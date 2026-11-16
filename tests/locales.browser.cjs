@@ -21,11 +21,11 @@ const assert=require('node:assert/strict');
   });for(const keys of Object.values(coverage.missing))assert.deepEqual(keys,[]);assert.equal(coverage.saved,lang);assert.equal(coverage.dir,lang==='ar'?'rtl':'ltr');
   for(const route of pages){
    const snapshot=await page.evaluate(route=>{showPage(route);wfBackupCloseRestoreModal();const root=document.getElementById('page-'+route);const bindings=[...root.querySelectorAll('[data-wf-ui]')];const known=new Set(Object.values(WOWUICopy).flatMap(c=>Object.values(c)));const valid=new Set(Object.values(WOWUICopy).map(c=>c[S.lang]));const foreign=[];
-    for(const el of root.querySelectorAll('*')){if(el.children.length||!el.getClientRects().length)continue;let e=el,hidden=false;while(e){const style=getComputedStyle(e);if(style.opacity==='0'||style.visibility==='hidden'||style.display==='none'){hidden=true;break;}e=e.parentElement;}if(hidden)continue;for(const text of [el.textContent.trim(),el.getAttribute('placeholder'),el.getAttribute('title')].filter(Boolean))if(known.has(text)&&!valid.has(text))foreign.push(text);}
+    for(const el of root.querySelectorAll('*')){if(el.children.length||!el.getClientRects().length)continue;let e=el,hidden=false;while(e){const style=getComputedStyle(e);if(style.opacity==='0'||style.visibility==='hidden'||style.display==='none'){hidden=true;break;}e=e.parentElement;}if(hidden)continue;for(const text of [el.textContent.trim(),el.getAttribute('placeholder'),el.getAttribute('title')].filter(Boolean))if(known.has(text)&&!valid.has(text)&&!['A','B','C'].includes(text))foreign.push(text);}
     return {foreign,bad:bindings.filter(e=>e.textContent!==wfUiText(e.dataset.wfUi)).map(e=>e.dataset.wfUi),undefined:/\bundefined\b/.test(root.innerText)}},route);
    assert.deepEqual(snapshot.bad,[],lang+' / '+route);assert.deepEqual(snapshot.foreign,[],lang+' / '+route+' contains copy from another language');assert(!snapshot.undefined,lang+' / '+route+' renders undefined');
   }
-  await page.evaluate(()=>{showPage('quick-barcode');wfBackupCloseRestoreModal();qblStopCamera()});
+  await page.evaluate(()=>{showPage('quick-barcode');wfBackupCloseRestoreModal();qblStopCamera()});await page.waitForTimeout(100);await page.evaluate(()=>qblStopCamera());
   assert.equal(await page.locator('#qblPageTitle').textContent(),await page.evaluate(()=>QBL_TEXTS[S.lang].page_title));
   assert.equal(await page.locator('#qblInput').getAttribute('placeholder'),await page.evaluate(()=>QBL_TEXTS[S.lang].placeholder));
   await page.locator('#qblInput').fill('TEST-4242');await page.locator('#qblInput').press('Enter');

@@ -8359,6 +8359,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 
 <section class="page" id="page-quick-barcode">
+<link rel="stylesheet" href="modern-ui.css?v=26">
 
 <!-- ══ PHASE 1: SCAN ══ -->
 <div id="qblPhase1" style="transition:all .5s cubic-bezier(.4,0,.2,1);">
@@ -8828,10 +8829,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <p id="wfLanguageHint" style="color:var(--muted);margin:8px 0 18px"><span data-wf-ui="Choose the interface language. Your choice is saved on this device.">اختر لغة الواجهة. تتغير اللغة فورًا وتُحفظ على هذا الجهاز.</span></p>
       <div class="wf-language-grid">
         <button type="button" class="wf-language-card" data-language="ar" onclick="setLang('ar')"><svg class="wf-flag" viewBox="0 0 32 22" role="img" aria-label="علم سوريا" data-wf-ui-aria-label="Syrian flag"><path fill="#19854a" d="M0 0h32v7.33H0z"/><path fill="#fff" d="M0 7.33h32v7.34H0z"/><path fill="#111" d="M0 14.67h32V22H0z"/><g fill="#c42828"><path d="M7 8.4l.6 1.8h1.9l-1.55 1.1.6 1.8L7 12l-1.55 1.1.6-1.8-1.55-1.1h1.9z"/><path d="M16 8.4l.6 1.8h1.9l-1.55 1.1.6 1.8L16 12l-1.55 1.1.6-1.8-1.55-1.1h1.9z"/><path d="M25 8.4l.6 1.8h1.9l-1.55 1.1.6 1.8L25 12l-1.55 1.1.6-1.8-1.55-1.1h1.9z"/></g></svg><span>العربية</span></button>
-        <button type="button" class="wf-language-card" data-language="tr" onclick="setLang('tr')"><span aria-hidden="true">🇹🇷</span><span>Türkçe</span></button>
-        <button type="button" class="wf-language-card" data-language="en" onclick="setLang('en')"><span aria-hidden="true">🇬🇧</span><span>English</span></button>
-        <button type="button" class="wf-language-card" data-language="fr" onclick="setLang('fr')"><span aria-hidden="true">🇫🇷</span><span>Français</span></button>
-        <button type="button" class="wf-language-card" data-language="ru" onclick="setLang('ru')"><span aria-hidden="true">🇷🇺</span><span>Русский</span></button>
+        <button type="button" class="wf-language-card" data-language="tr" onclick="setLang('tr')"><svg class="wf-flag" viewBox="0 0 32 22" aria-hidden="true"><path fill="#e30a17" d="M0 0h32v22H0z"/><circle cx="12" cy="11" r="6" fill="#fff"/><circle cx="13.7" cy="11" r="4.8" fill="#e30a17"/><path fill="#fff" d="m19 7.2.8 2.5h2.6l-2.1 1.5.8 2.5-2.1-1.5-2.1 1.5.8-2.5-2.1-1.5h2.6z"/></svg><span>Türkçe</span></button>
+        <button type="button" class="wf-language-card" data-language="en" onclick="setLang('en')"><svg class="wf-flag" viewBox="0 0 32 22" aria-hidden="true"><path fill="#012169" d="M0 0h32v22H0z"/><path stroke="#fff" stroke-width="5" d="M0 0l32 22M32 0 0 22"/><path stroke="#c8102e" stroke-width="2" d="M0 0l32 22M32 0 0 22"/><path stroke="#fff" stroke-width="7" d="M16 0v22M0 11h32"/><path stroke="#c8102e" stroke-width="4" d="M16 0v22M0 11h32"/></svg><span>English</span></button>
+        <button type="button" class="wf-language-card" data-language="fr" onclick="setLang('fr')"><svg class="wf-flag" viewBox="0 0 32 22" aria-hidden="true"><path fill="#002395" d="M0 0h11v22H0z"/><path fill="#fff" d="M11 0h10v22H11z"/><path fill="#ed2939" d="M21 0h11v22H21z"/></svg><span>Français</span></button>
+        <button type="button" class="wf-language-card" data-language="ru" onclick="setLang('ru')"><svg class="wf-flag" viewBox="0 0 32 22" aria-hidden="true"><path fill="#fff" d="M0 0h32v7.34H0z"/><path fill="#0039a6" d="M0 7.34h32v7.33H0z"/><path fill="#d52b1e" d="M0 14.67h32V22H0z"/></svg><span>Русский</span></button>
       </div>
     </div>
     
@@ -13261,7 +13262,7 @@ if(id==='add-product'){
   // ✅ أوقف الكاميرا القديمة أولاً قبل إعادة التهيئة
   qblStopCamera();
   // ✅ ثم أعد التهيئة
-  setTimeout(() => initQblPage(), 50);
+  setTimeout(() => { if(getCurrentPage()==='quick-barcode')initQblPage(); }, 50);
 
   const bar = document.getElementById('qblStickyCart');
   if (bar) bar.classList.remove('visible');
@@ -21485,7 +21486,13 @@ function initQblPage() {
 /* ══════════════════════════════════════════
    الكاميرا
 ══════════════════════════════════════════ */
+let qblCameraGeneration = 0;
+let qblFallbackControls = null;
+let qblFallbackLoading = null;
+let qblSearchTimer = null;
 function qblStopCamera() {
+  qblCameraGeneration++;
+  if(qblFallbackControls){qblFallbackControls.stop();qblFallbackControls=null;}
   if (QBL.interval) { clearInterval(QBL.interval); QBL.interval = null; }
   if (QBL.stream)   { QBL.stream.getTracks().forEach(t => t.stop()); QBL.stream = null; }
   const v = document.getElementById('qblVideo');
@@ -21493,30 +21500,66 @@ function qblStopCamera() {
 }
 
 async function qblStartCamera() {
+  qblStopCamera();
+  const generation = qblCameraGeneration;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment' }
     });
+    if (generation !== qblCameraGeneration || getCurrentPage() !== 'quick-barcode') { stream.getTracks().forEach(t=>t.stop()); return; }
     QBL.stream = stream;
     const video = document.getElementById('qblVideo');
-    if (!video) return;
+    if (!video) { qblStopCamera(); return; }
     video.srcObject = stream;
     await video.play();
-    qblStartDetection(video);
+    if (generation === qblCameraGeneration && QBL.stream === stream) qblStartDetection(video);
   } catch {
+    if (generation !== qblCameraGeneration) return;
     const el = document.getElementById('qblStatus');
     if (el) el.textContent = qblTx('cam_err');
   }
 }
 
-function qblStartDetection(video) {
-  if (!('BarcodeDetector' in window)) return;
-  const detector = new BarcodeDetector({
-    formats: ['qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e']
+function qblLoadFallback(){
+  if(window.ZXingBrowser)return Promise.resolve(window.ZXingBrowser);
+  if(!qblFallbackLoading)qblFallbackLoading=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');script.src='./vendor/zxing-browser.min.js?v=26';
+    script.onload=()=>resolve(window.ZXingBrowser);script.onerror=()=>{qblFallbackLoading=null;script.remove();reject(new Error('scanner unavailable'));};
+    document.head.appendChild(script);
   });
+  return qblFallbackLoading;
+}
+async function qblStartFallback(video,generation){
+  try{
+    const ZXing=await qblLoadFallback();
+    if(generation!==qblCameraGeneration || !QBL.stream)return;
+    const reader=new ZXing.BrowserMultiFormatReader(undefined,{delayBetweenScanAttempts:400,delayBetweenScanSuccess:400});
+    let found=false;
+    const controls=await reader.decodeFromVideoElement(video,(result,error,active)=>{
+      if(!result || found || generation!==qblCameraGeneration || document.hidden)return;
+      found=true;active.stop();qblFallbackControls=null;
+      const raw=result.getText().trim();const inp=document.getElementById('qblInput');if(inp)inp.value=raw;qblFindProduct(raw);
+    });
+    if(generation!==qblCameraGeneration || found){controls.stop();return;}
+    qblFallbackControls=controls;
+  }catch(_){
+    if(generation===qblCameraGeneration){const el=document.getElementById('qblStatus');if(el)el.textContent=qblTx('cam_err');}
+  }
+}
+function qblStartDetection(video) {
+  if (!('BarcodeDetector' in window)) { qblStartFallback(video,qblCameraGeneration); return; }
+  let detector;
+  try { detector = new BarcodeDetector({
+    formats: ['qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e']
+  }); } catch (_) { qblStartFallback(video,qblCameraGeneration); return; }
+  let detecting = false;
   QBL.interval = setInterval(async () => {
+    if (detecting || !QBL.stream || document.hidden) return;
+    detecting = true;
     try {
+      const stream = QBL.stream;
       const barcodes = await detector.detect(video);
+      if (QBL.stream !== stream || !QBL.interval) return;
       if (barcodes.length > 0) {
         clearInterval(QBL.interval); QBL.interval = null;
         const raw = barcodes[0].rawValue.trim();
@@ -21524,9 +21567,14 @@ function qblStartDetection(video) {
         if (inp) inp.value = raw;
         qblFindProduct(raw);
       }
-    } catch {}
+    } catch {} finally { detecting = false; }
   }, 400);
 }
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)qblStopCamera();
+  else if(getCurrentPage()==='quick-barcode' && QBL.phase===1 && !qblDropdownOpen)qblStartCamera();
+});
 
 /* ══════════════════════════════════════════
    البحث
@@ -21556,7 +21604,8 @@ function onQblInput() {
   }
 
   // ── تحديث القائمة إذا كانت مفتوحة
-  if (qblDropdownOpen) qblBuildDropdown(inp.value);
+  clearTimeout(qblSearchTimer);
+  if (qblDropdownOpen) qblSearchTimer=setTimeout(()=>{if(qblDropdownOpen)qblBuildDropdown(inp.value,qblActiveType);},120);
 }
 
 function searchQbl() {
@@ -22933,8 +22982,7 @@ function qblBuildDropdown(filter, type) {
             padding:9px 14px;cursor:pointer;
             border-bottom:1px solid var(--border);
             transition:background var(--tr);
-            animation:fadeUp .2s ease both;
-            animation-delay:${i * 30}ms;
+            contain:layout style;
           "
           onmouseenter="this.style.background='var(--input)'"
           onmouseleave="this.style.background=''">

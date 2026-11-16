@@ -1,8 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v25-complete-ui-locales';
+const CACHE_NAME = 'wow-furniture-v26-modern-ui';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=25',
+  './modern-ui.css?v=26',
+  './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
   './manifest.json',
   './account-statement-core.js?v=25',

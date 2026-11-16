@@ -21,3 +21,5 @@ Set `CHROMIUM_PATH` to your Chromium executable (default `/usr/bin/chromium`), o
 The browser checks all pages and languages, barcode lookup, price selection, cart labels, quantity retention when changing languages, account statements, invoice HTML, language persistence, and mobile layout. It uses a new browser context and in-memory fixtures; it does not save client, product, invoice, or payment records.
 
 New authored UI copy must have all five translations. Use `data-i18n` for the main dictionary or explicit `data-wf-ui` bindings for bundled copy. Dynamic text must use its language dictionary or `wfUiText`; do not translate arbitrary input values, product names, customer names, or saved notes.
+
+Run `npm run test:scanner` against the same local server to exercise a generated QR code through the ZXing fallback, scanner concurrency and cleanup, five flags, and touch layouts. The video input is simulated; verify physical cameras on target tablets separately.

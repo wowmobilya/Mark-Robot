@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/locales.test.cjs",
-    "test:browser": "node tests/locales.browser.cjs"
+    "test:browser": "node tests/locales.browser.cjs",
+    "test:scanner": "node tests/scanner.browser.cjs"
   },
   "devDependencies": {
     "acorn": "^8.17.0",
