@@ -8359,7 +8359,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 
 <section class="page" id="page-quick-barcode">
-<link rel="stylesheet" href="modern-ui.css?v=27">
+<link rel="stylesheet" href="modern-ui.css?v=28">
 
 <!-- ══ PHASE 1: SCAN ══ -->
 <div id="qblPhase1" style="transition:all .5s cubic-bezier(.4,0,.2,1);">
@@ -13017,6 +13017,7 @@ function loadTheme(){let th='light';try{th=localStorage.getItem('wf_theme')||'li
    EXCHANGE RATE
 ============================================================ */
 async function fetchRate(){
+  const previous={usdTry:S.usdTry,usdEur:S.usdEur};
   const apis=['https://api.exchangerate-api.com/v4/latest/USD','https://open.er-api.com/v6/latest/USD'];
   for(const url of apis){
     try{
@@ -13029,6 +13030,7 @@ async function fetchRate(){
         S.usdEur=S.settings.manualUsdEur||parseFloat(eurRate.toFixed(4));
 S.rateTime = new Date().toLocaleTimeString('en-US', { hour12: false });
         updateRateUI();showToast(t('rate_updated'),'ok');
+        window.wfAnimateRateChanges?.(previous);
         await dbPut('settings',{id:'usdTry',value:S.usdTry,eur:S.usdEur,time:S.rateTime});
         return;
       }
@@ -27609,6 +27611,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 })();
 </script>
 
-<script src="ui-icons.js?v=29"></script>
+<script src="ui-icons.js?v=30"></script>
 </body>
 </html>
