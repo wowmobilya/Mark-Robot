@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v27-icons';
+const CACHE_NAME = 'wow-furniture-v28-icons';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=25',
   './modern-ui.css?v=27',
-  './ui-icons.js?v=27',
+  './ui-icons.js?v=28',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
   './manifest.json',
