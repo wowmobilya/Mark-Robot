@@ -1,0 +1,13 @@
+{
+  "name": "wow-galeri",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/locales.test.cjs",
+    "test:browser": "node tests/locales.browser.cjs"
+  },
+  "devDependencies": {
+    "acorn": "^8.17.0",
+    "acorn-walk": "^8.3.5",
+    "playwright": "^1.61.1"
+  }
+}

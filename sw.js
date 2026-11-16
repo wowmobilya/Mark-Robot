@@ -1,12 +1,13 @@
-const CACHE_NAME = 'wow-furniture-v24-five-languages';
+const CACHE_NAME = 'wow-furniture-v25-complete-ui-locales';
 const urlsToCache = [
   './',
   './index.html',
+  './ui-i18n.js?v=25',
   './google-drive-config.js',
   './manifest.json',
-  './account-statement-core.js?v=22',
-  './account-statement.js?v=22',
-  './account-statement.css?v=22',
+  './account-statement-core.js?v=25',
+  './account-statement.js?v=25',
+  './account-statement.css?v=25',
   'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
   'https://h.top4top.io/p_3861refg81.png'
 ];
