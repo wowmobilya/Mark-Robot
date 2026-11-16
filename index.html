@@ -5353,8 +5353,9 @@ textarea.fc{resize:vertical;min-height:72px}
     font-weight: 800;
     transform: translateY(2px);
   }
+}
 
-} /* ── مسافات آمنة للقائمة السفلية ── */
+/* ── مسافات آمنة للقائمة السفلية ── */
 @media (max-width: 1024px) {
 
   /* مسافة أسفل الصفحات */
@@ -6569,9 +6570,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   </div>
   <div class="nb-right">
     <div class="lang-sw">
-      <button class="lang-btn active" onclick="setLang('ar')">ع</button>
-      <button class="lang-btn" onclick="setLang('tr')">TR</button>
-      <button class="lang-btn" onclick="setLang('en')">EN</button>
+      <!-- Language selection is managed in Settings. -->
     </div>
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
 <button class="icon-btn" onclick="openSettingsPage()">⚙️</button>
@@ -7864,6 +7863,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     <span id="step6Arrow" style="font-size:16px;color:var(--muted);transition:transform .3s;">▼</span>
   </div>
   <div class="inv-step-body" id="step6Body">
+    <div id="wfProductUpdates" style="display:none;margin:12px 0;padding:12px;border:1px solid var(--gold);border-radius:12px;background:var(--gold-light)">
+      <span id="wfProductUpdatesText"></span>
+      <button type="button" class="btn btn-p btn-sm" onclick="wfReviewProductUpdates()" id="wfProductUpdatesButton"></button>
+    </div>
     <div class="inv-tbl-wrap">
       <table class="inv-tbl">
         <thead>
@@ -8754,6 +8757,20 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
    <!-- ========== SETTINGS PAGE ========== -->
 <section class="page" id="page-settings">
+<style>
+#page-settings .sct-sticky-header{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding-top:16px;overflow:hidden}
+#page-settings .tabs{gap:5px;scrollbar-width:thin!important}
+#page-settings .tab-btn{min-height:48px;padding:10px 14px;white-space:nowrap}
+#page-settings .tab-btn:focus-visible,#page-settings button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#page-settings .wf-language-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+#page-settings .wf-language-card{min-height:66px;text-align:start;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:13px;background:var(--input);color:var(--text);font:inherit;cursor:pointer}
+#page-settings .wf-language-card[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-light)}
+#page-settings .wf-language-card:disabled{opacity:.55;cursor:not-allowed}
+#page-settings .wf-flag{width:32px;height:22px;flex:none;border-radius:3px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.1)}
+#page-settings [id^="stab-"]{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:var(--shadow)}
+@media(max-width:700px){#page-settings .sct-sticky-header{border-radius:14px}#page-settings [id^="stab-"]{padding:16px;border-radius:14px}#page-settings .sct-sticky-header>div:first-child{padding:0 12px!important;flex-wrap:wrap}#page-settings .tabs{margin:0 12px!important}}
+@media(prefers-reduced-motion:reduce){#page-settings *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+</style>
   
    <!-- الشريط العلوي الثابت مع التبويبات -->
   <div class="sct-sticky-header" style="flex-direction: column; align-items: stretch; gap: 14px; padding-bottom: 0;">
@@ -8795,6 +8812,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <button class="tab-btn" onclick="switchTab('data')" style="border-radius: 10px 10px 0 0; flex-shrink: 0;">
         🛡️ <span data-i18n="tab_data">البيانات</span>
       </button>
+      <button class="tab-btn" onclick="switchTab('language')" style="border-radius:10px 10px 0 0;flex-shrink:0"><span id="wfLanguageTab">🌐 اللغة</span></button>
 <button class="tab-btn" onclick="switchTab('about')" style="border-radius: 10px 10px 0 0; flex-shrink: 0;">
   ℹ️ <span data-i18n="tab_about">عن البرنامج</span>
 </button>
@@ -8805,6 +8823,17 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
   <!-- محتوى الإعدادات -->
 <div style="max-width: 700px; margin: 20px auto 20px;">
+    <div id="stab-language" style="display:none">
+      <h2 id="wfLanguageTitle">لغة البرنامج</h2>
+      <p id="wfLanguageHint" style="color:var(--muted);margin:8px 0 18px">اختر لغة الواجهة. تتغير اللغة فورًا وتُحفظ على هذا الجهاز.</p>
+      <div class="wf-language-grid">
+        <button type="button" class="wf-language-card" data-language="ar" onclick="setLang('ar')"><svg class="wf-flag" viewBox="0 0 32 22" role="img" aria-label="علم سوريا"><path fill="#19854a" d="M0 0h32v7.33H0z"/><path fill="#fff" d="M0 7.33h32v7.34H0z"/><path fill="#111" d="M0 14.67h32V22H0z"/><g fill="#c42828"><path d="M7 8.4l.6 1.8h1.9l-1.55 1.1.6 1.8L7 12l-1.55 1.1.6-1.8-1.55-1.1h1.9z"/><path d="M16 8.4l.6 1.8h1.9l-1.55 1.1.6 1.8L16 12l-1.55 1.1.6-1.8-1.55-1.1h1.9z"/><path d="M25 8.4l.6 1.8h1.9l-1.55 1.1.6 1.8L25 12l-1.55 1.1.6-1.8-1.55-1.1h1.9z"/></g></svg><span>العربية</span></button>
+        <button type="button" class="wf-language-card" data-language="tr" onclick="setLang('tr')"><span aria-hidden="true">🇹🇷</span><span>Türkçe</span></button>
+        <button type="button" class="wf-language-card" data-language="en" onclick="setLang('en')"><span aria-hidden="true">🇬🇧</span><span>English</span></button>
+        <button type="button" class="wf-language-card" data-language="fr" onclick="setLang('fr')"><span aria-hidden="true">🇫🇷</span><span>Français</span></button>
+        <button type="button" class="wf-language-card" data-language="ru" onclick="setLang('ru')"><span aria-hidden="true">🇷🇺</span><span>Русский</span></button>
+      </div>
+    </div>
     
     <!-- 1. تبويب الشركة -->
     <div id="stab-company">
@@ -9093,11 +9122,14 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
         <span class="wf14-preview-lang-label" data-i18n="print_lang_title">لغة:</span>
         <select class="pdf-lang-sel" id="pdfLangSel" onchange="onPdfLangChange()" style="display:none!important;" aria-hidden="true" tabindex="-1">
           <option value="en">English</option><option value="tr">Türkçe</option><option value="ar">العربية</option>
+          <option value="fr">Français</option><option value="ru">Русский</option>
         </select>
         <div class="wf14-preview-lang-buttons" role="radiogroup" aria-label="Invoice language">
           <button type="button" class="wf14-preview-lang-btn sel" data-pvlang="en" onclick="wf14SelectPreviewLang('en',this)" title="English">🇬🇧 EN</button>
           <button type="button" class="wf14-preview-lang-btn" data-pvlang="tr" onclick="wf14SelectPreviewLang('tr',this)" title="Türkçe">🇹🇷 TR</button>
-          <button type="button" class="wf14-preview-lang-btn" data-pvlang="ar" onclick="wf14SelectPreviewLang('ar',this)" title="العربية">🇸🇦 AR</button>
+          <button type="button" class="wf14-preview-lang-btn" data-pvlang="ar" onclick="wf14SelectPreviewLang('ar',this)" title="العربية">🇸🇾 AR</button>
+          <button type="button" class="wf14-preview-lang-btn" data-pvlang="fr" onclick="wf14SelectPreviewLang('fr',this)" title="Français">🇫🇷 FR</button>
+          <button type="button" class="wf14-preview-lang-btn" data-pvlang="ru" onclick="wf14SelectPreviewLang('ru',this)" title="Русский">🇷🇺 RU</button>
         </div>
       </div>
       <div class="wf15-preview-actions">
@@ -9313,8 +9345,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
           <span class="wf14-pl-flag">🇹🇷</span><span class="wf14-pl-copy"><span class="wf14-pl-name">Türkçe</span><span class="wf14-pl-code">TR</span></span><span class="wf14-pl-check">✓</span>
         </button>
         <button type="button" class="print-lang-btn" data-pl="ar" onclick="setPrintLang('ar',this)" aria-pressed="false">
-          <span class="wf14-pl-flag">🇸🇦</span><span class="wf14-pl-copy"><span class="wf14-pl-name">العربية</span><span class="wf14-pl-code">AR</span></span><span class="wf14-pl-check">✓</span>
+          <span class="wf14-pl-flag">🇸🇾</span><span class="wf14-pl-copy"><span class="wf14-pl-name">العربية</span><span class="wf14-pl-code">AR</span></span><span class="wf14-pl-check">✓</span>
         </button>
+        <button type="button" class="print-lang-btn" data-pl="fr" onclick="setPrintLang('fr',this)" aria-pressed="false"><span class="wf14-pl-flag">🇫🇷</span><span class="wf14-pl-name">Français</span></button>
+        <button type="button" class="print-lang-btn" data-pl="ru" onclick="setPrintLang('ru',this)" aria-pressed="false"><span class="wf14-pl-flag">🇷🇺</span><span class="wf14-pl-name">Русский</span></button>
       </div>
     </div>
 
@@ -11237,6 +11271,140 @@ name_hasan: 'Mr. Hasan Al-Helou',
     ai_greet_night:['Good Night! Do not forget to rest 🌙','Night work needs coffee ☕','A quiet and productive night 🌟'],
   }
 };
+const WF_UI_COPY = [
+  ['nav_main','Menu','Меню'],
+  ['nav_dashboard','Tableau de bord','Панель управления'],
+  ['nav_companies co_title','Clients','Клиенты'],
+  ['nav_products stat_pr pr_title','Produits','Товары'],
+  ['nav_invoices stat_inv inv_title co_fin_invoices','Factures','Счета'],
+  ['nav_actions','Actions','Действия'],
+  ['nav_add_co btn_add_co add_co_title','Ajouter un client','Добавить клиента'],
+  ['nav_add_pr btn_add_pr add_pr_title','Ajouter un produit','Добавить товар'],
+  ['nav_create btn_create create_title','Créer une facture','Создать счёт'],
+  ['stat_co','Sociétés','Компании'],
+  ['stat_total','Total des ventes','Общий объём продаж'],
+  ['quick_act','Actions rapides','Быстрые действия'],
+  ['recent_inv','Factures récentes','Последние счета'],
+  ['view_all','Tout afficher','Показать все'],
+  ['co_tab_all','Tous','Все'],
+  ['client_type','Type de client','Тип клиента'],
+  ['t_ext','Export','Экспорт'],
+  ['t_int_retail','Vente au détail locale','Розница внутри страны'],
+  ['t_int_whl','Vente en gros locale','Опт внутри страны'],
+  ['co_info tab_company','Informations sur la société','Данные компании'],
+  ['co_name company_name_setting','Nom de la société','Название компании'],
+  ['buyer_name','Nom de l’acheteur','Имя покупателя'],
+  ['country','Pays','Страна'],
+  ['province','Région','Регион'],
+  ['city','Ville','Город'],
+  ['phone','Téléphone','Телефон'],
+  ['email','Courriel','Эл. почта'],
+  ['website','Site web','Веб-сайт'],
+  ['showrooms','Salles d’exposition','Выставочные залы'],
+  ['co_logo','Logo de la société','Логотип компании'],
+  ['btn_save_co','Enregistrer la société','Сохранить компанию'],
+  ['btn_back','Retour','Назад'],
+  ['pr_type','Type de produit','Тип товара'],
+  ['pr_info','Informations sur le produit','Данные товара'],
+  ['pr_name','Nom du produit','Название товара'],
+  ['pr_desc','Description','Описание'],
+  ['pricing','Tarification','Цены'],
+  ['pricing_hint','Devise de base : USD','Основная валюта: USD'],
+  ['price_a','Prix A (USD)','Цена A (USD)'],
+  ['price_b','Prix B (USD)','Цена B (USD)'],
+  ['price_c','Prix C (USD)','Цена C (USD)'],
+  ['dims th_dims','Dimensions','Размеры'],
+  ['weight','Poids (kg)','Вес (кг)'],
+  ['packets','Nombre de colis','Количество упаковок'],
+  ['color th_color','Couleur','Цвет'],
+  ['pr_image','Image du produit','Фото товара'],
+  ['btn_save_pr','Enregistrer le produit','Сохранить товар'],
+  ['pay_method_title','Mode de paiement','Способ оплаты'],
+  ['pm_cash','Espèces','Наличные'],
+  ['pm_bank','Virement bancaire','Банковский перевод'],
+  ['pm_card','Carte bancaire','Банковская карта'],
+  ['pm_check','Chèque','Чек'],
+  ['pm_install','Paiement échelonné','Рассрочка'],
+  ['pm_lc','Crédit documentaire','Аккредитив'],
+  ['pm_defer','Paiement différé','Отсрочка платежа'],
+  ['inv_no','N° de facture','Номер счёта'],
+  ['inv_details','Détails de la facture','Данные счёта'],
+  ['currency tab_currency','Devise','Валюта'],
+  ['load_date','Date de chargement','Дата погрузки'],
+  ['plate_no','Immatriculation','Номерной знак'],
+  ['truck_no','N° du camion','Номер грузовика'],
+  ['notes opt_notes pay_note','Notes','Примечания'],
+  ['add_items','Ajouter des articles','Добавить позиции'],
+  ['inv_items','Articles de la facture','Позиции счёта'],
+  ['inv_summary','Récapitulatif','Сводка по счёту'],
+  ['subtotal sum_subtotal','Sous-total','Промежуточный итог'],
+  ['discount sum_discount','Remise','Скидка'],
+  ['deposit sum_deposit','Acompte','Аванс'],
+  ['grand_total sum_grand_total','Total général','Общая сумма'],
+  ['remaining sum_balance_due','Solde restant','Остаток к оплате'],
+  ['total_paid sum_total_paid','Total payé','Всего оплачено'],
+  ['btn_preview sum_btn_preview','Aperçu','Предпросмотр'],
+  ['btn_save_inv','Enregistrer la facture','Сохранить счёт'],
+  ['btn_print sum_btn_print','Imprimer','Печать'],
+  ['sum_btn_save','Enregistrer','Сохранить'],
+  ['th_name','Nom','Название'],
+  ['th_qty','Qté','Кол-во'],
+  ['th_price','Prix','Цена'],
+  ['th_total total co_fin_total','Total','Итого'],
+  ['preview_title','Aperçu de la facture','Предпросмотр счёта'],
+  ['scan_barcode','Scanner un code-barres','Сканировать штрихкод'],
+  ['scan_aim','Orientez la caméra vers le code-barres','Наведите камеру на штрихкод'],
+  ['confirm','Confirmer','Подтвердить'],
+  ['cancel','Annuler','Отмена'],
+  ['settings','Paramètres','Настройки'],
+  ['change_logo','Changer le logo','Изменить логотип'],
+  ['reset_logo','Rétablir le logo par défaut','Восстановить исходный логотип'],
+  ['tab_bank','Banque','Банк'],
+  ['tab_invoice','Paramètres des factures','Настройки счетов'],
+  ['tab_data','Données','Данные'],
+  ['tab_about','À propos','О программе'],
+  ['address','Adresse','Адрес'],
+  ['bank_name','Nom de la banque','Название банка'],
+  ['beneficiary','Bénéficiaire','Получатель'],
+  ['account_no','N° de compte','Номер счёта'],
+  ['next_inv_no','Prochain n° de facture','Следующий номер счёта'],
+  ['auth_person','Personne habilitée','Уполномоченное лицо'],
+  ['default_notes','Notes par défaut','Примечания по умолчанию'],
+  ['save_settings','Enregistrer les paramètres','Сохранить настройки'],
+  ['edit','Modifier','Изменить'],
+  ['delete','Supprimer','Удалить'],
+  ['other','Autre','Другое'],
+  ['no_co','Aucun client trouvé','Клиенты не найдены'],
+  ['no_pr','Aucun produit','Нет товаров'],
+  ['no_inv','Aucune facture','Нет счетов'],
+  ['saved_co','Société enregistrée','Компания сохранена'],
+  ['saved_pr','Produit enregistré','Товар сохранён'],
+  ['saved_inv','Facture enregistrée','Счёт сохранён'],
+  ['updated_inv','Facture mise à jour','Счёт обновлён'],
+  ['settings_saved','Paramètres enregistrés','Настройки сохранены'],
+  ['fill_req','Remplissez les champs obligatoires','Заполните обязательные поля'],
+  ['no_items','Ajoutez des articles','Добавьте позиции'],
+  ['no_company','Sélectionnez une société','Выберите компанию'],
+  ['print_lang_title','Langue d’impression','Язык печати'],
+  ['print_settings_btn share_settings','Paramètres d’impression','Настройки печати'],
+  ['print_options_title','Impression et partage','Печать и отправка'],
+  ['share_btn','Partager','Поделиться'],
+  ['share_pdf','Télécharger le PDF','Скачать PDF'],
+  ['share_print','Imprimer la facture','Распечатать счёт'],
+  ['pay_history pm_hist_title','Historique des paiements','История платежей'],
+  ['pay_amount','Montant','Сумма'],
+  ['pay_date','Date','Дата'],
+  ['btn_add_pay btn_add_payment','Ajouter un paiement','Добавить платёж'],
+  ['tip_label','Conseil du jour','Совет дня'],
+];
+TR.fr={...TR.en};
+TR.ru={...TR.en};
+for(const [keys, french, russian] of WF_UI_COPY){
+  for(const key of keys.split(' ')){
+    TR.fr[key]=french;
+    TR.ru[key]=russian;
+  }
+}
 const t=k=>(TR[S.lang]?.[k])||TR.ar[k]||k;
 
 /* ============================================================
@@ -11572,8 +11740,9 @@ function updatePrintOpts(){
   });
   refreshActivePreviewFromPrintSettings();
 }
+const WF_INVOICE_LANGUAGES = ['ar','tr','en','fr','ru'];
 function wf14SyncInvoiceLangControls(lang){
-  const v=['ar','tr','en'].includes(lang)?lang:'en';
+  const v=WF_INVOICE_LANGUAGES.includes(lang)?lang:'en';
   document.querySelectorAll('#printOptionsModal .print-lang-btn').forEach(b=>{
     const on=b.dataset.pl===v;b.classList.toggle('sel',on);b.setAttribute('aria-pressed',on?'true':'false');
   });
@@ -11583,20 +11752,20 @@ function wf14SyncInvoiceLangControls(lang){
   const pdfSel=document.getElementById('pdfLangSel');if(pdfSel&&pdfSel.value!==v)pdfSel.value=v;
 }
 function setPrintLang(lang,btn){
-  if(!['ar','tr','en'].includes(lang))return;
+  if(!WF_INVOICE_LANGUAGES.includes(lang))return;
   // IMPORTANT: only invoice/export language changes here. Never call setLang/applyTr.
   S.printLang=lang;
   wf14SyncInvoiceLangControls(lang);
   refreshActivePreviewFromPrintSettings();
 }
 function wf14SelectPreviewLang(lang,btn){
-  if(!['ar','tr','en'].includes(lang))return;
+  if(!WF_INVOICE_LANGUAGES.includes(lang))return;
   const pdfSel=document.getElementById('pdfLangSel');if(pdfSel)pdfSel.value=lang;
   onPdfLangChange();
 }
 function onPdfLangChange(){
   const val=document.getElementById('pdfLangSel')?.value||S.printLang||'en';
-  if(!['ar','tr','en'].includes(val))return;
+  if(!WF_INVOICE_LANGUAGES.includes(val))return;
   // Invoice only. The application UI remains governed exclusively by S.lang.
   S.printLang=val;
   wf14SyncInvoiceLangControls(val);
@@ -12412,6 +12581,9 @@ function selectInvTypeAndContinue(tp,event){
 function applyTr(){
   window.wfStatementRefreshLabels?.();
   const lang=S.lang;
+  document.querySelectorAll('.wf-language-card').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.language===lang)));
+  const languageCopy={ar:['🌐 اللغة','لغة البرنامج','اختر لغة الواجهة. تتغير اللغة فورًا وتُحفظ على هذا الجهاز.'],tr:['🌐 Dil','Uygulama dili','Arayüz dilini seçin. Seçiminiz bu cihazda saklanır.'],en:['🌐 Language','App language','Choose the interface language. Your choice is saved on this device.'],fr:['🌐 Langue','Langue de l’application','Votre choix est enregistré sur cet appareil.'],ru:['🌐 Язык','Язык приложения','Выбранный язык сохраняется на этом устройстве.']}[lang];
+  if(languageCopy)['wfLanguageTab','wfLanguageTitle','wfLanguageHint'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=languageCopy[i];});
   document.documentElement.lang=lang;
   document.documentElement.dir=lang==='ar'?'rtl':'ltr';
   document.querySelectorAll('[data-i18n]').forEach(el=>{const v=TR[lang]?.[el.dataset.i18n];if(v)el.textContent=v;});
@@ -12476,6 +12648,9 @@ function applyTr(){
 
 function setLang(l){
   S.lang=l;
+  document.querySelectorAll('.wf-language-card').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.language===l)));
+  const langCopy={ar:['🌐 اللغة','لغة البرنامج','اختر لغة الواجهة. تتغير اللغة فورًا وتُحفظ على هذا الجهاز.'],tr:['🌐 Dil','Uygulama dili','Arayüz dilini seçin. Seçiminiz bu cihazda saklanır.'],en:['🌐 Language','App language','Choose the interface language. Your choice is saved on this device.']}[l];
+  if(langCopy){['wfLanguageTab','wfLanguageTitle','wfLanguageHint'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=langCopy[i]});}
   window.wfStatementRefreshLabels?.();
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.querySelector(`.lang-btn[onclick="setLang('${l}')"]`);
@@ -14515,12 +14690,12 @@ function getTierPrice(product,tier){
   if(tier==='C'&&product.priceC)return product.priceC;
   return product.priceA||product.priceUSD||0;
 }
-function selInvTier(tier,el){
+function selInvTier(tier,el,preservePrices=false){
   S.invTier=tier;
   document.querySelectorAll('#invTierGrp .price-tier-btn').forEach(b=>b.classList.toggle('sel',b.dataset.tier===tier));
   const chip=document.getElementById('invTierChip');if(chip)chip.textContent=tier;
   const badge=document.getElementById('step2Badge');if(badge)badge.textContent='🎯 '+tier;
-  S.invItems.forEach(item=>{
+  if(!preservePrices) S.invItems.forEach(item=>{
     const p=S.products.find(x=>x.id===item.productId);
     if(p){
       const newPrice=getTierPrice(p,tier);
@@ -14714,6 +14889,74 @@ function renderPrSelector(){
   }).join('');
 }
 function addItemToInv_id(id){const p=S.products.find(x=>x.id===id);if(p)addItemToInv(p);}
+// Keep the product version separately from editable invoice values.
+function wfProductSnapshot(p,tier){
+  return {name:p.name||'',dimensions:p.dimensions||'',dimPieces:wfGetProductDims(p),
+    color:p.color||'STANDARD',cbm:Number(p.cbm)||0,packets:Number(p.packets)||1,
+    weight:Number(p.weight)||0,image:p.image||null,type:p.type||'other',
+    hsCode:p.hsCode||'',priceUSD:Number(getTierPrice(p,tier||'A'))||0};
+}
+const WF_PRODUCT_FIELDS=['name','dimensions','dimPieces','color','cbm','packets','weight','image','type','hsCode','priceUSD'];
+let wfIgnoredProductUpdate='';
+function wfProductUpdates(){
+  const changes=[];
+  for(const [index,item] of (S.invItems||[]).entries()){
+    const product=S.products.find(p=>p.id===item.productId);if(!product)continue;
+    const next=wfProductSnapshot(product,item.tier||S.invTier),base=item.productSnapshot;
+    // Older invoices have no source snapshot: compare the invoice values, and show
+    // every difference for explicit review rather than changing them silently.
+    const old=base||{...item,dimPieces:item.dimPieces||[],priceUSD:Number(item.priceUSD)||0};
+    const fields=WF_PRODUCT_FIELDS.filter(k=>JSON.stringify(old[k]??null)!==JSON.stringify(next[k]??null));
+    if(fields.length)changes.push({index,item,next,fields});
+  }
+  return changes;
+}
+function wfProductUpdateSignature(changes){return JSON.stringify([S.editInvId||null,changes.map(c=>[c.index,c.fields,c.next])]);}
+function wfRefreshProductUpdateNotice(){
+  const box=document.getElementById('wfProductUpdates');if(!box)return;
+  const changes=wfProductUpdates();box.style.display=changes.length&&wfProductUpdateSignature(changes)!==wfIgnoredProductUpdate?'flex':'none';
+  box.style.alignItems='center';box.style.justifyContent='space-between';box.style.gap='10px';box.style.flexWrap='wrap';
+  const lang=S.lang||'ar';
+  document.getElementById('wfProductUpdatesText').textContent=({ar:'توجد تحديثات لمعلومات قطع هذه البروفرما. راجعها قبل تطبيقها.',tr:'Bu proformadaki ürün bilgilerinde güncellemeler var. Uygulamadan önce inceleyin.',en:'Product information in this proforma has updates. Review them before applying.',fr:'Des informations produit de cette pro forma ont changé. Vérifiez-les avant de les appliquer.',ru:'Данные товаров в этой проформе обновлены. Проверьте изменения перед применением.'})[lang];
+  document.getElementById('wfProductUpdatesButton').textContent=({ar:'مراجعة التحديثات',tr:'Güncellemeleri incele',en:'Review updates',fr:'Examiner les modifications',ru:'Проверить изменения'})[lang];
+}
+function wfReviewProductUpdates(){
+  const changes=wfProductUpdates();if(!changes.length){wfRefreshProductUpdateNotice();return;}
+  const lang=S.lang||'ar',L={
+    ar:{title:'تحديث معلومات القطع',intro:'قارن المعلومات الحالية بالمعلومات الجديدة. لن تتغير البروفرما إلا بعد موافقتك وحفظها.',old:'الحالي',next:'الجديد',apply:'تطبيق التحديثات',keep:'إبقاء البروفرما كما هي',save:'تم تطبيق التحديثات. احفظ البروفرما لتثبيتها.',image:'تغيرت الصورة',labels:{name:'الاسم',dimensions:'الأبعاد',dimPieces:'تفاصيل الأبعاد',color:'اللون',cbm:'CBM للقطعة',packets:'عدد الطرود',weight:'الوزن',image:'الصورة',type:'النوع',hsCode:'رمز HS',priceUSD:'السعر بالدولار'}},
+    tr:{title:'Ürün bilgilerini güncelle',intro:'Mevcut ve yeni bilgileri karşılaştırın. Proforma yalnızca onaylayıp kaydettiğinizde değişir.',old:'Mevcut',next:'Yeni',apply:'Güncellemeleri uygula',keep:'Proformayı olduğu gibi tut',save:'Güncellemeler uygulandı. Proformayı kaydedin.',image:'Görsel değişti',labels:{name:'Ad',dimensions:'Ölçüler',dimPieces:'Ölçü detayları',color:'Renk',cbm:'Birim CBM',packets:'Paket sayısı',weight:'Ağırlık',image:'Görsel',type:'Tür',hsCode:'HS kodu',priceUSD:'USD fiyatı'}},
+    en:{title:'Update product information',intro:'Compare current and new values. The proforma changes only after you apply and save.',old:'Current',next:'New',apply:'Apply updates',keep:'Keep proforma unchanged',save:'Updates applied. Save the proforma to keep them.',image:'Image changed',labels:{name:'Name',dimensions:'Dimensions',dimPieces:'Dimension details',color:'Color',cbm:'CBM per item',packets:'Packages',weight:'Weight',image:'Image',type:'Type',hsCode:'HS code',priceUSD:'USD price'}}
+    ,fr:{title:'Mettre à jour les produits',intro:'Comparez les valeurs actuelles et les nouvelles valeurs. La pro forma ne change qu’après application et enregistrement.',old:'Actuel',next:'Nouveau',apply:'Appliquer les modifications',keep:'Garder la pro forma inchangée',save:'Modifications appliquées. Enregistrez la pro forma.',image:'Image modifiée',labels:{name:'Nom',dimensions:'Dimensions',dimPieces:'Détail des dimensions',color:'Couleur',cbm:'CBM par article',packets:'Colis',weight:'Poids',image:'Image',type:'Type',hsCode:'Code SH',priceUSD:'Prix en USD'}}
+    ,ru:{title:'Обновить данные товаров',intro:'Сравните текущие и новые значения. Проформа изменится только после применения и сохранения.',old:'Текущее',next:'Новое',apply:'Применить изменения',keep:'Оставить проформу без изменений',save:'Изменения применены. Сохраните проформу.',image:'Изображение изменено',labels:{name:'Название',dimensions:'Размеры',dimPieces:'Размеры по элементам',color:'Цвет',cbm:'CBM на единицу',packets:'Упаковки',weight:'Вес',image:'Изображение',type:'Тип',hsCode:'Код ТН ВЭД',priceUSD:'Цена в USD'}}
+  }[lang]||null;if(!L)return;
+  const ov=document.createElement('div');ov.className='modal-ov open';ov.style.zIndex='10000000';
+  const dialog=document.createElement('div');dialog.className='modal';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.style.maxWidth='650px';dialog.style.maxHeight='85vh';dialog.style.overflowY='auto';
+  const title=document.createElement('h2');title.textContent=L.title;dialog.appendChild(title);
+  const intro=document.createElement('p');intro.textContent=L.intro;dialog.appendChild(intro);
+  const val=(v,k)=>k==='image'?L.image:k==='dimPieces'?(Array.isArray(v)?v.map(d=>`${d.l}×${d.w}×${d.h}`).join(' + '):'—'):String(v??'—');
+  for(const c of changes){
+    const group=document.createElement('section');group.style.cssText='padding:12px;margin:10px 0;border:1px solid var(--border);border-radius:12px';
+    const heading=document.createElement('strong');heading.textContent=c.item.name||c.next.name;group.appendChild(heading);
+    for(const k of c.fields){const row=document.createElement('div');row.style.cssText='padding:6px 0;border-bottom:1px solid var(--border);overflow-wrap:anywhere';row.textContent=k==='image'?`${L.labels[k]}: ${L.image}`:`${L.labels[k]}: ${L.old} ${val(c.item[k],k)} → ${L.next} ${val(c.next[k],k)}`;group.appendChild(row)}
+    dialog.appendChild(group);
+  }
+  const buttons=document.createElement('div');buttons.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:16px';
+  const keep=document.createElement('button');keep.type='button';keep.className='btn btn-s';keep.textContent=L.keep;
+  const apply=document.createElement('button');apply.type='button';apply.className='btn btn-p';apply.textContent=L.apply;
+  const close=()=>{ov.remove();wfRefreshProductUpdateNotice();};
+  keep.onclick=()=>{wfIgnoredProductUpdate=wfProductUpdateSignature(changes);close();};
+  apply.onclick=()=>{
+    // Recheck before applying so the preview cannot silently approve newer changes.
+    if(wfProductUpdateSignature(wfProductUpdates())!==wfProductUpdateSignature(changes)){close();wfReviewProductUpdates();return;}
+    for(const c of changes){for(const k of c.fields)c.item[k]=JSON.parse(JSON.stringify(c.next[k]));
+      c.item.productSnapshot=JSON.parse(JSON.stringify(c.next));
+      c.item.totalCBM=(c.item.cbm||0)*c.item.qty;
+      if(c.fields.includes('priceUSD')){c.item.priceTRY=usdToTry(c.item.priceUSD);c.item.priceEUR=usdToEur(c.item.priceUSD);c.item.totalUSD=c.item.qty*c.item.priceUSD;c.item.totalTRY=c.item.qty*c.item.priceTRY;c.item.totalEUR=c.item.qty*c.item.priceEUR;}
+    }
+    wfIgnoredProductUpdate='';close();renderInvTable();updateSummary();showToast(L.save,'ok');
+  };
+  buttons.append(keep,apply);dialog.appendChild(buttons);ov.appendChild(dialog);document.body.appendChild(ov);keep.focus();
+}
 function addItemToInv(product){
   const price=getTierPrice(product,S.invTier);
   const priceTRY=usdToTry(price);const priceEUR=usdToEur(price);
@@ -14736,6 +14979,7 @@ function addItemToInv(product){
       packets:product.packets||1,weight:product.weight||0,
       image:product.image||null,setpcs:'SET',type:product.type||'other',tier:S.invTier,
       hsCode:product.hsCode||'',
+      productSnapshot:wfProductSnapshot(product,S.invTier),
     });
   }
   const card=document.getElementById('invItemsCard');if(card)card.style.display='block';
@@ -14752,6 +14996,7 @@ function addItemToInv(product){
 function renderInvTable(){
   const tbody = document.getElementById('invItemsTbody');
   if(!tbody) return;
+  wfRefreshProductUpdateNotice();
   
   if(!S.invItems.length){
     const card = document.getElementById('invItemsCard');
@@ -15830,7 +16075,7 @@ function editInv(id){
     sv('sumDiscount',inv.discountUSD||0);sv('sumDeposit',inv.depositUSD||0);
     sv('invCurrency',inv.currency||'USD');
     onCoSelect();onCurrencyChange();
-    selInvTier(inv.tier||'A',null);
+    selInvTier(inv.tier||'A',null,true);
     
     const pmSel = document.getElementById('invPayMethodSelect');
     if (pmSel) pmSel.value = inv.payMethod || 'cash';    
@@ -16703,13 +16948,13 @@ function resetSettingsLogo() {
 
 function switchTab(tab){
   // إضافة about للمصفوفة
-  ['company','bank','invoice','currency','data','about'].forEach(t=>{
+  ['company','bank','invoice','currency','data','language','about'].forEach(t=>{
     const el=document.getElementById('stab-'+t);
     if(el) el.style.display = (t===tab) ? 'block' : 'none';
   });
   
   document.querySelectorAll('#page-settings .tab-btn').forEach((btn,i)=>{
-    const tabs=['company','bank','invoice','currency','data','about'];
+    const tabs=['company','bank','invoice','currency','data','language','about'];
     btn.classList.toggle('active', tabs[i]===tab);
   });
   if(tab==='data') wfUpdateDataPanel();
@@ -16802,6 +17047,8 @@ if(typeof S!=='undefined' && S.settings) S.settings.logo=wfCompanyLogo(S.setting
    BUILD INVOICE HTML — A4 CLEAN WHITE
 ============================================================ */
 const PDF_TR={
+  fr:{proforma:'FACTURE PRO FORMA',companyName:'NOM DE LA SOCIÉTÉ',orderDate:'DATE DE COMMANDE',country:'PAYS',province:'RÉGION',city:'VILLE',invoice:'FACTURE',seller:'VENDEUR',buyer:'ACHETEUR',no:'N° DE FACTURE',date:'Date',loadDate:'DATE DE CHARGEMENT',plate:'IMMATRICULATION',truck:'N° DU CAMION',item:'#',name:'Désignation',dims:'Dimensions',color:'Couleur',qty:'Qté',price:'Prix unitaire',total:'Total',cbm:'CBM',weight:'Poids',subtotal:'Sous-total',discount:'Remise',kdv:'TVA',grandTotal:'TOTAL GÉNÉRAL',deposit:'Acompte',paid:'Total payé',remaining:'Solde restant',payMethod:'Mode de paiement',bankInfo:'COORDONNÉES BANCAIRES',bank:'Banque',beneficiary:'Bénéficiaire',iban_usd:'IBAN USD',iban_try:'IBAN TRY',iban_eur:'IBAN EUR',swift:'SWIFT',account:'N° de compte',rates:'Taux de change',notes:'Conditions de livraison et de vente',seller_sig:'Signature du vendeur',buyer_sig:'Signature de l’acheteur',stamp:'Cachet',verify:'Facture émise par WOW Furniture — www.wowmobilya.net',tier:'Catégorie de prix',packets:'Colis',payHistory:'Historique des paiements',mersis:'N° Mersis'},
+  ru:{proforma:'СЧЁТ-ПРОФОРМА',companyName:'НАЗВАНИЕ КОМПАНИИ',orderDate:'ДАТА ЗАКАЗА',country:'СТРАНА',province:'РЕГИОН',city:'ГОРОД',invoice:'СЧЁТ',seller:'ПРОДАВЕЦ',buyer:'ПОКУПАТЕЛЬ',no:'НОМЕР СЧЁТА',date:'Дата',loadDate:'ДАТА ПОГРУЗКИ',plate:'НОМЕРНОЙ ЗНАК',truck:'НОМЕР ГРУЗОВИКА',item:'№',name:'Наименование товара',dims:'Размеры',color:'Цвет',qty:'Кол-во',price:'Цена за единицу',total:'Сумма',cbm:'CBM',weight:'Вес',subtotal:'Промежуточный итог',discount:'Скидка',kdv:'НДС',grandTotal:'ИТОГО',deposit:'Аванс',paid:'Всего оплачено',remaining:'Остаток',payMethod:'Способ оплаты',bankInfo:'БАНКОВСКИЕ РЕКВИЗИТЫ',bank:'Банк',beneficiary:'Получатель',iban_usd:'IBAN USD',iban_try:'IBAN TRY',iban_eur:'IBAN EUR',swift:'SWIFT',account:'Номер счёта',rates:'Курсы валют',notes:'Условия доставки и продажи',seller_sig:'Подпись продавца',buyer_sig:'Подпись покупателя',stamp:'Печать',verify:'Счёт выдан WOW Furniture — www.wowmobilya.net',tier:'Категория цены',packets:'Упаковки',payHistory:'История платежей',mersis:'Номер Mersis'},
   en:{
     proforma:'PROFORMA INVOICE',
     companyName:'COMPANY NAME',
@@ -16833,6 +17080,8 @@ const PDF_TR={
 
 
 const PAY_METHOD_LABELS={
+  fr:{cash:'Espèces',bank_transfer:'Virement bancaire',credit_card:'Carte bancaire',check:'Chèque',installment:'Paiement échelonné',western_union:'Western Union',crypto:'Cryptomonnaie',paypal:'PayPal',letter_credit:'Crédit documentaire',deferred:'Paiement différé'},
+  ru:{cash:'Наличные',bank_transfer:'Банковский перевод',credit_card:'Банковская карта',check:'Чек',installment:'Рассрочка',western_union:'Western Union',crypto:'Криптовалюта',paypal:'PayPal',letter_credit:'Аккредитив',deferred:'Отсрочка платежа'},
   en:{cash:'Cash',bank_transfer:'Bank Transfer',credit_card:'Credit Card',check:'Check',installment:'Installment',western_union:'Western Union',crypto:'Crypto',paypal:'PayPal',letter_credit:'Letter of Credit',deferred:'Deferred'},
   tr:{cash:'Nakit',bank_transfer:'Banka Transferi',credit_card:'Kredi Kartı',check:'Çek',installment:'Taksit',western_union:'Western Union',crypto:'Kripto',paypal:'PayPal',letter_credit:'Akreditif',deferred:'Vadeli'},
   ar:{cash:'نقداً',bank_transfer:'تحويل بنكي',credit_card:'بطاقة ائتمان',check:'شيك',installment:'أقساط',western_union:'Western Union',crypto:'كريبتو',paypal:'PayPal',letter_credit:'اعتماد مستندي',deferred:'آجل'},
@@ -16850,6 +17099,12 @@ function numberToWords(amount, currency, lang) {
   const n = Math.round(Math.abs(Number(amount) || 0) * 100) / 100;
   const intPart = Math.floor(n);
   const decPart = Math.round((n - intPart) * 100);
+  if(lang==='fr'||lang==='ru') {
+    if(!Number.isSafeInteger(intPart))return '—';
+    const spell = lang==='fr' ? wfFrenchNumber : wfRussianNumber;
+    const currencyName = {USD:'USD',EUR:'EUR',TRY:'TRY'}[currency] || 'USD';
+    return spell(intPart) + ' ' + currencyName + (decPart ? ' ' + (lang==='fr'?'et':'и') + ' ' + String(decPart).padStart(2,'0') + '/100' : '');
+  }
 
   const units = {
     USD: { ar:['دولار أمريكي','سنت'], tr:['Amerikan Doları','Sent'], en:['US Dollar','Cent'] },
@@ -16873,6 +17128,46 @@ function numberToWords(amount, currency, lang) {
     if (decWords) r += ` and ${decWords} ${u[1]}`;
     return r + ' only';
   }
+}
+
+function wfFrenchNumber(n) {
+  const small=['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize'];
+  if(n<17)return small[n];
+  if(n<20)return 'dix-'+small[n-10];
+  if(n<100){
+    const tens=Math.floor(n/10), ones=n%10;
+    if(tens===8&&ones===0)return 'quatre-vingts';
+    if(tens>=8)return 'quatre-vingt-'+wfFrenchNumber(n-80);
+    const prefix=['','','vingt','trente','quarante','cinquante','soixante','soixante'][tens];
+    const tail=n-(tens===7?60:tens*10);
+    return prefix+(tail ? ((tail===1||tail===11)?' et ':'-')+wfFrenchNumber(tail) : '');
+  }
+  if(n<1000){
+    const hundreds=Math.floor(n/100), rest=n%100;
+    return (hundreds===1?'cent':small[hundreds]+' cent'+(rest?'':'s'))+(rest?' '+wfFrenchNumber(rest):'');
+  }
+  const [size,label]=n>=1e9?[1e9,'milliard']:n>=1e6?[1e6,'million']:[1000,'mille'];
+  const count=Math.floor(n/size), rest=n%size;
+  let prefix=size===1000&&count===1?'':wfFrenchNumber(count)+' ';
+  if(size===1000)prefix=prefix.replace(/(cent|vingt)s $/,'$1 ');
+  return prefix+label+(count>1&&size>1000?'s':'')+(rest?' '+wfFrenchNumber(rest):'');
+}
+
+function wfRussianNumber(n, feminine=false) {
+  const ones=['ноль','один','два','три','четыре','пять','шесть','семь','восемь','девять','десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'];
+  if(n<20)return feminine&&n===1?'одна':feminine&&n===2?'две':ones[n];
+  if(n<100){
+    const tens=['','','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто'];
+    return tens[Math.floor(n/10)]+(n%10?' '+wfRussianNumber(n%10,feminine):'');
+  }
+  if(n<1000){
+    const hundreds=['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот'];
+    return hundreds[Math.floor(n/100)]+(n%100?' '+wfRussianNumber(n%100,feminine):'');
+  }
+  const [size,forms]=n>=1e9?[1e9,['миллиард','миллиарда','миллиардов']]:n>=1e6?[1e6,['миллион','миллиона','миллионов']]:[1000,['тысяча','тысячи','тысяч']];
+  const count=Math.floor(n/size), rest=n%size, last=count%10, lastTwo=count%100;
+  const form=lastTwo>=11&&lastTwo<=14?2:last===1?0:last>=2&&last<=4?1:2;
+  return wfRussianNumber(count,size===1000)+' '+forms[form]+(rest?' '+wfRussianNumber(rest):'');
 }
 
 function _toWordsCore(n, lang) {
@@ -17255,10 +17550,20 @@ function buildInvoiceHTML(inv, lang, opts) {
       unitWeight:'وزن\nالوحدة', totalWeight:'الوزن\nالإجمالي',
     },
   };
-  const CH = {...(colHeaders[lang] || colHeaders.en)};
+  const localizedColumns = {
+    fr:{pic:'PHOTO',name:'DÉSIGNATION',hs:'CODE SH',dims:'DIMENSIONS\n(cm)',color:'COULEUR',
+      setpcs:'LOT / PIÈCE',qty:'QTÉ',unitPrice:'PRIX\nUNITAIRE',totalPrice:'PRIX\nTOTAL',
+      pktCount:'COLIS / UNITÉ',totalPkt:'TOTAL COLIS',unitCbm:'VOLUME\nUNITAIRE (m³)',totalCbm:'VOLUME\nTOTAL (m³)',
+      unitWeight:'POIDS\nUNITAIRE',totalWeight:'POIDS\nTOTAL'},
+    ru:{pic:'ФОТО',name:'НАИМЕНОВАНИЕ',hs:'КОД ТН ВЭД',dims:'РАЗМЕРЫ\n(см)',color:'ЦВЕТ',
+      setpcs:'КОМПЛЕКТ / ШТ.',qty:'КОЛ-ВО',unitPrice:'ЦЕНА\nЗА ЕД.',totalPrice:'СУММА',
+      pktCount:'УПАК. НА ЕД.',totalPkt:'ВСЕГО УПАК.',unitCbm:'ОБЪЁМ\nЕД. (м³)',totalCbm:'ОБЪЁМ\nВСЕГО (м³)',
+      unitWeight:'ВЕС\nЕД.',totalWeight:'ОБЩИЙ\nВЕС'},
+  };
+  const CH = {...(localizedColumns[lang] || colHeaders[lang] || colHeaders.en)};
   if(cur==='EUR'){
-    CH.unitPrice={en:'UNIT\nPRICE\nUSD / EUR',tr:'BİRİM\nFİYAT\nUSD / EUR',ar:'سعر\nالوحدة\nUSD / EUR'}[lang]||'UNIT\nPRICE\nUSD / EUR';
-    CH.totalPrice={en:'TOTAL\nPRICE\nUSD / EUR',tr:'TOPLAM\nFİYAT\nUSD / EUR',ar:'الإجمالي\nUSD / EUR'}[lang]||'TOTAL\nPRICE\nUSD / EUR';
+    CH.unitPrice += '\nUSD / EUR';
+    CH.totalPrice += '\nUSD / EUR';
   }
 
 
@@ -17605,7 +17910,7 @@ function buildInvoiceHTML(inv, lang, opts) {
     const finalRemain = Math.max(0,(inv.grandTotal||0)-finalPaid);
     const pct = inv.grandTotal>0 ? Math.min(100,(finalPaid/inv.grandTotal)*100) : 0;
     const totalLbl = {en:'Total',tr:'Toplam',ar:'الإجمالي'}[lang]||'Total';
-    const payHistTitle = {en:'Payment History',tr:'Ödeme Geçmişi',ar:'سجل الدفعات'}[lang];
+    const payHistTitle = L.payHistory;
 
     return `
     <div style="margin-top:10px;padding-top:10px;border-top:1.5px solid #e2e8f0;direction:${dir};">
@@ -18342,16 +18647,16 @@ const sellerSig = `
             let wordsTitle = '';
             let wordsAmount = 0;
             if (remainingAmt > 0 && totalPaidAmt > 0) {
-              wordsTitle = { en: 'AMOUNT PAYABLE IN WORDS', tr: 'ÖDENECEK TUTAR YAZIYLA', ar: 'المبلغ المستحق كتابةً' }[lang];
+              wordsTitle = { en: 'AMOUNT PAYABLE IN WORDS', tr: 'ÖDENECEK TUTAR YAZIYLA', ar: 'المبلغ المستحق كتابةً', fr:'MONTANT À PAYER EN LETTRES', ru:'СУММА К ОПЛАТЕ ПРОПИСЬЮ' }[lang];
               wordsAmount = remainingAmt;
             } else if (remainingAmt === 0 && totalPaidAmt > 0) {
-              wordsTitle = { en: 'TOTAL PAID IN WORDS', tr: 'ÖDENEN TUTAR YAZIYLA', ar: 'إجمالي المدفوع كتابةً' }[lang];
+              wordsTitle = { en: 'TOTAL PAID IN WORDS', tr: 'ÖDENEN TUTAR YAZIYLA', ar: 'إجمالي المدفوع كتابةً', fr:'TOTAL PAYÉ EN LETTRES', ru:'ОПЛАЧЕННАЯ СУММА ПРОПИСЬЮ' }[lang];
               wordsAmount = totalPaidAmt;
             } else if (hasModifiers) {
-              wordsTitle = { en: 'TOTAL INCLUDING TAXES IN WORDS', tr: 'VERGİLER DAHİL TOPLAM YAZIYLA', ar: 'المجموع الشامل للضرائب كتابةً' }[lang];
+              wordsTitle = { en: 'TOTAL INCLUDING TAXES IN WORDS', tr: 'VERGİLER DAHİL TOPLAM YAZIYLA', ar: 'المجموع الشامل للضرائب كتابةً', fr:'TOTAL TTC EN LETTRES', ru:'СУММА С НАЛОГАМИ ПРОПИСЬЮ' }[lang];
               wordsAmount = inv.grandTotal || 0;
             } else {
-              wordsTitle = { en: 'GRAND TOTAL IN WORDS', tr: 'GENEL TOPLAM YAZIYLA', ar: 'المجموع النهائي كتابةً' }[lang];
+              wordsTitle = { en: 'GRAND TOTAL IN WORDS', tr: 'GENEL TOPLAM YAZIYLA', ar: 'المجموع النهائي كتابةً', fr:'TOTAL GÉNÉRAL EN LETTRES', ru:'ИТОГОВАЯ СУММА ПРОПИСЬЮ' }[lang];
               wordsAmount = inv.grandTotal || 0;
             }
             return `
@@ -20653,6 +20958,7 @@ function qblSendToInvoice() {
           type:       cartItem.product.type || 'other',
           tier:       cartItem.tier,
           hsCode:     cartItem.product.hsCode || '',
+          productSnapshot: wfProductSnapshot(cartItem.product,cartItem.tier),
         });
 
       }
@@ -21457,6 +21763,8 @@ function updateCurrencySelect() {
 // 1. خيارات التسليم الأساسية (تظهر فقط في القائمة المنسدلة)
 const NOTE_TEMPLATE_DAYS = [0, 15, 30, 45, 50];
 const NOTE_BASE_TEMPLATES = {
+  fr: ['Livraison immédiate','Livraison après 15 jours','Livraison après 30 jours','Livraison après 45 jours','Livraison après 50 jours'],
+  ru: ['Немедленная доставка','Доставка через 15 дней','Доставка через 30 дней','Доставка через 45 дней','Доставка через 50 дней'],
   ar: ['تسليم فوري', 'التسليم بعد 15 يوماً', 'التسليم بعد 30 يوماً', 'التسليم بعد 45 يوماً', 'التسليم بعد 50 يوماً'],
   tr: ['Hemen Teslim', '15 gün sonra teslimat', '30 gün sonra teslimat', '45 gün sonra teslimat', '50 gün sonra teslimat'],
   en: ['Immediate Delivery', 'Delivery after 15 days', 'Delivery after 30 days', 'Delivery after 45 days', 'Delivery after 50 days']
@@ -21464,6 +21772,8 @@ const NOTE_BASE_TEMPLATES = {
 
 // 2. نصوص الشحن الديناميكية (تُضاف بجانب خيار التسليم بناءً على زر اختيار الشحن)
 const NOTE_SHIPPING_TEXT = {
+  fr: { client:'Transport à la charge de l’acheteur', company:'Transport gratuit / à la charge de la société' },
+  ru: { client:'Доставка за счёт покупателя', company:'Бесплатная доставка / за счёт компании' },
   ar: { client: 'الشحن على المشتري', company: 'الشحن مجاني / على حساب الشركة' },
   tr: { client: 'Nakliye alıcıya ait', company: 'Ücretsiz nakliye / Şirket öder' },
   en: { client: 'Shipping on buyer', company: 'Free shipping / Covered by company' }
@@ -21471,6 +21781,8 @@ const NOTE_SHIPPING_TEXT = {
 
 // 3. الشروط والأحكام الثابتة (تُضاف كأسطر مخفية عن القائمة ولكن تظهر في مربع النص)
 const NOTE_TERMS = {
+  fr:['Les prix sont valables 15 jours à compter de la date de la facture','Les marchandises vendues ne sont ni reprises ni échangées','Le montant total doit être payé avant l’expédition','La société décline toute responsabilité pour les dommages causés par une mauvaise utilisation ou installation','Toute réclamation pour dommage ou article manquant doit être signalée dans les 3 jours suivant la réception'],
+  ru:['Цены действительны в течение 15 дней с даты выставления счёта','Проданные товары не подлежат возврату или обмену','Полная сумма должна быть оплачена до отгрузки','Компания не несёт ответственности за ущерб, вызванный неправильным использованием или установкой','О повреждениях или недостаче необходимо сообщить в течение 3 дней после получения'],
   ar: [
     'الأسعار صالحة لمدة 15 يوماً من تاريخ الفاتورة',
     'البضاعة المباعة لا ترد ولا تستبدل',
@@ -21560,8 +21872,8 @@ function wfNumericDeliveryDate(value) {
 }
 function getDynamicDeliveryText(days,lang,deliveryDate='') {
   lang=NOTE_TERMS[lang]?lang:'en';days=Math.max(0,Number(days)||0);
-  const text=days===0?{ar:'تسليم فوري',tr:'Hemen Teslim',en:'Immediate Delivery'}[lang]:{
-    ar:`التسليم بعد ${days} يوماً`,tr:`${days} gün sonra teslimat`,en:`Delivery after ${days} days`
+  const text=days===0?{ar:'تسليم فوري',tr:'Hemen Teslim',en:'Immediate Delivery',fr:'Livraison immédiate',ru:'Немедленная доставка'}[lang]:{
+    ar:`التسليم بعد ${days} يوماً`,tr:`${days} gün sonra teslimat`,en:`Delivery after ${days} days`,fr:`Livraison après ${days} jours`,ru:`Доставка через ${days} дней`
   }[lang];
   const date=wfNumericDeliveryDate(deliveryDate);
   return text+(date?` (${date})`:'');
@@ -21574,12 +21886,12 @@ function wfParseDeliveryLine(line) {
   const date=dateMatch?`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`:'';
   if(dateMatch)base=base.slice(0,dateMatch.index).trim();
   let days=null;
-  if(['تسليم فوري','Hemen Teslim','Immediate Delivery'].includes(base))days=0;
+  if(['تسليم فوري','Hemen Teslim','Immediate Delivery','Livraison immédiate','Немедленная доставка'].includes(base))days=0;
   else {
     const match=base.match(/^التسليم بعد (\d+) يوماً(?: من استلام الدفعة المقدمة)?$/)||
       base.match(/^(?:Depozito alındıktan )?(\d+) gün sonra teslimat$/)||
       base.match(/^Delivery (\d+) days after receiving the deposit$/)||
-      base.match(/^Delivery after (\d+) days$/);
+      base.match(/^Delivery after (\d+) days$/)||base.match(/^Livraison après (\d+) jours$/)||base.match(/^Доставка через (\d+) дней$/);
     if(match)days=Number(match[1]);
   }
   if(days===null)return null;
@@ -24847,7 +25159,7 @@ function invoice(){
 }
 function invoiceLang(inv){
   const v=(q('pdfLangSel')?.value||inv?.printLang||(typeof S!=='undefined'?S.printLang:null)||'en').toLowerCase();
-  return v==='ar'||v==='tr'||v==='en'?v:'en';
+  return WF_INVOICE_LANGUAGES.includes(v)?v:'en';
 }
 function uiLang(){
   const v=((typeof S!=='undefined'&&S.lang)||document.documentElement.lang||'ar').toLowerCase();
