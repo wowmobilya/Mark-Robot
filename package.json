@@ -4,7 +4,8 @@
   "scripts": {
     "test": "node --test tests/locales.test.cjs",
     "test:browser": "node tests/locales.browser.cjs",
-    "test:scanner": "node tests/scanner.browser.cjs"
+    "test:scanner": "node tests/scanner.browser.cjs",
+    "test:icons": "node tests/icons.browser.cjs"
   },
   "devDependencies": {
     "acorn": "^8.17.0",

@@ -15,7 +15,7 @@ vm.runInNewContext(fs.readFileSync(path.join(root,'ui-i18n.js'),'utf8'),context)
 const copy=context.window.WOWUICopy;
 test('all scripts parse, including bundled localization and account statements',()=>{
  for(const code of scripts)acorn.parse(code,{ecmaVersion:'latest'});
- for(const file of ['ui-i18n.js','account-statement.js','account-statement-core.js','sw.js'])new vm.Script(fs.readFileSync(path.join(root,file),'utf8'));
+ for(const file of ['ui-i18n.js','ui-icons.js','account-statement.js','account-statement-core.js','sw.js'])new vm.Script(fs.readFileSync(path.join(root,file),'utf8'));
 });
 test('every interface language map has all five languages',()=>{
  const missing=[];let checked=0;

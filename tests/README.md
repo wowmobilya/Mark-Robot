@@ -23,3 +23,5 @@ The browser checks all pages and languages, barcode lookup, price selection, car
 New authored UI copy must have all five translations. Use `data-i18n` for the main dictionary or explicit `data-wf-ui` bindings for bundled copy. Dynamic text must use its language dictionary or `wfUiText`; do not translate arbitrary input values, product names, customer names, or saved notes.
 
 Run `npm run test:scanner` against the same local server to exercise a generated QR code through the ZXing fallback, scanner concurrency and cleanup, five flags, and touch layouts. The video input is simulated; verify physical cameras on target tablets separately.
+
+Run `npm run test:icons` to check navigation and currency SVG icons, language changes, saved product names, theme switching and responsive layouts. Icons are bundled locally.
