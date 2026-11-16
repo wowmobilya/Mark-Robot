@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v23-account-statement';
+const CACHE_NAME = 'wow-furniture-v24-five-languages';
 const urlsToCache = [
   './',
   './index.html',

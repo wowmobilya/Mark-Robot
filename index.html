@@ -6831,7 +6831,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <div class="ctsc-icon">🏠</div>
       <div class="ctsc-body">
         <div class="ctsc-title" id="sct-ret-title">داخلي مفرق</div>
-        <div class="ctsc-desc" id="sct-ret-desc">عميل محلي مفرق — فاتورة باليرة التركية</div>
+        <div class="ctsc-desc" id="sct-ret-desc">عميل محلي مفرق — فاتورة بالليرة التركية</div>
       </div>
       <div class="ctsc-arrow">←</div>
     </div>
@@ -6839,7 +6839,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <div class="ctsc-icon">📦</div>
       <div class="ctsc-body">
         <div class="ctsc-title" id="sct-whl-title">داخلي جملة</div>
-        <div class="ctsc-desc" id="sct-whl-desc">عميل محلي جملة — فاتورة باليرة التركية</div>
+        <div class="ctsc-desc" id="sct-whl-desc">عميل محلي جملة — فاتورة بالليرة التركية</div>
       </div>
       <div class="ctsc-arrow">←</div>
     </div>
@@ -7387,7 +7387,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <div class="ctsc-icon">🏠</div>
       <div class="ctsc-body">
         <div class="ctsc-title" id="sit-ret-title">داخلي مفرق</div>
-        <div class="ctsc-desc" id="sit-ret-desc">فاتورة محلية مفرق — باليرة التركية</div>
+        <div class="ctsc-desc" id="sit-ret-desc">فاتورة محلية مفرق — بالليرة التركية</div>
       </div>
       <div class="ctsc-arrow">←</div>
     </div>
@@ -7395,7 +7395,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <div class="ctsc-icon">📦</div>
       <div class="ctsc-body">
         <div class="ctsc-title" id="sit-whl-title">داخلي جملة</div>
-        <div class="ctsc-desc" id="sit-whl-desc">فاتورة محلية جملة — باليرة التركية</div>
+        <div class="ctsc-desc" id="sit-whl-desc">فاتورة محلية جملة — بالليرة التركية</div>
       </div>
       <div class="ctsc-arrow">←</div>
     </div>
@@ -11272,6 +11272,103 @@ name_hasan: 'Mr. Hasan Al-Helou',
   }
 };
 const WF_UI_COPY = [
+  ["excel_hint", "Excel : mise en page du PDF, une feuille par page, cellules modifiables et totaux automatiques. Vérifiez le montant en lettres et le code QR après modification ; ils ne se mettent pas à jour automatiquement.", "Excel: макет PDF, отдельный лист для каждой страницы, редактируемые ячейки и автоматические итоги. После изменений проверьте сумму прописью и QR-код: они не обновляются автоматически."],
+  ["ai_greet_morning", ["Bonjour ! Une nouvelle journée pleine de possibilités 🌟", "Bonjour ! Prêt à créer vos factures ? ✨", "Une belle matinée pour avancer 💪"], ["Доброе утро! Новый день — новые возможности 🌟", "Доброе утро! Готовы создавать счета? ✨", "Отличное утро для новых достижений 💪"]],
+  ["ai_greet_noon", ["Bon après-midi ! Comment avance le travail ? 😊", "Un après-midi productif ! Les factures vous attendent 📄", "Continuons à avancer ensemble 🚀"], ["Добрый день! Как продвигается работа? 😊", "Продуктивного дня! Счета ждут 📄", "Продолжим работать вместе 🚀"]],
+  ["ai_greet_evening", ["Bonsoir ! C’est le moment de faire le point 📊", "Bonsoir ! Comment s’est passée votre journée ? 🌆", "Une soirée calme pour travailler sereinement 💼"], ["Добрый вечер! Время подвести итоги 📊", "Добрый вечер! Как прошёл ваш день? 🌆", "Спокойный вечер для сосредоточенной работы 💼"]],
+  ["ai_greet_night", ["Bonne nuit ! Pensez à vous reposer 🌙", "Un café pour le travail de nuit ☕", "Une nuit calme et productive 🌟"], ["Доброй ночи! Не забывайте отдыхать 🌙", "Для ночной работы нужен кофе ☕", "Спокойной и продуктивной ночи 🌟"]],
+
+  ["pm_conv_title", "La devise diffère de celle de la facture", "Валюта отличается от валюты счёта"],
+  ["pm_conv_accept", "Accepter et convertir", "Принять и конвертировать"],
+  ["pm_conv_reject", "Conserver la devise d’origine", "Сохранить исходную валюту"],
+  ["pm_receipt_type_label", "Mode de réception", "Способ получения"],
+  ["pm_smart_details", "Détails du paiement", "Детали платежа"],
+  ["pm_curr_badge", "Devise de la facture", "Валюта счёта"],
+  ["pm_pay_progress pay_progress", "Avancement des paiements", "Прогресс оплаты"],
+  ["pm_add_title add_payment", "Ajouter un paiement", "Добавить платёж"],
+  ["pm_no_payments no_payments", "Aucun paiement pour le moment", "Платежей пока нет"],
+  ["pm_stat_total", "Total de la facture", "Сумма счёта"],
+  ["pm_stat_paid co_fin_paid", "Payé", "Оплачено"],
+  ["pm_stat_remaining co_fin_remaining", "Solde restant", "Остаток"],
+  ["pm_conv_accepted", "Conversion acceptée", "Конвертация принята"],
+  ["pm_smart_converted", "Converti en", "Конвертировано в"],
+  ["pm_smart_received", "Reçu", "Получено"],
+  ["pm_smart_via", "par", "через"],
+  ["pm_smart_on", "le", "дата"],
+  ["pm_smart_from", "de", "от"],
+  ["inv_client_filter_title", "Factures du client", "Счета клиента"],
+  ["inv_client_filter_invoices", "facture(s)", "счёт(ов)"],
+  ["inv_client_filter_clear", "Effacer le filtre", "Сбросить фильтр"],
+  ["inv_client_filter_all", "Afficher toutes les factures", "Показать все счета"],
+  ["nav_panel", "Tableau de bord", "Панель управления"],
+  ["nav_barcode opt_barcode", "Code-barres", "Штрихкод"],
+  ["logo_restored", "✅ Logo par défaut restauré", "✅ Логотип по умолчанию восстановлен"],
+  ["pr_tab_coffee", "Table basse", "Журнальный столик"],
+  ["pr_tab_dresser", "Commode", "Комод"],
+  ["pr_tab_side", "Table d’appoint", "Приставной столик"],
+  ["pr_tab_tv", "Meuble TV", "Тумба под телевизор"],
+  ["st_seq_ext", "Numérotation export (A)", "Нумерация экспорта (A)"],
+  ["st_seq_ret", "Numérotation au détail (B)", "Нумерация розницы (B)"],
+  ["st_seq_whl", "Numérotation en gros (C)", "Нумерация опта (C)"],
+  ["kdv_rate_word", "Taux :", "Ставка:"],
+  ["share_wa", "Envoyer via WhatsApp", "Отправить через WhatsApp"],
+  ["share_email", "Envoyer par courriel", "Отправить по электронной почте"],
+  ["app_subtitle", "Système de gestion des factures", "Система управления счетами"],
+  ["app_desc", "Un système de gestion rapide des factures, des clients et des produits, conçu pour faciliter le commerce et l’exportation de meubles.", "Система для быстрого управления счетами, клиентами и товарами, разработанная для торговли и экспорта мебели."],
+  ["desc_mutez", "Développement de l’architecture logicielle, conception d’interfaces interactives et création de bases de données pour assurer des performances rapides et fiables.", "Разработка архитектуры программного обеспечения, интерактивных интерфейсов и баз данных для быстрой и надёжной работы."],
+  ["desc_hasan", "Contrôle des opérations financières, vérification des factures et conformité aux normes comptables et commerciales.", "Проверка финансовых операций и счетов, обеспечение соответствия бухгалтерским и коммерческим стандартам."],
+  ["team_title", "L’équipe", "Команда"],
+  ["role_dev", "Programmation et développement", "Программирование и разработка"],
+  ["role_audit", "Audit et vérification", "Аудит и проверка"],
+  ["name_mutez", "Ing. Mutez Billah Haj Shaban", "Инж. Мутаз Биллах Хадж Шаабан"],
+  ["name_hasan", "M. Hasan Al-Helou", "Г-н Хасан Аль-Хелу"],
+  ["active_tier", "Catégorie de prix affichée", "Отображаемая категория цены"],
+  ["dims_label", "Dimensions (L × l × H), cm", "Размеры (Д × Ш × В), см"],
+  ["upload_img", "Glissez l’image ici", "Перетащите изображение сюда"],
+  ["inv_tier_title", "Catégorie de prix de la facture", "Категория цены счёта"],
+  ["inv_tier_hint", "Choisissez la catégorie appliquée à tous les produits de cette facture", "Выберите категорию цены для всех товаров этого счёта"],
+  ["tier_standard", "Standard", "Стандартная"],
+  ["tier_wholesale", "Vente en gros", "Оптовая"],
+  ["tier_special", "Spécial", "Специальная"],
+  ["pm_wu", "Western Union", "Western Union"],
+  ["pm_crypto", "Cryptomonnaie", "Криптовалюта"],
+  ["no_co_filter", "Aucun client dans cette catégorie", "В этой категории нет клиентов"],
+  ["no_co_start", "Ajoutez votre premier client", "Добавьте первого клиента"],
+  ["deleted", "🗑️ Supprimé", "🗑️ Удалено"],
+  ["rate_updated", "✅ Taux de change mis à jour", "✅ Курс валют обновлён"],
+  ["rate_error", "⚠️ Impossible de mettre à jour le taux de change", "⚠️ Не удалось обновить курс валют"],
+  ["barcode_found", "✅ Code-barres lu", "✅ Штрихкод считан"],
+  ["barcode_not_found", "⚠️ Produit introuvable", "⚠️ Товар не найден"],
+  ["added_to_inv", "ajouté à la facture", "добавлено в счёт"],
+  ["good_morning", "Bonjour", "Доброе утро"],
+  ["good_noon", "Bon après-midi", "Добрый день"],
+  ["good_evening", "Bonsoir", "Добрый вечер"],
+  ["good_night", "Bonne nuit", "Доброй ночи"],
+  ["kdv_title", "TVA (KDV)", "НДС (KDV)"],
+  ["kdv_label", "Appliquer la TVA à la facture", "Применить НДС к счёту"],
+  ["kdv_rate_setting", "Taux de TVA (%)", "Ставка НДС (%)"],
+  ["curr_rates_title", "Taux de change actuels", "Текущие курсы валют"],
+  ["update_rates", "Actualiser les taux", "Обновить курсы"],
+  ["manual_usd_try", "Taux USD/TRY manuel", "Курс USD/TRY вручную"],
+  ["manual_usd_eur", "Taux USD/EUR manuel", "Курс USD/EUR вручную"],
+  ["manual_rate_hint", "Laissez vide pour utiliser les taux automatiques", "Оставьте пустым для автоматического курса"],
+  ["pay_mgmt_title", "Gestion des paiements", "Управление платежами"],
+  ["pay_section", "Paiements", "Платежи"],
+  ["currency_equiv", "Équivalents en devises", "Эквиваленты в других валютах"],
+  ["std_mode_title", "Réglages standard rapides", "Быстрые стандартные настройки"],
+  ["std_mode_desc", "Cliquez pour appliquer automatiquement les réglages recommandés", "Нажмите, чтобы применить рекомендуемые настройки"],
+  ["std_mode_btn", "Appliquer", "Применить"],
+  ["std_mode_applied", "✅ Réglages standard appliqués", "✅ Стандартные настройки применены"],
+  ["print_options_badge", "Personnaliser", "Настроить"],
+  ["show_hide_title", "Afficher ou masquer sur la facture", "Показать или скрыть в счёте"],
+  ["opt_images", "Images", "Изображения"],
+  ["opt_weights", "Poids", "Вес"],
+  ["opt_signatures", "Signatures", "Подписи"],
+  ["opt_bank", "Coordonnées bancaires", "Банковские реквизиты"],
+  ["opt_rates", "Taux de change", "Курсы валют"],
+  ["excel_download", "Télécharger Excel", "Скачать Excel"],
+  ["excel_share", "Partager Excel", "Поделиться Excel"],
+
   ['nav_main','Menu','Меню'],
   ['nav_dashboard','Tableau de bord','Панель управления'],
   ['nav_companies co_title','Clients','Клиенты'],
@@ -11632,7 +11729,25 @@ const TIPS = {
     'Document client complaints and feedback to improve service quality continuously.',
     'Use the multilingual print feature to serve clients of different nationalities.',
     'Keep a record of competitor prices to ensure your pricing remains competitive.',
-  ]
+  ],
+  fr: [
+    "Vérifiez le taux de change avant de créer une facture.",
+    "Utilisez des photos claires pour présenter vos produits.",
+    "Vérifiez les dimensions pour calculer le volume avec précision.",
+    "Enregistrez chaque paiement avec sa date et son mode de réception.",
+    "Vérifiez les coordonnées du client avant l’expédition.",
+    "Prévisualisez la facture avant de l’imprimer.",
+    "Conservez une sauvegarde régulière de vos données."
+  ],
+  ru: [
+    "Проверяйте курс валют перед созданием счёта.",
+    "Используйте чёткие фотографии товаров.",
+    "Проверяйте размеры для точного расчёта объёма.",
+    "Записывайте дату и способ получения каждого платежа.",
+    "Проверяйте данные клиента перед отгрузкой.",
+    "Проверяйте счёт перед печатью.",
+    "Регулярно создавайте резервную копию данных."
+  ],
 };
 
 function getDailyTip() {
@@ -11656,11 +11771,13 @@ function getDailyTip() {
 /* ============================================================
    DELETE MODAL
 ============================================================ */
-const DM_KEYWORDS={ar:'حذف',tr:'SİL',en:'DELETE'};
+const DM_KEYWORDS={ar:'حذف',tr:'SİL',en:'DELETE',fr:'SUPPRIMER',ru:'УДАЛИТЬ'};
 const DM_TEXTS={
   ar:{title:'تأكيد الحذف',subtitle:'هذا الإجراء لا يمكن التراجع عنه',warning:'سيتم حذف هذا العنصر نهائياً',label:'اكتب للتأكيد:',hint:'اكتب:',cancel:'إلغاء',deleteBtn:'🗑️ حذف'},
   tr:{title:'Silmeyi Onayla',subtitle:'Bu işlem geri alınamaz',warning:'Bu öğe kalıcı olarak silinecek',label:'Onaylamak için yazın:',hint:'Yazın:',cancel:'İptal',deleteBtn:'🗑️ Sil'},
   en:{title:'Confirm Delete',subtitle:'This action cannot be undone',warning:'This item will be permanently deleted',label:'Type to confirm:',hint:'Type:',cancel:'Cancel',deleteBtn:'🗑️ Delete'},
+  fr:{"title":"Confirmer la suppression","subtitle":"Cette action est irréversible","warning":"Cet élément sera supprimé définitivement","label":"Saisissez le mot de confirmation :","hint":"Saisissez :","cancel":"Annuler","deleteBtn":"🗑️ Supprimer"},
+  ru:{"title":"Подтвердить удаление","subtitle":"Это действие нельзя отменить","warning":"Этот элемент будет удалён навсегда","label":"Введите слово для подтверждения:","hint":"Введите:","cancel":"Отмена","deleteBtn":"🗑️ Удалить"},
 };
 let _dmCallback=null;
 function openDM(itemName,callback){
@@ -12196,6 +12313,50 @@ const GREETING_POOL = {
       'Lord, make our sleep peaceful and our waking energetic 🤲',
     ],
   },
+  fr: {
+    "morning": [
+      "Bonjour ! Une nouvelle journée pleine de possibilités 🌟",
+      "Bonjour ! Prêt à créer vos factures ? ✨",
+      "Une belle matinée pour avancer 💪"
+    ],
+    "noon": [
+      "Bon après-midi ! Comment avance le travail ? 😊",
+      "Un après-midi productif ! Les factures vous attendent 📄",
+      "Continuons à avancer ensemble 🚀"
+    ],
+    "evening": [
+      "Bonsoir ! C’est le moment de faire le point 📊",
+      "Bonsoir ! Comment s’est passée votre journée ? 🌆",
+      "Une soirée calme pour travailler sereinement 💼"
+    ],
+    "night": [
+      "Bonne nuit ! Pensez à vous reposer 🌙",
+      "Un café pour le travail de nuit ☕",
+      "Une nuit calme et productive 🌟"
+    ]
+  },
+  ru: {
+    "morning": [
+      "Доброе утро! Новый день — новые возможности 🌟",
+      "Доброе утро! Готовы создавать счета? ✨",
+      "Отличное утро для новых достижений 💪"
+    ],
+    "noon": [
+      "Добрый день! Как продвигается работа? 😊",
+      "Продуктивного дня! Счета ждут 📄",
+      "Продолжим работать вместе 🚀"
+    ],
+    "evening": [
+      "Добрый вечер! Время подвести итоги 📊",
+      "Добрый вечер! Как прошёл ваш день? 🌆",
+      "Спокойный вечер для сосредоточенной работы 💼"
+    ],
+    "night": [
+      "Доброй ночи! Не забывайте отдыхать 🌙",
+      "Для ночной работы нужен кофе ☕",
+      "Спокойной и продуктивной ночи 🌟"
+    ]
+  },
 };
 
 /* ── الحصول على رسالة بناءً على الوقت + الدقيقة (تتغير كل 20 دقيقة) ── */
@@ -12227,7 +12388,7 @@ function updateGreeting(animate = false) {
   set('greetingTime',    `${hh}:${mm}`);
   set('greetingTimeIcon', getTimeIcon(slot));
 const companyNames = { ar: 'واو موبيليا', tr: 'WOW Mobilya', en: 'WOW Furniture' };
-const invoiceLabels = { ar: 'نظام الفواتير', tr: 'Fatura Sistemi', en: 'Invoice System' };
+const invoiceLabels = { ar: 'نظام الفواتير', tr: 'Fatura Sistemi', en: 'Invoice System', fr: 'Gestion des factures', ru: 'Система счетов' };
 set('greetingSub', `${companyNames[S.lang] || 'WOW Furniture'} — ${invoiceLabels[S.lang] || 'Invoice System'}`);
 
   // ── نصيحة اليوم
@@ -12241,6 +12402,8 @@ set('greetingSub', `${companyNames[S.lang] || 'WOW Furniture'} — ${invoiceLabe
     ar: ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'],
     tr: ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'],
     en: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+    fr: ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'],
+    ru: ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'],
   };
   const days   = dayNames[S.lang] || dayNames.ar;
   const elBadge = document.getElementById('tipDayBadge');
@@ -12286,9 +12449,31 @@ function startGreetingRotation() {
    SELECT TYPE TEXTS
 ============================================================ */
 const SCT_TEXTS={
-  ar:{title:'👤 إضافة عميل',subtitle:'اختر نوع العميل للمتابعة',ext_title:'خارجي',ext_desc:'عميل دولي — فاتورة بالدولار واليورو',ret_title:'داخلي مفرق',ret_desc:'عميل محلي مفرق — فاتورة باليرة التركية',whl_title:'داخلي جملة',whl_desc:'عميل محلي جملة — فاتورة باليرة التركية',back:'رجوع'},
+  ar:{title:'👤 إضافة عميل',subtitle:'اختر نوع العميل للمتابعة',ext_title:'خارجي',ext_desc:'عميل دولي — فاتورة بالدولار واليورو',ret_title:'داخلي مفرق',ret_desc:'عميل محلي مفرق — فاتورة بالليرة التركية',whl_title:'داخلي جملة',whl_desc:'عميل محلي جملة — فاتورة بالليرة التركية',back:'رجوع'},
   tr:{title:'👤 Müşteri Ekle',subtitle:'Devam etmek için müşteri tipini seçin',ext_title:'Dış Müşteri',ext_desc:'Uluslararası müşteri — Dolar ve Euro faturası',ret_title:'İç Perakende',ret_desc:'Yerel perakende müşteri — Türk Lirası faturası',whl_title:'İç Toptan',whl_desc:'Yerel toptan müşteri — Türk Lirası faturası',back:'Geri'},
   en:{title:'👤 Add Client',subtitle:'Choose client type to continue',ext_title:'External',ext_desc:'International client — Dollar & Euro invoice',ret_title:'Internal Retail',ret_desc:'Local retail client — Turkish Lira invoice',whl_title:'Internal Wholesale',whl_desc:'Local wholesale client — Turkish Lira invoice',back:'Back'},
+  fr: {
+    "title": "👤 Ajouter un client",
+    "subtitle": "Choisissez le type de client pour continuer",
+    "ext_title": "Export",
+    "ext_desc": "Client international — facturation en dollars américains et en euros",
+    "ret_title": "Vente au détail locale",
+    "ret_desc": "Client local au détail — facturation en livres turques",
+    "whl_title": "Vente en gros locale",
+    "whl_desc": "Client local en gros — facturation en livres turques",
+    "back": "Retour"
+  },
+  ru: {
+    "title": "👤 Добавить клиента",
+    "subtitle": "Выберите тип клиента, чтобы продолжить",
+    "ext_title": "Экспорт",
+    "ext_desc": "Международный клиент — счета в долларах США и евро",
+    "ret_title": "Розница внутри страны",
+    "ret_desc": "Розничный клиент внутри страны — счета в турецких лирах",
+    "whl_title": "Опт внутри страны",
+    "whl_desc": "Оптовый клиент внутри страны — счета в турецких лирах",
+    "back": "Назад"
+  },
 };
 
 function updateSCTTexts(){
@@ -12405,6 +12590,68 @@ const ADD_CO_PAGE_TEXTS = {
       coShowrooms: '1',
     },
   },
+  fr: {
+    "page_subtitle": "Renseignez les informations du client",
+    "save": "Enregistrer le client",
+    "reset": "Réinitialiser",
+    "co_name": "Nom de la société",
+    "buyer_name": "Nom de l’acheteur",
+    "country": "Pays",
+    "province": "Région",
+    "city": "Ville",
+    "phone": "Téléphone",
+    "email": "Courriel",
+    "website": "Site web",
+    "showrooms": "Salles d’exposition",
+    "upload_img": "Glissez l’image ici",
+    "select_default": "— Sélectionner —",
+    "select_province": "— Sélectionner une région —",
+    "placeholders": {
+      "coName": "WOW Furniture",
+      "buyerName": "Marie Dupont",
+      "coCity": "Paris",
+      "coPhone": "+90 5xx xxx xxxx",
+      "coEmail": "info@company.com",
+      "coWebsite": "www.company.com",
+      "coShowrooms": "1"
+    },
+    "type_badge": {
+      "external": "🌍 Export",
+      "internal_retail": "🏠 Vente au détail locale",
+      "internal_wholesale": "📦 Vente en gros locale"
+    }
+  },
+  ru: {
+    "page_subtitle": "Заполните данные клиента",
+    "save": "Сохранить клиента",
+    "reset": "Сбросить",
+    "co_name": "Название компании",
+    "buyer_name": "Имя покупателя",
+    "country": "Страна",
+    "province": "Регион",
+    "city": "Город",
+    "phone": "Телефон",
+    "email": "Эл. почта",
+    "website": "Веб-сайт",
+    "showrooms": "Выставочные залы",
+    "upload_img": "Перетащите изображение сюда",
+    "select_default": "— Выберите —",
+    "select_province": "— Выберите регион —",
+    "placeholders": {
+      "coName": "WOW Furniture",
+      "buyerName": "Иван Иванов",
+      "coCity": "Москва",
+      "coPhone": "+90 5xx xxx xxxx",
+      "coEmail": "info@company.com",
+      "coWebsite": "www.company.com",
+      "coShowrooms": "1"
+    },
+    "type_badge": {
+      "external": "🌍 Экспорт",
+      "internal_retail": "🏠 Розница внутри страны",
+      "internal_wholesale": "📦 Опт внутри страны"
+    }
+  },
 };
 
 function updateAddCoPageTexts() {
@@ -12496,9 +12743,9 @@ function updateAddCoTypeBadge(tp) {
   if (!badge) return;
 
   const configs = {
-    external:           { icon:'🌍', label:{ ar:'خارجي', tr:'Dış Müşteri', en:'External' } },
-    internal_retail:    { icon:'🏠', label:{ ar:'داخلي مفرق', tr:'İç Perakende', en:'Internal Retail' } },
-    internal_wholesale: { icon:'📦', label:{ ar:'داخلي جملة', tr:'İç Toptan', en:'Internal Wholesale' } },
+    external:           { icon:'🌍', label:{ ar:'خارجي', tr:'Dış Müşteri', en:'External', fr:'Export', ru:'Экспорт' } },
+    internal_retail:    { icon:'🏠', label:{ ar:'داخلي مفرق', tr:'İç Perakende', en:'Internal Retail', fr:'Vente au détail locale', ru:'Розница внутри страны' } },
+    internal_wholesale: { icon:'📦', label:{ ar:'داخلي جملة', tr:'İç Toptan', en:'Internal Wholesale', fr:'Vente en gros locale', ru:'Опт внутри страны' } },
   };
 
   const cfg = configs[tp] || configs.external;
@@ -12509,9 +12756,31 @@ function updateAddCoTypeBadge(tp) {
 
 
 const SIT_TEXTS={
-  ar:{title:'✏️ إنشاء فاتورة',subtitle:'اختر نوع الفاتورة للمتابعة',ext_title:'خارجي',ext_desc:'فاتورة دولية — بالدولار واليورو',ret_title:'داخلي مفرق',ret_desc:'فاتورة محلية مفرق — باليرة التركية',whl_title:'داخلي جملة',whl_desc:'فاتورة محلية جملة — باليرة التركية',back:'رجوع'},
+  ar:{title:'✏️ إنشاء فاتورة',subtitle:'اختر نوع الفاتورة للمتابعة',ext_title:'خارجي',ext_desc:'فاتورة دولية — بالدولار واليورو',ret_title:'داخلي مفرق',ret_desc:'فاتورة محلية مفرق — بالليرة التركية',whl_title:'داخلي جملة',whl_desc:'فاتورة محلية جملة — بالليرة التركية',back:'رجوع'},
   tr:{title:'✏️ Yeni Fatura',subtitle:'Devam etmek için fatura tipini seçin',ext_title:'Dış',ext_desc:'Uluslararası fatura — Dolar ve Euro',ret_title:'İç Perakende',ret_desc:'Yerel perakende fatura — Türk Lirası',whl_title:'İç Toptan',whl_desc:'Yerel toptan fatura — Türk Lirası',back:'Geri'},
   en:{title:'✏️ Create Invoice',subtitle:'Choose invoice type to continue',ext_title:'External',ext_desc:'International invoice — Dollar & Euro',ret_title:'Internal Retail',ret_desc:'Local retail invoice — Turkish Lira',whl_title:'Internal Wholesale',whl_desc:'Local wholesale invoice — Turkish Lira',back:'Back'},
+  fr: {
+    "title": "✏️ Créer une facture",
+    "subtitle": "Choisissez le type de facture pour continuer",
+    "ext_title": "Export",
+    "ext_desc": "Facture internationale — dollars américains et euros",
+    "ret_title": "Vente au détail locale",
+    "ret_desc": "Facture locale au détail — livres turques",
+    "whl_title": "Vente en gros locale",
+    "whl_desc": "Facture locale en gros — livres turques",
+    "back": "Retour"
+  },
+  ru: {
+    "title": "✏️ Создать счёт",
+    "subtitle": "Выберите тип счёта, чтобы продолжить",
+    "ext_title": "Экспорт",
+    "ext_desc": "Международный счёт — доллары США и евро",
+    "ret_title": "Розница внутри страны",
+    "ret_desc": "Счёт для розничной продажи внутри страны — турецкие лиры",
+    "whl_title": "Опт внутри страны",
+    "whl_desc": "Счёт для оптовой продажи внутри страны — турецкие лиры",
+    "back": "Назад"
+  },
 };
 function updateSITTexts(){
   const tx=SIT_TEXTS[S.lang]||SIT_TEXTS.ar;
@@ -12521,6 +12790,7 @@ function updateSITTexts(){
   set('sit-ret-title',tx.ret_title);set('sit-ret-desc',tx.ret_desc);
   set('sit-whl-title',tx.whl_title);set('sit-whl-desc',tx.whl_desc);
   set('sit-back',tx.back);
+  document.querySelectorAll('#page-select-invoice-type .ctsc-arrow').forEach(el=>{el.textContent=S.lang==='ar'?'←':'→';});
 }
 
 /* ============================================================
@@ -12649,8 +12919,6 @@ function applyTr(){
 function setLang(l){
   S.lang=l;
   document.querySelectorAll('.wf-language-card').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.language===l)));
-  const langCopy={ar:['🌐 اللغة','لغة البرنامج','اختر لغة الواجهة. تتغير اللغة فورًا وتُحفظ على هذا الجهاز.'],tr:['🌐 Dil','Uygulama dili','Arayüz dilini seçin. Seçiminiz bu cihazda saklanır.'],en:['🌐 Language','App language','Choose the interface language. Your choice is saved on this device.']}[l];
-  if(langCopy){['wfLanguageTab','wfLanguageTitle','wfLanguageHint'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=langCopy[i]});}
   window.wfStatementRefreshLabels?.();
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.querySelector(`.lang-btn[onclick="setLang('${l}')"]`);
@@ -14776,7 +15044,7 @@ function initCreateInv(){
   updateSumCurrencyBadge();
 
   const b4=document.getElementById('step4Badge');if(b4)b4.textContent=t('kdv_off')||'غير مفعّل';
-  const itemLbls = { ar: 'قطعة', tr: 'ürün', en: 'items' };
+  const itemLbls = { ar: 'قطعة', tr: 'ürün', en: 'items', fr: 'articles', ru: 'позиций' };
   const b5 = document.getElementById('step5Badge');
   if (b5) b5.textContent = `0 ${itemLbls[S.lang || 'ar'] || itemLbls.en}`;
   
@@ -15568,6 +15836,28 @@ const RECEIPT_TYPE_LABELS = {
   ar: { cash:'نقداً', transfer:'تحويل بنكي', card:'بطاقة ائتمان', check:'شيك', installment:'أقساط', western_union:'ويسترن يونيون', deferred:'آجل', exchange:'صراف', other:'أخرى' },
   tr: { cash:'Nakit', transfer:'Banka Transferi', card:'Kredi Kartı', check:'Çek', installment:'Taksit', western_union:'Western Union', deferred:'Vadeli', exchange:'Dövizci', other:'Diğer' },
   en: { cash:'Cash', transfer:'Bank Transfer', card:'Credit Card', check:'Check', installment:'Installment', western_union:'Western Union', deferred:'Deferred', exchange:'Exchange', other:'Other' },
+  fr: {
+    "cash": "Espèces",
+    "transfer": "Virement bancaire",
+    "card": "Carte bancaire",
+    "check": "Chèque",
+    "installment": "Paiement échelonné",
+    "western_union": "Western Union",
+    "deferred": "Paiement différé",
+    "exchange": "Bureau de change",
+    "other": "Autre"
+  },
+  ru: {
+    "cash": "Наличные",
+    "transfer": "Банковский перевод",
+    "card": "Банковская карта",
+    "check": "Чек",
+    "installment": "Рассрочка",
+    "western_union": "Western Union",
+    "deferred": "Отсрочка платежа",
+    "exchange": "Обменный пункт",
+    "other": "Другое"
+  },
 };
 
 const PM_STATE = {
@@ -15763,7 +16053,7 @@ function updateReceiptTypeLabels() {
   });
   const titleEl = document.getElementById('pmReceiptTypeLabel');
   if (titleEl) {
-    const titles = { ar: 'نوع الاستلام', tr: 'Alım Türü', en: 'Receipt Type' };
+    const titles = { ar: 'نوع الاستلام', tr: 'Alım Türü', en: 'Receipt Type', fr: 'Mode de réception', ru: 'Способ получения' };
     titleEl.textContent = titles[lang] || titles.en;
   }
 }
@@ -18835,10 +19125,10 @@ function updateInvFormLabels() {
   const isEdit = !!S.editInvId; // إذا كان هناك ID فهذا يعني أننا في وضع التعديل
 
   const labels = {
-    titleAdd:  { ar:'✏️ إنشاء فاتورة', tr:'✏️ Yeni Fatura', en:'✏️ Create Invoice' },
-    titleEdit: { ar:'✏️ تعديل الفاتورة', tr:'✏️ Faturayı Düzenle', en:'✏️ Edit Invoice' },
-    saveAdd:   { ar:'حفظ', tr:'Kaydet', en:'Save' },
-    saveEdit:  { ar:'حفظ التعديل', tr:'Değişiklikleri Kaydet', en:'Save Edit' }
+    titleAdd:  { ar:'✏️ إنشاء فاتورة', tr:'✏️ Yeni Fatura', en:'✏️ Create Invoice', fr:"✏️ Créer une facture", ru:"✏️ Создать счёт" },
+    titleEdit: { ar:'✏️ تعديل الفاتورة', tr:'✏️ Faturayı Düzenle', en:'✏️ Edit Invoice', fr:"✏️ Modifier la facture", ru:"✏️ Изменить счёт" },
+    saveAdd:   { ar:'حفظ', tr:'Kaydet', en:'Save', fr:"Enregistrer", ru:"Сохранить" },
+    saveEdit:  { ar:'حفظ التعديل', tr:'Değişiklikleri Kaydet', en:'Save Edit', fr:"Enregistrer les modifications", ru:"Сохранить изменения" }
   };
 
   const titleEl = document.getElementById('invFormTitle');
@@ -21659,6 +21949,8 @@ function updateSumSectionLabels() {
       shipping:   'SHIPPING',
       pkts:       'PKTS',
     },
+    fr:{invoice:'FACTURE',summary:'RÉCAPITULATIF',payments:'PAIEMENTS',equivalents:'ÉQUIVALENTS',shipping:'TRANSPORT',pkts:'COLIS'},
+    ru:{invoice:'СЧЁТ',summary:'ИТОГИ',payments:'ПЛАТЕЖИ',equivalents:'ЭКВИВАЛЕНТЫ',shipping:'ДОСТАВКА',pkts:'УПАКОВКИ'},
   };
 
   const L = sections[lang] || sections.en;
@@ -21742,6 +22034,34 @@ const CURRENCY_OPTIONS = {
     { val:'USD', label:'💵 US Dollar — USD'    },
     { val:'EUR', label:'💶 Euro — EUR'          },
     { val:'TRY', label:'🇹🇷 Turkish Lira — TRY' },
+  ],
+  fr: [
+    {
+      "val": "USD",
+      "label": "💵 Dollar américain — USD"
+    },
+    {
+      "val": "EUR",
+      "label": "💶 Euro — EUR"
+    },
+    {
+      "val": "TRY",
+      "label": "🇹🇷 Livre turque — TRY"
+    }
+  ],
+  ru: [
+    {
+      "val": "USD",
+      "label": "💵 Доллар США — USD"
+    },
+    {
+      "val": "EUR",
+      "label": "💶 Евро — EUR"
+    },
+    {
+      "val": "TRY",
+      "label": "🇹🇷 Турецкая лира — TRY"
+    }
   ],
 };
 
@@ -21833,11 +22153,11 @@ function renderNoteTemplates() {
   // 3. تحديد النص الافتراضي للقائمة بناءً على الحالة واللغة
   let defaultText = '';
   if (isCustomDate) {
-     defaultText = { ar: '✏️ تاريخ مخصص', tr: '✏️ Özel Tarih', en: '✏️ Custom Date' }[lang];
+     defaultText = { ar: '✏️ تاريخ مخصص', tr: '✏️ Özel Tarih', en: '✏️ Custom Date', fr: '✏️ Date personnalisée', ru: '✏️ Другая дата' }[lang];
   } else if (hasCustomDays) {
-     defaultText = { ar: '✅ تم اختيار الشروط', tr: '✅ Şartlar seçildi', en: '✅ Terms selected' }[lang];
+     defaultText = { ar: '✅ تم اختيار الشروط', tr: '✅ Şartlar seçildi', en: '✅ Terms selected', fr: '✅ Conditions sélectionnées', ru: '✅ Условия выбраны' }[lang];
   } else {
-     defaultText = { ar: '— اختر ملاحظة جاهزة —', tr: '— Hazır not seçin —', en: '— Select a template —' }[lang];
+     defaultText = { ar: '— اختر ملاحظة جاهزة —', tr: '— Hazır not seçin —', en: '— Select a template —', fr: '— Choisir un modèle —', ru: '— Выберите шаблон —' }[lang];
   }
 
   // 4. بناء القائمة
@@ -22062,6 +22382,66 @@ const STEP1_TEXTS = {
       company: '🏢 Company Pays',
     },
   },
+  fr: {
+    "step1Title": "Détails de la facture",
+    "lbl_invNo": "N° de facture",
+    "lbl_coName": "Société",
+    "lbl_country": "Pays",
+    "lbl_province": "Région",
+    "lbl_currency": "Devise",
+    "lbl_loadDate": "Date de chargement",
+    "lbl_deliveryDate": "Date de livraison",
+    "lbl_45days": "45 jours",
+    "lbl_manualDate": "Date manuelle",
+    "lbl_plate": "Immatriculation",
+    "lbl_truck": "N° du camion",
+    "lbl_shippingTitle": "Transport",
+    "lbl_shippingSubtitle": "Choisissez qui prend en charge les frais de transport",
+    "lbl_clientShipping": "Transport à la charge du client",
+    "lbl_clientShippingSub": "Le client paie les frais de transport",
+    "lbl_companyShipping": "Transport à la charge de la société",
+    "lbl_companyShippingSub": "WOW Furniture prend en charge le transport",
+    "lbl_notes": "Conditions de livraison et de vente",
+    "lbl_noteTemplates": "Modèles prédéfinis",
+    "deliveryModeBadge_manual": "Manuel",
+    "deliveryModeBadge_45": "45 jours",
+    "delivery45Info": "Livraison après 45 jours",
+    "lbl_regDate": "Date d’enregistrement",
+    "shippingBadge": {
+      "client": "👤 À la charge du client",
+      "company": "🏢 À la charge de la société"
+    }
+  },
+  ru: {
+    "step1Title": "Данные счёта",
+    "lbl_invNo": "Номер счёта",
+    "lbl_coName": "Компания",
+    "lbl_country": "Страна",
+    "lbl_province": "Регион",
+    "lbl_currency": "Валюта",
+    "lbl_loadDate": "Дата погрузки",
+    "lbl_deliveryDate": "Дата доставки",
+    "lbl_45days": "45 дней",
+    "lbl_manualDate": "Указать дату",
+    "lbl_plate": "Номерной знак",
+    "lbl_truck": "Номер грузовика",
+    "lbl_shippingTitle": "Доставка",
+    "lbl_shippingSubtitle": "Выберите, кто оплачивает доставку",
+    "lbl_clientShipping": "Доставка за счёт клиента",
+    "lbl_clientShippingSub": "Клиент оплачивает доставку",
+    "lbl_companyShipping": "Доставка за счёт компании",
+    "lbl_companyShippingSub": "WOW Furniture оплачивает доставку",
+    "lbl_notes": "Условия доставки и продажи",
+    "lbl_noteTemplates": "Готовые шаблоны",
+    "deliveryModeBadge_manual": "Вручную",
+    "deliveryModeBadge_45": "45 дней",
+    "delivery45Info": "Доставка через 45 дней",
+    "lbl_regDate": "Дата регистрации",
+    "shippingBadge": {
+      "client": "👤 За счёт клиента",
+      "company": "🏢 За счёт компании"
+    }
+  },
 };
 
 
@@ -22097,6 +22477,8 @@ function updateStep1Texts() {
     ar: { client: '👤 يدفع العميل تكلفة الشحن', company: '🏢 تتحمل الشركة تكاليف الشحن' },
     tr: { client: '👤 Nakliye alıcıya ait', company: '🏢 WOW Furniture nakliyeyi üstlenir' },
     en: { client: '👤 Buyer pays shipping costs', company: '🏢 Company covers shipping costs' },
+    fr: { client: '👤 Transport à la charge du client', company: '🏢 Transport à la charge de la société' },
+    ru: { client: '👤 Доставка за счёт клиента', company: '🏢 Доставка за счёт компании' },
   };
 
   const sOpts = shippingOptLabels[lang] || shippingOptLabels.en;
@@ -22136,7 +22518,9 @@ function updateStep1Texts() {
   const pmLabels = {
     ar: { cash:'💵 نقداً', bank:'🏦 تحويل بنكي', card:'💳 بطاقة ائتمان', check:'📝 شيك', install:'📅 أقساط', wu:'🌐 Western Union', lc:'📜 اعتماد مستندي', defer:'⏳ آجل' },
     tr: { cash:'💵 Nakit', bank:'🏦 Banka Transferi', card:'💳 Kredi Kartı', check:'📝 Çek', install:'📅 Taksit', wu:'🌐 Western Union', lc:'📜 Akreditif', defer:'⏳ Vadeli' },
-    en: { cash:'💵 Cash', bank:'🏦 Bank Transfer', card:'💳 Credit Card', check:'📝 Check', install:'📅 Installment', wu:'🌐 Western Union', lc:'📜 Letter of Credit', defer:'⏳ Deferred' }
+    en: { cash:'💵 Cash', bank:'🏦 Bank Transfer', card:'💳 Credit Card', check:'📝 Check', install:'📅 Installment', wu:'🌐 Western Union', lc:'📜 Letter of Credit', defer:'⏳ Deferred' },
+    fr: { cash:'💵 Espèces', bank:'🏦 Virement bancaire', card:'💳 Carte bancaire', check:'📝 Chèque', install:'📅 Paiement échelonné', wu:'🌐 Western Union', lc:'📜 Crédit documentaire', defer:'⏳ Paiement différé' },
+    ru: { cash:'💵 Наличные', bank:'🏦 Банковский перевод', card:'💳 Банковская карта', check:'📝 Чек', install:'📅 Рассрочка', wu:'🌐 Western Union', lc:'📜 Аккредитив', defer:'⏳ Отсрочка платежа' }
   };
   const pms = pmLabels[lang] || pmLabels.en;
   
@@ -22175,7 +22559,7 @@ function updateStep1Texts() {
 
   /* ✅ 8 — تحديث شارة "إضافة قطع" (عدد القطع) باللغات الثلاث */
   const itemsCount = (S.invItems && S.invItems.length) ? S.invItems.length : 0;
-  const itemLbls = { ar: 'قطعة', tr: 'ürün', en: 'items' };
+  const itemLbls = { ar: 'قطعة', tr: 'ürün', en: 'items', fr: 'articles', ru: 'позиций' };
   const b5 = document.getElementById('step5Badge');
   if (b5) b5.textContent = `${itemsCount} ${itemLbls[lang] || itemLbls.en}`;
 
@@ -22183,7 +22567,9 @@ function updateStep1Texts() {
   const searchPh = {
     ar: '🔍 ابحث عن منتج...',
     tr: '🔍 Ürün ara...',
-    en: '🔍 Search for a product...'
+    en: '🔍 Search for a product...',
+    fr: '🔍 Rechercher un produit…',
+    ru: '🔍 Поиск товара…'
   };
   const invPrSearch = document.getElementById('invPrSearch');
   if (invPrSearch) invPrSearch.placeholder = searchPh[lang] || searchPh.en;
