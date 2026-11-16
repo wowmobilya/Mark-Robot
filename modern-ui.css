@@ -24,6 +24,21 @@ input,select,textarea{border-radius:11px}
 .curr-rate{font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .curr-rate.wf-rate-up{animation:wfRateUp .65s ease;color:#138a62!important}.curr-rate.wf-rate-down{animation:wfRateDown .65s ease;color:#b84c4c!important}
 .curr-badge{background:color-mix(in srgb,var(--brand-accent) 12%,var(--card));color:var(--gold2)}
+.greeting-card{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:radial-gradient(ellipse at 85% 5%,rgba(43,190,179,.28),transparent 36%),linear-gradient(120deg,#111b27 0%,#1b3440 56%,#176f70 130%);box-shadow:0 22px 50px rgba(18,43,54,.18)}
+.greeting-card::after{content:"";position:absolute;inset:auto 0 0;height:3px;background:linear-gradient(90deg,#76d7ca,#2b999c,#8fa4ac,#76d7ca);background-size:220% 100%;animation:wfMarketSweep 8s linear infinite}
+.greeting-card .greeting-msg,.greeting-card .greeting-sub,.greeting-card .greeting-time-badge{color:#f4f8fa}
+.ai-badge{border:1px solid rgba(115,220,205,.28);background:rgba(34,133,132,.17);color:#a8eee2;backdrop-filter:blur(8px)}
+.tip-card-standalone{border-inline-start:3px solid var(--brand-accent);background:linear-gradient(100deg,var(--card),color-mix(in srgb,var(--card) 90%,var(--gold-light)))}
+.curr-bar{border:1px solid color-mix(in srgb,var(--gold) 18%,var(--border));border-radius:20px;background:linear-gradient(140deg,var(--card),color-mix(in srgb,var(--card) 94%,var(--gold-light)));box-shadow:0 16px 38px rgba(22,42,52,.07)}
+.curr-update{border-radius:10px;background:var(--input)}
+.curr-refresh{border-radius:11px;color:var(--gold2);background:var(--gold-light)}
+.curr-item{min-height:76px;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.curr-item:hover{transform:translateY(-3px);box-shadow:0 12px 25px rgba(17,94,96,.12)}
+.curr-rate{position:relative;z-index:1}
+.stat-card{background:linear-gradient(150deg,var(--card),color-mix(in srgb,var(--card) 96%,var(--gold-light)))}
+.wf-ui-icon{transition:transform .2s ease,color .2s ease}
+button:hover>.wf-ui-icon,.nav-item:hover .wf-ui-icon,.curr-item:hover .wf-ui-icon{transform:scale(1.08)}
+::selection{background:color-mix(in srgb,var(--brand-accent) 28%,transparent)}
 @keyframes wfMarketSweep{to{background-position:220% 0}}
 @keyframes wfRateUp{0%{transform:translateY(4px);text-shadow:0 0 0 transparent}45%{transform:translateY(-2px);text-shadow:0 0 14px rgba(22,166,160,.55)}100%{transform:translateY(0)}}
 @keyframes wfRateDown{0%{transform:translateY(-4px)}45%{transform:translateY(2px);text-shadow:0 0 14px rgba(184,76,76,.4)}100%{transform:translateY(0)}}
@@ -31,6 +46,8 @@ input,select,textarea{border-radius:11px}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid color-mix(in srgb,var(--gold) 70%,var(--brand-accent));outline-offset:2px}
 @media(max-width:700px){.page{border-radius:16px}.card,.stat-card,.co-card,.pr-card-new,.inv-card,.modal-box{border-radius:15px}.btn,.btn-p,.btn-g{min-height:42px}}
 @media(min-width:1200px){.page{max-width:1680px;margin-inline:auto}}
+@media(max-width:480px){.curr-bar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.curr-item{min-height:70px;padding:9px;flex-direction:row;align-items:center}.curr-rate{font-size:14px!important}.curr-label{font-size:9px}.curr-badge{font-size:8px;padding:2px 5px}.greeting-card{border-radius:16px}}
+@media(min-width:1100px){.curr-bar-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.curr-bar{padding:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 /* Shared surfaces for settings and quick barcode. */
 #page-settings .sct-sticky-header,#page-quick-barcode .sct-sticky-header{background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:0 12px 32px rgba(15,23,42,.06)}
