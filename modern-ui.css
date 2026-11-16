@@ -38,6 +38,9 @@
 /* One icon family for navigation, section titles, controls and currencies. */
 .wf-ui-icon{display:inline-flex;align-items:center;justify-content:center;width:1.28em;height:1.28em;vertical-align:-.18em;flex:0 0 auto;position:relative;color:inherit;line-height:1}
 .wf-ui-icon svg{display:block;width:100%;height:100%;stroke:currentColor;stroke-width:1.8;fill:none}
+.btn>.wf-ui-icon,.btn-icon>.wf-ui-icon,.co-card-actions .wf-ui-icon,.pr-card-new-actions .wf-ui-icon,.inv-card-actions .wf-ui-icon,.pay-item-del .wf-ui-icon{width:1.12em;height:1.12em;margin-inline-end:4px;vertical-align:-.15em}
+.btn-icon>.wf-ui-icon,.pay-item-del>.wf-ui-icon{margin-inline:0}
+.qbl-cart-item-img>.wf-ui-icon,.qbl-dd-img>.wf-ui-icon{width:24px;height:24px;color:var(--gold2)}
 .wf-ui-icon-original{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 .nav-icon .wf-ui-icon,.bnav-icon .wf-ui-icon,.bnav-circle-icon .wf-ui-icon{width:22px;height:22px;vertical-align:middle}
 .nav-item .nav-icon{display:inline-flex;align-items:center;justify-content:center;color:var(--text2)}
