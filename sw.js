@@ -1,13 +1,13 @@
-const CACHE_NAME = 'wow-furniture-v92-calculator-details';
+const CACHE_NAME = 'wow-furniture-v93-market-rows';
 const urlsToCache = [
   './',
   './index.html',
   './business-ui.css?v=1',
   './settings-responsive.css?v=1',
   './settings-navigation.js?v=1',
-  './dashboard-visuals.css?v=2',
-  './rate-refresh.js?v=1',
-  './section-headings.css?v=5',
+  './dashboard-visuals.css?v=3',
+  './rate-refresh.js?v=2',
+  './section-headings.css?v=6',
   './currency-calculator.css?v=8',
   './currency-calculator.js?v=5',
   './ui-i18n.js?v=26',

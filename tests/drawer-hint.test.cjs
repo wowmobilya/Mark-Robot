@@ -29,3 +29,9 @@ test('narrow pointer stays horizontal outside the handle, never above it',()=>{
   assert(handleLeft-pointerWidth-gap>=0, 'arrow fits at '+width);
  }
 });
+test('pointer has a soft white halo without a mask clipping the glow',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'../section-headings.css'),'utf8');
+ assert.match(css,/filter:drop-shadow\(0 0 2px #fff\) drop-shadow\(0 0 5px rgba\(255,255,255,.95\)\)/);
+ assert.match(css,/background-image:url/);
+ assert.doesNotMatch(css,/mask:url/);
+});

@@ -57,11 +57,10 @@
  /* A temporary, non-interactive pointer shares the existing three-click hint. */
  html body #wfSidebarClose.wf-dismiss-hint::after {
   content:"";position:absolute;left:calc(-1 * var(--wf-pointer-width, 44px) - var(--wf-pointer-gap, 16px));right:auto;top:calc(50% - 9px);bottom:auto;
-  width:var(--wf-pointer-width, 44px);height:18px;border-radius:0;background:#21566b;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 1px white) drop-shadow(0 -1px 1px white);
+  width:var(--wf-pointer-width, 44px);height:18px;border-radius:0;background-color:transparent;pointer-events:none;z-index:2;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px rgba(255,255,255,.95));
   --wf-pointer-flip:1;--wf-pointer-shift:3px;
   transform:scaleX(var(--wf-pointer-flip));
-  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18'%3E%3Cpath d='M2 9h29m-7-6 7 6-7 6' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% 100% no-repeat;
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18'%3E%3Cpath d='M2 9h29m-7-6 7 6-7 6' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% 100% no-repeat;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18' preserveAspectRatio='none'%3E%3Cpath d='M2 9h29m-7-6 7 6-7 6' fill='none' stroke='%2321566b' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:100% 100%;background-repeat:no-repeat;
   animation:wfDrawerPointer 1.2s ease-in-out 2;
  }
  html[dir="ltr"] body #wfSidebarClose.wf-dismiss-hint::after {
@@ -75,7 +74,7 @@
 
 @media screen {
  html body #wfSidebarClose {overflow:visible!important;isolation:isolate;}
- html[data-theme="dark"] body #wfSidebarClose.wf-dismiss-hint::after {background:#d4f1ff;filter:drop-shadow(0 1px 1px #17323e) drop-shadow(0 -1px 1px #17323e);}
+ html[data-theme="dark"] body #wfSidebarClose.wf-dismiss-hint::after {background-color:transparent;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px rgba(255,255,255,.95));}
 }
 @media screen and (max-width:420px) {
  /* Stay horizontal on the transparent side, within the narrow exposed strip. */

@@ -6,8 +6,8 @@ test('dashboard icon foreground/background pairs meet text contrast',()=>{
   const a=lum(fg),b=lum(bg);assert((Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5,fg+' '+bg);
  }
 });
-test('currency quotes use a compact market strip and icons inherit contrast',()=>{
- assert(css.includes('flex:1 0 168px'));assert(css.includes('overflow-x:auto!important'));assert(css.includes('scroll-snap-type:x proximity'));assert(css.includes('min-height:68px'));
- assert(css.includes('color:inherit!important'));assert(css.includes('repeat(2,minmax(0,1fr))'));
- assert(!css.includes('content:"'));assert(css.includes('@media screen'));
+test('all quote pairs remain in compact full-width rows with no internal scrolling',()=>{
+ assert(css.includes('flex-direction:column!important'));assert(css.includes('overflow:visible!important'));
+ assert(css.includes('min-height:48px'));assert(css.includes('grid-column:4!important;grid-row:1!important'));
+ assert(css.includes('color:inherit!important'));assert(css.includes('@media(prefers-reduced-motion:reduce)'));
 });

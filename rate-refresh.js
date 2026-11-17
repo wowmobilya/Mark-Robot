@@ -1,7 +1,7 @@
 /* Honest refresh state and localized twelve-hour quote timestamps. */
 (function(root){'use strict';
  const sources=['https://api.exchangerate-api.com/v4/latest/USD','https://open.er-api.com/v6/latest/USD'];
- const locales={ar:'ar-u-nu-arab',tr:'tr-TR',en:'en-US',fr:'fr-FR',ru:'ru-RU'};
+ const locales={ar:'ar-u-nu-latn',tr:'tr-TR',en:'en-US',fr:'fr-FR',ru:'ru-RU'};
  function formatTime(value,lang){
   if(!value)return '';
   let date=new Date(value);
@@ -11,7 +11,7 @@
    date=new Date();date.setHours(Number(parts[1]),Number(parts[2]),Number(parts[3]||0),0);
   }
   const formatter=new Intl.DateTimeFormat(locales[lang]||locales.en,{hour:'numeric',minute:'2-digit',hour12:true});
-  if(lang==='ar')return formatter.formatToParts(date).map(part=>part.type==='dayPeriod'?(date.getHours()<12?'صباحاً':'مساءً'):part.value).join('');
+  if(lang==='ar')return formatter.formatToParts(date).map(part=>part.type==='dayPeriod'?(date.getHours()<12?'ص':'م'):part.value).join('');
   return formatter.format(date);
  }
  async function requestRates(fetcher){
@@ -19,7 +19,10 @@
    const response=await fetcher(url,{signal:AbortSignal.timeout(5000)});
    if(response.ok===false)continue;
    const data=await response.json(),usdTry=data.rates?.TRY??data.conversion_rates?.TRY,usdEur=data.rates?.EUR??data.conversion_rates?.EUR;
-   if(typeof usdTry==='number'&&Number.isFinite(usdTry)&&usdTry>0&&typeof usdEur==='number'&&Number.isFinite(usdEur)&&usdEur>0)return {usdTry:Number(usdTry.toFixed(4)),usdEur:Number(usdEur.toFixed(4))};
+   if(typeof usdTry==='number'&&Number.isFinite(usdTry)&&usdTry>0&&typeof usdEur==='number'&&Number.isFinite(usdEur)&&usdEur>0){
+    const seconds=Number(data.time_last_update_unix||data.time_last_updated),stamp=seconds>0?new Date(seconds*1000):null;
+    return {usdTry:Number(usdTry.toFixed(4)),usdEur:Number(usdEur.toFixed(4)),updatedAt:stamp&&!Number.isNaN(stamp.getTime())?stamp.toISOString():null};
+   }
   }catch(_) {}}
   throw new Error('rate-unavailable');
  }
@@ -54,10 +57,10 @@
    const previous={usdTry:S.usdTry,usdEur:S.usdEur};
    let rates;try{rates=await requestRates(root.fetch.bind(root));}catch(_){state='failed';return false;}
    S.usdTry=S.settings.manualUsdTry||rates.usdTry;S.usdEur=S.settings.manualUsdEur||rates.usdEur;
-   S.rateTime=new Date().toISOString();root.updateRateUI();
+   S.rateTime=new Date().toISOString();S.rateUpdatedAt=rates.updatedAt;root.updateRateUI();
    root.wfAnimateRateChanges?.(previous);root.wfUpdateMarketIndicators?.(previous);
    state=(S.settings.manualUsdTry||S.settings.manualUsdEur)?'manual':'ok';
-   try{await dbPut('settings',{id:'usdTry',value:S.usdTry,eur:S.usdEur,time:S.rateTime});}catch(_){state='unsaved';}
+   try{await dbPut('settings',{id:'usdTry',value:S.usdTry,eur:S.usdEur,time:S.rateTime,updatedAt:S.rateUpdatedAt});}catch(_){state='unsaved';}
    return true;
   })().finally(()=>{pending=null;render();
    if(document.getElementById('page-settings')?.classList.contains('active'))root.showToast?.(text()[state],['failed','unsaved'].includes(state)?'in':'ok');
