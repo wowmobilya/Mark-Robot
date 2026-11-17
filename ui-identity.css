@@ -204,3 +204,18 @@ html .curr-item .wf-market-trend{grid-column:2;grid-row:2;justify-self:start;ali
  html[data-theme="dark"] body nav#bottomNav button.bnav-btn.bnav-active span.bnav-label{color:#e7edf5!important}
 }
 @media(prefers-reduced-motion:reduce){html .bottom-nav .bnav-btn,html .bottom-nav .bnav-icon{transition:none!important}}
+
+/* Dashboard chrome stays put; its fine progress line responds to page scroll. */
+html:not(.wf-booting):not(.wf-section-mode) .navbar{transform:none!important;visibility:visible!important}
+html:not(.wf-section-mode) .navbar::after{content:"";position:absolute;inset-inline-start:0;bottom:0;height:3px;width:var(--wf-scroll-progress,0%);background:#3a5071;border-radius:999px;transition:width .12s linear;pointer-events:none}
+html.wf-dashboard-scrolled:not(.wf-section-mode) .navbar{box-shadow:0 10px 26px rgba(25,40,62,.13)!important;border-bottom-color:var(--border)!important}
+html[data-theme="dark"].wf-dashboard-scrolled:not(.wf-section-mode) .navbar{box-shadow:0 10px 28px rgba(0,0,0,.3)!important}
+html[data-theme="dark"]:not(.wf-section-mode) .navbar::after{background:#a9bfd9}
+@media(max-width:1024px){
+ html:not(.wf-section-mode) .navbar{border-radius:0 0 18px 18px!important;overflow:hidden;background:var(--card)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+ html.wf-dashboard-scrolled:not(.wf-section-mode) .navbar{background:color-mix(in srgb,var(--card) 92%,var(--ui-soft))!important}
+ html .bottom-nav{left:7px!important;right:7px!important;width:auto!important;border-radius:22px 22px 0 0!important;overflow:hidden;border:1px solid var(--border)!important;border-bottom:0!important}
+ html .bottom-nav .bnav-btn:first-of-type{border-start-start-radius:15px}
+ html .bottom-nav .bnav-btn:last-of-type{border-start-end-radius:15px}
+}
+@media(prefers-reduced-motion:reduce){html:not(.wf-section-mode) .navbar::after{transition:none}}
