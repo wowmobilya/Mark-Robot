@@ -1,0 +1,20 @@
+/* Keep contextual controls out of forms and settings; use original filters/counts. */
+@media screen {
+ #wfContextNav[hidden]{display:none!important}
+ html.wf-context-nav-open body #bottomNav{display:none!important}
+ html.wf-context-nav-open body .main{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))!important}
+ #wfContextNav{position:fixed;z-index:680;bottom:max(8px,env(safe-area-inset-bottom,0px));left:8px;right:8px;margin-inline:auto;width:auto;max-width:720px;box-sizing:border-box;display:flex;align-items:stretch;gap:4px;padding:6px;background:var(--card,#fff);border:1px solid var(--border,#dce4e8);border-radius:22px;box-shadow:0 8px 28px #173d4a22;color:var(--text,#213d48)}
+ #wfContextNav .wf-context-home{flex:0 0 40px;min-width:0;border:0;border-radius:15px;background:color-mix(in srgb,#3f7c94 10%,transparent);color:#3f7c94;cursor:pointer}
+ #wfContextNav .wf-context-home svg{width:22px;height:22px}
+ #wfContextNav .co-stats-bar{display:flex!important;flex:1;min-width:0;width:auto!important;gap:3px!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important;flex-wrap:nowrap!important}
+ #wfContextNav .co-stat-pill{position:relative;flex:1 1 0!important;min-width:0!important;max-width:none!important;min-height:64px;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;padding:5px 2px!important;border:0!important;border-radius:15px!important;background:transparent!important;box-shadow:none!important;color:var(--muted,#526974)!important;transform:none!important;cursor:pointer;white-space:normal!important;text-align:center;line-height:1.25;font-size:11px!important;font-weight:650}
+ #wfContextNav .co-stat-pill>span:not(.csp-icon):not(.csp-num){min-width:0;overflow-wrap:anywhere}
+ #wfContextNav .co-stat-pill.active{background:color-mix(in srgb,#3f7c94 16%,transparent)!important;color:#3f7c94!important}
+ #wfContextNav .csp-icon{display:flex!important;align-items:center;justify-content:center;width:22px!important;height:22px!important;margin:0!important;font-size:19px!important;background:transparent!important;color:inherit!important}
+ #wfContextNav .csp-icon svg{width:21px!important;height:21px!important}
+ #wfContextNav .csp-num{position:absolute;inset-inline-end:1px;top:0;font-size:9px!important;line-height:14px;min-width:14px;padding:0 2px!important;background:var(--card,#fff)!important;color:inherit;border-radius:8px}
+ #wfContextNav [role=button]:focus-visible,#wfContextNav button:focus-visible{outline:2px solid #3f7c94;outline-offset:1px}
+ @media(min-width:1025px){#wfContextNav{max-width:640px}#wfContextNav .co-stat-pill{font-size:12px!important}}
+ @media(prefers-reduced-motion:reduce){#wfContextNav *{animation:none!important;transition:none!important}}
+}
+@media print{#wfContextNav{display:none!important}}

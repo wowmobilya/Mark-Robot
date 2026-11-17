@@ -1,0 +1,17 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../context-nav.js'),'utf8');
+class El{constructor(id=''){this.id=id;this.children=[];this.attrs={};this.events={};this.classes=new Set;this.classList={contains:n=>this.classes.has(n),toggle:(n,on)=>on?this.classes.add(n):this.classes.delete(n)};}append(el){if(el.parent)el.parent.children=el.parent.children.filter(x=>x!==el);this.children.push(el);el.parent=this;}before(el){el.parent=this.parent;this.parent.children.splice(this.parent.children.indexOf(this),0,el);}after(el){if(el.parent)el.parent.children=el.parent.children.filter(x=>x!==el);el.parent=this.parent;this.parent.children.splice(this.parent.children.indexOf(this)+1,0,el);}setAttribute(k,v){this.attrs[k]=v}getAttribute(k){return this.attrs[k]}addEventListener(k,fn){this.events[k]=fn}querySelectorAll(){return this.children}click(){this.onclick?.();this.events.click?.()}}
+test('original filters move without cloning; click/keyboard, counts, locale and form navigation remain intact',()=>{
+ const root=new El,body=new El,ids={},observers=[],queue=[];root.lang='ar';let currentPage='';
+ const state={coTabFilter:'all',prTabFilter:'all',invTabFilter:'all'};
+ for(const [page,id,key] of [['companies','coStatsBar','coTabFilter'],['products','prStatsBar','prTabFilter'],['invoices','invStatsBar','invTabFilter']]){const section=ids['page-'+page]=new El;const bar=ids[id]=new El;section.append(bar);body.append(section);for(const type of ['all','external']){const pill=new El;pill.attrs.onclick=`filter('${type}')`;pill.onclick=()=>state[key]=type;bar.append(pill);}}
+ ids['page-companies'].classes.add('active');
+ const doc={documentElement:root,body,getElementById:id=>ids[id],createComment:()=>new El,createElement:()=>new El};
+ vm.runInNewContext(source,{document:doc,S:state,window:{showPage:p=>currentPage=p},requestAnimationFrame:fn=>queue.push(fn),MutationObserver:class{constructor(fn){observers.push(fn)}observe(){}}});
+ const flush=()=>{while(queue.length)queue.shift()()};const sync=()=>{observers.forEach(fn=>fn());flush()};
+ const dock=body.children.find(x=>x.id==='wfContextNav'),bar=ids.coStatsBar,pill=bar.children[1];
+ assert.equal(bar.parent,dock);assert.equal(dock.hidden,false);assert.equal(pill.attrs.role,'button');let prevented=false;pill.events.keydown({key:' ',preventDefault(){prevented=true}});flush();assert(prevented);assert.equal(state.coTabFilter,'external');assert.equal(pill.attrs['aria-pressed'],'true');
+ ids['page-companies'].classes.delete('active');sync();assert(dock.hidden);assert.equal(bar.parent,ids['page-companies']);assert(!root.classes.has('wf-context-nav-open'));
+ ids['page-products'].classes.add('active');root.lang='tr';sync();assert.equal(ids.prStatsBar.parent,dock);assert.equal(dock.attrs['aria-label'],'Bölüm filtreleri');dock.children[0].click();assert.equal(currentPage,'dashboard');
+});
+test('styles reserve space, keep controls touchable and do not replace settings/save controls',()=>{const css=fs.readFileSync(path.join(__dirname,'../context-nav.css'),'utf8');assert(css.includes('112px + env(safe-area-inset-bottom'));assert(css.includes('min-height:64px'));assert(css.includes('prefers-reduced-motion'));assert(css.includes(':focus-visible'));assert(!source.includes('saveSettings'));assert(!source.includes('dbPut'));});

@@ -1,5 +1,7 @@
-const CACHE_NAME = 'wow-furniture-v97-sculpted-header';
+const CACHE_NAME = 'wow-furniture-v98-context-navigation';
 const urlsToCache = [
+  './context-nav.js?v=1',
+  './context-nav.css?v=1',
   './',
   './bottomnav-fit.css?v=1',
   './bottomnav-fit.js?v=1',
