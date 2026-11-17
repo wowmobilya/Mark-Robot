@@ -6571,13 +6571,13 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     </div>
     <div class="nb-title" id="navTitle"><span>WOW</span> Furniture</div>
   </div>
-  <div class="nb-right">
+  <div class="nb-right wf-header-controls">
     <div class="lang-sw">
       <!-- Language selection is managed in Settings. -->
     </div>
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
     <button class="icon-btn wf-desktop-sidebar-toggle" id="desktopSidebarToggle" onclick="wfToggleDesktopSidebar()" title="Toggle sidebar" aria-label="Toggle sidebar">☰</button>
-<button class="icon-btn" onclick="openSettingsPage()">⚙️</button>
+<button class="icon-btn" id="headerSettingsBtn" onclick="openSettingsPage()">⚙️</button>
   </div>
 </nav>
 
@@ -8369,7 +8369,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 
 <section class="page" id="page-quick-barcode">
-<link rel="stylesheet" href="modern-ui.css?v=45">
+<link rel="stylesheet" href="modern-ui.css?v=46">
 
 <!-- ══ PHASE 1: SCAN ══ -->
 <div id="qblPhase1" style="transition:all .5s cubic-bezier(.4,0,.2,1);">

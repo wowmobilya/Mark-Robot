@@ -172,6 +172,11 @@ html:not([data-theme="dark"]) .btn-p:hover,html:not([data-theme="dark"]) .btn-g:
 .stat-icon,.tip-card-icon,.curr-flag{box-shadow:none!important}
 @media(min-width:1100px){#page-dashboard.active{grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:16px}.stats-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:600px){.main{padding:14px 12px 24px}.curr-bar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.curr-item{min-width:0}.curr-info{min-width:0}.curr-label{white-space:nowrap}.curr-badge{margin-inline-start:auto}}
+/* Header controls occupy explicit slots so language direction cannot reorder them. */
+.navbar .wf-header-controls{position:absolute!important;inset:0!important;width:auto!important;margin:0!important;padding:0 16px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;direction:ltr;pointer-events:none}
+.navbar .wf-header-controls .lang-sw{display:none!important}.navbar .wf-header-controls .icon-btn{pointer-events:auto;width:40px!important;height:40px!important;flex:0 0 40px!important;border:1px solid var(--border);border-radius:12px!important;background:var(--input);color:var(--text2);order:0!important}
+.navbar .wf-header-controls #themeBtn{order:2!important}.navbar .wf-header-controls #headerSettingsBtn{order:1!important}.navbar .wf-header-controls #desktopSidebarToggle{position:absolute;right:16px;order:0!important}
+@media(max-width:1024px){.navbar .wf-header-controls{padding-inline:12px!important}.navbar .wf-header-controls #desktopSidebarToggle{display:inline-flex!important;right:12px}.navbar .wf-header-controls #themeBtn{display:none!important}.navbar .wf-header-controls #headerSettingsBtn{order:0!important}}
 /* Refined header, softer geometry, and market quote cards. */
 html:not([data-theme="dark"]) .navbar{justify-content:flex-end}
 html:not([data-theme="dark"]) .nb-brand{position:absolute;right:var(--side-w);top:50%;transform:translate(50%,-50%);width:var(--side-w);justify-content:center;gap:0}

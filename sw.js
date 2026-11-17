@@ -1,9 +1,9 @@
-const CACHE_NAME = 'wow-furniture-v47-animated-market-arrows';
+const CACHE_NAME = 'wow-furniture-v48-header-controls';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
-  './modern-ui.css?v=45',
+  './modern-ui.css?v=46',
   './ui-icons.js?v=42',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
