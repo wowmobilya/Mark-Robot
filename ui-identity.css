@@ -391,16 +391,16 @@ html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-
 /* Shared primary identity. Preserve semantic success/error colors and print layouts. */
 @media screen {
  html, html:not([data-theme="dark"]), html[data-theme="dark"] {
-  --brand-primary:#123B46; --ui-accent:var(--brand-primary);
+  --brand-primary:#3f7c94; --ui-accent:var(--brand-primary);
   --brand-accent:var(--brand-primary); --gold:var(--brand-primary);
-  --gold2:#123B46; --ui-soft:#e9f0f1; --gold-light:var(--ui-soft);
+  --gold2:#3f7c94; --ui-soft:#fafcfd; --gold-light:var(--ui-soft);
  }
- html[data-theme="dark"] { --ui-accent:#9cc5cc; --ui-soft:#173b46; --gold-light:var(--ui-soft); --gold2:#9cc5cc; }
+ html[data-theme="dark"] { --ui-accent:#a5cddd; --ui-soft:#203d49; --gold-light:var(--ui-soft); --gold2:#a5cddd; }
  html body #sidebar .nav-item.active { background:var(--ui-soft)!important; border-color:var(--brand-primary)!important; }
  html body #sidebar .nav-item.active .nav-icon,
  html body #bottomNav #bnavCircle {
   background:var(--brand-primary)!important; border-color:var(--brand-primary)!important; color:#fff!important;
-  box-shadow:0 4px 12px rgba(18,59,70,.18)!important;
+  box-shadow:0 4px 12px rgba(63,124,148,.18)!important;
  }
  html body #bottomNav .bnav-btn.bnav-active .bnav-label { color:var(--gold2)!important; }
  html body #page-settings .tabs .tab-btn.active,
@@ -413,8 +413,8 @@ html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-
  }
  html body .wf-catalog-row em { background:var(--brand-primary); }
  html body .wf-insight-head .wf-ui-icon { color:var(--ui-accent); }
- html body .wf-ai-panel { background:linear-gradient(108deg,#0d2d35,var(--brand-primary)); }
- html body .wf-ai-action { color:#123B46!important; }
+ html body .wf-ai-panel { background:linear-gradient(108deg,#2e5d70,var(--brand-primary)); }
+ html body .wf-ai-action { color:#3f7c94!important; }
  html body :is(input.fc,select.fc,textarea.fc):focus-visible {
   outline:2px solid var(--ui-accent); outline-offset:2px;
  }

@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v78-drawer-edge';
+const CACHE_NAME = 'wow-furniture-v79-primary-blue';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=29',
+  './ui-identity.css?v=30',
   './ui-navigation.js?v=11',
   './ui-logo.js?v=2',
   './ui-settings.js?v=1',
