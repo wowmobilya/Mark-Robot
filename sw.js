@@ -1,11 +1,11 @@
-const CACHE_NAME = 'wow-furniture-v86-drawer-pointer';
+const CACHE_NAME = 'wow-furniture-v87-visible-drawer-pointer';
 const urlsToCache = [
   './',
   './index.html',
   './business-ui.css?v=1',
   './settings-responsive.css?v=1',
   './settings-navigation.js?v=1',
-  './section-headings.css?v=3',
+  './section-headings.css?v=4',
   './currency-calculator.css?v=5',
   './currency-calculator.js?v=3',
   './ui-i18n.js?v=26',

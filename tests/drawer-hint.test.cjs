@@ -17,3 +17,14 @@ test('drawer pointer shares hint lifetime, mirrors direction and respects reduce
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)[\s\S]*#wfSidebarClose\.wf-dismiss-hint::after \{animation:none!important/);
  assert.match(source,/setTimeout\(\(\)=>handle.classList.remove\('wf-dismiss-hint'\),2400\)/);
 });
+test('narrow pointer stays horizontal outside the handle, never above it',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'../section-headings.css'),'utf8');
+ assert.doesNotMatch(css,/wfDrawerPointerPhone|rotate\(90deg\)|top:-42px/);
+ assert.match(css,/overflow:visible!important/);
+ assert.match(css,/14vw - 28px/);
+ for(const width of [320,360,390,420]){
+  const handleLeft=width-Math.min(300,.86*width)-18;
+  const pointerWidth=Math.min(30,Math.max(16,.14*width-28));
+  assert(handleLeft-pointerWidth-8>=0, 'arrow fits at '+width);
+ }
+});
