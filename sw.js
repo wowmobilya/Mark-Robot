@@ -1,7 +1,9 @@
-const CACHE_NAME = 'wow-furniture-v79-primary-blue';
+const CACHE_NAME = 'wow-furniture-v80-currency-pad';
 const urlsToCache = [
   './',
   './index.html',
+  './currency-calculator.css?v=1',
+  './currency-calculator.js?v=1',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
   './ui-identity.css?v=30',

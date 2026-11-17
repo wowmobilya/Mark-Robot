@@ -6438,6 +6438,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
      <script src="ui-navigation.js?v=11" defer></script>
      <script src="ui-logo.js?v=2" defer></script>
 <script src="ui-settings.js?v=1" defer></script>
+<link rel="stylesheet" href="currency-calculator.css?v=1">
 </head>
 <body>
 
@@ -10873,7 +10874,7 @@ function openCurrCalc(key) {
 
   openModal('currCalcModal');
   window.wfRefreshIcons?.();
-  setTimeout(() => { const i = document.getElementById('ccInput'); if (i) i.focus(); }, 220);
+  setTimeout(() => { const i = document.getElementById('ccInput'); if (i && document.getElementById('currCalcModal').classList.contains('open')) i.focus({preventScroll:true}); }, 220);
 }
 
 function calcCurrencyModal() {
@@ -27657,5 +27658,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 })();
 </script>
 
+<script src="currency-calculator.js?v=1"></script>
 </body>
 </html>
