@@ -15,7 +15,7 @@
  html body .navbar .wf-topbar-title {display:none!important;}
  html body .page .wf-heading-row {grid-template-columns:48px minmax(0,1fr) 48px!important;min-height:48px;}
  html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn),
- html body .page .sct-back-btn {
+ html.wf-section-mode body #mainContent .page .sct-back-btn {
   position:relative;isolation:isolate;overflow:visible;
   width:48px!important;height:48px!important;min-width:48px!important;flex:0 0 48px!important;
   padding:0!important;border-radius:16px!important;background:var(--card)!important;
@@ -24,25 +24,35 @@
   transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s ease,background .22s ease!important;
  }
  html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn)::after,
- html body .page .sct-back-btn::after {
+ html.wf-section-mode body #mainContent .page .sct-back-btn::after {
   content:"";position:absolute;inset:-7px;border:1px solid color-mix(in srgb,var(--brand-primary) 15%,transparent);
   border-radius:22px;pointer-events:none;opacity:.7;transform:scale(1);
   transition:transform .25s ease,opacity .25s ease;
  }
  html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):active,
- html body .page .sct-back-btn:active {transform:scale(.94)!important;}
+ html.wf-section-mode body #mainContent .page .sct-back-btn:active {transform:scale(.94)!important;}
  html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):active::after,
- html body .page .sct-back-btn:active::after {transform:scale(1.08);opacity:0;}
+ html.wf-section-mode body #mainContent .page .sct-back-btn:active::after {transform:scale(1.08);opacity:0;}
  html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):focus-visible,
- html body .page .sct-back-btn:focus-visible {outline:2px solid var(--brand-primary);outline-offset:3px;}
+ html.wf-section-mode body #mainContent .page .sct-back-btn:focus-visible {outline:2px solid var(--brand-primary);outline-offset:3px;}
  html body .navbar #desktopSidebarToggle[aria-expanded="true"] {background:var(--brand-primary)!important;color:#fff!important;}
  @media(hover:hover) {
   html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):hover,
-  html body .page .sct-back-btn:hover {background:var(--ui-soft)!important;transform:translateY(-1px);}
+  html.wf-section-mode body #mainContent .page .sct-back-btn:hover {background:var(--ui-soft)!important;transform:translateY(-1px);}
  }
  @media(prefers-reduced-motion:reduce) {
   html body .navbar .wf-header-controls .icon-btn,html body .navbar .wf-header-controls .icon-btn::after,
-  html body .page .sct-back-btn,html body .page .sct-back-btn::after {transition:none!important;animation:none!important;}
+  html.wf-section-mode body #mainContent .page .sct-back-btn,html.wf-section-mode body #mainContent .page .sct-back-btn::after {transition:none!important;animation:none!important;}
  }
 }
 @media screen {html:not(.wf-section-mode) body .navbar::after {top:0;bottom:auto;}}
+
+@media screen {
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn) {position:absolute;top:calc(50% - 24px);}
+ html[dir="rtl"] body .navbar #desktopSidebarToggle {right:12px;left:auto;}
+ html[dir="rtl"] body .navbar #headerSettingsBtn {left:12px;right:auto;}
+ html[dir="rtl"] body .navbar #themeBtn {left:76px;right:auto;}
+ html[dir="ltr"] body .navbar #desktopSidebarToggle {left:12px;right:auto;}
+ html[dir="ltr"] body .navbar #headerSettingsBtn {right:12px;left:auto;}
+ html[dir="ltr"] body .navbar #themeBtn {right:76px;left:auto;}
+}

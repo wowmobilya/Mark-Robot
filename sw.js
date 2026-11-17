@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v95-unified-header';
+const CACHE_NAME = 'wow-furniture-v96-header-alignment';
 const urlsToCache = [
   './',
   './index.html',
@@ -8,7 +8,7 @@ const urlsToCache = [
   './dashboard-visuals.css?v=3',
   './rate-refresh.js?v=2',
   './section-headings.css?v=6',
-  './topbar-dock.css?v=2',
+  './topbar-dock.css?v=3',
   './topbar-dock.js?v=2',
   './currency-calculator.css?v=8',
   './currency-calculator.js?v=5',
