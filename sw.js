@@ -1,11 +1,11 @@
-const CACHE_NAME = 'wow-furniture-v82-refined-calculator';
+const CACHE_NAME = 'wow-furniture-v83-heading-alignment';
 const urlsToCache = [
   './',
   './index.html',
   './business-ui.css?v=1',
   './settings-responsive.css?v=1',
   './settings-navigation.js?v=1',
-  './section-headings.css?v=1',
+  './section-headings.css?v=2',
   './currency-calculator.css?v=3',
   './currency-calculator.js?v=2',
   './ui-i18n.js?v=26',
