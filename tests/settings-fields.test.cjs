@@ -14,9 +14,9 @@ test('existing company and banking fields round-trip through the real save and l
  names.forEach((name,i)=>assert.equal(elements['st'+name].value,'test-'+i));
  assert.equal(context.S.settings.nextNoExt,5000);assert.equal(context.S.settings.manualUsdTry,40);
 });
-test('all seven original settings sections remain, with native mobile picker and reduced-motion support',()=>{
+test('all seven original settings sections remain, with inline navigation and reduced-motion support',()=>{
  for(const key of ['company','bank','invoice','currency','data','language','about'])assert(html.includes(`id="stab-${key}"`));
  const js=fs.readFileSync(path.join(__dirname,'../settings-navigation.js'),'utf8');new vm.Script(js);
- assert(js.includes("document.createElement('select')"));assert(js.includes('original.apply(this,arguments)'));
+ assert(!js.includes("document.createElement('select')"));assert(js.includes('footer.append(save)'));assert(js.includes('wf-settings-open'));assert(js.includes('original.apply(this,arguments)'));
  assert(js.includes('prefers-reduced-motion'));assert(!js.includes('wfWriteBatch'));
 });

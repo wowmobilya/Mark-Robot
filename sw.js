@@ -1,13 +1,15 @@
-const CACHE_NAME = 'wow-furniture-v93-market-rows';
+const CACHE_NAME = 'wow-furniture-v94-topbar-settings';
 const urlsToCache = [
   './',
   './index.html',
   './business-ui.css?v=1',
-  './settings-responsive.css?v=1',
-  './settings-navigation.js?v=1',
+  './settings-responsive.css?v=2',
+  './settings-navigation.js?v=2',
   './dashboard-visuals.css?v=3',
   './rate-refresh.js?v=2',
   './section-headings.css?v=6',
+  './topbar-dock.css?v=1',
+  './topbar-dock.js?v=1',
   './currency-calculator.css?v=8',
   './currency-calculator.js?v=5',
   './ui-i18n.js?v=26',
