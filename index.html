@@ -6443,7 +6443,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="currency-calculator.css?v=7">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=1">
-<link rel="stylesheet" href="dashboard-visuals.css?v=1">
+<link rel="stylesheet" href="dashboard-visuals.css?v=2">
 <link rel="stylesheet" href="section-headings.css?v=5">
 </head>
 <body>
@@ -6660,7 +6660,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   <!-- ── شبكة العملات 3×2 ── -->
   <div class="curr-bar-grid">
 
-    <div class="curr-item" onclick="openCurrCalc('usd-try')" title="USD → TRY" data-wf-ui-title="USD → TRY">
+    <div class="curr-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="openCurrCalc('usd-try')" title="USD → TRY" data-wf-ui-title="USD → TRY">
       <span class="curr-flag">💵</span>
       <div class="curr-info">
         <div class="curr-label"><span data-wf-ui="USD → TRY">USD → TRY</span></div>
@@ -6669,7 +6669,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <span class="curr-badge"><span data-wf-ui="LIVE">LIVE</span></span>
     </div>
 
-        <div class="curr-item" onclick="openCurrCalc('eur-usd')" title="EUR → USD" data-wf-ui-title="EUR → USD">
+        <div class="curr-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="openCurrCalc('eur-usd')" title="EUR → USD" data-wf-ui-title="EUR → USD">
       <span class="curr-flag">💶</span>
       <div class="curr-info">
         <div class="curr-label"><span data-wf-ui="EUR → USD">EUR → USD</span></div>
@@ -6678,7 +6678,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <span class="curr-badge"><span data-wf-ui="LIVE">LIVE</span></span>
     </div>
 
-    <div class="curr-item" onclick="openCurrCalc('try-usd')" title="TRY → USD" data-wf-ui-title="TRY → USD">
+    <div class="curr-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="openCurrCalc('try-usd')" title="TRY → USD" data-wf-ui-title="TRY → USD">
       <span class="curr-flag">💴</span>
       <div class="curr-info">
         <div class="curr-label"><span data-wf-ui="TRY → USD">TRY → USD</span></div>
@@ -6689,7 +6689,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 
 
-<div class="curr-item" onclick="openCurrCalc('usd-eur')" title="USD → EUR" data-wf-ui-title="USD → EUR">
+<div class="curr-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="openCurrCalc('usd-eur')" title="USD → EUR" data-wf-ui-title="USD → EUR">
       <span class="curr-flag">💵</span>
       <div class="curr-info">
         <div class="curr-label"><span data-wf-ui="USD → EUR">USD → EUR</span></div>
@@ -6699,7 +6699,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     </div>
 
 
-    <div class="curr-item" onclick="openCurrCalc('eur-try')" title="EUR → TRY" data-wf-ui-title="EUR → TRY">
+    <div class="curr-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="openCurrCalc('eur-try')" title="EUR → TRY" data-wf-ui-title="EUR → TRY">
       <span class="curr-flag">💶</span>
       <div class="curr-info">
         <div class="curr-label"><span data-wf-ui="EUR → TRY">EUR → TRY</span></div>
@@ -6708,7 +6708,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <span class="curr-badge"><span data-wf-ui="LIVE">LIVE</span></span>
     </div>
 
-    <div class="curr-item" onclick="openCurrCalc('try-eur')" title="TRY → EUR" data-wf-ui-title="TRY → EUR">
+    <div class="curr-item" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="openCurrCalc('try-eur')" title="TRY → EUR" data-wf-ui-title="TRY → EUR">
       <span class="curr-flag">💴</span>
       <div class="curr-info">
         <div class="curr-label"><span data-wf-ui="TRY → EUR">TRY → EUR</span></div>
