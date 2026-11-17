@@ -15,4 +15,32 @@
  #page-settings :is(.sct-sticky-header,[id^="stab-"],.wf-language-card){background:var(--card)!important;color:var(--text)!important;border-color:var(--border)!important}#page-settings :is(.fl,.sct-sticky-title h1,#wfLanguageTitle){color:var(--text)!important}#page-settings :is(input,select,textarea){background:var(--input)!important;color:var(--text)!important;border-color:var(--border)!important}
  .modal-box,.wf-restore-modal{background:var(--card)!important;color:var(--text)!important}.modal-box :is(.modal-title,.modal-body){color:var(--text)!important}
  @media(max-width:700px){.main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){padding:12px!important;margin-bottom:12px}.main :is(.co-toolbar-row,.page-toolbar-row){gap:8px}.main .co-toolbar-title{flex:1;min-width:80px}.main .fgrid{gap:12px}.main .wf-smart-search.open{position:relative!important;inset:auto!important;flex-basis:100%;width:100%!important;max-width:100%!important;order:10}.main .stats-grid{gap:10px}}
+ html .main #greetingCard{padding:20px!important;margin-bottom:16px!important}
+ html .main #greetingCard #tipCardStandalone{background:transparent!important;border:0!important;border-top:1px solid var(--border)!important;border-radius:0!important;box-shadow:none!important;margin:14px 0 0!important;padding:12px 0 0!important;transform:none!important}
+ #greetingCard .tip-card-inner{gap:10px;align-items:center}#greetingCard .tip-card-icon{width:32px;height:32px;border-radius:9px!important;font-size:18px}#greetingCard .tip-card-icon .wf-ui-icon{width:19px;height:19px}#greetingCard .tip-card-label{font-size:11px;letter-spacing:0;margin-bottom:2px}#greetingCard .tip-card-text{font-size:12px;line-height:1.6}#greetingCard .tip-card-badge{display:none}
+ /* Settings uses one scale for every tab, field, action and language option. */
+ html #page-settings{max-width:1120px;margin-inline:auto}
+ html #page-settings .sct-sticky-header{padding:16px!important;gap:16px!important;border-radius:16px!important}
+ html #page-settings .sct-sticky-header>div:first-child{padding:0!important;gap:12px!important;flex-wrap:nowrap!important}
+ html #page-settings .sct-sticky-title h1{font-size:22px!important;line-height:1.4!important}
+ html #page-settings .tabs{margin:0!important;padding:5px!important;gap:5px!important;background:var(--ui-soft)!important;border:0!important;border-radius:12px!important;scrollbar-width:thin!important}
+ html #page-settings .tab-btn{font-size:13px!important;min-height:42px!important;padding:9px 12px!important;border-radius:9px!important;line-height:1.4!important;display:flex;align-items:center;justify-content:center;gap:6px;color:var(--text2)!important}
+ html #page-settings .tab-btn.active{background:var(--card)!important;color:var(--ui-accent)!important;box-shadow:0 2px 6px rgba(25,40,60,.08)!important;border:1px solid var(--border)!important}
+ html #page-settings .wf-settings-workspace{max-width:none!important;margin:16px 0!important}
+ html #page-settings [id^="stab-"]{max-width:none!important;margin:16px 0!important;padding:24px!important;border-radius:16px!important;font-size:14px;line-height:1.6}
+ html #page-settings [id^="stab-"]>.card{padding:20px!important;margin-bottom:16px;background:var(--input)!important;border:1px solid var(--border)!important;box-shadow:none!important;border-radius:12px!important}
+ html #page-settings .fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px!important}
+ html #page-settings .fg{min-width:0;margin:0!important}html #page-settings .fg.full{grid-column:1/-1}
+ html #page-settings .fl{font-size:13px!important;font-weight:650!important;margin-bottom:7px;line-height:1.5}
+ html #page-settings input.fc,html #page-settings select.fc{height:44px!important;font-size:14px!important;padding:10px 12px!important}html #page-settings textarea.fc{font-size:14px!important;padding:12px!important;min-height:90px}
+ html #page-settings .btn{font-size:13px!important;min-height:42px!important;padding:10px 16px!important}
+ html #page-settings .settings-logo-prev{width:72px!important;height:72px!important;margin:0 auto 12px!important;border-radius:14px!important}
+ html #page-settings .wf-language-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important;gap:12px!important}
+ html #page-settings .wf-language-card,html #page-settings .wf-language-card[aria-pressed="true"]{grid-column:auto!important;flex-direction:row!important;justify-content:flex-start!important;min-height:68px!important;padding:14px!important;font-size:14px!important;gap:12px!important;border-radius:12px!important;text-align:start!important}
+ html #page-settings .wf-language-card[aria-pressed="true"]::after{width:18px;height:18px;font-size:10px;flex-shrink:0}
+ html #page-settings .wf-language-card .wf-flag{width:32px!important;height:22px!important;border-radius:4px!important}
+ html #page-settings #wfLanguageTitle{font-size:18px!important}html #page-settings #wfLanguageHint{font-size:13px!important}
+ html #page-settings .wf-data-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}html #page-settings .wf-data-stat{padding:14px;border-radius:12px}html #page-settings .wf-data-stat b{font-size:22px}html #page-settings .wf-data-stat span{font-size:12px}
+ html #page-settings .wf-bg-row{flex-wrap:wrap;padding:14px;gap:10px}html #page-settings .wf-bg-title{font-size:13px}html #page-settings .wf-bg-sub{font-size:12px}html #page-settings .wf-bg-enable{min-height:40px;font-size:12px;padding:9px 12px}
+ @media(max-width:700px){html #page-settings .sct-sticky-header{padding:12px!important;position:relative!important;top:auto!important}html #page-settings .sct-sticky-title h1{font-size:19px!important}html #page-settings [id^="stab-"]{padding:16px!important}html #page-settings [id^="stab-"]>.card{padding:14px!important}html #page-settings .fgrid{grid-template-columns:1fr;gap:14px!important}html #page-settings .wf-data-grid{grid-template-columns:repeat(2,minmax(0,1fr))}html #page-settings .wf-language-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}html #page-settings .wf-language-card{gap:8px!important;padding:10px!important;font-size:13px!important}}
 }
