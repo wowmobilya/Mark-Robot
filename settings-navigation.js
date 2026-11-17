@@ -9,6 +9,12 @@
  const save=page.querySelector('button[onclick="saveSettings()"]');
  if(save){
   const footer=document.createElement('div');footer.className='wf-settings-save-footer';footer.id='wf-settings-save-footer';
+  // Keep the original save button and localized label, replacing only its pictogram.
+  save.querySelectorAll('.wf-ui-icon').forEach(icon=>icon.remove());
+  Array.from(save.childNodes).filter(node=>node.nodeType===3).forEach(node=>{node.nodeValue=node.nodeValue.replace(/💾/g,'');});
+  const symbol=document.createElement('span');symbol.className='wf-settings-save-symbol';symbol.setAttribute('aria-hidden','true');
+  symbol.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h12l4 4v14H3V3h2Z"/><path d="M7 3v6h10V3M7 21v-8h10v8"/></svg>';
+  save.prepend(symbol);
   footer.append(save);document.body.append(footer);
  }
  const original=window.switchTab;

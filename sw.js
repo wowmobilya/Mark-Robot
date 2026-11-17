@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v99-straight-header';
+const CACHE_NAME = 'wow-furniture-v100-settings-save-dock';
 const urlsToCache = [
   './context-nav.js?v=1',
   './context-nav.css?v=1',
@@ -7,8 +7,8 @@ const urlsToCache = [
   './bottomnav-fit.js?v=1',
   './index.html',
   './business-ui.css?v=1',
-  './settings-responsive.css?v=3',
-  './settings-navigation.js?v=3',
+  './settings-responsive.css?v=4',
+  './settings-navigation.js?v=4',
   './dashboard-visuals.css?v=3',
   './rate-refresh.js?v=2',
   './section-headings.css?v=6',
