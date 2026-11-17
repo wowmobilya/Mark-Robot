@@ -123,6 +123,11 @@
  html.wf-section-mode #sidebar{top:0!important;padding-top:20px!important}
  html.wf-section-mode #page-settings .sct-sticky-header{position:sticky!important;top:8px!important;z-index:500}
  @media(max-width:700px){html.wf-section-mode .main{padding-top:max(8px,env(safe-area-inset-top,0px))!important}html.wf-section-mode .main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){top:max(8px,env(safe-area-inset-top,0px))!important}}
+ .wf-section-menu{display:inline-grid;place-items:center;width:40px;height:40px;flex:0 0 40px;border:1px solid var(--border);border-radius:12px;background:var(--input);color:var(--text2);margin-inline-start:4px;cursor:pointer}
+ .wf-section-menu svg,#desktopSidebarToggle>svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease}
+ [dir="rtl"] .wf-section-menu[data-open="true"] svg,[dir="rtl"] #desktopSidebarToggle[data-open="true"]>svg{transform:rotate(180deg)}
+ .wf-section-menu:hover{background:var(--ui-soft);color:var(--ui-accent)}
+ .wf-search-toggle.active>.wf-ui-icon{display:none}.wf-search-toggle.active::after{content:"×";font-size:25px;line-height:1;font-weight:400}
  /* Settings uses one scale for every tab, field, action and language option. */
  html #page-settings{max-width:1120px;margin-inline:auto}
  html #page-settings .sct-sticky-header{padding:16px!important;gap:16px!important;border-radius:16px!important}
