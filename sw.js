@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v66-fixed-dashboard-nav';
+const CACHE_NAME = 'wow-furniture-v67-unified-section-headers';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=17',
+  './ui-identity.css?v=18',
   './ui-navigation.js?v=6',
   './ui-logo.js?v=2',
   './ui-icons.js?v=44',
