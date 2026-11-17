@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v38-refined-market-ui';
+const CACHE_NAME = 'wow-furniture-v43-complete-icon-system';
 const urlsToCache = [
   './',
   './index.html',
-  './ui-i18n.js?v=25',
-  './modern-ui.css?v=38',
-  './ui-icons.js?v=31',
+  './ui-i18n.js?v=26',
+  './modern-ui.css?v=41',
+  './ui-icons.js?v=42',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
   './manifest.json',

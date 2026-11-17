@@ -34,6 +34,7 @@
 <meta name="google" content="notranslate">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script src="ui-icons.js?v=42" defer></script>
 <title>WOW FURNITURE — Invoice System · V14</title>
 
 <!-- ربط ملف الـ Manifest -->
@@ -6740,7 +6741,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   <button class="sct-back-btn" onclick="goBack()">← <span data-i18n="btn_back">رجوع</span></button>
   
   <h1 class="co-toolbar-title" data-i18n="pr_title">🛋️ المنتجات</h1>
-  <input type="text" class="fc" id="prSearch" placeholder="🔍" oninput="wfDebouncedRenderPr()">
+  <button class="wf-search-toggle" type="button" onclick="wfToggleSearch('prSearch',this)" aria-controls="prSearch" aria-label="Search" title="Search" data-wf-ui-aria-label="Search" data-wf-ui-title="Search">🔍</button>
+  <input type="search" class="fc wf-smart-search" id="prSearch" placeholder="Search products" data-wf-ui-placeholder="Search products" oninput="wfDebouncedRenderPr()" autocomplete="off">
   <button class="btn btn-p" onclick="showPage('add-product')">➕ <span data-i18n="btn_add_pr">إضافة</span></button>
 </div>
 
@@ -6782,7 +6784,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   <button class="sct-back-btn" onclick="goBack()">← <span data-i18n="btn_back">رجوع</span></button>
   
   <h1 class="co-toolbar-title" data-i18n="co_title">👥 العملاء</h1>
-  <input type="text" class="fc" id="coSearch" placeholder="🔍" oninput="wfDebouncedRenderCo()">
+  <button class="wf-search-toggle" type="button" onclick="wfToggleSearch('coSearch',this)" aria-controls="coSearch" aria-label="Search" title="Search" data-wf-ui-aria-label="Search" data-wf-ui-title="Search">🔍</button>
+  <input type="search" class="fc wf-smart-search" id="coSearch" placeholder="Search clients" data-wf-ui-placeholder="Search clients" oninput="wfDebouncedRenderCo()" autocomplete="off">
   <button class="btn btn-p" onclick="wfOpenStatement()">📑 <span data-wf-statement-label><span data-wf-ui="Account Statement">كشف الحساب</span></span></button>
   <button class="btn btn-p" onclick="showPage('select-client-type')">➕ <span data-i18n="btn_add_co">إضافة</span></button>
 </div>
@@ -7317,7 +7320,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   <button class="sct-back-btn" onclick="goBack()">← <span data-i18n="btn_back">رجوع</span></button>
   
   <h1 class="co-toolbar-title" data-i18n="inv_title">📄 الفواتير</h1>
-  <input type="text" class="fc" id="invSearch" placeholder="🔍" oninput="wfDebouncedRenderInv()">
+  <button class="wf-search-toggle" type="button" onclick="wfToggleSearch('invSearch',this)" aria-controls="invSearch" aria-label="Search" title="Search" data-wf-ui-aria-label="Search" data-wf-ui-title="Search">🔍</button>
+  <input type="search" class="fc wf-smart-search" id="invSearch" placeholder="Search invoices" data-wf-ui-placeholder="Search invoices" oninput="wfDebouncedRenderInv()" autocomplete="off">
   <button class="btn btn-p" onclick="showPage('select-invoice-type')">✏️ <span data-i18n="btn_create">إنشاء</span></button>
 </div>
 
@@ -8359,7 +8363,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 
 <section class="page" id="page-quick-barcode">
-<link rel="stylesheet" href="modern-ui.css?v=38">
+<link rel="stylesheet" href="modern-ui.css?v=41">
 
 <!-- ══ PHASE 1: SCAN ══ -->
 <div id="qblPhase1" style="transition:all .5s cubic-bezier(.4,0,.2,1);">
@@ -8823,7 +8827,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   </div>
 
   <!-- محتوى الإعدادات -->
-<div style="max-width: 700px; margin: 20px auto 20px;">
+<div class="wf-settings-workspace" style="max-width: 1080px; margin: 20px auto 20px;">
     <div id="stab-language" style="display:none">
       <h2 id="wfLanguageTitle"><span data-wf-ui="App language">لغة البرنامج</span></h2>
       <p id="wfLanguageHint" style="color:var(--muted);margin:8px 0 18px"><span data-wf-ui="Choose the interface language. Your choice is saved on this device.">اختر لغة الواجهة. تتغير اللغة فورًا وتُحفظ على هذا الجهاز.</span></p>
@@ -9448,7 +9452,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <!-- ============================================================
      JAVASCRIPT
 ============================================================ -->
-<script src="ui-i18n.js?v=25"></script>
+<script src="ui-i18n.js?v=26"></script>
 <script>
 'use strict';
 
@@ -13031,6 +13035,7 @@ async function fetchRate(){
 S.rateTime = new Date().toLocaleTimeString('en-US', { hour12: false });
         updateRateUI();showToast(t('rate_updated'),'ok');
         window.wfAnimateRateChanges?.(previous);
+        wfUpdateMarketIndicators(previous);
         await dbPut('settings',{id:'usdTry',value:S.usdTry,eur:S.usdEur,time:S.rateTime});
         return;
       }
@@ -13052,6 +13057,17 @@ set('tryEurRate', (S.usdEur / S.usdTry).toFixed(6));
   set('st-tryUsd',(1/S.usdTry).toFixed(6));set('st-tryEur',((1/S.usdTry)*S.usdEur).toFixed(6));
   set('st-eurUsd',(1/S.usdEur).toFixed(4));set('st-eurTry',((1/S.usdEur)*S.usdTry).toFixed(2));
   updateCostBox();updateSummary();updateTierPreviews();
+}
+function wfUpdateMarketIndicators(previous={}){
+  const points=[
+    ['usdTryRate',Number(previous.usdTry),Number(S.usdTry)],
+    ['eurTryRate',Number(previous.usdTry)/Number(previous.usdEur),Number(S.usdTry)/Number(S.usdEur)],
+    ['tryEurRate',Number(previous.usdEur)/Number(previous.usdTry),Number(S.usdEur)/Number(S.usdTry)],
+    ['usdEurRate',Number(previous.usdEur),Number(S.usdEur)],
+    ['tryUsdRate',1/Number(previous.usdTry),1/Number(S.usdTry)],
+    ['eurUsdRate',1/Number(previous.usdEur),1/Number(S.usdEur)]
+  ];
+  points.forEach(([id,before,after])=>{const rate=document.getElementById(id),card=rate?.closest('.curr-item');if(!card)return;let tag=card.querySelector('.wf-market-trend');if(!tag){tag=document.createElement('span');tag.className='wf-market-trend';tag.setAttribute('role','status');card.append(tag)}card.classList.remove('market-up','market-down','wf-market-pulse');if(!Number.isFinite(before)||before<=0||!Number.isFinite(after)||after<=0){tag.textContent='—';tag.setAttribute('aria-label','—');return}const delta=((after-before)/before)*100;const up=delta>=0;const sign=up?'+':'−';card.classList.add(up?'market-up':'market-down');tag.textContent=`${sign}${Math.abs(delta).toFixed(2)}% ${up?'▲':'▼'}`;tag.setAttribute('aria-label',tag.textContent);void tag.offsetWidth;card.classList.add('wf-market-pulse');});
 }
 
 /* ============================================================
@@ -13219,6 +13235,12 @@ function wfDebouncedRender(key,fn,delay=90){
 function wfDebouncedRenderCo(){wfDebouncedRender('co',renderCo);}
 function wfDebouncedRenderPr(){wfDebouncedRender('pr',renderPr);}
 function wfDebouncedRenderInv(){wfDebouncedRender('inv',renderInvList);}
+function wfToggleSearch(inputId,button){
+  const input=document.getElementById(inputId);if(!input)return;
+  const open=!input.classList.contains('open');input.classList.toggle('open',open);button.classList.toggle('active',open);button.setAttribute('aria-expanded',String(open));
+  if(open){requestAnimationFrame(()=>input.focus());}
+  else if(!input.value){input.blur();}
+}
 function wfIsTouchTablet(){
   try{return matchMedia('(hover: none) and (pointer: coarse) and (min-width: 600px) and (max-width: 1366px)').matches;}catch(_){return false;}
 }
@@ -13399,6 +13421,7 @@ function updateDash(){
   set2('s-co',S.companies.length);set2('s-pr',S.products.length);
   set2('s-inv',S.invoices.length);
   set2('s-total','$'+total.toLocaleString('en-US',{minimumFractionDigits:2}));
+  wfUpdateDashboardTrends({companies:S.companies.length,products:S.products.length,invoices:S.invoices.length,total});
   const bco=document.getElementById('badge-co');if(bco)bco.textContent=S.companies.length;
   const bpr=document.getElementById('badge-pr');if(bpr)bpr.textContent=S.products.length;
   const binv=document.getElementById('badge-inv');if(binv)binv.textContent=S.invoices.length;
@@ -13441,6 +13464,21 @@ function updateDash(){
 ============================================================ */
 const COUNTRY_NAMES={SA:'Saudi Arabia',AE:'UAE',KW:'Kuwait',QA:'Qatar',BH:'Bahrain',OM:'Oman',IQ:'Iraq',JO:'Jordan',SY:'Syria',LB:'Lebanon',EG:'Egypt',LY:'Libya',MA:'Morocco',TR:'Turkey',DE:'Germany',GB:'UK',US:'USA',OTHER:'Other'};
 
+function wfUpdateDashboardTrends(snapshot){
+  const key='wf_dashboard_snapshot_v1';let previous=null;
+  try{previous=JSON.parse(localStorage.getItem(key)||'null')}catch(_){}
+  const slots={companies:'s-co',products:'s-pr',invoices:'s-inv',total:'s-total'};
+  Object.entries(slots).forEach(([name,id])=>{
+    const value=Number(snapshot[name])||0,card=document.getElementById(id)?.closest('.stat-card');if(!card)return;
+    let chip=card.querySelector('.wf-stat-trend');if(!chip){chip=document.createElement('span');chip.className='wf-stat-trend';chip.setAttribute('aria-live','polite');card.append(chip)}
+    const old=Number(previous?.[name]);card.classList.remove('stat-trend-up','stat-trend-down');
+    if(!Number.isFinite(old)){chip.textContent='—';return}
+    const delta=value-old;if(!delta){chip.textContent='—';return}
+    const up=delta>0,percent=old>0?`${up?'+':'−'}${(Math.abs(delta/old)*100).toFixed(1)}% `:'';
+    card.classList.add(up?'stat-trend-up':'stat-trend-down');chip.textContent=`${percent}${up?'▲':'▼'}`;
+  });
+  try{localStorage.setItem(key,JSON.stringify(snapshot))}catch(_){}
+}
 function handleLogoUpload(e){
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
@@ -27611,6 +27649,5 @@ document.addEventListener('DOMContentLoaded',()=>{
 })();
 </script>
 
-<script src="ui-icons.js?v=31"></script>
 </body>
 </html>

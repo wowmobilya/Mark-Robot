@@ -771,6 +771,34 @@ const COPY={
     "fr": "🔍 Rechercher un produit…",
     "ru": "🔍 Поиск товара…"
   },
+  "Search": {
+    "ar": "بحث",
+    "en": "Search",
+    "tr": "Ara",
+    "fr": "Rechercher",
+    "ru": "Поиск"
+  },
+  "Search products": {
+    "ar": "ابحث في المنتجات",
+    "en": "Search products",
+    "tr": "Ürünlerde ara",
+    "fr": "Rechercher des produits",
+    "ru": "Поиск товаров"
+  },
+  "Search clients": {
+    "ar": "ابحث في العملاء",
+    "en": "Search clients",
+    "tr": "Müşterilerde ara",
+    "fr": "Rechercher des clients",
+    "ru": "Поиск клиентов"
+  },
+  "Search invoices": {
+    "ar": "ابحث في الفواتير",
+    "en": "Search invoices",
+    "tr": "Faturalarda ara",
+    "fr": "Rechercher des factures",
+    "ru": "Поиск счетов"
+  },
   "Scan barcode": {
     "ar": "مسح الباركود",
     "en": "Scan barcode",
