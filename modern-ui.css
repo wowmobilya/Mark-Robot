@@ -1,4 +1,4 @@
-/* Quiet, precise visual system: slate, white, and a restrained teal accent. */
+/* Quiet, precise visual system. */
 :root{--gold:#167d82;--gold2:#11666a;--gold-light:#e9f3f3;--brand-accent:#167d82;--brand-lilac:#64748b}
 [data-theme="dark"]{--gold:#59b8b8;--gold2:#7acbca;--gold-light:rgba(89,184,184,.12);--brand-accent:#59b8b8;--brand-lilac:#94a3b8}
 body{background:var(--bg);letter-spacing:0}
@@ -115,3 +115,27 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 #page-settings .tab-btn .wf-ui-icon{width:17px;height:17px;vertical-align:-.2em}
 .bnav-circle-icon .wf-ui-icon{color:#fff}
 label.fl>.wf-ui-icon,label.fl [data-wf-ui]>.wf-ui-icon{color:var(--gold2);margin-inline-end:3px}
+/* Pearl workspace: shared by every application page. */
+html:not([data-theme="dark"]){--bg:#f4f7fc;--card:#fff;--input:#f8faff;--nav:#fff;--text:#192c48;--text2:#4c607b;--muted:#667b95;--border:#dce5f1;--gold:#3276df;--gold2:#245db8;--gold-light:#edf4ff;--brand-accent:#3276df}
+html:not([data-theme="dark"]) .navbar{background:#fff;border-bottom:1px solid var(--border);box-shadow:0 3px 16px rgba(30,65,110,.05)}
+html:not([data-theme="dark"]) .nb-title{color:var(--text)}
+html:not([data-theme="dark"]) .navbar .icon-btn,html:not([data-theme="dark"]) .lang-btn{color:var(--text2);background:var(--input)}
+html:not([data-theme="dark"]) .hamburger span{background:var(--text)}
+html:not([data-theme="dark"]) .sidebar{background:#fff;border-inline-end:1px solid var(--border);box-shadow:none}
+html:not([data-theme="dark"]) .nav-item{color:var(--text2);border-radius:12px;min-height:46px}
+html:not([data-theme="dark"]) .nav-item.active{background:var(--gold-light);color:var(--gold2);border-color:#d5e5fc;box-shadow:none}
+html:not([data-theme="dark"]) .nav-item.active .nav-icon{color:var(--gold2)}
+html:not([data-theme="dark"]) .greeting-card{background:linear-gradient(115deg,#fff,#edf4ff);border:1px solid #dce7f6;box-shadow:0 6px 24px rgba(35,80,140,.05);padding:28px;border-radius:20px}
+html:not([data-theme="dark"]) .greeting-card .greeting-msg{color:var(--text)}
+html:not([data-theme="dark"]) .greeting-card .greeting-sub{color:var(--text2)}
+html:not([data-theme="dark"]) .greeting-card .greeting-time-badge,html:not([data-theme="dark"]) .ai-badge{background:#fff;color:var(--gold2);border-color:#d5e5fc}
+html:not([data-theme="dark"]) .greeting-card::after{display:none}
+html:not([data-theme="dark"]) .btn-p,html:not([data-theme="dark"]) .btn-g{background:var(--gold)!important;border-color:var(--gold)!important}
+html:not([data-theme="dark"]) .btn-p:hover,html:not([data-theme="dark"]) .btn-g:hover{background:var(--gold2)!important}
+.main>.page .card,.main>.page .stat-card{border-radius:16px}
+.stats-grid{gap:16px}
+.stat-card{padding:20px}
+.curr-bar{border-radius:18px}
+.curr-item{border-radius:12px}
+@media(min-width:1100px){#page-dashboard.active{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:20px}#page-dashboard>.greeting-card,#page-dashboard>.tip-card-standalone{margin:0}#page-dashboard>.curr-bar,#page-dashboard>.stats-grid,#page-dashboard>.card:not(.tip-card-standalone){grid-column:1/-1;margin-bottom:0}}
+@media(max-width:600px){.stat-card{padding:14px}.stats-grid{gap:10px}html:not([data-theme="dark"]) .greeting-card{padding:20px}}
