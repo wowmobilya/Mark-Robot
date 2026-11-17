@@ -6,7 +6,7 @@ const keys=Object.keys(glyphs).sort((a,b)=>b.length-a.length);
 const selector=['#sidebar .nav-icon','.bnav-icon','#bnavCircleIcon','.stat-icon','.tip-card-icon','.empty .ei','.ai-badge [data-wf-ui]','#greetingTimeIcon','.curr-flag','.curr-refresh','#qblFinalImg div','#qblFinalDetails span:first-child','.qbl-cart-item-img','.ctsc-icon','label.fl','label.fl [data-wf-ui]','.wf-restore-icon','.card-title','.co-toolbar-title','.sct-sticky-title h1','.sct-sticky-title h2','#qblPageTitle','#wfLanguageTab','#page-settings .tab-btn','#page-settings h2','section.page button','nav button','.modal-ov button','.wf-restore-ov button','.delete-modal-ov button','.co-card-actions button','.pr-card-new-actions button','.inv-card-actions button','.pay-item-del','#qblCartList button','#qblDdList button','#prSelectorList button','#pmGrid button','#page-quick-barcode .qbl-dd-img','#page-quick-barcode .qbl-cart-item-img','#page-select-invoice-type .client-type-icon','.client-type-step-icon','.co-stat-pill .csp-icon','.wf-share-head-icon','.wf-bg-icon','.wf13-format-icon:not(.pdf):not(.xls)','[data-i18n]'].join(',');
 const excluded='#prGrid,#coGrid,#invListContainer,#prSelectorList,#dashRecentInv,#qblDdList,#qblCartList,#pdfModal,#wfsa,.co-card,.pr-card-new,.inv-card,.qbl-cart-item';
 function decorate(el){
- if((el.closest(excluded)&&!el.matches('.empty .ei,.qbl-cart-item-img,.co-card-actions button,.pr-card-new-actions button,.inv-card-actions button,.pay-item-del,#qblCartList button,#qblDdList button,#prSelectorList button,#pmGrid button,.qbl-dd-img'))||el.closest('.wf-language-card')||el.closest('[data-wf-ui-icon]'))return;
+ if((el.closest(excluded)&&!el.matches('.empty .ei,.co-empty-state .ei,.co-empty-state button,.empty button,.qbl-cart-item-img,.co-card-actions button,.pr-card-new-actions button,.inv-card-actions button,.pay-item-del,#qblCartList button,#qblDdList button,#prSelectorList button,#pmGrid button,.qbl-dd-img'))||el.closest('.wf-language-card')||el.closest('[data-wf-ui-icon]'))return;
  for(const node of Array.from(el.childNodes)){
   if(node.nodeType!==Node.TEXT_NODE)continue;
   const value=node.nodeValue;const leading=value.match(/^\s*/)[0];const rest=value.slice(leading.length);const currencyFlag=el.matches('label.fl')&&rest.startsWith('🇹🇷')&&rest.includes('IBAN TRY');const key=currencyFlag?'🇹🇷':keys.find(k=>rest.startsWith(k));
@@ -18,7 +18,7 @@ function decorate(el){
   node.before(document.createTextNode(leading),shell);node.nodeValue=rest.slice(key.length);
  }
 }
-function refresh(){document.querySelectorAll(selector).forEach(decorate)}
+function refresh(){document.querySelectorAll(selector+',.co-empty-state .ei,.co-empty-state button,.empty button,.wf-insight-head>span,#rateTime,.qbl-sticky-cart-icon,#qblFinalImgIcon,.wf-data-hero>div>div:first-child').forEach(decorate)}
 window.wfAnimateRateChanges=function(previous){
  const base={usdTry:previous?.usdTry,eurUsd:previous?.usdEur};
  const pairs={usdTryRate:['usdTry',1],eurTryRate:['usdTry',1],tryEurRate:['usdTry',-1],usdEurRate:['eurUsd',1],tryUsdRate:['usdTry',-1],eurUsdRate:['eurUsd',-1]};
@@ -32,5 +32,6 @@ for(const name of ['applyTr','setLang','showPage','switchTab','toggleTheme','upd
 for(const id of ['bnavCircleIcon','greetingTimeIcon','themeBtn']){
  const el=document.getElementById(id);if(el)new MutationObserver(schedule).observe(el,{childList:true});
 }
-window.wfRefreshIcons=schedule;schedule();document.documentElement.classList.add('wf-icons-ready');
+for(const name of ['updateDash','wfRenderDashboardIntelligence']){const original=window[name];if(typeof original==='function')window[name]=function(...args){const result=original.apply(this,args);schedule();return result};}
+window.wfRefreshIcons=schedule;refresh();document.documentElement.classList.add('wf-icons-ready');
 })();

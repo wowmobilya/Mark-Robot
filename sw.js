@@ -1,11 +1,11 @@
-const CACHE_NAME = 'wow-furniture-v49-shared-identity';
+const CACHE_NAME = 'wow-furniture-v50-icon-coverage';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
   './ui-identity.css?v=1',
-  './ui-icons.js?v=42',
+  './ui-icons.js?v=43',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
   './manifest.json',
