@@ -391,16 +391,16 @@ html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-
 /* Shared primary identity. Preserve semantic success/error colors and print layouts. */
 @media screen {
  html, html:not([data-theme="dark"]), html[data-theme="dark"] {
-  --brand-primary:#217c94; --ui-accent:var(--brand-primary);
+  --brand-primary:#123B46; --ui-accent:var(--brand-primary);
   --brand-accent:var(--brand-primary); --gold:var(--brand-primary);
-  --gold2:#196176; --ui-soft:#e6f2f5; --gold-light:var(--ui-soft);
+  --gold2:#123B46; --ui-soft:#e9f0f1; --gold-light:var(--ui-soft);
  }
- html[data-theme="dark"] { --ui-soft:#173b46; --gold-light:var(--ui-soft); --gold2:#83ccde; }
+ html[data-theme="dark"] { --ui-accent:#9cc5cc; --ui-soft:#173b46; --gold-light:var(--ui-soft); --gold2:#9cc5cc; }
  html body #sidebar .nav-item.active { background:var(--ui-soft)!important; border-color:var(--brand-primary)!important; }
  html body #sidebar .nav-item.active .nav-icon,
  html body #bottomNav #bnavCircle {
   background:var(--brand-primary)!important; border-color:var(--brand-primary)!important; color:#fff!important;
-  box-shadow:0 4px 12px rgba(33,124,148,.18)!important;
+  box-shadow:0 4px 12px rgba(18,59,70,.18)!important;
  }
  html body #bottomNav .bnav-btn.bnav-active .bnav-label { color:var(--gold2)!important; }
  html body #page-settings .tabs .tab-btn.active,
@@ -408,14 +408,36 @@ html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-
   background:var(--ui-soft)!important; border-color:var(--brand-primary)!important;
  }
  html body #page-settings .wf-language-card[aria-pressed="true"]::after,
- html body .btn-p {
+ html body .btn-p, html body .main :is(.btn-p,.btn-g) {
   background:var(--brand-primary)!important; border-color:var(--brand-primary)!important; color:#fff!important;
  }
  html body .wf-catalog-row em { background:var(--brand-primary); }
  html body .wf-insight-head .wf-ui-icon { color:var(--ui-accent); }
- html body .wf-ai-panel { background:linear-gradient(108deg,#196176,var(--brand-primary)); }
- html body .wf-ai-action { color:#196176!important; }
+ html body .wf-ai-panel { background:linear-gradient(108deg,#0d2d35,var(--brand-primary)); }
+ html body .wf-ai-action { color:#123B46!important; }
  html body :is(input.fc,select.fc,textarea.fc):focus-visible {
-  outline:2px solid var(--brand-primary); outline-offset:2px;
+  outline:2px solid var(--ui-accent); outline-offset:2px;
  }
+}
+
+/* Fit the drawer to the available height; short screens retain native scrolling. */
+@media screen {
+ html body #sidebar {
+  padding-top:max(8px,env(safe-area-inset-top,0px))!important;
+  padding-bottom:max(12px,env(safe-area-inset-bottom,0px))!important;
+  overflow-y:auto!important; overflow-x:hidden; scrollbar-width:none;
+  scroll-padding-block:12px; -ms-overflow-style:none;
+ }
+ html body #sidebar::-webkit-scrollbar { display:none; width:0; height:0; }
+ html body #sidebar .wf-sidebar-brand {
+  height:clamp(64px,10dvh,82px); min-height:64px;
+  margin:0 4px 6px; padding-block:4px;
+ }
+ html body #sidebar #wfSidebarLogo { width:56px; height:56px; padding:5px; border-radius:15px; }
+ html body #sidebar .side-sec { margin:8px 0 3px!important; padding:0 12px 4px!important; }
+ html body #sidebar .nav-item {
+  min-height:clamp(44px,6.5dvh,50px)!important; margin-bottom:3px!important;
+  padding-block:5px!important; scroll-margin-block:12px;
+ }
+ html body #sidebar .nav-divider { margin:8px 12px 3px!important; }
 }

@@ -10,13 +10,33 @@
  function syncControls(){
   const brand=document.getElementById('wfSidebarBrand');
   if(brand&&!document.getElementById('wfSidebarClose')){const close=document.createElement('button');close.id='wfSidebarClose';close.type='button';close.setAttribute('aria-controls','sidebar');close.onclick=()=>window.wfToggleDesktopSidebar();document.body.append(close);}
-  const page=document.querySelector('.page.active');
-  const toolbar=page?.querySelector('.co-toolbar-row,.sct-sticky-header,.page-toolbar-row');
-  if(toolbar&&!toolbar.querySelector('.wf-section-menu')){const button=document.createElement('button');button.type='button';button.className='wf-section-menu';button.setAttribute('aria-controls','sidebar');button.onclick=()=>window.wfToggleDesktopSidebar();const target=page.id==='page-settings'?toolbar.firstElementChild:toolbar;target.append(button);}
+  // Section headers keep their existing back action, not a second sidebar toggle.
+  document.querySelectorAll('.wf-section-menu').forEach(button=>button.remove());
+  syncBackButtons();
   const open=compact.matches?document.getElementById('sidebar')?.classList.contains('open'):!root.classList.contains('wf-sidebar-collapsed');
   const handle=document.getElementById('wfSidebarClose');if(handle)handle.hidden=!open;
   const lang=root.lang||'ar';const copy={ar:['فتح القائمة','طيّ القائمة'],tr:['Menüyü aç','Menüyü kapat'],en:['Open sidebar','Close sidebar'],fr:['Ouvrir le menu','Fermer le menu'],ru:['Открыть меню','Закрыть меню']}[lang]||['Open sidebar','Close sidebar'];
-  document.querySelectorAll('#desktopSidebarToggle,.wf-section-menu,#wfSidebarClose').forEach(button=>{if(button.dataset.open!==String(open)){button.innerHTML=open?foldSvg:menuSvg;button.dataset.open=String(open);}button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',copy[open?1:0]);button.title=copy[open?1:0];});
+  document.querySelectorAll('#desktopSidebarToggle,#wfSidebarClose').forEach(button=>{if(button.dataset.open!==String(open)){button.innerHTML=open?foldSvg:menuSvg;button.dataset.open=String(open);}button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',copy[open?1:0]);button.title=copy[open?1:0];});
+ }
+ // Replace only the back pictogram; never replace buttons, labels or onclick handlers.
+ function syncBackButtons(){
+  const rtl=root.dir==='rtl'||(!root.dir&&root.lang==='ar');
+  const label={ar:'رجوع',tr:'Geri',en:'Back',fr:'Retour',ru:'Назад'}[root.lang]||'Back';
+  document.querySelectorAll('.page .sct-back-btn').forEach(button=>{
+   let icon=button.querySelector('[data-wf-back-icon]');
+   if(!icon){
+    button.querySelectorAll('[data-wf-ui-icon="arrow-left"],[data-wf-ui-icon="arrow-right"]').forEach(old=>old.remove());
+    Array.from(button.childNodes).filter(node=>node.nodeType===3).forEach(node=>{node.nodeValue=node.nodeValue.replace(/^[\s]*[←→]\s*/, '');});
+    icon=document.createElement('span');icon.className='wf-ui-icon';icon.setAttribute('data-wf-back-icon','');icon.setAttribute('data-wf-ui-icon','back');icon.setAttribute('aria-hidden','true');button.prepend(icon);
+   }
+   const direction=rtl?'right':'left';
+   if(icon.dataset.direction!==direction){
+    const path=rtl?'M5 12h14m-6-6 6 6-6 6':'M19 12H5m6-6-6 6 6 6';
+    icon.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${path}"/></svg>`;
+    icon.dataset.direction=direction;
+   }
+   button.setAttribute('aria-label',label);button.title=label;
+  });
  }
  function update(){
   queued=false;

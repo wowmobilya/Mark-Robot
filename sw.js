@@ -1,11 +1,11 @@
-const CACHE_NAME = 'wow-furniture-v76-primary-teal';
+const CACHE_NAME = 'wow-furniture-v77-primary-petroleum';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=27',
-  './ui-navigation.js?v=10',
+  './ui-identity.css?v=28',
+  './ui-navigation.js?v=11',
   './ui-logo.js?v=2',
   './ui-settings.js?v=1',
   './ui-icons.js?v=44',
