@@ -1,10 +1,11 @@
-const CACHE_NAME = 'wow-furniture-v57-record-actions-search';
+const CACHE_NAME = 'wow-furniture-v58-adaptive-header';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=8',
+  './ui-identity.css?v=9',
+  './ui-navigation.js?v=1',
   './ui-logo.js?v=1',
   './ui-icons.js?v=44',
   './vendor/zxing-browser.min.js?v=26',

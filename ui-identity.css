@@ -98,6 +98,15 @@
  @media(hover:hover){html .main .btn:hover{filter:brightness(.97);transform:none!important}}
  @media(max-width:700px){html .main :is(.co-card-body,.pr-card-new-body,.inv-card-body){padding:15px!important}html .main :is(.co-actions,.pr-card-new-actions,.inv-card-actions){padding:10px!important}html .main :is(.co-actions,.pr-card-new-actions,.inv-card-actions) .btn{min-height:44px!important}}
  @media(prefers-reduced-motion:reduce){html .main .btn:active{transform:none!important}}
+ @media(max-width:1024px){
+  html .navbar{transition:transform .22s ease!important;will-change:transform}
+  html.wf-header-hidden .navbar{transform:translateY(-100%)!important;pointer-events:none}
+  html .main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){transition:top .22s ease!important;margin-inline:0!important}
+  html.wf-header-hidden .main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){top:8px!important}
+  html.wf-header-hidden #page-create-invoice .sct-sticky-header .chip-row{display:none}
+  html.wf-header-hidden #page-create-invoice .sct-sticky-header{gap:8px!important;padding-block:10px!important}
+ }
+ @media(prefers-reduced-motion:reduce){html .navbar,html .main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){transition:none!important}}
  /* Settings uses one scale for every tab, field, action and language option. */
  html #page-settings{max-width:1120px;margin-inline:auto}
  html #page-settings .sct-sticky-header{padding:16px!important;gap:16px!important;border-radius:16px!important}
