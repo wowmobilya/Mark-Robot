@@ -6721,6 +6721,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     </div>
   </div>
 
+  <div id="dashAiBrief" class="wf-ai-brief"></div>
   <div id="dashIntelligence" class="wf-dashboard-intelligence"></div>
 
   
@@ -13428,6 +13429,7 @@ function updateDash(){
   const bpr=document.getElementById('badge-pr');if(bpr)bpr.textContent=S.products.length;
   const binv=document.getElementById('badge-inv');if(binv)binv.textContent=S.invoices.length;
   const recent=[...S.invoices].reverse().slice(0,5);
+  wfRenderAiBrief(total);
   wfRenderDashboardIntelligence(total);
   const c=document.getElementById('dashRecentInv');if(!c)return;
    const dashTx = {
@@ -13468,6 +13470,13 @@ function wfRenderDashboardIntelligence(total){
   const kinds=[['coffee_table',{ar:'طاولة قهوة',tr:'Sehpa',en:'Coffee table',fr:'Table basse',ru:'Журнальный столик'}],['dresser',{ar:'مدخل',tr:'Dresuar',en:'Dresser',fr:'Commode',ru:'Комод'}],['side_table',{ar:'طاولة جانبية',tr:'Yan sehpa',en:'Side table',fr:'Table d’appoint',ru:'Приставной столик'}],['tv_table',{ar:'طاولة تلفاز',tr:'TV ünitesi',en:'TV table',fr:'Meuble TV',ru:'Тумба под ТВ'}]];const counts=kinds.map(([key,label])=>({label,n:S.products.filter(p=>p.type===key).length}));const max=Math.max(1,...counts.map(x=>x.n));
   const money='$'+Number(total||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   host.innerHTML=`<section class="wf-insight-card"><div class="wf-insight-head"><span>📊</span><strong>${tx.pulse}</strong></div><div class="wf-insight-row"><span>${tx.sales}</span><b>${money}</b></div><div class="wf-insight-row"><span>${tx.invoices}</span><b>${S.invoices.length}</b></div><div class="wf-insight-row"><span>${tx.clients}</span><b>${S.companies.length}</b></div></section><section class="wf-insight-card"><div class="wf-insight-head"><span>📦</span><strong>${tx.catalog}</strong></div><div class="wf-catalog-total"><b>${S.products.length}</b><span>${tx.products}</span></div><div class="wf-catalog-label">${tx.types}</div>${counts.map(x=>`<div class="wf-catalog-row"><span>${x.label[lang]||x.label.en}</span><i><em style="width:${(x.n/max)*100}%"></em></i><b>${x.n}</b></div>`).join('')}</section>`;
+}
+
+function wfRenderAiBrief(total){
+  const host=document.getElementById('dashAiBrief');if(!host)return;const lang=S.lang||'ar';
+  const tx={ar:{title:'مساعد WOW الذكي',ready:'تم تحليل بيانات اليوم',empty:'ابدأ بإضافة أول عميل لتكوين قاعدة عملك.',products:'أضف أول منتج ليصبح الباركود والفواتير جاهزين.',invoice:'أنشئ أول فاتورة لبدء متابعة المبيعات بذكاء.',active:'البيانات مرتبة — حدّث سعر الصرف للحصول على أحدث تحويلات.',client:'إضافة عميل',product:'إضافة منتج',create:'إنشاء فاتورة',rates:'تحديث الأسعار'},tr:{title:'WOW Akıllı Asistan',ready:'Bugünün verileri analiz edildi',empty:'İş temelini oluşturmak için ilk müşterinizi ekleyin.',products:'Barkod ve faturaların hazır olması için ilk ürününüzü ekleyin.',invoice:'Satışları akıllıca takip etmeye başlamak için ilk faturayı oluşturun.',active:'Veriler düzenli — en güncel dönüşümler için kuru güncelleyin.',client:'Müşteri ekle',product:'Ürün ekle',create:'Fatura oluştur',rates:'Kurları güncelle'},en:{title:'WOW Smart Assistant',ready:'Today’s data has been analyzed',empty:'Add your first client to establish your workspace.',products:'Add your first product to enable barcode and invoices.',invoice:'Create your first invoice to begin tracking sales.',active:'Your data is organized — refresh exchange rates for current conversions.',client:'Add client',product:'Add product',create:'Create invoice',rates:'Update rates'},fr:{title:'Assistant intelligent WOW',ready:'Les données du jour ont été analysées',empty:'Ajoutez votre premier client pour créer votre espace de travail.',products:'Ajoutez votre premier produit pour activer le code-barres et les factures.',invoice:'Créez votre première facture pour suivre les ventes.',active:'Vos données sont organisées — actualisez les taux de change.',client:'Ajouter un client',product:'Ajouter un produit',create:'Créer une facture',rates:'Actualiser les taux'},ru:{title:'Умный помощник WOW',ready:'Данные за сегодня проанализированы',empty:'Добавьте первого клиента, чтобы начать работу.',products:'Добавьте первый товар для штрихкодов и счетов.',invoice:'Создайте первый счёт, чтобы отслеживать продажи.',active:'Данные в порядке — обновите курсы валют.',client:'Добавить клиента',product:'Добавить товар',create:'Создать счёт',rates:'Обновить курсы'}}[lang];
+  let message=tx.active,label=tx.rates,action='fetchRate()';if(!S.companies.length){message=tx.empty;label=tx.client;action="showPage('select-client-type')"}else if(!S.products.length){message=tx.products;label=tx.product;action="showPage('add-product')"}else if(!S.invoices.length){message=tx.invoice;label=tx.create;action="showPage('select-invoice-type')"}
+  host.innerHTML=`<section class="wf-ai-panel"><div class="wf-ai-orb">✦</div><div class="wf-ai-copy"><div class="wf-ai-title">${tx.title}<span>${tx.ready}</span></div><p>${message}</p></div><button class="btn btn-p wf-ai-action" onclick="${action}">${label}</button></section>`;
 }
 
 /* ============================================================
