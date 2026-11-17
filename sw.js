@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v87-visible-drawer-pointer';
+const CACHE_NAME = 'wow-furniture-v88-symbolic-calculator';
 const urlsToCache = [
   './',
   './index.html',
@@ -6,8 +6,8 @@ const urlsToCache = [
   './settings-responsive.css?v=1',
   './settings-navigation.js?v=1',
   './section-headings.css?v=4',
-  './currency-calculator.css?v=5',
-  './currency-calculator.js?v=3',
+  './currency-calculator.css?v=6',
+  './currency-calculator.js?v=4',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
   './ui-identity.css?v=30',

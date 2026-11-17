@@ -85,7 +85,7 @@ html body #currCalcModal .curr-calc-icon-wrap { border:0!important; background:v
 html body #currCalcModal .curr-calc-input-section:focus-within { box-shadow:0 0 0 2px var(--ui-soft)!important; }
 html body #currCalcModal .cc-number-pad [data-key="C"], html body #currCalcModal .cc-number-pad [data-key="⌫"] { background:var(--ui-soft)!important; color:var(--ui-accent)!important; border-color:var(--cc-line)!important; }
 /* Quick values always refer to the selected source currency. */
-html body #currCalcModal .curr-calc-quick-btns { display:grid!important; grid-template-columns:repeat(5,minmax(0,1fr))!important; gap:5px!important; margin:0!important; direction:ltr!important; }
+html body #currCalcModal .curr-calc-quick-btns { display:grid!important; grid-template-columns:repeat(var(--cc-quick-columns,5),minmax(0,1fr))!important; gap:5px!important; margin:0!important; direction:ltr!important; }
 html body #currCalcModal .curr-calc-quick-btn { min-height:36px!important; padding:4px!important; border-radius:9px!important; font-size:12px!important; color:var(--ui-accent)!important; background:var(--ui-soft)!important; }
 @media (max-height:620px) and (max-width:559px) {
  html body #currCalcModal .curr-calc-header { min-height:56px!important; height:56px!important; padding-block:4px!important; }
@@ -102,3 +102,28 @@ html body #currCalcModal .curr-calc-quick-btn { min-height:36px!important; paddi
  html body #currCalcModal .cc-number-pad { grid-column:2!important; grid-row:1 / 5!important; }
  html body #currCalcModal .curr-calc-quick-btns { grid-column:1!important; grid-row:4!important; }
 }
+/* A balanced symbolic conversion header replaces both visible text lines. */
+html body #currCalcModal .curr-calc-header-info, html body #currCalcModal .curr-calc-icon-wrap { display:none!important; }
+.cc-currency-route { display:flex; align-items:center; justify-content:center; gap:20px; width:100%; }
+.cc-route-symbol { display:flex; align-items:center; justify-content:center; width:44px; height:44px; font-size:28px; font-weight:650; line-height:1; color:var(--ui-accent); background:var(--ui-soft); border-radius:13px; font-family:Arial,sans-serif; }
+.cc-currency-route svg { width:30px; height:24px; color:var(--muted); flex:none; }
+html body #currCalcModal .curr-calc-arrow { display:block!important; position:relative!important; height:0!important; margin:0!important; opacity:1!important; z-index:2!important; }
+html body #currCalcModal .cc-swap { position:absolute; inset-inline-end:14px; top:0; transform:translateY(-50%); width:36px; height:36px; padding:7px; display:flex; align-items:center; justify-content:center; color:var(--ui-accent); background:var(--cc-field); border:1px solid var(--cc-line); border-radius:50%; box-shadow:0 3px 10px rgba(28,65,82,.16); cursor:pointer; touch-action:manipulation; }
+html body #currCalcModal .cc-swap svg { width:20px; height:20px; }
+html body #currCalcModal .cc-swap:hover { background:var(--ui-soft); }
+@media (max-height:540px) and (min-width:560px) {
+ html body #currCalcModal .curr-calc-body { grid-template-rows:auto auto 0 auto auto!important; }
+ html body #currCalcModal .cc-number-pad { grid-row:1 / 6!important; }
+ html body #currCalcModal .curr-calc-quick-btns { grid-row:5!important; }
+ html body #currCalcModal .curr-calc-arrow { grid-column:1!important; grid-row:3!important; }
+}
+/* Single integrated amount surface: focus belongs to its container, not a nested box. */
+html body #currCalcModal .curr-calc-input:focus, html body #currCalcModal .curr-calc-input:focus-visible { outline:none!important; border:0!important; box-shadow:none!important; }
+html body #currCalcModal .curr-calc-input-section:focus-within { border-color:var(--ui-accent)!important; box-shadow:0 0 0 2px var(--ui-soft)!important; }
+html body #currCalcModal .cc-number-pad button { border-radius:18px!important; box-shadow:0 2px 5px rgba(32,70,87,.07)!important; font-weight:650!important; }
+html body #currCalcModal .curr-calc-quick-btn { border-radius:12px!important; }
+html body #currCalcModal .curr-calc-footer { gap:10px!important; }
+html body #currCalcModal .curr-calc-footer button { display:flex!important; align-items:center!important; justify-content:center!important; gap:9px!important; border-radius:18px!important; font-size:13px!important; font-weight:750!important; letter-spacing:0!important; min-height:44px!important; }
+html body #currCalcModal .curr-calc-footer button .wf-ui-icon { width:18px!important; height:18px!important; }
+html body #currCalcModal .curr-calc-footer .btn-s { color:var(--ui-accent)!important; background:var(--ui-soft)!important; border-color:transparent!important; box-shadow:none!important; }
+html body #currCalcModal .curr-calc-footer .btn-p { border-color:transparent!important; box-shadow:0 3px 7px rgba(30,74,94,.15)!important; }

@@ -8,6 +8,21 @@
   heading.className = 'cc-centered-heading';
   heading.append(modal.querySelector('.curr-calc-icon-wrap'), modal.querySelector('.curr-calc-header-info'));
   modal.querySelector('.curr-calc-header').prepend(heading);
+  const route = document.createElement('div');
+  route.className = 'cc-currency-route'; route.setAttribute('role', 'img'); route.setAttribute('dir', 'ltr');
+  route.innerHTML = '<span class="cc-route-symbol cc-route-from" aria-hidden="true"></span><svg aria-hidden="true" viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h22m-5-5 5 5-5 5M27 17H5m5-5-5 5 5 5"/></svg><span class="cc-route-symbol cc-route-to" aria-hidden="true"></span>';
+  heading.append(route);
+  const swap = document.createElement('button');
+  swap.type = 'button'; swap.className = 'cc-swap';
+  swap.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v18m-4-4 4 4 4-4M16 21V3m-4 4 4-4 4 4"/></svg>';
+  modal.querySelector('.curr-calc-arrow').replaceChildren(swap);
+  swap.addEventListener('click', () => {
+    const cfg = CC_CONFIGS[_ccCurrentKey];
+    const reverse = cfg.to.toLowerCase() + '-' + cfg.from.toLowerCase();
+    if (!CC_CONFIGS[reverse]) return;
+    const value = input.value; const opener = returnFocus;
+    openCurrCalc(reverse); returnFocus = opener; setCCInput(value);
+  });
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
   panel.setAttribute('aria-labelledby', 'ccTitle');
@@ -57,13 +72,21 @@
     previousOpen(key); lastValue = '';
     const cfg = CC_CONFIGS[key];
     const symbol = {USD:'$', EUR:'€', TRY:'₺'};
+    route.querySelector('.cc-route-from').textContent = symbol[cfg.from];
+    route.querySelector('.cc-route-to').textContent = symbol[cfg.to];
+    route.setAttribute('aria-label', cfg.from + ' → ' + cfg.to);
+    route.setAttribute('title', cfg.from + ' → ' + cfg.to);
+    const swapLabel = {ar:'تبديل اتجاه التحويل',tr:'Döviz yönünü değiştir',en:'Swap conversion direction',fr:'Inverser la conversion',ru:'Изменить направление обмена'}[S.lang] || 'Swap conversion direction';
+    swap.setAttribute('aria-label', swapLabel); swap.title = swapLabel;
     document.getElementById('ccFromLabel').textContent = symbol[cfg.from] + ' ' + cfg.from;
     document.getElementById('ccResultLabel').textContent = symbol[cfg.to] + ' ' + cfg.to;
     const quick = document.getElementById('ccQuickBtns');
-    quick.replaceChildren(...[20,50,100,200,1000].map(amount => {
+    const quickAmounts = cfg.from === 'TRY' ? [200,5000,10000,20000,50000,100000] : [20,50,100,200,1000];
+    quick.style.setProperty('--cc-quick-columns', quickAmounts.length);
+    quick.replaceChildren(...quickAmounts.map(amount => {
       const button = document.createElement('button');
       button.type = 'button'; button.className = 'curr-calc-quick-btn';
-      button.textContent = amount.toLocaleString('en-US');
+      button.textContent = cfg.from === 'TRY' && amount >= 1000 ? (amount / 1000) + 'K' : amount.toLocaleString('en-US');
       button.setAttribute('aria-label', amount + ' ' + cfg.from);
       button.title = amount + ' ' + cfg.from;
       button.addEventListener('click', () => setCCInput(amount));
