@@ -107,6 +107,14 @@
   html.wf-header-hidden #page-create-invoice .sct-sticky-header{gap:8px!important;padding-block:10px!important}
  }
  @media(prefers-reduced-motion:reduce){html .navbar,html .main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){transition:none!important}}
+ @media(max-width:1024px){
+  html.wf-header-hidden .main .co-page-sticky{padding:10px 12px!important;border-color:var(--border)!important;box-shadow:0 9px 24px rgba(26,43,66,.12)!important}
+  html.wf-header-hidden .main .co-toolbar-row{margin-bottom:8px!important}
+  html.wf-header-hidden .main .co-stats-bar{padding:3px!important;border-radius:10px}
+  html.wf-header-hidden .main .co-stat-pill{min-height:34px;padding-block:5px!important;font-size:11px}
+  html.wf-header-hidden .main .sct-sticky-title p{display:none}
+  html.wf-header-hidden .main .sct-sticky-header{box-shadow:0 9px 24px rgba(26,43,66,.12)!important}
+ }
  /* Settings uses one scale for every tab, field, action and language option. */
  html #page-settings{max-width:1120px;margin-inline:auto}
  html #page-settings .sct-sticky-header{padding:16px!important;gap:16px!important;border-radius:16px!important}

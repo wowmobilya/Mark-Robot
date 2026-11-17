@@ -7,7 +7,7 @@
  function update(){
   queued=false;
   const page=document.querySelector('.page.active');
-  const locked=!compact.matches||page?.id==='page-quick-barcode'||document.querySelector('.modal-ov.open,.sidebar.open,.delete-modal-ov.open,.wf-restore-ov.open')||document.activeElement?.matches('input,textarea,select');
+  const locked=!compact.matches||page?.id==='page-quick-barcode'||document.querySelector('.modal-ov.open,.sidebar.open,.delete-modal-ov.open,.wf-restore-ov.open');
   const current=Math.max(0,scrollY),delta=current-last;last=current;
   if(locked||current<90){reveal();return;}
   if(Math.abs(delta)<2)return;
