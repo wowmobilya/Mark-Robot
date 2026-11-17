@@ -1,9 +1,9 @@
-const CACHE_NAME = 'wow-furniture-v44-pearl-navigation';
+const CACHE_NAME = 'wow-furniture-v45-header-logo-fix';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
-  './modern-ui.css?v=42',
+  './modern-ui.css?v=43',
   './ui-icons.js?v=42',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
