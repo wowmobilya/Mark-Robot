@@ -367,3 +367,12 @@ html body #page-settings .wf-data-actions .btn,html body #page-settings .wf3-dri
  html body #page-settings [id^="stab-"]>.card{padding:14px!important}
  html body #page-settings .wf-language-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
+
+/* Rounded drawer with a recessed, elongated edge handle. */
+html body #sidebar{border-radius:26px!important;padding-inline-end:30px!important;mask:radial-gradient(ellipse 27px 68px at 0 50%,transparent 97%,#000 100%);-webkit-mask:radial-gradient(ellipse 27px 68px at 0 50%,transparent 97%,#000 100%)}
+html[dir="ltr"] body #sidebar{mask:radial-gradient(ellipse 27px 68px at 100% 50%,transparent 97%,#000 100%);-webkit-mask:radial-gradient(ellipse 27px 68px at 100% 50%,transparent 97%,#000 100%)}
+html body #wfSidebarClose{height:3cm;max-height:28dvh;width:36px;border-radius:22px;border:1px solid var(--border);background:var(--card);box-shadow:0 4px 12px rgba(25,40,62,.12);color:var(--ui-accent)}
+html body #wfSidebarClose::before,html body #wfSidebarClose::after{content:"";position:absolute;left:50%;width:3px;height:17px;transform:translateX(-50%);border-radius:4px;background:var(--border)}
+html body #wfSidebarClose::before{top:13px}html body #wfSidebarClose::after{bottom:13px}
+html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-accent)}
+@media(min-width:1025px){html:not(.wf-section-mode) body #wfSidebarClose{top:calc(50% + var(--nav-h)/2)}}

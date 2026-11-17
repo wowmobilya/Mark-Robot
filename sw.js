@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v73-settings-workspace';
+const CACHE_NAME = 'wow-furniture-v74-recessed-drawer';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=24',
+  './ui-identity.css?v=25',
   './ui-navigation.js?v=9',
   './ui-logo.js?v=2',
   './ui-settings.js?v=1',
