@@ -441,3 +441,8 @@ html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-
  }
  html body #sidebar .nav-divider { margin:8px 12px 3px!important; }
 }
+
+/* Only the two corners touching the screen edge are square (mirrored for LTR). */
+@media screen {
+ html body #sidebar { border-start-start-radius:0!important; border-end-start-radius:0!important; }
+}
