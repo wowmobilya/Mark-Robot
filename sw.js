@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v98-context-navigation';
+const CACHE_NAME = 'wow-furniture-v99-straight-header';
 const urlsToCache = [
   './context-nav.js?v=1',
   './context-nav.css?v=1',
@@ -12,8 +12,8 @@ const urlsToCache = [
   './dashboard-visuals.css?v=3',
   './rate-refresh.js?v=2',
   './section-headings.css?v=6',
-  './topbar-dock.css?v=4',
-  './topbar-dock.js?v=3',
+  './topbar-dock.css?v=5',
+  './topbar-dock.js?v=4',
   './currency-calculator.css?v=8',
   './currency-calculator.js?v=5',
   './ui-i18n.js?v=26',
