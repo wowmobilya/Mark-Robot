@@ -192,3 +192,13 @@
  @media(prefers-reduced-motion:reduce){html body #wf-settings-save-footer *{transition:none!important;animation:none!important}}
 }
 @media print{#wf-settings-save-footer{display:none!important}}
+/* Edge-to-edge save navigation, matching the main bottom bar. */
+@media screen {
+ html.wf-settings-open body #wf-settings-save-footer {
+  left:0;right:0;bottom:0;width:100%;max-width:none;margin:0;
+  height:calc(58px + env(safe-area-inset-bottom,0px));
+  padding:0 12px calc(4px + env(safe-area-inset-bottom,0px));
+  border-radius:22px 22px 0 0;
+ }
+ html body #wf-settings-save-footer::before {border-radius:22px 22px 0 0;background:#fff;}
+}

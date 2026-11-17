@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v100-settings-save-dock';
+const CACHE_NAME = 'wow-furniture-v101-centered-fullwidth-docks';
 const urlsToCache = [
   './context-nav.js?v=1',
   './context-nav.css?v=1',
@@ -7,12 +7,12 @@ const urlsToCache = [
   './bottomnav-fit.js?v=1',
   './index.html',
   './business-ui.css?v=1',
-  './settings-responsive.css?v=4',
+  './settings-responsive.css?v=5',
   './settings-navigation.js?v=4',
   './dashboard-visuals.css?v=3',
   './rate-refresh.js?v=2',
   './section-headings.css?v=6',
-  './topbar-dock.css?v=5',
+  './topbar-dock.css?v=6',
   './topbar-dock.js?v=4',
   './currency-calculator.css?v=8',
   './currency-calculator.js?v=5',

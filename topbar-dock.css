@@ -64,3 +64,11 @@
  html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn),html.wf-section-mode body #mainContent .page .sct-back-btn{box-shadow:0 3px 9px rgba(33,86,107,.12)!important;}
  html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn)::after,html.wf-section-mode body #mainContent .page .sct-back-btn::after{display:none!important;}
 }
+/* Explicit vertical centering: no inherited lower-edge or transform offsets. */
+@media screen {
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn){top:50%!important;bottom:auto!important;margin-block:0!important;transform:translateY(-50%)!important;}
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):hover,
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):active{transform:translateY(-50%)!important;}
+ html.wf-section-mode body #mainContent .page .sct-back-btn{align-self:center!important;top:auto!important;bottom:auto!important;margin-block:0!important;transform:none!important;}
+ html body .page .wf-heading-row{align-items:center!important;}
+}
