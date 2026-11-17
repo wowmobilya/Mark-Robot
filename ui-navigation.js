@@ -24,7 +24,7 @@
  document.addEventListener('focusin',reveal);
  const original=window.showPage;
  if(typeof original==='function')window.showPage=function(...args){root.classList.toggle('wf-section-mode',args[0]!=='dashboard');root.classList.remove('wf-header-hidden');const value=original.apply(this,args);reveal();return value;};
- const sidebar=document.getElementById('sidebar');if(sidebar)new MutationObserver(()=>{syncControls();if(sidebar.classList.contains('open'))reveal();}).observe(sidebar,{attributes:true,attributeFilter:['class']});
+ const sidebar=document.getElementById('sidebar');if(sidebar)new MutationObserver(()=>{const open=compact.matches&&sidebar.classList.contains('open');root.classList.toggle('wf-mobile-menu-open',open);syncControls();if(open)reveal();}).observe(sidebar,{attributes:true,attributeFilter:['class']});
  new MutationObserver(syncControls).observe(root,{attributes:true,attributeFilter:['class','dir','lang']});
  reveal();
 })();
