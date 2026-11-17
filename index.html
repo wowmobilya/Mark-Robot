@@ -6724,7 +6724,6 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     </div>
   </div>
 
-  <div id="dashAiBrief" class="wf-ai-brief"></div>
   <div id="dashIntelligence" class="wf-dashboard-intelligence"></div>
 
   
@@ -8370,6 +8369,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 <section class="page" id="page-quick-barcode">
 <link rel="stylesheet" href="modern-ui.css?v=46">
+<link rel="stylesheet" href="ui-identity.css?v=1">
 
 <!-- ══ PHASE 1: SCAN ══ -->
 <div id="qblPhase1" style="transition:all .5s cubic-bezier(.4,0,.2,1);">
@@ -13435,7 +13435,6 @@ function updateDash(){
   const bpr=document.getElementById('badge-pr');if(bpr)bpr.textContent=S.products.length;
   const binv=document.getElementById('badge-inv');if(binv)binv.textContent=S.invoices.length;
   const recent=[...S.invoices].reverse().slice(0,5);
-  wfRenderAiBrief(total);
   wfRenderDashboardIntelligence(total);
   const c=document.getElementById('dashRecentInv');if(!c)return;
    const dashTx = {
