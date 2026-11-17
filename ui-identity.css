@@ -164,3 +164,19 @@
  html #page-settings .wf-bg-row{flex-wrap:wrap;padding:14px;gap:10px}html #page-settings .wf-bg-title{font-size:13px}html #page-settings .wf-bg-sub{font-size:12px}html #page-settings .wf-bg-enable{min-height:40px;font-size:12px;padding:9px 12px}
  @media(max-width:700px){html #page-settings .sct-sticky-header{padding:12px!important;position:relative!important;top:auto!important}html #page-settings .sct-sticky-title h1{font-size:19px!important}html #page-settings [id^="stab-"]{padding:16px!important}html #page-settings [id^="stab-"]>.card{padding:14px!important}html #page-settings .fgrid{grid-template-columns:1fr;gap:14px!important}html #page-settings .wf-data-grid{grid-template-columns:repeat(2,minmax(0,1fr))}html #page-settings .wf-language-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}html #page-settings .wf-language-card{gap:8px!important;padding:10px!important;font-size:13px!important}}
 }
+
+/* Keep exchange data legible at phone widths, including Android display scaling. */
+html #sidebar .wf-sidebar-brand{height:88px;display:flex;align-items:center;justify-content:center;margin:0 4px 15px;border-bottom:1px solid var(--border)}
+html #sidebar #wfSidebarLogo{width:58px;height:58px;object-fit:contain;padding:5px;border:1px solid var(--border);border-radius:16px;background:var(--logo-surface,#fff);box-shadow:0 4px 14px rgba(25,42,66,.1)}
+@media(min-width:1025px){html .navbar .nb-brand{display:none!important}}
+@media(max-width:1024px){html #sidebar .wf-sidebar-brand{height:78px;margin-bottom:12px}html #sidebar #wfSidebarLogo{width:54px;height:54px}}
+html .curr-bar-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+html .curr-item{display:grid!important;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;align-items:center!important;column-gap:10px!important;row-gap:5px!important;min-width:0;min-height:78px;padding:12px!important}
+html .curr-item .curr-flag{grid-column:1;grid-row:1/3;align-self:center;flex-shrink:0}
+html .curr-item .curr-info{grid-column:2;grid-row:1;min-width:0;line-height:1.25}
+html .curr-item .curr-label{white-space:nowrap;font-size:10px!important}
+html .curr-item .curr-rate{font-size:clamp(14px,1.5vw,18px)!important;line-height:1.25;font-variant-numeric:tabular-nums;white-space:nowrap}
+html .curr-item .curr-badge{display:none!important}
+html .curr-item .wf-market-trend{grid-column:2;grid-row:2;justify-self:start;align-self:start;margin:0!important;position:relative;max-width:100%;font-size:10px!important}
+@media(max-width:700px){html .curr-bar-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}html .curr-item{min-height:86px;padding:10px!important;column-gap:7px!important}html .curr-item .curr-flag{width:34px;height:34px}html .curr-item .curr-label{font-size:9px!important}html .curr-item .curr-rate{font-size:clamp(13px,3.7vw,17px)!important}}
+@media(max-width:360px){html .curr-item{grid-template-columns:1fr;grid-template-rows:auto auto auto;gap:4px!important}html .curr-item .curr-flag{grid-column:1;grid-row:1;width:28px;height:28px}html .curr-item .curr-info{grid-column:1;grid-row:2}html .curr-item .wf-market-trend{grid-column:1;grid-row:3}}

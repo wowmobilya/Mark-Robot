@@ -38,7 +38,11 @@
 <title>WOW FURNITURE — Invoice System · V14</title>
 
 <!-- ربط ملف الـ Manifest -->
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json?v=2">
+<meta name="application-name" content="WOW Furniture">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <!-- تحديد لون شريط المتصفح المحيط بالتطبيق -->
 <meta name="theme-color" content="#1a1a2e">
 <!-- Private deployment config: end users never edit this file -->
@@ -6430,9 +6434,9 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script>document.documentElement.classList.add('wf-booting');if(location.hash&&location.hash!=='#dashboard')document.documentElement.classList.add('wf-section-mode');</script>
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=46">
-<link rel="stylesheet" href="ui-identity.css?v=14">
+     <link rel="stylesheet" href="ui-identity.css?v=15">
 <script src="ui-navigation.js?v=5" defer></script>
-<script src="ui-logo.js?v=1" defer></script>
+     <script src="ui-logo.js?v=2" defer></script>
 </head>
 <body>
 
@@ -6589,6 +6593,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
+  <div class="wf-sidebar-brand" id="wfSidebarBrand" aria-label="WOW Furniture"><img id="wfSidebarLogo" src="app-icon-192.png" alt="WOW Furniture"></div>
   <div class="side-sec" data-i18n="nav_main">القائمة</div>
   <button class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">🏠</span><span data-i18n="nav_dashboard">لوحة التحكم</span></button>
   <button class="nav-item" onclick="showPage('companies')"><span class="nav-icon">👥</span><span data-i18n="nav_companies">العملاء</span><span class="nav-badge" id="badge-co">0</span></button>

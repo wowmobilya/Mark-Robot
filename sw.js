@@ -1,16 +1,18 @@
-const CACHE_NAME = 'wow-furniture-v63-stable-first-paint';
+const CACHE_NAME = 'wow-furniture-v64-standalone-layout';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=14',
+  './ui-identity.css?v=15',
   './ui-navigation.js?v=5',
-  './ui-logo.js?v=1',
+  './ui-logo.js?v=2',
   './ui-icons.js?v=44',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
   './manifest.json',
+  './app-icon-192.png',
+  './app-icon-512.png',
   './account-statement-core.js?v=25',
   './account-statement.js?v=25',
   './account-statement.css?v=25',
