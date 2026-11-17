@@ -83,6 +83,21 @@
  @media(min-width:1100px){html #page-select-client-type>div:last-child,html #page-select-invoice-type>div:last-child{max-width:900px!important;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}html #page-select-client-type .client-type-step-card,html #page-select-invoice-type .client-type-step-card{margin-bottom:0!important}}
  @media(max-width:700px){html .main{padding-inline:12px!important;transition:none!important}html .main .sct-sticky-header{padding:12px!important;gap:10px!important}html #page-create-invoice>.sct-sticky-header>div:last-child{width:100%;display:flex!important;gap:8px!important;flex-wrap:wrap}html #page-create-invoice>.sct-sticky-header>div:last-child>.btn{flex:1;justify-content:center}html .main #prTypeStepCards{grid-template-columns:1fr}html .main .client-type-step-card{min-height:86px;padding:15px!important}html .main .fgrid{gap:14px!important}}
  html .main .wf-smart-search:not(.open){display:none!important}html .main .co-page-sticky{margin-inline:0!important}html .main>.page>.co-page-sticky{top:calc(var(--nav-h) + 12px)}
+ /* Record cards share readable hierarchy and a stable action rail. */
+ html .main :is(.co-card,.pr-card-new,.inv-card){overflow:hidden;transition:border-color .18s ease,box-shadow .18s ease!important}
+ html .main :is(.co-card,.pr-card-new,.inv-card):hover{transform:none!important;border-color:var(--ui-accent)!important;box-shadow:0 8px 24px rgba(29,45,67,.08)!important}
+ html .main :is(.co-card-body,.pr-card-new-body,.inv-card-body){padding:18px!important}
+ html .main :is(.co-name,.pr-card-new-name,.inv-card-name){font-size:15px!important;font-weight:750;line-height:1.5;overflow-wrap:anywhere;color:var(--text)}
+ html .main :is(.co-actions,.pr-card-new-actions,.inv-card-actions){background:var(--input)!important;border-top:1px solid var(--border)!important;padding:12px!important;gap:8px!important}
+ html .main :is(.co-actions,.pr-card-new-actions,.inv-card-actions) .btn{min-height:40px!important;font-size:12px!important;padding:8px 10px!important;justify-content:center}
+ html .main .co-logo{background:var(--ui-soft)!important;color:var(--ui-accent)!important;border:1px solid var(--border)!important;box-shadow:none!important;object-fit:contain}
+ html .main .co-info{font-size:12px!important;line-height:1.6;padding-block:5px!important;overflow-wrap:anywhere}
+ html .main .badge{font-size:10px;line-height:1.6;border-radius:7px;padding:3px 7px}
+ html .main :is(button,a,input,select,textarea):focus-visible{outline:2px solid var(--ui-accent)!important;outline-offset:3px!important}
+ html .main .btn:active{transform:translateY(1px)!important}
+ @media(hover:hover){html .main .btn:hover{filter:brightness(.97);transform:none!important}}
+ @media(max-width:700px){html .main :is(.co-card-body,.pr-card-new-body,.inv-card-body){padding:15px!important}html .main :is(.co-actions,.pr-card-new-actions,.inv-card-actions){padding:10px!important}html .main :is(.co-actions,.pr-card-new-actions,.inv-card-actions) .btn{min-height:44px!important}}
+ @media(prefers-reduced-motion:reduce){html .main .btn:active{transform:none!important}}
  /* Settings uses one scale for every tab, field, action and language option. */
  html #page-settings{max-width:1120px;margin-inline:auto}
  html #page-settings .sct-sticky-header{padding:16px!important;gap:16px!important;border-radius:16px!important}

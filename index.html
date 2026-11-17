@@ -8367,7 +8367,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 <section class="page" id="page-quick-barcode">
 <link rel="stylesheet" href="modern-ui.css?v=46">
-<link rel="stylesheet" href="ui-identity.css?v=7">
+<link rel="stylesheet" href="ui-identity.css?v=8">
 <script src="ui-logo.js?v=1" defer></script>
 
 <!-- ══ PHASE 1: SCAN ══ -->
@@ -13245,8 +13245,15 @@ function wfToggleSearch(inputId,button){
   const input=document.getElementById(inputId);if(!input)return;
   const open=!input.classList.contains('open');input.classList.toggle('open',open);button.classList.toggle('active',open);button.setAttribute('aria-expanded',String(open));
   if(open){requestAnimationFrame(()=>input.focus());}
-  else if(!input.value){input.blur();}
+  else{if(input.value){input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));}input.blur();button.focus();}
 }
+document.addEventListener('keydown',event=>{
+  const active=document.activeElement,editing=active?.matches('input,textarea,select,[contenteditable="true"]');
+  const page=document.querySelector('.page.active'),button=page?.querySelector('.wf-search-toggle');if(!button)return;
+  const input=document.getElementById(button.getAttribute('aria-controls'));if(!input)return;
+  if(event.key==='Escape'&&input.classList.contains('open')){event.preventDefault();wfToggleSearch(input.id,button);}
+  else if((event.key==='/'&&!editing)||((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k')){event.preventDefault();if(!input.classList.contains('open'))wfToggleSearch(input.id,button);else input.focus();}
+});
 function wfIsTouchTablet(){
   try{return matchMedia('(hover: none) and (pointer: coarse) and (min-width: 600px) and (max-width: 1366px)').matches;}catch(_){return false;}
 }
