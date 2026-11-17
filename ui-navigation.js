@@ -32,5 +32,14 @@
  const quotes=document.getElementById('currBar');
  function decorateQuotes(){quotes?.querySelectorAll('.wf-market-trend').forEach(tag=>{if(tag.querySelector('.wf-market-arrow'))return;const match=tag.textContent.match(/([▲▼])\s*$/);if(!match)return;const value=tag.textContent.slice(0,match.index).trim();const arrow=document.createElement('span');arrow.className='wf-market-arrow';arrow.setAttribute('aria-hidden','true');arrow.textContent=match[1];tag.replaceChildren(document.createTextNode(value+' '),arrow);});}
  if(quotes){new MutationObserver(decorateQuotes).observe(quotes,{childList:true,subtree:true});decorateQuotes();}
+ function fitDrawerRecess(){
+  const drawer=document.getElementById('sidebar'),handle=document.getElementById('wfSidebarClose');if(!drawer||!handle||handle.hidden)return;
+  const box=drawer.getBoundingClientRect(),height=handle.getBoundingClientRect().height+12,width=box.width,rtl=root.dir!=='ltr';
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${box.height}"><defs><mask id="cut"><rect width="100%" height="100%" fill="white"/><rect x="${rtl?-24:width-24}" y="${(box.height-height)/2}" width="48" height="${height}" rx="24" fill="black"/></mask></defs><rect width="100%" height="100%" fill="white" mask="url(#cut)"/></svg>`;
+  const mask=`url("data:image/svg+xml,${encodeURIComponent(svg)}")`;drawer.style.setProperty('mask-image',mask,'important');drawer.style.setProperty('-webkit-mask-image',mask,'important');drawer.style.setProperty('mask-size','100% 100%','important');handle.style.top=(box.top+box.height/2)+'px';
+ }
  reveal();
+ const drawerSize=new ResizeObserver(fitDrawerRecess);if(sidebar)drawerSize.observe(sidebar);const edgeHandle=document.getElementById('wfSidebarClose');if(edgeHandle)drawerSize.observe(edgeHandle);
+ new MutationObserver(fitDrawerRecess).observe(root,{attributes:true,attributeFilter:['dir','class']});
+ fitDrawerRecess();
 })();

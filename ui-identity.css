@@ -376,3 +376,14 @@ html body #wfSidebarClose::before,html body #wfSidebarClose::after{content:"";po
 html body #wfSidebarClose::before{top:13px}html body #wfSidebarClose::after{bottom:13px}
 html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-accent)}
 @media(min-width:1025px){html:not(.wf-section-mode) body #wfSidebarClose{top:calc(50% + var(--nav-h)/2)}}
+
+/* Reference dock: navy floating button and a smoothly curved white surface. */
+@media(max-width:1024px){
+ html body #bottomNav{padding-inline:0!important;gap:0!important}
+ html body #bottomNav::before{border-radius:0!important;mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10000' height='160' viewBox='0 0 10000 160'%3E%3Cpath fill='white' d='M0 0H4945C4970 0 4969 33 5000 33S5030 0 5055 0H10000V160H0Z'/%3E%3C/svg%3E");mask-size:10000px 160px;mask-position:calc(var(--nav-x) - 5000px) 0;mask-repeat:no-repeat;-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10000' height='160' viewBox='0 0 10000 160'%3E%3Cpath fill='white' d='M0 0H4945C4970 0 4969 33 5000 33S5030 0 5055 0H10000V160H0Z'/%3E%3C/svg%3E");-webkit-mask-size:10000px 160px;-webkit-mask-position:calc(var(--nav-x) - 5000px) 0;-webkit-mask-repeat:no-repeat}
+ html body #bottomNav #bnavCircle{top:-23px;background:#09213e!important;border:1px solid #193552!important;box-shadow:0 5px 14px rgba(9,33,62,.2)!important}
+ html body #bottomNav #bnavCircleIcon,html body #bottomNav #bnavCircleIcon svg{color:#fff!important}
+ html body #bottomNav .bnav-btn{padding-top:10px!important;gap:5px!important}
+ html body #bottomNav .bnav-icon{height:30px!important;width:32px!important}
+ html body #bottomNav .bnav-label{font-size:10px!important;font-weight:600!important}
+}
