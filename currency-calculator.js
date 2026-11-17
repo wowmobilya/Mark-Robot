@@ -12,6 +12,18 @@
   route.className = 'cc-currency-route'; route.setAttribute('role', 'img'); route.setAttribute('dir', 'ltr');
   route.innerHTML = '<span class="cc-route-symbol cc-route-from" aria-hidden="true"></span><svg aria-hidden="true" viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h22m-5-5 5 5-5 5M27 17H5m5-5-5 5 5 5"/></svg><span class="cc-route-symbol cc-route-to" aria-hidden="true"></span>';
   heading.append(route);
+  const actionIcons = [
+    ['.curr-calc-footer .btn-s', '<path d="m3 14 10-10a2 2 0 0 1 3 0l5 5a2 2 0 0 1 0 3l-9 9H8l-5-5a1.5 1.5 0 0 1 0-2Z"/><path d="m9 8 8 8M12 21h9"/>'],
+    ['.curr-calc-footer .btn-p', '<rect x="4" y="4" width="16" height="16" rx="5"/><path d="m9 9 6 6m0-6-6 6"/>']
+  ];
+  actionIcons.forEach(([selector, paths]) => {
+    const button = modal.querySelector(selector);
+    button.childNodes.forEach(node => { if (node.nodeType === 3) node.textContent = ''; });
+    button.querySelectorAll('.wf-ui-icon').forEach(icon => icon.remove());
+    const icon = document.createElement('span'); icon.className = 'cc-action-icon'; icon.setAttribute('aria-hidden','true');
+    icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
+    button.prepend(icon);
+  });
   const swap = document.createElement('button');
   swap.type = 'button'; swap.className = 'cc-swap';
   swap.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v18m-4-4 4 4 4-4M16 21V3m-4 4 4-4 4 4"/></svg>';
@@ -32,6 +44,29 @@
   input.removeAttribute('oninput');
   input.setAttribute('maxlength', '18');
   input.setAttribute('dir', 'ltr');
+  const ratePill = modal.querySelector('.curr-calc-rate-pill');
+  ratePill.childNodes.forEach(node => { if (node.nodeType === 3) node.textContent = ''; });
+  const stamp = document.createElement('time'); stamp.className = 'cc-rate-stamp'; stamp.setAttribute('dir','auto');
+  ratePill.append(stamp);
+  function updateStamp() {
+    const lang = S.lang || 'ar';
+    const missing = {ar:'الوقت غير متاح',tr:'Zaman bilgisi yok',en:'Time unavailable',fr:'Heure indisponible',ru:'Время недоступно'}[lang] || 'Time unavailable';
+    const rateManual = (_ccCurrentKey.includes('try') && S.settings.manualUsdTry) || (_ccCurrentKey.includes('eur') && S.settings.manualUsdEur);
+    const date = new Date(S.rateUpdatedAt || '');
+    if (rateManual || !Number.isFinite(date.getTime())) { stamp.textContent = missing; stamp.removeAttribute('datetime'); return; }
+    const locale = {ar:'ar-SY-u-nu-latn',tr:'tr-TR',en:'en-US',fr:'fr-FR',ru:'ru-RU'}[lang] || 'en-US';
+    stamp.dateTime = date.toISOString();
+    stamp.textContent = new Intl.DateTimeFormat(locale,{year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',hour12:true}).format(date);
+  }
+  let hintTimer;
+  modal.addEventListener('click', event => {
+    if (event.target !== modal) return;
+    event.stopPropagation();
+    const close = modal.querySelector('.curr-calc-footer .btn-p');
+    clearTimeout(hintTimer); close.classList.remove('cc-close-hint');
+    requestAnimationFrame(() => close.classList.add('cc-close-hint'));
+    hintTimer = setTimeout(() => close.classList.remove('cc-close-hint'), 1200);
+  }, true);
   const pad = document.createElement('div');
   pad.className = 'cc-number-pad';
   pad.setAttribute('dir', 'ltr');
@@ -69,7 +104,7 @@
   window.openCurrCalc = function (key) {
     if (!CC_CONFIGS[key]) return;
     returnFocus = document.activeElement;
-    previousOpen(key); lastValue = '';
+    previousOpen(key); lastValue = ''; updateStamp();
     const cfg = CC_CONFIGS[key];
     const symbol = {USD:'$', EUR:'€', TRY:'₺'};
     route.querySelector('.cc-route-from').textContent = symbol[cfg.from];
@@ -101,6 +136,15 @@
     }[S.lang] || ['Delete digit', 'Clear amount', 'Decimal point', 'Close'];
     ['⌫','C','.'].forEach((key,i) => pad.querySelector(`[data-key="${key}"]`).setAttribute('aria-label',labels[i]));
     modal.querySelector('.curr-calc-close').setAttribute('aria-label', labels[3]);
+  };
+  const previousRateUI = window.updateRateUI;
+  window.updateRateUI = function () {
+    const result = previousRateUI.apply(this, arguments);
+    if (modal.classList.contains('open')) {
+      document.getElementById('ccRateInfo').textContent = CC_CONFIGS[_ccCurrentKey].rateText();
+      calcCurrencyModal(); updateStamp();
+    }
+    return result;
   };
   const previousClose = window.closeModal;
   window.closeModal = function (id) {

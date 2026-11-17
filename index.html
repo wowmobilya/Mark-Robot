@@ -6440,7 +6440,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="ui-settings.js?v=1" defer></script>
 <script src="settings-navigation.js?v=1" defer></script>
 <script src="rate-refresh.js?v=1" defer></script>
-<link rel="stylesheet" href="currency-calculator.css?v=7">
+<link rel="stylesheet" href="currency-calculator.css?v=8">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=1">
 <link rel="stylesheet" href="dashboard-visuals.css?v=2">
@@ -10054,7 +10054,7 @@ function wfBuildBackup(){
       payments:Array.isArray(S.payments)?S.payments:[],
       settings:S.settings||{},
       nextInvNo:S.nextInvNo||5001,
-      rates:{usdTry:S.usdTry,usdEur:S.usdEur,rateTime:S.rateTime}
+      rates:{usdTry:S.usdTry,usdEur:S.usdEur,rateTime:S.rateTime,rateUpdatedAt:S.rateUpdatedAt||null}
     },
     preferences:{lang:S.lang,theme:S.theme,qblCart:(()=>{try{return localStorage.getItem('wf_qbl_cart')||null;}catch(_){return null;}})()}
   };
@@ -10142,7 +10142,7 @@ function wfReplaceStoresFromBackup(b){
       const st=tx.objectStore('settings');
       st.put(mainSettings);
       st.put({id:'nextInvNo',value:Number(b.data.nextInvNo)||5001});
-      if(b.data.rates)st.put({id:'usdTry',value:Number(b.data.rates.usdTry)||46.98,eur:Number(b.data.rates.usdEur)||0.92,time:b.data.rates.rateTime||null});
+      if(b.data.rates)st.put({id:'usdTry',value:Number(b.data.rates.usdTry)||46.98,eur:Number(b.data.rates.usdEur)||0.92,time:b.data.rates.rateTime||null,updatedAt:b.data.rates.rateUpdatedAt||null});
       const ms=tx.objectStore(WF_MEDIA_STORE);
       for(const row of mediaRows.values())ms.put(row);
     }catch(err){fail(err);}
@@ -13053,10 +13053,12 @@ async function fetchRate(){
         S.usdTry=S.settings.manualUsdTry||parseFloat(tryRate.toFixed(4));
         S.usdEur=S.settings.manualUsdEur||parseFloat(eurRate.toFixed(4));
 S.rateTime = new Date().toLocaleTimeString('en-US', { hour12: false });
+        const providerSeconds=Number(d.time_last_update_unix || d.time_last_updated);
+        S.rateUpdatedAt=Number.isFinite(providerSeconds)&&providerSeconds>0 ? new Date(providerSeconds*1000).toISOString() : null;
         updateRateUI();showToast(t('rate_updated'),'ok');
         window.wfAnimateRateChanges?.(previous);
         wfUpdateMarketIndicators(previous);
-        await dbPut('settings',{id:'usdTry',value:S.usdTry,eur:S.usdEur,time:S.rateTime});
+        await dbPut('settings',{id:'usdTry',value:S.usdTry,eur:S.usdEur,time:S.rateTime,updatedAt:S.rateUpdatedAt});
         return;
       }
     }catch{}
@@ -20425,7 +20427,7 @@ async function init(){
   const nextNoRow=await dbGet('settings','nextInvNo');
   if(nextNoRow)S.nextInvNo=nextNoRow.value||5001;
   const rateRow=await dbGet('settings','usdTry');
-  if(rateRow){S.usdTry=S.settings.manualUsdTry||rateRow.value||46.98;S.usdEur=S.settings.manualUsdEur||rateRow.eur||0.92;S.rateTime=rateRow.time||null;}
+  if(rateRow){S.usdTry=S.settings.manualUsdTry||rateRow.value||46.98;S.usdEur=S.settings.manualUsdEur||rateRow.eur||0.92;S.rateTime=rateRow.time||null;S.rateUpdatedAt=rateRow.updatedAt||null;}
   // load data
   [S.companies,S.products,S.invoices,S.payments]=await Promise.all([dbGetAll('companies'),dbGetAll('products'),dbGetAll('invoices'),dbGetAll('payments')]);
   // apply lang
@@ -27664,6 +27666,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 })();
 </script>
 
-<script src="currency-calculator.js?v=4"></script>
+<script src="currency-calculator.js?v=5"></script>
 </body>
 </html>
