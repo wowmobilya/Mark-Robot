@@ -1,9 +1,9 @@
-const CACHE_NAME = 'wow-furniture-v46-header-daily-trends';
+const CACHE_NAME = 'wow-furniture-v47-animated-market-arrows';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
-  './modern-ui.css?v=44',
+  './modern-ui.css?v=45',
   './ui-icons.js?v=42',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',

@@ -2953,6 +2953,8 @@ textarea.fc{resize:vertical;min-height:72px}
 .modal-close{width:30px;height:30px;border-radius:7px;border:none;background:var(--input);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all var(--tr)}
 .modal-close:hover{background:var(--red);color:#fff}
 
+/* Animate the directional glyph independently of the numeric quote. */
+setInterval(()=>{document.querySelectorAll('.wf-market-trend').forEach(tag=>{if(tag.querySelector('.wf-market-arrow'))return;const text=tag.textContent,arrow=text.match(/[▲▼]$/)?.[0];if(!arrow)return;tag.textContent=text.slice(0,-1).trim();const icon=document.createElement('span');icon.className='wf-market-arrow';icon.textContent=arrow;icon.setAttribute('aria-hidden','true');tag.append(icon);});},1000);
 /* ============================================================
    TOAST
 ============================================================ */
@@ -8367,7 +8369,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 
 <section class="page" id="page-quick-barcode">
-<link rel="stylesheet" href="modern-ui.css?v=44">
+<link rel="stylesheet" href="modern-ui.css?v=45">
 
 <!-- ══ PHASE 1: SCAN ══ -->
 <div id="qblPhase1" style="transition:all .5s cubic-bezier(.4,0,.2,1);">
