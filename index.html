@@ -6574,6 +6574,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <!-- Language selection is managed in Settings. -->
     </div>
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+    <button class="icon-btn wf-desktop-sidebar-toggle" id="desktopSidebarToggle" onclick="wfToggleDesktopSidebar()" title="Toggle sidebar" aria-label="Toggle sidebar">☰</button>
 <button class="icon-btn" onclick="openSettingsPage()">⚙️</button>
   </div>
 </nav>
@@ -8366,7 +8367,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 
 <section class="page" id="page-quick-barcode">
-<link rel="stylesheet" href="modern-ui.css?v=41">
+<link rel="stylesheet" href="modern-ui.css?v=42">
 
 <!-- ══ PHASE 1: SCAN ══ -->
 <div id="qblPhase1" style="transition:all .5s cubic-bezier(.4,0,.2,1);">
@@ -12920,9 +12921,7 @@ function applyTr(){
   document.documentElement.lang=lang;
   document.documentElement.dir=lang==='ar'?'rtl':'ltr';
   document.querySelectorAll('[data-i18n]').forEach(el=>{const v=TR[lang]?.[el.dataset.i18n];if(v)el.textContent=v;});
-  const sb=document.getElementById('sidebar');const mc=document.getElementById('mainContent');
-  if(lang==='ar'){sb.style.right='0';sb.style.left='auto';mc.style.marginRight='var(--side-w)';mc.style.marginLeft='0';}
-  else{sb.style.left='0';sb.style.right='auto';mc.style.marginLeft='var(--side-w)';mc.style.marginRight='0';}
+  wfApplySidebarLayout();
   updateGreeting(false);updateKdvDisplay();
 
   renderCo();
@@ -13326,6 +13325,9 @@ window.addEventListener('popstate',(e)=>{
 });
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sideOv').classList.toggle('open');}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sideOv').classList.remove('open');}
+function wfApplySidebarLayout(){const sb=document.getElementById('sidebar'),mc=document.getElementById('mainContent');if(!sb||!mc)return;const rtl=(document.documentElement.dir||'rtl')==='rtl',collapsed=document.documentElement.classList.contains('wf-sidebar-collapsed');sb.style.right=rtl?'0':'auto';sb.style.left=rtl?'auto':'0';mc.style.marginRight=rtl?(collapsed?'0':'var(--side-w)'):'0';mc.style.marginLeft=rtl?'0':(collapsed?'0':'var(--side-w)');const btn=document.getElementById('desktopSidebarToggle');if(btn){btn.setAttribute('aria-pressed',String(!collapsed));btn.title=collapsed?'Show sidebar':'Hide sidebar';}}
+function wfToggleDesktopSidebar(){if(matchMedia('(max-width:1024px)').matches){toggleSidebar();return;}document.documentElement.classList.toggle('wf-sidebar-collapsed');try{localStorage.setItem('wf_sidebar_collapsed',document.documentElement.classList.contains('wf-sidebar-collapsed')?'1':'0')}catch(_){}wfApplySidebarLayout();}
+(function wfRestoreSidebarPreference(){try{if(localStorage.getItem('wf_sidebar_collapsed')==='1')document.documentElement.classList.add('wf-sidebar-collapsed')}catch(_){}})();
 
 /* Keep the sidebar closed whenever a touch tablet enters portrait mode. */
 (function initTabletPortraitSidebarGuard(){
