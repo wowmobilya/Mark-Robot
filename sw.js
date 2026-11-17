@@ -1,11 +1,11 @@
-const CACHE_NAME = 'wow-furniture-v85-calculator-quick-values';
+const CACHE_NAME = 'wow-furniture-v86-drawer-pointer';
 const urlsToCache = [
   './',
   './index.html',
   './business-ui.css?v=1',
   './settings-responsive.css?v=1',
   './settings-navigation.js?v=1',
-  './section-headings.css?v=2',
+  './section-headings.css?v=3',
   './currency-calculator.css?v=5',
   './currency-calculator.js?v=3',
   './ui-i18n.js?v=26',

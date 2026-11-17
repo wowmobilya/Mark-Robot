@@ -53,3 +53,31 @@
  @keyframes wfDrawerHint {50%{box-shadow:0 0 0 4px rgba(63,124,148,.1),0 4px 18px rgba(63,124,148,.25)}}
  @media(prefers-reduced-motion:reduce){html body #wfSidebarClose.wf-dismiss-hint{animation:none!important;}}
 }
+@media screen {
+ /* A temporary, non-interactive pointer shares the existing three-click hint. */
+ html body #wfSidebarClose.wf-dismiss-hint::after {
+  content:"";position:absolute;left:-48px;right:auto;top:calc(50% - 9px);bottom:auto;
+  width:34px;height:18px;border-radius:0;background:var(--ui-accent);pointer-events:none;
+  --wf-pointer-flip:1;--wf-pointer-shift:5px;
+  transform:scaleX(var(--wf-pointer-flip));
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18'%3E%3Cpath d='M2 9h29m-7-6 7 6-7 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18'%3E%3Cpath d='M2 9h29m-7-6 7 6-7 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  animation:wfDrawerPointer 1.2s ease-in-out 2;
+ }
+ html[dir="ltr"] body #wfSidebarClose.wf-dismiss-hint::after {
+  left:auto;right:-48px;--wf-pointer-flip:-1;--wf-pointer-shift:-5px;
+ }
+ @keyframes wfDrawerPointer {50%{transform:translateX(var(--wf-pointer-shift)) scaleX(var(--wf-pointer-flip));}}
+ @media(prefers-reduced-motion:reduce) {
+  html body #wfSidebarClose.wf-dismiss-hint::after {animation:none!important;}
+ }
+}
+@media screen and (max-width:420px) {
+ /* Narrow phones have too little space beside the drawer: point down from above. */
+ html body #wfSidebarClose.wf-dismiss-hint::after,
+ html[dir="ltr"] body #wfSidebarClose.wf-dismiss-hint::after {
+  left:calc(50% - 17px);right:auto;top:-42px;transform:rotate(90deg);
+  animation-name:wfDrawerPointerPhone;
+ }
+ @keyframes wfDrawerPointerPhone {50%{transform:translateY(5px) rotate(90deg);}}
+}

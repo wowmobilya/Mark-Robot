@@ -9,3 +9,11 @@ test('three blank outside clicks hint without closing; single/interactive clicks
  ctx.event={target:{closest:()=>({})}};vm.runInContext('trackOutsideClick(event)',ctx);assert.equal(classes.size,0);
  ctx.event={target:{closest:()=>null}};vm.runInContext('trackOutsideClick(event);trackOutsideClick(event)',ctx);assert(classes.has('wf-dismiss-hint'));assert(status.textContent.includes('طيّ'));assert.equal(handle.hidden,false);
 });
+test('drawer pointer shares hint lifetime, mirrors direction and respects reduced motion',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'../section-headings.css'),'utf8');
+ assert.match(css,/#wfSidebarClose\.wf-dismiss-hint::after/);
+ assert.match(css,/pointer-events:none/);
+ assert.match(css,/html\[dir="ltr"\][\s\S]*--wf-pointer-flip:-1;--wf-pointer-shift:-5px/);
+ assert.match(css,/@media\(prefers-reduced-motion:reduce\)[\s\S]*#wfSidebarClose\.wf-dismiss-hint::after \{animation:none!important/);
+ assert.match(source,/setTimeout\(\(\)=>handle.classList.remove\('wf-dismiss-hint'\),2400\)/);
+});
