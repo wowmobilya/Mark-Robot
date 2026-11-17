@@ -1,17 +1,48 @@
-/* Top and bottom docks share the same calm circular visual language. */
+/* One recessed, softly rounded header language across dashboard and inner pages. */
 @media screen {
- html:not(.wf-section-mode) body .navbar {border-radius:0 0 23px 23px!important;background:var(--card)!important;box-shadow:0 5px 20px rgba(33,86,107,.08)!important;}
- html body .navbar .wf-topbar-title {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;gap:9px;max-width:calc(100% - 144px);padding:5px 13px 5px 6px;min-height:42px;border-radius:28px;background:var(--ui-soft);border:1px solid var(--border);color:var(--text);pointer-events:none;direction:inherit;transition:box-shadow .25s ease,background .25s ease;}
- html[dir="rtl"] body .navbar .wf-topbar-title {padding:5px 6px 5px 13px;}
- html body .navbar .wf-topbar-orb {display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:50%;background:var(--brand-primary);color:#fff;box-shadow:0 3px 9px rgba(63,124,148,.22);transition:transform .25s cubic-bezier(.2,.8,.2,1);}
- html body .navbar .wf-topbar-orb svg {width:19px;height:19px;}
- html body .navbar .wf-topbar-label {font-size:12px;font-weight:750;line-height:1.35;min-width:0;overflow-wrap:anywhere;text-align:center;}
- html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn) {width:44px!important;height:44px!important;flex-basis:44px!important;border-radius:50%!important;background:var(--ui-soft)!important;color:var(--ui-accent)!important;border:1px solid var(--border)!important;box-shadow:0 2px 7px rgba(33,86,107,.05);transition:transform .2s ease,box-shadow .2s ease,background .2s ease!important;}
- html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):active {transform:scale(.94)!important;}
- html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):focus-visible {outline:2px solid var(--brand-primary);outline-offset:2px;}
- html.wf-dashboard-scrolled body .navbar .wf-topbar-orb {transform:translateY(-2px);}
- html.wf-dashboard-scrolled body .navbar .wf-topbar-title {box-shadow:0 3px 12px rgba(63,124,148,.1);}
- html body .navbar #desktopSidebarToggle[aria-expanded="true"] {background:var(--brand-primary)!important;color:#fff!important;box-shadow:0 0 0 4px rgba(63,124,148,.12);}
- @media(max-width:360px){html body .navbar .wf-topbar-title{gap:6px;max-width:calc(100% - 136px);}html body .navbar .wf-topbar-label{font-size:11px;}}
- @media(prefers-reduced-motion:reduce){html body .navbar .wf-topbar-title,html body .navbar .wf-topbar-orb,html body .navbar .wf-header-controls .icon-btn {transition:none!important;animation:none!important;}}
+ html {--nav-h:72px;}
+ html:not(.wf-section-mode) body .navbar,
+ html.wf-section-mode body #mainContent .page :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar),
+ html.wf-section-mode body #page-settings>.sct-sticky-header,
+ html.wf-section-mode body #page-quick-barcode #qblPhase1>.sct-sticky-header {
+  min-height:72px!important;box-sizing:border-box;border-radius:0 0 23px 23px!important;
+  background:var(--card)!important;box-shadow:0 5px 20px rgba(33,86,107,.08)!important;
+ }
+ html:not(.wf-section-mode) body .navbar {height:72px!important;}
+ html.wf-section-mode body #mainContent .page :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar),
+ html.wf-section-mode body #page-settings>.sct-sticky-header,
+ html.wf-section-mode body #page-quick-barcode #qblPhase1>.sct-sticky-header {padding-block:12px!important;}
+ html body .navbar .wf-topbar-title {display:none!important;}
+ html body .page .wf-heading-row {grid-template-columns:48px minmax(0,1fr) 48px!important;min-height:48px;}
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn),
+ html body .page .sct-back-btn {
+  position:relative;isolation:isolate;overflow:visible;
+  width:48px!important;height:48px!important;min-width:48px!important;flex:0 0 48px!important;
+  padding:0!important;border-radius:16px!important;background:var(--card)!important;
+  color:var(--ui-accent)!important;border:1px solid var(--border)!important;
+  box-shadow:0 0 0 6px var(--bg),0 3px 9px rgba(33,86,107,.14)!important;
+  transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s ease,background .22s ease!important;
+ }
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn)::after,
+ html body .page .sct-back-btn::after {
+  content:"";position:absolute;inset:-7px;border:1px solid color-mix(in srgb,var(--brand-primary) 15%,transparent);
+  border-radius:22px;pointer-events:none;opacity:.7;transform:scale(1);
+  transition:transform .25s ease,opacity .25s ease;
+ }
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):active,
+ html body .page .sct-back-btn:active {transform:scale(.94)!important;}
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):active::after,
+ html body .page .sct-back-btn:active::after {transform:scale(1.08);opacity:0;}
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):focus-visible,
+ html body .page .sct-back-btn:focus-visible {outline:2px solid var(--brand-primary);outline-offset:3px;}
+ html body .navbar #desktopSidebarToggle[aria-expanded="true"] {background:var(--brand-primary)!important;color:#fff!important;}
+ @media(hover:hover) {
+  html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):hover,
+  html body .page .sct-back-btn:hover {background:var(--ui-soft)!important;transform:translateY(-1px);}
+ }
+ @media(prefers-reduced-motion:reduce) {
+  html body .navbar .wf-header-controls .icon-btn,html body .navbar .wf-header-controls .icon-btn::after,
+  html body .page .sct-back-btn,html body .page .sct-back-btn::after {transition:none!important;animation:none!important;}
+ }
 }
+@media screen {html:not(.wf-section-mode) body .navbar::after {top:0;bottom:auto;}}
