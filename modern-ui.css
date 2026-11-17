@@ -172,3 +172,22 @@ html:not([data-theme="dark"]) .btn-p:hover,html:not([data-theme="dark"]) .btn-g:
 .stat-icon,.tip-card-icon,.curr-flag{box-shadow:none!important}
 @media(min-width:1100px){#page-dashboard.active{grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:16px}.stats-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:600px){.main{padding:14px 12px 24px}.curr-bar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.curr-item{min-width:0}.curr-info{min-width:0}.curr-label{white-space:nowrap}.curr-badge{margin-inline-start:auto}}
+/* Refined header, softer geometry, and market quote cards. */
+html:not([data-theme="dark"]) .navbar{justify-content:flex-end}
+html:not([data-theme="dark"]) .nb-brand{position:absolute;right:var(--side-w);top:50%;transform:translate(50%,-50%);width:var(--side-w);justify-content:center;gap:0}
+html:not([data-theme="dark"]) .nb-brand .hamburger{display:none}
+html:not([data-theme="dark"]) .nb-logo{width:42px;height:42px;border-radius:12px;background:#f4f6f9;border:1px solid #e2e7ee}
+html:not([data-theme="dark"]) .nb-title{display:none!important}
+[dir="ltr"] html:not([data-theme="dark"]) .nb-brand{right:auto;left:var(--side-w);transform:translate(-50%,-50%)}
+html:not([data-theme="dark"]) .nb-right{margin-inline-start:auto}
+html:not([data-theme="dark"]) .card,html:not([data-theme="dark"]) .stat-card,html:not([data-theme="dark"]) .curr-bar,html:not([data-theme="dark"]) .co-card,html:not([data-theme="dark"]) .pr-card-new,html:not([data-theme="dark"]) .inv-card,html:not([data-theme="dark"]) .greeting-card{border-radius:16px}
+html:not([data-theme="dark"]) .curr-item{border-radius:13px;padding:12px 14px;background:linear-gradient(180deg,#fff 0%,#fbfcfe 100%);box-shadow:inset 0 0 0 1px rgba(226,231,238,.55)}
+html:not([data-theme="dark"]) .curr-item::before{content:"";position:absolute;inset:8px auto 8px 8px;width:56px;opacity:.42;pointer-events:none;background:linear-gradient(150deg,transparent 0 17%,#3a5071 18% 20%,transparent 21% 36%,#3a5071 37% 39%,transparent 40% 57%,#3a5071 58% 60%,transparent 61% 76%,#3a5071 77% 79%,transparent 80%);clip-path:polygon(0 60%,18% 49%,36% 58%,52% 28%,70% 41%,100% 8%,100% 13%,70% 47%,52% 34%,36% 64%,18% 55%,0 66%)}
+html:not([data-theme="dark"]) .curr-item::after{height:2px;opacity:.55}
+html:not([data-theme="dark"]) .curr-rate{font-size:18px!important;font-weight:800;letter-spacing:.01em}
+html:not([data-theme="dark"]) .curr-label{font-size:10px;font-weight:700;letter-spacing:.035em}
+html:not([data-theme="dark"]) .curr-badge{border-radius:7px;font-size:9px}
+html:not([data-theme="dark"]) .curr-flag{background:#f0f3f7!important;border-radius:10px;width:36px;height:36px}
+.curr-rate.wf-rate-up,.curr-rate.wf-rate-down{position:relative}
+@media(max-width:700px){html:not([data-theme="dark"]) .nb-brand{right:50%;transform:translate(50%,-50%);width:auto}html:not([data-theme="dark"]) .nb-right{margin:0}.navbar{padding-inline:10px}.curr-item{padding:9px}.curr-item::before{width:34px}.curr-rate{font-size:14px!important}}
+@media(prefers-reduced-motion:reduce){.curr-item::before{display:none}}
