@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v81-centered-workspace';
+const CACHE_NAME = 'wow-furniture-v82-refined-calculator';
 const urlsToCache = [
   './',
   './index.html',
@@ -6,8 +6,8 @@ const urlsToCache = [
   './settings-responsive.css?v=1',
   './settings-navigation.js?v=1',
   './section-headings.css?v=1',
-  './currency-calculator.css?v=2',
-  './currency-calculator.js?v=1',
+  './currency-calculator.css?v=3',
+  './currency-calculator.js?v=2',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
   './ui-identity.css?v=30',

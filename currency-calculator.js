@@ -55,6 +55,10 @@
     if (!CC_CONFIGS[key]) return;
     returnFocus = document.activeElement;
     previousOpen(key); lastValue = '';
+    const cfg = CC_CONFIGS[key];
+    const symbol = {USD:'$', EUR:'€', TRY:'₺'};
+    document.getElementById('ccFromLabel').textContent = symbol[cfg.from] + ' ' + cfg.from;
+    document.getElementById('ccResultLabel').textContent = symbol[cfg.to] + ' ' + cfg.to;
     const labels = {
       ar: ['حذف رقم', 'مسح المبلغ', 'الفاصلة العشرية', 'إغلاق'],
       tr: ['Rakam sil', 'Tutarı temizle', 'Ondalık ayırıcı', 'Kapat'],

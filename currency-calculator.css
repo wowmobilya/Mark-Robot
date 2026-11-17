@@ -46,3 +46,22 @@ html body #currCalcModal .curr-calc-footer .btn-p { background:var(--brand-prima
 html body #currCalcModal .curr-calc-close { background:rgba(255,255,255,.16)!important; color:#fff!important; border-color:rgba(255,255,255,.35)!important; }
 html body #currCalcModal .curr-calc-close .wf-ui-icon { color:#fff!important; }
 html body #currCalcModal .curr-calc-rate-pill { direction:ltr!important; }
+/* Refined blue frame and centered money displays, retaining compact dimensions. */
+html body #currCalcModal { --cc-shell:#e2edf2; --cc-key:#f5f9fb; --cc-field:#f9fcfd; --cc-line:#b7ced8; }
+html[data-theme="dark"] body #currCalcModal { --cc-shell:#19313e; --cc-key:#284553; --cc-field:#203b49; --cc-line:#446574; }
+html body #currCalcModal .curr-calc-modal { background:var(--cc-shell)!important; border:2px solid var(--brand-primary,#3f7c94)!important; box-shadow:0 22px 64px rgba(20,50,64,.28)!important; }
+html body #currCalcModal .curr-calc-body, html body #currCalcModal .curr-calc-footer { background:var(--cc-shell)!important; }
+html body #currCalcModal .curr-calc-header { background:linear-gradient(135deg,#315f73,#3f7c94)!important; }
+html body #currCalcModal .curr-calc-rate-pill { background:var(--cc-key)!important; border-color:var(--cc-line)!important; text-align:center!important; gap:8px!important; }
+html body #currCalcModal .curr-calc-input-section, html body #currCalcModal .curr-calc-result-section { background:var(--cc-field)!important; border:1px solid var(--cc-line)!important; box-shadow:inset 0 1px 3px rgba(20,50,64,.04)!important; }
+html body #currCalcModal .curr-calc-input-top, html body #currCalcModal .curr-calc-result-top { justify-content:center!important; align-items:center!important; gap:8px!important; margin-bottom:4px!important; }
+html body #currCalcModal .curr-calc-from-sym, html body #currCalcModal .curr-calc-to-sym { color:var(--ui-accent)!important; font-size:14px!important; font-weight:800!important; direction:ltr!important; }
+html body #currCalcModal .curr-calc-input { padding:4px 14px!important; height:40px!important; min-height:40px!important; text-align:center!important; box-sizing:border-box!important; border-radius:8px!important; }
+html body #currCalcModal .curr-calc-result-val { display:flex!important; align-items:center!important; justify-content:center!important; text-align:center!important; min-height:40px!important; padding:4px 14px!important; box-sizing:border-box!important; }
+html body #currCalcModal .cc-number-pad button { background:linear-gradient(160deg,var(--cc-field),var(--cc-key))!important; border-color:var(--cc-line)!important; box-shadow:0 2px 0 rgba(32,70,87,.12),inset 0 1px 0 rgba(255,255,255,.12)!important; border-radius:13px!important; transition:background .15s,transform .15s,box-shadow .15s!important; }
+html body #currCalcModal .cc-number-pad button:active { box-shadow:inset 0 2px 4px rgba(32,70,87,.16)!important; transform:translateY(1px)!important; }
+html body #currCalcModal .cc-number-pad [data-key="C"], html body #currCalcModal .cc-number-pad [data-key="⌫"] { background:var(--brand-primary,#3f7c94)!important; color:white!important; border-color:var(--brand-primary,#3f7c94)!important; }
+html body #currCalcModal .curr-calc-footer { border-top-color:var(--cc-line)!important; }
+html body #currCalcModal .curr-calc-footer .btn-s { background:var(--cc-key)!important; border-color:var(--cc-line)!important; }
+html body #currCalcModal .curr-calc-input-top, html body #currCalcModal .curr-calc-result-top { flex-wrap:wrap!important; column-gap:12px!important; row-gap:4px!important; }
+html body #currCalcModal .curr-calc-from-tag, html body #currCalcModal .curr-calc-to-tag, html body #currCalcModal .curr-calc-from-sym, html body #currCalcModal .curr-calc-to-sym { flex:none!important; white-space:nowrap!important; }
