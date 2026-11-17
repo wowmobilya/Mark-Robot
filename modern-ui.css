@@ -116,7 +116,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .bnav-circle-icon .wf-ui-icon{color:#fff}
 label.fl>.wf-ui-icon,label.fl [data-wf-ui]>.wf-ui-icon{color:var(--gold2);margin-inline-end:3px}
 /* Pearl workspace: shared by every application page. */
-html:not([data-theme="dark"]){--bg:#f4f7fc;--card:#fff;--input:#f8faff;--nav:#fff;--text:#192c48;--text2:#4c607b;--muted:#667b95;--border:#dce5f1;--gold:#3276df;--gold2:#245db8;--gold-light:#edf4ff;--brand-accent:#3276df}
+html:not([data-theme="dark"]){--bg:#f4f7fc;--card:#fff;--input:#f8faff;--nav:#fff;--text:#192c48;--text2:#4c607b;--muted:#667b95;--border:#dce5f1;--gold:#3a5071;--gold2:#304461;--gold-light:#edf1f6;--brand-accent:#3a5071}
 html:not([data-theme="dark"]) .navbar{background:#fff;border-bottom:1px solid var(--border);box-shadow:0 3px 16px rgba(30,65,110,.05)}
 html:not([data-theme="dark"]) .nb-title{color:var(--text)}
 html:not([data-theme="dark"]) .navbar .icon-btn,html:not([data-theme="dark"]) .lang-btn{color:var(--text2);background:var(--input)}
@@ -130,7 +130,7 @@ html:not([data-theme="dark"]) .greeting-card .greeting-msg{color:var(--text)}
 html:not([data-theme="dark"]) .greeting-card .greeting-sub{color:var(--text2)}
 html:not([data-theme="dark"]) .greeting-card .greeting-time-badge,html:not([data-theme="dark"]) .ai-badge{background:#fff;color:var(--gold2);border-color:#d5e5fc}
 html:not([data-theme="dark"]) .greeting-card::after{display:none}
-html:not([data-theme="dark"]) .btn-p,html:not([data-theme="dark"]) .btn-g{background:var(--gold)!important;border-color:var(--gold)!important}
+html:not([data-theme="dark"]) .btn-p,html:not([data-theme="dark"]) .btn-g{background:#3a5071!important;border-color:#3a5071!important}
 html:not([data-theme="dark"]) .btn-p:hover,html:not([data-theme="dark"]) .btn-g:hover{background:var(--gold2)!important}
 .main>.page .card,.main>.page .stat-card{border-radius:16px}
 .stats-grid{gap:16px}
