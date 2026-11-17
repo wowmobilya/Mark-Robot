@@ -1,13 +1,17 @@
-const CACHE_NAME = 'wow-furniture-v80-currency-pad';
+const CACHE_NAME = 'wow-furniture-v81-centered-workspace';
 const urlsToCache = [
   './',
   './index.html',
-  './currency-calculator.css?v=1',
+  './business-ui.css?v=1',
+  './settings-responsive.css?v=1',
+  './settings-navigation.js?v=1',
+  './section-headings.css?v=1',
+  './currency-calculator.css?v=2',
   './currency-calculator.js?v=1',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
   './ui-identity.css?v=30',
-  './ui-navigation.js?v=11',
+  './ui-navigation.js?v=12',
   './ui-logo.js?v=2',
   './ui-settings.js?v=1',
   './ui-icons.js?v=44',

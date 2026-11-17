@@ -43,3 +43,6 @@ html body #currCalcModal .curr-calc-close { position:absolute!important; inset-i
 @media (max-height:540px) and (min-width:560px) { html body #currCalcModal .curr-calc-header { min-height:52px!important; } }
 html body #currCalcModal .curr-calc-title { color:#fff!important; font-size:15px!important; }
 html body #currCalcModal .curr-calc-footer .btn-p { background:var(--brand-primary,#3f7c94)!important; }
+html body #currCalcModal .curr-calc-close { background:rgba(255,255,255,.16)!important; color:#fff!important; border-color:rgba(255,255,255,.35)!important; }
+html body #currCalcModal .curr-calc-close .wf-ui-icon { color:#fff!important; }
+html body #currCalcModal .curr-calc-rate-pill { direction:ltr!important; }

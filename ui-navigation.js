@@ -3,6 +3,22 @@
  const root=document.documentElement;
  const compact=matchMedia('(max-width:1024px)');
  let queued=false;
+ let outsideClicks=0,lastOutsideClick=0,hintTimer;
+ function trackOutsideClick(event){
+  const drawer=document.getElementById('sidebar'),handle=document.getElementById('wfSidebarClose');
+  const open=compact.matches?drawer?.classList.contains('open'):!root.classList.contains('wf-sidebar-collapsed');
+  if(!open||!handle||handle.hidden){outsideClicks=0;return;}
+  if(!event.target.closest||event.target.closest('#sidebar,#wfSidebarClose,button,a,input,select,textarea,[role="button"],[onclick]'))return;
+  const now=Date.now();outsideClicks=now-lastOutsideClick<=5000?outsideClicks+1:1;lastOutsideClick=now;
+  if(outsideClicks<3)return;outsideClicks=0;
+  handle.classList.add('wf-dismiss-hint');clearTimeout(hintTimer);
+  hintTimer=setTimeout(()=>handle.classList.remove('wf-dismiss-hint'),2400);
+  let status=document.getElementById('wfDrawerHint');
+  if(!status){status=document.createElement('span');status.id='wfDrawerHint';status.className='wf-visually-hidden';status.setAttribute('role','status');status.setAttribute('aria-live','polite');document.body.append(status);}
+  status.textContent={ar:'لإغلاق القائمة استخدم زر طيّ القائمة.',en:'Use the Close sidebar button to close the menu.',tr:'Menüyü kapatmak için menüyü kapat düğmesini kullanın.',fr:'Utilisez le bouton Fermer le menu pour le fermer.',ru:'Чтобы закрыть меню, нажмите кнопку «Закрыть меню».'}[root.lang]||'Use the Close sidebar button to close the menu.';
+ }
+ document.addEventListener('click',trackOutsideClick);
+
  function syncScroll(){const dashboard=document.querySelector('#page-dashboard.active');const distance=Math.max(0,document.documentElement.scrollHeight-innerHeight);const y=Math.max(0,scrollY);root.classList.toggle('wf-dashboard-scrolled',!!dashboard&&y>24);root.style.setProperty('--wf-scroll-progress',dashboard&&distance?`${Math.min(100,y/distance*100)}%`:'0%');root.classList.remove('wf-header-hidden');}
  function reveal(){const page=document.querySelector('.page.active');root.classList.toggle('wf-section-mode',!!page&&page.id!=='page-dashboard');syncScroll();syncControls();}
  const menuSvg='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
@@ -13,10 +29,25 @@
   // Section headers keep their existing back action, not a second sidebar toggle.
   document.querySelectorAll('.wf-section-menu').forEach(button=>button.remove());
   syncBackButtons();
+  syncSectionHeadings();
   const open=compact.matches?document.getElementById('sidebar')?.classList.contains('open'):!root.classList.contains('wf-sidebar-collapsed');
   const handle=document.getElementById('wfSidebarClose');if(handle)handle.hidden=!open;
   const lang=root.lang||'ar';const copy={ar:['فتح القائمة','طيّ القائمة'],tr:['Menüyü aç','Menüyü kapat'],en:['Open sidebar','Close sidebar'],fr:['Ouvrir le menu','Fermer le menu'],ru:['Открыть меню','Закрыть меню']}[lang]||['Open sidebar','Close sidebar'];
   document.querySelectorAll('#desktopSidebarToggle,#wfSidebarClose').forEach(button=>{if(button.dataset.open!==String(open)){button.innerHTML=open?foldSvg:menuSvg;button.dataset.open=String(open);}button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',copy[open?1:0]);button.title=copy[open?1:0];});
+ }
+ // Equal side columns keep the full title group centered independently of actions.
+ function syncSectionHeadings(){
+  document.querySelectorAll('.page .sct-sticky-title,.page .co-toolbar-title,.page .page-toolbar-title').forEach(title=>{
+   const row=title.parentElement;
+   if(!row||!Array.from(row.children).some(child=>child.classList.contains('sct-back-btn')))return;
+   row.classList.add('wf-heading-row');title.classList.add('wf-centered-heading');
+   let actions=Array.from(row.children).find(child=>child.classList.contains('wf-heading-actions'));
+   const extra=Array.from(row.children).filter(child=>child!==title&&child!==actions&&!child.classList.contains('sct-back-btn'));
+   if(extra.length){if(!actions){actions=document.createElement('div');actions.className='wf-heading-actions';row.append(actions);}extra.forEach(child=>actions.append(child));}
+  });
+  document.querySelectorAll('.modal-hdr').forEach(row=>{if(row.querySelector('.modal-title')&&row.querySelector('.modal-close'))row.classList.add('wf-centered-modal-header');});
+  const scanner=document.querySelector('#scannerModal .modal > div:first-child');
+  if(scanner&&scanner.querySelector('.modal-close')){scanner.classList.add('wf-centered-modal-header');scanner.firstElementChild.classList.add('wf-modal-heading');}
  }
  // Replace only the back pictogram; never replace buttons, labels or onclick handlers.
  function syncBackButtons(){

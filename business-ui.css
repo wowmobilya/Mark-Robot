@@ -1,0 +1,96 @@
+/* WOW business workspace. Screen-only: preserve printed documents and all calculations. */
+@media screen {
+ :root { --business-soft:#edf5f8; --business-line:#c7dfe8; --business-shadow:0 8px 26px rgba(34,77,94,.07); }
+ [data-theme="dark"] { --business-soft:#203946; --business-line:#355363; --business-shadow:0 8px 26px rgba(0,0,0,.17); }
+ html body .main :is(#page-companies,#page-products,#page-invoices) .co-page-sticky {
+  background:linear-gradient(120deg,var(--card),var(--business-soft))!important;
+  border:1px solid var(--business-line)!important;border-radius:20px!important;
+  box-shadow:var(--business-shadow)!important;padding:20px!important;
+ }
+ html body .main :is(#page-companies,#page-products,#page-invoices) .co-toolbar-row {
+  flex-wrap:wrap!important;gap:10px!important;margin-bottom:16px!important;
+ }
+ html body .main :is(#page-companies,#page-products,#page-invoices) .co-toolbar-title {
+  font-size:clamp(19px,2vw,25px)!important;font-weight:800;letter-spacing:-.02em;
+ }
+ html body .main :is(#page-companies,#page-products,#page-invoices) .co-toolbar-title .wf-ui-icon {
+  width:25px;height:25px;color:var(--ui-accent);
+ }
+ html body .main :is(#page-companies,#page-products,#page-invoices) .co-stats-bar {
+  background:transparent!important;border:0!important;padding:0!important;
+  flex-wrap:wrap!important;gap:8px!important;overflow:visible;
+ }
+ html body .main :is(#page-companies,#page-products,#page-invoices) .co-stat-pill {
+  background:var(--card)!important;border:1px solid var(--border)!important;
+  border-radius:12px!important;min-height:42px;flex:1 1 auto;
+ }
+ html body .main :is(#page-companies,#page-products,#page-invoices) .co-stat-pill.active {
+  background:var(--brand-primary)!important;border-color:var(--brand-primary)!important;color:#fff!important;
+ }
+ html body .main :is(#page-companies,#page-products,#page-invoices) .co-stat-pill.active .wf-ui-icon {color:inherit!important}
+ html body .main :is(#page-companies,#page-products,#page-invoices) .co-stat-pill.active .csp-num {
+  background:rgba(255,255,255,.18)!important;color:#fff!important;
+ }
+ html body .main :is(.co-grid,.pr-grid-new,.inv-grid) {
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:18px;padding-top:4px;align-items:start;
+ }
+ html body .main :is(.co-card,.pr-card-new,.inv-card) {
+  min-width:0;border:1px solid var(--business-line)!important;border-radius:20px!important;
+  box-shadow:var(--business-shadow)!important;transition:box-shadow .18s,border-color .18s;
+ }
+ html body .main :is(.co-card,.pr-card-new,.inv-card):hover {
+  transform:none!important;border-color:var(--ui-accent)!important;box-shadow:0 10px 30px rgba(34,77,94,.13)!important;
+ }
+ html body .main :is(.co-card-body,.pr-card-new-body,.inv-card-body) {padding:20px}
+ html body .main :is(.co-hdr,.inv-card-hdr) {gap:12px;margin-bottom:16px}
+ html body .main :is(.co-logo,.inv-card-avatar) {
+  border:1px solid var(--business-line)!important;background:var(--business-soft)!important;
+  color:var(--ui-accent)!important;box-shadow:none!important;border-radius:14px;
+ }
+ html body .main .co-name {font-size:17px;line-height:1.5;overflow-wrap:anywhere}
+ html body .main .co-info {font-size:12px;line-height:1.65;overflow-wrap:anywhere;color:var(--text2)}
+ html body .main :is(.co-details-toggle,.co-fin-summary,.inv-card-meta,.inv-card-pay) {
+  background:var(--business-soft);border-color:var(--business-line);border-radius:12px;
+ }
+ html body .main .co-details-toggle {min-height:42px;padding:10px 12px}
+ html body .main .co-fin-row {gap:12px;padding:7px 0;font-size:12px}
+ html body .main :is(.co-fin-val,.inv-card-total,.inv-card-pay-footer) {font-variant-numeric:tabular-nums}
+ html body .main .pr-card-new-img {background:linear-gradient(145deg,var(--business-soft),var(--business-line))!important;height:190px}
+ html body .main .pr-card-new-img img {object-fit:contain;padding:12px}
+ html body .main .pr-card-type-badge {background:var(--card);color:var(--ui-accent);border:1px solid var(--business-line);backdrop-filter:none}
+ html body .main .pr-card-new-body>div:first-child {background:transparent!important;border:0!important;padding:0 0 12px!important;text-align:start!important;border-bottom:1px solid var(--border)!important}
+ html body .main .pr-card-new-body>div:first-child>div:first-child {font-size:20px!important;line-height:1.5!important;overflow-wrap:anywhere}
+ html body .main .inv-card-hdr {flex-wrap:wrap}
+ html body .main .inv-card-hdr-info {flex:1;min-width:110px}
+ html body .main .inv-card-hdr-amount {margin-inline-start:auto;max-width:100%}
+ html body .main .inv-card-total {font-size:23px;line-height:1.5;color:var(--ui-accent);overflow-wrap:anywhere}
+ html body .main .inv-card-num {font-size:15px;color:var(--text)}
+ html body .main .inv-card-co {font-size:13px;color:var(--text2)}
+ html body .main .inv-card-meta {padding:12px;margin-block:14px;line-height:1.6}
+ html body .main .inv-card-meta-row {flex-wrap:wrap;gap:6px}
+ html body .main .inv-card-pay {padding:12px}
+ html body .main .inv-card-pay-bar {height:7px;border-radius:10px;background:var(--border)}
+ html body .main .inv-card-pay-footer {gap:8px;flex-wrap:wrap;font-size:12px}
+ html body .main :is(.co-empty-state) {border:1px dashed var(--business-line);border-radius:20px;background:var(--card);padding:48px 20px}
+ html body .main .co-empty-state .ei {color:var(--ui-accent);font-size:42px}
+ /* The sales overview and entry screens share the same quiet visual language. */
+ html body .main :is(.wf-insight-card,.stat-card,#page-add-company .card,#page-add-product .card,#page-create-invoice .card,#page-payment-management .card) {
+  border-color:var(--business-line)!important;border-radius:20px!important;box-shadow:var(--business-shadow)!important;
+ }
+ html body .main .wf-insight-head {border-color:var(--business-line);padding-bottom:14px}
+ html body .main .wf-insight-row {padding-block:12px;font-size:13px}
+ html body .main .wf-insight-row b {color:var(--ui-accent)!important;font-size:20px}
+ html body .main :is(#page-add-company,#page-add-product,#page-create-invoice,#page-payment-management) :is(.card-hdr,.card-header) {
+  background:var(--business-soft);border-bottom:1px solid var(--business-line);border-radius:19px 19px 0 0;
+ }
+ @media(max-width:700px) {
+  html body .main :is(#page-companies,#page-products,#page-invoices) .co-page-sticky {padding:13px!important;border-radius:16px!important}
+  html body .main :is(#page-companies,#page-products,#page-invoices) .co-toolbar-row {gap:8px!important}
+  html body .main :is(#page-companies,#page-products,#page-invoices) .co-toolbar-row>.btn {padding:8px 12px!important;min-height:44px}
+  html body .main :is(#page-companies,#page-products,#page-invoices) .co-stats-bar {gap:6px!important}
+  html body .main :is(#page-companies,#page-products,#page-invoices) .co-stat-pill {flex:1 1 30%;font-size:11px;padding:8px!important;white-space:normal}
+  html body .main :is(.co-grid,.pr-grid-new,.inv-grid) {gap:12px;grid-template-columns:1fr}
+  html body .main :is(.co-card-body,.pr-card-new-body,.inv-card-body) {padding:16px}
+  html body .main :is(.co-card,.pr-card-new,.inv-card) {border-radius:16px!important}
+ }
+}

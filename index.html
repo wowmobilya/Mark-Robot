@@ -6435,10 +6435,14 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=46">
      <link rel="stylesheet" href="ui-identity.css?v=30">
-     <script src="ui-navigation.js?v=11" defer></script>
+     <script src="ui-navigation.js?v=12" defer></script>
      <script src="ui-logo.js?v=2" defer></script>
 <script src="ui-settings.js?v=1" defer></script>
-<link rel="stylesheet" href="currency-calculator.css?v=1">
+<script src="settings-navigation.js?v=1" defer></script>
+<link rel="stylesheet" href="currency-calculator.css?v=2">
+<link rel="stylesheet" href="business-ui.css?v=1">
+<link rel="stylesheet" href="settings-responsive.css?v=1">
+<link rel="stylesheet" href="section-headings.css?v=1">
 </head>
 <body>
 
@@ -6473,7 +6477,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     <button type="button" class="wf-restore-confirm wf-restore-done" id="wfRestoreDoneBtn" style="display:none;" onclick="wfRecoveryContinue()"><span data-wf-ui="Continue to the app">الدخول إلى البرنامج</span></button>
   </div>
 </div>
-<div class="sidebar-overlay" id="sideOv" onclick="closeSidebar()"></div>
+<div class="sidebar-overlay" id="sideOv" aria-hidden="true"></div>
 
 <!-- ========== DELETE CONFIRM MODAL ========== -->
 <div class="delete-modal-ov" id="deleteModal">
