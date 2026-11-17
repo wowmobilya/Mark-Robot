@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v51-compact-settings';
+const CACHE_NAME = 'wow-furniture-v52-refined-sidebar';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=2',
+  './ui-identity.css?v=3',
   './ui-icons.js?v=43',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
