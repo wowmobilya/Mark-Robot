@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v55-balanced-workspaces';
+const CACHE_NAME = 'wow-furniture-v56-responsive-workspaces';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=6',
+  './ui-identity.css?v=7',
   './ui-logo.js?v=1',
   './ui-icons.js?v=44',
   './vendor/zxing-browser.min.js?v=26',
