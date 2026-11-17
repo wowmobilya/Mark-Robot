@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v64-standalone-layout';
+const CACHE_NAME = 'wow-furniture-v65-mobile-nav';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=15',
+  './ui-identity.css?v=16',
   './ui-navigation.js?v=5',
   './ui-logo.js?v=2',
   './ui-icons.js?v=44',
