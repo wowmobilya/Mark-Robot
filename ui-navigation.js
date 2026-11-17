@@ -9,11 +9,12 @@
  const foldSvg='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16m7-12-4 4 4 4"/></svg>';
  function syncControls(){
   const brand=document.getElementById('wfSidebarBrand');
-  if(brand&&!document.getElementById('wfSidebarClose')){const close=document.createElement('button');close.id='wfSidebarClose';close.type='button';close.setAttribute('aria-controls','sidebar');close.onclick=()=>window.wfToggleDesktopSidebar();brand.append(close);}
+  if(brand&&!document.getElementById('wfSidebarClose')){const close=document.createElement('button');close.id='wfSidebarClose';close.type='button';close.setAttribute('aria-controls','sidebar');close.onclick=()=>window.wfToggleDesktopSidebar();document.body.append(close);}
   const page=document.querySelector('.page.active');
   const toolbar=page?.querySelector('.co-toolbar-row,.sct-sticky-header,.page-toolbar-row');
   if(toolbar&&!toolbar.querySelector('.wf-section-menu')){const button=document.createElement('button');button.type='button';button.className='wf-section-menu';button.setAttribute('aria-controls','sidebar');button.onclick=()=>window.wfToggleDesktopSidebar();const target=page.id==='page-settings'?toolbar.firstElementChild:toolbar;target.append(button);}
   const open=compact.matches?document.getElementById('sidebar')?.classList.contains('open'):!root.classList.contains('wf-sidebar-collapsed');
+  const handle=document.getElementById('wfSidebarClose');if(handle)handle.hidden=!open;
   const lang=root.lang||'ar';const copy={ar:['فتح القائمة','طيّ القائمة'],tr:['Menüyü aç','Menüyü kapat'],en:['Open sidebar','Close sidebar'],fr:['Ouvrir le menu','Fermer le menu'],ru:['Открыть меню','Закрыть меню']}[lang]||['Open sidebar','Close sidebar'];
   document.querySelectorAll('#desktopSidebarToggle,.wf-section-menu,#wfSidebarClose').forEach(button=>{if(button.dataset.open!==String(open)){button.innerHTML=open?foldSvg:menuSvg;button.dataset.open=String(open);}button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',copy[open?1:0]);button.title=copy[open?1:0];});
  }
@@ -28,5 +29,8 @@
  if(typeof original==='function')window.showPage=function(...args){root.classList.toggle('wf-section-mode',args[0]!=='dashboard');root.classList.remove('wf-header-hidden');const value=original.apply(this,args);reveal();return value;};
  const sidebar=document.getElementById('sidebar');if(sidebar)new MutationObserver(()=>{const open=compact.matches&&sidebar.classList.contains('open');root.classList.toggle('wf-mobile-menu-open',open);syncControls();if(open)reveal();}).observe(sidebar,{attributes:true,attributeFilter:['class']});
  new MutationObserver(syncControls).observe(root,{attributes:true,attributeFilter:['class','dir','lang']});
+ const quotes=document.getElementById('currBar');
+ function decorateQuotes(){quotes?.querySelectorAll('.wf-market-trend').forEach(tag=>{if(tag.querySelector('.wf-market-arrow'))return;const match=tag.textContent.match(/([▲▼])\s*$/);if(!match)return;const value=tag.textContent.slice(0,match.index).trim();const arrow=document.createElement('span');arrow.className='wf-market-arrow';arrow.setAttribute('aria-hidden','true');arrow.textContent=match[1];tag.replaceChildren(document.createTextNode(value+' '),arrow);});}
+ if(quotes){new MutationObserver(decorateQuotes).observe(quotes,{childList:true,subtree:true});decorateQuotes();}
  reveal();
 })();

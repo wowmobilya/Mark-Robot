@@ -6434,8 +6434,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script>document.documentElement.classList.add('wf-booting');if(location.hash&&location.hash!=='#dashboard')document.documentElement.classList.add('wf-section-mode');</script>
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=46">
-     <link rel="stylesheet" href="ui-identity.css?v=22">
-     <script src="ui-navigation.js?v=8" defer></script>
+     <link rel="stylesheet" href="ui-identity.css?v=23">
+     <script src="ui-navigation.js?v=9" defer></script>
      <script src="ui-logo.js?v=2" defer></script>
 </head>
 <body>
@@ -23195,55 +23195,16 @@ function updateQabActive(pageId) {
 
 /* ── تحريك الدائرة والمنحنى ── */
 function bnavMoveToIndex(idx) {
-  const nav    = document.getElementById('bottomNav');
-  const circle = document.getElementById('bnavCircle');
-  const curve  = document.getElementById('bnavCurve');
-  const iconEl = document.getElementById('bnavCircleIcon');
-  if (!nav || !circle) return;
-
-  const totalW  = nav.offsetWidth;
-  const btnW    = totalW / BNAV_CONFIG.count;
-
-  // ✅ الحساب دائماً من اليسار بغض النظر عن RTL/LTR
-  const centerX = btnW * idx + btnW / 2;
-
-  /* موضع الدائرة — دائماً left */
-  circle.style.left  = (centerX - 28) + 'px';
-  circle.style.right = 'auto';
-
-  /* موضع المنحنى — دائماً left */
-  if (curve) {
-    curve.style.left  = (centerX - 50) + 'px';
-    curve.style.right = 'auto';
-  }
-
-  /* تحديث لون المنحنى */
-  const curvePath = document.getElementById('bnavCurvePath');
-  if (curvePath) {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    curvePath.setAttribute('fill', isDark ? '#161927' : 'white');
-  }
-
-  /* تغيير الأيقونة */
-  if (iconEl) {
-    _bnavAnimating = true;
-    iconEl.classList.add('switching');
-    setTimeout(() => {
-      iconEl.textContent = BNAV_CONFIG.icons[idx];
-      iconEl.classList.remove('switching');
-      _bnavAnimating = false;
-    }, 180);
-  }
-
-  /* تحديث الأزرار */
-  for (let i = 0; i < BNAV_CONFIG.count; i++) {
-    const btn = document.getElementById('bnav-' + i);
-    if (btn) {
-      btn.classList.toggle('bnav-active', i === idx);
-      if (i === idx) btn.setAttribute('aria-current', 'page');
-      else btn.removeAttribute('aria-current');
-    }
-  }
+  const nav=document.getElementById('bottomNav'),circle=document.getElementById('bnavCircle'),icon=document.getElementById('bnavCircleIcon');
+  if(!nav||!circle)return;
+  const button=document.getElementById('bnav-'+idx);
+  const center=button?button.offsetLeft+button.offsetWidth/2:nav.offsetWidth*(idx+.5)/5;
+  nav.style.setProperty('--nav-x',center+'px');
+  circle.style.left=(center-24)+'px';circle.style.right='auto';
+  const svg=button?.querySelector('.bnav-icon svg');
+  if(icon&&svg){icon.replaceChildren(svg.cloneNode(true));icon.classList.remove('switching');}
+  for(let i=0;i<BNAV_CONFIG.count;i++){const el=document.getElementById('bnav-'+i);if(!el)continue;el.classList.toggle('bnav-active',i===idx);if(i===idx)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');}
+  _bnavAnimating=false;
 }
 
 /* ── نبضة الدائرة عند الضغط على نفس الزر ── */

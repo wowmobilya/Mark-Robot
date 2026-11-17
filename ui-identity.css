@@ -294,3 +294,48 @@ html #wfSidebarClose:focus-visible{outline:2px solid var(--ui-accent);outline-of
  html[data-theme="dark"] body #bottomNav button.bnav-btn.bnav-active span.bnav-icon{color:#172235!important}
 }
 html.wf-section-mode body #mainContent .page :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar),html.wf-section-mode body #page-settings>.sct-sticky-header,html.wf-section-mode body #page-quick-barcode #qblPhase1>.sct-sticky-header{border-radius:0 0 20px 20px!important;background:var(--card)!important;border-bottom:1px solid var(--border)!important;box-shadow:0 6px 18px rgba(29,45,67,.06)!important}
+
+@property --nav-x{syntax:'<length>';inherits:true;initial-value:0px}
+@media(max-width:1024px){
+ html body #bottomNav{background:transparent!important;border:0!important;box-shadow:none!important;transition:--nav-x .3s ease;isolation:isolate}
+ html body #bottomNav::before{content:"";position:absolute;inset:0;z-index:0;background:var(--card);border-radius:0 0 24px 24px;mask:radial-gradient(circle 32px at var(--nav-x) 0px,transparent 98%,#000 100%);-webkit-mask:radial-gradient(circle 32px at var(--nav-x) 0px,transparent 98%,#000 100%);pointer-events:none}
+ html body #bottomNav .bnav-btn.bnav-active::before{display:none!important}
+ html body #bottomNav #bnavCircle{display:grid!important;place-items:center;top:-25px;width:48px;height:48px;border-radius:50%;background:var(--card)!important;border:1px solid var(--border);box-shadow:0 4px 14px rgba(25,40,62,.15)!important;transition:left .3s ease;z-index:6}
+ html body #bottomNav #bnavCircle::before{display:none!important}
+ html body #bottomNav #bnavCircleIcon{display:grid;place-items:center;filter:none;color:var(--text);transform:none!important;opacity:1!important}
+ html body #bottomNav #bnavCircleIcon svg{width:23px;height:23px;stroke:currentColor}
+ html body #bottomNav .bnav-btn.bnav-active .bnav-icon{opacity:0!important;transform:none!important}
+ html body #bottomNav .bnav-btn .bnav-label{color:var(--text2)!important}
+}
+html body #wfSidebarClose{position:fixed;top:50%;inset-inline-start:calc(var(--side-w) - 18px);inset-inline-end:auto;transform:translateY(-50%);z-index:1250;width:36px;height:64px;border-radius:18px;background:var(--card);box-shadow:0 4px 15px rgba(25,40,62,.14)}
+html body #wfSidebarClose[hidden]{display:none!important}
+html #sidebar .wf-sidebar-brand{padding-inline:20px;min-height:108px}
+html #sidebar #wfSidebarLogo{width:68px;height:68px;border-radius:18px;padding:6px}
+@media(max-width:1024px){html body #wfSidebarClose{inset-inline-start:calc(min(300px,86vw) - 18px)}}
+html .main .co-toolbar-row,html .main .page-toolbar-row{align-items:center!important}
+@media(max-width:480px){
+ html .main .co-toolbar-row,html .main .page-toolbar-row{flex-wrap:wrap!important;gap:8px!important}
+ html .main .co-toolbar-title,html .main .page-toolbar-title{flex:1 1 120px!important}
+ html .main .co-toolbar-row>.btn,html .main .page-toolbar-row>.btn{flex:1 1 auto;justify-content:center;min-height:42px}
+ html #page-settings .sct-sticky-header>div:first-child{flex-wrap:wrap!important}
+ html .main .sct-sticky-title{min-width:90px!important}
+}
+@media(prefers-reduced-motion:reduce){html body #bottomNav,html body #bottomNav #bnavCircle{transition:none!important}}
+
+/* Balanced quote cards and the matching converter. */
+html body .curr-item{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:16px!important;box-shadow:0 3px 10px rgba(29,45,67,.035)!important;gap:7px 10px!important;min-height:98px}
+html body .curr-item::before,html body .curr-item::after{display:none!important}
+html body .curr-item .curr-flag{width:40px;height:40px;border-radius:13px;background:var(--ui-soft)!important;color:var(--ui-accent)!important}
+html body .curr-item[onclick*="usd-"] .curr-flag{background:#eaf0fa!important;color:#385b91!important}
+html body .curr-item[onclick*="eur-"] .curr-flag{background:#eceef7!important;color:#535f8c!important}
+html body .curr-item[onclick*="try-"] .curr-flag{background:#e9f1f2!important;color:#426c75!important}
+html[data-theme="dark"] body .curr-item .curr-flag{background:#29394c!important;color:#c0d3e9!important}
+html body .curr-item .curr-rate{color:var(--text)!important;font-size:clamp(15px,1.6vw,21px)!important;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+html body .curr-item .curr-label{color:var(--muted)!important;direction:ltr;text-align:start;line-height:1.5}
+html body .curr-item .wf-market-trend{min-width:0;padding:3px 7px!important;height:auto!important;min-height:24px;font-size:10px!important}
+html body #currCalcModal .curr-calc-modal{border-radius:24px!important;box-shadow:0 20px 60px rgba(20,35,55,.2)!important}
+html body #currCalcModal .curr-calc-header{padding:20px!important;align-items:center}
+html body #currCalcModal .curr-calc-result-section{background:var(--ui-soft)!important;border-color:var(--border)!important}
+html body #currCalcModal .curr-calc-input,html body #currCalcModal .curr-calc-result-val{font-size:clamp(25px,6vw,34px)!important;font-variant-numeric:tabular-nums}
+html body #currCalcModal .curr-calc-quick-btn{min-height:44px;border-radius:12px!important}
+@media(max-width:380px){html body .curr-item .curr-flag{width:32px;height:32px}html body .curr-item{padding:9px!important;column-gap:6px!important}}
