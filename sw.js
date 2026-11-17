@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v75-reference-dock';
+const CACHE_NAME = 'wow-furniture-v76-primary-teal';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=26',
+  './ui-identity.css?v=27',
   './ui-navigation.js?v=10',
   './ui-logo.js?v=2',
   './ui-settings.js?v=1',
