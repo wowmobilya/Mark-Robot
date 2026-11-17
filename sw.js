@@ -1,10 +1,11 @@
-const CACHE_NAME = 'wow-furniture-v53-currency-calculator';
+const CACHE_NAME = 'wow-furniture-v54-adaptive-logo';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=4',
+  './ui-identity.css?v=5',
+  './ui-logo.js?v=1',
   './ui-icons.js?v=44',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
