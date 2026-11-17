@@ -56,16 +56,16 @@
 @media screen {
  /* A temporary, non-interactive pointer shares the existing three-click hint. */
  html body #wfSidebarClose.wf-dismiss-hint::after {
-  content:"";position:absolute;left:calc(-1 * var(--wf-pointer-width, 34px) - 8px);right:auto;top:calc(50% - 9px);bottom:auto;
-  width:var(--wf-pointer-width, 34px);height:18px;border-radius:0;background:#21566b;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 1px white) drop-shadow(0 -1px 1px white);
-  --wf-pointer-flip:1;--wf-pointer-shift:5px;
+  content:"";position:absolute;left:calc(-1 * var(--wf-pointer-width, 44px) - var(--wf-pointer-gap, 16px));right:auto;top:calc(50% - 9px);bottom:auto;
+  width:var(--wf-pointer-width, 44px);height:18px;border-radius:0;background:#21566b;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 1px white) drop-shadow(0 -1px 1px white);
+  --wf-pointer-flip:1;--wf-pointer-shift:3px;
   transform:scaleX(var(--wf-pointer-flip));
-  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18'%3E%3Cpath d='M2 9h29m-7-6 7 6-7 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18'%3E%3Cpath d='M2 9h29m-7-6 7 6-7 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18'%3E%3Cpath d='M2 9h29m-7-6 7 6-7 6' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% 100% no-repeat;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18'%3E%3Cpath d='M2 9h29m-7-6 7 6-7 6' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% 100% no-repeat;
   animation:wfDrawerPointer 1.2s ease-in-out 2;
  }
  html[dir="ltr"] body #wfSidebarClose.wf-dismiss-hint::after {
-  left:auto;right:calc(-1 * var(--wf-pointer-width, 34px) - 8px);--wf-pointer-flip:-1;--wf-pointer-shift:-5px;
+  left:auto;right:calc(-1 * var(--wf-pointer-width, 44px) - var(--wf-pointer-gap, 16px));--wf-pointer-flip:-1;--wf-pointer-shift:-3px;
  }
  @keyframes wfDrawerPointer {50%{transform:translateX(var(--wf-pointer-shift)) scaleX(var(--wf-pointer-flip));}}
  @media(prefers-reduced-motion:reduce) {
@@ -79,5 +79,5 @@
 }
 @media screen and (max-width:420px) {
  /* Stay horizontal on the transparent side, within the narrow exposed strip. */
- html body #wfSidebarClose {--wf-pointer-width:clamp(16px,calc(14vw - 28px),30px);}
+ html body #wfSidebarClose {--wf-pointer-width:clamp(16px,calc(100vw - min(300px,86vw) - 36px),44px);--wf-pointer-gap:clamp(10px,calc(100vw - min(300px,86vw) - 48px),16px);}
 }

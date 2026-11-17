@@ -1,0 +1,15 @@
+const test=require('node:test'),assert=require('node:assert/strict');const {formatTime,requestRates}=require('../rate-refresh');
+test('time uses local timezone, twelve hours and localized day period and digits',()=>{
+ const date=new Date(2026,10,17,15,7).toISOString();
+ assert.match(formatTime(date,'en'),/3:07.*PM/);assert(!formatTime(date,'en').includes('15:'));
+ assert.match(formatTime(date,'ar'),/٣:٠٧/);assert.match(formatTime(date,'ar'),/مساءً/);
+ for(const lang of ['tr','fr','ru'])assert(formatTime(date,lang).length>4);
+ assert.match(formatTime('15:07:00','en'),/3:07.*PM/);
+});
+test('validates rates, falls back to original second source and keeps numeric precision',async()=>{
+ let calls=0;const rates=await requestRates(async()=>({ok:true,json:async()=>++calls===1?{rates:{TRY:-3,EUR:0}}:{conversion_rates:{TRY:47.123456,EUR:.873456}}}));
+ assert.equal(calls,2);assert.deepEqual(rates,{usdTry:47.1235,usdEur:.8735});
+});
+test('failure is explicit and does not invent a successful quote',async()=>{
+ await assert.rejects(()=>requestRates(async()=>{throw new Error('offline')}),/rate-unavailable/);
+});

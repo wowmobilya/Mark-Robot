@@ -1,16 +1,18 @@
-const CACHE_NAME = 'wow-furniture-v88-symbolic-calculator';
+const CACHE_NAME = 'wow-furniture-v89-dashboard-polish';
 const urlsToCache = [
   './',
   './index.html',
   './business-ui.css?v=1',
   './settings-responsive.css?v=1',
   './settings-navigation.js?v=1',
-  './section-headings.css?v=4',
+  './dashboard-visuals.css?v=1',
+  './rate-refresh.js?v=1',
+  './section-headings.css?v=5',
   './currency-calculator.css?v=6',
   './currency-calculator.js?v=4',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=30',
+  './ui-identity.css?v=31',
   './ui-navigation.js?v=12',
   './ui-logo.js?v=2',
   './ui-settings.js?v=1',

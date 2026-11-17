@@ -1,0 +1,86 @@
+/* Clear currency symbols and dashboard summaries, without changing financial data. */
+@media screen {
+ html body #page-dashboard .curr-item {--tile-ink:#255a6e;--tile-bg:#e5f2f7}
+ html body #page-dashboard .curr-item[onclick*="eur-"] {--tile-ink:#48577d;--tile-bg:#eef0f8}
+ html body #page-dashboard .curr-item[onclick*="try-"] {--tile-ink:#835b2a;--tile-bg:#f7f0e4}
+ html body #page-dashboard .stat-card {--tile-ink:#255a6e;--tile-bg:#e5f2f7}
+ html body #page-dashboard .stat-card:has(.si-b) {--tile-ink:#615181;--tile-bg:#f0ecf7}
+ html body #page-dashboard .stat-card:has(.si-gr) {--tile-ink:#286d63;--tile-bg:#e7f4f0}
+ html body #page-dashboard .stat-card:has(.si-r) {--tile-ink:#835b2a;--tile-bg:#f7f0e4}
+ html[data-theme="dark"] body #page-dashboard :is(.curr-item,.stat-card) {--tile-ink:#b5dfef;--tile-bg:#264653}
+ html[data-theme="dark"] body #page-dashboard .curr-item[onclick*="eur-"] {--tile-ink:#c6cff4;--tile-bg:#333d5a}
+ html[data-theme="dark"] body #page-dashboard .curr-item[onclick*="try-"],
+ html[data-theme="dark"] body #page-dashboard .stat-card:has(.si-r) {--tile-ink:#f2d5a6;--tile-bg:#493a28}
+ html[data-theme="dark"] body #page-dashboard .stat-card:has(.si-b) {--tile-ink:#ded0f5;--tile-bg:#423554}
+ html[data-theme="dark"] body #page-dashboard .stat-card:has(.si-gr) {--tile-ink:#b9e8db;--tile-bg:#24483f}
+ html body #page-dashboard :is(.curr-flag,.stat-icon) {
+  display:grid!important;place-items:center;width:46px!important;height:46px!important;min-width:46px;
+  border-radius:14px!important;background:var(--tile-bg)!important;color:var(--tile-ink)!important;
+  border:1px solid color-mix(in srgb,var(--tile-ink) 16%,transparent)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1)!important;flex:0 0 46px;
+ }
+ /* Nested icon wrappers must inherit the tile contrast, not the global accent. */
+ html body #page-dashboard :is(.curr-flag,.stat-icon) .wf-ui-icon {
+  color:inherit!important;width:27px!important;height:27px!important;margin:0!important;opacity:1!important;
+ }
+ html body #page-dashboard :is(.curr-flag,.stat-icon) svg {width:100%;height:100%;stroke:currentColor;stroke-width:2;filter:none}
+ html body #page-dashboard .curr-bar {padding:18px!important;border-radius:20px!important}
+ html body #page-dashboard .curr-bar-grid {gap:12px!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ html body #page-dashboard .curr-item {
+  border-radius:16px!important;padding:14px!important;gap:8px 12px!important;
+  min-height:102px;box-shadow:0 4px 14px rgba(34,77,94,.04)!important;
+ }
+ html body #page-dashboard .curr-label {font-size:11px!important;font-weight:750;color:var(--text2)!important;line-height:1.5!important}
+ html body #page-dashboard .curr-rate {font-size:21px!important;font-weight:800;line-height:1.3!important;letter-spacing:0!important}
+ html body #page-dashboard .stats-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+ html body #page-dashboard .stat-card {
+  min-width:0;position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:14px;
+  padding:20px!important;min-height:164px;border-radius:20px!important;
+  border:1px solid var(--business-line,var(--border))!important;box-shadow:0 6px 22px rgba(34,77,94,.06)!important;
+ }
+ html body #page-dashboard .stat-card::after {display:none!important}
+ html body #page-dashboard .stat-card>div:not(.stat-icon) {min-width:0;width:100%}
+ html body #page-dashboard .stat-val {font-size:clamp(23px,2vw,30px)!important;line-height:1.25;font-weight:800;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+ html body #page-dashboard #s-total {font-size:clamp(18px,1.8vw,25px)!important;direction:ltr;text-align:start}
+ html body #page-dashboard .stat-lbl {font-size:13px;line-height:1.5;color:var(--text2);font-weight:650;margin-top:5px}
+ html body #page-dashboard .stat-card .wf-stat-trend {position:static;margin-top:0;font-size:11px}
+ @media(max-width:1050px) {
+  html body #page-dashboard .stats-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+ }
+ @media(max-width:700px) {
+  html body #page-dashboard .curr-bar {padding:12px!important;border-radius:17px!important}
+  html body #page-dashboard .curr-bar-grid {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+  html body #page-dashboard .curr-item {grid-template-columns:38px minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;gap:8px!important;padding:11px!important;min-height:128px;align-content:start}
+  html body #page-dashboard .curr-item .curr-flag {grid-column:1!important;grid-row:1!important;width:38px!important;height:38px!important;min-width:38px;border-radius:12px!important}
+  html body #page-dashboard .curr-item .curr-flag .wf-ui-icon {width:24px!important;height:24px!important}
+  html body #page-dashboard .curr-item .curr-info {display:contents}
+  html body #page-dashboard .curr-item .curr-label {grid-column:2;grid-row:1;align-self:center;font-size:10px!important;white-space:normal!important;line-height:1.4!important}
+  html body #page-dashboard .curr-item .curr-rate {grid-column:1/-1;grid-row:2;font-size:20px!important;direction:ltr;text-align:start;white-space:normal!important;overflow-wrap:anywhere}
+  html body #page-dashboard .curr-item .wf-market-trend {grid-column:1/-1!important;grid-row:3!important;justify-self:start;margin:0!important}
+  html body #page-dashboard .stats-grid {gap:10px}
+  html body #page-dashboard .stat-card {padding:16px!important;min-height:151px;gap:12px;border-radius:17px!important}
+  html body #page-dashboard .stat-val {font-size:25px!important}
+  html body #page-dashboard #s-total {font-size:19px!important}
+  html body #page-dashboard .stat-lbl {font-size:12px}
+ }
+ @media(max-width:360px) {
+  html body #page-dashboard .curr-item {grid-template-columns:32px minmax(0,1fr)!important;padding:9px!important;gap:7px!important}
+  html body #page-dashboard .curr-item .curr-flag {width:32px!important;height:32px!important;min-width:32px}
+  html body #page-dashboard .curr-item .curr-label {font-size:9px!important}
+  html body #page-dashboard .curr-item .curr-rate {font-size:19px!important}
+  html body #page-dashboard .stat-card {padding:13px!important}
+ }
+}
+@media screen {
+ html body #page-dashboard .curr-bar-top {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+ html body #page-dashboard .curr-refresh {display:inline-flex!important;align-items:center;justify-content:center;gap:7px;min-width:44px;width:auto!important;min-height:44px;height:auto!important;padding:10px 12px!important;border-radius:12px!important;background:var(--brand-primary)!important;color:#fff!important;border:0!important;transform:none!important;animation:none!important;box-shadow:none!important;font:inherit;font-size:12px;font-weight:700}
+ html body #page-dashboard .curr-refresh .wf-ui-icon {color:inherit!important;width:18px;height:18px;margin:0!important;animation:none;transform:none}
+ html body #page-dashboard .curr-refresh.wf-refreshing .wf-ui-icon {animation:wfRefreshSpin 1s linear infinite}
+ html body #page-dashboard .curr-refresh:disabled {opacity:.75;cursor:wait}
+ html body #page-dashboard .curr-update {font-size:11px;line-height:1.6;color:var(--text2);background:transparent!important;border:0!important;padding:0!important}
+ html body #page-dashboard .wf-rate-status {font-size:11px;line-height:1.6;color:var(--text2);margin-bottom:10px;overflow-wrap:anywhere}
+ html body #page-dashboard .wf-rate-status:empty {display:none}
+ html body #page-dashboard .wf-rate-status[data-state="failed"],html body #page-dashboard .wf-rate-status[data-state="unsaved"] {color:var(--red)}
+ @keyframes wfRefreshSpin {to{transform:rotate(360deg)}}
+ @media(prefers-reduced-motion:reduce){html body #page-dashboard .curr-refresh.wf-refreshing .wf-ui-icon {animation:none!important}}
+}
