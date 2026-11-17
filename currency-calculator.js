@@ -59,6 +59,16 @@
     const symbol = {USD:'$', EUR:'€', TRY:'₺'};
     document.getElementById('ccFromLabel').textContent = symbol[cfg.from] + ' ' + cfg.from;
     document.getElementById('ccResultLabel').textContent = symbol[cfg.to] + ' ' + cfg.to;
+    const quick = document.getElementById('ccQuickBtns');
+    quick.replaceChildren(...[20,50,100,200,1000].map(amount => {
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'curr-calc-quick-btn';
+      button.textContent = amount.toLocaleString('en-US');
+      button.setAttribute('aria-label', amount + ' ' + cfg.from);
+      button.title = amount + ' ' + cfg.from;
+      button.addEventListener('click', () => setCCInput(amount));
+      return button;
+    }));
     const labels = {
       ar: ['حذف رقم', 'مسح المبلغ', 'الفاصلة العشرية', 'إغلاق'],
       tr: ['Rakam sil', 'Tutarı temizle', 'Ondalık ayırıcı', 'Kapat'],

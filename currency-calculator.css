@@ -84,3 +84,21 @@ html body #currCalcModal .curr-calc-rate-pill { background:transparent!important
 html body #currCalcModal .curr-calc-icon-wrap { border:0!important; background:var(--ui-soft)!important; color:var(--ui-accent)!important; }
 html body #currCalcModal .curr-calc-input-section:focus-within { box-shadow:0 0 0 2px var(--ui-soft)!important; }
 html body #currCalcModal .cc-number-pad [data-key="C"], html body #currCalcModal .cc-number-pad [data-key="⌫"] { background:var(--ui-soft)!important; color:var(--ui-accent)!important; border-color:var(--cc-line)!important; }
+/* Quick values always refer to the selected source currency. */
+html body #currCalcModal .curr-calc-quick-btns { display:grid!important; grid-template-columns:repeat(5,minmax(0,1fr))!important; gap:5px!important; margin:0!important; direction:ltr!important; }
+html body #currCalcModal .curr-calc-quick-btn { min-height:36px!important; padding:4px!important; border-radius:9px!important; font-size:12px!important; color:var(--ui-accent)!important; background:var(--ui-soft)!important; }
+@media (max-height:620px) and (max-width:559px) {
+ html body #currCalcModal .curr-calc-header { min-height:56px!important; height:56px!important; padding-block:4px!important; }
+ html body #currCalcModal .curr-calc-body { padding:6px!important; gap:4px!important; }
+ html body #currCalcModal .curr-calc-input-section, html body #currCalcModal .curr-calc-result-section { padding:4px 10px!important; }
+ html body #currCalcModal .curr-calc-input-top, html body #currCalcModal .curr-calc-result-top { margin-bottom:6px!important; line-height:18px!important; }
+ html body #currCalcModal .curr-calc-from-sym, html body #currCalcModal .curr-calc-to-sym { padding:1px 6px!important; line-height:18px!important; }
+ html body #currCalcModal .curr-calc-input, html body #currCalcModal .curr-calc-result-val { min-height:34px!important; height:34px!important; padding-block:2px!important; font-size:23px!important; }
+ html body #currCalcModal .curr-calc-footer { padding:4px 6px 6px!important; }
+ html body #currCalcModal .curr-calc-rate-pill { padding:2px!important; font-size:11px!important; }
+}
+@media (max-height:540px) and (min-width:560px) {
+ html body #currCalcModal .curr-calc-body { grid-template-rows:auto auto auto auto!important; }
+ html body #currCalcModal .cc-number-pad { grid-column:2!important; grid-row:1 / 5!important; }
+ html body #currCalcModal .curr-calc-quick-btns { grid-column:1!important; grid-row:4!important; }
+}
