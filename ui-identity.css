@@ -136,6 +136,8 @@
  html.wf-section-mode body .main .wf-section-menu{order:-2;margin-inline:0 2px;border-radius:9px}
  html.wf-section-mode body .main .sct-sticky-title h1{line-height:1.4}
  @media(max-width:700px){html.wf-section-mode body .main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){margin-inline:-12px!important;padding:12px!important;padding-top:max(12px,env(safe-area-inset-top,0px))!important;top:0!important}html.wf-section-mode body .main .co-toolbar-title{font-size:18px!important}html.wf-section-mode body .main .wf-section-menu{width:36px;height:36px;flex-basis:36px}html.wf-section-mode body .main .co-toolbar-row{gap:7px!important}}
+ html.wf-section-mode body .main>.page{animation:none!important}
+ html.wf-section-mode body .main{transition:none!important}
  /* Settings uses one scale for every tab, field, action and language option. */
  html #page-settings{max-width:1120px;margin-inline:auto}
  html #page-settings .sct-sticky-header{padding:16px!important;gap:16px!important;border-radius:16px!important}

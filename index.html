@@ -6427,6 +6427,12 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 @media(prefers-reduced-motion:reduce){.wf-restore-ov,.wf-restore-modal,#wfRestoreProgressFill{transition:none}.wf-restore-ov.working .wf-restore-icon:after,.wf-restore-progress-track.indeterminate #wfRestoreProgressFill,.wf-restore-ov.success .wf-restore-icon,.wf-recovery-check{animation:none}.wf-recovery-check{stroke-dashoffset:0}}
 
 </style>
+<script>document.documentElement.classList.add('wf-booting');if(location.hash&&location.hash!=='#dashboard')document.documentElement.classList.add('wf-section-mode');</script>
+<style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
+<link rel="stylesheet" href="modern-ui.css?v=46">
+<link rel="stylesheet" href="ui-identity.css?v=14">
+<script src="ui-navigation.js?v=5" defer></script>
+<script src="ui-logo.js?v=1" defer></script>
 </head>
 <body>
 
@@ -8366,10 +8372,6 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 
 <section class="page" id="page-quick-barcode">
-<link rel="stylesheet" href="modern-ui.css?v=46">
-<link rel="stylesheet" href="ui-identity.css?v=13">
-<script src="ui-navigation.js?v=5" defer></script>
-<script src="ui-logo.js?v=1" defer></script>
 
 <!-- ══ PHASE 1: SCAN ══ -->
 <div id="qblPhase1" style="transition:all .5s cubic-bezier(.4,0,.2,1);">
@@ -13264,9 +13266,12 @@ function wfIsTouchTablet(){
 ============================================================ */
 let _isPopState=false;
 function showPage(id,pushHistory=true){
+  document.documentElement.classList.toggle('wf-section-mode',id!=='dashboard');
+  document.documentElement.classList.remove('wf-header-hidden');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
+  document.documentElement.classList.remove('wf-booting');
 const map = {
   dashboard:             0,
   companies:             1,

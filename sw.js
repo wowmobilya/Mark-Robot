@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v62-integrated-section-header';
+const CACHE_NAME = 'wow-furniture-v63-stable-first-paint';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=13',
+  './ui-identity.css?v=14',
   './ui-navigation.js?v=5',
   './ui-logo.js?v=1',
   './ui-icons.js?v=44',
