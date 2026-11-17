@@ -56,3 +56,26 @@
  html[dir="ltr"] body .navbar #headerSettingsBtn {right:12px;left:auto;}
  html[dir="ltr"] body .navbar #themeBtn {right:76px;left:auto;}
 }
+
+/* Sculpted open notches echo the lower dock; no translucent control frame. */
+@media screen {
+ html body .navbar.wf-notched-header,
+ html.wf-section-mode body #mainContent .page .wf-notched-header {
+  background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  box-shadow:none!important;border:0!important;overflow:visible!important;isolation:isolate;
+  padding-bottom:12px!important;
+ }
+ .wf-header-surface{position:absolute;inset:0;z-index:-1;background:var(--card);mask-size:100% 100%;-webkit-mask-size:100% 100%;pointer-events:none;filter:drop-shadow(0 5px 6px rgba(25,55,70,.06));}
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn),
+ html.wf-section-mode body #mainContent .page .sct-back-btn {
+  background:var(--brand-primary)!important;color:#fff!important;border:0!important;
+  box-shadow:0 5px 10px rgba(33,86,107,.18)!important;transform:translateY(13px);
+ }
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn)::after,
+ html.wf-section-mode body #mainContent .page .sct-back-btn::after{display:none!important;}
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):hover,
+ html.wf-section-mode body #mainContent .page .sct-back-btn:hover{background:var(--brand-primary)!important;transform:translateY(11px);}
+ html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn):active,
+ html.wf-section-mode body #mainContent .page .sct-back-btn:active{transform:translateY(13px) scale(.95)!important;}
+ html body .navbar::after{top:1px!important;bottom:auto!important;z-index:2;}
+}

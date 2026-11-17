@@ -8,8 +8,8 @@
  page.querySelector('.wf-settings-picker')?.remove();page.classList.remove('wf-settings-picker-ready');
  const save=page.querySelector('button[onclick="saveSettings()"]');
  if(save){
-  const footer=document.createElement('div');footer.className='wf-settings-save-footer';
-  footer.append(save);page.append(footer);
+  const footer=document.createElement('div');footer.className='wf-settings-save-footer';footer.id='wf-settings-save-footer';
+  footer.append(save);document.body.append(footer);
  }
  const original=window.switchTab;
  window.switchTab=function(key){

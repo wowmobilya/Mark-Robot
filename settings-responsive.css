@@ -133,3 +133,30 @@
  html body #page-settings .wf-heading-actions:empty {display:none!important}
  html.wf-settings-open body .main {padding-bottom:24px!important}
 }
+/* A compact fixed save dock replaces the app navigation only in Settings. */
+@media screen {
+ html body #wf-settings-save-footer {display:none}
+ html.wf-settings-open body #wf-settings-save-footer {
+  display:flex;position:fixed;z-index:690;bottom:max(8px,env(safe-area-inset-bottom,0px));
+  left:12px;right:12px;max-width:720px;margin:0 auto;padding:6px;
+  background:var(--card);border:1px solid var(--border);border-radius:18px;
+  box-shadow:0 5px 24px rgba(34,77,94,.15);
+ }
+ html body #wf-settings-save-footer .btn {width:100%;min-height:44px;max-height:52px;margin:0;display:flex;justify-content:center;align-items:center;gap:8px;padding:9px 16px!important;font-size:13px;border-radius:12px!important;background:var(--brand-primary)!important;color:#fff!important;box-shadow:none!important}
+ html.wf-settings-open body .main {padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))!important}
+ html.wf-settings-open {scroll-padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))}
+ html body #page-settings :is(input,select,textarea,button) {scroll-margin-bottom:100px}
+ html body #page-settings .tabs .tab-btn {position:relative}
+ html body #page-settings.wf-settings-inline-ready .tabs .tab-btn .wf-ui-icon {
+  display:grid;place-items:center;width:32px!important;height:32px!important;flex:0 0 32px!important;
+  background:var(--ui-soft);border:1px solid var(--border);border-radius:11px;color:var(--ui-accent)!important;
+ }
+ html body #page-settings.wf-settings-inline-ready .tabs .tab-btn .wf-ui-icon svg {width:19px;height:19px}
+ html body #page-settings.wf-settings-inline-ready .tabs .tab-btn.active .wf-ui-icon {background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.2);color:#fff!important}
+ html body #page-settings.wf-settings-inline-ready .tabs .tab-btn.active {box-shadow:0 5px 12px rgba(63,124,148,.14)!important}
+ @media(max-width:900px){
+  html body #page-settings.wf-settings-inline-ready .wf-settings-workspace>.tabs {border:0!important;padding:0!important;background:transparent!important;gap:9px!important}
+  html body #page-settings.wf-settings-inline-ready .tabs .tab-btn {min-height:62px!important;border-radius:15px!important;background:var(--card)!important;padding:10px!important;box-shadow:0 3px 12px rgba(34,77,94,.035)!important}
+  html body #page-settings.wf-settings-inline-ready .tabs .tab-btn.active {background:var(--brand-primary)!important}
+ }
+}

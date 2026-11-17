@@ -1,0 +1,3 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');
+test('header recess follows actual controls and responds to resize without navigation replacement',()=>{const js=fs.readFileSync('topbar-dock.js','utf8');assert.match(js,/ResizeObserver/);assert.match(js,/getBoundingClientRect/);assert.match(js,/maskImage/);assert.match(js,/\.sct-back-btn/);assert.doesNotMatch(js,/location\.href\s*=/);});
+test('sculpted header removes transparent frame and retains top progress and square controls',()=>{const css=fs.readFileSync('topbar-dock.css','utf8');assert.match(css,/border-radius:16px/);assert.match(css,/::after\{display:none!important/);assert.match(css,/navbar::after\{top:1px/);assert.match(css,/padding-bottom:12px/);});
