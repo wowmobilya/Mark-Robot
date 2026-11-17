@@ -6721,6 +6721,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     </div>
   </div>
 
+  <div id="dashIntelligence" class="wf-dashboard-intelligence"></div>
+
   
 
   <div class="card">
@@ -13426,6 +13428,7 @@ function updateDash(){
   const bpr=document.getElementById('badge-pr');if(bpr)bpr.textContent=S.products.length;
   const binv=document.getElementById('badge-inv');if(binv)binv.textContent=S.invoices.length;
   const recent=[...S.invoices].reverse().slice(0,5);
+  wfRenderDashboardIntelligence(total);
   const c=document.getElementById('dashRecentInv');if(!c)return;
    const dashTx = {
     no_inv:     { ar:'لا توجد فواتير',    tr:'Fatura yok',       en:'No invoices'       ,
@@ -13457,6 +13460,14 @@ function updateDash(){
       <div class="ih-amt">${fmtCurr(inv.grandTotal||0, inv.currency||'USD')}</div>
     </div>`).join('');
 
+}
+
+function wfRenderDashboardIntelligence(total){
+  const host=document.getElementById('dashIntelligence');if(!host)return;const lang=S.lang||'ar';
+  const tx={ar:{pulse:'نظرة على الأعمال',catalog:'كتالوج المنتجات',sales:'إجمالي المبيعات',invoices:'عدد الفواتير',clients:'إجمالي العملاء',products:'منتج في النظام',types:'توزيع الأنواع'},tr:{pulse:'İş görünümü',catalog:'Ürün kataloğu',sales:'Toplam satış',invoices:'Fatura sayısı',clients:'Toplam müşteri',products:'sistemde ürün',types:'Tür dağılımı'},en:{pulse:'Business pulse',catalog:'Product catalog',sales:'Total sales',invoices:'Invoices',clients:'Total clients',products:'products in system',types:'Type distribution'},fr:{pulse:'Vue d’ensemble',catalog:'Catalogue produits',sales:'Ventes totales',invoices:'Factures',clients:'Clients',products:'produits dans le système',types:'Répartition'},ru:{pulse:'Показатели бизнеса',catalog:'Каталог товаров',sales:'Общие продажи',invoices:'Счета',clients:'Клиенты',products:'товаров в системе',types:'Распределение'}}[lang]||{};
+  const kinds=[['coffee_table',{ar:'طاولة قهوة',tr:'Sehpa',en:'Coffee table',fr:'Table basse',ru:'Журнальный столик'}],['dresser',{ar:'مدخل',tr:'Dresuar',en:'Dresser',fr:'Commode',ru:'Комод'}],['side_table',{ar:'طاولة جانبية',tr:'Yan sehpa',en:'Side table',fr:'Table d’appoint',ru:'Приставной столик'}],['tv_table',{ar:'طاولة تلفاز',tr:'TV ünitesi',en:'TV table',fr:'Meuble TV',ru:'Тумба под ТВ'}]];const counts=kinds.map(([key,label])=>({label,n:S.products.filter(p=>p.type===key).length}));const max=Math.max(1,...counts.map(x=>x.n));
+  const money='$'+Number(total||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  host.innerHTML=`<section class="wf-insight-card"><div class="wf-insight-head"><span>📊</span><strong>${tx.pulse}</strong></div><div class="wf-insight-row"><span>${tx.sales}</span><b>${money}</b></div><div class="wf-insight-row"><span>${tx.invoices}</span><b>${S.invoices.length}</b></div><div class="wf-insight-row"><span>${tx.clients}</span><b>${S.companies.length}</b></div></section><section class="wf-insight-card"><div class="wf-insight-head"><span>📦</span><strong>${tx.catalog}</strong></div><div class="wf-catalog-total"><b>${S.products.length}</b><span>${tx.products}</span></div><div class="wf-catalog-label">${tx.types}</div>${counts.map(x=>`<div class="wf-catalog-row"><span>${x.label[lang]||x.label.en}</span><i><em style="width:${(x.n/max)*100}%"></em></i><b>${x.n}</b></div>`).join('')}</section>`;
 }
 
 /* ============================================================
