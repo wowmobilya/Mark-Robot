@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v89-dashboard-polish';
+const CACHE_NAME = 'wow-furniture-v90-circular-swap';
 const urlsToCache = [
   './',
   './index.html',
@@ -8,7 +8,7 @@ const urlsToCache = [
   './dashboard-visuals.css?v=1',
   './rate-refresh.js?v=1',
   './section-headings.css?v=5',
-  './currency-calculator.css?v=6',
+  './currency-calculator.css?v=7',
   './currency-calculator.js?v=4',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',

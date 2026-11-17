@@ -127,3 +127,10 @@ html body #currCalcModal .curr-calc-footer button { display:flex!important; alig
 html body #currCalcModal .curr-calc-footer button .wf-ui-icon { width:18px!important; height:18px!important; }
 html body #currCalcModal .curr-calc-footer .btn-s { color:var(--ui-accent)!important; background:var(--ui-soft)!important; border-color:transparent!important; box-shadow:none!important; }
 html body #currCalcModal .curr-calc-footer .btn-p { border-color:transparent!important; box-shadow:0 3px 7px rgba(30,74,94,.15)!important; }
+/* Keep the side swap control truly circular despite shared button minimums. */
+html body #currCalcModal .curr-calc-arrow .cc-swap {
+ width:44px!important; height:44px!important; min-width:44px!important; min-height:44px!important;
+ max-width:44px!important; max-height:44px!important; aspect-ratio:1 / 1!important;
+ box-sizing:border-box!important; padding:10px!important; border-radius:50%!important;
+ flex:0 0 44px!important; line-height:1!important; inset-inline-end:12px!important;
+}
