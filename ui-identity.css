@@ -269,3 +269,16 @@ html.wf-section-mode body .main .page :is(.co-page-sticky,.sct-sticky-header,.pa
  html .bottom-nav .bnav-btn.bnav-active .bnav-icon::before{width:39px;height:39px;border-radius:16px 16px 12px 5px;background:linear-gradient(145deg,#506a8c,#344964);transform:rotate(45deg) translateY(-8px);box-shadow:0 8px 18px rgba(35,54,80,.26)!important}
  html[data-theme="dark"] .bottom-nav .bnav-btn.bnav-active .bnav-icon::before{background:linear-gradient(145deg,#c0d3eb,#91a9c6);box-shadow:0 8px 18px rgba(0,0,0,.35)!important}
 }
+
+/* The drawer owns its close control and layers consistently over app chrome. */
+html #sidebar .wf-sidebar-brand{position:relative;min-height:88px;padding-inline:44px}
+html #wfSidebarClose{position:absolute;inset-inline-start:0;top:22px;width:40px;height:44px;display:grid;place-items:center;border:1px solid var(--border);border-radius:13px;background:var(--input);color:var(--text2);cursor:pointer;box-shadow:0 3px 8px rgba(29,45,67,.06)}
+html #wfSidebarClose svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+html[dir="rtl"] #wfSidebarClose svg{transform:scaleX(-1)}
+html #wfSidebarClose:hover{background:var(--ui-soft);color:var(--ui-accent)}
+html #wfSidebarClose:focus-visible{outline:2px solid var(--ui-accent);outline-offset:3px}
+@media(max-width:1024px){
+ html body #sidebar{top:0!important;bottom:0!important;z-index:1200!important;padding-top:max(16px,env(safe-area-inset-top,0px))!important;border-radius:0!important;background:var(--card)!important}
+ html body #sideOv{z-index:1100!important;background:rgba(19,30,46,.3);backdrop-filter:none!important}
+ html.wf-mobile-menu-open .navbar #desktopSidebarToggle{transform:none!important;background:var(--input)!important;color:var(--text2)!important;border-color:var(--border)!important}
+}
