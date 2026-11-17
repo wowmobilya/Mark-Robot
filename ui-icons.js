@@ -18,7 +18,7 @@ function decorate(el){
   node.before(document.createTextNode(leading),shell);node.nodeValue=rest.slice(key.length);
  }
 }
-function refresh(){document.querySelectorAll(selector+',.co-empty-state .ei,.co-empty-state button,.empty button,.wf-insight-head>span,#rateTime,.qbl-sticky-cart-icon,#qblFinalImgIcon,.wf-data-hero>div>div:first-child').forEach(decorate)}
+function refresh(){document.querySelectorAll(selector+',#ccIcon,.curr-calc-rate-pill,.curr-calc-close,.curr-calc-footer button,.co-empty-state .ei,.co-empty-state button,.empty button,.wf-insight-head>span,#rateTime,.qbl-sticky-cart-icon,#qblFinalImgIcon,.wf-data-hero>div>div:first-child').forEach(decorate)}
 window.wfAnimateRateChanges=function(previous){
  const base={usdTry:previous?.usdTry,eurUsd:previous?.usdEur};
  const pairs={usdTryRate:['usdTry',1],eurTryRate:['usdTry',1],tryEurRate:['usdTry',-1],usdEurRate:['eurUsd',1],tryUsdRate:['usdTry',-1],eurUsdRate:['eurUsd',-1]};

@@ -34,7 +34,7 @@
 <meta name="google" content="notranslate">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<script src="ui-icons.js?v=43" defer></script>
+<script src="ui-icons.js?v=44" defer></script>
 <title>WOW FURNITURE — Invoice System · V14</title>
 
 <!-- ربط ملف الـ Manifest -->
@@ -8325,7 +8325,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
         </div>
         <input
           type="number" class="curr-calc-input" id="ccInput"
-          placeholder="0" min="0" step="any"
+          placeholder="0" min="0" step="any" inputmode="decimal" aria-labelledby="ccFromTag ccFromLabel"
           oninput="calcCurrencyModal()"
         >
       </div>
@@ -8339,7 +8339,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
           <span class="curr-calc-to-tag" id="ccToTag"><span data-wf-ui="TO">TO</span></span>
           <span class="curr-calc-to-sym" id="ccResultLabel"><span data-wf-ui="TRY">TRY</span></span>
         </div>
-        <div class="curr-calc-result-val" id="ccResult">—</div>
+        <output class="curr-calc-result-val" id="ccResult" aria-live="polite">—</output>
       </div>
 
       <!-- Quick amounts -->
@@ -8367,7 +8367,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 <section class="page" id="page-quick-barcode">
 <link rel="stylesheet" href="modern-ui.css?v=46">
-<link rel="stylesheet" href="ui-identity.css?v=3">
+<link rel="stylesheet" href="ui-identity.css?v=4">
 
 <!-- ══ PHASE 1: SCAN ══ -->
 <div id="qblPhase1" style="transition:all .5s cubic-bezier(.4,0,.2,1);">
@@ -10862,6 +10862,7 @@ function openCurrCalc(key) {
   set('ccResult', '—');
 
   openModal('currCalcModal');
+  window.wfRefreshIcons?.();
   setTimeout(() => { const i = document.getElementById('ccInput'); if (i) i.focus(); }, 220);
 }
 

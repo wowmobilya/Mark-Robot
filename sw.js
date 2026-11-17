@@ -1,11 +1,11 @@
-const CACHE_NAME = 'wow-furniture-v52-refined-sidebar';
+const CACHE_NAME = 'wow-furniture-v53-currency-calculator';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=3',
-  './ui-icons.js?v=43',
+  './ui-identity.css?v=4',
+  './ui-icons.js?v=44',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
   './manifest.json',

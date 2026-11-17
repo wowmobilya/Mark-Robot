@@ -33,6 +33,22 @@
  html #sidebar .nav-divider{height:1px;background:var(--border)!important;margin:18px 12px 4px!important;opacity:.8}
  html #sidebar .nav-item:focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px}
  @media(max-width:1024px){html #sidebar{padding-top:16px!important;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))!important;border-radius:0;width:min(300px,86vw)!important}html #sidebar .nav-item{min-height:54px!important}}
+ /* Currency calculator shares the same surfaces, control scale and semantic colors. */
+ html #currCalcModal{padding:16px!important;align-items:center!important;background:rgba(19,32,49,.35)!important}
+ html #currCalcModal .curr-calc-modal{width:100%;max-width:440px!important;max-height:calc(100dvh - 32px)!important;border:1px solid var(--border);border-radius:20px!important;background:var(--card)!important;box-shadow:0 24px 70px rgba(15,29,48,.22);color:var(--text);margin:auto!important}
+ html .curr-calc-header{padding:20px!important;gap:12px;background:var(--card)!important;border-bottom:1px solid var(--border)}html .curr-calc-header::after{display:none}
+ html .curr-calc-icon-wrap{width:42px;height:42px;border-radius:12px;background:var(--ui-soft)!important;color:var(--ui-accent)!important;border:1px solid var(--border);box-shadow:none!important;font-size:22px}
+ html .curr-calc-title{font-size:18px;color:var(--text)!important}html .curr-calc-subtitle{font-size:12px;color:var(--muted)!important}
+ html .curr-calc-close{width:36px;height:36px;border-radius:10px;background:var(--ui-soft)!important;color:var(--text2)!important;border:1px solid var(--border)}
+ html .curr-calc-body{padding:20px!important;overflow:auto;gap:14px}html .curr-calc-rate-pill{background:var(--ui-soft)!important;color:var(--text2)!important;border:1px solid var(--border);border-radius:10px;font-size:12px;padding:9px 12px;box-shadow:none}
+ html .curr-calc-input-section,html .curr-calc-result-section{background:var(--input)!important;border:1px solid var(--border)!important;border-radius:14px!important;padding:16px!important;box-shadow:none!important}
+ html .curr-calc-input-section:focus-within{border-color:var(--ui-accent)!important;outline:2px solid var(--ui-soft);outline-offset:2px}
+ html .curr-calc-input{font-size:30px!important;font-weight:750;color:var(--text)!important;direction:ltr;text-align:start;min-width:0;width:100%;background:transparent!important}
+ html .curr-calc-result-val{display:block;font-size:30px!important;line-height:1.4;font-weight:800;color:var(--ui-accent)!important;direction:ltr;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+ html :is(.curr-calc-from-tag,.curr-calc-to-tag,.curr-calc-quick-label){font-size:11px;color:var(--muted)!important;letter-spacing:.02em}html :is(.curr-calc-from-sym,.curr-calc-to-sym){color:var(--text2)!important;font-size:13px}
+ html .curr-calc-arrow{color:var(--muted)!important;font-size:18px;margin:5px auto}html .curr-calc-quick-btns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}html .curr-calc-quick-btn{min-height:40px;padding:8px;border-radius:10px;background:var(--ui-soft)!important;color:var(--text2)!important;border:1px solid var(--border)!important;font-size:13px;box-shadow:none!important}
+ html .curr-calc-footer{padding:16px 20px!important;background:var(--card)!important;border-top:1px solid var(--border);gap:10px}html .curr-calc-footer .btn{min-height:42px;border-radius:12px!important;font-size:13px}html .curr-calc-footer .btn-p{background:#3a5071!important;color:#fff!important}html .curr-calc-footer .btn-s{background:var(--ui-soft)!important;color:var(--text2)!important}
+ @media(max-width:480px){html #currCalcModal{padding:12px!important}html #currCalcModal .curr-calc-modal{max-height:calc(100dvh - 24px)!important}html .curr-calc-header,html .curr-calc-body{padding:16px!important}}
  /* Settings uses one scale for every tab, field, action and language option. */
  html #page-settings{max-width:1120px;margin-inline:auto}
  html #page-settings .sct-sticky-header{padding:16px!important;gap:16px!important;border-radius:16px!important}
