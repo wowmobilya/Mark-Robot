@@ -1,9 +1,9 @@
-const CACHE_NAME = 'wow-furniture-v35-slate-ui';
+const CACHE_NAME = 'wow-furniture-v36-navigation-ui';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=25',
-  './modern-ui.css?v=35',
+  './modern-ui.css?v=36',
   './ui-icons.js?v=31',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',

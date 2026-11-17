@@ -139,3 +139,17 @@ html:not([data-theme="dark"]) .btn-p:hover,html:not([data-theme="dark"]) .btn-g:
 .curr-item{border-radius:12px}
 @media(min-width:1100px){#page-dashboard.active{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:20px}#page-dashboard>.greeting-card,#page-dashboard>.tip-card-standalone{margin:0}#page-dashboard>.curr-bar,#page-dashboard>.stats-grid,#page-dashboard>.card:not(.tip-card-standalone){grid-column:1/-1;margin-bottom:0}}
 @media(max-width:600px){.stat-card{padding:14px}.stats-grid{gap:10px}html:not([data-theme="dark"]) .greeting-card{padding:20px}}
+/* Navigation and surface hierarchy. */
+html:not([data-theme="dark"]) .nav-item{border:1px solid transparent;gap:12px;padding:12px 14px;font-weight:650;transition:background .16s,border-color .16s,color .16s}
+html:not([data-theme="dark"]) .nav-item:hover{background:#f2f5f9;border-color:#e3e9f0;color:#304461}
+html:not([data-theme="dark"]) .nav-item.active{background:#e9eef5;border-color:#cbd7e5;color:#263b58;box-shadow:inset 3px 0 #3a5071}
+html:not([data-theme="dark"]) .nav-item.active .nav-badge{background:#3a5071!important;color:#fff!important;min-width:22px;text-align:center}
+html:not([data-theme="dark"]) .nav-item:not(.active) .nav-badge{background:#e5ebf3;color:#354c6a}
+html:not([data-theme="dark"]) .nav-item .nav-icon{color:#526783}
+html:not([data-theme="dark"]) .nav-item.active .nav-icon{color:#304461}
+html:not([data-theme="dark"]) .side-sec{color:#65778f;font-size:10px;letter-spacing:.08em}
+html:not([data-theme="dark"]) .card,html:not([data-theme="dark"]) .stat-card,html:not([data-theme="dark"]) .curr-bar{border-color:#dfe6ef;box-shadow:0 4px 18px rgba(27,46,76,.045)}
+html:not([data-theme="dark"]) .stat-icon,html:not([data-theme="dark"]) .curr-flag{background:#edf1f6!important;border-color:#dce4ee!important;color:#3a5071!important}
+html:not([data-theme="dark"]) .curr-item::after{background:#3a5071;opacity:.28}
+html:not([data-theme="dark"]) .tab-btn.active{color:#304461!important}
+@media(max-width:600px){html:not([data-theme="dark"]) .nav-item{min-height:48px}.curr-bar-grid{gap:8px}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
