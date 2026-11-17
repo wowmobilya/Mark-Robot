@@ -128,6 +128,14 @@
  [dir="rtl"] .wf-section-menu[data-open="true"] svg,[dir="rtl"] #desktopSidebarToggle[data-open="true"]>svg{transform:rotate(180deg)}
  .wf-section-menu:hover{background:var(--ui-soft);color:var(--ui-accent)}
  .wf-search-toggle.active>.wf-ui-icon{display:none}.wf-search-toggle.active::after{content:"×";font-size:25px;line-height:1;font-weight:400}
+ /* Integrated section chrome: flush from first paint, with no floating-card transition. */
+ html.wf-section-mode body .main{padding-top:0!important;transition:none!important}
+ html.wf-section-mode body .main>.page{max-width:none!important}
+ html.wf-section-mode body .main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){position:sticky!important;top:0!important;margin-top:0!important;margin-inline:calc(-1 * clamp(16px,2.3vw,36px))!important;padding:16px clamp(16px,2.3vw,36px)!important;border:0!important;border-bottom:1px solid var(--border)!important;border-radius:0!important;background:var(--card)!important;box-shadow:0 3px 10px rgba(29,45,67,.035)!important;transition:none!important;z-index:600}
+ html.wf-section-mode body .main .co-toolbar-row{margin-bottom:12px!important}
+ html.wf-section-mode body .main .wf-section-menu{order:-2;margin-inline:0 2px;border-radius:9px}
+ html.wf-section-mode body .main .sct-sticky-title h1{line-height:1.4}
+ @media(max-width:700px){html.wf-section-mode body .main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){margin-inline:-12px!important;padding:12px!important;padding-top:max(12px,env(safe-area-inset-top,0px))!important;top:0!important}html.wf-section-mode body .main .co-toolbar-title{font-size:18px!important}html.wf-section-mode body .main .wf-section-menu{width:36px;height:36px;flex-basis:36px}html.wf-section-mode body .main .co-toolbar-row{gap:7px!important}}
  /* Settings uses one scale for every tab, field, action and language option. */
  html #page-settings{max-width:1120px;margin-inline:auto}
  html #page-settings .sct-sticky-header{padding:16px!important;gap:16px!important;border-radius:16px!important}
