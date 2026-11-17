@@ -65,3 +65,22 @@ html body #currCalcModal .curr-calc-footer { border-top-color:var(--cc-line)!imp
 html body #currCalcModal .curr-calc-footer .btn-s { background:var(--cc-key)!important; border-color:var(--cc-line)!important; }
 html body #currCalcModal .curr-calc-input-top, html body #currCalcModal .curr-calc-result-top { flex-wrap:wrap!important; column-gap:12px!important; row-gap:4px!important; }
 html body #currCalcModal .curr-calc-from-tag, html body #currCalcModal .curr-calc-to-tag, html body #currCalcModal .curr-calc-from-sym, html body #currCalcModal .curr-calc-to-sym { flex:none!important; white-space:nowrap!important; }
+/* One close action is sufficient; keep it in the always-visible footer. */
+html body #currCalcModal .curr-calc-close { display:none!important; }
+html body #currCalcModal .curr-calc-header { padding-inline:16px!important; }
+html body #currCalcModal .curr-calc-input-top, html body #currCalcModal .curr-calc-result-top { margin-bottom:8px!important; }
+html body #currCalcModal .curr-calc-footer { flex-shrink:0!important; }
+html body #currCalcModal .curr-calc-input-section:focus-within { outline:none!important; border-color:var(--brand-primary,#3f7c94)!important; box-shadow:0 0 0 2px var(--ui-soft)!important; }
+html body #currCalcModal .curr-calc-input { border:0!important; box-shadow:none!important; background:transparent!important; }
+html body #currCalcModal .curr-calc-footer .btn-p { box-shadow:0 3px 8px rgba(30,74,94,.18)!important; }
+/* Latest direction: restrained brand accents on the same light base as the app. */
+html body #currCalcModal { --cc-shell:#f7f9fa; --cc-key:#f0f4f6; --cc-field:#fff; --cc-line:#d5e0e5; }
+html[data-theme="dark"] body #currCalcModal { --cc-shell:#182531; --cc-key:#223440; --cc-field:#1c2d39; --cc-line:#354b58; }
+html body #currCalcModal .curr-calc-modal { border:1px solid var(--cc-line)!important; box-shadow:0 24px 64px rgba(22,42,53,.2)!important; }
+html body #currCalcModal .curr-calc-header { background:var(--cc-field)!important; border-bottom:1px solid var(--cc-line)!important; }
+html body #currCalcModal .curr-calc-title { color:var(--text)!important; }
+html body #currCalcModal .curr-calc-subtitle { color:var(--muted)!important; }
+html body #currCalcModal .curr-calc-rate-pill { background:transparent!important; border:0!important; color:var(--muted)!important; }
+html body #currCalcModal .curr-calc-icon-wrap { border:0!important; background:var(--ui-soft)!important; color:var(--ui-accent)!important; }
+html body #currCalcModal .curr-calc-input-section:focus-within { box-shadow:0 0 0 2px var(--ui-soft)!important; }
+html body #currCalcModal .cc-number-pad [data-key="C"], html body #currCalcModal .cc-number-pad [data-key="⌫"] { background:var(--ui-soft)!important; color:var(--ui-accent)!important; border-color:var(--cc-line)!important; }

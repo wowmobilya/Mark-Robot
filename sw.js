@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v83-heading-alignment';
+const CACHE_NAME = 'wow-furniture-v84-calculator-single-close';
 const urlsToCache = [
   './',
   './index.html',
@@ -6,7 +6,7 @@ const urlsToCache = [
   './settings-responsive.css?v=1',
   './settings-navigation.js?v=1',
   './section-headings.css?v=2',
-  './currency-calculator.css?v=3',
+  './currency-calculator.css?v=4',
   './currency-calculator.js?v=2',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
