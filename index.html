@@ -8367,7 +8367,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 
 <section class="page" id="page-quick-barcode">
-<link rel="stylesheet" href="modern-ui.css?v=43">
+<link rel="stylesheet" href="modern-ui.css?v=44">
 
 <!-- ══ PHASE 1: SCAN ══ -->
 <div id="qblPhase1" style="transition:all .5s cubic-bezier(.4,0,.2,1);">
@@ -13061,6 +13061,8 @@ set('tryEurRate', (S.usdEur / S.usdTry).toFixed(6));
   updateCostBox();updateSummary();updateTierPreviews();
 }
 function wfUpdateMarketIndicators(previous={}){
+  const today=new Date().toLocaleDateString('en-CA');
+  try{const saved=JSON.parse(localStorage.getItem('wf_market_baseline')||'null');if(saved?.day===today)previous=saved.rates;else localStorage.setItem('wf_market_baseline',JSON.stringify({day:today,rates:previous}));}catch(_){}
   const points=[
     ['usdTryRate',Number(previous.usdTry),Number(S.usdTry)],
     ['eurTryRate',Number(previous.usdTry)/Number(previous.usdEur),Number(S.usdTry)/Number(S.usdEur)],
@@ -13487,8 +13489,8 @@ function wfRenderAiBrief(total){
 const COUNTRY_NAMES={SA:'Saudi Arabia',AE:'UAE',KW:'Kuwait',QA:'Qatar',BH:'Bahrain',OM:'Oman',IQ:'Iraq',JO:'Jordan',SY:'Syria',LB:'Lebanon',EG:'Egypt',LY:'Libya',MA:'Morocco',TR:'Turkey',DE:'Germany',GB:'UK',US:'USA',OTHER:'Other'};
 
 function wfUpdateDashboardTrends(snapshot){
-  const key='wf_dashboard_snapshot_v1';let previous=null;
-  try{previous=JSON.parse(localStorage.getItem(key)||'null')}catch(_){}
+  const key='wf_dashboard_daily_baseline';let previous=null;const today=new Date().toLocaleDateString('en-CA');
+  try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved?.day===today)previous=saved.values;}catch(_){}
   const slots={companies:'s-co',products:'s-pr',invoices:'s-inv',total:'s-total'};
   Object.entries(slots).forEach(([name,id])=>{
     const value=Number(snapshot[name])||0,card=document.getElementById(id)?.closest('.stat-card');if(!card)return;
@@ -13499,7 +13501,7 @@ function wfUpdateDashboardTrends(snapshot){
     const up=delta>0,percent=old>0?`${up?'+':'−'}${(Math.abs(delta/old)*100).toFixed(1)}% `:'';
     card.classList.add(up?'stat-trend-up':'stat-trend-down');chip.textContent=`${percent}${up?'▲':'▼'}`;
   });
-  try{localStorage.setItem(key,JSON.stringify(snapshot))}catch(_){}
+  if(!previous)try{localStorage.setItem(key,JSON.stringify({day:today,values:snapshot}))}catch(_){}
 }
 function handleLogoUpload(e){
   const f=e.target.files[0];if(!f)return;
