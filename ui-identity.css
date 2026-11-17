@@ -282,3 +282,15 @@ html #wfSidebarClose:focus-visible{outline:2px solid var(--ui-accent);outline-of
  html body #sideOv{z-index:1100!important;background:rgba(19,30,46,.3);backdrop-filter:none!important}
  html.wf-mobile-menu-open .navbar #desktopSidebarToggle{transform:none!important;background:var(--input)!important;color:var(--text2)!important;border-color:var(--border)!important}
 }
+
+/* The selected destination forms a raised crest, without a surrounding ring. */
+@media(max-width:1024px){
+ html body #bottomNav{overflow:visible!important}
+ html body #bottomNav .bnav-btn.bnav-active::before{content:"";position:absolute;top:-19px;left:50%;width:62px;height:54px;transform:translateX(-50%);border-radius:50% 50% 22% 22% / 65% 65% 25% 25%;background:linear-gradient(160deg,#506a8c,#344964);box-shadow:0 -4px 12px rgba(35,54,80,.13);pointer-events:none}
+ html body #bottomNav .bnav-btn.bnav-active .bnav-icon::before{display:none!important;box-shadow:none!important}
+ html body #bottomNav .bnav-btn.bnav-active .bnav-icon{transform:translateY(-12px)!important;color:#fff!important}
+ html body #bottomNav .bnav-btn.bnav-active .bnav-label{position:relative;z-index:1}
+ html[data-theme="dark"] body #bottomNav .bnav-btn.bnav-active::before{background:linear-gradient(160deg,#c0d3eb,#91a9c6);box-shadow:0 -4px 12px rgba(0,0,0,.2)}
+ html[data-theme="dark"] body #bottomNav button.bnav-btn.bnav-active span.bnav-icon{color:#172235!important}
+}
+html.wf-section-mode body #mainContent .page :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar),html.wf-section-mode body #page-settings>.sct-sticky-header,html.wf-section-mode body #page-quick-barcode #qblPhase1>.sct-sticky-header{border-radius:0 0 20px 20px!important;background:var(--card)!important;border-bottom:1px solid var(--border)!important;box-shadow:0 6px 18px rgba(29,45,67,.06)!important}

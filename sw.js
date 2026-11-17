@@ -1,10 +1,10 @@
-const CACHE_NAME = 'wow-furniture-v70-integrated-drawer';
+const CACHE_NAME = 'wow-furniture-v71-raised-navigation';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=21',
+  './ui-identity.css?v=22',
   './ui-navigation.js?v=8',
   './ui-logo.js?v=2',
   './ui-icons.js?v=44',
