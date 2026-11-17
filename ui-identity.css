@@ -115,6 +115,14 @@
   html.wf-header-hidden .main .sct-sticky-title p{display:none}
   html.wf-header-hidden .main .sct-sticky-header{box-shadow:0 9px 24px rgba(26,43,66,.12)!important}
  }
+ /* Internal sections have a single contextual header, without stacked global chrome. */
+ html.wf-section-mode .navbar{visibility:hidden!important;pointer-events:none!important;transform:none!important;box-shadow:none!important;background:transparent!important}
+ html.wf-section-mode .navbar .qbl-sticky-cart.visible{visibility:visible!important;pointer-events:auto!important}
+ html.wf-section-mode .main{margin-top:0!important;padding-top:12px!important;min-height:100dvh}
+ html.wf-section-mode .main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){top:8px!important;margin-top:0!important}
+ html.wf-section-mode #sidebar{top:0!important;padding-top:20px!important}
+ html.wf-section-mode #page-settings .sct-sticky-header{position:sticky!important;top:8px!important;z-index:500}
+ @media(max-width:700px){html.wf-section-mode .main{padding-top:max(8px,env(safe-area-inset-top,0px))!important}html.wf-section-mode .main :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){top:max(8px,env(safe-area-inset-top,0px))!important}}
  /* Settings uses one scale for every tab, field, action and language option. */
  html #page-settings{max-width:1120px;margin-inline:auto}
  html #page-settings .sct-sticky-header{padding:16px!important;gap:16px!important;border-radius:16px!important}

@@ -1,11 +1,11 @@
-const CACHE_NAME = 'wow-furniture-v59-compact-section-header';
+const CACHE_NAME = 'wow-furniture-v60-contextual-sections';
 const urlsToCache = [
   './',
   './index.html',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
-  './ui-identity.css?v=10',
-  './ui-navigation.js?v=2',
+  './ui-identity.css?v=11',
+  './ui-navigation.js?v=3',
   './ui-logo.js?v=1',
   './ui-icons.js?v=44',
   './vendor/zxing-browser.min.js?v=26',

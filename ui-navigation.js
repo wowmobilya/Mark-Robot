@@ -3,11 +3,11 @@
  const root=document.documentElement;
  const compact=matchMedia('(max-width:1024px)');
  let last=scrollY,travel=0,direction=0,queued=false;
- function reveal(){root.classList.remove('wf-header-hidden');travel=0;last=scrollY;}
+ function reveal(){root.classList.remove('wf-header-hidden');const page=document.querySelector('.page.active');root.classList.toggle('wf-section-mode',!!page&&page.id!=='page-dashboard');travel=0;last=scrollY;}
  function update(){
   queued=false;
   const page=document.querySelector('.page.active');
-  const locked=!compact.matches||page?.id==='page-quick-barcode'||document.querySelector('.modal-ov.open,.sidebar.open,.delete-modal-ov.open,.wf-restore-ov.open');
+  const locked=root.classList.contains('wf-section-mode')||!compact.matches||page?.id==='page-quick-barcode'||document.querySelector('.modal-ov.open,.sidebar.open,.delete-modal-ov.open,.wf-restore-ov.open');
   const current=Math.max(0,scrollY),delta=current-last;last=current;
   if(locked||current<90){reveal();return;}
   if(Math.abs(delta)<2)return;
@@ -21,4 +21,5 @@
  const original=window.showPage;
  if(typeof original==='function')window.showPage=function(...args){reveal();const value=original.apply(this,args);reveal();return value;};
  const sidebar=document.getElementById('sidebar');if(sidebar)new MutationObserver(()=>{if(sidebar.classList.contains('open'))reveal();}).observe(sidebar,{attributes:true,attributeFilter:['class']});
+ reveal();
 })();
