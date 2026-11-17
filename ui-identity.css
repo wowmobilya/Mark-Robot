@@ -260,3 +260,12 @@ html :is(.modal,.modal-box) .modal-close{width:38px;height:38px;flex:none;border
  html:not(.wf-section-mode) .navbar{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
  html .curr-item::after{animation:none!important}
 }
+/* Bring nested workflow headers into the same visual system as page headers. */
+html.wf-section-mode body .main .page :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){position:sticky!important;top:0!important;background:var(--card)!important;border:0!important;border-bottom:1px solid var(--border)!important;border-radius:0 0 20px 20px!important;box-shadow:0 7px 20px rgba(29,45,67,.065)!important;z-index:600}
+@media(max-width:700px){html.wf-section-mode body .main .page :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){margin-inline:-12px!important;padding:12px!important}}
+/* Raised selection crest: soft, floating above the full-width navigation rail. */
+@media(max-width:1024px){
+ html .bottom-nav .bnav-btn.bnav-active .bnav-icon{transform:translateY(-4px)!important}
+ html .bottom-nav .bnav-btn.bnav-active .bnav-icon::before{width:39px;height:39px;border-radius:16px 16px 12px 5px;background:linear-gradient(145deg,#506a8c,#344964);transform:rotate(45deg) translateY(-8px);box-shadow:0 8px 18px rgba(35,54,80,.26)!important}
+ html[data-theme="dark"] .bottom-nav .bnav-btn.bnav-active .bnav-icon::before{background:linear-gradient(145deg,#c0d3eb,#91a9c6);box-shadow:0 8px 18px rgba(0,0,0,.35)!important}
+}
