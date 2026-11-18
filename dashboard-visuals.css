@@ -1,259 +1,333 @@
-/* Clear currency symbols and dashboard summaries, without changing financial data. */
 @media screen {
- html body #page-dashboard .curr-item {--tile-ink:#255a6e;--tile-bg:#e5f2f7}
- html body #page-dashboard .curr-item[onclick*="eur-"] {--tile-ink:#48577d;--tile-bg:#eef0f8}
- html body #page-dashboard .curr-item[onclick*="try-"] {--tile-ink:#835b2a;--tile-bg:#f7f0e4}
- html body #page-dashboard .stat-card {--tile-ink:#255a6e;--tile-bg:#e5f2f7}
- html body #page-dashboard .stat-card:has(.si-b) {--tile-ink:#615181;--tile-bg:#f0ecf7}
- html body #page-dashboard .stat-card:has(.si-gr) {--tile-ink:#286d63;--tile-bg:#e7f4f0}
- html body #page-dashboard .stat-card:has(.si-r) {--tile-ink:#835b2a;--tile-bg:#f7f0e4}
- html[data-theme="dark"] body #page-dashboard :is(.curr-item,.stat-card) {--tile-ink:#b5dfef;--tile-bg:#264653}
- html[data-theme="dark"] body #page-dashboard .curr-item[onclick*="eur-"] {--tile-ink:#c6cff4;--tile-bg:#333d5a}
- html[data-theme="dark"] body #page-dashboard .curr-item[onclick*="try-"],
- html[data-theme="dark"] body #page-dashboard .stat-card:has(.si-r) {--tile-ink:#f2d5a6;--tile-bg:#493a28}
- html[data-theme="dark"] body #page-dashboard .stat-card:has(.si-b) {--tile-ink:#ded0f5;--tile-bg:#423554}
- html[data-theme="dark"] body #page-dashboard .stat-card:has(.si-gr) {--tile-ink:#b9e8db;--tile-bg:#24483f}
- html body #page-dashboard :is(.curr-flag,.stat-icon) {
-  display:grid!important;place-items:center;width:46px!important;height:46px!important;min-width:46px;
-  border-radius:14px!important;background:var(--tile-bg)!important;color:var(--tile-ink)!important;
-  border:1px solid color-mix(in srgb,var(--tile-ink) 16%,transparent)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.1)!important;flex:0 0 46px;
- }
- /* Nested icon wrappers must inherit the tile contrast, not the global accent. */
- html body #page-dashboard :is(.curr-flag,.stat-icon) .wf-ui-icon {
-  color:inherit!important;width:27px!important;height:27px!important;margin:0!important;opacity:1!important;
- }
- html body #page-dashboard :is(.curr-flag,.stat-icon) svg {width:100%;height:100%;stroke:currentColor;stroke-width:2;filter:none}
- html body #page-dashboard .curr-bar {padding:18px!important;border-radius:20px!important}
- html body #page-dashboard .curr-bar-grid {gap:12px!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
- html body #page-dashboard .curr-item {
-  border-radius:16px!important;padding:14px!important;gap:8px 12px!important;
-  min-height:102px;box-shadow:0 4px 14px rgba(34,77,94,.04)!important;
- }
- html body #page-dashboard .curr-label {font-size:11px!important;font-weight:750;color:var(--text2)!important;line-height:1.5!important}
- html body #page-dashboard .curr-rate {font-size:21px!important;font-weight:800;line-height:1.3!important;letter-spacing:0!important}
- html body #page-dashboard .stats-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
- html body #page-dashboard .stat-card {
-  min-width:0;position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:14px;
-  padding:20px!important;min-height:164px;border-radius:20px!important;
-  border:1px solid var(--business-line,var(--border))!important;box-shadow:0 6px 22px rgba(34,77,94,.06)!important;
- }
- html body #page-dashboard .stat-card::after {display:none!important}
- html body #page-dashboard .stat-card>div:not(.stat-icon) {min-width:0;width:100%}
- html body #page-dashboard .stat-val {font-size:clamp(23px,2vw,30px)!important;line-height:1.25;font-weight:800;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
- html body #page-dashboard #s-total {font-size:clamp(18px,1.8vw,25px)!important;direction:ltr;text-align:start}
- html body #page-dashboard .stat-lbl {font-size:13px;line-height:1.5;color:var(--text2);font-weight:650;margin-top:5px}
- html body #page-dashboard .stat-card .wf-stat-trend {position:static;margin-top:0;font-size:11px}
- @media(max-width:1050px) {
-  html body #page-dashboard .stats-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
- }
- @media(max-width:700px) {
-  html body #page-dashboard .curr-bar {padding:12px!important;border-radius:17px!important}
-  html body #page-dashboard .curr-bar-grid {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
-  html body #page-dashboard .curr-item {grid-template-columns:38px minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;gap:8px!important;padding:11px!important;min-height:128px;align-content:start}
-  html body #page-dashboard .curr-item .curr-flag {grid-column:1!important;grid-row:1!important;width:38px!important;height:38px!important;min-width:38px;border-radius:12px!important}
-  html body #page-dashboard .curr-item .curr-flag .wf-ui-icon {width:24px!important;height:24px!important}
-  html body #page-dashboard .curr-item .curr-info {display:contents}
-  html body #page-dashboard .curr-item .curr-label {grid-column:2;grid-row:1;align-self:center;font-size:10px!important;white-space:normal!important;line-height:1.4!important}
-  html body #page-dashboard .curr-item .curr-rate {grid-column:1/-1;grid-row:2;font-size:20px!important;direction:ltr;text-align:start;white-space:normal!important;overflow-wrap:anywhere}
-  html body #page-dashboard .curr-item .wf-market-trend {grid-column:1/-1!important;grid-row:3!important;justify-self:start;margin:0!important}
-  html body #page-dashboard .stats-grid {gap:10px}
-  html body #page-dashboard .stat-card {padding:16px!important;min-height:151px;gap:12px;border-radius:17px!important}
-  html body #page-dashboard .stat-val {font-size:25px!important}
-  html body #page-dashboard #s-total {font-size:19px!important}
-  html body #page-dashboard .stat-lbl {font-size:12px}
- }
- @media(max-width:360px) {
-  html body #page-dashboard .curr-item {grid-template-columns:32px minmax(0,1fr)!important;padding:9px!important;gap:7px!important}
-  html body #page-dashboard .curr-item .curr-flag {width:32px!important;height:32px!important;min-width:32px}
-  html body #page-dashboard .curr-item .curr-label {font-size:9px!important}
-  html body #page-dashboard .curr-item .curr-rate {font-size:19px!important}
-  html body #page-dashboard .stat-card {padding:13px!important}
- }
-}
-@media screen {
- html body #page-dashboard .curr-bar-top {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px}
- html body #page-dashboard .curr-refresh {display:inline-flex!important;align-items:center;justify-content:center;gap:7px;min-width:44px;width:auto!important;min-height:44px;height:auto!important;padding:10px 12px!important;border-radius:12px!important;background:var(--brand-primary)!important;color:#fff!important;border:0!important;transform:none!important;animation:none!important;box-shadow:none!important;font:inherit;font-size:12px;font-weight:700}
- html body #page-dashboard .curr-refresh .wf-ui-icon {color:inherit!important;width:18px;height:18px;margin:0!important;animation:none;transform:none}
- html body #page-dashboard .curr-refresh.wf-refreshing .wf-ui-icon {animation:wfRefreshSpin 1s linear infinite}
- html body #page-dashboard .curr-refresh:disabled {opacity:.75;cursor:wait}
- html body #page-dashboard .curr-update {font-size:11px;line-height:1.6;color:var(--text2);background:transparent!important;border:0!important;padding:0!important}
- html body #page-dashboard .wf-rate-status {font-size:11px;line-height:1.6;color:var(--text2);margin-bottom:10px;overflow-wrap:anywhere}
- html body #page-dashboard .wf-rate-status:empty {display:none}
- html body #page-dashboard .wf-rate-status[data-state="failed"],html body #page-dashboard .wf-rate-status[data-state="unsaved"] {color:var(--red)}
- @keyframes wfRefreshSpin {to{transform:rotate(360deg)}}
- @media(prefers-reduced-motion:reduce){html body #page-dashboard .curr-refresh.wf-refreshing .wf-ui-icon {animation:none!important}}
-}
-/* Full-width market rows: every pair remains visible without an internal scroller. */
-@media screen {
- html body #page-dashboard .curr-bar {min-width:0;padding:10px 14px!important;border-radius:16px!important}
- html body #page-dashboard .curr-bar-top {margin-bottom:6px;gap:8px}
- html body #page-dashboard .curr-bar-grid {
-  display:flex!important;flex-direction:column!important;gap:0!important;min-width:0;
-  overflow:visible!important;scroll-snap-type:none;max-height:none!important;padding:0!important;
- }
- html body #page-dashboard .curr-item {
-  flex:none!important;display:grid!important;width:100%;box-sizing:border-box;
-  grid-template-columns:30px minmax(64px,1fr) minmax(76px,1fr) auto!important;
-  grid-template-rows:auto!important;gap:8px!important;min-width:0;min-height:51px;
-  padding:8px 4px!important;border:0!important;border-bottom:1px solid var(--border)!important;
-  border-radius:0!important;box-shadow:none!important;background:transparent!important;
-  transition:background .15s ease;transform:none!important;animation:none!important;
- }
- html body #page-dashboard .curr-item:last-child {border-bottom:0!important}
- html body #page-dashboard .curr-item:hover {background:var(--ui-soft)!important}
- html body #page-dashboard .curr-item .curr-flag {
-  grid-column:1!important;grid-row:1!important;align-self:center;width:30px!important;height:30px!important;
-  min-width:30px;border-radius:9px!important;
- }
- html body #page-dashboard .curr-item .curr-flag .wf-ui-icon {width:21px!important;height:21px!important}
- html body #page-dashboard .curr-item .curr-info {display:contents}
- html body #page-dashboard .curr-item .curr-label {grid-column:2;grid-row:1;align-self:center;font-size:11px!important;line-height:1.35!important;white-space:nowrap!important}
- html body #page-dashboard .curr-item .curr-rate {grid-column:3;grid-row:1;align-self:center;font-size:18px!important;line-height:1.25!important;white-space:nowrap!important;direction:ltr;text-align:end;letter-spacing:0!important}
- html body #page-dashboard .curr-item .wf-market-trend {
-  grid-column:4!important;grid-row:1!important;align-self:center!important;justify-self:end;
-  min-height:20px;font-size:10px!important;padding:2px 5px!important;line-height:1.4;animation:none!important;white-space:nowrap;
- }
- html body #page-dashboard .curr-item .wf-market-arrow {animation:none!important}
- html body #page-dashboard .curr-item:focus-visible {outline:2px solid var(--ui-accent);outline-offset:-3px;background:var(--ui-soft)!important}
- html body #page-dashboard .wf-rate-status[data-state="ok"]::before,
- html body #page-dashboard .wf-rate-status[data-state="manual"]::before {content:"✓ ";font-weight:800;color:var(--green)}
- html body #page-dashboard .stat-card:is(:has(.si-g),:has(.si-b)) .stat-icon {position:relative;isolation:isolate}
- html body #page-dashboard .stat-card:is(:has(.si-g),:has(.si-b)) .stat-icon::after {
-  content:"";position:absolute;inset:-3px;border:1px solid var(--brand-primary);border-radius:inherit;
-  opacity:0;pointer-events:none;animation:wfSummaryRing 5s ease-out infinite;
- }
- html body #page-dashboard .stat-card:has(.si-b) .stat-icon::after {animation-delay:2.5s}
- @keyframes wfSummaryRing {0%,60%,100%{opacity:0;transform:scale(1)}68%{opacity:.22;transform:scale(1)}90%{opacity:0;transform:scale(1.15)}}
- @media(max-width:700px){
-  html body #page-dashboard .curr-bar {padding:9px 10px!important}
-  html body #page-dashboard .curr-item {min-height:48px;gap:6px!important;padding:7px 2px!important;grid-template-columns:28px minmax(60px,1fr) minmax(72px,1fr) auto!important}
-  html body #page-dashboard .curr-item .curr-flag {width:28px!important;height:28px!important;min-width:28px}
-  html body #page-dashboard .curr-item .curr-label {font-size:10px!important}
-  html body #page-dashboard .curr-item .curr-rate {font-size:16px!important}
-  html body #page-dashboard .curr-item .wf-market-trend {font-size:9px!important;padding-inline:4px!important}
-  html body #page-dashboard .curr-refresh {min-height:40px;padding:8px 10px!important;font-size:11px}
- }
- @media(prefers-reduced-motion:reduce) {
-  html body #page-dashboard .stat-card .stat-icon::after {animation:none!important;opacity:0}
- }
-}
-/* Smaller, balanced summary tiles keep the home screen focused. */
-@media screen {
- html body #page-dashboard .stats-grid {gap:10px}
- html body #page-dashboard .stat-card {min-height:128px;padding:15px!important;gap:9px}
- html body #page-dashboard .stat-card .stat-icon {width:38px!important;height:38px!important;min-width:38px;flex-basis:38px;border-radius:12px!important}
- html body #page-dashboard .stat-card .stat-icon .wf-ui-icon {width:23px!important;height:23px!important}
- html body #page-dashboard .stat-val {font-size:25px!important}
- html body #page-dashboard #s-total {font-size:21px!important}
- html body #page-dashboard .stat-lbl {font-size:12px;margin-top:3px}
- @media(max-width:700px){
-  html body #page-dashboard .stats-grid {gap:9px}
-  html body #page-dashboard .stat-card {min-height:114px;padding:12px!important;gap:8px}
-  html body #page-dashboard .stat-card .stat-icon {width:34px!important;height:34px!important;min-width:34px;flex-basis:34px;border-radius:11px!important}
-  html body #page-dashboard .stat-card .stat-icon .wf-ui-icon {width:21px!important;height:21px!important}
-  html body #page-dashboard .stat-val {font-size:23px!important}
-  html body #page-dashboard #s-total {font-size:18px!important}
-  html body #page-dashboard .stat-lbl {font-size:11px}
- }
-}
+  #page-dashboard {
+    --dash-gap: clamp(12px, 1.7vw, 24px);
+    --dash-accent: var(--brand-primary);
+    --dash-surface: var(--paper, var(--card));
+    --dash-line: var(--hairline, var(--border));
+    container-type: inline-size;
+  }
 
-/* Dashboard workspace */
-#page-dashboard{--dash-gap:clamp(12px,1.6vw,22px);--dash-line:color-mix(in srgb,var(--border) 80%,var(--ui-accent))}
-html body #page-dashboard #greetingCard{
- background:linear-gradient(112deg,var(--card) 44%,var(--ui-soft))!important;
- padding:clamp(16px,3vw,36px)!important;border-radius:24px!important;
- margin-bottom:var(--dash-gap)!important
-}
-#page-dashboard .greeting-top{align-items:center;gap:16px;flex-wrap:wrap}
-#page-dashboard .greeting-left{flex:1 1 235px;min-width:0}
-html body #page-dashboard .greeting-msg{font-size:clamp(19px,2.2vw,31px)!important;line-height:1.45;color:var(--text)!important}
-#page-dashboard .wf-dash-create{background:#243c59;color:white;padding:10px 16px;font-weight:750}
-#page-dashboard .wf-dash-create svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
-html body #page-dashboard .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--dash-gap);margin-bottom:var(--dash-gap)}
-html body #page-dashboard .stat-card{padding:clamp(10px,1.5vw,20px)!important;margin:0!important;min-width:0;min-height:88px;border-radius:17px!important;gap:10px;transition:border-color .18s ease!important}
-html body #page-dashboard .stat-card:hover{border-color:var(--ui-accent)!important;transform:none!important}
-#page-dashboard .stat-val{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-html body #page-dashboard .stat-card:last-child{background:var(--ui-soft)!important}
-#page-dashboard .wf-dash-workspace{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:var(--dash-gap);align-items:start}
-#page-dashboard .wf-dash-primary,#page-dashboard .wf-dash-secondary{min-width:0}
-#page-dashboard .wf-dash-secondary{display:grid;gap:var(--dash-gap)}
-html body #page-dashboard :is(.wf-dash-recent,.curr-bar,.wf-dashboard-intelligence){margin:0!important}
-#page-dashboard .wf-dashboard-intelligence{grid-template-columns:minmax(0,1fr);gap:var(--dash-gap)}
-#page-dashboard .curr-bar-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-#page-dashboard .curr-bar-top{flex-wrap:wrap;gap:8px;justify-content:flex-start}
-#page-dashboard .curr-bar-top h2{font-size:16px;color:var(--text);margin:0;margin-inline-end:auto}
-#page-dashboard .wf-dash-recent{padding:clamp(14px,2vw,24px)!important}
-@media(max-width:1000px){#page-dashboard .wf-dash-workspace{grid-template-columns:minmax(0,1fr)}#page-dashboard .wf-dashboard-intelligence{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){html body #page-dashboard .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#page-dashboard .wf-dashboard-intelligence{grid-template-columns:minmax(0,1fr)}}
-@media(prefers-reduced-motion:reduce){#page-dashboard .stat-card{transition:none!important}}
+  #page-dashboard .wf-dash-overview {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-areas: "welcome sales" "metrics metrics";
+    gap: var(--dash-gap);
+    margin-block-end: var(--dash-gap);
+  }
 
-/* Match the dashboard's primary actions to the selected navigation color. */
-html body #page-dashboard #greetingCard{
- background:linear-gradient(125deg,#102638 15%,color-mix(in srgb,var(--brand-primary) 66%,#102638))!important;
- border:0!important;color:white!important
-}
-html body #page-dashboard #greetingCard .greeting-top{margin:0;gap:clamp(14px,3vw,36px)}
-html body #page-dashboard #greetingCard :is(.greeting-msg,.greeting-sub,.greeting-time-badge){color:#fff!important}
-html body #page-dashboard #greetingCard .greeting-time-badge{background:#ffffff18!important;border-color:#ffffff3d!important}
-#page-dashboard .wf-dash-sales{flex:0 1 260px;min-width:0;padding:16px 20px;border-radius:18px;background:#ffffff14;border:1px solid #ffffff38;display:flex;gap:14px;align-items:center}
-html body #page-dashboard .wf-dash-sales :is(.stat-val,.stat-lbl){color:white!important}
-html body #page-dashboard .wf-dash-sales .stat-val{font-size:clamp(21px,3vw,35px)!important;line-height:1.15}
-#page-dashboard .wf-dash-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--dash-gap);margin-bottom:var(--dash-gap)}
-html body #page-dashboard :is(.wf-dash-actions .btn,.wf-dash-recent .card-hdr .btn,.wf-dash-recent .btn-p,.curr-refresh){
- background:var(--brand-primary)!important;border-color:var(--brand-primary)!important;color:#fff!important
-}
-#page-dashboard .wf-dash-actions .btn{justify-content:space-between;min-height:50px;white-space:normal;padding:10px 14px;border-radius:14px!important;text-align:start}
-#page-dashboard .wf-dash-actions svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
-#page-dashboard .wf-dash-actions .btn:hover{filter:brightness(.92)}
-html body #page-dashboard .stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-html body #page-dashboard .stat-card:last-child{background:var(--card)!important}
-html body #page-dashboard>#tipCardStandalone{margin-top:var(--dash-gap)!important}
-@media(max-width:600px){
- #page-dashboard .wf-dash-sales{flex:1 1 100%;padding:12px 14px}
- #page-dashboard .wf-dash-actions{gap:6px}
- #page-dashboard .wf-dash-actions .btn{flex-direction:column-reverse;justify-content:center;padding:7px 3px;font-size:11px;text-align:center}
- html body #page-dashboard .stat-card{flex-direction:column;align-items:flex-start;gap:6px}
-}
+  html body #page-dashboard #greetingCard {
+    grid-area: welcome;
+    display: grid;
+    align-items: center;
+    min-width: 0;
+    margin: 0 !important;
+    padding: clamp(14px, 2.5vw, 30px) !important;
+    background: linear-gradient(115deg, var(--dash-surface) 45%, var(--wash)) !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: 20px !important;
+    box-shadow: none !important;
+  }
 
-/* A light welcome panel shares the overview with sales and daily actions. */
-#page-dashboard .wf-dash-overview{
- display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
- grid-template-areas:"welcome sales" "actions metrics";
- align-items:stretch;gap:var(--dash-gap);margin-bottom:var(--dash-gap)
-}
-html body #page-dashboard #greetingCard{
- grid-area:welcome;margin:0!important;border:1px solid var(--border)!important;
- background:linear-gradient(115deg,var(--card) 45%,var(--ui-soft))!important;
- display:flex;align-items:center;box-shadow:none!important
-}
-html body #page-dashboard #greetingCard :is(.greeting-msg,.greeting-sub,.greeting-time-badge){color:var(--text)!important}
-html body #page-dashboard #greetingCard .greeting-time-badge{background:var(--card)!important;border-color:var(--border)!important}
-#page-dashboard .wf-dash-sales{
- grid-area:sales;min-height:132px;padding:clamp(14px,2.5vw,28px);
- background:linear-gradient(150deg,#102638,var(--brand-primary));border:0;border-radius:24px;
- box-shadow:0 8px 22px #10263824;flex-direction:row-reverse;justify-content:space-between
-}
-#page-dashboard .wf-dash-sales .stat-icon{background:#ffffff20!important;color:white!important}
-#page-dashboard .wf-dash-sales>div:last-child{min-width:0}
-#page-dashboard .wf-dash-sales .stat-val{direction:ltr;unicode-bidi:isolate;text-align:start;color:white!important}
-#page-dashboard .wf-dash-actions{grid-area:actions;align-content:stretch;margin:0!important}
-html body #page-dashboard .wf-dash-overview .stats-grid{
- grid-area:metrics;margin:0!important;gap:0;padding:4px;
- background:var(--card);border:1px solid var(--border);border-radius:16px
-}
-html body #page-dashboard .wf-dash-overview .stat-card{
- border:0!important;box-shadow:none!important;min-height:64px;
- padding:8px clamp(4px,1vw,12px)!important;background:transparent!important;
- border-radius:10px!important
-}
-html body #page-dashboard .wf-dash-overview .stat-card:hover{background:var(--ui-soft)!important}
-#page-dashboard .wf-dash-overview .stat-icon{flex:none}
-@media(max-width:1000px){
- #page-dashboard .wf-dash-overview{grid-template-areas:"welcome sales" "actions actions" "metrics metrics"}
-}
-@media(max-width:540px){
- #page-dashboard .wf-dash-overview{grid-template-columns:minmax(0,1fr);grid-template-areas:"welcome" "sales" "actions" "metrics"}
- #page-dashboard .wf-dash-sales{min-height:90px;border-radius:18px}
- html body #page-dashboard .wf-dash-overview .stat-card{align-items:center;text-align:center}
+  #page-dashboard #greetingCard .greeting-top { margin: 0; }
+  #page-dashboard .greeting-left { min-width: 0; }
+  html body #page-dashboard #greetingCard :is(.greeting-msg, .greeting-time-badge) {
+    color: var(--ink) !important;
+  }
+  html body #page-dashboard #greetingCard .greeting-msg {
+    font-size: clamp(19px, 2.3vw, 32px) !important;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  html body #page-dashboard #greetingCard .greeting-sub { color: var(--text2) !important; }
+  html body #page-dashboard #greetingCard .greeting-time-badge {
+    background: var(--dash-surface) !important;
+    border-color: var(--dash-line) !important;
+  }
+
+  #page-dashboard .wf-dash-sales {
+    grid-area: sales;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-width: 0;
+    min-height: 106px;
+    padding: clamp(14px, 2.5vw, 28px);
+    color: white;
+    border-radius: 20px;
+    background: linear-gradient(145deg, #112c38, color-mix(in srgb, var(--dash-accent) 70%, #112c38));
+  }
+  #page-dashboard .wf-dash-sales::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset-block-start: -88px;
+    inset-inline-start: -56px;
+    width: 176px;
+    aspect-ratio: 1;
+    border: 1px solid #ffffff22;
+    border-radius: 50%;
+    box-shadow: 0 0 0 23px #ffffff0b, 0 0 0 46px #ffffff08;
+    pointer-events: none;
+  }
+  #page-dashboard .wf-dash-sales > div:last-child { min-width: 0; }
+  html body #page-dashboard .wf-dash-sales .stat-val {
+    color: white !important;
+    font-size: clamp(21px, 3vw, 38px) !important;
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+  html body #page-dashboard .wf-dash-sales .stat-lbl { color: #ebf5f8 !important; }
+
+  html body #page-dashboard .stats-grid {
+    grid-area: metrics;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--dash-gap);
+    margin: 0 !important;
+  }
+
+  html body #page-dashboard .stat-card {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: clamp(8px, 1.4vw, 16px);
+    min-width: 0;
+    min-height: 74px;
+    margin: 0 !important;
+    padding: clamp(8px, 1.4vw, 16px) !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: 16px !important;
+    background: var(--dash-surface) !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+  html body #page-dashboard .stat-card::after { display: none; }
+  html body #page-dashboard .stat-card:hover { border-color: var(--ui-accent) !important; }
+  #page-dashboard .stat-card > div:last-child { min-width: 0; }
+  html body #page-dashboard .stat-val {
+    font-size: clamp(19px, 2.4vw, 30px) !important;
+    font-weight: 800;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
+  }
+  html body #page-dashboard .stat-lbl {
+    color: var(--text2) !important;
+    font-size: 12px;
+    margin-block-start: 4px;
+    overflow-wrap: anywhere;
+  }
+  #page-dashboard .stat-card .wf-stat-trend {
+    position: static;
+    font-size: 10px;
+    margin-block-start: 3px;
+    max-width: 100%;
+    white-space: normal;
+  }
+  html body #page-dashboard :is(.stat-icon, .curr-flag) {
+    display: grid !important;
+    place-items: center;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 0 !important;
+    flex: 0 0 38px;
+    margin: 0 !important;
+    color: var(--tile-ink, var(--ink)) !important;
+    background: var(--tile-fill, var(--wash)) !important;
+    border-radius: 11px !important;
+    box-shadow: none !important;
+  }
+  html body #page-dashboard :is(.stat-icon, .curr-flag) .wf-ui-icon {
+    color: inherit !important;
+    width: 22px;
+    height: 22px;
+    margin: 0 !important;
+    opacity: 1 !important;
+  }
+  #page-dashboard .wf-dash-sales .stat-icon {
+    --tile-ink: white;
+    --tile-fill: #ffffff24;
+  }
+
+  html body #page-dashboard .curr-bar {
+    min-width: 0;
+    margin: 0 0 var(--dash-gap) !important;
+    padding: clamp(12px, 2vw, 24px) !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: 20px !important;
+    background: var(--dash-surface) !important;
+    box-shadow: var(--lift) !important;
+  }
+  #page-dashboard .curr-bar-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 3px 12px;
+    margin-block-end: 14px;
+  }
+  #page-dashboard .curr-bar-top h2 {
+    margin: 0;
+    font-size: clamp(17px, 2vw, 22px);
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  html body #page-dashboard .curr-update {
+    grid-row: 2;
+    padding: 0 !important;
+    border: 0 !important;
+    background: none !important;
+    color: var(--text2) !important;
+    font-size: 11px;
+    overflow-wrap: anywhere;
+    text-align: start;
+  }
+  html body #page-dashboard .curr-refresh {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 44px;
+    min-height: 44px;
+    width: auto !important;
+    height: auto !important;
+    padding: 8px 12px !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: 11px !important;
+    background: var(--wash) !important;
+    color: var(--ink) !important;
+    font-weight: 700;
+    font-size: 12px;
+    transform: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+  }
+  html body #page-dashboard .curr-refresh .wf-ui-icon {
+    color: inherit !important;
+    width: 18px;
+    height: 18px;
+    margin: 0 !important;
+    animation: none;
+  }
+  #page-dashboard .curr-refresh:disabled { opacity: .7; cursor: wait; }
+  #page-dashboard .wf-rate-status {
+    margin-block-end: 10px;
+    color: var(--text2);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  #page-dashboard .wf-rate-status:empty { display: none; }
+  #page-dashboard .wf-rate-status:is([data-state="failed"], [data-state="unsaved"]) { color: var(--red); }
+
+  html body #page-dashboard .curr-bar-grid {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: clamp(7px, 1vw, 12px) !important;
+    overflow: visible !important;
+    max-height: none !important;
+    padding: 0 !important;
+  }
+  html body #page-dashboard .curr-item {
+    --tile-ink: #255a6e;
+    --tile-fill: #dceef4;
+    --tile-tint: color-mix(in srgb, var(--tile-fill) 36%, var(--dash-surface));
+    position: relative;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-rows: auto 1fr !important;
+    justify-content: stretch;
+    align-items: center;
+    gap: 8px !important;
+    min-width: 0;
+    min-height: 100px;
+    padding: clamp(8px, 1vw, 14px) !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: 14px !important;
+    background: linear-gradient(155deg, var(--tile-tint), var(--dash-surface)) !important;
+    box-shadow: none !important;
+    transform: none !important;
+    animation: none !important;
+    cursor: pointer;
+  }
+  #page-dashboard .curr-item[onclick*="'eur-"] { --tile-ink: #4f507f; --tile-fill: #e6e6f6; }
+  #page-dashboard .curr-item[onclick*="'try-"] { --tile-ink: #794c21; --tile-fill: #f6e9d8; }
+  [data-theme="dark"] #page-dashboard .curr-item { --tile-ink: #bde6f2; --tile-fill: #264754; }
+  [data-theme="dark"] #page-dashboard .curr-item[onclick*="'eur-"] { --tile-ink: #d3d0fc; --tile-fill: #3b3c5b; }
+  [data-theme="dark"] #page-dashboard .curr-item[onclick*="'try-"] { --tile-ink: #f5d7b3; --tile-fill: #4b382d; }
+  html body #page-dashboard .curr-item:is(:hover, :focus-visible) {
+    border-color: var(--ui-accent) !important;
+    background: var(--tile-tint) !important;
+  }
+  #page-dashboard .curr-item:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+  #page-dashboard .curr-item .curr-flag { grid-column: 1; grid-row: 1; }
+  #page-dashboard .curr-item .curr-info { grid-column: 1 / -1; grid-row: 2; min-width: 0; text-align: start; }
+  html body #page-dashboard .curr-item .curr-label {
+    color: var(--text2) !important;
+    font-size: 11px !important;
+    font-weight: 750;
+    letter-spacing: .035em;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+  html body #page-dashboard .curr-item .curr-rate {
+    color: var(--ink) !important;
+    font-size: clamp(17px, 1.8vw, 27px) !important;
+    font-weight: 800;
+    line-height: 1.18;
+    letter-spacing: -.025em !important;
+    font-variant-numeric: tabular-nums;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+  html body #page-dashboard .curr-item .wf-market-trend {
+    grid-column: 2;
+    grid-row: 1;
+    position: static !important;
+    justify-self: end;
+    margin: 0 !important;
+    padding: 2px 4px !important;
+    font-size: 10px !important;
+    white-space: nowrap;
+    animation: none !important;
+  }
+  #page-dashboard .curr-item .wf-market-arrow { animation: none !important; }
+
+  #page-dashboard .wf-dash-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--dash-gap);
+  }
+  #page-dashboard :is(.wf-dash-primary, .wf-dash-secondary) { min-width: 0; }
+  html body #page-dashboard :is(.wf-dash-recent, .wf-dashboard-intelligence) { margin: 0 !important; }
+  html body #page-dashboard .wf-dashboard-intelligence { grid-template-columns: minmax(0, 1fr); gap: var(--dash-gap); }
+  #page-dashboard > #tipCardStandalone { margin-block-start: var(--dash-gap) !important; }
+
+  @container (max-width: 860px) {
+    html body #page-dashboard .curr-bar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  }
+  @container (max-width: 690px) {
+    #page-dashboard .wf-dash-workspace { grid-template-columns: minmax(0, 1fr); }
+  }
+  @container (max-width: 510px) {
+    #page-dashboard .wf-dash-overview {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "welcome" "sales" "metrics";
+    }
+    #page-dashboard .wf-dash-sales { min-height: 76px; }
+    html body #page-dashboard .stat-card { flex-direction: column; align-items: flex-start; gap: 6px; }
+    html body #page-dashboard .stat-card .stat-icon { width: 30px !important; height: 30px !important; flex-basis: 30px; }
+    html body #page-dashboard .stat-card .stat-icon .wf-ui-icon { width: 18px; height: 18px; }
+    html body #page-dashboard .curr-bar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    html body #page-dashboard .curr-refresh { max-width: 145px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html body #page-dashboard .curr-refresh.wf-refreshing .wf-ui-icon { animation: wfRefreshSpin 1s linear infinite; }
+  }
+  @keyframes wfRefreshSpin { to { transform: rotate(360deg); } }
 }
