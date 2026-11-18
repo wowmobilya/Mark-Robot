@@ -34,7 +34,7 @@
 <meta name="google" content="notranslate">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<script src="ui-icons.js?v=45" defer></script>
+<script src="ui-icons.js?v=46" defer></script>
 <title>WOW FURNITURE — Invoice System · V14</title>
 
 <!-- ربط ملف الـ Manifest -->
@@ -6441,17 +6441,17 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=2" defer></script>
 <script src="ui-settings.js?v=1" defer></script>
-<script src="settings-navigation.js?v=5" defer></script>
-<script src="rate-refresh.js?v=2" defer></script>
+<script src="settings-navigation.js?v=6" defer></script>
+<script src="rate-refresh.js?v=3" defer></script>
 <script src="topbar-dock.js?v=4" defer></script>
-<link rel="stylesheet" href="currency-calculator.css?v=9">
+<link rel="stylesheet" href="currency-calculator.css?v=10">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
-<link rel="stylesheet" href="dashboard-visuals.css?v=8">
+<link rel="stylesheet" href="dashboard-visuals.css?v=9">
 <link rel="stylesheet" href="section-headings.css?v=6">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
-<link rel="stylesheet" href="workspace-surfaces.css?v=8">
+<link rel="stylesheet" href="workspace-surfaces.css?v=9">
 </head>
 <body>
 
@@ -6619,13 +6619,13 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     <div class="side-sec" id="wf-nav-nav_main" data-i18n="nav_main">القائمة</div>
     <button class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">🏠</span><span data-i18n="nav_dashboard">لوحة التحكم</span></button>
     <button class="nav-item" onclick="showPage('companies')"><span class="nav-icon">👥</span><span data-i18n="nav_companies">العملاء</span><span class="nav-badge" id="badge-co">0</span></button>
-    <button class="nav-item" onclick="showPage('products')"><span class="nav-icon">🛋️</span><span data-i18n="nav_products">المنتجات</span><span class="nav-badge" id="badge-pr">0</span></button>
+    <button class="nav-item" onclick="showPage('products')"><span class="nav-icon" data-wf-business-icon>🛋️</span><span data-i18n="nav_products">المنتجات</span><span class="nav-badge" id="badge-pr">0</span></button>
     <button class="nav-item" onclick="showPage('invoices')"><span class="nav-icon">📄</span><span data-i18n="nav_invoices">الفواتير</span><span class="nav-badge" id="badge-inv">0</span></button>
   </div>
   <div class="wf-nav-group" role="group" aria-labelledby="wf-nav-nav_actions">
     <div class="side-sec" id="wf-nav-nav_actions" data-i18n="nav_actions">إجراءات</div>
     <button class="nav-item" onclick="showPage('select-client-type')"><span class="nav-icon">➕</span><span data-i18n="nav_add_co">إضافة عميل</span></button>
-    <button class="nav-item" onclick="showPage('add-product')"><span class="nav-icon">📦</span><span data-i18n="nav_add_pr">إضافة منتج</span></button>
+    <button class="nav-item" onclick="showPage('add-product')"><span class="nav-icon" data-wf-business-icon>📦</span><span data-i18n="nav_add_pr">إضافة منتج</span></button>
     <button class="nav-item" onclick="showPage('quick-barcode')"><span class="nav-icon">📷</span><span id="qblSidebarBtn"><span data-wf-ui="Quick Barcode">باركود سريع</span></span></button>
     <button class="nav-item" onclick="showPage('select-invoice-type')"><span class="nav-icon">✏️</span><span data-i18n="nav_create">إنشاء فاتورة</span></button>
   </div>
@@ -6667,7 +6667,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <div><div class="stat-val" id="s-co">0</div><div class="stat-lbl" data-i18n="stat_co">الشركات</div></div>
     </div>
     <div class="stat-card" onclick="showPage('products')">
-      <div class="stat-icon si-b">🛋️</div>
+      <div class="stat-icon si-b" data-wf-business-icon>🛋️</div>
       <div><div class="stat-val" id="s-pr">0</div><div class="stat-lbl" data-i18n="stat_pr">المنتجات</div></div>
     </div>
     <div class="stat-card" onclick="showPage('invoices')">
@@ -6764,7 +6764,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   <!-- زر الرجوع الجديد -->
   <button class="sct-back-btn" onclick="goBack()">← <span data-i18n="btn_back">رجوع</span></button>
   
-  <h1 class="co-toolbar-title" data-i18n="pr_title">🛋️ المنتجات</h1>
+  <h1 class="co-toolbar-title" data-wf-business-icon data-i18n="pr_title">🛋️ المنتجات</h1>
   <button class="wf-search-toggle" type="button" onclick="wfToggleSearch('prSearch',this)" aria-controls="prSearch" aria-label="Search" title="Search" data-wf-ui-aria-label="Search" data-wf-ui-title="Search">🔍</button>
   <input type="search" class="fc wf-smart-search" id="prSearch" placeholder="Search products" data-wf-ui-placeholder="Search products" oninput="wfDebouncedRenderPr()" autocomplete="off">
   <button class="btn btn-p" onclick="showPage('add-product')">➕ <span data-i18n="btn_add_pr">إضافة</span></button>
@@ -7010,7 +7010,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <button class="sct-back-btn" onclick="goBack()">← <span data-i18n="btn_back">رجوع</span></button>
       <div class="sct-sticky-title">
         <!-- 2. إضافة ID للعنوان للتحكم به برمجياً -->
-        <h1 id="prFormTitle" data-i18n="add_pr_title">📦 إضافة منتج</h1>
+        <h1 id="prFormTitle" data-wf-business-icon data-i18n="add_pr_title">📦 إضافة منتج</h1>
         <p id="addPrSubtitle">—</p>
       </div>
      <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -9093,6 +9093,19 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   <p class="wf-appearance-help" data-i18n="appearance_hint">تُطبّق هذه الخيارات فورًا وتُحفظ على هذا الجهاز.</p>
   <div class="wf-appearance-grid">
     <div class="wf-appearance-control">
+      <label class="fl" for="wfBusinessPreference">🛋️ <span data-i18n="business_title">اختصاص الموبيليا</span></label>
+      <select class="fc" id="wfBusinessPreference">
+        <option value="auto" data-i18n="business_general">أثاث عام</option>
+        <option value="seating" data-i18n="business_seating">كنب ومقاعد</option>
+        <option value="living" data-i18n="business_living">غرف معيشة</option>
+        <option value="tables" data-i18n="business_tables">طاولات وسط وقهوة</option>
+        <option value="dining" data-i18n="business_dining">طاولات سفرة</option>
+        <option value="console" data-i18n="business_console">كونسول</option>
+        <option value="bedroom" data-i18n="business_bedroom">غرف نوم</option>
+        <option value="office" data-i18n="business_office">أثاث مكتبي</option>
+      </select>
+    </div>
+    <div class="wf-appearance-control">
       <label class="fl" for="wfThemePreference">🌙 <span data-i18n="appearance_theme">الألوان</span></label>
       <select class="fc" id="wfThemePreference">
         <option value="light" data-i18n="appearance_light">فاتح</option>
@@ -9312,7 +9325,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   <button class="bnav-btn" id="bnav-1"
     onclick="showPage('add-product')">
     <span class="bnav-dot" id="bnavDot-1"></span>
-    <span class="bnav-icon">📦</span>
+    <span class="bnav-icon" data-wf-business-icon>📦</span>
     <span class="bnav-label" data-i18n="nav_add_pr">منتج</span>
   </button>
 
@@ -10968,7 +10981,8 @@ const TR={
   ar:{
     th_image:'الصورة',
     nav_main:'القائمة',nav_reports:'التقارير',report_monthly_sales:'المبيعات حسب الشهر',
-    appearance_title:'المظهر والتحكم',appearance_hint:'تُطبّق هذه الخيارات فورًا وتُحفظ على هذا الجهاز.',appearance_theme:'الألوان',appearance_light:'فاتح',appearance_dark:'داكن',appearance_density:'كثافة العرض',appearance_auto:'تلقائي',appearance_compact:'مدمج',appearance_roomy:'واسع',appearance_motion:'الحركة',appearance_reduced:'حركة أقل',appearance_sidebar:'القائمة على الكمبيوتر',appearance_open:'ظاهرة',appearance_closed:'مطوية',nav_dashboard:'لوحة التحكم',nav_companies:'العملاء',
+    appearance_title:'المظهر والتحكم',appearance_hint:'تُطبّق هذه الخيارات فورًا وتُحفظ على هذا الجهاز.',appearance_theme:'الألوان',appearance_light:'فاتح',appearance_dark:'داكن',appearance_density:'كثافة العرض',appearance_auto:'تلقائي',appearance_compact:'مدمج',appearance_roomy:'واسع',appearance_motion:'الحركة',appearance_reduced:'حركة أقل',appearance_sidebar:'القائمة على الكمبيوتر',appearance_open:'ظاهرة',appearance_closed:'مطوية',
+    business_title:'اختصاص الموبيليا',business_general:'أثاث عام',business_seating:'كنب ومقاعد',business_living:'غرف معيشة',business_tables:'طاولات وسط وقهوة',business_dining:'طاولات سفرة',business_console:'كونسول',business_bedroom:'غرف نوم',business_office:'أثاث مكتبي',nav_dashboard:'لوحة التحكم',nav_companies:'العملاء',
     nav_products:'المنتجات',nav_invoices:'الفواتير',nav_actions:'إجراءات',
     nav_add_co:'إضافة عميل',nav_add_pr:'إضافة منتج',nav_create:'إنشاء فاتورة',
     stat_co:'الشركات',stat_pr:'المنتجات',stat_inv:'الفواتير',stat_total:'إجمالي المبيعات',
@@ -11116,7 +11130,8 @@ name_hasan: 'أ. حسن الحلو',
   tr:{
     th_image:'Görsel',
     nav_main:'Menü',nav_reports:'Raporlar',report_monthly_sales:'Aylık satışlar',
-    appearance_title:'Görünüm ve denetimler',appearance_hint:'Seçimler hemen uygulanır ve bu cihaza kaydedilir.',appearance_theme:'Tema',appearance_light:'Açık',appearance_dark:'Koyu',appearance_density:'Ekran yoğunluğu',appearance_auto:'Otomatik',appearance_compact:'Kompakt',appearance_roomy:'Geniş',appearance_motion:'Hareket',appearance_reduced:'Azaltılmış',appearance_sidebar:'Masaüstü menüsü',appearance_open:'Açık',appearance_closed:'Kapalı',nav_dashboard:'Panel',nav_companies:'Müşteriler',
+    appearance_title:'Görünüm ve denetimler',appearance_hint:'Seçimler hemen uygulanır ve bu cihaza kaydedilir.',appearance_theme:'Tema',appearance_light:'Açık',appearance_dark:'Koyu',appearance_density:'Ekran yoğunluğu',appearance_auto:'Otomatik',appearance_compact:'Kompakt',appearance_roomy:'Geniş',appearance_motion:'Hareket',appearance_reduced:'Azaltılmış',appearance_sidebar:'Masaüstü menüsü',appearance_open:'Açık',appearance_closed:'Kapalı',
+    business_title:'Mobilya uzmanlığı',business_general:'Genel mobilya',business_seating:'Koltuk ve oturma',business_living:'Oturma odası',business_tables:'Orta sehpalar',business_dining:'Yemek masaları',business_console:'Konsollar',business_bedroom:'Yatak odası',business_office:'Ofis mobilyası',nav_dashboard:'Panel',nav_companies:'Müşteriler',
     nav_products:'Ürünler',nav_invoices:'Faturalar',nav_actions:'İşlemler',
     nav_add_co:'Müşteri Ekle',nav_add_pr:'Ürün Ekle',nav_create:'Fatura Oluştur',
     stat_co:'Şirketler',stat_pr:'Ürünler',stat_inv:'Faturalar',stat_total:'Toplam Satış',
@@ -11263,7 +11278,8 @@ name_hasan: 'Sn. Hasan Al-Helou',
   en:{
     th_image:'Image',
     nav_main:'Menu',nav_reports:'Reports',report_monthly_sales:'Sales by month',
-    appearance_title:'Appearance and controls',appearance_hint:'Changes apply immediately and are saved on this device.',appearance_theme:'Theme',appearance_light:'Light',appearance_dark:'Dark',appearance_density:'Display density',appearance_auto:'Automatic',appearance_compact:'Compact',appearance_roomy:'Roomy',appearance_motion:'Motion',appearance_reduced:'Reduced motion',appearance_sidebar:'Desktop sidebar',appearance_open:'Expanded',appearance_closed:'Collapsed',nav_dashboard:'Dashboard',nav_companies:'Clients',
+    appearance_title:'Appearance and controls',appearance_hint:'Changes apply immediately and are saved on this device.',appearance_theme:'Theme',appearance_light:'Light',appearance_dark:'Dark',appearance_density:'Display density',appearance_auto:'Automatic',appearance_compact:'Compact',appearance_roomy:'Roomy',appearance_motion:'Motion',appearance_reduced:'Reduced motion',appearance_sidebar:'Desktop sidebar',appearance_open:'Expanded',appearance_closed:'Collapsed',
+    business_title:'Furniture specialty',business_general:'General furniture',business_seating:'Sofas and seating',business_living:'Living room furniture',business_tables:'Coffee and center tables',business_dining:'Dining tables',business_console:'Console tables',business_bedroom:'Bedroom furniture',business_office:'Office furniture',nav_dashboard:'Dashboard',nav_companies:'Clients',
     nav_products:'Products',nav_invoices:'Invoices',nav_actions:'Actions',
     nav_add_co:'Add Client',nav_add_pr:'Add Product',nav_create:'Create Invoice',
     stat_co:'Companies',stat_pr:'Products',stat_inv:'Invoices',stat_total:'Total Sales',
@@ -11524,6 +11540,15 @@ const WF_UI_COPY = [
   ['appearance_sidebar','Menu sur ordinateur','Боковое меню на компьютере'],
   ['appearance_open','Déployé','Развёрнуто'],
   ['appearance_closed','Replié','Свёрнуто'],
+  ['business_title','Spécialité du mobilier','Специализация мебели'],
+  ['business_general','Mobilier général','Мебель общего назначения'],
+  ['business_seating','Canapés et sièges','Диваны и кресла'],
+  ['business_living','Mobilier de salon','Мебель для гостиной'],
+  ['business_tables','Tables basses','Журнальные столики'],
+  ['business_dining','Tables de salle à manger','Обеденные столы'],
+  ['business_console','Consoles','Консольные столики'],
+  ['business_bedroom','Mobilier de chambre','Мебель для спальни'],
+  ['business_office','Mobilier de bureau','Офисная мебель'],
   ['report_monthly_sales','Ventes par mois','Продажи по месяцам'],
   ['nav_dashboard','Tableau de bord','Панель управления'],
   ['nav_companies co_title','Clients','Клиенты'],
@@ -13590,7 +13615,7 @@ function wfRenderDashboardIntelligence(total, host=document.getElementById('dash
   const tx={ar:{pulse:'نظرة على الأعمال',catalog:'كتالوج المنتجات',sales:'إجمالي المبيعات',invoices:'عدد الفواتير',clients:'إجمالي العملاء',products:'منتج في النظام',types:'توزيع الأنواع'},tr:{pulse:'İş görünümü',catalog:'Ürün kataloğu',sales:'Toplam satış',invoices:'Fatura sayısı',clients:'Toplam müşteri',products:'sistemde ürün',types:'Tür dağılımı'},en:{pulse:'Business pulse',catalog:'Product catalog',sales:'Total sales',invoices:'Invoices',clients:'Total clients',products:'products in system',types:'Type distribution'},fr:{pulse:'Vue d’ensemble',catalog:'Catalogue produits',sales:'Ventes totales',invoices:'Factures',clients:'Clients',products:'produits dans le système',types:'Répartition'},ru:{pulse:'Показатели бизнеса',catalog:'Каталог товаров',sales:'Общие продажи',invoices:'Счета',clients:'Клиенты',products:'товаров в системе',types:'Распределение'}}[lang]||{};
   const kinds=[['coffee_table',{ar:'طاولة قهوة',tr:'Sehpa',en:'Coffee table',fr:'Table basse',ru:'Журнальный столик'}],['dresser',{ar:'مدخل',tr:'Dresuar',en:'Dresser',fr:'Commode',ru:'Комод'}],['side_table',{ar:'طاولة جانبية',tr:'Yan sehpa',en:'Side table',fr:'Table d’appoint',ru:'Приставной столик'}],['tv_table',{ar:'طاولة تلفاز',tr:'TV ünitesi',en:'TV table',fr:'Meuble TV',ru:'Тумба под ТВ'}]];const counts=kinds.map(([key,label])=>({label,n:S.products.filter(p=>p.type===key).length}));const max=Math.max(1,...counts.map(x=>x.n));
   const money='$'+Number(total||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  host.innerHTML=`<section class="wf-insight-card"><div class="wf-insight-head"><span>📊</span><strong>${tx.pulse}</strong></div><div class="wf-insight-row"><span>${tx.sales}</span><b>${money}</b></div><div class="wf-insight-row"><span>${tx.invoices}</span><b>${S.invoices.length}</b></div><div class="wf-insight-row"><span>${tx.clients}</span><b>${S.companies.length}</b></div></section><section class="wf-insight-card"><div class="wf-insight-head"><span>📦</span><strong>${tx.catalog}</strong></div><div class="wf-catalog-total"><b>${S.products.length}</b><span>${tx.products}</span></div><div class="wf-catalog-label">${tx.types}</div>${counts.map(x=>`<div class="wf-catalog-row"><span>${x.label[lang]||x.label.en}</span><i><em style="width:${(x.n/max)*100}%"></em></i><b>${x.n}</b></div>`).join('')}</section>`;
+  host.innerHTML=`<section class="wf-insight-card"><div class="wf-insight-head"><span>📊</span><strong>${tx.pulse}</strong></div><div class="wf-insight-row"><span>${tx.sales}</span><b>${money}</b></div><div class="wf-insight-row"><span>${tx.invoices}</span><b>${S.invoices.length}</b></div><div class="wf-insight-row"><span>${tx.clients}</span><b>${S.companies.length}</b></div></section><section class="wf-insight-card"><div class="wf-insight-head"><span data-wf-business-icon>📦</span><strong>${tx.catalog}</strong></div><div class="wf-catalog-total"><b>${S.products.length}</b><span>${tx.products}</span></div><div class="wf-catalog-label">${tx.types}</div>${counts.map(x=>`<div class="wf-catalog-row"><span>${x.label[lang]||x.label.en}</span><i><em style="width:${(x.n/max)*100}%"></em></i><b>${x.n}</b></div>`).join('')}</section>`;
 }
 
 function wfRenderReports(total){
@@ -15611,6 +15636,7 @@ function renderPr(){
 
   grid.innerHTML=list.map(p=>{
     const icon=TYPE_ICONS[p.type]||'📦';
+    const iconType=Object.hasOwn(TYPE_ICONS,p.type)?p.type:'other';
     const priceA=p.priceA||p.priceUSD||0;
     const priceB=p.priceB||0;
     const priceC=p.priceC||0;
@@ -15624,7 +15650,7 @@ function renderPr(){
        opacity:1;
      ">
        <img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async">
-       <span class="pr-card-type-badge">${icon} ${typeName}</span>
+       <span class="pr-card-type-badge"><span data-wf-product-type="${iconType}">${icon}</span> ${typeName}</span>
      </div>`
   : `<div id="prCardImg-${p.id}" class="pr-card-new-img" style="
        background:linear-gradient(180deg,#1a3a5c,#1a1b2d);
@@ -15633,7 +15659,7 @@ function renderPr(){
        max-height:220px;
        opacity:1;
      ">
-       <span style="font-size:64px;filter:drop-shadow(0 4px 16px rgba(0,0,0,.3));">${icon}</span>
+       <span class="wf-catalog-placeholder" data-wf-product-type="${iconType}">${icon}</span>
        <span class="pr-card-type-badge">${typeName}</span>
      </div>`;
 
@@ -27793,6 +27819,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 })();
 </script>
 
-<script src="currency-calculator.js?v=6"></script>
+<script src="currency-calculator.js?v=7"></script>
 </body>
 </html>

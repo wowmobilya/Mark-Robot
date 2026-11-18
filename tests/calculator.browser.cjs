@@ -2,8 +2,10 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:['--no-sandbox']});
- const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const page=await browser.newPage({serviceWorkers:'block'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('https://**/*',route=>route.abort());
  await page.goto(process.env.TEST_URL||'http://127.0.0.1:3015/',{waitUntil:'load'});
+ await page.waitForFunction(()=>!document.documentElement.classList.contains('wf-booting'));
  await page.evaluate(()=>{wfBackupCloseRestoreModal();showPage('dashboard');S.usdTry=40;S.usdEur=.8;});
  for(const size of [[320,568],[390,844],[768,1024],[1280,800],[844,390],[667,375]]){
   await page.setViewportSize({width:size[0],height:size[1]});

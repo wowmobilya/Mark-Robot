@@ -20,6 +20,33 @@
   resetIcon.setAttribute('aria-hidden', 'true');
   resetIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3 7M3 5v7h7"/></svg>';
   reset.prepend(resetIcon);
+  const result = document.getElementById('ccResult');
+  const copy = document.createElement('button');
+  copy.type = 'button';
+  copy.className = 'btn cc-copy-result';
+  const copyIcon = document.createElement('span');
+  copyIcon.className = 'cc-action-icon';
+  copyIcon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>';
+  const copyLabel = document.createElement('span');
+  copy.append(copyIcon, copyLabel);
+  reset.after(copy);
+  const copyWords = {
+    ar: ['نسخ النتيجة','تم نسخ النتيجة','تعذّر نسخ النتيجة'],
+    tr: ['Sonucu kopyala','Sonuç kopyalandı','Sonuç kopyalanamadı'],
+    en: ['Copy result','Result copied','Could not copy the result'],
+    fr: ['Copier le résultat','Résultat copié','Impossible de copier le résultat'],
+    ru: ['Скопировать результат','Результат скопирован','Не удалось скопировать результат']
+  };
+  copy.addEventListener('click', async () => {
+    const words = copyWords[S.lang] || copyWords.en;
+    if (copy.disabled) return;
+    try {
+      await navigator.clipboard.writeText(result.textContent);
+      showToast(words[1]);
+    } catch (_) {
+      showToast(words[2], 'in');
+    }
+  });
   const swap = document.createElement('button');
   swap.type = 'button'; swap.className = 'cc-swap';
   swap.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v18m-4-4 4 4 4-4M16 21V3m-4 4 4-4 4 4"/></svg>';
@@ -92,6 +119,8 @@
     if (!CC_CONFIGS[key]) return;
     returnFocus = document.activeElement;
     previousOpen(key); lastValue = ''; updateStamp();
+    copyLabel.textContent = (copyWords[S.lang] || copyWords.en)[0];
+    copy.disabled = true;
     const cfg = CC_CONFIGS[key];
     const symbol = {USD:'$', EUR:'€', TRY:'₺'};
     route.querySelector('.cc-route-from').textContent = symbol[cfg.from];
@@ -145,12 +174,13 @@
     const result = cfg?.convert(value);
     output.textContent = !input.value || input.value === '.' || !Number.isFinite(result) || value < 0 || !Number.isFinite(S.usdTry) || S.usdTry <= 0 || !Number.isFinite(S.usdEur) || S.usdEur <= 0
       ? '—' : cfg.resultSym + result.toLocaleString('en-US', {minimumFractionDigits:cfg.resultDecimals,maximumFractionDigits:cfg.resultDecimals});
+    copy.disabled = output.textContent === '—';
     lastValue = input.value;
   };
   modal.addEventListener('keydown', event => {
     if (event.key === 'Escape') { event.preventDefault(); closeModal('currCalcModal'); }
     if (event.key === 'Tab') {
-      const items = [...modal.querySelectorAll('button,input')].filter(el => el.getClientRects().length);
+      const items = [...modal.querySelectorAll('button:enabled,input:enabled')].filter(el => el.getClientRects().length);
       const first = items[0], last = items[items.length-1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
