@@ -6435,23 +6435,23 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=46">
      <link rel="stylesheet" href="ui-identity.css?v=31">
-     <script src="ui-navigation.js?v=12" defer></script>
+     <script src="ui-navigation.js?v=13" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
 <script src="context-nav.js?v=1" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=2" defer></script>
 <script src="ui-settings.js?v=1" defer></script>
-<script src="settings-navigation.js?v=4" defer></script>
+<script src="settings-navigation.js?v=5" defer></script>
 <script src="rate-refresh.js?v=2" defer></script>
 <script src="topbar-dock.js?v=4" defer></script>
 <link rel="stylesheet" href="currency-calculator.css?v=9">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
-<link rel="stylesheet" href="dashboard-visuals.css?v=7">
+<link rel="stylesheet" href="dashboard-visuals.css?v=8">
 <link rel="stylesheet" href="section-headings.css?v=6">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
-<link rel="stylesheet" href="workspace-surfaces.css?v=7">
+<link rel="stylesheet" href="workspace-surfaces.css?v=8">
 </head>
 <body>
 
@@ -6486,7 +6486,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     <button type="button" class="wf-restore-confirm wf-restore-done" id="wfRestoreDoneBtn" style="display:none;" onclick="wfRecoveryContinue()"><span data-wf-ui="Continue to the app">الدخول إلى البرنامج</span></button>
   </div>
 </div>
-<div class="sidebar-overlay" id="sideOv" aria-hidden="true"></div>
+<div class="sidebar-overlay" id="sideOv" aria-hidden="true" onclick="closeSidebar()"></div>
 
 <!-- ========== DELETE CONFIRM MODAL ========== -->
 <div class="delete-modal-ov" id="deleteModal">
@@ -6608,23 +6608,33 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 </nav>
 
 <!-- SIDEBAR -->
-<aside class="sidebar" id="sidebar">
-  <div class="wf-sidebar-brand" id="wfSidebarBrand" aria-label="WOW Furniture"><img id="wfSidebarLogo" src="app-icon-192.png" alt="WOW Furniture"></div>
-  <div class="side-sec" data-i18n="nav_main">القائمة</div>
-  <button class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">🏠</span><span data-i18n="nav_dashboard">لوحة التحكم</span></button>
-  <button class="nav-item" onclick="showPage('companies')"><span class="nav-icon">👥</span><span data-i18n="nav_companies">العملاء</span><span class="nav-badge" id="badge-co">0</span></button>
-  <button class="nav-item" onclick="showPage('products')"><span class="nav-icon">🛋️</span><span data-i18n="nav_products">المنتجات</span><span class="nav-badge" id="badge-pr">0</span></button>
-  <button class="nav-item" onclick="showPage('invoices')"><span class="nav-icon">📄</span><span data-i18n="nav_invoices">الفواتير</span><span class="nav-badge" id="badge-inv">0</span></button>
-  <div class="nav-divider"></div>
-  <div class="side-sec" data-i18n="nav_actions">إجراءات</div>
-  <button class="nav-item" onclick="showPage('select-client-type')"><span class="nav-icon">➕</span><span data-i18n="nav_add_co">إضافة عميل</span></button>
-  <button class="nav-item" onclick="showPage('add-product')"><span class="nav-icon">📦</span><span data-i18n="nav_add_pr">إضافة منتج</span></button><button class="nav-item" onclick="showPage('quick-barcode')">
-  <span class="nav-icon">📷</span>
-  <span id="qblSidebarBtn"><span data-wf-ui="Quick Barcode">باركود سريع</span></span>
-</button>
-
-
-  <button class="nav-item" onclick="showPage('select-invoice-type')"><span class="nav-icon">✏️</span><span data-i18n="nav_create">إنشاء فاتورة</span></button>
+<aside class="sidebar" id="sidebar" inert aria-labelledby="wf-nav-nav_main">
+  <div class="wf-sidebar-brand" id="wfSidebarBrand">
+    <img id="wfSidebarLogo" src="app-icon-192.png" alt="">
+    <strong dir="ltr">WOW <span>Furniture</span></strong>
+    <button type="button" id="wfSidebarClose" aria-controls="sidebar" onclick="wfToggleDesktopSidebar()">×</button>
+  </div>
+  <nav class="wf-sidebar-links" id="wf-nav-main" aria-labelledby="wf-nav-nav_main">
+  <div class="wf-nav-group" role="group" aria-labelledby="wf-nav-nav_main">
+    <div class="side-sec" id="wf-nav-nav_main" data-i18n="nav_main">القائمة</div>
+    <button class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">🏠</span><span data-i18n="nav_dashboard">لوحة التحكم</span></button>
+    <button class="nav-item" onclick="showPage('companies')"><span class="nav-icon">👥</span><span data-i18n="nav_companies">العملاء</span><span class="nav-badge" id="badge-co">0</span></button>
+    <button class="nav-item" onclick="showPage('products')"><span class="nav-icon">🛋️</span><span data-i18n="nav_products">المنتجات</span><span class="nav-badge" id="badge-pr">0</span></button>
+    <button class="nav-item" onclick="showPage('invoices')"><span class="nav-icon">📄</span><span data-i18n="nav_invoices">الفواتير</span><span class="nav-badge" id="badge-inv">0</span></button>
+  </div>
+  <div class="wf-nav-group" role="group" aria-labelledby="wf-nav-nav_actions">
+    <div class="side-sec" id="wf-nav-nav_actions" data-i18n="nav_actions">إجراءات</div>
+    <button class="nav-item" onclick="showPage('select-client-type')"><span class="nav-icon">➕</span><span data-i18n="nav_add_co">إضافة عميل</span></button>
+    <button class="nav-item" onclick="showPage('add-product')"><span class="nav-icon">📦</span><span data-i18n="nav_add_pr">إضافة منتج</span></button>
+    <button class="nav-item" onclick="showPage('quick-barcode')"><span class="nav-icon">📷</span><span id="qblSidebarBtn"><span data-wf-ui="Quick Barcode">باركود سريع</span></span></button>
+    <button class="nav-item" onclick="showPage('select-invoice-type')"><span class="nav-icon">✏️</span><span data-i18n="nav_create">إنشاء فاتورة</span></button>
+  </div>
+  <div class="wf-nav-group wf-nav-settings">
+    <button class="nav-item" onclick="showPage('reports')"><span class="nav-icon">📊</span><span data-i18n="nav_reports">التقارير</span></button>
+    <button class="nav-item" onclick="showPage('exchange')"><span class="nav-icon">💱</span><span data-i18n="curr_rates_title">أسعار الصرف</span></button>
+    <button class="nav-item" onclick="openSettingsPage()"><span class="nav-icon">⚙️</span><span data-i18n="settings">الإعدادات</span></button>
+  </div>
+  </nav>
 </aside>
 
 <!-- MAIN -->
@@ -6667,6 +6677,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
   </div>
 </div>
+<div id="wfDashRates">
 <div class="curr-bar" id="currBar" role="region" aria-labelledby="dashRatesTitle">
   <div class="curr-bar-top">
     <h2 id="dashRatesTitle" data-i18n="curr_rates_title">أسعار الصرف</h2>
@@ -6717,6 +6728,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       </div>
     </div>
   </div>
+</div>
 </div>
 <div class="wf-dash-workspace">
 <div class="wf-dash-primary">
@@ -6787,6 +6799,27 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 
 
+
+<section class="page" id="page-reports">
+  <header class="sct-sticky-header">
+    <button class="sct-back-btn" onclick="goBack()">← <span data-i18n="btn_back">رجوع</span></button>
+    <div class="sct-sticky-title"><h1>📊 <span data-i18n="nav_reports">التقارير</span></h1></div>
+    <button class="btn btn-s" onclick="showPage('invoices')">📄 <span data-i18n="nav_invoices">الفواتير</span></button>
+  </header>
+  <div id="wfReportsOverview" class="wf-dashboard-intelligence"></div>
+  <section class="card wf-report-sales" aria-labelledby="wfSalesHeading">
+    <h2 id="wfSalesHeading" data-i18n="report_monthly_sales">المبيعات حسب الشهر</h2>
+    <div id="wfMonthlySales"></div>
+  </section>
+</section>
+
+<section class="page" id="page-exchange">
+  <header class="sct-sticky-header">
+    <button class="sct-back-btn" onclick="goBack()">← <span data-i18n="btn_back">رجوع</span></button>
+    <div class="sct-sticky-title"><h1>💱 <span data-i18n="curr_rates_title">أسعار الصرف</span></h1></div>
+  </header>
+  <div id="wfExchangeRates"></div>
+</section>
 
 <!-- ========== COMPANIES LIST ========== -->
 <section class="page" id="page-companies">
@@ -8826,6 +8859,9 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
         🛡️ <span data-i18n="tab_data">البيانات</span>
       </button>
       <button class="tab-btn" onclick="switchTab('language')" style="border-radius:10px 10px 0 0;flex-shrink:0"><span id="wfLanguageTab"><span data-wf-ui="🌐 Language">🌐 اللغة</span></span></button>
+<button class="tab-btn" onclick="switchTab('appearance')">
+  🎨 <span data-i18n="appearance_title">المظهر والتحكم</span>
+</button>
 <button class="tab-btn" onclick="switchTab('about')" style="border-radius: 10px 10px 0 0; flex-shrink: 0;">
   ℹ️ <span data-i18n="tab_about">عن البرنامج</span>
 </button>
@@ -9053,6 +9089,40 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   </div>
 </div>
 
+<div id="stab-appearance" style="display:none">
+  <p class="wf-appearance-help" data-i18n="appearance_hint">تُطبّق هذه الخيارات فورًا وتُحفظ على هذا الجهاز.</p>
+  <div class="wf-appearance-grid">
+    <div class="wf-appearance-control">
+      <label class="fl" for="wfThemePreference">🌙 <span data-i18n="appearance_theme">الألوان</span></label>
+      <select class="fc" id="wfThemePreference">
+        <option value="light" data-i18n="appearance_light">فاتح</option>
+        <option value="dark" data-i18n="appearance_dark">داكن</option>
+      </select>
+    </div>
+    <div class="wf-appearance-control">
+      <label class="fl" for="wfDensityPreference">📐 <span data-i18n="appearance_density">كثافة العرض</span></label>
+      <select class="fc" id="wfDensityPreference">
+        <option value="auto" data-i18n="appearance_auto">تلقائي</option>
+        <option value="compact" data-i18n="appearance_compact">مدمج</option>
+        <option value="roomy" data-i18n="appearance_roomy">واسع</option>
+      </select>
+    </div>
+    <div class="wf-appearance-control">
+      <label class="fl" for="wfMotionPreference">✨ <span data-i18n="appearance_motion">الحركة</span></label>
+      <select class="fc" id="wfMotionPreference">
+        <option value="auto" data-i18n="appearance_auto">تلقائي</option>
+        <option value="reduced" data-i18n="appearance_reduced">حركة أقل</option>
+      </select>
+    </div>
+    <div class="wf-appearance-control">
+      <label class="fl" for="wfSidebarPreference">📋 <span data-i18n="appearance_sidebar">القائمة على الكمبيوتر</span></label>
+      <select class="fc" id="wfSidebarPreference">
+        <option value="open" data-i18n="appearance_open">ظاهرة</option>
+        <option value="closed" data-i18n="appearance_closed">مطوية</option>
+      </select>
+    </div>
+  </div>
+</div>
 <div id="stab-about" style="display:none;">
   
   <!-- بطاقة معلومات البرنامج -->
@@ -10897,7 +10967,8 @@ function setCCInput(val) {
 const TR={
   ar:{
     th_image:'الصورة',
-    nav_main:'القائمة',nav_dashboard:'لوحة التحكم',nav_companies:'العملاء',
+    nav_main:'القائمة',nav_reports:'التقارير',report_monthly_sales:'المبيعات حسب الشهر',
+    appearance_title:'المظهر والتحكم',appearance_hint:'تُطبّق هذه الخيارات فورًا وتُحفظ على هذا الجهاز.',appearance_theme:'الألوان',appearance_light:'فاتح',appearance_dark:'داكن',appearance_density:'كثافة العرض',appearance_auto:'تلقائي',appearance_compact:'مدمج',appearance_roomy:'واسع',appearance_motion:'الحركة',appearance_reduced:'حركة أقل',appearance_sidebar:'القائمة على الكمبيوتر',appearance_open:'ظاهرة',appearance_closed:'مطوية',nav_dashboard:'لوحة التحكم',nav_companies:'العملاء',
     nav_products:'المنتجات',nav_invoices:'الفواتير',nav_actions:'إجراءات',
     nav_add_co:'إضافة عميل',nav_add_pr:'إضافة منتج',nav_create:'إنشاء فاتورة',
     stat_co:'الشركات',stat_pr:'المنتجات',stat_inv:'الفواتير',stat_total:'إجمالي المبيعات',
@@ -11044,7 +11115,8 @@ name_hasan: 'أ. حسن الحلو',
   },
   tr:{
     th_image:'Görsel',
-    nav_main:'Menü',nav_dashboard:'Panel',nav_companies:'Müşteriler',
+    nav_main:'Menü',nav_reports:'Raporlar',report_monthly_sales:'Aylık satışlar',
+    appearance_title:'Görünüm ve denetimler',appearance_hint:'Seçimler hemen uygulanır ve bu cihaza kaydedilir.',appearance_theme:'Tema',appearance_light:'Açık',appearance_dark:'Koyu',appearance_density:'Ekran yoğunluğu',appearance_auto:'Otomatik',appearance_compact:'Kompakt',appearance_roomy:'Geniş',appearance_motion:'Hareket',appearance_reduced:'Azaltılmış',appearance_sidebar:'Masaüstü menüsü',appearance_open:'Açık',appearance_closed:'Kapalı',nav_dashboard:'Panel',nav_companies:'Müşteriler',
     nav_products:'Ürünler',nav_invoices:'Faturalar',nav_actions:'İşlemler',
     nav_add_co:'Müşteri Ekle',nav_add_pr:'Ürün Ekle',nav_create:'Fatura Oluştur',
     stat_co:'Şirketler',stat_pr:'Ürünler',stat_inv:'Faturalar',stat_total:'Toplam Satış',
@@ -11190,7 +11262,8 @@ name_hasan: 'Sn. Hasan Al-Helou',
   },
   en:{
     th_image:'Image',
-    nav_main:'Menu',nav_dashboard:'Dashboard',nav_companies:'Clients',
+    nav_main:'Menu',nav_reports:'Reports',report_monthly_sales:'Sales by month',
+    appearance_title:'Appearance and controls',appearance_hint:'Changes apply immediately and are saved on this device.',appearance_theme:'Theme',appearance_light:'Light',appearance_dark:'Dark',appearance_density:'Display density',appearance_auto:'Automatic',appearance_compact:'Compact',appearance_roomy:'Roomy',appearance_motion:'Motion',appearance_reduced:'Reduced motion',appearance_sidebar:'Desktop sidebar',appearance_open:'Expanded',appearance_closed:'Collapsed',nav_dashboard:'Dashboard',nav_companies:'Clients',
     nav_products:'Products',nav_invoices:'Invoices',nav_actions:'Actions',
     nav_add_co:'Add Client',nav_add_pr:'Add Product',nav_create:'Create Invoice',
     stat_co:'Companies',stat_pr:'Products',stat_inv:'Invoices',stat_total:'Total Sales',
@@ -11436,6 +11509,22 @@ const WF_UI_COPY = [
   ["excel_share", "Partager Excel", "Поделиться Excel"],
 
   ['nav_main','Menu','Меню'],
+  ['nav_reports','Rapports','Отчёты'],
+  ['appearance_title','Apparence et commandes','Внешний вид и управление'],
+  ['appearance_hint','Les changements s’appliquent immédiatement et sont enregistrés sur cet appareil.','Изменения применяются сразу и сохраняются на этом устройстве.'],
+  ['appearance_theme','Thème','Тема'],
+  ['appearance_light','Clair','Светлая'],
+  ['appearance_dark','Sombre','Тёмная'],
+  ['appearance_density','Densité d’affichage','Плотность интерфейса'],
+  ['appearance_auto','Automatique','Автоматически'],
+  ['appearance_compact','Compacte','Компактная'],
+  ['appearance_roomy','Aérée','Свободная'],
+  ['appearance_motion','Animations','Анимация'],
+  ['appearance_reduced','Animations réduites','Меньше анимации'],
+  ['appearance_sidebar','Menu sur ordinateur','Боковое меню на компьютере'],
+  ['appearance_open','Déployé','Развёрнуто'],
+  ['appearance_closed','Replié','Свёрнуто'],
+  ['report_monthly_sales','Ventes par mois','Продажи по месяцам'],
   ['nav_dashboard','Tableau de bord','Панель управления'],
   ['nav_companies co_title','Clients','Клиенты'],
   ['nav_products stat_pr pr_title','Produits','Товары'],
@@ -13286,10 +13375,13 @@ const map = {
   'select-invoice-type': 7,
   'create-invoice':      7,
   'payment-management':  3,
+  reports:               8,
+  exchange:              9,
+  settings:             10,
 };
   const items=document.querySelectorAll('.nav-item');
   if(map[id]!==undefined&&items[map[id]])items[map[id]].classList.add('active');
-  if(id==='dashboard')updateDash();
+  if(id==='dashboard'||id==='reports')updateDash();
   if(id==='companies')renderCo();
   if(id==='products')renderPr();
 if(id==='add-product'){
@@ -13345,7 +13437,15 @@ window.addEventListener('popstate',(e)=>{
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sideOv').classList.toggle('open');}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sideOv').classList.remove('open');}
 function wfApplySidebarLayout(){const sb=document.getElementById('sidebar'),mc=document.getElementById('mainContent');if(!sb||!mc)return;const rtl=(document.documentElement.dir||'rtl')==='rtl',collapsed=document.documentElement.classList.contains('wf-sidebar-collapsed');sb.style.right=rtl?'0':'auto';sb.style.left=rtl?'auto':'0';mc.style.marginRight=rtl?(collapsed?'0':'var(--side-w)'):'0';mc.style.marginLeft=rtl?'0':(collapsed?'0':'var(--side-w)');const btn=document.getElementById('desktopSidebarToggle');if(btn){btn.setAttribute('aria-pressed',String(!collapsed));btn.title=collapsed?'Show sidebar':'Hide sidebar';}}
-function wfToggleDesktopSidebar(){if(matchMedia('(max-width:1024px)').matches){toggleSidebar();return;}document.documentElement.classList.toggle('wf-sidebar-collapsed');try{localStorage.setItem('wf_sidebar_collapsed',document.documentElement.classList.contains('wf-sidebar-collapsed')?'1':'0')}catch(_){}wfApplySidebarLayout();}
+function wfSetSidebarCollapsed(collapsed){
+  document.documentElement.classList.toggle('wf-sidebar-collapsed',collapsed);
+  try{localStorage.setItem('wf_sidebar_collapsed',collapsed?'1':'0')}catch(_){}
+  wfApplySidebarLayout();
+}
+function wfToggleDesktopSidebar(){
+  if(matchMedia('(max-width:1024px)').matches){toggleSidebar();return;}
+  wfSetSidebarCollapsed(!document.documentElement.classList.contains('wf-sidebar-collapsed'));
+}
 (function wfRestoreSidebarPreference(){try{if(localStorage.getItem('wf_sidebar_collapsed')==='1')document.documentElement.classList.add('wf-sidebar-collapsed')}catch(_){}})();
 
 /* Keep the sidebar closed whenever a touch tablet enters portrait mode. */
@@ -13451,6 +13551,7 @@ function updateDash(){
   const binv=document.getElementById('badge-inv');if(binv)binv.textContent=S.invoices.length;
   const recent=[...S.invoices].reverse().slice(0,5);
   wfRenderDashboardIntelligence(total);
+  if (getCurrentPage()==='reports') wfRenderReports(total);
   const c=document.getElementById('dashRecentInv');if(!c)return;
    const dashTx = {
     no_inv:     { ar:'لا توجد فواتير',    tr:'Fatura yok',       en:'No invoices'       ,
@@ -13484,12 +13585,48 @@ function updateDash(){
 
 }
 
-function wfRenderDashboardIntelligence(total){
-  const host=document.getElementById('dashIntelligence');if(!host)return;const lang=S.lang||'ar';
+function wfRenderDashboardIntelligence(total, host=document.getElementById('dashIntelligence')){
+  if(!host)return;const lang=S.lang||'ar';
   const tx={ar:{pulse:'نظرة على الأعمال',catalog:'كتالوج المنتجات',sales:'إجمالي المبيعات',invoices:'عدد الفواتير',clients:'إجمالي العملاء',products:'منتج في النظام',types:'توزيع الأنواع'},tr:{pulse:'İş görünümü',catalog:'Ürün kataloğu',sales:'Toplam satış',invoices:'Fatura sayısı',clients:'Toplam müşteri',products:'sistemde ürün',types:'Tür dağılımı'},en:{pulse:'Business pulse',catalog:'Product catalog',sales:'Total sales',invoices:'Invoices',clients:'Total clients',products:'products in system',types:'Type distribution'},fr:{pulse:'Vue d’ensemble',catalog:'Catalogue produits',sales:'Ventes totales',invoices:'Factures',clients:'Clients',products:'produits dans le système',types:'Répartition'},ru:{pulse:'Показатели бизнеса',catalog:'Каталог товаров',sales:'Общие продажи',invoices:'Счета',clients:'Клиенты',products:'товаров в системе',types:'Распределение'}}[lang]||{};
   const kinds=[['coffee_table',{ar:'طاولة قهوة',tr:'Sehpa',en:'Coffee table',fr:'Table basse',ru:'Журнальный столик'}],['dresser',{ar:'مدخل',tr:'Dresuar',en:'Dresser',fr:'Commode',ru:'Комод'}],['side_table',{ar:'طاولة جانبية',tr:'Yan sehpa',en:'Side table',fr:'Table d’appoint',ru:'Приставной столик'}],['tv_table',{ar:'طاولة تلفاز',tr:'TV ünitesi',en:'TV table',fr:'Meuble TV',ru:'Тумба под ТВ'}]];const counts=kinds.map(([key,label])=>({label,n:S.products.filter(p=>p.type===key).length}));const max=Math.max(1,...counts.map(x=>x.n));
   const money='$'+Number(total||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   host.innerHTML=`<section class="wf-insight-card"><div class="wf-insight-head"><span>📊</span><strong>${tx.pulse}</strong></div><div class="wf-insight-row"><span>${tx.sales}</span><b>${money}</b></div><div class="wf-insight-row"><span>${tx.invoices}</span><b>${S.invoices.length}</b></div><div class="wf-insight-row"><span>${tx.clients}</span><b>${S.companies.length}</b></div></section><section class="wf-insight-card"><div class="wf-insight-head"><span>📦</span><strong>${tx.catalog}</strong></div><div class="wf-catalog-total"><b>${S.products.length}</b><span>${tx.products}</span></div><div class="wf-catalog-label">${tx.types}</div>${counts.map(x=>`<div class="wf-catalog-row"><span>${x.label[lang]||x.label.en}</span><i><em style="width:${(x.n/max)*100}%"></em></i><b>${x.n}</b></div>`).join('')}</section>`;
+}
+
+function wfRenderReports(total){
+  wfRenderDashboardIntelligence(total, document.getElementById('wfReportsOverview'));
+  const months=new Map();
+  const today=new Date();
+  const dateLabel=new Intl.DateTimeFormat(S.lang,{month:'short',year:'numeric'});
+  const money=new Intl.NumberFormat(S.lang,{style:'currency',currency:'USD'});
+  for(let offset=5;offset>=0;offset--){
+    const date=new Date(today.getFullYear(),today.getMonth()-offset,1);
+    const key=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');
+    months.set(key,{label:dateLabel.format(date),total:0});
+  }
+  for(const invoice of S.invoices){
+    const date=[invoice.regDate,invoice.createdAt,invoice.date]
+      .map(value=>String(value||'').slice(0,10)).find(wfCalendarDate);
+    const month=date&&months.get(date.slice(0,7));
+    const amount=Number(invoice.grandTotal||0);
+    if(month&&Number.isFinite(amount))month.total+=amount;
+  }
+  const peak=Math.max(1,...Array.from(months.values(),month=>Math.abs(month.total)));
+  const rows=Array.from(months.values(),month=>{
+    const row=document.createElement('div');
+    row.className='wf-report-month';
+    const label=document.createElement('span');
+    label.textContent=month.label;
+    const bar=document.createElement('meter');
+    bar.max=peak;
+    bar.value=Math.abs(month.total);
+    bar.setAttribute('aria-hidden','true');
+    const amount=document.createElement('bdi');
+    amount.textContent=money.format(month.total);
+    row.append(label,bar,amount);
+    return row;
+  });
+  document.getElementById('wfMonthlySales').replaceChildren(...rows);
 }
 
 function wfRenderAiBrief(total){
@@ -18247,13 +18384,13 @@ function resetSettingsLogo() {
 
 function switchTab(tab){
   // إضافة about للمصفوفة
-  ['company','bank','invoice','currency','data','language','about'].forEach(t=>{
+  const tabs=['company','bank','invoice','currency','data','language','appearance','about'];
+  tabs.forEach(t=>{
     const el=document.getElementById('stab-'+t);
     if(el) el.style.display = (t===tab) ? 'block' : 'none';
   });
   
   document.querySelectorAll('#page-settings .tab-btn').forEach((btn,i)=>{
-    const tabs=['company','bank','invoice','currency','data','language','about'];
     btn.classList.toggle('active', tabs[i]===tab);
   });
   if(tab==='data') wfUpdateDataPanel();
@@ -20446,8 +20583,11 @@ startGreetingRotation();
   }
   // handle hash routing
   const hash=window.location.hash.replace('#','');
-const validPages=['dashboard','companies','products','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management'];
-  if(hash&&validPages.includes(hash)){showPage(hash,false);history.replaceState({page:hash},'','#'+hash);}
+const validPages=['dashboard','companies','products','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management','reports','exchange','settings','quick-barcode'];
+  if(hash&&validPages.includes(hash)){
+    if(hash==='settings')loadSettingsToForm();
+    showPage(hash,false);history.replaceState({page:hash},'','#'+hash);
+  }
   else{showPage('dashboard',false);history.replaceState({page:'dashboard'},'','#dashboard');}
   // fetch rate in background
   fetchRate();
