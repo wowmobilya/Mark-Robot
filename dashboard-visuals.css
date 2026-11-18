@@ -215,3 +215,45 @@ html body #page-dashboard>#tipCardStandalone{margin-top:var(--dash-gap)!importan
  #page-dashboard .wf-dash-actions .btn{flex-direction:column-reverse;justify-content:center;padding:7px 3px;font-size:11px;text-align:center}
  html body #page-dashboard .stat-card{flex-direction:column;align-items:flex-start;gap:6px}
 }
+
+/* A light welcome panel shares the overview with sales and daily actions. */
+#page-dashboard .wf-dash-overview{
+ display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+ grid-template-areas:"welcome sales" "actions metrics";
+ align-items:stretch;gap:var(--dash-gap);margin-bottom:var(--dash-gap)
+}
+html body #page-dashboard #greetingCard{
+ grid-area:welcome;margin:0!important;border:1px solid var(--border)!important;
+ background:linear-gradient(115deg,var(--card) 45%,var(--ui-soft))!important;
+ display:flex;align-items:center;box-shadow:none!important
+}
+html body #page-dashboard #greetingCard :is(.greeting-msg,.greeting-sub,.greeting-time-badge){color:var(--text)!important}
+html body #page-dashboard #greetingCard .greeting-time-badge{background:var(--card)!important;border-color:var(--border)!important}
+#page-dashboard .wf-dash-sales{
+ grid-area:sales;min-height:132px;padding:clamp(14px,2.5vw,28px);
+ background:linear-gradient(150deg,#102638,var(--brand-primary));border:0;border-radius:24px;
+ box-shadow:0 8px 22px #10263824;flex-direction:row-reverse;justify-content:space-between
+}
+#page-dashboard .wf-dash-sales .stat-icon{background:#ffffff20!important;color:white!important}
+#page-dashboard .wf-dash-sales>div:last-child{min-width:0}
+#page-dashboard .wf-dash-sales .stat-val{direction:ltr;unicode-bidi:isolate;text-align:start;color:white!important}
+#page-dashboard .wf-dash-actions{grid-area:actions;align-content:stretch;margin:0!important}
+html body #page-dashboard .wf-dash-overview .stats-grid{
+ grid-area:metrics;margin:0!important;gap:0;padding:4px;
+ background:var(--card);border:1px solid var(--border);border-radius:16px
+}
+html body #page-dashboard .wf-dash-overview .stat-card{
+ border:0!important;box-shadow:none!important;min-height:64px;
+ padding:8px clamp(4px,1vw,12px)!important;background:transparent!important;
+ border-radius:10px!important
+}
+html body #page-dashboard .wf-dash-overview .stat-card:hover{background:var(--ui-soft)!important}
+#page-dashboard .wf-dash-overview .stat-icon{flex:none}
+@media(max-width:1000px){
+ #page-dashboard .wf-dash-overview{grid-template-areas:"welcome sales" "actions actions" "metrics metrics"}
+}
+@media(max-width:540px){
+ #page-dashboard .wf-dash-overview{grid-template-columns:minmax(0,1fr);grid-template-areas:"welcome" "sales" "actions" "metrics"}
+ #page-dashboard .wf-dash-sales{min-height:90px;border-radius:18px}
+ html body #page-dashboard .wf-dash-overview .stat-card{align-items:center;text-align:center}
+}
