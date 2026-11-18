@@ -39,69 +39,12 @@
     outline: 2px solid var(--brand-primary);
     outline-offset: 2px;
   }
-  html body #mainContent #page-dashboard .wf-dash-overview {
-    grid-template-areas: "welcome sales" "metrics sales" "actions actions";
-    grid-template-columns: minmax(0,1.6fr) minmax(0,1fr);
-    padding: clamp(14px,2vw,30px);
-    gap: clamp(12px,1.5vw,22px);
-    border-radius: 24px;
-    background: var(--paper);
-    border: 1px solid var(--hairline);
-    box-shadow: var(--lift);
-  }
-  html body #mainContent #page-dashboard #greetingCard {
-    padding: 0 !important;
-    background: transparent !important;
-    border: 0 !important;
-  }
-  html body #mainContent #page-dashboard .wf-dash-sales {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20px;
-    background: linear-gradient(145deg,#16343f,#285466 64%,var(--brand-primary));
-  }
-  #mainContent .wf-dash-sales::after {
-    content: "";
-    position: absolute;
-    inset-inline-end: -66px;
-    top: -64px;
-    width: 185px;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    border: 1px solid #ffffff24;
-    box-shadow: 0 0 0 24px #ffffff08,0 0 0 48px #ffffff06;
-    z-index: -1;
-  }
-  html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
-    border: 0 !important;
-    background: var(--wash) !important;
-  }
-  html body #mainContent #page-dashboard .wf-dash-actions .btn {
-    min-height: 46px;
-    background: var(--brand-primary) !important;
-    border-color: var(--brand-primary) !important;
-    color: white !important;
-  }
   html body #mainContent #page-settings .wf-settings-content>[role="tabpanel"] {
     background: var(--paper) !important;
     border-color: var(--hairline) !important;
     box-shadow: var(--lift) !important;
   }
   @media (max-width:680px) {
-    html body #mainContent #page-dashboard .wf-dash-overview {
-      grid-template-areas: "welcome" "sales" "metrics" "actions";
-      grid-template-columns: minmax(0,1fr);
-      padding: 14px;
-    }
-    html body #mainContent #page-dashboard .wf-dash-sales {
-      flex-direction: row-reverse;
-      align-items: center;
-      min-height: 84px;
-    }
     html body #mainContent .page :is(.card,.wf-insight-card) {border-radius: 14px !important}
   }
 }
@@ -131,9 +74,6 @@
     html body #mainContent .page :is(.co-actions,.pr-card-new-actions,.inv-card-actions) > * {
       max-width: 100%;
     }
-    html body #mainContent #page-dashboard .wf-dash-overview .stat-card > div:last-child {
-      overflow-wrap: anywhere;
-    }
   }
 }
 
@@ -154,169 +94,11 @@
     gap: var(--workspace-gap) !important;
   }
   html body #mainContent .page .fgrid { gap: 18px 22px !important; }
-  html body #mainContent #page-dashboard {
-    --dash-gap: var(--workspace-gap);
-  }
-  html body #mainContent #page-dashboard .wf-dash-overview,
-  html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
-    gap: var(--workspace-gap);
-  }
-  html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
-    gap: 6px;
-    padding: 7px;
-  }
-  html body #mainContent #page-dashboard .wf-dash-actions { gap: 10px; }
-  html body #mainContent #page-dashboard .curr-bar-grid { gap: 10px !important; }
   html body #mainContent #page-settings .wf-settings-workspace { gap: var(--workspace-gap); }
   html body #mainContent #page-settings [id^="stab-"]>.card + .card {
     margin-top: var(--workspace-gap) !important;
   }
   @media (max-width:680px) {
-    html body #mainContent #page-dashboard .wf-dash-overview { padding: 14px; }
-    html body #mainContent #page-dashboard .wf-dash-actions .btn { min-height: 58px; }
     html body #mainContent .page .fgrid { gap: 14px !important; }
-  }
-}
-
-/* Dashboard: distinct blocks with comfortable spacing at every width. */
-@media screen {
- html body #mainContent #page-dashboard .wf-dash-overview {
-  padding:0;
-  border:0;
-  box-shadow:none;
-  background:transparent;
-  gap:18px;
- }
- html body #mainContent #page-dashboard #greetingCard {
-  padding:clamp(18px,2.5vw,30px)!important;
-  border:1px solid var(--hairline)!important;
-  background:var(--paper)!important;
-  border-radius:18px!important;
- }
- html body #mainContent #page-dashboard .wf-dash-sales {
-  min-height:120px;
-  border-radius:18px;
-  box-shadow:none;
- }
- html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
-  background:transparent!important;
-  padding:0;
-  gap:10px;
- }
- html body #mainContent #page-dashboard .wf-dash-overview .stat-card {
-  background:var(--paper)!important;
-  border:1px solid var(--hairline)!important;
-  padding:14px!important;
-  border-radius:14px!important;
-  align-items:center;
-  text-align:center;
- }
- html body #mainContent #page-dashboard .wf-dash-actions {
-  gap:10px;
- }
- html body #mainContent #page-dashboard .wf-dash-actions .btn {
-  min-height:52px;
-  border-radius:12px!important;
-  box-shadow:none!important;
- }
- html body #mainContent #page-dashboard .wf-dash-workspace {
-  gap:18px;
- }
- html body #mainContent #page-dashboard .wf-dash-recent {
-  min-height:220px;
- }
- html body #mainContent #page-dashboard .wf-dash-recent .card-hdr {
-  margin-bottom:16px;
-  padding-bottom:14px;
- }
- html body #mainContent #page-dashboard .curr-bar {
-  padding:18px!important;
-  background:var(--paper)!important;
- }
- @media(max-width:680px) {
-  html body #mainContent #page-dashboard .wf-dash-overview {padding:0;gap:14px}
-  html body #mainContent #page-dashboard #greetingCard {padding:18px!important}
-  html body #mainContent #page-dashboard .wf-dash-sales {min-height:88px}
-  html body #mainContent #page-dashboard .wf-dash-actions {gap:8px}
-  html body #mainContent #page-dashboard .wf-dash-actions .btn {min-height:56px}
-  html body #mainContent #page-dashboard .wf-dash-overview .stat-card {padding:10px 5px!important}
-  html body #mainContent #page-dashboard .wf-dash-workspace {gap:14px}
- }
-}
-
-/* Keep each dashboard action and metric in its own grid cell. */
-@media screen {
-  html body #mainContent #page-dashboard .wf-dash-overview {
-    display: grid !important;
-    gap: clamp(16px, 2vw, 24px) !important;
-  }
-  html body #mainContent #page-dashboard .wf-dash-actions {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-    margin: 0 !important;
-  }
-  html body #mainContent #page-dashboard .wf-dash-actions .btn {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 10px !important;
-    min-width: 0;
-    min-height: 56px;
-    padding: 12px !important;
-    line-height: 1.35;
-  }
-  html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
-  }
-  html body #mainContent #page-dashboard .wf-dash-overview .stat-card {
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-    min-width: 0;
-    min-height: 88px;
-    margin: 0 !important;
-    padding: 14px !important;
-    background: var(--paper) !important;
-    border: 1px solid var(--hairline) !important;
-    border-radius: 14px !important;
-  }
-  html body #mainContent #page-dashboard .wf-dash-overview .stat-icon {
-    flex: 0 0 40px;
-    width: 40px;
-    height: 40px;
-    margin: 0 !important;
-  }
-  html body #mainContent #page-dashboard .wf-dash-overview .stat-card > div:last-child {
-    min-width: 0;
-    line-height: 1.5;
-  }
-  @media (max-width: 540px) {
-    html body #mainContent #page-dashboard .wf-dash-actions { gap: 8px !important; }
-    html body #mainContent #page-dashboard .wf-dash-actions .btn {
-      flex-direction: column-reverse !important;
-      gap: 7px !important;
-      min-height: 72px;
-      padding: 8px 4px !important;
-      font-size: 11px;
-    }
-    html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-      gap: 10px !important;
-    }
-    html body #mainContent #page-dashboard .wf-dash-overview .stat-card:last-child {
-      grid-column: 1 / -1;
-    }
-    html body #mainContent #page-dashboard .wf-dash-overview .stat-card {
-      flex-direction: row !important;
-      text-align: start !important;
-      min-height: 78px;
-      padding: 12px !important;
-    }
   }
 }
