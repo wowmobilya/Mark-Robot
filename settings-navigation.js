@@ -33,8 +33,9 @@
  bar.append(title, close);
  workspace.append(dialog);
  dialog.append(bar, content);
+ let actions;
  if (save) {
-   const actions = document.createElement('footer');
+   actions = document.createElement('footer');
    actions.append(save);
    dialog.append(actions);
  }
@@ -44,21 +45,59 @@
      if (dialog.open && restore.getAttribute('aria-hidden') === 'false') dialog.close();
    }).observe(restore, {attributes: true, attributeFilter: ['aria-hidden']});
  }
+ const sections = {
+   company: ['بيانات الشركة والشعار', 'Company details and logo', 'Şirket bilgileri ve logo', 'Coordonnées et logo', 'Данные компании и логотип'],
+   bank: ['الحسابات البنكية وIBAN', 'Bank accounts and IBAN', 'Banka hesapları ve IBAN', 'Comptes bancaires et IBAN', 'Банковские счета и IBAN'],
+   invoice: ['الترقيم والضريبة', 'Numbering and tax', 'Numaralandırma ve vergi', 'Numérotation et taxe', 'Нумерация и налог'],
+   currency: ['أسعار الصرف اليدوية', 'Manual exchange rates', 'Manuel döviz kurları', 'Taux de change manuels', 'Ручные курсы валют'],
+   appearance: ['المظهر والكثافة والحركة', 'Theme, density and motion', 'Tema, yoğunluk ve hareket', 'Thème, densité et animations', 'Тема, плотность и анимация'],
+   language: ['لغة واجهة البرنامج', 'Interface language', 'Arayüz dili', 'Langue de l’interface', 'Язык интерфейса'],
+   data: ['النسخ الاحتياطي والاستعادة', 'Backup and restore', 'Yedekleme ve geri yükleme', 'Sauvegarde et restauration', 'Резервное копирование'],
+   about: ['الإصدار ومعلومات البرنامج', 'Version and app information', 'Sürüm ve uygulama bilgileri', 'Version et informations', 'Версия и сведения'],
+ };
+ tabs.removeAttribute('role');
+ const localeOrder = ['ar', 'en', 'tr', 'fr', 'ru'];
+ const descriptions = new Map();
+ const saveSections = new Set(['company', 'bank', 'invoice', 'currency']);
  let opener;
- new MutationObserver(() => {
-   if (dialog.open && opener) title.textContent = opener.textContent.trim();
- }).observe(tabs, {childList: true, subtree: true, characterData: true});
-
- for (const {button} of entries) {
+ function updateDialogTitle() {
+   if (!opener) return;
+   const copy = opener.cloneNode(true);
+   copy.querySelectorAll('.wf-settings-card-description, .wf-ui-icon').forEach(node => node.remove());
+   title.textContent = copy.textContent.trim();
+ }
+ function translateDescriptions() {
+   const locale = Math.max(0, localeOrder.indexOf(document.documentElement.lang));
+   for (const [key, description] of descriptions) description.textContent = sections[key][locale];
+   updateDialogTitle();
+ }
+ for (const key of Object.keys(sections)) {
+   const entry = entries.find(value => value.key === key);
+   if (!entry) continue;
+   const {button} = entry;
+   tabs.append(button);
+   button.removeAttribute('role');
+   button.removeAttribute('aria-selected');
+   button.tabIndex = 0;
+   const description = document.createElement('small');
+   description.className = 'wf-settings-card-description';
+   description.id = 'wf-settings-description-' + key;
+   descriptions.set(key, description);
+   button.append(description);
+   button.setAttribute('aria-describedby', description.id);
    button.setAttribute('aria-haspopup', 'dialog');
    button.addEventListener('click', () => {
      opener = button;
-     title.textContent = button.textContent.trim();
+     updateDialogTitle();
+     if (actions) actions.hidden = !saveSections.has(key);
      if (!dialog.open) dialog.showModal();
      content.scrollTop = 0;
      close.focus();
    });
  }
+ translateDescriptions();
+ new MutationObserver(translateDescriptions).observe(document.documentElement, {attributes: true, attributeFilter: ['lang']});
+ new MutationObserver(updateDialogTitle).observe(tabs, {childList: true, subtree: true, characterData: true});
  dialog.addEventListener('close', () => {
    if (page.classList.contains('active')) opener?.focus();
  });

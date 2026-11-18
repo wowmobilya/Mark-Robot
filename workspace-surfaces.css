@@ -145,7 +145,6 @@
   }
   html body #mainContent .page :is(.co-card,.pr-card-new,.inv-card,.client-type-step-card,.pr-type-step-card,.qbl-product-card,.pm-receipt-type) {
     border: 1px solid var(--hairline) !important;
-    border-block-start: 2px solid color-mix(in srgb, var(--section-accent) 40%, var(--hairline)) !important;
     border-radius: 17px !important;
     box-shadow: var(--lift) !important;
   }
@@ -325,7 +324,8 @@
     border-color: color-mix(in srgb,var(--brand-primary) 45%,var(--border)) !important;
     box-shadow: none !important;
   }
-  html body #sidebar .nav-item.active::before { inset-block: 12px; }
+  html body #sidebar .nav-item.active::before { content: none; }
+  html body #sidebar .nav-item.active { box-shadow: none !important; }
   html body #sidebar .nav-item:focus-visible,
   html body .page .wf-section-menu:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
 
@@ -486,7 +486,7 @@
     color: var(--text) !important;
     border-block-end: 1px solid var(--window-edge);
   }
-  html:root body :is(.deliver-modal-top-bar, .deliver-modal-btn-confirm, .wf-restore-confirm, .qbl-cart-invoice-btn) {
+  html:root body :is(.deliver-modal-btn-confirm, .wf-restore-confirm, .qbl-cart-invoice-btn) {
     background: var(--sales-gradient) !important;
     color: white !important;
   }
@@ -584,4 +584,74 @@
     }
     #wfSettingsDialog > footer { padding-block-end: max(10px, env(safe-area-inset-bottom)); }
   }
+}
+
+@media screen {
+  html body #mainContent .page .client-type-step-card {
+    width: 100%;
+    min-height: 80px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    font: inherit;
+    text-align: start;
+    background: var(--paper) !important;
+  }
+  html body #mainContent .page .client-type-step-card:is(:hover,:focus-visible) {
+    background: color-mix(in srgb, var(--section-accent) 7%, var(--paper)) !important;
+    transform: none;
+  }
+  .client-type-step-card .ctsc-desc { overflow-wrap: anywhere; }
+  .client-type-step-card .ctsc-arrow { color: var(--text2); }
+  .deliver-modal-top-bar,
+  html body :is(.curr-item, .greeting-card)::after { display: none !important; }
+}
+
+@media screen {
+  #sidebar .wf-sidebar-search { padding: 4px 12px 10px; }
+  #sidebar .wf-sidebar-search input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding-inline: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--input);
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+  }
+  #sidebar .wf-sidebar-search input:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+  #sidebar .wf-sidebar-empty { color: var(--text2); padding-inline: 14px; }
+  html body #sidebar :is(.wf-nav-group,.nav-item,.wf-sidebar-empty)[hidden] { display: none !important; }
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-wf-motion="reduced"]) body #sidebar .nav-item {
+      transition: background-color .18s ease, color .18s ease, transform .18s ease;
+    }
+    html:not([data-wf-motion="reduced"]) body #sidebar .nav-item:active { transform: scale(.98); }
+  }
+}
+
+@media screen {
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) .tab-btn {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-content: center;
+    column-gap: 8px;
+    row-gap: 4px;
+    min-height: 76px !important;
+    overflow-wrap: anywhere;
+  }
+  .wf-settings-card-description {
+    flex: 0 0 100%;
+    text-align: start;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+  }
+  #wfSettingsDialog > footer[hidden] { display: none; }
+  #wfSettingsDialog .wf-settings-content { padding: clamp(12px, 2.5vw, 20px); }
 }

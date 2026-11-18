@@ -113,3 +113,42 @@
  if(quotes){new MutationObserver(decorateQuotes).observe(quotes,{childList:true,subtree:true});decorateQuotes();}
  reveal();
 })();
+
+(() => {
+  const search = document.getElementById('wfSidebarSearch');
+  const empty = document.getElementById('wfSidebarEmpty');
+  const groups = [...document.querySelectorAll('#wf-nav-main .wf-nav-group')];
+  if (!search || !empty) return;
+  function normalize(text) {
+    return text.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase(document.documentElement.lang || 'ar');
+  }
+  function filter() {
+    const query = normalize(search.value.trim());
+    let total = 0;
+    for (const group of groups) {
+      let matches = 0;
+      for (const item of group.querySelectorAll('.nav-item')) {
+        const caption = item.querySelector('[data-i18n], [data-wf-ui]')?.textContent || item.textContent;
+        item.hidden = !normalize(caption).includes(query);
+        if (!item.hidden) matches++;
+      }
+      group.hidden = matches === 0;
+      total += matches;
+    }
+    empty.hidden = total !== 0;
+  }
+  search.addEventListener('input', filter);
+  search.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && search.value) {
+      event.stopPropagation();
+      search.value = '';
+      filter();
+    }
+  });
+  document.getElementById('wf-nav-main').addEventListener('click', event => {
+    if (!event.target.closest('.nav-item')) return;
+    search.value = '';
+    filter();
+  });
+  new MutationObserver(filter).observe(document.documentElement, {attributes:true, attributeFilter:['lang']});
+})();

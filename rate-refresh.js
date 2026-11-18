@@ -75,24 +75,16 @@
   'try-eur':point=>point.eur/point.try,
  };
  const arrows=new Intl.NumberFormat('en',{style:'percent',maximumFractionDigits:2,signDisplay:'exceptZero'});
- const svgNS='http://www.w3.org/2000/svg';
  const cards=Array.from(top.parentElement.querySelectorAll('.curr-item'),card=>{
   const pair=card.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-  const chart=document.createElementNS(svgNS,'svg');
-  chart.setAttribute('class','wf-quote-chart');
-  chart.setAttribute('viewBox','0 0 100 24');
-  chart.setAttribute('preserveAspectRatio','none');
-  chart.setAttribute('aria-hidden','true');
-  const line=document.createElementNS(svgNS,'polyline');
-  chart.append(line);
   const trend=document.createElement('span');
   trend.className='wf-market-trend wf-quote-trend';
   trend.dir='ltr';
-  card.append(trend,chart);
-  return {pair,card,line,trend};
+  card.append(trend);
+  return {pair,card,trend};
  });
- function renderCharts(){
-  for(const {pair,card,line,trend} of cards){
+ function renderTrends(){
+  for(const {pair,card,trend} of cards){
    const manual=(pair.includes('try')&&S.settings.manualUsdTry)||(pair.includes('eur')&&S.settings.manualUsdEur);
    const prices=manual?[]:history.map(pairs[pair]);
    const hasTrend=prices.length>1;
@@ -100,8 +92,11 @@
    const change=arrows.format(delta);
    const direction=!hasTrend?'empty':Number(Math.abs(delta*100).toFixed(2))===0?'flat':delta>0?'up':'down';
    card.dataset.quoteTrend=direction;
-   line.setAttribute('points',sparkPoints(prices)||'2,12 98,12');
-   trend.textContent=hasTrend?(direction==='up'?'▲ ':direction==='down'?'▼ ':'')+change:'';
+   const arrow = document.createElement('span');
+   arrow.className = 'wf-quote-arrow';
+   arrow.setAttribute('aria-hidden', 'true');
+   arrow.textContent = direction === 'up' ? '↗' : direction === 'down' ? '↘' : '–';
+   trend.replaceChildren(arrow, document.createTextNode(hasTrend ? change : ''));
    trend.hidden=!hasTrend;
   }
  }
@@ -119,7 +114,7 @@
   if(!history.length&&S.rateUpdatedAt&&!S.settings.manualUsdTry&&!S.settings.manualUsdEur){
    remember({at:S.rateUpdatedAt,try:S.usdTry,eur:S.usdEur});
   }
-  render();renderCharts();return result;};
+  render();renderTrends();return result;};
  root.fetchRate=function(){
   if(pending)return pending;
   state='loading';
@@ -143,5 +138,5 @@
   render();return pending;
  };
  new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:['lang','dir']});
- render();renderCharts();
+ render();renderTrends();
 })(typeof window==='undefined'?globalThis:window);

@@ -28,7 +28,7 @@ input,select,textarea{border-radius:9px}
 .greeting-card .greeting-time-badge{background:rgba(89,184,184,.13);border-color:rgba(89,184,184,.18)}
 .greeting-card::after{content:"";display:block;position:absolute;inset:auto 0 0;height:2px;background:#167d82;animation:none}
 .ai-badge{border:1px solid rgba(89,184,184,.2);background:rgba(89,184,184,.1);color:#b8e6e4;backdrop-filter:none;box-shadow:none}
-.tip-card-standalone{border-inline-start:3px solid var(--brand-accent);background:var(--card)}
+.tip-card-standalone{background:var(--card)}
 .curr-bar{border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:0 2px 10px rgba(15,23,42,.045)}
 .curr-update{border-radius:9px;background:var(--input)}
 .curr-refresh{border-radius:9px;color:var(--gold2);background:var(--gold-light)}

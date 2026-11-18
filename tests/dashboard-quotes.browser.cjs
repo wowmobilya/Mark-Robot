@@ -47,7 +47,7 @@ async function checkQuotes() {
       const card = cards.filter({ has: page.locator('#' + pair) });
       return card.evaluate(el => ({
         trend: el.dataset.quoteTrend,
-        color: getComputedStyle(el.querySelector('.wf-quote-chart')).color,
+        color: getComputedStyle(el.querySelector('.wf-quote-trend')).color,
       }));
     };
     for (const theme of ['light', 'dark']) {
@@ -63,9 +63,9 @@ async function checkQuotes() {
 
     const animationNames = () => cards.first().evaluate(el => [
       getComputedStyle(el).animationName,
-      getComputedStyle(el.querySelector('.wf-quote-chart')).animationName,
+      getComputedStyle(el.querySelector('.wf-quote-arrow')).animationName,
     ]);
-    assert.deepEqual(await animationNames(), ['wfQuoteEnter', 'wfQuoteDraw']);
+    assert.deepEqual(await animationNames(), ['wfQuoteEnter', 'wfQuoteArrow']);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     assert.deepEqual(await animationNames(), ['none', 'none']);
     await page.emulateMedia({ reducedMotion: 'no-preference' });

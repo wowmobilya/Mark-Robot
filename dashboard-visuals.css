@@ -334,16 +334,11 @@
     }
     :is(#page-dashboard,#page-exchange) .curr-item:nth-child(3n + 2) { --quote-enter-delay: 45ms; }
     :is(#page-dashboard,#page-exchange) .curr-item:nth-child(3n) { --quote-enter-delay: 90ms; }
-    html:not([data-wf-motion="reduced"]) body :is(#page-dashboard,#page-exchange) .curr-item[data-quote-trend]:not([data-quote-trend="empty"]) .wf-quote-chart {
-      animation: wfQuoteDraw 420ms ease-out var(--quote-enter-delay, 0ms) backwards;
-    }
+
   }
   @keyframes wfRefreshSpin { to { transform: rotate(360deg); } }
   @keyframes wfQuoteEnter { from { opacity: .55; translate: 0 6px; } }
-  @keyframes wfQuoteDraw {
-    from { clip-path: inset(0 100% 0 0); }
-    to { clip-path: inset(0); }
-  }
+
 }
 
 @media screen {
@@ -355,7 +350,7 @@
   :is(#page-dashboard,#page-exchange) .curr-bar-top { margin-block-end: 6px; padding-block-end: 6px; }
   :is(#page-dashboard,#page-exchange) .wf-rate-status { margin-block-end: 5px; }
   html body :is(#page-dashboard,#page-exchange) .curr-item {
-    grid-template-rows: auto auto 19px !important;
+    grid-template-rows: auto auto !important;
     min-height: 0;
     gap: 4px !important;
     padding: clamp(7px, .85vw, 11px) !important;
@@ -364,26 +359,11 @@
     width: 30px !important; height: 30px !important;
   }
   html body :is(#page-dashboard,#page-exchange) .curr-item .curr-flag .wf-ui-icon { width: 18px; height: 18px; }
-  :is(#page-dashboard,#page-exchange) .wf-quote-chart {
-    display: block;
-    grid-column: 1 / -1;
-    grid-row: 3;
-    width: 100%;
-    height: 19px;
-    color: var(--ui-accent);
-    overflow: visible;
-  }
-  :is(#page-dashboard,#page-exchange) .wf-quote-chart polyline {
-    fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
-    vector-effect: non-scaling-stroke;
-  }
-  .curr-item[data-quote-trend="empty"] .wf-quote-chart { opacity: .5; }
-  .curr-item[data-quote-trend="empty"] .wf-quote-chart polyline { stroke-dasharray: 3 4; }
   .curr-item[data-quote-trend="up"] { --quote-color: #187858; }
   .curr-item[data-quote-trend="down"] { --quote-color: #ab4351; }
   [data-theme="dark"] .curr-item[data-quote-trend="up"] { --quote-color: #8ad4ad; }
   [data-theme="dark"] .curr-item[data-quote-trend="down"] { --quote-color: #fa9cab; }
-  :is(#page-dashboard,#page-exchange) .curr-item :is(.wf-quote-trend,.wf-quote-chart) {
+  :is(#page-dashboard,#page-exchange) .curr-item .wf-quote-trend {
     color: var(--quote-color, var(--tile-ink)) !important;
   }
   :is(#page-dashboard,#page-exchange) .curr-item .wf-quote-trend[hidden] { display: none !important; }
@@ -421,9 +401,8 @@
   }
   html body #page-dashboard .wf-greeting-faces > #tipCardStandalone {
     display: grid; align-content: center; background: var(--dash-surface) !important;
-    padding: clamp(12px, 2vw, 22px); transform: rotateX(180deg) !important;
+    padding: clamp(12px, 2vw, 22px);
   }
-  .wf-greeting-flip.show-tip .wf-greeting-faces { transform: rotateX(180deg); }
   @media (prefers-reduced-motion: no-preference) {
     html:not([data-wf-motion="reduced"]) .wf-greeting-faces { transition: transform .62s cubic-bezier(.35,.08,.2,1); }
   }
@@ -466,4 +445,77 @@
     min-width: 0;
     max-width: 100%;
   }
+}
+
+@media screen {
+  .qbl-search-trigger { flex: none; min-height: 44px; padding-inline: 16px !important; }
+  #qblKeyboard {
+    width: min(34rem, calc(100% - 20px));
+    max-height: calc(100dvh - 20px);
+    box-sizing: border-box;
+    padding: 14px;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: 0 18px 48px rgb(12 30 40 / 35%);
+  }
+  #qblKeyboard::backdrop { background: rgb(13 29 38 / 62%); }
+  #qblKeyboard form { display: grid; gap: 10px; }
+  #qblKeyboard header { display: flex; justify-content: space-between; align-items: center; }
+  #qblKeyboard h2 { font-size: 18px; margin: 0; }
+  .qbl-keyboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
+    gap: 4px;
+    direction: ltr;
+  }
+  .qbl-keyboard-grid button, .qbl-key-close {
+    min-height: 40px;
+    color: var(--text);
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font: inherit;
+    cursor: pointer;
+  }
+  .qbl-key-close { min-width: 40px; }
+  .qbl-key-submit { min-height: 44px; background: var(--sales-gradient) !important; }
+  @media (max-width: 600px) {
+    #qblKeyboard { width: 100%; max-width: none; margin: auto 0 0; border-radius: 20px 20px 0 0; padding-block-end: max(14px, env(safe-area-inset-bottom)); }
+  }
+}
+
+@media screen {
+  .wf-greeting-faces > [aria-hidden="true"] { visibility: hidden; pointer-events: none; }
+  .wf-greeting-extra {
+    grid-area: 1 / 1;
+    min-width: 0;
+    padding: clamp(12px, 2vw, 20px);
+    border: 1px solid var(--dash-line);
+    border-radius: 20px;
+    background: linear-gradient(145deg, var(--dash-surface), var(--wash));
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  .wf-weather { display: grid; align-content: center; gap: 8px; }
+  .wf-weather-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  #wfWeatherTemp { font-size: clamp(19px, 3vw, 32px); white-space: nowrap; }
+  #wfWeatherStatus, .wf-weather small { color: var(--text2); font-size: 11px; }
+  .wf-weather-days { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 34px), 1fr)); gap: 4px; }
+  .wf-weather-days > div { display: grid; gap: 3px; padding: 5px 2px; text-align: center; background: var(--dash-surface); border-radius: 8px; font-size: 10px; }
+  .wf-weather-days .rainy { background: color-mix(in srgb, var(--brand-primary) 15%, var(--dash-surface)); }
+  .wf-greeting-logo { display: grid; place-content: center; justify-items: center; gap: 8px; text-align: center; }
+  #wfGreetingLogoImage { font-size: 32px; font-weight: 800; }
+  #wfGreetingLogoImage img { display: block; width: min(150px, 42vw) !important; height: 68px !important; object-fit: contain; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-wf-motion="reduced"]) .curr-item:is([data-quote-trend="up"],[data-quote-trend="down"]) .wf-quote-arrow {
+    display: inline-block;
+    animation: wfQuoteArrow 750ms ease-in-out 3 alternate;
+  }
+  .curr-item[data-quote-trend="up"] { --quote-arrow-travel: -3px; }
+  .curr-item[data-quote-trend="down"] { --quote-arrow-travel: 3px; }
+  @keyframes wfQuoteArrow { to { transform: translateY(var(--quote-arrow-travel)); } }
 }

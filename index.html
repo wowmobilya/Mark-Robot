@@ -1721,8 +1721,7 @@ input,select,textarea{font-family:inherit}
 .typewriter-cursor{display:inline-block;width:2px;height:1em;background:var(--gold2);margin-right:2px;animation:blink .7s step-end infinite;vertical-align:text-bottom;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 .ai-badge{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#fff;border-radius:20px;padding:5px 12px;font-size:10px;font-weight:700;letter-spacing:.5px;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 8px rgba(200,169,110,.3);}
-.tip-box{background:var(--input);border-radius:var(--rs);padding:12px 16px;border:1px solid var(--border);border-right:3px solid var(--gold);display:flex;align-items:flex-start;gap:10px;margin-top:14px;}
-[dir="ltr"] .tip-box{border-right:none;border-left:3px solid var(--gold)}
+.tip-box{background:var(--input);border-radius:var(--rs);padding:12px 16px;border:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;margin-top:14px;}
 .tip-icon{font-size:18px;flex-shrink:0;margin-top:1px}
 .tip-text{font-size:12px;color:var(--text2);line-height:1.6}
 .tip-label{font-size:10px;color:var(--gold2);font-weight:700;letter-spacing:1px;margin-bottom:3px;text-transform:uppercase;}
@@ -2965,12 +2964,10 @@ setInterval(()=>{document.querySelectorAll('.wf-market-trend').forEach(tag=>{if(
 .toast-box{position:fixed;bottom:20px;left:20px;z-index:3000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 [dir="rtl"] .toast-box{left:auto;right:20px}
 .toast{background:var(--card);border-radius:var(--rs);border:1px solid var(--border);padding:11px 16px;box-shadow:var(--shadow2);display:flex;align-items:center;gap:9px;font-size:12px;font-weight:500;min-width:200px;pointer-events:all;animation:toastIn .3s ease,toastOut .3s ease 2.7s forwards}
-.toast.ok{border-right:4px solid var(--green)}
-.toast.er{border-right:4px solid var(--red)}
-.toast.in{border-right:4px solid var(--blue)}
-[dir="ltr"] .toast.ok{border-right:none;border-left:4px solid var(--green)}
-[dir="ltr"] .toast.er{border-right:none;border-left:4px solid var(--red)}
-[dir="ltr"] .toast.in{border-right:none;border-left:4px solid var(--blue)}
+.toast.ok{--toast-accent:var(--green)}
+.toast.er{--toast-accent:var(--red)}
+.toast.in{--toast-accent:var(--blue)}
+.toast:is(.ok,.er,.in){border:1px solid color-mix(in srgb,var(--toast-accent) 40%,var(--border));background:color-mix(in srgb,var(--toast-accent) 9%,var(--card))}
 @keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateX(110%)}}
 
@@ -3371,7 +3368,7 @@ setInterval(()=>{document.querySelectorAll('.wf-market-trend').forEach(tag=>{if(
   gap: 10px;
   background: linear-gradient(135deg, #1a1a2e, #2d2d4e);
   padding: 14px 16px;
-  border-bottom: 2px solid var(--gold);
+  border-bottom: 1px solid var(--border);
   position: relative;
   flex-shrink: 0;    /* ← لا يتقلص أبداً */
 }
@@ -4281,7 +4278,7 @@ setInterval(()=>{document.querySelectorAll('.wf-market-trend').forEach(tag=>{if(
   display: flex; align-items: center; gap: 10px;
   background: linear-gradient(135deg, #1a1a2e, #2d2d4e);
   padding: 14px 16px;
-  border-bottom: 2px solid var(--gold);
+  border-bottom: 1px solid var(--border);
 }
 .qbl-header-icon {
   width: 38px; height: 38px; border-radius: 10px;
@@ -4580,7 +4577,7 @@ setInterval(()=>{document.querySelectorAll('.wf-market-trend').forEach(tag=>{if(
   bottom: 0; left: 0; right: 0;
   z-index: 1200;
   background: var(--card);
-  border-top: 2px solid var(--gold);
+  border-top: 1px solid var(--border);
   box-shadow: 0 -8px 32px rgba(0,0,0,.18);
   padding: 0;
   transform: translateY(100%);
@@ -4884,7 +4881,7 @@ setInterval(()=>{document.querySelectorAll('.wf-market-trend').forEach(tag=>{if(
   left: 0; right: 0;
   z-index: 800;
   background: linear-gradient(135deg, #1a1a2e, #2d2d4e);
-  border-bottom: 2px solid var(--gold);
+  border-bottom: 1px solid var(--border);
   box-shadow: 0 4px 20px rgba(0,0,0,.3);
   transform: translateY(-100%);
   opacity: 0;
@@ -6433,25 +6430,26 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 </style>
 <script>document.documentElement.classList.add('wf-booting');if(location.hash&&location.hash!=='#dashboard')document.documentElement.classList.add('wf-section-mode');</script>
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
-<link rel="stylesheet" href="modern-ui.css?v=46">
+<link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=31">
-     <script src="ui-navigation.js?v=13" defer></script>
+     <script src="ui-navigation.js?v=14" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
 <script src="context-nav.js?v=1" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=2" defer></script>
-<script src="ui-settings.js?v=1" defer></script>
-<script src="settings-navigation.js?v=7" defer></script>
-<script src="rate-refresh.js?v=3" defer></script>
+<script src="ui-settings.js?v=2" defer></script>
+<script src="settings-navigation.js?v=8" defer></script>
+<script src="rate-refresh.js?v=4" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
+<script src="greeting-carousel.js?v=1" defer></script>
 <link rel="stylesheet" href="currency-calculator.css?v=10">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
-<link rel="stylesheet" href="dashboard-visuals.css?v=13">
+<link rel="stylesheet" href="dashboard-visuals.css?v=16">
 <link rel="stylesheet" href="section-headings.css?v=6">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
-<link rel="stylesheet" href="workspace-surfaces.css?v=11">
+<link rel="stylesheet" href="workspace-surfaces.css?v=14">
 </head>
 <body>
 
@@ -6614,6 +6612,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     <strong dir="ltr">WOW <span>Furniture</span></strong>
     <button type="button" id="wfSidebarClose" aria-controls="sidebar" onclick="wfToggleDesktopSidebar()">×</button>
   </div>
+  <div class="wf-sidebar-search">
+    <input type="search" id="wfSidebarSearch" aria-controls="wf-nav-main" data-wf-ui-aria-label="Search" data-wf-ui-placeholder="Search" aria-label="بحث" placeholder="بحث" autocomplete="off">
+  </div>
+  <p class="wf-sidebar-empty" id="wfSidebarEmpty" role="status" hidden data-wf-ui="No results">لا توجد نتائج</p>
   <nav class="wf-sidebar-links" id="wf-nav-main" aria-labelledby="wf-nav-nav_main">
   <div class="wf-nav-group" role="group" aria-labelledby="wf-nav-nav_main">
     <div class="side-sec" id="wf-nav-nav_main" data-i18n="nav_main">القائمة</div>
@@ -6669,6 +6671,15 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <div class="tip-card-badge" id="tipDayBadge"><span data-wf-ui="Sunday">الأحد</span></div>
     </div>
   </div>
+      <div class="wf-greeting-extra wf-weather" id="wfGreetingWeather" aria-hidden="true">
+        <div class="wf-weather-head"><div><strong id="wfWeatherTitle"></strong><div id="wfWeatherStatus"></div></div><b id="wfWeatherTemp" dir="ltr"></b></div>
+        <div id="wfWeatherDays" class="wf-weather-days"></div>
+        <small>Open-Meteo</small>
+      </div>
+      <div class="wf-greeting-extra wf-greeting-logo" id="wfGreetingLogo" aria-hidden="true">
+        <span id="wfGreetingLogoImage" aria-hidden="true"></span>
+        <strong id="wfGreetingLogoTitle"></strong>
+      </div>
     </div>
   </div>
     <div class="wf-dash-sales">
@@ -6872,30 +6883,30 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     </div>
   </div>
   <div style="max-width:560px;margin:20px auto 0;">
-    <div class="client-type-step-card" onclick="selectTypeAndContinue('external',event)">
+    <button type="button" class="client-type-step-card" onclick="selectTypeAndContinue('external',event)">
       <div class="ctsc-icon">🌍</div>
       <div class="ctsc-body">
         <div class="ctsc-title" id="sct-ext-title"><span data-wf-ui="External">خارجي</span></div>
         <div class="ctsc-desc" id="sct-ext-desc"><span data-wf-ui="International client — Dollar &amp; Euro invoice">عميل دولي — فاتورة بالدولار واليورو</span></div>
       </div>
       <div class="ctsc-arrow">←</div>
-    </div>
-    <div class="client-type-step-card" onclick="selectTypeAndContinue('internal_retail',event)">
+    </button>
+    <button type="button" class="client-type-step-card" onclick="selectTypeAndContinue('internal_retail',event)">
       <div class="ctsc-icon">🏠</div>
       <div class="ctsc-body">
         <div class="ctsc-title" id="sct-ret-title"><span data-wf-ui="Internal Retail">داخلي مفرق</span></div>
         <div class="ctsc-desc" id="sct-ret-desc"><span data-wf-ui="Local retail client — Turkish Lira invoice">عميل محلي مفرق — فاتورة بالليرة التركية</span></div>
       </div>
       <div class="ctsc-arrow">←</div>
-    </div>
-    <div class="client-type-step-card" onclick="selectTypeAndContinue('internal_wholesale',event)">
+    </button>
+    <button type="button" class="client-type-step-card" onclick="selectTypeAndContinue('internal_wholesale',event)">
       <div class="ctsc-icon">📦</div>
       <div class="ctsc-body">
         <div class="ctsc-title" id="sct-whl-title"><span data-wf-ui="Internal Wholesale">داخلي جملة</span></div>
         <div class="ctsc-desc" id="sct-whl-desc"><span data-wf-ui="Local wholesale client — Turkish Lira invoice">عميل محلي جملة — فاتورة بالليرة التركية</span></div>
       </div>
       <div class="ctsc-arrow">←</div>
-    </div>
+    </button>
   </div>
 </section>
 
@@ -7429,30 +7440,30 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     </div>
   </div>
   <div style="max-width:560px;margin:20px auto 0;">
-    <div class="client-type-step-card" onclick="selectInvTypeAndContinue('external',event)">
+    <button type="button" class="client-type-step-card" onclick="selectInvTypeAndContinue('external',event)">
       <div class="ctsc-icon">🌍</div>
       <div class="ctsc-body">
         <div class="ctsc-title" id="sit-ext-title"><span data-wf-ui="External">خارجي</span></div>
         <div class="ctsc-desc" id="sit-ext-desc"><span data-wf-ui="International invoice — Dollar &amp; Euro">فاتورة دولية — بالدولار واليورو</span></div>
       </div>
       <div class="ctsc-arrow">←</div>
-    </div>
-    <div class="client-type-step-card" onclick="selectInvTypeAndContinue('internal_retail',event)">
+    </button>
+    <button type="button" class="client-type-step-card" onclick="selectInvTypeAndContinue('internal_retail',event)">
       <div class="ctsc-icon">🏠</div>
       <div class="ctsc-body">
         <div class="ctsc-title" id="sit-ret-title"><span data-wf-ui="Internal Retail">داخلي مفرق</span></div>
         <div class="ctsc-desc" id="sit-ret-desc"><span data-wf-ui="Local retail invoice — Turkish Lira">فاتورة محلية مفرق — بالليرة التركية</span></div>
       </div>
       <div class="ctsc-arrow">←</div>
-    </div>
-    <div class="client-type-step-card" onclick="selectInvTypeAndContinue('internal_wholesale',event)">
+    </button>
+    <button type="button" class="client-type-step-card" onclick="selectInvTypeAndContinue('internal_wholesale',event)">
       <div class="ctsc-icon">📦</div>
       <div class="ctsc-body">
         <div class="ctsc-title" id="sit-whl-title"><span data-wf-ui="Internal Wholesale">داخلي جملة</span></div>
         <div class="ctsc-desc" id="sit-whl-desc"><span data-wf-ui="Local wholesale invoice — Turkish Lira">فاتورة محلية جملة — بالليرة التركية</span></div>
       </div>
       <div class="ctsc-arrow">←</div>
-    </div>
+    </button>
   </div>
 </section>
 
@@ -8306,7 +8317,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       </div>
 
       <!-- Smart note preview -->
-<div id="pmSmartNotePreview" style="display:none;background:var(--input);border:1px solid var(--border);border-right:3px solid var(--gold);border-radius:var(--rs);padding:9px 12px;margin-bottom:10px;font-size:11px;color:var(--text2);">
+<div id="pmSmartNotePreview" style="display:none;background:var(--input);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;margin-bottom:10px;font-size:11px;color:var(--text2);">
   <span style="font-size:10px;font-weight:800;color:var(--gold2);letter-spacing:1px;text-transform:uppercase;">
     📄 <span data-i18n="pm_smart_details">تفاصيل ذكية</span>
   </span>
@@ -8440,11 +8451,11 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
             style="width:100%;height:100%;object-fit:cover;display:block;"></video>
           <div style="position:absolute;inset:0;pointer-events:none;">
             <div style="position:absolute;top:18px;right:18px;width:28px;height:28px;
-              border-top:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 6px 0 0;"></div>
+              border-top:3px solid var(--gold);border-radius:0 6px 0 0;"></div>
             <div style="position:absolute;top:18px;left:18px;width:28px;height:28px;
               border-top:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:6px 0 0 0;"></div>
             <div style="position:absolute;bottom:18px;right:18px;width:28px;height:28px;
-              border-bottom:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 0 6px 0;"></div>
+              border-bottom:3px solid var(--gold);border-radius:0 0 6px 0;"></div>
             <div style="position:absolute;bottom:18px;left:18px;width:28px;height:28px;
               border-bottom:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:0 0 0 6px;"></div>
             <div style="position:absolute;left:18px;right:18px;height:2px;
@@ -8500,17 +8511,13 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <div style="padding:14px;">
         <div style="display:flex;gap:8px;">
 
-          <input type="text" id="qblInput" class="fc"
+          <input type="text" id="qblInput" class="fc" inputmode="none" aria-haspopup="dialog" onclick="qblOpenKeyboard()"
             placeholder="اسم الموديل أو الباركود..."
             oninput="onQblInput()"
             onkeydown="if(event.key==='Enter')searchQbl()"
             style="flex:1;" data-wf-ui-placeholder="Model name or barcode...">
 
-          <button class="btn btn-p" data-wf-ui-aria-label="Search" onclick="searchQbl()"
-            style="width:42px;height:42px;padding:0;flex-shrink:0;
-              display:flex;align-items:center;justify-content:center;">
-            🔍
-          </button>
+          <button type="button" class="btn btn-p qbl-search-trigger" aria-haspopup="dialog" onclick="qblOpenKeyboard()" data-wf-ui="Search">بحث</button>
 
         </div>
       </div>
@@ -18400,7 +18407,7 @@ function switchTab(tab){
   });
   
   document.querySelectorAll('#page-settings .tab-btn').forEach((btn,i)=>{
-    btn.classList.toggle('active', tabs[i]===tab);
+    btn.classList.toggle('active', btn.id === 'wf-settings-tab-' + tab || (!btn.id && tabs[i] === tab));
   });
   if(tab==='data') wfUpdateDataPanel();
 }
@@ -21758,10 +21765,10 @@ async function qblStartFallback(video,generation){
     if(generation!==qblCameraGeneration || !QBL.stream)return;
     const reader=new ZXing.BrowserMultiFormatReader(undefined,{delayBetweenScanAttempts:400,delayBetweenScanSuccess:400});
     let found=false;
-    const controls=await reader.decodeFromVideoElement(video,(result,error,active)=>{
+    const controls=await reader.decodeFromVideoElement(video,(result,error)=>{
       if(!result || found || generation!==qblCameraGeneration || document.hidden)return;
-      found=true;active.stop();qblFallbackControls=null;
-      const raw=result.getText().trim();const inp=document.getElementById('qblInput');if(inp)inp.value=raw;qblFindProduct(raw);
+      if (!qblAcceptScan(result.getText())) return;
+      found=true;
     });
     if(generation!==qblCameraGeneration || found){controls.stop();return;}
     qblFallbackControls=controls;
@@ -21783,20 +21790,14 @@ function qblStartDetection(video) {
       const stream = QBL.stream;
       const barcodes = await detector.detect(video);
       if (QBL.stream !== stream || !QBL.interval) return;
-      if (barcodes.length > 0) {
-        clearInterval(QBL.interval); QBL.interval = null;
-        const raw = barcodes[0].rawValue.trim();
-        const inp = document.getElementById('qblInput');
-        if (inp) inp.value = raw;
-        qblFindProduct(raw);
-      }
+      if (barcodes.length) qblAcceptScan(barcodes[0].rawValue);
     } catch {} finally { detecting = false; }
   }, 400);
 }
 
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden)qblStopCamera();
-  else if(getCurrentPage()==='quick-barcode' && QBL.phase===1 && !qblDropdownOpen)qblStartCamera();
+  else if(getCurrentPage()==='quick-barcode' && QBL.phase===1 && !qblDropdownOpen && !qblKeyboard?.open)qblStartCamera();
 });
 
 /* ══════════════════════════════════════════
@@ -21831,6 +21832,103 @@ function onQblInput() {
   if (qblDropdownOpen) qblSearchTimer=setTimeout(()=>{if(qblDropdownOpen)qblBuildDropdown(inp.value,qblActiveType);},120);
 }
 
+let qblLastScan = {code: '', time: 0};
+let qblAudio;
+function qblEnableSound() {
+  const Audio = window.AudioContext || window.webkitAudioContext;
+  if (!Audio) return;
+  try {
+    qblAudio ??= new Audio();
+    qblAudio.resume().catch(() => {});
+  } catch (_) {}
+}
+document.addEventListener('pointerdown', event => {
+  if (event.target.closest('#page-quick-barcode, #bnav-4')) qblEnableSound();
+});
+function qblAcceptScan(value) {
+  const code = value.trim();
+  const time = performance.now();
+  if (!code || QBL.phase !== 1 || qblKeyboard?.open ||
+      (code === qblLastScan.code && time - qblLastScan.time < 2200)) return false;
+  qblLastScan = {code, time};
+  if (qblAudio?.state === 'running') {
+    const tone = qblAudio.createOscillator(), volume = qblAudio.createGain();
+    const now = qblAudio.currentTime;
+    tone.frequency.value = 720;
+    volume.gain.setValueAtTime(.09, now);
+    volume.gain.exponentialRampToValueAtTime(.001, now + .12);
+    tone.connect(volume).connect(qblAudio.destination);
+    tone.start(now);
+    tone.stop(now + .13);
+  }
+  qblStopCamera();
+  document.getElementById('qblInput').value = code;
+  qblFindProduct(code);
+  return true;
+}
+
+let qblKeyboard;
+function qblOpenKeyboard() {
+  if (qblKeyboard?.open) return;
+  qblEnableSound();
+  qblStopCamera();
+  qblKeyboard ??= document.createElement('dialog');
+  qblKeyboard.id = 'qblKeyboard';
+  qblKeyboard.setAttribute('aria-labelledby', 'qblKeyboardTitle');
+  qblKeyboard.innerHTML = '<form><header><h2 id="qblKeyboardTitle"></h2><button type="button" class="qbl-key-close">×</button></header><input class="fc" type="text" inputmode="none" autocomplete="off" autofocus><div class="qbl-keyboard-grid"></div><button type="submit" class="btn btn-p qbl-key-submit"></button></form>';
+  const form = qblKeyboard.querySelector('form');
+  const field = form.querySelector('input');
+  const keys = form.querySelector('.qbl-keyboard-grid');
+  const search = wfUiText('Search');
+  const close = form.querySelector('.qbl-key-close');
+  close.setAttribute('aria-label', wfUiText('Close'));
+  close.onclick = () => qblKeyboard.close();
+  form.querySelector('h2').textContent = search;
+  form.querySelector('.qbl-key-submit').textContent = search;
+  field.placeholder = QBL_TEXTS[S.lang].placeholder;
+  field.setAttribute('aria-label', field.placeholder);
+  field.value = document.getElementById('qblInput').value;
+  const alphabets = {
+    ar: 'ضصثقفغعهخحجدشسيبلاتنمكطئءؤرلاىةوزظأإ',
+    tr: 'QWERTYUIOPĞÜASDFGHJKLŞİZXCVBNMÖÇ',
+    fr: 'AZERTYUIOPQSDFGHJKLMWXCVBNÉÈÀÇÙ',
+    ru: 'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮЁ'
+  };
+  const latin = 'QWERTYUIOPASDFGHJKLZXCVBNM';
+  let native = !!alphabets[S.lang];
+  function renderKeys() {
+    keys.replaceChildren();
+    for (const key of [...new Set('1234567890' + (native ? alphabets[S.lang] : latin) + '-_./') , '␣', '⌫', '↔', '×']) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = key;
+      if (key === '×') button.setAttribute('aria-label', wfUiText('Clear'));
+      button.addEventListener('click', () => {
+        if (key === '↔') { if (alphabets[S.lang]) { native = !native; renderKeys(); } }
+        else if (key === '×') field.value = '';
+        else if (key === '⌫') field.value = [...field.value].slice(0, -1).join('');
+        else field.value += key === '␣' ? ' ' : key;
+      });
+      keys.append(button);
+    }
+  }
+  renderKeys();
+  form.onsubmit = event => {
+    event.preventDefault();
+    const value = field.value.trim();
+    if (!value) return;
+    document.getElementById('qblInput').value = value;
+    qblKeyboard.close('search');
+    searchQbl();
+  };
+  qblKeyboard.onclose = () => {
+    if (qblKeyboard.returnValue !== 'search' && getCurrentPage() === 'quick-barcode' && QBL.phase === 1 && !qblDropdownOpen) qblStartCamera();
+  };
+  qblKeyboard.returnValue = '';
+  document.body.append(qblKeyboard);
+  qblKeyboard.showModal();
+}
+
 function searchQbl() {
   const val = document.getElementById('qblInput')?.value?.trim();
   if (val) qblFindProduct(val);
@@ -21839,8 +21937,8 @@ function searchQbl() {
 function qblFindProduct(query) {
   const q = query.toUpperCase().trim();
   const product =
+    S.products.find(p => String(p.barcode || '').toUpperCase() === q) ||
     S.products.find(p => (p.name||'').toUpperCase() === q) ||
-    S.products.find(p => (p.barcode||'').toUpperCase() === q) ||
     S.products.find(p => (p.name||'').toUpperCase().includes(q));
 
   if (!product) {
