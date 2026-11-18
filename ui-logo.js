@@ -14,7 +14,7 @@
    cache.set(source,color);paint(host,color);
   }catch(_){paint(host,[255,255,255]);}
  }
- function paint(host,rgb){host.style.setProperty('--logo-surface',`rgb(${rgb.join(',')})`);host.classList.add('wf-adaptive-logo');}
+ function paint(host,rgb){host.style.setProperty('--logo-surface',`rgb(${rgb.join(',')})`);host.classList.add('wf-adaptive-logo');if(host.id==='navLogo')document.documentElement.style.setProperty('--wf-logo-tint',host.style.getPropertyValue('--logo-surface'));}
  function refresh(){document.querySelectorAll('#navLogo img,#settingsLogoPrev img').forEach(adapt);const original=document.querySelector('#navLogo img'),sidebar=document.getElementById('wfSidebarLogo'),brand=document.getElementById('wfSidebarBrand');if(original&&sidebar&&brand){const source=original.currentSrc||original.src;if(sidebar.src!==source)sidebar.src=source;brand.style.setProperty('--logo-surface',getComputedStyle(document.getElementById('navLogo')).getPropertyValue('--logo-surface')||'#fff');}}
  document.addEventListener('load',event=>{if(event.target.matches?.('#navLogo img,#settingsLogoPrev img'))adapt(event.target);},true);
  new MutationObserver(refresh).observe(document.getElementById('navLogo'),{childList:true,subtree:true});

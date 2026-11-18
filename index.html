@@ -6436,12 +6436,12 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="bottomnav-fit.js?v=1" defer></script>
 <script src="context-nav.js?v=1" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
-     <script src="ui-logo.js?v=2" defer></script>
+     <script src="ui-logo.js?v=3" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
-<script src="settings-navigation.js?v=8" defer></script>
+<script src="settings-navigation.js?v=9" defer></script>
 <script src="rate-refresh.js?v=4" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
-<script src="greeting-carousel.js?v=1" defer></script>
+<script src="greeting-carousel.js?v=2" defer></script>
 <link rel="stylesheet" href="currency-calculator.css?v=10">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
@@ -6449,7 +6449,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="section-headings.css?v=6">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
-<link rel="stylesheet" href="workspace-surfaces.css?v=14">
+<link rel="stylesheet" href="workspace-surfaces.css?v=15">
 </head>
 <body>
 
@@ -6687,18 +6687,18 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <div><div class="stat-val" id="s-total" >$0</div><div class="stat-lbl" data-i18n="stat_total">المبيعات</div></div>
     </div>
 <div class="stats-grid">
-    <div class="stat-card" onclick="showPage('companies')">
+    <button type="button" class="stat-card" onclick="showPage('companies')">
       <div class="stat-icon si-g">🏢</div>
       <div><div class="stat-val" id="s-co">0</div><div class="stat-lbl" data-i18n="stat_co">الشركات</div></div>
-    </div>
-    <div class="stat-card" onclick="showPage('products')">
+    </button>
+    <button type="button" class="stat-card" onclick="showPage('products')">
       <div class="stat-icon si-b" data-wf-business-icon>🛋️</div>
       <div><div class="stat-val" id="s-pr">0</div><div class="stat-lbl" data-i18n="stat_pr">المنتجات</div></div>
-    </div>
-    <div class="stat-card" onclick="showPage('invoices')">
+    </button>
+    <button type="button" class="stat-card" onclick="showPage('invoices')">
       <div class="stat-icon si-gr">📄</div>
       <div><div class="stat-val" id="s-inv">0</div><div class="stat-lbl" data-i18n="stat_inv">الفواتير</div></div>
-    </div>
+    </button>
 
   </div>
 </div>
@@ -9113,6 +9113,11 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
         <option value="light" data-i18n="appearance_light">فاتح</option>
         <option value="dark" data-i18n="appearance_dark">داكن</option>
       </select>
+    </div>
+    <div class="wf-appearance-control">
+      <label class="fl" for="wfLogoTint"></label>
+      <select class="fc" id="wfLogoTint"><option value="auto"></option><option value="brand"></option><option value="custom"></option></select>
+      <input id="wfLogoColor" type="color" value="#427a92" hidden>
     </div>
     <div class="wf-appearance-control">
       <label class="fl" for="wfDensityPreference">📐 <span data-i18n="appearance_density">كثافة العرض</span></label>

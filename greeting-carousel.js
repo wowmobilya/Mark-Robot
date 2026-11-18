@@ -20,9 +20,20 @@
     fr: ['İnegöl, Bursa', 'Pluie sur 7 jours', 'Météo en cours…', 'Météo indisponible', 'WOW Furniture', 'mm'],
     ru: ['Инегёль, Бурса', 'Дождь на 7 дней', 'Загрузка погоды…', 'Погода недоступна', 'WOW Furniture', 'мм'],
   };
-  const endpoint = 'https://api.open-meteo.com/v1/forecast?latitude=40.08&longitude=29.51&timezone=Europe%2FIstanbul&forecast_days=7&current=temperature_2m&daily=rain_sum,showers_sum';
+  const endpoint = 'https://api.open-meteo.com/v1/forecast?latitude=40.08&longitude=29.51&timezone=Europe%2FIstanbul&forecast_days=7&current=temperature_2m,weather_code,is_day&daily=rain_sum,showers_sum,weather_code';
   let timer, animation, forecast, fetched = 0, loading = false, failed = false;
   let face = 0, manual = false;
+
+  function weatherIcon(code, daylight = true) {
+    if (!Number.isFinite(code)) return '';
+    if (code === 0) return daylight ? '☀️' : '🌙';
+    if (code < 3) return daylight ? '🌤️' : '☁️';
+    if (code === 3) return '☁️';
+    if (code < 50) return '🌫️';
+    if (code >= 95) return '⛈️';
+    if ((code >= 70 && code < 80) || code >= 85) return '🌨️';
+    return code < 60 ? '🌦️' : '🌧️';
+  }
 
   function render() {
     const locale = document.documentElement.lang || 'ar';
@@ -33,7 +44,7 @@
     if (!forecast) { temperature.textContent = ''; week.replaceChildren(); return; }
     const format = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
     const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'Europe/Istanbul' });
-    temperature.textContent = format.format(Math.round(forecast.current.temperature_2m)) + ' °C';
+    temperature.textContent = weatherIcon(forecast.current.weather_code, forecast.current.is_day !== 0) + ' ' + format.format(Math.round(forecast.current.temperature_2m)) + ' °C';
     const {time, rain_sum, showers_sum} = forecast.daily;
     week.replaceChildren(...time.map((date, i) => {
       const day = document.createElement('div');
@@ -43,7 +54,10 @@
       label.textContent = weekday.format(new Date(date + 'T12:00:00Z'));
       amount.textContent = format.format(mm) + ' ' + unit;
       day.classList.toggle('rainy', mm > 0);
-      day.append(label, amount);
+      const icon = document.createElement('span');
+      icon.className = 'wf-weather-icon';
+      icon.textContent = weatherIcon(forecast.daily.weather_code?.[i]);
+      day.append(label, icon, amount);
       return day;
     }));
   }

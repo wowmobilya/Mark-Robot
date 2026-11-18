@@ -150,3 +150,40 @@
  new MutationObserver(sync).observe(root, {attributes:true, attributeFilter:['data-theme','class']});
  sync();
 })();
+
+(() => {
+  const mode = document.getElementById('wfLogoTint');
+  const color = document.getElementById('wfLogoColor');
+  const labels = {
+    ar:['لون بطاقة الشعار','من الشعار','لون البرنامج','اختيار لون'],
+    en:['Logo card color','From logo','App color','Custom color'],
+    tr:['Logo kartı rengi','Logodan','Uygulama rengi','Özel renk'],
+    fr:['Couleur de la carte du logo','Du logo','Couleur de l’application','Couleur personnalisée'],
+    ru:['Цвет карточки логотипа','Из логотипа','Цвет приложения','Свой цвет']
+  };
+  function translate() {
+    const words = labels[document.documentElement.lang] || labels.en;
+    mode.labels[0].textContent = words[0];
+    Array.from(mode.options).forEach((option,i) => option.textContent = words[i+1]);
+    color.setAttribute('aria-label', words[3]);
+  }
+  function apply() {
+    color.hidden = mode.value !== 'custom';
+    const tint = {auto:'var(--wf-logo-tint, var(--brand-primary))',brand:'var(--brand-primary)',custom:color.value};
+    document.documentElement.style.setProperty('--wf-card-tint', tint[mode.value]);
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem('wfLogoCard') || '{}');
+    if (['auto','brand','custom'].includes(saved.mode)) mode.value = saved.mode;
+    if (/^#[0-9a-f]{6}$/i.test(saved.color)) color.value = saved.color;
+  } catch (_) {}
+  function save() {
+    apply();
+    try { localStorage.setItem('wfLogoCard', JSON.stringify({mode:mode.value,color:color.value})); } catch (_) {}
+  }
+  mode.addEventListener('change', save);
+  color.addEventListener('input', save);
+  new MutationObserver(translate).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+  translate();
+  apply();
+})();
