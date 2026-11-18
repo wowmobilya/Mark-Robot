@@ -187,3 +187,31 @@ html body #page-dashboard :is(.wf-dash-recent,.curr-bar,.wf-dashboard-intelligen
 @media(max-width:1000px){#page-dashboard .wf-dash-workspace{grid-template-columns:minmax(0,1fr)}#page-dashboard .wf-dashboard-intelligence{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){html body #page-dashboard .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#page-dashboard .wf-dashboard-intelligence{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){#page-dashboard .stat-card{transition:none!important}}
+
+/* Match the dashboard's primary actions to the selected navigation color. */
+html body #page-dashboard #greetingCard{
+ background:linear-gradient(125deg,#102638 15%,color-mix(in srgb,var(--brand-primary) 66%,#102638))!important;
+ border:0!important;color:white!important
+}
+html body #page-dashboard #greetingCard .greeting-top{margin:0;gap:clamp(14px,3vw,36px)}
+html body #page-dashboard #greetingCard :is(.greeting-msg,.greeting-sub,.greeting-time-badge){color:#fff!important}
+html body #page-dashboard #greetingCard .greeting-time-badge{background:#ffffff18!important;border-color:#ffffff3d!important}
+#page-dashboard .wf-dash-sales{flex:0 1 260px;min-width:0;padding:16px 20px;border-radius:18px;background:#ffffff14;border:1px solid #ffffff38;display:flex;gap:14px;align-items:center}
+html body #page-dashboard .wf-dash-sales :is(.stat-val,.stat-lbl){color:white!important}
+html body #page-dashboard .wf-dash-sales .stat-val{font-size:clamp(21px,3vw,35px)!important;line-height:1.15}
+#page-dashboard .wf-dash-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--dash-gap);margin-bottom:var(--dash-gap)}
+html body #page-dashboard :is(.wf-dash-actions .btn,.wf-dash-recent .card-hdr .btn,.wf-dash-recent .btn-p,.curr-refresh){
+ background:var(--brand-primary)!important;border-color:var(--brand-primary)!important;color:#fff!important
+}
+#page-dashboard .wf-dash-actions .btn{justify-content:space-between;min-height:50px;white-space:normal;padding:10px 14px;border-radius:14px!important;text-align:start}
+#page-dashboard .wf-dash-actions svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#page-dashboard .wf-dash-actions .btn:hover{filter:brightness(.92)}
+html body #page-dashboard .stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+html body #page-dashboard .stat-card:last-child{background:var(--card)!important}
+html body #page-dashboard>#tipCardStandalone{margin-top:var(--dash-gap)!important}
+@media(max-width:600px){
+ #page-dashboard .wf-dash-sales{flex:1 1 100%;padding:12px 14px}
+ #page-dashboard .wf-dash-actions{gap:6px}
+ #page-dashboard .wf-dash-actions .btn{flex-direction:column-reverse;justify-content:center;padding:7px 3px;font-size:11px;text-align:center}
+ html body #page-dashboard .stat-card{flex-direction:column;align-items:flex-start;gap:6px}
+}

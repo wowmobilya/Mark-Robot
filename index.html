@@ -6447,7 +6447,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="currency-calculator.css?v=8">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=5">
-<link rel="stylesheet" href="dashboard-visuals.css?v=4">
+<link rel="stylesheet" href="dashboard-visuals.css?v=5">
 <link rel="stylesheet" href="section-headings.css?v=6">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
@@ -6642,20 +6642,17 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
         </div>
         <div class="greeting-sub" id="greetingSub"><span data-wf-ui="Invoice management — WOW Furniture">نظام إدارة الفواتير — WOW Furniture</span></div>
       </div>
+    <div class="wf-dash-sales">
+      <div class="stat-icon si-r">💰</div>
+      <div><div class="stat-val" id="s-total" >$0</div><div class="stat-lbl" data-i18n="stat_total">المبيعات</div></div>
+    </div>
+    </div>
+  </div>
+<div class="wf-dash-actions">
       <button type="button" class="btn wf-dash-create" onclick="showPage('select-invoice-type')"><span data-i18n="nav_create">إنشاء فاتورة</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
-    </div>
-  <div class="card tip-card-standalone" id="tipCardStandalone">
-    <div class="tip-card-inner">
-      <div class="tip-card-icon">💡</div>
-      <div class="tip-card-content">
-        <div class="tip-card-label" id="tipLabel"><span data-wf-ui="Today&#x27;s Tip">نصيحة اليوم</span></div>
-        <div class="tip-card-text" id="tipText">—</div>
-      </div>
-      <div class="tip-card-badge" id="tipDayBadge"><span data-wf-ui="Sunday">الأحد</span></div>
-    </div>
-  </div>
-
-  </div>
+  <button type="button" class="btn" onclick="showPage('select-client-type')"><span data-i18n="nav_add_co">إضافة عميل</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2m4-13v6m-3-3h6"/></svg></button>
+  <button type="button" class="btn" onclick="showPage('add-product')"><span data-i18n="nav_add_pr">إضافة منتج</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 3 8 4v10l-8 4-8-4V7zM4 7l8 4 8-4m-8 4v10"/></svg></button>
+</div>
 <div class="stats-grid">
     <div class="stat-card" onclick="showPage('companies')">
       <div class="stat-icon si-g">🏢</div>
@@ -6669,10 +6666,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <div class="stat-icon si-gr">📄</div>
       <div><div class="stat-val" id="s-inv">0</div><div class="stat-lbl" data-i18n="stat_inv">الفواتير</div></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-icon si-r">💰</div>
-      <div><div class="stat-val" id="s-total" style="font-size:16px;">$0</div><div class="stat-lbl" data-i18n="stat_total">المبيعات</div></div>
-    </div>
+
   </div>
 <div class="wf-dash-workspace">
 <div class="wf-dash-primary">
@@ -6758,6 +6752,16 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <div id="dashIntelligence" class="wf-dashboard-intelligence"></div>
 </div>
 </div>
+  <div class="card tip-card-standalone" id="tipCardStandalone">
+    <div class="tip-card-inner">
+      <div class="tip-card-icon">💡</div>
+      <div class="tip-card-content">
+        <div class="tip-card-label" id="tipLabel"><span data-wf-ui="Today&#x27;s Tip">نصيحة اليوم</span></div>
+        <div class="tip-card-text" id="tipText">—</div>
+      </div>
+      <div class="tip-card-badge" id="tipDayBadge"><span data-wf-ui="Sunday">الأحد</span></div>
+    </div>
+  </div>
 </section>
 
 
