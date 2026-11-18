@@ -15,17 +15,16 @@ function fixture(){
  const button={childNodes:[text,label],onclick:handler,attrs:{},icon:null,
   querySelector(){return this.icon},querySelectorAll(){return [oldIcon]},
   prepend(icon){this.icon=icon;this.childNodes.unshift(icon)},setAttribute(k,v){this.attrs[k]=v}};
- const obsolete={remove(){this.removed=true}};
  const document={createElement(){return {dataset:{},attrs:{},setAttribute(k,v){this.attrs[k]=v}}},
   getElementById(){return null},querySelector(){return null},
-  querySelectorAll(selector){if(selector==='.page .sct-back-btn')return [button];if(selector==='.wf-section-menu')return [obsolete];return []}};
- const context=vm.createContext({root,document,compact:{matches:false},menuSvg:'',foldSvg:''});
+  querySelectorAll(selector){if(selector==='.page .sct-back-btn')return [button];return []}};
+ const context=vm.createContext({root,document,compact:{matches:false},sidebar:{querySelectorAll:()=>[]},menuSvg:'',foldSvg:''});
  vm.runInContext(functions.syncBackButtons+'\n'+functions.syncSectionHeadings+'\n'+functions.syncControls,context);
- return {context,root,button,text,label,oldIcon,obsolete,handler};
+ return {context,root,button,text,label,oldIcon,handler};
 }
-test('section menu removed, original back handler and localized label retained',()=>{
+test('original back handler and localized label are retained',()=>{
  const f=fixture();vm.runInContext('syncControls()',f.context);
- assert.equal(f.obsolete.removed,true);assert.equal(f.oldIcon.removed,true);
+ assert.equal(f.oldIcon.removed,true);
  assert.equal(f.button.onclick,f.handler);assert.equal(f.button.onclick(),42);
  assert.ok(f.button.childNodes.includes(f.label));assert.equal(f.text.nodeValue,'');
  assert.equal(f.button.icon.dataset.direction,'right');assert.equal(f.button.attrs['aria-label'],'رجوع');

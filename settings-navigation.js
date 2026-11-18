@@ -31,3 +31,37 @@
  new MutationObserver(syncPage).observe(page,{attributes:true,attributeFilter:['class']});
  page.classList.add('wf-settings-inline-ready');syncPage();
 })();
+
+(() => {
+ const root = document.documentElement;
+ const theme = document.getElementById('wfThemePreference');
+ const drawer = document.getElementById('wfSidebarPreference');
+
+ function bindPreference(id, datasetKey, storageKey) {
+  const field = document.getElementById(id);
+  const values = Array.from(field.options, option => option.value);
+  function apply(value) {
+   const choice = values.includes(value) ? value : 'auto';
+   field.value = choice;
+   root.dataset[datasetKey] = choice;
+  }
+  try { apply(localStorage.getItem(storageKey)); } catch (_) { apply('auto'); }
+  field.addEventListener('change', () => {
+   apply(field.value);
+   try { localStorage.setItem(storageKey, field.value); } catch (_) {}
+  });
+ }
+ bindPreference('wfDensityPreference', 'wfDensity', 'wf_display_density');
+ bindPreference('wfMotionPreference', 'wfMotion', 'wf_motion_preference');
+
+ function sync() {
+  theme.value = root.dataset.theme === 'dark' ? 'dark' : 'light';
+  drawer.value = root.classList.contains('wf-sidebar-collapsed') ? 'closed' : 'open';
+ }
+ theme.addEventListener('change', () => {
+  if (theme.value !== root.dataset.theme) window.toggleTheme();
+ });
+ drawer.addEventListener('change', () => window.wfSetSidebarCollapsed(drawer.value === 'closed'));
+ new MutationObserver(sync).observe(root, {attributes:true, attributeFilter:['data-theme','class']});
+ sync();
+})();
