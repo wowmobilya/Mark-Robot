@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v128-market-and-sidebar';
+const CACHE_NAME = 'wow-furniture-v129-back-controls';
 const urlsToCache = [
   './workspace-surfaces.css?v=17',
   './context-nav.js?v=1',
@@ -12,7 +12,7 @@ const urlsToCache = [
   './settings-navigation.js?v=9',
   './dashboard-visuals.css?v=17',
   './rate-refresh.js?v=5',
-  './section-headings.css?v=6',
+  './section-headings.css?v=7',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
   './greeting-carousel.js?v=2',

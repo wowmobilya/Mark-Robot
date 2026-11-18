@@ -80,3 +80,30 @@
  /* Stay horizontal on the transparent side, within the narrow exposed strip. */
  html body #wfSidebarClose {--wf-pointer-width:clamp(16px,calc(100vw - min(300px,86vw) - 36px),44px);--wf-pointer-gap:clamp(10px,calc(100vw - min(300px,86vw) - 48px),16px);}
 }
+
+@media screen {
+ html body .page .sct-back-btn {
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  background: var(--card) !important;
+  color: var(--brand-primary) !important;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--brand-primary) 10%, transparent) !important;
+ }
+ html body .page .sct-back-btn:is(:hover,:focus-visible) {
+  background: color-mix(in srgb, var(--brand-primary) 10%, var(--card)) !important;
+  border-color: var(--brand-primary) !important;
+ }
+ html body .page .sct-back-btn:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 3px;
+ }
+ html body .page .sct-back-btn [data-wf-back-icon] svg {
+  display: block; width: 22px; height: 22px; stroke: currentColor;
+ }
+ @media(prefers-reduced-motion:no-preference) {
+  html:not([data-wf-motion="reduced"]) body .page .sct-back-btn {
+   transition: background-color .18s ease, border-color .18s ease, scale .18s ease;
+  }
+  html:not([data-wf-motion="reduced"]) body .page .sct-back-btn:active { scale: .94; }
+ }
+}
