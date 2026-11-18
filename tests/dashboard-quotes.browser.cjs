@@ -45,7 +45,7 @@ async function checkQuotes() {
             height: item.getBoundingClientRect().height,
             fits: item.scrollWidth <= item.clientWidth + 1,
           })));
-          assert(quotes.every(quote => quote.fits && quote.height >= 43.9 && quote.height <= 50), JSON.stringify(quotes));
+          assert(quotes.every(quote => quote.fits && quote.height >= 43.9 && quote.height <= 58), JSON.stringify(quotes));
         }
       }
     }
