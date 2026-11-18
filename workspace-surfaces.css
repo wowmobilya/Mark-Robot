@@ -552,3 +552,36 @@
   #wfSettingsDialog > footer > button { margin: 0 !important; width: 100%; min-height: 44px; background: var(--sales-gradient) !important; color: white !important; }
   html.wf-settings-open body #wf-settings-save-footer:empty { display: none !important; }
 }
+
+@media screen {
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) > .tabs {
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) .tab-btn {
+    background: var(--window-surface) !important;
+    border: 1px solid var(--window-edge) !important;
+    padding: 10px 14px !important;
+    gap: 10px;
+    text-align: start;
+  }
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) .tab-btn:is(:hover,:focus-visible) {
+    background: var(--window-muted) !important;
+    border-color: var(--window-accent) !important;
+  }
+  #wfSettingsDialog > header { border-block-end: 1px solid var(--window-edge); gap: 12px; }
+  #wfSettingsDialog > footer { border-block-start: 1px solid var(--window-edge); }
+  #wfSettingsDialog > .wf-settings-content { overscroll-behavior: contain; }
+  @media (max-width: 600px) {
+    #wfSettingsDialog {
+      width: 100%;
+      max-width: none;
+      max-height: min(90dvh, calc(100dvh - 12px));
+      margin: auto 0 0;
+      border-radius: 20px 20px 0 0;
+    }
+    #wfSettingsDialog > footer { padding-block-end: max(10px, env(safe-area-inset-bottom)); }
+  }
+}

@@ -6443,15 +6443,15 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="ui-settings.js?v=1" defer></script>
 <script src="settings-navigation.js?v=7" defer></script>
 <script src="rate-refresh.js?v=3" defer></script>
-<script src="topbar-dock.js?v=5" defer></script>
+<script src="topbar-dock.js?v=6" defer></script>
 <link rel="stylesheet" href="currency-calculator.css?v=10">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
-<link rel="stylesheet" href="dashboard-visuals.css?v=12">
+<link rel="stylesheet" href="dashboard-visuals.css?v=13">
 <link rel="stylesheet" href="section-headings.css?v=6">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
-<link rel="stylesheet" href="workspace-surfaces.css?v=10">
+<link rel="stylesheet" href="workspace-surfaces.css?v=11">
 </head>
 <body>
 
@@ -8424,8 +8424,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
   <div class="qbl-workbench">
     <div class="qbl-modes">
-      <button id="qblScanMode" aria-pressed="true" onclick="qblCloseDropdown();qblStartCamera()" data-wf-ui="Scan barcode">مسح الباركود</button>
-      <button id="qblBrowseMode" aria-pressed="false" onclick="if(!qblDropdownOpen)qblOpenDropdown()" data-wf-ui="Products">المنتجات</button>
+      <button id="qblScanMode" aria-controls="qblCameraWrap" aria-pressed="true" onclick="if(qblDropdownOpen)qblCloseDropdown();if(!QBL.stream)qblStartCamera()" data-wf-ui="Scan barcode">مسح الباركود</button>
+      <button id="qblBrowseMode" aria-controls="qblDropdown" aria-pressed="false" onclick="if(!qblDropdownOpen)qblOpenDropdown()" data-wf-ui="Products">المنتجات</button>
     </div>
     <div class="qbl-panel">
       <div class="qbl-view">

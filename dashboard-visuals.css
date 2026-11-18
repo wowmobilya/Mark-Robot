@@ -431,3 +431,39 @@
 @media (prefers-reduced-motion: reduce) {
   html body .wf-greeting-faces { transition: none !important; }
 }
+
+@media screen {
+  #page-quick-barcode .qbl-workbench { max-width: 40rem; }
+  .qbl-modes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .qbl-modes button { padding: 6px 10px; }
+  .qbl-modes button:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+  .qbl-panel { border: 1px solid var(--border); }
+  html body #page-quick-barcode #qblCameraWrap { background: var(--sales-gradient) !important; }
+  .qbl-view { height: clamp(185px, 36dvh, 320px); }
+
+  html body #page-dashboard .wf-greeting-faces > #tipCardStandalone {
+    background: linear-gradient(115deg, var(--dash-surface) 45%, var(--wash)) !important;
+  }
+  .wf-greeting-faces .tip-card-inner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 6px 12px;
+  }
+  .wf-greeting-faces .tip-card-badge { grid-column: 2; justify-self: start; }
+  .wf-greeting-faces .tip-card-text { white-space: normal; overflow-wrap: anywhere; line-height: 1.55; }
+
+  html body :is(#page-dashboard,#page-exchange) .curr-item {
+    --tile-tint: color-mix(in srgb, var(--tile-fill) 38%, var(--dash-surface));
+  }
+  html body :is(#page-dashboard,#page-exchange) .curr-item .wf-quote-trend {
+    align-self: start;
+    min-width: 0;
+    max-width: 100%;
+  }
+}

@@ -37,7 +37,13 @@
   for (const name of ['focus','blur','pointerenter','pointerleave']) card.addEventListener(name, schedule);
   reduced.addEventListener('change', schedule);
   document.addEventListener('visibilitychange', schedule);
-  new MutationObserver(schedule).observe(dashboard, {attributes:true, attributeFilter:['class']});
+  new MutationObserver(() => {
+    if (!dashboard.classList.contains('active')) {
+      manual = false;
+      if (card.classList.contains('show-tip')) flip();
+    }
+    schedule();
+  }).observe(dashboard, {attributes:true, attributeFilter:['class']});
   new MutationObserver(schedule).observe(document.documentElement, {attributes:true, attributeFilter:['data-wf-motion']});
   schedule();
 })();

@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v118-greeting-flip';
+const CACHE_NAME = 'wow-furniture-v119-interface-polish';
 const urlsToCache = [
-  './workspace-surfaces.css?v=10',
+  './workspace-surfaces.css?v=11',
   './context-nav.js?v=1',
   './context-nav.css?v=1',
   './',
@@ -10,11 +10,11 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=7',
-  './dashboard-visuals.css?v=12',
+  './dashboard-visuals.css?v=13',
   './rate-refresh.js?v=3',
   './section-headings.css?v=6',
   './topbar-dock.css?v=6',
-  './topbar-dock.js?v=5',
+  './topbar-dock.js?v=6',
   './currency-calculator.css?v=10',
   './currency-calculator.js?v=7',
   './ui-i18n.js?v=26',
