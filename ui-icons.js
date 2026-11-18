@@ -22,6 +22,7 @@ function decorate(el){
   if(!key)continue;
   // Replace only a leading pictogram in a fixed interface control.
   const shell=document.createElement('span');shell.className='wf-ui-icon';let iconName=currencyFlag?'turkish-lira':glyphs[key];
+  if(key==='✏️' && el.closest('[onclick*="select-invoice-type"], #sit-title, #invFormTitle')) iconName='file-pen-line';
   if(el.matches('.ctsc-icon,.client-type-icon,.client-type-step-icon,.csp-icon')){
    const action=el.closest('[onclick]')?.getAttribute('onclick')||'';
    if(action.includes('internal_retail'))iconName='store';
@@ -53,6 +54,19 @@ function updateIcon(shell, name) {
  shell.dataset.wfUiIcon=name;
  shell.querySelector('svg')?.remove();
  shell.insertAdjacentHTML('beforeend',icons[name]);
+}
+const typeChip = document.getElementById('invTypeChip');
+if (typeChip) {
+ const badge = document.createElement('span');
+ badge.className = 'wf-ui-icon';
+ badge.setAttribute('aria-hidden','true');
+ const label = document.getElementById('invTypeChipTxt');
+ typeChip.replaceChildren(badge,label);
+ const syncInvoiceType = () => updateIcon(badge, {
+   external:'globe', internal_retail:'store', internal_wholesale:'warehouse'
+ }[S.invType] || 'globe');
+ new MutationObserver(syncInvoiceType).observe(label,{childList:true,subtree:true,characterData:true});
+ syncInvoiceType();
 }
 function refreshBusinessIcons(){
  const profile=document.documentElement.dataset.wfBusiness;

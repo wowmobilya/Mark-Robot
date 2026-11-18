@@ -696,3 +696,70 @@
     }
   }
 }
+
+@media screen {
+  html body #page-create-invoice .wf-heading-actions > div:first-child {
+    display: grid !important;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    width: min(100%, 38rem);
+    margin-inline: auto;
+  }
+  html body #page-create-invoice .wf-heading-actions :is(button[onclick="saveInvoice()"],button[onclick="previewInvoice()"],#shareMainBtn) {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 100%; min-height: 44px; padding-inline: 5px !important;
+    white-space: normal !important; box-shadow: none !important;
+  }
+  #page-create-invoice .chip-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
+  #invTypeChip { display: inline-flex; align-items: center; gap: 4px; }
+  #page-select-invoice-type .ctsc-body { min-width: 0; text-align: start; }
+  @media (max-width:1024px) {
+    html body #sidebar { width: min(22rem, calc(100vw - 48px)) !important; touch-action: pan-y; }
+    html body #sideOv { display: block; opacity: 0; visibility: hidden; pointer-events: none; }
+    html body #sideOv.open { opacity: 1; visibility: visible; pointer-events: auto; }
+  }
+  @media (max-width:1024px) and (prefers-reduced-motion:no-preference) {
+    html:not([data-wf-motion="reduced"]) body #sideOv { transition: opacity .22s ease, visibility 0s linear .22s; }
+    html:not([data-wf-motion="reduced"]) body #sideOv.open { transition-delay: 0s; animation: none; }
+    html:not([data-wf-motion="reduced"]) body #sidebar { transition: transform .26s cubic-bezier(.22,.75,.18,1) !important; }
+  }
+}
+
+@media screen {
+  html body #sidebar {
+    overflow: hidden !important;
+    padding-inline-end: 52px !important;
+  }
+  html body #sidebar .wf-sidebar-links {
+    min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    padding-block-end: max(12px,env(safe-area-inset-bottom));
+  }
+  html body #sidebar .wf-sidebar-brand { grid-template-columns: 42px minmax(0,1fr); flex-shrink: 0; }
+  html body #sidebar > #wfSidebarClose {
+    position: absolute !important; inset: auto !important;
+    inset-block-start: 50% !important; inset-inline-end: 3px !important;
+    transform: translateY(-50%) !important;
+    width: 48px !important; height: 48px !important; max-height: none;
+    border: 0 !important; border-radius: 50% !important; z-index: 4;
+    color: white !important; background: var(--sales-gradient) !important;
+    box-shadow: 0 0 0 4px var(--card), var(--wf-dock-shadow) !important;
+  }
+  html body #sidebar > #wfSidebarClose[hidden] { display: none !important; }
+  #sidebar > #wfSidebarClose svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  html[dir="rtl"] #sidebar > #wfSidebarClose svg { scale: -1 1; }
+}
+
+@media screen {
+  #wfSidebarSearchToggle {
+    width: 100%; display: flex; align-items: center; gap: 9px; min-height: 44px;
+    padding-inline: 12px; background: var(--input); color: var(--text);
+    border: 1px solid var(--border); border-radius: 12px; font: inherit; cursor: pointer;
+  }
+  #wfSidebarSearchToggle svg { width: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+  #wfSidebarSearchToggle[aria-expanded="true"] { background: var(--drawer-tint); }
+  #wfSidebarSearchToggle[aria-expanded="true"]::after { content: '×'; margin-inline-start: auto; }
+  #wfSidebarSearch:not([hidden]) { margin-block-start: 6px; }
+  #wfSidebarSearch[hidden] { display: none !important; }
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-wf-motion="reduced"]) #wfSidebarSearch:not([hidden]) { animation: wfPanelReveal .16s ease-out; }
+  }
+}

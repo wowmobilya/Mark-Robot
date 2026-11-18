@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v126-dashboard-identity';
+const CACHE_NAME = 'wow-furniture-v127-invoice-drawer';
 const urlsToCache = [
-  './workspace-surfaces.css?v=15',
+  './workspace-surfaces.css?v=16',
   './context-nav.js?v=1',
   './context-nav.css?v=1',
   './',
@@ -21,10 +21,10 @@ const urlsToCache = [
   './ui-i18n.js?v=26',
   './modern-ui.css?v=47',
   './ui-identity.css?v=31',
-  './ui-navigation.js?v=14',
+  './ui-navigation.js?v=15',
   './ui-logo.js?v=3',
   './ui-settings.js?v=2',
-  './ui-icons.js?v=46',
+  './ui-icons.js?v=47',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
   './manifest.json',

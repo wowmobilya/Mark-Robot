@@ -90,6 +90,19 @@
   syncScroll();
  }
  addEventListener('scroll',()=>{if(!queued){queued=true;requestAnimationFrame(update);}},{passive:true});
+ let swipeStart;
+ sidebar.addEventListener('touchstart', event => {
+  swipeStart = compact.matches && event.touches.length === 1 ? event.touches[0] : null;
+ }, {passive:true});
+ sidebar.addEventListener('touchcancel', () => { swipeStart = null; });
+ sidebar.addEventListener('touchend', event => {
+  if (!swipeStart || !sidebar.classList.contains('open')) return;
+  const end = event.changedTouches[0];
+  const dx = end.clientX - swipeStart.clientX, dy = end.clientY - swipeStart.clientY;
+  swipeStart = null;
+  const outward = getComputedStyle(sidebar).direction === 'rtl' ? dx : -dx;
+  if (outward > 70 && outward > 2 * Math.abs(dy)) window.closeSidebar();
+ }, {passive:true});
  compact.addEventListener('change',()=>{window.closeSidebar();reveal();});
  document.addEventListener('keydown',event=>{
   if(!compact.matches||!sidebar.classList.contains('open'))return;
@@ -99,7 +112,7 @@
    return;
   }
   if(event.key!=='Tab')return;
-  const buttons=sidebar.querySelectorAll('button');
+  const buttons=[...sidebar.querySelectorAll('button:not([disabled]),input:not([disabled])')].filter(control=>control.getClientRects().length);
   const first=buttons[0],last=buttons[buttons.length-1];
   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
@@ -137,18 +150,35 @@
     }
     empty.hidden = total !== 0;
   }
-  search.addEventListener('input', filter);
-  search.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && search.value) {
-      event.stopPropagation();
+  const toggle = document.getElementById('wfSidebarSearchToggle');
+  function setSearchOpen(open, restoreFocus = false) {
+    search.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    if (open) search.focus();
+    else {
       search.value = '';
       filter();
+      if (restoreFocus) toggle.focus();
+    }
+  }
+  toggle.addEventListener('click', () => setSearchOpen(search.hidden, true));
+  search.addEventListener('input', filter);
+  search.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      setSearchOpen(false, true);
+    }
+    if (event.key === 'Enter') {
+      const matches = document.querySelectorAll('#wf-nav-main .nav-item:not([hidden])');
+      if (matches.length === 1) matches[0].click();
     }
   });
-  document.getElementById('wf-nav-main').addEventListener('click', event => {
-    if (!event.target.closest('.nav-item')) return;
-    search.value = '';
-    filter();
+  document.addEventListener('click', event => {
+    if (!search.hidden && !event.target.closest('.wf-sidebar-search')) setSearchOpen(false);
   });
+  new MutationObserver(() => {
+    if (search.closest('#sidebar').inert && !search.hidden) setSearchOpen(false);
+  }).observe(search.closest('#sidebar'), {attributes:true,attributeFilter:['inert']});
   new MutationObserver(filter).observe(document.documentElement, {attributes:true, attributeFilter:['lang']});
 })();

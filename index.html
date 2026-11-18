@@ -34,7 +34,7 @@
 <meta name="google" content="notranslate">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<script src="ui-icons.js?v=46" defer></script>
+<script src="ui-icons.js?v=47" defer></script>
 <title>WOW FURNITURE — Invoice System · V14</title>
 
 <!-- ربط ملف الـ Manifest -->
@@ -6432,7 +6432,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=31">
-     <script src="ui-navigation.js?v=14" defer></script>
+     <script src="ui-navigation.js?v=15" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
 <script src="context-nav.js?v=1" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
@@ -6449,7 +6449,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="section-headings.css?v=6">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
-<link rel="stylesheet" href="workspace-surfaces.css?v=15">
+<link rel="stylesheet" href="workspace-surfaces.css?v=16">
 </head>
 <body>
 
@@ -6607,13 +6607,15 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar" inert aria-labelledby="wf-nav-nav_main">
+    <button type="button" id="wfSidebarClose" aria-controls="sidebar" onclick="wfToggleDesktopSidebar()">×</button>
   <div class="wf-sidebar-brand" id="wfSidebarBrand">
     <img id="wfSidebarLogo" src="app-icon-192.png" alt="">
     <strong dir="ltr">WOW <span>Furniture</span></strong>
-    <button type="button" id="wfSidebarClose" aria-controls="sidebar" onclick="wfToggleDesktopSidebar()">×</button>
+
   </div>
   <div class="wf-sidebar-search">
-    <input type="search" id="wfSidebarSearch" aria-controls="wf-nav-main" data-wf-ui-aria-label="Search" data-wf-ui-placeholder="Search" aria-label="بحث" placeholder="بحث" autocomplete="off">
+    <button type="button" id="wfSidebarSearchToggle" aria-expanded="false" aria-controls="wfSidebarSearch"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 5 5"></path></svg><span data-wf-ui="Search">بحث</span></button>
+    <input hidden type="search" id="wfSidebarSearch" aria-controls="wf-nav-main" data-wf-ui-aria-label="Search" data-wf-ui-placeholder="Search" aria-label="بحث" placeholder="بحث" autocomplete="off">
   </div>
   <p class="wf-sidebar-empty" id="wfSidebarEmpty" role="status" hidden data-wf-ui="No results">لا توجد نتائج</p>
   <nav class="wf-sidebar-links" id="wf-nav-main" aria-labelledby="wf-nav-nav_main">
