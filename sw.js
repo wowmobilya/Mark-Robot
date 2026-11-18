@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v105-workspace-surfaces';
+const CACHE_NAME = 'wow-furniture-v106-adaptive-spacing';
 const urlsToCache = [
   './workspace-surfaces.css?v=1',
   './context-nav.js?v=1',

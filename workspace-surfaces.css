@@ -105,3 +105,44 @@
     html body #mainContent .page :is(.card,.wf-insight-card) {border-radius: 14px !important}
   }
 }
+
+/* Use the workspace width so the grid responds when the drawer opens. */
+@media screen {
+  #mainContent {
+    --workspace-inset: clamp(16px, 2.6vw, 40px);
+    --workspace-gap: clamp(16px, 2vw, 28px);
+  }
+  html body #mainContent.main { padding-inline: var(--workspace-inset) !important; }
+  html.wf-section-mode body #mainContent .page :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar) {
+    margin-inline: calc(-1 * var(--workspace-inset)) !important;
+    padding-inline: var(--workspace-inset) !important;
+    margin-block-end: var(--workspace-gap) !important;
+  }
+  html body #mainContent .page :is(.co-grid,.pr-grid-new,.inv-grid) {
+    grid-template-columns: repeat(auto-fit,minmax(min(100%,280px),1fr)) !important;
+    gap: var(--workspace-gap) !important;
+  }
+  html body #mainContent .page .fgrid { gap: 18px 22px !important; }
+  html body #mainContent #page-dashboard {
+    --dash-gap: var(--workspace-gap);
+  }
+  html body #mainContent #page-dashboard .wf-dash-overview,
+  html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
+    gap: var(--workspace-gap);
+  }
+  html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
+    gap: 6px;
+    padding: 7px;
+  }
+  html body #mainContent #page-dashboard .wf-dash-actions { gap: 10px; }
+  html body #mainContent #page-dashboard .curr-bar-grid { gap: 10px !important; }
+  html body #mainContent #page-settings .wf-settings-workspace { gap: var(--workspace-gap); }
+  html body #mainContent #page-settings [id^="stab-"]>.card + .card {
+    margin-top: var(--workspace-gap) !important;
+  }
+  @media (max-width:680px) {
+    html body #mainContent #page-dashboard .wf-dash-overview { padding: 14px; }
+    html body #mainContent #page-dashboard .wf-dash-actions .btn { min-height: 58px; }
+    html body #mainContent .page .fgrid { gap: 14px !important; }
+  }
+}
