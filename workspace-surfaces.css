@@ -1,0 +1,107 @@
+/* Shared workspace materials, scoped to on-screen application content. */
+@media screen {
+  #mainContent {
+    --paper: #fcfcfb;
+    --canvas: #eff2f3;
+    --hairline: #d6dfe1;
+    --ink: #182f38;
+    --wash: #e6eff0;
+    --lift: 0 8px 24px -17px rgb(22 48 58 / 32%);
+    background: var(--canvas);
+  }
+  [data-theme="dark"] #mainContent {
+    --paper: #192832;
+    --canvas: #101c23;
+    --hairline: #334750;
+    --ink: #e5eff0;
+    --wash: #253b45;
+  }
+  html body #mainContent .page :is(.co-card,.pr-card-new,.inv-card,.client-type-step-card,.card,.wf-insight-card) {
+    background: var(--paper) !important;
+    border: 1px solid var(--hairline) !important;
+    border-radius: 16px !important;
+    box-shadow: var(--lift) !important;
+  }
+  html body #mainContent .page :is(.card-hdr,.co-hdr,.wf-insight-head) {
+    border-color: var(--hairline) !important;
+    color: var(--ink);
+  }
+  html body #mainContent .page :is(.co-actions,.pr-card-new-actions,.inv-card-actions) {
+    background: var(--wash) !important;
+    padding-block: 10px;
+  }
+  html body #mainContent .page :is(input.fc,select.fc,textarea.fc) {
+    background: var(--paper) !important;
+    border: 1px solid var(--hairline) !important;
+    border-radius: 10px !important;
+  }
+  #mainContent .page :is(input,select,textarea,button):focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+  html body #mainContent #page-dashboard .wf-dash-overview {
+    grid-template-areas: "welcome sales" "metrics sales" "actions actions";
+    grid-template-columns: minmax(0,1.6fr) minmax(0,1fr);
+    padding: clamp(14px,2vw,30px);
+    gap: clamp(12px,1.5vw,22px);
+    border-radius: 24px;
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--lift);
+  }
+  html body #mainContent #page-dashboard #greetingCard {
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+  }
+  html body #mainContent #page-dashboard .wf-dash-sales {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    background: linear-gradient(145deg,#16343f,#285466 64%,var(--brand-primary));
+  }
+  #mainContent .wf-dash-sales::after {
+    content: "";
+    position: absolute;
+    inset-inline-end: -66px;
+    top: -64px;
+    width: 185px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 1px solid #ffffff24;
+    box-shadow: 0 0 0 24px #ffffff08,0 0 0 48px #ffffff06;
+    z-index: -1;
+  }
+  html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
+    border: 0 !important;
+    background: var(--wash) !important;
+  }
+  html body #mainContent #page-dashboard .wf-dash-actions .btn {
+    min-height: 46px;
+    background: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    color: white !important;
+  }
+  html body #mainContent #page-settings .wf-settings-content>[role="tabpanel"] {
+    background: var(--paper) !important;
+    border-color: var(--hairline) !important;
+    box-shadow: var(--lift) !important;
+  }
+  @media (max-width:680px) {
+    html body #mainContent #page-dashboard .wf-dash-overview {
+      grid-template-areas: "welcome" "sales" "metrics" "actions";
+      grid-template-columns: minmax(0,1fr);
+      padding: 14px;
+    }
+    html body #mainContent #page-dashboard .wf-dash-sales {
+      flex-direction: row-reverse;
+      align-items: center;
+      min-height: 84px;
+    }
+    html body #mainContent .page :is(.card,.wf-insight-card) {border-radius: 14px !important}
+  }
+}

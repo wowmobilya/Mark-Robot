@@ -1,5 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v104-dashboard-composition';
+const CACHE_NAME = 'wow-furniture-v105-workspace-surfaces';
 const urlsToCache = [
+  './workspace-surfaces.css?v=1',
   './context-nav.js?v=1',
   './context-nav.css?v=1',
   './',
