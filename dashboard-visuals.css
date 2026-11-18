@@ -1,4 +1,5 @@
 @media screen {
+  :root { --sales-gradient: linear-gradient(145deg, #112c38, color-mix(in srgb, var(--brand-primary) 70%, #112c38)); }
   :is(#page-dashboard,#page-exchange) {
     --dash-gap: clamp(12px, 1.7vw, 24px);
     --dash-accent: var(--brand-primary);
@@ -58,7 +59,7 @@
     padding: clamp(14px, 2.5vw, 28px);
     color: white;
     border-radius: 20px;
-    background: linear-gradient(145deg, #112c38, color-mix(in srgb, var(--dash-accent) 70%, #112c38));
+    background: var(--sales-gradient);
   }
   #page-dashboard .wf-dash-sales::before {
     content: "";
@@ -235,7 +236,7 @@
   html body :is(#page-dashboard,#page-exchange) .curr-item {
     --tile-ink: #255a6e;
     --tile-fill: #dceef4;
-    --tile-tint: color-mix(in srgb, var(--tile-fill) 36%, var(--dash-surface));
+    --tile-tint: color-mix(in srgb, var(--tile-fill) 60%, var(--dash-surface));
     position: relative;
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) auto !important;
@@ -328,8 +329,21 @@
   }
   @media (prefers-reduced-motion: no-preference) {
     html body :is(#page-dashboard,#page-exchange) .curr-refresh.wf-refreshing .wf-ui-icon { animation: wfRefreshSpin 1s linear infinite; }
+    html:not([data-wf-motion="reduced"]) body :is(#page-dashboard,#page-exchange) .curr-item {
+      animation: wfQuoteEnter 280ms ease-out var(--quote-enter-delay, 0ms) backwards !important;
+    }
+    :is(#page-dashboard,#page-exchange) .curr-item:nth-child(3n + 2) { --quote-enter-delay: 45ms; }
+    :is(#page-dashboard,#page-exchange) .curr-item:nth-child(3n) { --quote-enter-delay: 90ms; }
+    html:not([data-wf-motion="reduced"]) body :is(#page-dashboard,#page-exchange) .curr-item[data-quote-trend]:not([data-quote-trend="empty"]) .wf-quote-chart {
+      animation: wfQuoteDraw 420ms ease-out var(--quote-enter-delay, 0ms) backwards;
+    }
   }
   @keyframes wfRefreshSpin { to { transform: rotate(360deg); } }
+  @keyframes wfQuoteEnter { from { opacity: .55; translate: 0 6px; } }
+  @keyframes wfQuoteDraw {
+    from { clip-path: inset(0 100% 0 0); }
+    to { clip-path: inset(0); }
+  }
 }
 
 @media screen {
@@ -370,11 +384,50 @@
   [data-theme="dark"] .curr-item[data-quote-trend="up"] { --quote-color: #8ad4ad; }
   [data-theme="dark"] .curr-item[data-quote-trend="down"] { --quote-color: #fa9cab; }
   :is(#page-dashboard,#page-exchange) .curr-item :is(.wf-quote-trend,.wf-quote-chart) {
-    color: var(--quote-color,var(--ui-accent)) !important;
+    color: var(--quote-color, var(--tile-ink)) !important;
   }
   :is(#page-dashboard,#page-exchange) .curr-item .wf-quote-trend[hidden] { display: none !important; }
   @container (max-width: 510px) {
     #page-dashboard .wf-dash-sales { min-height: 65px; }
     html body #page-dashboard .stat-card { min-height: 58px; padding: 7px !important; }
   }
+}
+
+@media screen {
+  html:root body #bottomNav #bnavCircle {
+    background: var(--sales-gradient) !important;
+    border-color: transparent !important;
+    color: white !important;
+  }
+  #page-quick-barcode .qbl-workbench {
+    max-width: 46rem; margin: clamp(12px, 3vw, 32px) auto;
+    color: var(--text);
+  }
+  .qbl-modes { display: flex; gap: 4px; padding: 4px; background: var(--input); border-radius: 14px; margin-bottom: 10px; }
+  .qbl-modes button { flex: 1; min-height: 44px; font: inherit; font-weight: 700; color: var(--text2); background: transparent; border: 0; border-radius: 11px; cursor: pointer; }
+  .qbl-modes button[aria-pressed="true"] { background: var(--sales-gradient); color: white; }
+  .qbl-panel { overflow: hidden; border-radius: 16px; background: var(--card); }
+  .qbl-view { position: relative; height: clamp(230px, 39dvh, 390px); }
+  #qblCameraWrap { background: var(--sales-gradient) !important; }
+  #qblInput { min-width: 0; }
+}
+@media screen {
+  .wf-greeting-flip { grid-area: welcome; min-width: 0; perspective: 1100px; cursor: pointer; border-radius: 20px; }
+  .wf-greeting-flip:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
+  .wf-greeting-faces { display: grid; height: 100%; transform-style: preserve-3d; }
+  html body #page-dashboard .wf-greeting-faces > :is(#greetingCard,#tipCardStandalone) {
+    grid-area: 1 / 1; margin: 0 !important; min-width: 0; backface-visibility: hidden;
+    border: 1px solid var(--dash-line) !important; border-radius: 20px !important;
+  }
+  html body #page-dashboard .wf-greeting-faces > #tipCardStandalone {
+    display: grid; align-content: center; background: var(--dash-surface) !important;
+    padding: clamp(12px, 2vw, 22px); transform: rotateX(180deg) !important;
+  }
+  .wf-greeting-flip.show-tip .wf-greeting-faces { transform: rotateX(180deg); }
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-wf-motion="reduced"]) .wf-greeting-faces { transition: transform .62s cubic-bezier(.35,.08,.2,1); }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html body .wf-greeting-faces { transition: none !important; }
 }

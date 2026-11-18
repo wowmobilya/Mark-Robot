@@ -6441,17 +6441,17 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=2" defer></script>
 <script src="ui-settings.js?v=1" defer></script>
-<script src="settings-navigation.js?v=6" defer></script>
+<script src="settings-navigation.js?v=7" defer></script>
 <script src="rate-refresh.js?v=3" defer></script>
-<script src="topbar-dock.js?v=4" defer></script>
+<script src="topbar-dock.js?v=5" defer></script>
 <link rel="stylesheet" href="currency-calculator.css?v=10">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
-<link rel="stylesheet" href="dashboard-visuals.css?v=9">
+<link rel="stylesheet" href="dashboard-visuals.css?v=12">
 <link rel="stylesheet" href="section-headings.css?v=6">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
-<link rel="stylesheet" href="workspace-surfaces.css?v=9">
+<link rel="stylesheet" href="workspace-surfaces.css?v=10">
 </head>
 <body>
 
@@ -6643,6 +6643,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <!-- ========== DASHBOARD ========== -->
 <section class="page active" id="page-dashboard">
 <div class="wf-dash-overview">
+  <div class="wf-greeting-flip" role="button" tabindex="0" aria-labelledby="greetingSub">
+    <div class="wf-greeting-faces">
   <div class="greeting-card" id="greetingCard">
     <div class="greeting-top">
       <div class="greeting-left">
@@ -6655,6 +6657,18 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
         </div>
         <div class="greeting-sub" id="greetingSub"><span data-wf-ui="Invoice management — WOW Furniture">نظام إدارة الفواتير — WOW Furniture</span></div>
       </div>
+    </div>
+  </div>
+  <div class="card tip-card-standalone" id="tipCardStandalone" aria-hidden="true">
+    <div class="tip-card-inner">
+      <div class="tip-card-icon">💡</div>
+      <div class="tip-card-content">
+        <div class="tip-card-label" id="tipLabel"><span data-wf-ui="Today&#x27;s Tip">نصيحة اليوم</span></div>
+        <div class="tip-card-text" id="tipText">—</div>
+      </div>
+      <div class="tip-card-badge" id="tipDayBadge"><span data-wf-ui="Sunday">الأحد</span></div>
+    </div>
+  </div>
     </div>
   </div>
     <div class="wf-dash-sales">
@@ -6744,16 +6758,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <div id="dashIntelligence" class="wf-dashboard-intelligence"></div>
 </div>
 </div>
-  <div class="card tip-card-standalone" id="tipCardStandalone">
-    <div class="tip-card-inner">
-      <div class="tip-card-icon">💡</div>
-      <div class="tip-card-content">
-        <div class="tip-card-label" id="tipLabel"><span data-wf-ui="Today&#x27;s Tip">نصيحة اليوم</span></div>
-        <div class="tip-card-text" id="tipText">—</div>
-      </div>
-      <div class="tip-card-badge" id="tipDayBadge"><span data-wf-ui="Sunday">الأحد</span></div>
-    </div>
-  </div>
+
 </section>
 
 
@@ -8417,12 +8422,13 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     </div>
   </div>
 
-  <div style="max-width:480px;margin:20px auto 0;">
-    <div class="card" style="padding:0;overflow:hidden;border-radius:20px;">
-
-          <!-- Scanner + Dropdown Container -->
-<div style="position:relative;height:310px;">
-
+  <div class="qbl-workbench">
+    <div class="qbl-modes">
+      <button id="qblScanMode" aria-pressed="true" onclick="qblCloseDropdown();qblStartCamera()" data-wf-ui="Scan barcode">مسح الباركود</button>
+      <button id="qblBrowseMode" aria-pressed="false" onclick="if(!qblDropdownOpen)qblOpenDropdown()" data-wf-ui="Products">المنتجات</button>
+    </div>
+    <div class="qbl-panel">
+      <div class="qbl-view">
         <!-- الكاميرا -->
         <div id="qblCameraWrap" style="
           position:absolute;inset:0;
@@ -8450,7 +8456,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
             <span style="background:rgba(0,0,0,.6);backdrop-filter:blur(8px);
               color:#fff;font-size:11px;font-weight:700;padding:5px 16px;
               border-radius:20px;border:1px solid rgba(255,255,255,.15);"
-              id="qblStatus"><span data-wf-ui="Point camera at barcode">وجّه الكاميرا نحو الباركود</span></span>
+              role="status" id="qblStatus"><span data-wf-ui="Point camera at barcode">وجّه الكاميرا نحو الباركود</span></span>
           </div>
         </div>
 
@@ -8500,18 +8506,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
             onkeydown="if(event.key==='Enter')searchQbl()"
             style="flex:1;" data-wf-ui-placeholder="Model name or barcode...">
 
-          <!-- زر القائمة -->
-          <button onclick="qblToggleDropdown()" id="qblDropdownBtn"
-            style="
-              width:42px;height:42px;border-radius:10px;flex-shrink:0;
-              background:var(--input);border:1.5px solid var(--border);
-              color:var(--text2);font-size:16px;cursor:pointer;
-              display:flex;align-items:center;justify-content:center;
-              transition:all var(--tr);
-            "
-          >☰</button>
-
-          <button class="btn btn-p" onclick="searchQbl()"
+          <button class="btn btn-p" data-wf-ui-aria-label="Search" onclick="searchQbl()"
             style="width:42px;height:42px;padding:0;flex-shrink:0;
               display:flex;align-items:center;justify-content:center;">
             🔍
@@ -12591,18 +12586,6 @@ set('greetingSub', `${companyNames[S.lang] || 'WOW Furniture'} — ${invoiceLabe
   const days   = dayNames[S.lang] || dayNames.ar;
   const elBadge = document.getElementById('tipDayBadge');
   if (elBadge) elBadge.textContent = days[now.getDay()];
-
-  // ── أنيميشن الدوران
-  if (animate) {
-    const card = document.getElementById('greetingCard');
-    const tip  = document.getElementById('tipCardStandalone');
-    if (card) { card.classList.remove('rotating'); void card.offsetWidth; card.classList.add('rotating'); }
-    if (tip)  { tip.classList.remove('rotating');  void tip.offsetWidth;  tip.classList.add('rotating');  }
-    setTimeout(() => {
-      card?.classList.remove('rotating');
-      tip?.classList.remove('rotating');
-    }, 700);
-  }
 
   // ── تأثير الكتابة
   typewriterEffect(getRotatingGreeting(), 'greetingTypewriter', 38);
@@ -21696,13 +21679,7 @@ function initQblPage() {
   if (p3) { p3.style.maxHeight = '0'; p3.style.opacity = '0'; }
 
   // ✅ إعادة زر القائمة لحالته الأصلية
-  const ddBtn = document.getElementById('qblDropdownBtn');
-  if (ddBtn) {
-    ddBtn.style.borderColor = 'var(--border)';
-    ddBtn.style.color       = 'var(--text2)';
-    ddBtn.style.background  = 'var(--input)';
-    ddBtn.innerHTML         = '☰';
-  }
+  qblSyncModes();
 
   // ✅ إخفاء الـ Dropdown إذا كان مفتوحاً
   const dd = document.getElementById('qblDropdown');
@@ -22905,8 +22882,9 @@ function qblSendToInvoice() {
 let qblDropdownOpen = false;
 let qblActiveType   = null; // الفئة المختارة حالياً
 
-function qblToggleDropdown() {
-  qblDropdownOpen ? qblCloseDropdown() : qblOpenDropdown();
+function qblSyncModes() {
+  document.getElementById('qblScanMode').setAttribute('aria-pressed', String(!qblDropdownOpen));
+  document.getElementById('qblBrowseMode').setAttribute('aria-pressed', String(qblDropdownOpen));
 }
 
 function qblOpenDropdown() {
@@ -22915,7 +22893,8 @@ function qblOpenDropdown() {
 
   const dd  = document.getElementById('qblDropdown');
   const cam = document.getElementById('qblCameraWrap');
-  const btn = document.getElementById('qblDropdownBtn');
+  qblSyncModes();
+  qblStopCamera();
 
   // بناء التبويبات
   qblBuildTabs();
@@ -22940,12 +22919,7 @@ function qblOpenDropdown() {
     });
   }
 
-  if (btn) {
-    btn.style.borderColor = 'var(--gold)';
-    btn.style.color       = 'var(--gold)';
-    btn.style.background  = 'rgba(200,169,110,.1)';
-    btn.innerHTML         = '✕';
-  }
+
 }
 
 function qblCloseDropdown() {
@@ -22954,12 +22928,12 @@ function qblCloseDropdown() {
 
   const dd  = document.getElementById('qblDropdown');
   const cam = document.getElementById('qblCameraWrap');
-  const btn = document.getElementById('qblDropdownBtn');
+  qblSyncModes();
 
   if (dd) {
     dd.style.opacity   = '0';
     dd.style.transform = 'translateY(-12px) scale(.98)';
-    setTimeout(() => { if (dd) dd.style.display = 'none'; }, 300);
+    setTimeout(() => { if (dd && !qblDropdownOpen) dd.style.display = 'none'; }, 300);
   }
 
   if (cam) {
@@ -22968,12 +22942,7 @@ function qblCloseDropdown() {
     cam.style.pointerEvents = 'all';
   }
 
-  if (btn) {
-    btn.style.borderColor = 'var(--border)';
-    btn.style.color       = 'var(--text2)';
-    btn.style.background  = 'var(--input)';
-    btn.innerHTML         = '☰';
-  }
+
 }
 
 /* ── بناء أزرار الفئات الأربع ── */

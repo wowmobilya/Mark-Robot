@@ -453,3 +453,102 @@
     margin: 0;
   }
 }
+
+/* The same materials follow a task from its page into its dialog. */
+@media screen {
+  :root {
+    --window-surface: var(--card);
+    --window-edge: var(--border);
+    --window-accent: var(--brand-primary);
+    --window-muted: color-mix(in srgb, var(--window-accent) 8%, var(--window-surface));
+    --window-shadow: 0 18px 56px -24px rgb(10 28 38 / 48%);
+    --window-radius: clamp(14px, 2vw, 20px);
+  }
+  html body :is(.modal-ov, .delete-modal-ov, .deliver-modal-ov, .wf-restore-ov, .wf-share-overlay, .qbl-cart-overlay) {
+    background: rgb(13 29 38 / 62%) !important;
+  }
+  html:root body :is(#currCalcModal, #pdfModal, #scannerModal, #printOptionsModal) > .modal,
+  html:root body :is(.wf-restore-modal, .wf-share-panel, .delete-modal, .deliver-modal, #qblTierCard, .qbl-cart-bar) {
+    box-sizing: border-box;
+    background: var(--window-surface) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--window-edge) !important;
+    border-radius: var(--window-radius) !important;
+    box-shadow: var(--window-shadow) !important;
+  }
+  html:root body :is(.wf-restore-modal, .wf-share-panel, .delete-modal, .deliver-modal, #printOptionsModal > .modal, #scannerModal > .modal) {
+    max-block-size: calc(100dvh - 24px);
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+  html:root body :is(#scannerModal > .modal > :first-child, .wf-share-head, .qbl-cart-header, #printOptionsModal .modal-hdr) {
+    background: var(--window-muted) !important;
+    color: var(--text) !important;
+    border-block-end: 1px solid var(--window-edge);
+  }
+  html:root body :is(.deliver-modal-top-bar, .deliver-modal-btn-confirm, .wf-restore-confirm, .qbl-cart-invoice-btn) {
+    background: var(--sales-gradient) !important;
+    color: white !important;
+  }
+  html body :is(.dm-title, .deliver-modal-title, .wf-share-title, .wf-restore-title, .modal-title, .qbl-cart-title) {
+    color: var(--text) !important;
+    font-weight: 750;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  html body :is(.dm-btn-cancel, .deliver-modal-btn-cancel, .wf-restore-cancel, .wf-share-choice, .deliver-modal-inv-card) {
+    background: var(--window-muted) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--window-edge) !important;
+    border-radius: 12px;
+  }
+  html body :is(.modal-ov, .wf-share-panel, .wf-restore-modal, .delete-modal, .deliver-modal, .qbl-cart-bar, #qblTierCard, #mainContent .page) :is(button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--window-accent) !important;
+    outline-offset: 2px;
+  }
+  html body :is(.modal-ov, .delete-modal, .deliver-modal) :is(input.fc, select.fc, textarea.fc, .dm-input) {
+    color: var(--text) !important;
+    background: var(--input) !important;
+    border-radius: 10px !important;
+  }
+  html body #mainContent .page :is(.page-hdr, .sct-sticky-header) h1 {
+    color: var(--text);
+    font-weight: 750;
+    line-height: 1.3;
+  }
+}
+@media screen {
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) {
+    display: block !important;
+    max-width: 52rem !important;
+  }
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) > .tabs {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)) !important;
+    position: static !important;
+    gap: 8px !important;
+  }
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) .tab-btn {
+    min-height: 54px !important;
+    justify-content: flex-start !important;
+  }
+  #wfSettingsDialog {
+    box-sizing: border-box; padding: 0; margin: auto;
+    width: min(42rem, calc(100% - 24px)); max-height: calc(100dvh - 32px);
+    background: var(--card); color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--window-radius);
+    box-shadow: var(--window-shadow);
+  }
+  #wfSettingsDialog[open] { display: flex; flex-direction: column; }
+  #wfSettingsDialog::backdrop { background: rgb(13 29 38 / 62%); }
+  #wfSettingsDialog > header, #wfSettingsDialog > footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; background: var(--window-muted); flex: none;
+  }
+  #wfSettingsDialog > header h2 { margin: 0; font-size: 18px; }
+  #wfSettingsDialog > header button { font: inherit; font-size: 24px; min-width: 44px; height: 44px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 12px; }
+  #wfSettingsDialog > .wf-settings-content { overflow: auto; min-height: 0; padding: 12px; }
+  #wfSettingsDialog .wf-settings-panel-title, #wfSettingsDialog .wf-settings-save-symbol { display: none; }
+  #wfSettingsDialog > footer > button { margin: 0 !important; width: 100%; min-height: 44px; background: var(--sales-gradient) !important; color: white !important; }
+  html.wf-settings-open body #wf-settings-save-footer:empty { display: none !important; }
+}

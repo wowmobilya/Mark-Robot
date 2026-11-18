@@ -17,6 +17,51 @@
   save.prepend(symbol);
   footer.append(save);document.body.append(footer);
  }
+ const content = workspace.querySelector('.wf-settings-content');
+ const dialog = document.createElement('dialog');
+ dialog.id = 'wfSettingsDialog';
+ const bar = document.createElement('header');
+ const title = document.createElement('h2');
+ title.id = 'wfSettingsDialogTitle';
+ dialog.setAttribute('aria-labelledby', title.id);
+ const close = document.createElement('button');
+ close.type = 'button';
+ close.textContent = '×';
+ close.setAttribute('data-wf-ui-aria-label', 'Close');
+ close.setAttribute('aria-label', window.wfUiText?.('Close') || 'Close');
+ close.addEventListener('click', () => dialog.close());
+ bar.append(title, close);
+ workspace.append(dialog);
+ dialog.append(bar, content);
+ if (save) {
+   const actions = document.createElement('footer');
+   actions.append(save);
+   dialog.append(actions);
+ }
+ const restore = document.getElementById('wfRestoreModal');
+ if (restore) {
+   new MutationObserver(() => {
+     if (dialog.open && restore.getAttribute('aria-hidden') === 'false') dialog.close();
+   }).observe(restore, {attributes: true, attributeFilter: ['aria-hidden']});
+ }
+ let opener;
+ new MutationObserver(() => {
+   if (dialog.open && opener) title.textContent = opener.textContent.trim();
+ }).observe(tabs, {childList: true, subtree: true, characterData: true});
+
+ for (const {button} of entries) {
+   button.setAttribute('aria-haspopup', 'dialog');
+   button.addEventListener('click', () => {
+     opener = button;
+     title.textContent = button.textContent.trim();
+     if (!dialog.open) dialog.showModal();
+     content.scrollTop = 0;
+     close.focus();
+   });
+ }
+ dialog.addEventListener('close', () => {
+   if (page.classList.contains('active')) opener?.focus();
+ });
  const original=window.switchTab;
  window.switchTab=function(key){
   const result=original.apply(this,arguments);
@@ -27,7 +72,7 @@
   return result;
  };
  // A class follows actual page visibility, including browser Back/Forward navigation.
- function syncPage(){document.documentElement.classList.toggle('wf-settings-open',page.classList.contains('active'));}
+ function syncPage(){if(dialog.open && !page.classList.contains('active')) dialog.close();document.documentElement.classList.toggle('wf-settings-open',page.classList.contains('active'));}
  new MutationObserver(syncPage).observe(page,{attributes:true,attributeFilter:['class']});
  page.classList.add('wf-settings-inline-ready');syncPage();
 })();
