@@ -106,6 +106,37 @@
   }
 }
 
+/* Let translated headings and controls use a second line on narrow screens. */
+@media screen {
+  html body #mainContent .page :is(.card-hdr,.co-hdr,.wf-insight-head) {
+    min-width: 0;
+    gap: 10px;
+  }
+  html body #mainContent .page :is(.card-hdr,.co-hdr,.wf-insight-head) > * {
+    min-width: 0;
+  }
+  html body #mainContent .page :is(.co-actions,.pr-card-new-actions,.inv-card-actions) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  html body #mainContent .page :is(.co-grid,.pr-grid-new,.inv-grid) > * {
+    min-width: 0;
+  }
+  @media (max-width: 540px) {
+    html body #mainContent .page :is(.card-hdr,.co-hdr,.wf-insight-head) {
+      flex-wrap: wrap;
+      row-gap: 8px;
+    }
+    html body #mainContent .page :is(.co-actions,.pr-card-new-actions,.inv-card-actions) > * {
+      max-width: 100%;
+    }
+    html body #mainContent #page-dashboard .wf-dash-overview .stat-card > div:last-child {
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
 /* Use the workspace width so the grid responds when the drawer opens. */
 @media screen {
   #mainContent {
