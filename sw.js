@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v101-centered-fullwidth-docks';
+const CACHE_NAME = 'wow-furniture-v102-dashboard-workspace';
 const urlsToCache = [
   './context-nav.js?v=1',
   './context-nav.css?v=1',
@@ -9,7 +9,7 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=5',
   './settings-navigation.js?v=4',
-  './dashboard-visuals.css?v=3',
+  './dashboard-visuals.css?v=4',
   './rate-refresh.js?v=2',
   './section-headings.css?v=6',
   './topbar-dock.css?v=6',

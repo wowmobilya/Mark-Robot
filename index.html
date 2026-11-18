@@ -6447,7 +6447,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="currency-calculator.css?v=8">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=5">
-<link rel="stylesheet" href="dashboard-visuals.css?v=3">
+<link rel="stylesheet" href="dashboard-visuals.css?v=4">
 <link rel="stylesheet" href="section-headings.css?v=6">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
@@ -6642,6 +6642,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
         </div>
         <div class="greeting-sub" id="greetingSub"><span data-wf-ui="Invoice management — WOW Furniture">نظام إدارة الفواتير — WOW Furniture</span></div>
       </div>
+      <button type="button" class="btn wf-dash-create" onclick="showPage('select-invoice-type')"><span data-i18n="nav_create">إنشاء فاتورة</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
     </div>
   <div class="card tip-card-standalone" id="tipCardStandalone">
     <div class="tip-card-inner">
@@ -6655,10 +6656,40 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
   </div>
 
   </div>
- <div class="curr-bar" id="currBar">
+<div class="stats-grid">
+    <div class="stat-card" onclick="showPage('companies')">
+      <div class="stat-icon si-g">🏢</div>
+      <div><div class="stat-val" id="s-co">0</div><div class="stat-lbl" data-i18n="stat_co">الشركات</div></div>
+    </div>
+    <div class="stat-card" onclick="showPage('products')">
+      <div class="stat-icon si-b">🛋️</div>
+      <div><div class="stat-val" id="s-pr">0</div><div class="stat-lbl" data-i18n="stat_pr">المنتجات</div></div>
+    </div>
+    <div class="stat-card" onclick="showPage('invoices')">
+      <div class="stat-icon si-gr">📄</div>
+      <div><div class="stat-val" id="s-inv">0</div><div class="stat-lbl" data-i18n="stat_inv">الفواتير</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon si-r">💰</div>
+      <div><div class="stat-val" id="s-total" style="font-size:16px;">$0</div><div class="stat-lbl" data-i18n="stat_total">المبيعات</div></div>
+    </div>
+  </div>
+<div class="wf-dash-workspace">
+<div class="wf-dash-primary">
+  <div class="card wf-dash-recent">
+    <div class="card-hdr">
+    <div class="card-title">📋 <span data-i18n="recent_inv">آخر الفواتير</span></div>
+    <button class="btn btn-s btn-sm" onclick="showPage('invoices')" data-i18n="view_all">عرض الكل</button>
+</div>
+    <div id="dashRecentInv"></div>
+  </div>
+</div>
+<div class="wf-dash-secondary">
+<div class="curr-bar" id="currBar">
 
   <!-- ── الصف العلوي: الوقت + زر التحديث ── -->
   <div class="curr-bar-top">
+    <h2 data-i18n="curr_rates_title">أسعار الصرف</h2>
     <div class="curr-update" id="rateTime">⏱ 10:25:42</div>
     <button class="curr-refresh" onclick="fetchRate()" title="تحديث" data-wf-ui-title="Refresh">🔄</button>
   </div>
@@ -6724,40 +6755,9 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     </div>
   </div>
 </div>
-
-
-
-    
-  <div class="stats-grid">
-    <div class="stat-card" onclick="showPage('companies')">
-      <div class="stat-icon si-g">🏢</div>
-      <div><div class="stat-val" id="s-co">0</div><div class="stat-lbl" data-i18n="stat_co">الشركات</div></div>
-    </div>
-    <div class="stat-card" onclick="showPage('products')">
-      <div class="stat-icon si-b">🛋️</div>
-      <div><div class="stat-val" id="s-pr">0</div><div class="stat-lbl" data-i18n="stat_pr">المنتجات</div></div>
-    </div>
-    <div class="stat-card" onclick="showPage('invoices')">
-      <div class="stat-icon si-gr">📄</div>
-      <div><div class="stat-val" id="s-inv">0</div><div class="stat-lbl" data-i18n="stat_inv">الفواتير</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon si-r">💰</div>
-      <div><div class="stat-val" id="s-total" style="font-size:16px;">$0</div><div class="stat-lbl" data-i18n="stat_total">المبيعات</div></div>
-    </div>
-  </div>
-
-  <div id="dashIntelligence" class="wf-dashboard-intelligence"></div>
-
-  
-
-  <div class="card">
-    <div class="card-hdr">
-    <div class="card-title">📋 <span data-i18n="recent_inv">آخر الفواتير</span></div>
-    <button class="btn btn-s btn-sm" onclick="showPage('invoices')" data-i18n="view_all">عرض الكل</button>
+<div id="dashIntelligence" class="wf-dashboard-intelligence"></div>
 </div>
-    <div id="dashRecentInv"></div>
-  </div>
+</div>
 </section>
 
 
