@@ -26,7 +26,8 @@ async function checkQuotes() {
     for (const section of ['dashboard', 'exchange']) {
       await page.evaluate(name => showPage(name), section);
       assert.equal(await grid.evaluate(el => el.closest('.page').id), 'page-' + section);
-      for (const [width, columns] of [[1600, 6], [800, 3], [390, 2], [320, 2]]) {
+      const widths = section === 'dashboard' ? [[1600, 3], [800, 2], [390, 2], [320, 2]] : [[1600, 6], [800, 3], [390, 2], [320, 2]];
+      for (const [width, columns] of widths) {
         await page.setViewportSize({ width, height: 900 });
         const layout = await grid.evaluate(el => {
           const style = getComputedStyle(el);
@@ -39,6 +40,13 @@ async function checkQuotes() {
           };
         });
         assert.deepEqual(layout, { display: 'grid', columns, cards: 6, overflow: 'visible', fits: true }, section + ' at ' + width);
+        if (section === 'dashboard') {
+          const quotes = await grid.locator('.curr-item').evaluateAll(items => items.map(item => ({
+            height: item.getBoundingClientRect().height,
+            fits: item.scrollWidth <= item.clientWidth + 1,
+          })));
+          assert(quotes.every(quote => quote.fits && quote.height >= 43.9 && quote.height <= 50), JSON.stringify(quotes));
+        }
       }
     }
 
@@ -66,6 +74,9 @@ async function checkQuotes() {
       getComputedStyle(el.querySelector('.wf-quote-arrow')).animationName,
     ]);
     assert.deepEqual(await animationNames(), ['wfQuoteEnter', 'wfQuoteArrow']);
+    const stableArrow = await cards.first().locator('.wf-quote-arrow').elementHandle();
+    await page.evaluate(() => updateRateUI());
+    assert(await stableArrow.evaluate(el => el.isConnected), 'Unchanged rates do not restart the arrow animation');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     assert.deepEqual(await animationNames(), ['none', 'none']);
     await page.emulateMedia({ reducedMotion: 'no-preference' });

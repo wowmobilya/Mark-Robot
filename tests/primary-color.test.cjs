@@ -10,7 +10,7 @@ test('drawer retains scrolling and usable compact controls',()=>{
  assert(css.includes('overflow-y:auto!important'));assert(css.includes('scrollbar-width:none'));assert(css.includes('min-height:clamp(44px,6.5dvh,50px)'));assert(css.includes('scroll-margin-block:12px'));
 });
 test('HTML and offline shell reference the same current assets',()=>{
- for(const asset of ['ui-identity.css?v=31','ui-navigation.js?v=15']){assert(read('index.html').includes(asset));assert(read('sw.js').includes(asset));}
+ for(const asset of ['ui-identity.css?v=31','ui-navigation.js?v=16']){assert(read('index.html').includes(asset));assert(read('sw.js').includes(asset));}
 });
 test('dashboard scroll progress uses the primary color and reduced motion',()=>{
  const css=read('ui-identity.css');

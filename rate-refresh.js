@@ -81,16 +81,20 @@
   trend.className='wf-market-trend wf-quote-trend';
   trend.dir='ltr';
   card.append(trend);
-  return {pair,card,trend};
+  return {pair,card,trend,lastTrend:''};
  });
  function renderTrends(){
-  for(const {pair,card,trend} of cards){
+  for(const quote of cards){
+   const {pair,card,trend}=quote;
    const manual=(pair.includes('try')&&S.settings.manualUsdTry)||(pair.includes('eur')&&S.settings.manualUsdEur);
    const prices=manual?[]:history.map(pairs[pair]);
    const hasTrend=prices.length>1;
    const delta=hasTrend?(prices.at(-1)-prices.at(-2))/prices.at(-2):0;
    const change=arrows.format(delta);
    const direction=!hasTrend?'empty':Number(Math.abs(delta*100).toFixed(2))===0?'flat':delta>0?'up':'down';
+   const signature=hasTrend?JSON.stringify([history.at(-1).at,direction,change]):'empty';
+   if(quote.lastTrend===signature)continue;
+   quote.lastTrend=signature;
    card.dataset.quoteTrend=direction;
    const arrow = document.createElement('span');
    arrow.className = 'wf-quote-arrow';

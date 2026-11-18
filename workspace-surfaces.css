@@ -763,3 +763,49 @@
     html:not([data-wf-motion="reduced"]) #wfSidebarSearch:not([hidden]) { animation: wfPanelReveal .16s ease-out; }
   }
 }
+
+@media screen {
+  html body #sidebar {
+    --wf-close-center: calc(100% - 27px);
+    isolation: isolate;
+    background: transparent !important;
+    border-inline-end: 0 !important;
+  }
+  html[dir="rtl"] body #sidebar { --wf-close-center: 27px; }
+  html body #sidebar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--card);
+    mask: radial-gradient(circle 30px at var(--wf-close-center) 50%, transparent 29px, #000 30px);
+    pointer-events: none;
+  }
+  html body #sidebar > #wfSidebarClose { box-shadow: var(--wf-dock-shadow) !important; }
+  html body #sidebar .wf-sidebar-links {
+    flex: 1 1 0;
+    align-content: start;
+    overflow: hidden;
+    padding-block-end: 0;
+  }
+  #sidebar .wf-nav-paged { gap: 2px; }
+  #sidebar .wf-nav-paged .wf-nav-group { display: contents; }
+  #sidebar .wf-nav-paged .side-sec { display: none; }
+  #sidebar .wf-sidebar-brand { flex-shrink: 0; }
+  #sidebar .wf-sidebar-search { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  #wfSidebarSearchToggle[aria-expanded="true"] { flex: 0 0 44px; justify-content: center; padding: 0; }
+  #wfSidebarSearchToggle[aria-expanded="true"] :is(svg,span) { display: none; }
+  #wfSidebarSearchToggle[aria-expanded="true"]::after { margin: 0; font-size: 22px; }
+  #sidebar #wfSidebarSearch:not([hidden]) { min-width: 0; margin: 0; }
+  #wfSidebarPager { display: flex; min-height: 44px; align-items: center; justify-content: space-between; flex-shrink: 0; color: var(--text2); }
+  #wfSidebarPager[hidden] { display: none; }
+  #wfSidebarPager button { width: 44px; height: 40px; border: 1px solid var(--border); border-radius: 9px; background: var(--input); color: var(--text); font-size: 22px; cursor: pointer; }
+  #wfSidebarPager button:disabled { opacity: .38; cursor: default; }
+  #wfSidebarPage { direction: ltr; font-variant-numeric: tabular-nums; }
+  html[dir="rtl"] #wfSidebarPager button { scale: -1 1; }
+  @media (max-height: 440px) {
+    html body #sidebar .wf-sidebar-brand { height: 52px !important; min-height: 52px; }
+    #sidebar .wf-sidebar-search { padding-block: 2px 4px; }
+  }
+}

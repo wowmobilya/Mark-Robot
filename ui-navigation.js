@@ -135,25 +135,56 @@
   function normalize(text) {
     return text.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase(document.documentElement.lang || 'ar');
   }
+  const nav = document.getElementById('wf-nav-main');
+  const pager = document.getElementById('wfSidebarPager');
+  const previous = document.getElementById('wfSidebarPrev');
+  const next = document.getElementById('wfSidebarNext');
+  const pageNumber = document.getElementById('wfSidebarPage');
+  const items = [...nav.querySelectorAll('.nav-item')];
+  let activePage = 0;
+  let matchingItems = [];
   function filter() {
     const query = normalize(search.value.trim());
-    let total = 0;
-    for (const group of groups) {
-      let matches = 0;
-      for (const item of group.querySelectorAll('.nav-item')) {
-        const caption = item.querySelector('[data-i18n], [data-wf-ui]')?.textContent || item.textContent;
-        item.hidden = !normalize(caption).includes(query);
-        if (!item.hidden) matches++;
-      }
-      group.hidden = matches === 0;
-      total += matches;
-    }
-    empty.hidden = total !== 0;
+    matchingItems = items.filter(item => {
+      const caption = item.querySelector('[data-i18n], [data-wf-ui]')?.textContent || item.textContent;
+      return normalize(caption).includes(query);
+    });
+    const height = nav.clientHeight + pager.offsetHeight;
+    const paged = matchingItems.length * 46 + 80 > height && matchingItems.length > 1;
+    const capacity = paged ? Math.max(1, Math.floor((height - 44) / 46)) : Math.max(1, matchingItems.length);
+    const pages = Math.max(1, Math.ceil(matchingItems.length / capacity));
+    activePage = Math.min(activePage, pages - 1);
+    const visible = matchingItems.slice(activePage * capacity, (activePage + 1) * capacity);
+    nav.classList.toggle('wf-nav-paged', paged);
+    for (const item of items) item.hidden = !visible.includes(item);
+    for (const group of groups) group.hidden = !visible.some(item => item.parentElement === group);
+    pager.hidden = pages === 1;
+    previous.disabled = activePage === 0;
+    next.disabled = activePage + 1 === pages;
+    const lang = document.documentElement.lang || 'ar';
+    const labels = {ar:['السابق','التالي'], en:['Previous','Next'], tr:['Önceki','Sonraki'], fr:['Précédent','Suivant'], ru:['Назад','Далее']};
+    const [back, forward] = labels[lang] || labels.en;
+    previous.setAttribute('aria-label', back);
+    next.setAttribute('aria-label', forward);
+    const format = new Intl.NumberFormat(lang);
+    pageNumber.textContent = format.format(activePage + 1) + ' / ' + format.format(pages);
+    empty.hidden = matchingItems.length !== 0;
   }
+  for (const [button, step] of [[previous, -1], [next, 1]]) {
+    button.addEventListener('click', () => {
+      activePage += step;
+      filter();
+      if (button.disabled) (step > 0 ? previous : next).focus();
+    });
+  }
+  new ResizeObserver(filter).observe(nav);
   const toggle = document.getElementById('wfSidebarSearchToggle');
   function setSearchOpen(open, restoreFocus = false) {
     search.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
+    if (open) toggle.setAttribute('aria-label', window.wfUiText?.('Close') || 'Close');
+    else toggle.removeAttribute('aria-label');
+    activePage = 0;
     if (open) search.focus();
     else {
       search.value = '';
@@ -162,7 +193,7 @@
     }
   }
   toggle.addEventListener('click', () => setSearchOpen(search.hidden, true));
-  search.addEventListener('input', filter);
+  search.addEventListener('input', () => { activePage = 0; filter(); });
   search.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -170,12 +201,11 @@
       setSearchOpen(false, true);
     }
     if (event.key === 'Enter') {
-      const matches = document.querySelectorAll('#wf-nav-main .nav-item:not([hidden])');
-      if (matches.length === 1) matches[0].click();
+      if (matchingItems.length === 1) matchingItems[0].click();
     }
   });
   document.addEventListener('click', event => {
-    if (!search.hidden && !event.target.closest('.wf-sidebar-search')) setSearchOpen(false);
+    if (!search.hidden && !event.target.closest('.wf-sidebar-search, #wfSidebarPager')) setSearchOpen(false);
   });
   new MutationObserver(() => {
     if (search.closest('#sidebar').inert && !search.hidden) setSearchOpen(false);

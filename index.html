@@ -6432,24 +6432,24 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=31">
-     <script src="ui-navigation.js?v=15" defer></script>
+     <script src="ui-navigation.js?v=16" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
 <script src="context-nav.js?v=1" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=3" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
 <script src="settings-navigation.js?v=9" defer></script>
-<script src="rate-refresh.js?v=4" defer></script>
+<script src="rate-refresh.js?v=5" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
 <script src="greeting-carousel.js?v=2" defer></script>
 <link rel="stylesheet" href="currency-calculator.css?v=10">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
-<link rel="stylesheet" href="dashboard-visuals.css?v=16">
+<link rel="stylesheet" href="dashboard-visuals.css?v=17">
 <link rel="stylesheet" href="section-headings.css?v=6">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
-<link rel="stylesheet" href="workspace-surfaces.css?v=16">
+<link rel="stylesheet" href="workspace-surfaces.css?v=17">
 </head>
 <body>
 
@@ -6639,6 +6639,11 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     <button class="nav-item" onclick="openSettingsPage()"><span class="nav-icon">⚙️</span><span data-i18n="settings">الإعدادات</span></button>
   </div>
   </nav>
+  <div id="wfSidebarPager" hidden>
+    <button type="button" id="wfSidebarPrev">‹</button>
+    <output id="wfSidebarPage" aria-live="polite"></output>
+    <button type="button" id="wfSidebarNext">›</button>
+  </div>
 </aside>
 
 <!-- MAIN -->
