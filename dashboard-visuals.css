@@ -331,3 +331,50 @@
   }
   @keyframes wfRefreshSpin { to { transform: rotate(360deg); } }
 }
+
+@media screen {
+  #page-dashboard { --dash-gap: clamp(9px, 1.35vw, 17px); }
+  html body #page-dashboard #greetingCard { padding: clamp(10px, 1.6vw, 20px) !important; }
+  #page-dashboard .wf-dash-sales { min-height: 78px; padding: clamp(12px, 1.7vw, 22px); }
+  html body #page-dashboard .stat-card { min-height: 60px; }
+  html body :is(#page-dashboard,#page-exchange) .curr-bar { padding: clamp(9px,1.5vw,17px) !important; }
+  :is(#page-dashboard,#page-exchange) .curr-bar-top { margin-block-end: 6px; padding-block-end: 6px; }
+  :is(#page-dashboard,#page-exchange) .wf-rate-status { margin-block-end: 5px; }
+  html body :is(#page-dashboard,#page-exchange) .curr-item {
+    grid-template-rows: auto auto 19px !important;
+    min-height: 0;
+    gap: 4px !important;
+    padding: clamp(7px, .85vw, 11px) !important;
+  }
+  html body :is(#page-dashboard,#page-exchange) .curr-item .curr-flag {
+    width: 30px !important; height: 30px !important;
+  }
+  html body :is(#page-dashboard,#page-exchange) .curr-item .curr-flag .wf-ui-icon { width: 18px; height: 18px; }
+  :is(#page-dashboard,#page-exchange) .wf-quote-chart {
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    width: 100%;
+    height: 19px;
+    color: var(--ui-accent);
+    overflow: visible;
+  }
+  :is(#page-dashboard,#page-exchange) .wf-quote-chart polyline {
+    fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .curr-item[data-quote-trend="empty"] .wf-quote-chart { opacity: .5; }
+  .curr-item[data-quote-trend="empty"] .wf-quote-chart polyline { stroke-dasharray: 3 4; }
+  .curr-item[data-quote-trend="up"] { --quote-color: #187858; }
+  .curr-item[data-quote-trend="down"] { --quote-color: #ab4351; }
+  [data-theme="dark"] .curr-item[data-quote-trend="up"] { --quote-color: #8ad4ad; }
+  [data-theme="dark"] .curr-item[data-quote-trend="down"] { --quote-color: #fa9cab; }
+  :is(#page-dashboard,#page-exchange) .curr-item :is(.wf-quote-trend,.wf-quote-chart) {
+    color: var(--quote-color,var(--ui-accent)) !important;
+  }
+  :is(#page-dashboard,#page-exchange) .curr-item .wf-quote-trend[hidden] { display: none !important; }
+  @container (max-width: 510px) {
+    #page-dashboard .wf-dash-sales { min-height: 65px; }
+    html body #page-dashboard .stat-card { min-height: 58px; padding: 7px !important; }
+  }
+}

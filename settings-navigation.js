@@ -53,6 +53,7 @@
  }
  bindPreference('wfDensityPreference', 'wfDensity', 'wf_display_density');
  bindPreference('wfMotionPreference', 'wfMotion', 'wf_motion_preference');
+ bindPreference('wfBusinessPreference', 'wfBusiness', 'wf_furniture_specialty');
 
  function sync() {
   theme.value = root.dataset.theme === 'dark' ? 'dark' : 'light';

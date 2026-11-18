@@ -18,3 +18,17 @@ test('preserves the provider quote timestamp independently of local refresh time
  const r=await requestRates(async()=>({ok:true,json:async()=>({rates:{TRY:40,EUR:.9},time_last_update_unix:1700000000})}));
  assert.equal(r.updatedAt,new Date(1700000000*1000).toISOString());
 });
+
+test('quote history validates observations and replaces duplicate provider timestamps',()=>{
+ const {appendQuote,sparkPoints}=require('../rate-refresh');
+ const first={at:'2026-11-10T00:00:00Z',try:40,eur:.9};
+ const second={at:'2026-11-11T00:00:00Z',try:41,eur:.9};
+ let history=appendQuote([],second);
+ history=appendQuote(history,first);
+ assert.deepEqual(history,[first,second]);
+ assert.deepEqual(appendQuote(history,{...second,try:42}).map(p=>p.try),[40,42]);
+ assert.deepEqual(appendQuote(history,{...second,try:0}),history);
+ assert.equal(sparkPoints([40]),'');
+ assert.equal(sparkPoints([40,40]),'2.00,12.00 98.00,12.00');
+ assert.equal(sparkPoints([40,41]),'2.00,22.00 98.00,2.00');
+});

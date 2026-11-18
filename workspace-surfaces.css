@@ -426,3 +426,30 @@
     scroll-behavior: auto !important;
   }
 }
+
+@media screen {
+  #page-products .wf-catalog-placeholder {
+    display: grid;
+    place-items: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    color: var(--section-accent);
+    background: color-mix(in srgb, var(--section-accent) 10%, var(--paper));
+  }
+  #page-products .wf-catalog-placeholder .wf-ui-icon {
+    width: 48px;
+    height: 48px;
+    color: inherit !important;
+  }
+  #page-products .pr-card-type-badge [data-wf-product-type] {
+    display: inline-flex;
+    vertical-align: middle;
+  }
+  #page-products .pr-card-type-badge [data-wf-product-type] .wf-ui-icon {
+    width: 15px;
+    height: 15px;
+    color: inherit !important;
+    margin: 0;
+  }
+}

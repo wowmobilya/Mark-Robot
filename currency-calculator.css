@@ -127,3 +127,26 @@ html body #currCalcModal .curr-calc-footer .btn-s {
     grid-template-areas: "rate rate rate pad" "source swap result pad" "quick quick quick pad";
   }
 }
+
+html body #currCalcModal .curr-calc-footer {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) minmax(0,1.45fr);
+  gap: 7px;
+}
+html body #currCalcModal .curr-calc-footer :is(.btn-s,.cc-copy-result) { min-height: 42px; }
+html body #currCalcModal .cc-copy-result {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  border: 1px solid var(--cc-line);
+  border-radius: 11px;
+  color: var(--ui-accent);
+  background: var(--cc-tint);
+  font-size: 12px;
+  font-weight: 750;
+  white-space: normal;
+}
+html body #currCalcModal .cc-copy-result:disabled { opacity: .55; cursor: default; }
+html body #currCalcModal :is(.curr-calc-close,.cc-swap,.cc-copy-result):hover:not(:disabled) { background: var(--input) !important; }
