@@ -212,3 +212,80 @@
   html body #mainContent #page-dashboard .wf-dash-workspace {gap:14px}
  }
 }
+
+/* Keep each dashboard action and metric in its own grid cell. */
+@media screen {
+  html body #mainContent #page-dashboard .wf-dash-overview {
+    display: grid !important;
+    gap: clamp(16px, 2vw, 24px) !important;
+  }
+  html body #mainContent #page-dashboard .wf-dash-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    margin: 0 !important;
+  }
+  html body #mainContent #page-dashboard .wf-dash-actions .btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    min-width: 0;
+    min-height: 56px;
+    padding: 12px !important;
+    line-height: 1.35;
+  }
+  html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+  html body #mainContent #page-dashboard .wf-dash-overview .stat-card {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-width: 0;
+    min-height: 88px;
+    margin: 0 !important;
+    padding: 14px !important;
+    background: var(--paper) !important;
+    border: 1px solid var(--hairline) !important;
+    border-radius: 14px !important;
+  }
+  html body #mainContent #page-dashboard .wf-dash-overview .stat-icon {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    margin: 0 !important;
+  }
+  html body #mainContent #page-dashboard .wf-dash-overview .stat-card > div:last-child {
+    min-width: 0;
+    line-height: 1.5;
+  }
+  @media (max-width: 540px) {
+    html body #mainContent #page-dashboard .wf-dash-actions { gap: 8px !important; }
+    html body #mainContent #page-dashboard .wf-dash-actions .btn {
+      flex-direction: column-reverse !important;
+      gap: 7px !important;
+      min-height: 72px;
+      padding: 8px 4px !important;
+      font-size: 11px;
+    }
+    html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+    }
+    html body #mainContent #page-dashboard .wf-dash-overview .stat-card:last-child {
+      grid-column: 1 / -1;
+    }
+    html body #mainContent #page-dashboard .wf-dash-overview .stat-card {
+      flex-direction: row !important;
+      text-align: start !important;
+      min-height: 78px;
+      padding: 12px !important;
+    }
+  }
+}
