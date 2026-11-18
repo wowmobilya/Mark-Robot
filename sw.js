@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v129-back-controls';
+const CACHE_NAME = 'wow-furniture-v130-visible-market-trends';
 const urlsToCache = [
   './workspace-surfaces.css?v=17',
   './context-nav.js?v=1',
@@ -10,8 +10,8 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=9',
-  './dashboard-visuals.css?v=17',
-  './rate-refresh.js?v=5',
+  './dashboard-visuals.css?v=18',
+  './rate-refresh.js?v=6',
   './section-headings.css?v=7',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',

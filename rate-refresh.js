@@ -101,7 +101,8 @@
    arrow.setAttribute('aria-hidden', 'true');
    arrow.textContent = direction === 'up' ? '↗' : direction === 'down' ? '↘' : '–';
    trend.replaceChildren(arrow, document.createTextNode(hasTrend ? change : ''));
-   trend.hidden=!hasTrend;
+   trend.hidden=false;
+   trend.title=hasTrend ? '' : ({ar:'الاتجاه غير متاح بعد',en:'Trend unavailable',tr:'Yön henüz mevcut değil',fr:'Tendance indisponible',ru:'Тенденция недоступна'}[S.lang] || 'Trend unavailable');
   }
  }
  let pending=null,state='';

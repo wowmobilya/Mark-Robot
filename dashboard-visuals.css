@@ -513,7 +513,7 @@
 @media (prefers-reduced-motion: no-preference) {
   html:not([data-wf-motion="reduced"]) .curr-item:is([data-quote-trend="up"],[data-quote-trend="down"]) .wf-quote-arrow {
     display: inline-block;
-    animation: wfQuoteArrow 750ms ease-in-out 3 alternate;
+    animation: wfQuoteArrow 1.2s ease-in-out infinite alternate;
   }
   .curr-item[data-quote-trend="up"] { --quote-arrow-travel: -3px; }
   .curr-item[data-quote-trend="down"] { --quote-arrow-travel: 3px; }
