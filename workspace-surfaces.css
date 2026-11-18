@@ -146,3 +146,69 @@
     html body #mainContent .page .fgrid { gap: 14px !important; }
   }
 }
+
+/* Dashboard: distinct blocks with comfortable spacing at every width. */
+@media screen {
+ html body #mainContent #page-dashboard .wf-dash-overview {
+  padding:0;
+  border:0;
+  box-shadow:none;
+  background:transparent;
+  gap:18px;
+ }
+ html body #mainContent #page-dashboard #greetingCard {
+  padding:clamp(18px,2.5vw,30px)!important;
+  border:1px solid var(--hairline)!important;
+  background:var(--paper)!important;
+  border-radius:18px!important;
+ }
+ html body #mainContent #page-dashboard .wf-dash-sales {
+  min-height:120px;
+  border-radius:18px;
+  box-shadow:none;
+ }
+ html body #mainContent #page-dashboard .wf-dash-overview .stats-grid {
+  background:transparent!important;
+  padding:0;
+  gap:10px;
+ }
+ html body #mainContent #page-dashboard .wf-dash-overview .stat-card {
+  background:var(--paper)!important;
+  border:1px solid var(--hairline)!important;
+  padding:14px!important;
+  border-radius:14px!important;
+  align-items:center;
+  text-align:center;
+ }
+ html body #mainContent #page-dashboard .wf-dash-actions {
+  gap:10px;
+ }
+ html body #mainContent #page-dashboard .wf-dash-actions .btn {
+  min-height:52px;
+  border-radius:12px!important;
+  box-shadow:none!important;
+ }
+ html body #mainContent #page-dashboard .wf-dash-workspace {
+  gap:18px;
+ }
+ html body #mainContent #page-dashboard .wf-dash-recent {
+  min-height:220px;
+ }
+ html body #mainContent #page-dashboard .wf-dash-recent .card-hdr {
+  margin-bottom:16px;
+  padding-bottom:14px;
+ }
+ html body #mainContent #page-dashboard .curr-bar {
+  padding:18px!important;
+  background:var(--paper)!important;
+ }
+ @media(max-width:680px) {
+  html body #mainContent #page-dashboard .wf-dash-overview {padding:0;gap:14px}
+  html body #mainContent #page-dashboard #greetingCard {padding:18px!important}
+  html body #mainContent #page-dashboard .wf-dash-sales {min-height:88px}
+  html body #mainContent #page-dashboard .wf-dash-actions {gap:8px}
+  html body #mainContent #page-dashboard .wf-dash-actions .btn {min-height:56px}
+  html body #mainContent #page-dashboard .wf-dash-overview .stat-card {padding:10px 5px!important}
+  html body #mainContent #page-dashboard .wf-dash-workspace {gap:14px}
+ }
+}
