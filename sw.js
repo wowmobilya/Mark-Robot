@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v110-dashboard';
+const CACHE_NAME = 'wow-furniture-v111-identity';
 const urlsToCache = [
-  './workspace-surfaces.css?v=6',
+  './workspace-surfaces.css?v=7',
   './context-nav.js?v=1',
   './context-nav.css?v=1',
   './',
@@ -8,15 +8,15 @@ const urlsToCache = [
   './bottomnav-fit.js?v=1',
   './index.html',
   './business-ui.css?v=1',
-  './settings-responsive.css?v=5',
+  './settings-responsive.css?v=6',
   './settings-navigation.js?v=4',
   './dashboard-visuals.css?v=7',
   './rate-refresh.js?v=2',
   './section-headings.css?v=6',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=4',
-  './currency-calculator.css?v=8',
-  './currency-calculator.js?v=5',
+  './currency-calculator.css?v=9',
+  './currency-calculator.js?v=6',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=46',
   './ui-identity.css?v=31',
