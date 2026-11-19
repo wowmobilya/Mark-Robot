@@ -172,8 +172,46 @@
   const menu=document.createElement('details');
   menu.className='dash-visibility';
   const trigger=document.createElement('summary'),panel=document.createElement('div');
+  const toolbar=document.createElement('div'), design=document.createElement('div'), overview=document.createElement('div');
+  const layoutButton=document.createElement('button'), overviewButton=document.createElement('button'), move=document.createElement('button');
+  const wordsByLanguage={
+    ar:['التصميم','الملخّص','تبديل جانب اللوحة'],en:['Layout','Summary','Move panel to the other side'],
+    tr:['Düzen','Özet','Paneli diğer tarafa taşı'],fr:['Disposition','Résumé','Déplacer le panneau'],
+    ru:['Макет','Сводка','Переместить панель']
+  };
+  panel.className='dash-dock-panel';
+  toolbar.className='dash-dock-toolbar';
+  design.className='dash-dock-layout';
+  overview.className='dash-dock-styles';
+  overview.id='dashboard-summary-controls';
+  design.id='dashboard-layout-controls';
+  panel.id='dashboard-customization-panel';
+  trigger.setAttribute('aria-controls',panel.id);
+  layoutButton.type=overviewButton.type=move.type='button';
+  layoutButton.setAttribute('aria-controls',design.id);
+  overviewButton.setAttribute('aria-controls',overview.id);
+  move.className='dash-dock-move';
+  move.textContent='⇆';
+  function selectTab(summary){
+    design.hidden=summary;
+    overview.hidden=!summary;
+    layoutButton.setAttribute('aria-pressed',String(!summary));
+    overviewButton.setAttribute('aria-pressed',String(summary));
+  }
+  layoutButton.onclick=()=>selectTab(false);
+  overviewButton.onclick=()=>selectTab(true);
+  toolbar.append(layoutButton,overviewButton,move);
+  panel.append(toolbar,design,overview);
   menu.append(trigger,panel);
-  dashboard.prepend(menu);
+  selectTab(false);
+  const sideKey='wf.dashboard.dockSide';
+  menu.dataset.side=document.documentElement.dir==='rtl'?'left':'right';
+  try {const saved=localStorage.getItem(sideKey);if(['left','right'].includes(saved))menu.dataset.side=saved;} catch {}
+  move.onclick=()=>{
+    menu.dataset.side=menu.dataset.side==='right'?'left':'right';
+    try{localStorage.setItem(sideKey,menu.dataset.side);}catch{}
+  };
+  document.body.append(menu);
   const captions=[];
   sections.forEach(([key,selector],index)=>{
     const region=dashboard.querySelector(selector);
@@ -191,11 +229,16 @@
       hidden=sections.filter(([,s])=>dashboard.querySelector(s)?.classList.contains('dashboard-off')).map(([id])=>id);
       try{localStorage.setItem(storageKey,JSON.stringify(hidden));}catch{}
     };
-    captions.push([caption,index+1]);label.append(input,caption);panel.append(label);
+    captions.push([caption,index+1]);label.append(input,caption);design.append(label);
   });
   function translate(){
     const words=translations[document.documentElement.lang]||translations.ar;
     trigger.textContent=words[0];
+    const [layoutLabel,summaryLabel,moveLabel]=wordsByLanguage[document.documentElement.lang]||wordsByLanguage.en;
+    layoutButton.textContent=layoutLabel;
+    overviewButton.textContent=summaryLabel;
+    move.title=moveLabel;
+    move.setAttribute('aria-label',moveLabel);
     for(const [caption,index] of captions)caption.textContent=words[index];
   }
   menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;trigger.focus();}});
@@ -218,14 +261,34 @@
   const picker=document.createElement('label'),title=document.createElement('span'),select=document.createElement('select');
   picker.className='overview-style';
   modes.forEach(mode=>select.add(new Option('',mode)));
-  picker.append(title,select);host.before(picker);
+  const controls=document.getElementById('dashboard-summary-controls');
+  if(!controls)return;
+  picker.append(title,select);controls.append(picker);
+  const summaryPicker=document.createElement('label'),summaryTitle=document.createElement('span'),summarySelect=document.createElement('select');
+  summaryPicker.className='overview-style';
+  ['list','tiles'].forEach(value=>summarySelect.add(new Option('',value)));
+  summaryPicker.append(summaryTitle,summarySelect);controls.prepend(summaryPicker);
+  const summaryKey='wf.dashboard.summaryStyle';
+  const names={ar:['ملخّص الأعمال','توزيع المنتجات'],en:['Business summary','Product breakdown'],tr:['İş özeti','Ürün dağılımı'],fr:['Résumé d’activité','Répartition des produits'],ru:['Сводка бизнеса','Распределение товаров']};
+  let summaryMode='list';
+  try{if(localStorage.getItem(summaryKey)==='tiles')summaryMode='tiles';}catch{}
+  summarySelect.value=summaryMode;
+  summarySelect.onchange=()=>{
+    summaryMode=summarySelect.value;
+    host.dataset.summaryView=summaryMode;
+    try{localStorage.setItem(summaryKey,summaryMode);}catch{}
+  };
   const key='wf.dashboard.overviewStyle';
   let mode='bars';
   try{const saved=localStorage.getItem(key);if(modes.includes(saved))mode=saved;}catch{}
   select.value=mode;
   function draw(){
     const words=copy[document.documentElement.lang]||copy.en;
-    title.textContent=words[0];
+    const labels=names[document.documentElement.lang]||names.en;
+    summaryTitle.textContent=labels[0];
+    title.textContent=labels[1];
+    Array.from(summarySelect.options).forEach((opt,i)=>opt.textContent=words[i+1]);
+    host.dataset.summaryView=summaryMode;
     Array.from(select.options).forEach((opt,i)=>opt.textContent=words[i+1]);
     host.dataset.view=mode;
     const catalog=host.querySelector('.wf-catalog-total')?.parentElement;
