@@ -119,6 +119,12 @@
     host.replaceChildren(accent, document.createTextNode(words.length ? ' ' + words.join(' ') : ''));
   }
   function applyStored() {
+    // Application identity has its own settings. Company edits and upload
+    // previews must never replace that independent navigation identity.
+    if (window.WFAppIdentity) {
+      window.WFAppIdentity.apply();
+      return;
+    }
     const preferences = storedPreferences();
     document.documentElement.dataset.wfBrandShape = preferences.logoShape;
     document.documentElement.dataset.wfBrandSize = preferences.logoSize;

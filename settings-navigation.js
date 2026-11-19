@@ -84,6 +84,8 @@
    currency: ['أسعار الصرف اليدوية', 'Manual exchange rates', 'Manuel döviz kurları', 'Taux de change manuels', 'Ручные курсы валют'],
    'product-categories': ['تنظيم أقسام المنتجات وصورها', 'Manage product categories and images', 'Ürün kategorileri ve görsellerini yönetin', 'Gérer les catégories et leurs images', 'Управление категориями товаров и изображениями'],
    appearance: ['المظهر والكثافة والحركة', 'Theme, density and motion', 'Tema, yoğunluk ve hareket', 'Thème, densité et animations', 'Тема, плотность и анимация'],
+   'app-identity': ['اسم البرنامج وشعاره وأيقونة التثبيت', 'App name, logo and installation icon', 'Uygulama adı, logosu ve yükleme simgesi', 'Nom, logo et icône d’installation', 'Название, логотип и значок установки'],
+   robot: ['الصوت والتعبيرات وتتبع الحركة', 'Voice, expressions and movement tracking', 'Ses, ifadeler ve hareket takibi', 'Voix, expressions et suivi des mouvements', 'Голос, эмоции и отслеживание движения'],
    language: ['لغة واجهة البرنامج', 'Interface language', 'Arayüz dili', 'Langue de l’interface', 'Язык интерфейса'],
    data: ['النسخ الاحتياطي والاستعادة', 'Backup and restore', 'Yedekleme ve geri yükleme', 'Sauvegarde et restauration', 'Резервное копирование'],
    about: ['الإصدار ومعلومات البرنامج', 'Version and app information', 'Sürüm ve uygulama bilgileri', 'Version et informations', 'Версия и сведения'],
@@ -108,7 +110,7 @@
  function translateDescriptions() {
    const locale = Math.max(0, localeOrder.indexOf(document.documentElement.lang));
    for (const [key, description] of descriptions) description.textContent = sections[key][locale];
-   for (const [key,heading] of headings) heading.textContent=groupTitles[key][locale];
+   for (const [key,heading] of headings) heading.querySelector('.wf-settings-group-label').textContent=groupTitles[key][locale];
    updateDialogTitle();
  }
  for (const key of Object.keys(sections)) {
@@ -118,6 +120,10 @@
    if(groupTitles[key]){
      const heading=document.createElement('h2');
      heading.className='settings-group-title';
+     const symbol=document.createElement('span');symbol.className='wf-settings-group-symbol';symbol.setAttribute('aria-hidden','true');
+     const paths={company:'<path d="M4 21V5l8-3v19M4 9h8M4 13h8M16 8h5v13M16 12h5M16 16h5M2 21h21"/>',appearance:'<path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/>',data:'<path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7Z"/><path d="m8 12 3 3 5-6"/>'};
+     symbol.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+paths[key]+'</svg>';
+     const label=document.createElement('span');label.className='wf-settings-group-label';heading.append(symbol,label);
      headings.set(key,heading);
      tabs.append(heading);
    }

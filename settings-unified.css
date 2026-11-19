@@ -1,0 +1,19 @@
+/* Compact section dividers keep settings calm without reducing form touch targets. */
+@media screen {
+ html body #page-settings .settings-group-title {
+   display:flex;align-items:center;justify-content:center;gap:8px;
+   grid-column:1/-1;margin:16px 0 7px;padding:0;min-height:25px;
+   color:var(--text2);font-family:inherit;font-weight:650;font-size:12px;line-height:1.5;letter-spacing:normal;
+ }
+ html body #page-settings .settings-group-title::before,
+ html body #page-settings .settings-group-title::after {
+   content:'';height:1px;flex:1 1 24px;max-width:120px;
+   background:linear-gradient(90deg,transparent,var(--border));
+ }
+ html body #page-settings .settings-group-title::after {transform:rotate(180deg);}
+ #page-settings .wf-settings-group-symbol {display:grid;place-items:center;inline-size:23px;block-size:23px;color:var(--brand-primary);}
+ #page-settings .wf-settings-group-symbol svg {width:18px;height:18px;}
+ #page-settings .wf-settings-group-label {min-width:0;text-align:center;}
+ html body #page-settings .settings-group-title:first-child {margin-block-start:0;}
+ html body #page-settings .wf-settings-card-description {line-height:1.45;}
+}

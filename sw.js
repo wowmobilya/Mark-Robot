@@ -1,4 +1,5 @@
-const CACHE_NAME = 'wow-furniture-v171-ikea-categories';
+importScripts('./install-identity.js?v=1');
+const CACHE_NAME = 'wow-furniture-v172-infinity-identity';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
   './context-nav.js?v=5',
@@ -10,7 +11,7 @@ const urlsToCache = [
   './developer-portrait.jpg',
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
-  './settings-navigation.js?v=10',
+  './settings-navigation.js?v=11',
   './dashboard-visuals.css?v=36',
   './rate-refresh.js?v=6',
   './cashboxes.mjs',
@@ -22,7 +23,7 @@ const urlsToCache = [
   './dialog-surfaces.css?v=1',
   './product-categories.js?v=2',
   './product-categories.css?v=1',
-  './branding-settings.js?v=1',
+  './branding-settings.js?v=2',
   './branding-settings.css?v=1',
   './business-overview.js?v=2',
   './business-overview.css?v=2',
@@ -35,10 +36,23 @@ const urlsToCache = [
   './ui-navigation.js?v=24',
   './ui-logo.js?v=3',
   './ui-settings.js?v=2',
-  './ui-icons.js?v=47',
+  './ui-icons.js?v=48',
   './vendor/zxing-browser.min.js?v=26',
   './google-drive-config.js',
   './manifest.json',
+  './manifest.json?v=4',
+  './install-identity.js?v=1',
+  './app-identity.js?v=1',
+  './app-identity.css?v=1',
+  './settings-unified.css?v=1',
+  './ui-motion.css?v=1',
+  './assets/infinity-logo.svg',
+  './assets/infinity-logo.png',
+  './app-icon-maskable-512.png?v=172',
+  './apple-touch-icon.png?v=172',
+  './favicon-32.png?v=172',
+  './app-icon-192.png?v=172',
+  './app-icon-512.png?v=172',
   './app-icon-192.png',
   './app-icon-512.png',
   './account-statement-core.js?v=25',
@@ -66,6 +80,8 @@ self.addEventListener('activate', event => {
   );
 });
 self.addEventListener('fetch', event => {
+  const identityResponse = self.wfInstallIdentityWorker?.respond(event.request);
+  if (identityResponse) { event.respondWith(identityResponse); return; }
   const request = event.request;
   const url = new URL(request.url);
   const privateGoogle = url.hostname === 'accounts.google.com' ||

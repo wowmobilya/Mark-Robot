@@ -11,6 +11,18 @@ Object.assign(icons, {
  "furniture-desk": "<svg aria-hidden=\"true\" focusable=\"false\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 11h18M5 11v8m14-8v8M15 11v5h4\"/><rect x=\"8\" y=\"4\" width=\"8\" height=\"5\" rx=\"1\"/><path d=\"M12 9v2\"/></svg>",
  "furniture-console": "<svg aria-hidden=\"true\" focusable=\"false\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"7\" width=\"18\" height=\"6\" rx=\"1\"/><path d=\"M12 7v6M5 13v6m14-6v6M7 10h1m8 0h1\"/></svg>"
 });
+// Furniture controls share the same light, rounded outline at every size.
+const furnitureOutline=body=>`<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+Object.assign(icons,{
+ sofa:furnitureOutline('<path d="M5 10V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v2M12 5v8"/><path fill="currentColor" fill-opacity=".1" d="M6 13v-1.5a2 2 0 0 0-4 0V17a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.5a2 2 0 0 0-4 0V13Z"/><path d="M6 13h12M6 19v2m12-2v2"/>'),
+ armchair:furnitureOutline('<path d="M6 10V7a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v3"/><path fill="currentColor" fill-opacity=".1" d="M7 13v-2a2 2 0 0 0-4 0v5a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-5a2 2 0 0 0-4 0v2Z"/><path d="M7 13h10M6 19v2m12-2v2"/>'),
+ 'layout-grid':furnitureOutline('<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2" fill="currentColor" fill-opacity=".1"/><rect x="3" y="14" width="7" height="7" rx="2" fill="currentColor" fill-opacity=".1"/><rect x="14" y="14" width="7" height="7" rx="2"/>'),
+ 'furniture-coffee-table':furnitureOutline('<rect x="2.5" y="9" width="19" height="4" rx="2" fill="currentColor" fill-opacity=".1"/><path d="m6 13-1 6m13-6 1 6M6 17h12M9 9V6h4v3m0-3h1a1 1 0 0 1 0 2h-1"/>'),
+ 'furniture-side-table':furnitureOutline('<ellipse cx="12" cy="8" rx="8" ry="3" fill="currentColor" fill-opacity=".1"/><path d="M4 8v2c0 1.7 3.6 3 8 3s8-1.3 8-3V8M7 12v8m10-8v8M7 17h10"/>'),
+ 'furniture-console':furnitureOutline('<rect x="3" y="6" width="18" height="8" rx="2" fill="currentColor" fill-opacity=".1"/><path d="M12 6v8M5 14v6m14-6v6M7 10h1m8 0h1M5 18h14"/>'),
+ 'furniture-tv-console':furnitureOutline('<rect x="5" y="3" width="14" height="9" rx="1.5"/><path d="M12 12v3m-3 0h6"/><rect x="2" y="15" width="20" height="5" rx="1.5" fill="currentColor" fill-opacity=".1"/><path d="M9 15v5m6-5v5M4 20v1m16-1v1"/>')
+});
+glyphs['▦']='layout-grid';
 const keys=Object.keys(glyphs).sort((a,b)=>b.length-a.length);
 const selector=['#sidebar .nav-icon','.bnav-icon','#bnavCircleIcon','.stat-icon','.tip-card-icon','.empty .ei','.ai-badge [data-wf-ui]','#greetingTimeIcon','.curr-flag','.curr-refresh','#qblFinalImg div','#qblFinalDetails span:first-child','.qbl-cart-item-img','.ctsc-icon','label.fl','label.fl [data-wf-ui]','.wf-restore-icon','.card-title','.co-toolbar-title','.sct-sticky-title h1','.sct-sticky-title h2','#qblPageTitle','#wfLanguageTab','#page-settings .tab-btn','#page-settings h2','section.page button','nav button','.modal-ov button','.wf-restore-ov button','.delete-modal-ov button','.co-card-actions button','.pr-card-new-actions button','.inv-card-actions button','.pay-item-del','#qblCartList button','#qblDdList button','#prSelectorList button','#pmGrid button','#page-quick-barcode .qbl-dd-img','#page-quick-barcode .qbl-cart-item-img','#page-select-invoice-type .client-type-icon','.client-type-step-icon','.co-stat-pill .csp-icon','.wf-share-head-icon','.wf-bg-icon','.wf13-format-icon:not(.pdf):not(.xls)','[data-i18n]'].join(',');
 const excluded='#prGrid,#coGrid,#invListContainer,#prSelectorList,#dashRecentInv,#qblDdList,#qblCartList,#pdfModal,#wfsa,.co-card,.pr-card-new,.inv-card,.qbl-cart-item';
@@ -45,8 +57,8 @@ const specialtyIcons = {
 };
 const categoryIcons = {
  coffee_table: 'furniture-coffee-table',
- side_table: 'furniture-dining-table',
- tv_table: 'monitor',
+ side_table: 'furniture-side-table',
+ tv_table: 'furniture-tv-console',
  dresser: 'furniture-console',
 };
 function updateIcon(shell, name) {
