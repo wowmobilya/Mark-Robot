@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v149-dashboard-surfaces';
+const CACHE_NAME = 'wow-furniture-v150-context-actions';
 const urlsToCache = [
-  './workspace-surfaces.css?v=21',
+  './workspace-surfaces.css?v=22',
   './context-nav.js?v=1',
   './context-nav.css?v=1',
   './',
@@ -23,7 +23,7 @@ const urlsToCache = [
   './ui-i18n.js?v=26',
   './modern-ui.css?v=47',
   './ui-identity.css?v=31',
-  './ui-navigation.js?v=18',
+  './ui-navigation.js?v=19',
   './ui-logo.js?v=3',
   './ui-settings.js?v=2',
   './ui-icons.js?v=47',
