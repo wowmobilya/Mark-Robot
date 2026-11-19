@@ -2,35 +2,50 @@
 
 ## Bundled robot identity greetings
 
-`assets/robot-identity/ar.mp3`, `tr.mp3`, `en.mp3`, `fr.mp3`, and `ru.mp3`
+`assets/robot-identity/ar.mp3`, `ar-EG.mp3`, `tr.mp3`, `en.mp3`, `fr.mp3`, and `ru.mp3`
 contain the application's fixed identity greeting in each supported language.
 The wording follows the corresponding `messages[locale].greeting` string in
 `robot-face.js`; no business records or report content were used to create them.
-The Arabic recording uses Nabra-82M's native Modern Standard Arabic voice,
-with manually checked vowel marks and phrase-ending pauses. It is synthesized
-locally as one continuous utterance; the phonemizer's internal syllable dots
-are removed so they cannot introduce artificial pauses inside Arabic words.
-The other four recordings use the pinned Piper models and WASM runtime listed
-below. All five are fixed recordings played locally after the app caches them.
-They use generic model voices, without cloning or attempting to impersonate
-the user, developer, or another named individual.
+All six recordings use the user's selected **Mark - Natural Conversations**
+voice, generated with Eleven v3 through the authorized Artlist connection.
+They address الأستاذ حسن الحلو (localized in the other languages) and identify
+the company as **WOW FURNITURE**, with the Arabic spoken form
+**واو فِرْنِتْشَر** instead of the previous Infinity name. Arabic
+has Syrian and Egyptian wording, selected in Robot settings; Turkish uses
+the same Mark identity. Dialect describes the script, not an independently
+certified accent. The original generated audio is kept without pitch changes,
+speed edits or word/number splicing. These are fixed recordings, not voice models.
 
 The application service worker can cache these small audio files with the app
 shell. Playing the fixed introduction then needs neither an installed voice
 pack nor a remote speech service. Variable reports still require an available
 local system voice or an installed offline voice pack.
 
-`assets/robot-identity/metadata.json` records each voice's exact source text,
-the Arabic synthesis text with pronunciation marks, hashes, model source,
-encoding, file size, and duration measured from the fully decoded MP3. Each
-file is decoded after encoding and checked for nonzero audio. No word or
-sentence alignment is fabricated. The Arabic source is
-[Nabra-82M](https://huggingface.co/oddadmix/Nabra-82M-v0.1), using its
-[CPU ONNX export](https://huggingface.co/marwanelamami/Nabra-82M-v0.1-ONNX),
-both published under Apache-2.0. The original model and dataset notices below
-identify the other sources, including SIWIS attribution for the French voice.
-The application does not redistribute the Nabra model; only the generated
-identity recording is bundled, so phones do not download its model weights.
+`assets/robot-identity/metadata.json` records exact scripts, hashes, generation
+IDs, encoding, file sizes and measured decoded durations. Every MP3 is fully
+decoded and checked for nonzero audio. No listening/transcription verification
+or word alignment is fabricated. Provider-generated media does not inherit
+the open-source model licenses of the local engines described below.
+
+Mark's hosted generator is not a bundled offline inference engine. Newly
+changing reports and selected text use the installed local pack or a local
+device voice, visibly identified in the reading status and settings. No API
+key, invented remote endpoint or hidden remote speech fallback is included.
+
+## Shared controls and program text
+
+Robot settings persist speech enable/disable, speed (75–125%), volume (0–100%),
+Arabic greeting dialect, reading-engine preference and full-text preparation.
+The same controls apply to identity, report and selected-text playback. Saving
+changed voice controls stops the old playback; Stop and route/language changes
+discard pending callbacks so voices cannot overlap.
+
+The header reader speaks explicitly selected text on any program screen.
+`WFProgramSpeech.speak({text,event,locale})` is the shared owner, together with
+`preview({event})`, `stop()` and `getState()`. Reading requires a trusted user
+gesture and rejects empty or oversized text. Arabic and Turkish selected text
+normalizes only recognizable, unambiguous currency amounts. Business records,
+IDs and account calculations are never rewritten.
 
 ## User-installed packs for variable speech
 
@@ -51,8 +66,12 @@ bytes** (about 33.5 MB), independent of Piper's larger runtime.
 
 `arabic-report-speech.js` validates the exact Arabic narration and segment
 offsets against the committed report snapshot. It supplies vowel-marked phrases
-and numbers derived from the exact displayed digits, including sign and both
-decimal places. Unsupported or inconsistent text is never guessed. The visible
+and numbers derived from the exact displayed digits. Zero decimal fractions
+are omitted; displayed zero, including -0.00, is spoken as zero. USD/TRY/EUR/SYP
+fractions use named minor units, retaining their currency context.
+`turkish-report-speech.js` provides the same source-validated interface in
+Turkish. Both native and model-backed speech receive the normalized report.
+Unsupported or inconsistent text is never guessed. The visible
 report and accounting calculations are unchanged. Longer spoken clauses may
 share one original display span; highlighting is at actual audio chunk start,
 not invented word timing. The worker rejects phoneme overflow instead of
@@ -61,11 +80,15 @@ truncating speech.
 `nabra-report-worker.js` runs inference entirely on the device. It verifies all
 cached runtime/model bytes again, provides WASM bytes directly, and rejects
 network fetches. Speech text and generated audio are never sent to a service or
-saved in the voice cache. One following chunk is prepared while the current
-chunk plays. Arabic reports play at 1.12 times the generated audio's speed with
-pitch preservation enabled. The native Arabic report fallback uses a speech
-rate of 1.05 instead of the previous 0.94. Identity recordings and other
-languages retain their existing speed. A trusted tap primes the same audio
+saved in the voice cache. By default the complete text is generated before
+playback, validated and joined as one PCM16 WAV. This removes generation and
+source-switch gaps between clauses while preserving the model's natural pauses.
+Preparation progress is visible and cancellation discards incomplete results.
+Limits are 160 chunks, 32 MiB PCM and 20 minutes. This bounds audio buffering,
+not the model's entire memory use. Users may opt into the original one-chunk
+prefetch path when shorter initial waiting matters more than continuous audio.
+Saved speed and volume apply to every voice, with pitch preservation for recorded
+audio. A trusted tap primes the same audio
 element before asynchronous record reads or downloads, for mobile playback
 compatibility.
 

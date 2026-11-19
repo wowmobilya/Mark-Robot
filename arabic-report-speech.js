@@ -8,6 +8,8 @@
   const MAX_CHUNK_LENGTH = 220;
   const DIGITS = ['صِفْر', 'وَاحِد', 'اِثْنَانِ', 'ثَلَاثَة', 'أَرْبَعَة', 'خَمْسَة', 'سِتَّة', 'سَبْعَة', 'ثَمَانِيَة', 'تِسْعَة'];
   const TEENS = ['عَشَرَة', 'أَحَدَ عَشَر', 'اِثْنَا عَشَر', 'ثَلَاثَةَ عَشَر', 'أَرْبَعَةَ عَشَر', 'خَمْسَةَ عَشَر', 'سِتَّةَ عَشَر', 'سَبْعَةَ عَشَر', 'ثَمَانِيَةَ عَشَر', 'تِسْعَةَ عَشَر'];
+  const FEMININE_DIGITS = ['صِفْر', 'وَاحِدَة', 'اِثْنَتَانِ', 'ثَلَاث', 'أَرْبَع', 'خَمْس', 'سِتّ', 'سَبْع', 'ثَمَانِي', 'تِسْع'];
+  const FEMININE_TEENS = ['عَشْر', 'إِحْدَى عَشْرَة', 'اِثْنَتَا عَشْرَة', 'ثَلَاثَ عَشْرَة', 'أَرْبَعَ عَشْرَة', 'خَمْسَ عَشْرَة', 'سِتَّ عَشْرَة', 'سَبْعَ عَشْرَة', 'ثَمَانِيَ عَشْرَة', 'تِسْعَ عَشْرَة'];
   const TENS = ['', '', 'عِشْرُون', 'ثَلَاثُون', 'أَرْبَعُون', 'خَمْسُون', 'سِتُّون', 'سَبْعُون', 'ثَمَانُون', 'تِسْعُون'];
   const HUNDREDS = ['', 'مِائَة', 'مِائَتَانِ', 'ثَلَاثُمِائَة', 'أَرْبَعُمِائَة', 'خَمْسُمِائَة', 'سِتُّمِائَة', 'سَبْعُمِائَة', 'ثَمَانُمِائَة', 'تِسْعُمِائَة'];
   const SCALES = [null,
@@ -26,6 +28,32 @@
     CAD: 'دُولَار كَنَدِيّ', AUD: 'دُولَار أُسْتُرَالِيّ', RUB: 'رُوبَل رُوسِيّ',
     JPY: 'يَنّ يَابَانِيّ', CNY: 'يُوَان صِينِيّ'
   };
+  const CENT = { singular: 'سِنْت', dual: 'سِنْتَانِ', plural: 'سِنْتَات', many: 'سِنْتًا' };
+  const PIASTRE = { singular: 'قِرْش', dual: 'قِرْشَانِ', plural: 'قُرُوش', many: 'قِرْشًا' };
+  // Only these currencies have named hundredths here. Other currencies keep
+  // exact decimal speech: e.g. 0.05 KWD is not five fils (a dinar has 1000).
+  const MONEY_UNITS = {
+    USD: {
+      major: { singular: CURRENCIES.USD, dual: 'دُولَارَانِ أَمْرِيكِيَّانِ', plural: 'دُولَارَات أَمْرِيكِيَّة' },
+      minor: CENT,
+      minorAlone: { singular: 'سِنْت أَمْرِيكِيّ', dual: 'سِنْتَانِ أَمْرِيكِيَّانِ', plural: 'سِنْتَات أَمْرِيكِيَّة', many: 'سِنْتًا أَمْرِيكِيًّا' }
+    },
+    TRY: {
+      major: { singular: CURRENCIES.TRY, dual: 'لِيرَتَانِ تُرْكِيَّتَانِ', plural: 'لِيرَات تُرْكِيَّة', feminine: true },
+      minor: PIASTRE,
+      minorAlone: { singular: 'قِرْش تُرْكِيّ', dual: 'قِرْشَانِ تُرْكِيَّانِ', plural: 'قُرُوش تُرْكِيَّة', many: 'قِرْشًا تُرْكِيًّا' }
+    },
+    EUR: {
+      major: { singular: CURRENCIES.EUR, dual: 'يُورُوَانِ', plural: 'يُورُوهَات' },
+      minor: CENT,
+      minorAlone: { ...CENT, suffix: ' مِنَ الْيُورُو' }
+    },
+    SYP: {
+      major: { singular: CURRENCIES.SYP, dual: 'لِيرَتَانِ سُورِيَّتَانِ', plural: 'لِيرَات سُورِيَّة', feminine: true },
+      minor: PIASTRE,
+      minorAlone: { singular: 'قِرْش سُورِيّ', dual: 'قِرْشَانِ سُورِيَّانِ', plural: 'قُرُوش سُورِيَّة', many: 'قِرْشًا سُورِيًّا' }
+    }
+  };
   const MONTHS = ['يَنَايِر', 'فِبْرَايِر', 'مَارِس', 'أَبْرِيل', 'مَايُو', 'يُونْيُو', 'يُولْيُو', 'أَغُسْطُس', 'سِبْتَمْبَر', 'أُكْتُوبَر', 'نُوفَمْبَر', 'دِيسَمْبَر'];
   const ORDINALS = ['', 'الْأَوَّل', 'الثَّانِي', 'الثَّالِث', 'الرَّابِع', 'الْخَامِس', 'السَّادِس', 'السَّابِع', 'الثَّامِن', 'التَّاسِع', 'الْعَاشِر'];
   const DEPOSIT_NOTE = 'دفعات اليوم تشمل السجلات ذات التاريخ المحدد؛ العربون بلا تاريخ مستقل لا يدخل في تحصيل اليوم.';
@@ -40,17 +68,24 @@
   function asciiDigits(value) {
     return String(value).replace(/[\u0660-\u0669\u06f0-\u06f9]/g, digit => String(digit.charCodeAt(0) & 15));
   }
-  function underHundred(value, oblique) {
+  function underHundred(value, oblique, feminine = false) {
+    if (feminine) {
+      if (value < 10) return value === 2 && oblique ? 'اِثْنَتَيْنِ' : FEMININE_DIGITS[value];
+      if (value < 20) return value === 12 && oblique ? 'اِثْنَتَيْ عَشْرَة' : FEMININE_TEENS[value - 10];
+      const tens = oblique ? TENS[Math.floor(value / 10)].replace(/ُون$/, 'ِين') : TENS[Math.floor(value / 10)];
+      const units = value % 10 === 1 ? 'إِحْدَى' : underHundred(value % 10, oblique, true);
+      return value % 10 ? units + ' وَ' + tens : tens;
+    }
     if (value < 10) return value === 2 && oblique ? 'اِثْنَيْنِ' : DIGITS[value];
     if (value < 20) return value === 12 && oblique ? 'اِثْنَيْ عَشَر' : TEENS[value - 10];
     const tens = oblique ? TENS[Math.floor(value / 10)].replace(/ُون$/, 'ِين') : TENS[Math.floor(value / 10)];
     return value % 10 ? underHundred(value % 10, oblique) + ' وَ' + tens : tens;
   }
-  function underThousand(value, oblique, construct = false) {
+  function underThousand(value, oblique, construct = false, feminine = false) {
     const hundred = Math.floor(value / 100), rest = value % 100;
     let prefix = HUNDREDS[hundred];
     if (hundred === 2) prefix = construct && !rest ? (oblique ? 'مِائَتَيْ' : 'مِائَتَا') : (oblique ? 'مِائَتَيْنِ' : 'مِائَتَانِ');
-    return prefix && rest ? prefix + ' وَ' + underHundred(rest, oblique) : prefix || underHundred(rest, oblique);
+    return prefix && rest ? prefix + ' وَ' + underHundred(rest, oblique, feminine) : prefix || underHundred(rest, oblique, feminine);
   }
   function scaledGroup(value, scale, oblique) {
     const [singular, dual, dualOblique, plural] = SCALES[scale];
@@ -65,7 +100,7 @@
     }
     return underThousand(value, oblique, true) + ' ' + singular;
   }
-  function integerWords(digits, oblique = false) {
+  function integerWords(digits, oblique = false, feminine = false) {
     if (!/^\d+$/.test(String(digits))) fail('invalid-number');
     let value = BigInt(digits);
     if (value > MAX_SAFE) fail('unsafe-number');
@@ -74,7 +109,7 @@
     let scale = 0;
     while (value) {
       const group = Number(value % 1000n);
-      if (group) groups.unshift(scale ? scaledGroup(group, scale, oblique) : underThousand(group, oblique));
+      if (group) groups.unshift(scale ? scaledGroup(group, scale, oblique) : underThousand(group, oblique, false, feminine));
       value /= 1000n;
       scale++;
     }
@@ -85,6 +120,21 @@
     const formatter = new Intl.NumberFormat('ar');
     const digits = asciiDigits(formatter.formatToParts(value).filter(part => part.type === 'integer').map(part => part.value).join(''));
     return { display: formatter.format(value), speech: integerWords(digits) };
+  }
+  function namedAmount(digits, unit) {
+    const value = BigInt(digits);
+    let speech;
+    if (value === 1n) speech = unit.singular + (unit.feminine ? ' وَاحِدَة' : ' وَاحِد');
+    else if (value === 2n) speech = unit.dual;
+    else {
+      let number = integerWords(digits, false, unit.feminine);
+      // A final dual magnitude is in construct with the currency noun:
+      // مائتا دولار / ألفا دولار / مليونا دولار, without changing its value.
+      if (value >= 100n && value % 100n === 0n) number = number.replace(/َانِ$/, 'َا');
+      const noun = value >= 3n && value <= 10n ? unit.plural : value > 10n ? unit.many || unit.singular : unit.singular;
+      speech = number + ' ' + noun;
+    }
+    return speech + (unit.suffix || '');
   }
   function money(value, currency = 'USD') {
     if (typeof value !== 'number' || !Number.isFinite(value)) fail('invalid-money');
@@ -98,10 +148,22 @@
     if (!/^\d+$/.test(integer) || !/^\d{2}$/.test(fraction)) fail('invalid-money-format');
     // Read the exact displayed digits, not value * 100, which can round again.
     if (BigInt(integer) * 100n + BigInt(fraction) > MAX_SAFE) fail('unsafe-money');
-    const sign = parts.some(part => part.type === 'minusSign') ? 'سَالِب ' : '';
-    const speech = sign + integerWords(integer) + ' فَاصِلَة ' + [...fraction].map(digit => DIGITS[Number(digit)]).join(' ') + ' ' + CURRENCIES[code];
-    return { display: formatter.format(value), speech };
+    const whole = BigInt(integer), hundredths = BigInt(fraction);
+    const sign = (whole || hundredths) && parts.some(part => part.type === 'minusSign') ? 'سَالِب ' : '';
+    const units = MONEY_UNITS[code];
+    let speech;
+    if (units) {
+      if (!hundredths) speech = namedAmount(integer, units.major);
+      else if (!whole) speech = namedAmount(fraction, units.minorAlone);
+      else speech = namedAmount(integer, units.major) + ' وَ' + namedAmount(fraction, units.minor);
+    } else {
+      speech = integerWords(integer) + (hundredths ? ' فَاصِلَة ' + [...fraction].map(digit => DIGITS[Number(digit)]).join(' ') : '') + ' ' + CURRENCIES[code];
+    }
+    return { display: formatter.format(value), speech: sign + speech };
   }
+  // Shared with explicit monetary tokens in the program reader; no display or
+  // business state is changed. Uses the same rounding/currency/safety checks.
+  function moneyWords(value, currency = 'USD') { return money(value, currency).speech; }
   function date(value) {
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) fail('invalid-date');
     const instant = new Date(value + 'T12:00:00Z');
@@ -202,7 +264,7 @@
     return chunks;
   }
 
-  const api = Object.freeze({ prepare });
+  const api = Object.freeze({ prepare, moneyWords });
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.WFArabicReportSpeech = api;
 })(typeof window === 'object' ? window : globalThis);

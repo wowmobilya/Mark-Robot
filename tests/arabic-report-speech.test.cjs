@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
 const { build, localize } = require('../business-overview.js');
-const { prepare } = require('../arabic-report-speech.js');
+const { prepare, moneyWords } = require('../arabic-report-speech.js');
 
 const empty = () => ({ companies: [], products: [], invoices: [], payments: [], cashEntries: [] });
 function fixture(change = () => {}, date = '2026-11-19') {
@@ -26,9 +26,9 @@ test('real committed report templates become vocalized local speech without chan
   const snapshot = localize(build(state, { date }), 'ar');
   const before = JSON.stringify(snapshot), chunks = prepare(snapshot);
   assert.equal(JSON.stringify(snapshot), before);
-  assert.equal(speechFor(snapshot, 'مبيعات اليوم:'), 'مبيعات اليوم: مائة فاصلة صفر خمسة دولار أمريكي.');
-  assert.equal(speechFor(snapshot, 'دفعات اليوم:'), 'دفعات اليوم: ثلاثون فاصلة صفر واحد دولار أمريكي.');
-  assert.equal(speechFor(snapshot, 'مستحق لنا على العملاء:'), 'مستحق لنا على العملاء: خمسون فاصلة صفر أربعة دولار أمريكي.');
+  assert.equal(speechFor(snapshot, 'مبيعات اليوم:'), 'مبيعات اليوم: مائة دولار أمريكي وخمسة سنتات.');
+  assert.equal(speechFor(snapshot, 'دفعات اليوم:'), 'دفعات اليوم: ثلاثون دولار أمريكي وسنت واحد.');
+  assert.equal(speechFor(snapshot, 'مستحق لنا على العملاء:'), 'مستحق لنا على العملاء: خمسون دولار أمريكي وأربعة سنتات.');
   assert(chunks.some(chunk => source(snapshot, chunk).startsWith('دفعات اليوم تشمل السجلات')));
   assert(!chunks.some(chunk => source(snapshot, chunk).startsWith('لا توجد معاملات')));
   for (const chunk of chunks) {
@@ -64,20 +64,36 @@ test('each playback boundary refers to an exact original sentence or cash span',
   assert(chunks.some(chunk => source(snapshot, chunk) === 'لا توجد معاملات محفوظة حتى هذا التاريخ.'));
 });
 
-test('decimal speech uses the exact displayed rounding, two digits, sign and negative zero', () => {
+test('money speech follows displayed rounding, names cents and normalizes displayed negative zero', () => {
   const examples = [
-    [0, 'صفر فاصلة صفر صفر'],
-    [0.05, 'صفر فاصلة صفر خمسة'],
-    [0.5, 'صفر فاصلة خمسة صفر'],
-    [1.005, 'واحد فاصلة صفر واحد'],
-    [9.999, 'عشرة فاصلة صفر صفر'],
-    [1250.05, 'ألف ومائتان وخمسون فاصلة صفر خمسة'],
-    [-1250.05, 'سالب ألف ومائتان وخمسون فاصلة صفر خمسة'],
-    [-0, 'سالب صفر فاصلة صفر صفر']
+    [0, 'صفر دولار أمريكي'],
+    [0.05, 'خمسة سنتات أمريكية'],
+    [0.5, 'خمسون سنتا أمريكيا'],
+    [1.005, 'دولار أمريكي واحد وسنت واحد'],
+    [9.999, 'عشرة دولارات أمريكية'],
+    [1250.05, 'ألف ومائتان وخمسون دولار أمريكي وخمسة سنتات'],
+    [-1250.05, 'سالب ألف ومائتان وخمسون دولار أمريكي وخمسة سنتات'],
+    [-0, 'صفر دولار أمريكي'],
+    [-0.004, 'صفر دولار أمريكي'],
+    [-0.005, 'سالب سنت أمريكي واحد']
   ];
   for (const [value, expected] of examples) {
     const snapshot = fixture(s => { s.daily.salesUSD = value; });
-    assert.equal(speechFor(snapshot, 'مبيعات اليوم:'), 'مبيعات اليوم: ' + expected + ' دولار أمريكي.', String(value));
+    assert.equal(speechFor(snapshot, 'مبيعات اليوم:'), 'مبيعات اليوم: ' + expected + '.', String(value));
+  }
+});
+
+test('whole monetary magnitudes never read zero decimals or spell each zero', () => {
+  const examples = [
+    [1, 'دولار أمريكي واحد'], [2, 'دولاران أمريكيان'], [3, 'ثلاثة دولارات أمريكية'],
+    [200, 'مائتا دولار أمريكي'], [1000, 'ألف دولار أمريكي'], [2000, 'ألفا دولار أمريكي'],
+    [1000000, 'مليون دولار أمريكي'], [2000000, 'مليونا دولار أمريكي'],
+    [3000000, 'ثلاثة ملايين دولار أمريكي'], [1000000000, 'مليار دولار أمريكي'],
+    [1000000.05, 'مليون دولار أمريكي وخمسة سنتات']
+  ];
+  for (const [value, expected] of examples) {
+    const snapshot = fixture(s => { s.daily.salesUSD = value; });
+    assert.equal(speechFor(snapshot, 'مبيعات اليوم:'), 'مبيعات اليوم: ' + expected + '.', String(value));
   }
 });
 
@@ -88,10 +104,10 @@ test('all four native cash currencies retain their own amount, unit and original
   const cash = snapshot.narrationSegments[9];
   const chunks = prepare(snapshot).filter(chunk => chunk.charIndex > cash.start && chunk.charIndex < cash.end);
   assert.deepEqual(chunks.map(chunk => plain(chunk.text)), [
-    'ألف ومائتان وخمسون فاصلة صفر خمسة دولار أمريكي.',
-    'سالب مائتان واثنان فاصلة صفر اثنان ليرة تركية.',
-    'صفر فاصلة صفر واحد يورو.',
-    'مليون فاصلة تسعة تسعة ليرة سورية.'
+    'ألف ومائتان وخمسون دولار أمريكي وخمسة سنتات.',
+    'سالب مائتان واثنتان ليرة تركية وقرشان.',
+    'سنت واحد من اليورو.',
+    'مليون ليرة سورية وتسعة وتسعون قرشا.'
   ]);
   assert.equal(chunks.map(chunk => source(snapshot, chunk)).join(' '), cash.text.slice('أرصدة الصناديق المسجلة: '.length));
 });
@@ -130,7 +146,7 @@ test('long spelled amounts are bounded without silently dropping words or invent
   assert(chunks.some((chunk, index) => index && chunk.charIndex === chunks[index - 1].charIndex));
   const spoken = speechFor(snapshot, 'مبيعات اليوم:');
   assert(spoken.startsWith('مبيعات اليوم:'));
-  assert(spoken.endsWith('فاصلة اثنان خمسة دولار أمريكي.'));
+  assert(spoken.endsWith('دولار أمريكي وخمسة وعشرون سنتا.'));
   for (const chunk of chunks) {
     assert(chunk.text.length <= 220);
     assert(!/^[\u064b-\u065f]/.test(chunk.text));
@@ -178,10 +194,44 @@ test('additional known currencies are named and invalid codes follow the visible
   assert(prepare(invalid).some(chunk => source(invalid, chunk).includes('دولار أمريكي') && plain(chunk.text).includes('دولار أمريكي')));
 });
 
+test('minor-only values identify the currency and retain cent versus kurus versus piastre', () => {
+  const examples = [
+    ['USD', 0.01, 'سنت أمريكي واحد'], ['USD', 0.02, 'سنتان أمريكيان'],
+    ['USD', 0.05, 'خمسة سنتات أمريكية'], ['USD', 0.50, 'خمسون سنتا أمريكيا'],
+    ['TRY', 0.05, 'خمسة قروش تركية'], ['TRY', 21.05, 'إحدى وعشرون ليرة تركية وخمسة قروش'],
+    ['EUR', 0.05, 'خمسة سنتات من اليورو'], ['EUR', 1.25, 'يورو واحد وخمسة وعشرون سنتا'],
+    ['SYP', 0.05, 'خمسة قروش سورية'], ['SYP', 3.02, 'ثلاث ليرات سورية وقرشان']
+  ];
+  for (const [currency, value, expected] of examples) {
+    const snapshot = fixture(s => { s.cashboxes[0].currency = currency; s.cashboxes[0].balance = value; });
+    const matching = prepare(snapshot).filter(chunk => source(snapshot, chunk).includes(new Intl.NumberFormat('ar', {style: 'currency', currencyDisplay: 'name', currency, minimumFractionDigits: 2, maximumFractionDigits: 2}).format(value)));
+    assert.equal(matching.map(chunk => plain(chunk.text)).join(' '), expected + '.', currency + ' ' + value);
+  }
+});
+
+test('currencies with unconfigured minor units preserve decimals instead of inventing cent values', () => {
+  for (const [currency, unit] of [['KWD', 'دينار كويتي'], ['JOD', 'دينار أردني'], ['BHD', 'دينار بحريني']]) {
+    const snapshot = fixture(s => { s.cashboxes[0].currency = currency; s.cashboxes[0].balance = 0.05; });
+    assert(prepare(snapshot).some(chunk => plain(chunk.text) === 'صفر فاصلة صفر خمسة ' + unit + '.'));
+  }
+});
+
+test('the public money helper is pure and applies the same rounding and safety guards', () => {
+  assert.equal(plain(moneyWords(0)), 'صفر دولار أمريكي');
+  assert.equal(plain(moneyWords(-0.004, 'TRY')), 'صفر ليرة تركية');
+  assert.equal(plain(moneyWords(1000000)), 'مليون دولار أمريكي');
+  assert.equal(plain(moneyWords(1.005)), 'دولار أمريكي واحد وسنت واحد');
+  assert.equal(plain(moneyWords(0.05, 'KWD')), 'صفر فاصلة صفر خمسة دينار كويتي');
+  for (const value of [NaN, Infinity, -Infinity, '1.00']) assert.throws(() => moneyWords(value), error => error.reason === 'invalid-money');
+  assert.throws(() => moneyWords(90071992547409.92), error => error.reason === 'unsafe-money');
+  assert.throws(() => moneyWords(10, 'XYZ'), error => error.reason === 'unsupported-currency');
+});
+
 test('browser loading exposes only the pure API and needs neither DOM nor network', () => {
   const context = { window: {}, Intl, Date, BigInt, Object, Number, String, Error };
   vm.runInNewContext(readFileSync(require.resolve('../arabic-report-speech.js'), 'utf8'), context);
   assert.equal(typeof context.window.WFArabicReportSpeech.prepare, 'function');
+  assert.equal(typeof context.window.WFArabicReportSpeech.moneyWords, 'function');
   const snapshot = fixture(), before = JSON.stringify(snapshot);
   const chunks = context.window.WFArabicReportSpeech.prepare(snapshot);
   assert(chunks.length > 10);

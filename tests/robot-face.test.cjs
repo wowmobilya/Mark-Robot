@@ -74,7 +74,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   const track = new Element('div'); track.parentNode = dashboard;
   for (let i = 0; i < 4; i++) track.append(new Element());
   const doc = new Element('document'); doc.documentElement = root; doc.hidden = false;
-  doc.querySelector = selector => selector === '.wf-greeting-faces' ? track : null;
+  doc.querySelector = selector => selector === '.wf-greeting-faces' ? track : selector === '.page.active' && dashboard.classes.has('active') ? dashboard : null;
   doc.getElementById = id => track.children.find(child => child.id === id) || null;
   doc.createElement = tag => new Element(tag);
   const win = new Element('window');
@@ -100,6 +100,9 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   if (recordings) win.Audio = Audio;
   win.wfBusinessOverviewSnapshot = snapshot;
   win.WFRobotSettings = {getPreferences:()=>preferences};
+  // Lifecycle fixtures use a transparent pronunciation adapter; separate suites
+  // validate real financial snapshots and the exact money wording.
+  win.WFArabicReportSpeech = win.WFTurkishReportSpeech = {prepare:value=>[{text:value.narration,charIndex:0,charLength:value.narration.length}]};
   const offlineVoice = {calls:[],cancels:0,getStatus:()=>({ready:offlineReady}),speak(request){this.calls.push(request);return{cancel:()=>{this.cancels++;}};}};
   if (offline) win.WFOfflineVoice = offlineVoice;
   const reportEvents = [];
@@ -203,7 +206,7 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
     f.speak.click(false);
     check(f.audioRequests.length === 0, 'Programmatic identity clicks cannot start audio');
     f.speak.click();
-    check(f.audioRequests[0]?.src === 'assets/robot-identity/ar.mp3?v=2' && f.audioRequests[0].playCount === 1, 'Trusted click synchronously plays the versioned bundled identity');
+    check(f.audioRequests[0]?.src === 'assets/robot-identity/ar.mp3?v=3' && f.audioRequests[0].playCount === 1, 'Trusted click synchronously plays the versioned bundled identity');
     check(f.offlineVoice.calls.length === 0 && f.synth.calls.length === 0, 'Identity prefers the small recording over both pack generation and native speech');
     f.audioRequests[0].onplaying();
     check(f.reportEvents.length === 0 && f.face.dataset.speechBeat !== 'true', 'Recorded identity does not fabricate report or word timing events');
@@ -212,7 +215,7 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
   }
   for (const lang of ['ar','tr','en','fr','ru']) {
     const f = fixture({lang, supported:false, recordings:true}); f.reveal(); f.speak.click();
-    check(f.audioRequests[0]?.src === `assets/robot-identity/${lang}.mp3?v=${lang === 'ar' ? 2 : 1}`, 'Exact bundled recording selected for '+lang);
+    check(f.audioRequests[0]?.src === `assets/robot-identity/${lang}.mp3?v=${lang === 'ar' ? 3 : 2}`, 'Exact bundled recording selected for '+lang);
     check(!f.speak.disabled && f.face.dataset.voiceActive === 'true', 'Bundled '+lang+' identity remains available without platform voices');
   }
   {
@@ -401,6 +404,57 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
     f.offlineVoice.list=()=>[{locale:'ar',engine:'nabra'}];f.win.WFArabicReportSpeech={prepare(){throw new Error('unsupported-report');}};
     f.reveal();f.report.click();await flush();
     check(!f.offlineVoice.calls.length&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.reason==='report-text-unsupported'),'Unrecognized financial text never produces guessed speech');
+  }
+  for (const [lang,globalName,spoken] of [['ar','WFArabicReportSpeech','صفر دولار أمريكي. مليون دولار أمريكي.'],['tr','WFTurkishReportSpeech','sıfır dolar. bir milyon dolar.']]) {
+    const narration='0.00 USD; 1,000,000.00 USD';
+    const f=fixture({lang,voices:[{lang,localService:true}],snapshot:()=>({narration})});
+    f.win[globalName]={prepare:()=>[{text:spoken,charIndex:0,charLength:narration.length}]};
+    f.reveal();f.report.click();await flush();
+    check(f.synth.calls[0]?.text===spoken,'Native '+lang+' speech receives normalized amounts rather than raw currency digits');
+    f.synth.start();f.synth.current.onboundary({name:'word',charIndex:7,charLength:4});
+    const boundary=f.reportEvents.filter(e=>e.type==='wf-robot-report-boundary').at(-1);
+    check(boundary.charIndex===0&&boundary.charLength===narration.length,'Changed '+lang+' speech offsets map back to original displayed report');
+    f.synth.end();
+  }
+  {
+    const f=fixture({snapshot:()=>({narration:'invalid source'})});
+    f.win.WFArabicReportSpeech={prepare(){throw new Error('source-mismatch');}};
+    f.reveal();f.report.click();await flush();
+    check(f.synth.calls.length===0,'Invalid Arabic source is rejected even when a native fallback exists');
+  }
+  {
+    const f=fixture({recordings:true,preferences:{arabicDialect:'eg',speechRate:1.15,speechVolume:.4}});f.reveal();f.speak.click();
+    const recording=f.audioRequests[0];
+    check(recording.src.includes('ar-EG.mp3')&&recording.playbackRate===1.15&&recording.volume===.4&&recording.preservesPitch===true,'Saved dialect, speed and volume apply to unprocessed Mark recording');
+  }
+  {
+    const preferences={speechEnabled:false};const f=fixture({recordings:true,offline:true,preferences});f.reveal();f.speak.click();f.report.click();await flush();
+    check(!f.audioRequests.length&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Speech disable applies to greetings and reports');
+    check(f.win.WFProgramSpeech.speak({text:'Read me',event:{isTrusted:true}})===false,'Disabled shared reader never starts speech');
+  }
+  {
+    const f=fixture({offline:true,preferences:{speechRate:1.1,speechVolume:.6}});
+    check(f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:false}})===false,'Program reader requires the actual user gesture');
+    check(f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:true}})===true,'Program reader works with the dashboard robot hidden');
+    const request=f.offlineVoice.calls[0];
+    check(request.continuous===true&&request.rate===1.1&&request.volume===.6,'Program reader uses full buffering and shared saved audio preferences');
+    request.onStart();check(f.win.WFProgramSpeech.getState().active===true,'Hidden robot does not cancel explicit program-wide playback');
+    f.win.WFProgramSpeech.stop();request.onStart();check(f.win.WFProgramSpeech.getState().active===false,'Program stop ignores stale offline start');
+  }
+  {
+    const f=fixture({offline:true,preferences:{speechBackend:'device',speechRate:.9,speechVolume:.2}});f.reveal();f.speak.click();
+    check(f.offlineVoice.calls.length===0&&f.synth.calls[0].rate===.9&&f.synth.calls[0].volume===.2,'Device preference chooses a local native voice and respects saved controls');
+    f.synth.start();f.send('wf-robot-preferences',{});f.synth.end();
+  }
+  {
+    const f=fixture({offline:true});
+    f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:true}});
+    f.leaveDashboard();
+    check(!f.win.WFProgramSpeech.getState().active&&f.offlineVoice.cancels===1,'Real page-class navigation stops program reading even without hashchange');
+  }
+  {
+    const f=fixture({offline:true,preferences:{speechVolume:0}});
+    check(f.win.WFProgramSpeech.getState().state==='muted'&&!f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:true}})&&!f.offlineVoice.calls.length,'Muted audio reports mute without generating an inaudible report');
   }
   console.log(`${assertionCount} robot offline speech/report lifecycle assertions passed.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

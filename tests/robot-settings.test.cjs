@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {normalize, mergeSettings, packActionDisabled, voiceStatusKey, voicePhaseKey, createPreferenceStore, movement, createMotionTracker} = require('../robot-settings.js');
+const {defaults, normalize, mergeSettings, packActionDisabled, voiceStatusKey, voicePhaseKey, createPreferenceStore, movement, createMotionTracker} = require('../robot-settings.js');
 
 test('voice failures use the actual adapter reason without guessing a cause', () => {
   assert.equal(voiceStatusKey({state: 'error', reason: 'integrity-failed'}), 'voiceIntegrity');
@@ -35,10 +35,21 @@ test('one pack download disables other actions while leaving its own Cancel avai
 });
 
 test('normalizes preferences without restoring camera activation', () => {
-  assert.deepEqual(normalize(), {autoExpressions: true, idleMotion: true, trackingSensitivity: 'normal'});
+  assert.deepEqual(normalize(), {autoExpressions: true, idleMotion: true, trackingSensitivity: 'normal', speechEnabled:true, speechRate:1, speechVolume:1, arabicDialect:'sy', speechBackend:'local', continuousSpeech:true});
   assert.deepEqual(normalize({autoExpressions: false, idleMotion: false, trackingSensitivity: 'high', cameraEnabled: true}),
-    {autoExpressions: false, idleMotion: false, trackingSensitivity: 'high'});
+    {...defaults, autoExpressions: false, idleMotion: false, trackingSensitivity: 'high'});
   assert.equal(normalize({trackingSensitivity: 'invalid'}).trackingSensitivity, 'normal');
+});
+
+test('speech controls preserve mute, clamp speed/volume and reject invalid voice choices', () => {
+  const chosen=normalize({speechEnabled:false,speechRate:1.2,speechVolume:0,arabicDialect:'eg',speechBackend:'device',continuousSpeech:false});
+  assert.equal(chosen.speechEnabled,false); assert.equal(chosen.speechRate,1.2); assert.equal(chosen.speechVolume,0);
+  assert.equal(chosen.arabicDialect,'eg'); assert.equal(chosen.speechBackend,'device'); assert.equal(chosen.continuousSpeech,false);
+  assert.equal(normalize({speechRate:8}).speechRate,1.25); assert.equal(normalize({speechRate:-2}).speechRate,.75);
+  assert.equal(normalize({speechVolume:9}).speechVolume,1); assert.equal(normalize({speechVolume:-1}).speechVolume,0);
+  for(const value of [NaN,Infinity,'1.1',null]) assert.equal(normalize({speechRate:value}).speechRate,1);
+  assert.equal(normalize({arabicDialect:'xx',speechBackend:'remote'}).arabicDialect,'sy');
+  assert.equal(normalize({speechBackend:'remote'}).speechBackend,'local');
 });
 
 test('settings merge preserves the latest unrelated values and unknown robot preferences', () => {

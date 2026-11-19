@@ -46,7 +46,8 @@
     const total=number(detail.total,number(previous.total));
     const loaded=Math.min(total||Infinity,number(detail.loaded));
     const ratio=number(detail.progress,total?loaded/total:0);
-    return {state:detail.state,progress:Math.min(1,ratio),loaded,total,reason:typeof detail.reason==='string'?detail.reason:''};
+    return {state:detail.state,progress:Math.min(1,ratio),loaded,total,reason:typeof detail.reason==='string'?detail.reason:'',
+      ...(typeof detail.voiceName==='string'?{voiceName:detail.voiceName.slice(0,120)}:previous.voiceName?{voiceName:previous.voiceName}:{})};
   }
   function reportControlAction(voiceState,playbackState) {
     if(voiceState==='downloading')return 'cancel-download';
@@ -98,13 +99,16 @@
   sheet.append(head,status,progress,body,voiceSetup,footer);document.body.append(shade,sheet);
   let locale='ar',segments=[],paragraphs=[],active=-1,following=true,speechState='ready',returnFocus=null,closing=0,frame=0,snapshot=null,pendingPlayback={state:'ready'};
   const voiceStates=new Map();
+  let preparation=null;
   const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.dataset.wfMotion==='reduced';
   const control=action=>window.dispatchEvent(new CustomEvent('wf-robot-report-control',{detail:{action}}));
   function labels(){return copy[locale]||copy.en;}
   function setState(state,reason){
     speechState=state;const L=labels(),voice=voiceStates.get(locale),setup=voiceSetupFor(voice,locale),action=reportControlAction(voice?.state,state);
     sheet.dataset.playback=setup.visible?'ready':state;sheet.dataset.voice=voice?.state||'ready';
-    const statusText=setup.visible?L.ready:reason||L[state]||L.ready;if(status.textContent!==statusText)status.textContent=statusText;
+    const progressText=state==='preparing'&&preparation?' · '+preparation.completed+'/'+preparation.total:'';
+    const voiceText=!setup.visible&&voice?.voiceName?' · '+voice.voiceName:'';
+    const statusText=(setup.visible?L.ready:reason||L[state]||L.ready)+progressText+voiceText;if(status.textContent!==statusText)status.textContent=statusText;
     voiceSetup.hidden=!setup.visible;
     if(setup.visible){
       voiceSetup.dataset.state=voice.state;voiceSetup.setAttribute('aria-label',setup.label);
@@ -196,8 +200,13 @@
     const next=index<0?available.indexOf(close):(index+(event.shiftKey?-1:1)+available.length)%available.length;
     event.preventDefault();(available[next]||close).focus({preventScroll:true});
   });
-  window.addEventListener('wf-robot-report-open',event=>open(event.detail));
+  window.addEventListener('wf-robot-report-open',event=>{preparation=null;open(event.detail);});
   window.addEventListener('wf-robot-report-playback',event=>{pendingPlayback={state:event.detail?.state||'ready',reason:event.detail?.reason};if(!sheet.hidden)setState(pendingPlayback.state,pendingPlayback.reason);});
+  window.addEventListener('wf-robot-report-preparation',event=>{
+    const {completed,total}=event.detail||{};
+    if(!Number.isInteger(completed)||!Number.isInteger(total)||total<1||total>160||completed<0||completed>total)return;
+    preparation={completed,total};if(!sheet.hidden&&pendingPlayback.state==='preparing')setState('preparing');
+  });
   window.addEventListener('wf-robot-report-voice',event=>{
     const language=reportLocale(event.detail?.locale,locale),voice=reportVoiceState(event.detail,voiceStates.get(language));if(!voice)return;
     voiceStates.set(language,voice);if(language===locale&&!sheet.hidden)setState(pendingPlayback.state,pendingPlayback.reason);

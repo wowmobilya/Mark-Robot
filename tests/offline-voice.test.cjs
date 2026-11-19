@@ -126,3 +126,10 @@ test('vocalized speech accepts bounded original spans and exact repeats, rejects
  for(const bad of [[],[{text:'أ',charIndex:-1,charLength:3}],[{text:'أ',charIndex:0,charLength:999}],chunks.concat({text:'أ',charIndex:2,charLength:3}),[{text:'أ'.repeat(801),charIndex:0,charLength:2}]])assert.throws(()=>speechChunks(text,bad),/invalid-speech-chunks/);
  assert.deepEqual(speechChunks(text),splitText(text));
 });
+test('default speech splitting bounds many short sentences before any synthesis work',()=>{
+ const accepted='A. '.repeat(160).trim(),excessive='A. '.repeat(161).trim();
+ const chunks=speechChunks(accepted);
+ assert.equal(chunks.length,160);assert.equal(chunks.at(-1).charIndex,477);assert.equal(chunks.at(-1).charLength,2);
+ assert(excessive.length<16000,'the general reader text-length limit alone cannot bound synthesis requests');
+ assert.throws(()=>speechChunks(excessive),problem=>problem.code==='speech-too-long');
+});

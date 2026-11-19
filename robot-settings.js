@@ -2,14 +2,22 @@
    Camera pixels stay in a small canvas in this page. No recording or upload. */
 (() => {
   'use strict';
-  const defaults = {autoExpressions: true, idleMotion: true, trackingSensitivity: 'normal'};
+  const defaults = {autoExpressions: true, idleMotion: true, trackingSensitivity: 'normal',
+    speechEnabled: true, speechRate: 1, speechVolume: 1, arabicDialect: 'sy', speechBackend: 'local', continuousSpeech: true};
   const object = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const bounded = (value, min, max, fallback) => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
   function normalize(value) {
     const input = object(value);
     return {
       autoExpressions: input.autoExpressions !== false,
       idleMotion: input.idleMotion !== false,
       trackingSensitivity: ['low', 'normal', 'high'].includes(input.trackingSensitivity) ? input.trackingSensitivity : 'normal',
+      speechEnabled: input.speechEnabled !== false,
+      speechRate: bounded(input.speechRate, .75, 1.25, 1),
+      speechVolume: bounded(input.speechVolume, 0, 1, 1),
+      arabicDialect: input.arabicDialect === 'eg' ? 'eg' : 'sy',
+      speechBackend: input.speechBackend === 'device' ? 'device' : 'local',
+      continuousSpeech: input.continuousSpeech !== false,
     };
   }
   function mergeSettings(stored, memory, preferences) {
@@ -195,8 +203,23 @@
     return locales.includes(value) ? value : 'en';
   };
   const copy = {
+    speechTitle: ['الصوت والقراءة', 'Voice and reading', 'Ses ve okuma', 'Voix et lecture', 'Голос и чтение'],
+    speechEnabled: ['تشغيل الصوت في البرنامج', 'Enable program speech', 'Program sesini aç', 'Activer la lecture vocale', 'Включить речь в программе'],
+    speechRate: ['سرعة القراءة', 'Reading speed', 'Okuma hızı', 'Vitesse de lecture', 'Скорость чтения'],
+    speechVolume: ['مستوى الصوت', 'Volume', 'Ses düzeyi', 'Volume', 'Громкость'],
+    arabicDialect: ['لهجة الترحيب العربي', 'Arabic greeting dialect', 'Arapça karşılama lehçesi', 'Dialecte du message arabe', 'Диалект арабского приветствия'],
+    sy: ['سوري', 'Syrian', 'Suriye', 'Syrien', 'Сирийский'],
+    eg: ['مصري', 'Egyptian', 'Mısır', 'Égyptien', 'Египетский'],
+    speechBackend: ['صوت قراءة النصوص الجديدة', 'Voice for new text', 'Yeni metinleri okuyan ses', 'Voix pour les nouveaux textes', 'Голос для новых текстов'],
+    local: ['حزمة اللغة المثبتة', 'Installed language pack', 'Yüklü dil paketi', 'Pack de langue installé', 'Установленный языковой пакет'],
+    device: ['صوت الجهاز المحلي', 'Local device voice', 'Cihazın çevrimdışı sesi', 'Voix locale de l’appareil', 'Локальный голос устройства'],
+    continuousSpeech: ['تجهيز النص كاملًا قبل القراءة لتقليل الانقطاع', 'Prepare the full text before reading to reduce interruptions', 'Kesintileri azaltmak için metnin tamamını önceden hazırla', 'Préparer tout le texte pour limiter les interruptions', 'Готовить весь текст до чтения для уменьшения пауз'],
+    markScope: ['Mark للترحيب المحفوظ، ويعمل دون إنترنت. التقارير والنصوص الجديدة تُقرأ بالصوت المحلي المختار أدناه؛ صوته مختلف عن Mark.', 'Saved Mark greetings work offline. New reports and text use the local reading voice selected below; that voice differs from Mark.', 'Kayıtlı Mark karşılamaları çevrimdışı çalışır. Yeni raporlar ve metinler aşağıda seçilen yerel sesle okunur; bu ses Mark’tan farklıdır.', 'Les messages Mark enregistrés fonctionnent hors ligne. Les nouveaux rapports et textes utilisent la voix locale choisie ci-dessous, différente de Mark.', 'Сохранённые приветствия Mark работают без интернета. Новые отчёты и тексты читает выбранный ниже локальный голос, отличающийся от Mark.'],
+    speechPreview: ['تجربة الترحيب بالإعدادات المحفوظة', 'Preview saved greeting settings', 'Kayıtlı karşılama ayarlarını dene', 'Écouter le message avec les réglages enregistrés', 'Прослушать сохранённые настройки приветствия'],
+    speechStop: ['إيقاف القراءة', 'Stop reading', 'Okumayı durdur', 'Arrêter la lecture', 'Остановить чтение'],
+    speechHint: ['تُطبّق السرعة ومستوى الصوت على الترحيب والتقارير وقراءة النص المحدد في أي صفحة. التجهيز الكامل قد يزيد انتظار البداية.', 'Speed and volume apply to greetings, reports and selected text on every page. Full preparation can take longer before playback starts.', 'Hız ve ses düzeyi karşılamalara, raporlara ve tüm sayfalardaki seçili metne uygulanır. Tam hazırlık başlangıçta daha uzun sürebilir.', 'La vitesse et le volume s’appliquent aux messages, rapports et textes sélectionnés sur toutes les pages. La préparation complète peut retarder le démarrage.', 'Скорость и громкость действуют для приветствий, отчётов и выделенного текста на любой странице. Полная подготовка может увеличить ожидание перед чтением.'],
     title: ['الروبوت', 'Robot', 'Robot', 'Robot', 'Робот'],
-    hint: ['اضبط تعبيرات إنفنتي روبوت وحركته. تُحفظ التفضيلات من هنا.', 'Adjust Infinity Robot’s expressions and movement. Save preferences here.', 'Infinity Robot’un ifadelerini ve hareketlerini ayarlayın. Tercihleri buradan kaydedin.', 'Réglez les expressions et les mouvements d’Infinity Robot, puis enregistrez ici.', 'Настройте выражения и движения робота Infinity и сохраните здесь.'],
+    hint: ['اضبط صوت مساعد WOW FURNITURE وتعبيراته وحركته. تُحفظ التفضيلات من هنا.', 'Adjust the WOW FURNITURE assistant’s voice, expressions and movement. Save preferences here.', 'WOW FURNITURE asistanının sesini, ifadelerini ve hareketlerini ayarlayın. Tercihleri buradan kaydedin.', 'Réglez la voix, les expressions et les mouvements de l’assistant WOW FURNITURE, puis enregistrez ici.', 'Настройте голос, выражения и движения помощника WOW FURNITURE и сохраните здесь.'],
     expressions: ['تعبيرات تلقائية أثناء الكلام', 'Automatic expressions while speaking', 'Konuşurken otomatik ifadeler', 'Expressions automatiques pendant la parole', 'Автоматические выражения во время речи'],
     idle: ['رمش وحركة هادئة للعينين', 'Gentle blinking and idle eye movement', 'Hafif göz kırpma ve göz hareketi', 'Clignements et mouvements discrets des yeux', 'Мягкое моргание и движения глаз'],
     sensitivity: ['حساسية تتبّع الحركة', 'Movement sensitivity', 'Hareket hassasiyeti', 'Sensibilité au mouvement', 'Чувствительность к движению'],
@@ -268,6 +291,32 @@
   const form = create('form', 'wf-robot-settings-form'); panel.append(form);
   const preferencesFieldset = create('fieldset', 'wf-robot-preferences'); form.append(preferencesFieldset);
   const fields = {};
+  const speechControls = create('section', 'wf-robot-speech-controls');
+  speechControls.append(text('h3', 'speechTitle'));
+  const selectedVoice = create('strong', 'wf-robot-selected-voice'); selectedVoice.textContent = 'Mark · Natural Conversations';
+  speechControls.append(selectedVoice, text('p', 'markScope', 'wf-robot-camera-hint'));
+  for (const key of ['speechEnabled', 'continuousSpeech']) {
+    const row = create('label', 'wf-robot-preference'), input = create('input'); input.type = 'checkbox'; input.name = key;
+    input.addEventListener('change', changed); row.append(input, text('span', key)); speechControls.append(row); fields[key] = input;
+  }
+  const rangeOutputs = {};
+  for (const [key, min, max, step] of [['speechRate', .75, 1.25, .05], ['speechVolume', 0, 1, .05]]) {
+    const row = create('label', 'wf-robot-speech-range'), input = create('input'), output = create('output');
+    input.type = 'range'; input.name = key; input.min = min; input.max = max; input.step = step;
+    input.addEventListener('input', () => { output.textContent = Math.round(Number(input.value) * 100) + '%'; changed(); });
+    row.append(text('span', key), output, input); speechControls.append(row); fields[key] = input; rangeOutputs[key] = output;
+  }
+  for (const [key, choices] of [['arabicDialect', ['sy', 'eg']], ['speechBackend', ['local', 'device']]]) {
+    const row = create('label', 'wf-robot-sensitivity'), input = create('select'); input.name = key;
+    for (const value of choices) { const option = text('option', value); option.value = value; input.append(option); }
+    input.addEventListener('change', changed); row.append(text('span', key), input); speechControls.append(row); fields[key] = input;
+  }
+  speechControls.append(text('p', 'speechHint', 'wf-robot-camera-hint'));
+  const speechActions = create('div', 'wf-robot-speech-actions'), previewSpeech = text('button', 'speechPreview'), stopSpeech = text('button', 'speechStop');
+  previewSpeech.type = stopSpeech.type = 'button';
+  previewSpeech.addEventListener('click', event => window.WFProgramSpeech?.preview?.({event}));
+  stopSpeech.addEventListener('click', event => { if (event.isTrusted) window.WFProgramSpeech?.stop?.(); });
+  speechActions.append(previewSpeech, stopSpeech); speechControls.append(speechActions); preferencesFieldset.append(speechControls);
   for (const [key, label] of [['autoExpressions', 'expressions'], ['idleMotion', 'idle']]) {
     const row = create('label', 'wf-robot-preference'); const input = create('input'); input.type = 'checkbox'; input.name = key;
     input.addEventListener('change', changed); row.append(input, text('span', label)); preferencesFieldset.append(row); fields[key] = input;
@@ -334,6 +383,9 @@
     fields.autoExpressions.checked = preferences.autoExpressions;
     fields.idleMotion.checked = preferences.idleMotion;
     fields.trackingSensitivity.value = preferences.trackingSensitivity;
+    for (const key of ['speechEnabled', 'continuousSpeech']) fields[key].checked = preferences[key];
+    for (const key of ['speechRate', 'speechVolume', 'arabicDialect', 'speechBackend']) fields[key].value = preferences[key];
+    for (const key of ['speechRate', 'speechVolume']) rangeOutputs[key].textContent = Math.round(preferences[key] * 100) + '%';
   }
   function publishPreferences() {
     window.dispatchEvent(new CustomEvent('wf-robot-preferences', {detail: {preferences: getPreferences()}}));
@@ -414,7 +466,10 @@
     event.preventDefault(); if (store.busy) return;
     preferencesFieldset.disabled = true; save.disabled = true; save.textContent = t('saving'); saveState = 'saving'; saveStatus.textContent = t(saveState);
     try {
-      await store.save({autoExpressions: fields.autoExpressions.checked, idleMotion: fields.idleMotion.checked, trackingSensitivity: fields.trackingSensitivity.value});
+      await store.save({autoExpressions: fields.autoExpressions.checked, idleMotion: fields.idleMotion.checked, trackingSensitivity: fields.trackingSensitivity.value,
+        speechEnabled: fields.speechEnabled.checked, continuousSpeech: fields.continuousSpeech.checked,
+        speechRate: Number(fields.speechRate.value), speechVolume: Number(fields.speechVolume.value),
+        arabicDialect: fields.arabicDialect.value, speechBackend: fields.speechBackend.value});
       dirty = false; saveState = 'saved'; publishPreferences();
     } catch (_) { saveState = 'saveFailed'; }
     finally { preferencesFieldset.disabled = false; save.disabled = false; translate(); }

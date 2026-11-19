@@ -57,8 +57,40 @@
     for(let i=0;i<samples.length;i++){const sample=Math.max(-1,Math.min(1,Number.isFinite(samples[i])?samples[i]:0));view.setInt16(44+i*2,Math.round(sample*(sample<0?32768:32767)),true);}
     return buffer;
   }
+  const MAX_RENDERED_AUDIO_BYTES=32*1024*1024,MAX_RENDERED_AUDIO_SECONDS=20*60;
+  function createWavSequence(){
+    // Both local workers return canonical mono PCM16 WAV. Keep their PCM bytes
+    // verbatim: one source avoids waiting for synthesis between spoken clauses.
+    // Blob slices do not expand samples to float arrays while buffering a report.
+    const parts=[],boundaries=[];let firstHeader=null,sampleRate=0,totalBytes=0;
+    return {
+      async append(blob,chunk){
+        if(!blob||!Number.isSafeInteger(blob.size)||blob.size<46||typeof blob.slice!=='function')throw error('invalid-audio');
+        const dataBytes=blob.size-44;
+        if(totalBytes+dataBytes>MAX_RENDERED_AUDIO_BYTES)throw error('speech-too-long');
+        const header=new Uint8Array(await blob.slice(0,44).arrayBuffer());
+        if(header.byteLength!==44)throw error('invalid-audio');
+        const view=new DataView(header.buffer,header.byteOffset,header.byteLength),rate=view.getUint32(24,true);
+        const label=(offset,value)=>[...value].every((letter,index)=>header[offset+index]===letter.charCodeAt(0));
+        if(!label(0,'RIFF')||!label(8,'WAVE')||!label(12,'fmt ')||!label(36,'data')||
+          view.getUint32(4,true)!==blob.size-8||view.getUint32(16,true)!==16||view.getUint16(20,true)!==1||
+          view.getUint16(22,true)!==1||view.getUint16(32,true)!==2||view.getUint16(34,true)!==16||
+          view.getUint32(40,true)!==dataBytes||dataBytes%2||rate<8000||rate>96000||
+          view.getUint32(28,true)!==rate*2||(sampleRate&&sampleRate!==rate))throw error('invalid-audio');
+        if((totalBytes+dataBytes)/(rate*2)>MAX_RENDERED_AUDIO_SECONDS)throw error('speech-too-long');
+        if(!firstHeader){firstHeader=header;sampleRate=rate;}
+        boundaries.push({start:totalBytes/(sampleRate*2),charIndex:chunk.charIndex,charLength:chunk.charLength});
+        parts.push(blob.slice(44));totalBytes+=dataBytes;
+      },
+      finish(){
+        if(!firstHeader||!totalBytes)throw error('invalid-audio');
+        const header=firstHeader.slice(),view=new DataView(header.buffer);view.setUint32(4,totalBytes+36,true);view.setUint32(40,totalBytes,true);
+        return {blob:new Blob([header,...parts],{type:'audio/wav'}),boundaries:boundaries.map(item=>({...item})),duration:totalBytes/(sampleRate*2)};
+      }
+    };
+  }
   function speechChunks(text,chunks){
-    if(chunks===undefined)return splitText(text);
+    if(chunks===undefined){const result=splitText(text);if(result.length>160)throw error('speech-too-long');return result;}
     if(!Array.isArray(chunks)||!chunks.length||chunks.length>160)throw error('invalid-speech-chunks');
     let end=0,previous=null;
     return chunks.map(chunk=>{
@@ -170,7 +202,7 @@
     }
     return {list:()=>voices.map(({files,runtime:voiceRuntime,...voice})=>({...voice})),getStatus,refresh,download,remove,cancelDownload:locale=>{if(active?.locale===localeKey(locale))active.controller.abort();}};
   }
-  const core={CACHE,VERSION,runtime,catalog,retiredArabic,localeKey,error,aborted,checkAbort,hex,splitText,speechChunks,pcmToWav,validAsset,createManager};
+  const core={CACHE,VERSION,runtime,catalog,retiredArabic,localeKey,error,aborted,checkAbort,hex,splitText,speechChunks,pcmToWav,createWavSequence,MAX_RENDERED_AUDIO_BYTES,validAsset,createManager};
   if(typeof module!=='undefined'&&module.exports){module.exports=core;return;}
   if(typeof document==='undefined'){self.WFOfflineVoiceCore=core;return;}
   function supported(){
@@ -186,10 +218,11 @@
     const engine=catalog.find(voice=>voice.locale===localeKey(locale))?.engine||'piper';
     if(worker&&workerEngine!==engine)terminate();
     if(!worker){
-      worker=engine==='nabra'?new Worker(new URL('nabra-report-worker.js?v=1',document.baseURI),{type:'module'}):new Worker(new URL('offline-voice-worker.js?v=3',document.baseURI));
+      worker=engine==='nabra'?new Worker(new URL('nabra-report-worker.js?v=2',document.baseURI),{type:'module'}):new Worker(new URL('offline-voice-worker.js?v=4',document.baseURI));
       workerEngine=engine;
-      worker.onmessage=event=>{if(!job||event.data?.id!==job.id)return;const task=job;job=null;clearTimeout(task.timeout);task.cleanup();if(event.data.error){worker?.terminate();worker=null;task.reject(error(event.data.error));}else task.resolve(event.data.blob);};
-      worker.onerror=()=>{if(job){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();task.reject(error('engine-failed'));}worker?.terminate();worker=null;};
+      const instance=worker;
+      worker.onmessage=event=>{if(worker!==instance||!job||event.data?.id!==job.id)return;const task=job;job=null;clearTimeout(task.timeout);task.cleanup();if(event.data.error){worker?.terminate();worker=null;task.reject(error(event.data.error));}else task.resolve(event.data.blob);};
+      worker.onerror=()=>{if(worker!==instance)return;if(job){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();task.reject(error('engine-failed'));}worker?.terminate();worker=null;};
     }
     return new Promise((resolve,reject)=>{
       const id=++requestId,abort=()=>{if(job?.id===id)terminate();};
@@ -222,35 +255,54 @@
     playbackLeases.delete(lease);
     const controller=new AbortController(),audio=lease.audio;let stopped=false,url='',finished=false;
     const text=typeof options.text==='string'?options.text:'',locale=options.locale||'ar';
-    const cleanup=()=>{lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;};
+    const clearAudioEvents=()=>{audio.onplaying=audio.onwaiting=audio.onended=audio.onerror=audio.ontimeupdate=null;};
+    const cleanup=()=>{clearAudioEvents();lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;};
     const handle={cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();}};activeSpeech=handle;
+    async function playClip(blob,boundaries){
+      checkAbort(controller.signal);
+      url=URL.createObjectURL(blob);audio.src=url;audio.volume=Number.isFinite(options.volume)?Math.max(0,Math.min(1,options.volume)):1;
+      audio.preservesPitch=true;audio.playbackRate=Number.isFinite(options.rate)?Math.max(.75,Math.min(1.3,options.rate)):1;
+      await new Promise((resolve,reject)=>{
+        let boundaryIndex=0,settled=false;
+        const publishBoundaries=time=>{while(!stopped&&boundaryIndex<boundaries.length&&boundaries[boundaryIndex].start<=time){
+          const boundary=boundaries[boundaryIndex++];options.onBoundary?.({charIndex:boundary.charIndex,charLength:boundary.charLength,name:'sentence',type:'sentence'});
+        }};
+        const finish=problem=>{if(settled)return;settled=true;controller.signal.removeEventListener('abort',abort);clearAudioEvents();problem?reject(problem):resolve();};
+        const abort=()=>{audio.pause();finish(aborted());};
+        audio.onplaying=()=>{if(stopped)return;options.onStart?.();publishBoundaries(Number.isFinite(audio.currentTime)?audio.currentTime:0);};
+        // currentTime is already in media seconds, independently of playbackRate.
+        audio.ontimeupdate=()=>publishBoundaries(audio.currentTime);
+        audio.onwaiting=()=>options.onWaiting?.();audio.onended=()=>{publishBoundaries(Infinity);finish();};audio.onerror=()=>finish(error('playback-failed'));
+        controller.signal.addEventListener('abort',abort,{once:true});
+        try{Promise.resolve(audio.play()).catch(problem=>finish(error(problem?.name==='NotAllowedError'?'playback-blocked':'playback-failed')));}catch(_){finish(error('playback-failed'));}
+      });
+      URL.revokeObjectURL(url);url='';checkAbort(controller.signal);
+    }
     (async()=>{
       try{
         if(!text.trim()||text.length>16000)throw error('text-length');if(!manager.getStatus(locale).ready)throw error('pack-not-installed');
         const chunks=speechChunks(text,options.chunks);
         await lease.unlock;checkAbort(controller.signal);
-        // Prepare one sentence ahead in the worker while the previous one plays.
-        // Settling errors here avoids an unhandled rejection during playback.
-        const generate=chunk=>{const pending={ready:false,promise:null};pending.promise=synthesize(chunk.text,{locale,signal:controller.signal}).then(blob=>({blob}),problem=>({problem})).then(result=>{pending.ready=true;return result;});return pending;};
-        let next=generate(chunks[0]);
-        for(let index=0;index<chunks.length;index++){
-          const chunk=chunks[index];
-          if(!next.ready)options.onWaiting?.();
-          const result=await next.promise;checkAbort(controller.signal);if(result.problem)throw result.problem;
-          const blob=result.blob;
-          next=index+1<chunks.length?generate(chunks[index+1]):null;
-          url=URL.createObjectURL(blob);audio.src=url;audio.volume=Number.isFinite(options.volume)?Math.max(0,Math.min(1,options.volume)):1;
-          audio.preservesPitch=true;
-          audio.playbackRate=Number.isFinite(options.rate)?Math.max(.75,Math.min(1.3,options.rate)):1;
-          await new Promise((resolve,reject)=>{
-            let boundary=false;
-            const abort=()=>{audio.pause();finish(aborted());};
-            const finish=problem=>{controller.signal.removeEventListener('abort',abort);audio.onplaying=audio.onwaiting=audio.onended=audio.onerror=null;problem?reject(problem):resolve();};
-            audio.onplaying=()=>{if(stopped)return;options.onStart?.();if(!boundary){boundary=true;options.onBoundary?.({charIndex:chunk.charIndex,charLength:chunk.charLength,name:'sentence',type:'sentence'});}};
-            audio.onwaiting=()=>options.onWaiting?.();audio.onended=()=>finish();audio.onerror=()=>finish(error('playback-failed'));
-            controller.signal.addEventListener('abort',abort,{once:true});try{Promise.resolve(audio.play()).catch(problem=>finish(error(problem?.name==='NotAllowedError'?'playback-blocked':'playback-failed')));}catch(_){finish(error('playback-failed'));}
-          });
-          URL.revokeObjectURL(url);url='';checkAbort(controller.signal);
+        if(options.continuous===true){
+          const sequence=createWavSequence();options.onWaiting?.();
+          for(let index=0;index<chunks.length;index++){
+            const blob=await synthesize(chunks[index].text,{locale,signal:controller.signal});checkAbort(controller.signal);
+            await sequence.append(blob,chunks[index]);checkAbort(controller.signal);
+            options.onProgress?.({completed:index+1,total:chunks.length,phase:'preparing'});
+          }
+          const rendered=sequence.finish();await playClip(rendered.blob,rendered.boundaries);
+        }else{
+          // The compatibility path prepares one sentence ahead while it plays.
+          // Settling errors here avoids an unhandled rejection during playback.
+          const generate=chunk=>{const pending={ready:false,promise:null};pending.promise=synthesize(chunk.text,{locale,signal:controller.signal}).then(blob=>({blob}),problem=>({problem})).then(result=>{pending.ready=true;return result;});return pending;};
+          let next=generate(chunks[0]);
+          for(let index=0;index<chunks.length;index++){
+            const chunk=chunks[index];
+            if(!next.ready)options.onWaiting?.();
+            const result=await next.promise;checkAbort(controller.signal);if(result.problem)throw result.problem;
+            next=index+1<chunks.length?generate(chunks[index+1]):null;
+            await playClip(result.blob,[{...chunk,start:0}]);
+          }
         }
         finished=true;cleanup();options.onEnd?.();
       }catch(problem){finished=true;controller.abort();cleanup();if(!stopped&&problem?.name!=='AbortError')options.onError?.(problem);}
