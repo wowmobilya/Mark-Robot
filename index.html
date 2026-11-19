@@ -6432,7 +6432,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=31">
-     <script src="ui-navigation.js?v=17" defer></script>
+     <script src="ui-navigation.js?v=18" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
 <script src="context-nav.js?v=1" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
@@ -6441,15 +6441,15 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="settings-navigation.js?v=9" defer></script>
 <script src="rate-refresh.js?v=6" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
-<script src="greeting-carousel.js?v=5" defer></script>
+<script src="greeting-carousel.js?v=6" defer></script>
 <link rel="stylesheet" href="currency-calculator.css?v=10">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
-<link rel="stylesheet" href="dashboard-visuals.css?v=21">
+<link rel="stylesheet" href="dashboard-visuals.css?v=22">
 <link rel="stylesheet" href="section-headings.css?v=7">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=1">
-<link rel="stylesheet" href="workspace-surfaces.css?v=19">
+<link rel="stylesheet" href="workspace-surfaces.css?v=20">
 </head>
 <body>
 
@@ -6612,7 +6612,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     <img id="wfSidebarLogo" src="app-icon-192.png" alt="">
     <strong dir="ltr">WOW <span>Furniture</span></strong>
 
-  <button type="button" id="wfSidebarSearchToggle" data-wf-ui-aria-label="Search" aria-label="بحث" aria-expanded="false" aria-controls="wfSearchDialog" aria-haspopup="dialog"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 5 5"></path></svg><span data-wf-ui="Search">بحث</span></button></div>
+  <button type="button" id="wfSidebarSearchToggle" data-wf-ui-aria-label="Search" aria-label="بحث" aria-expanded="false" aria-controls="wfSearchDialog"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 5 5"></path></svg><span data-wf-ui="Search">بحث</span></button></div>
   <p class="wf-sidebar-empty" id="wfSidebarEmpty" role="status" hidden data-wf-ui="No results">لا توجد نتائج</p>
   <nav class="wf-sidebar-links" id="wf-nav-main" aria-labelledby="wf-nav-nav_main">
   <div class="wf-nav-group" role="group" aria-labelledby="wf-nav-nav_main">
@@ -6640,13 +6640,14 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     <output id="wfSidebarPage" aria-live="polite"></output>
     <button type="button" id="wfSidebarNext">›</button>
   </div>
+<section hidden class="wf-search-pane" id="wfSearchDialog" aria-labelledby="wfSearchTitle"><header><strong id="wfSearchTitle" data-wf-ui="Search">بحث</strong><button type="button" data-dialog-close data-wf-ui-aria-label="Close" aria-label="إغلاق">×</button></header>
+<input type="search" id="wfSidebarSearch" data-wf-ui-placeholder="Search" data-wf-ui-aria-label="Search" aria-label="بحث" autocomplete="off"><div id="wfSearchResults"></div></section>
 <button id="wfDevCredit" type="button" aria-haspopup="dialog">
 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 8-4 4 4 4m10-8 4 4-4 4m-4-12-2 16"/></svg>
 <span><small data-i18n="role_dev">برمجة وتطوير</small><b data-i18n="name_mutez">م. معتز بالله حاج شعبان</b></span></button>
 </aside>
 
-<dialog class="wf-nav-dialog" id="wfSearchDialog" aria-labelledby="wfSearchTitle"><header><strong id="wfSearchTitle" data-wf-ui="Search">بحث</strong><button type="button" data-dialog-close data-wf-ui-aria-label="Close" aria-label="إغلاق">×</button></header>
-<input type="search" id="wfSidebarSearch" data-wf-ui-placeholder="Search" data-wf-ui-aria-label="Search" aria-label="بحث" autocomplete="off"><div id="wfSearchResults"></div></dialog>
+
 <dialog class="wf-nav-dialog" id="wfDevDialog" aria-labelledby="wfDevName"><header><strong data-i18n="role_dev">برمجة وتطوير</strong><button type="button" data-dialog-close data-wf-ui-aria-label="Close" aria-label="إغلاق">×</button></header>
 <img width="92" height="92" loading="lazy" src="developer-portrait.jpg" alt=""><h2 id="wfDevName" data-i18n="name_mutez">م. معتز بالله حاج شعبان</h2><p data-i18n="desc_mutez">تطوير الهيكلة البرمجية، تصميم واجهات المستخدم التفاعلية، وبناء قواعد البيانات لضمان أداء سريع وموثوق.</p></dialog>
 <!-- MAIN -->

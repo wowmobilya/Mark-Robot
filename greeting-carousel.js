@@ -185,7 +185,12 @@
   trigger.setAttribute('aria-controls',panel.id);
   move.type='button';
   move.textContent='⇆';
-  toolbar.append(move);
+  const heading=document.createElement('strong'),close=document.createElement('button');
+  close.type='button';
+  close.textContent='×';
+  close.onclick=()=>{menu.open=false;trigger.focus();};
+  trigger.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h7m5 0h4M4 17h2m5 0h9"/><circle cx="13.5" cy="7" r="2.5"/><circle cx="8.5" cy="17" r="2.5"/></svg>';
+  toolbar.append(heading,move,close);
   panel.append(toolbar,design);
   menu.append(trigger,panel);
   document.body.append(menu);
@@ -194,11 +199,12 @@
   try {position=JSON.parse(localStorage.getItem(positionKey));}catch{}
   function place(){
     const width=document.documentElement.clientWidth,height=window.innerHeight;
-    const maxX=Math.max(0,width-trigger.offsetWidth-12);
+    const maxX=Math.max(0,width-trigger.offsetWidth);
     const maxY=Math.max(0,height-trigger.offsetHeight-12);
     const x=Number.isFinite(position?.x)?position.x:document.documentElement.dir==='rtl'?0:1;
     const y=Number.isFinite(position?.y)?position.y:0.52;
-    menu.style.left=(6+Math.max(0,Math.min(1,x))*maxX)+'px';
+    menu.style.right='auto';
+    menu.style.left=((drag?Math.max(0,Math.min(1,x)):Number(x>=0.5))*maxX)+'px';
     menu.style.top=(6+Math.max(0,Math.min(1,y))*maxY)+'px';
     menu.dataset.side=x<0.5?'left':'right';
     panel.style.left=Math.max(6-menu.offsetLeft,Math.min(0,width-panel.offsetWidth-menu.offsetLeft-6))+'px';
@@ -224,11 +230,11 @@
     suppressClick=true;
     menu.open=false;
     const fraction=(n,max)=>Math.max(0,Math.min(1,n/Math.max(1,max)));
-    position={x:fraction(drag.left+dx-6,document.documentElement.clientWidth-trigger.offsetWidth-12),
+    position={x:fraction(drag.left+dx,document.documentElement.clientWidth-trigger.offsetWidth),
       y:fraction(drag.top+dy-6,innerHeight-trigger.offsetHeight-12)};
     place();
   });
-  trigger.addEventListener('lostpointercapture',()=>{if(drag&&suppressClick)save();drag=null;});
+  trigger.addEventListener('lostpointercapture',()=>{if(drag&&suppressClick)save();drag=null;place();});
   trigger.addEventListener('click',e=>{if(suppressClick&&e.detail){e.preventDefault();}suppressClick=false;});
   menu.addEventListener('toggle',place);
   new ResizeObserver(place).observe(trigger);
@@ -255,6 +261,8 @@
   });
   function translate(){
     const words=translations[document.documentElement.lang]||translations.ar;
+    heading.textContent=words[0];
+    close.setAttribute('aria-label',window.wfUiText?.('Close')||'إغلاق');
     trigger.title=words[0];trigger.setAttribute('aria-label',words[0]);
     const [,,moveLabel]=wordsByLanguage[document.documentElement.lang]||wordsByLanguage.en;
 
