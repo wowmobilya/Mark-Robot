@@ -204,12 +204,13 @@
   try {position=JSON.parse(localStorage.getItem(positionKey));}catch{}
   function place(){
     const width=document.documentElement.clientWidth,height=window.innerHeight;
-    const maxX=Math.max(0,width-trigger.offsetWidth);
+    const edgeGap=6;
+    const maxX=Math.max(0,width-trigger.offsetWidth-2*edgeGap);
     const maxY=Math.max(0,height-trigger.offsetHeight-12);
     const x=Number.isFinite(position?.x)?position.x:document.documentElement.dir==='rtl'?0:1;
     const y=Number.isFinite(position?.y)?position.y:0.52;
     menu.style.right='auto';
-    menu.style.left=((drag?Math.max(0,Math.min(1,x)):Number(x>=0.5))*maxX)+'px';
+    menu.style.left=(edgeGap+(drag?Math.max(0,Math.min(1,x)):Number(x>=0.5))*maxX)+'px';
     menu.style.top=(6+Math.max(0,Math.min(1,y))*maxY)+'px';
     menu.dataset.side=x<0.5?'left':'right';
     panel.style.left=Math.max(6-menu.offsetLeft,Math.min(0,width-panel.offsetWidth-menu.offsetLeft-6))+'px';
@@ -235,7 +236,7 @@
     suppressClick=true;
     menu.open=false;
     const fraction=(n,max)=>Math.max(0,Math.min(1,n/Math.max(1,max)));
-    position={x:fraction(drag.left+dx,document.documentElement.clientWidth-trigger.offsetWidth),
+    position={x:fraction(drag.left+dx-6,document.documentElement.clientWidth-trigger.offsetWidth-12),
       y:fraction(drag.top+dy-6,innerHeight-trigger.offsetHeight-12)};
     place();
   });
