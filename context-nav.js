@@ -184,6 +184,21 @@
       if(current&&button.getAttribute('aria-current')!=='page')button.setAttribute('aria-current','page');
       else if(!current&&button.hasAttribute('aria-current'))button.removeAttribute('aria-current');
     });
+    // The older Home controller runs on every scroll/resize. While this button
+    // is inside Settings, its actual action and accessible name are Save/Close.
+    // Leave the original Save handler's own navigation behavior untouched.
+    const settings=document.querySelector('.page.active')?.id==='page-settings';
+    const center=buttons[2],homeLabel=center.querySelector('.bnav-label:not(.settings-save-label)'),settingsLabel=center.querySelector('.settings-save-label');
+    if(homeLabel){if(settings)homeLabel.setAttribute('aria-hidden','true');else homeLabel.removeAttribute('aria-hidden');}
+    if(settingsLabel){if(settings)settingsLabel.removeAttribute('aria-hidden');else settingsLabel.setAttribute('aria-hidden','true');}
+    if(settings){
+      const dialog=document.getElementById('wfSettingsDialog');
+      const close=nav.classList.contains('settings-close-action')||!!(dialog?.open&&dialog.querySelector('footer')?.hidden);
+      const label=t(close?'close':'save');
+      if(center.getAttribute('aria-label')!==label)center.setAttribute('aria-label',label);
+      if(center.title!==label)center.title=label;
+      if(settingsLabel&&settingsLabel.textContent!==label)settingsLabel.textContent=label;
+    }
   }
   function scheduleAria(){if(!ariaQueued){ariaQueued=true;requestAnimationFrame(normalizeCurrent);}}
   const originalMove=window.bnavMoveToIndex;
@@ -310,7 +325,7 @@
   const main=document.getElementById('mainContent');
   if(main)new MutationObserver(observePages).observe(main,{childList:true});
   new MutationObserver(schedule).observe(root,{attributes:true,attributeFilter:['lang','dir','class']});
-  new MutationObserver(scheduleAria).observe(nav,{subtree:true,attributes:true,attributeFilter:['aria-current']});
+  new MutationObserver(scheduleAria).observe(nav,{subtree:true,attributes:true,attributeFilter:['aria-current','aria-label','title','class']});
   const cart=document.getElementById('qblCartFab');
   if(cart)new MutationObserver(schedule).observe(cart,{attributes:true,attributeFilter:['class','style','disabled']});
   const compact=matchMedia('(max-width:1024px)');compact.addEventListener('change',schedule);

@@ -48,6 +48,51 @@
   .wf-business-definitions p { margin: 0 0 8px; }
   .wf-business-note, .wf-business-review { font-size: 12px; line-height: 1.8; color: var(--text2); margin: 8px 0 12px; }
   .wf-business-review { padding: 10px; border-inline-start: 3px solid var(--brand-primary); background: var(--input); border-radius: 8px; }
+
+  /* Give the detailed summary the full workspace before the two shorter cards.
+     Flatten presentation wrappers only while their insight section is visible;
+     the original DOM, category picker and section visibility controls stay intact. */
+  html body #mainContent #page-dashboard .wf-dash-workspace:has(> .wf-dash-secondary:not(.dashboard-off) > #dashIntelligence:not(.dashboard-off) > .wf-business-overview:not(.dashboard-off)) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-flow: row;
+    align-items: start;
+    gap: var(--dash-gap);
+  }
+  html body #mainContent #page-dashboard .wf-dash-workspace:has(> .wf-dash-secondary:not(.dashboard-off) > #dashIntelligence:not(.dashboard-off) > .wf-business-overview:not(.dashboard-off)) > .wf-dash-secondary:not(.dashboard-off),
+  html body #mainContent #page-dashboard .wf-dash-workspace:has(> .wf-dash-secondary:not(.dashboard-off) > #dashIntelligence:not(.dashboard-off) > .wf-business-overview:not(.dashboard-off)) > .wf-dash-secondary:not(.dashboard-off) > #dashIntelligence:not(.dashboard-off) {
+    display: contents !important;
+  }
+  html body #mainContent #page-dashboard .wf-dash-workspace:has(> .wf-dash-secondary:not(.dashboard-off) > #dashIntelligence:not(.dashboard-off) > .wf-business-overview:not(.dashboard-off)) .wf-business-overview {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    order: 0;
+    margin: 0 !important;
+  }
+  html body #mainContent #page-dashboard .wf-dash-workspace:has(> .wf-dash-secondary:not(.dashboard-off) > #dashIntelligence:not(.dashboard-off) > .wf-business-overview:not(.dashboard-off)) > .wf-dash-primary:not(.dashboard-off) {
+    grid-column: auto;
+    grid-row: auto;
+    order: 1;
+    align-self: start;
+    min-width: 0;
+  }
+  html body #mainContent #page-dashboard .wf-dash-workspace:has(> .wf-dash-secondary:not(.dashboard-off) > #dashIntelligence:not(.dashboard-off) > .wf-business-overview:not(.dashboard-off)) #dashIntelligence > .wf-insight-card:not(.wf-business-overview):not(.dashboard-off) {
+    grid-column: auto;
+    grid-row: auto;
+    order: 2;
+    align-self: start;
+    min-width: 0;
+    margin: 0 !important;
+  }
+  html body #mainContent #page-dashboard .wf-dash-workspace:not(:has(> .wf-dash-primary:not(.dashboard-off))) #dashIntelligence > .wf-insight-card:not(.wf-business-overview),
+  html body #mainContent #page-dashboard .wf-dash-workspace:not(:has(#dashIntelligence > .wf-insight-card:not(.wf-business-overview):not(.dashboard-off))) > .wf-dash-primary:not(.dashboard-off) {
+    grid-column: 1 / -1 !important;
+  }
+  html body #mainContent #page-dashboard .wf-business-overview.dashboard-off { display: none !important; }
+  @media (min-width: 720px) {
+    html body #mainContent #page-dashboard .wf-dash-workspace:has(> .wf-dash-secondary:not(.dashboard-off) > #dashIntelligence:not(.dashboard-off) > .wf-business-overview:not(.dashboard-off)) {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
   @container wf-business (min-width: 480px) {
     .wf-business-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .wf-business-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); }

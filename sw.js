@@ -1,7 +1,7 @@
-const CACHE_NAME = 'wow-furniture-v167-identity-report-categories';
+const CACHE_NAME = 'wow-furniture-v168-overview-layout-accessibility';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
-  './context-nav.js?v=4',
+  './context-nav.js?v=5',
   './context-nav.css?v=4',
   './',
   './bottomnav-fit.css?v=1',
@@ -25,7 +25,7 @@ const urlsToCache = [
   './branding-settings.js?v=1',
   './branding-settings.css?v=1',
   './business-overview.js?v=1',
-  './business-overview.css?v=1',
+  './business-overview.css?v=2',
   './greeting-carousel.js?v=15',
   './currency-calculator.css?v=11',
   './currency-calculator.js?v=7',
