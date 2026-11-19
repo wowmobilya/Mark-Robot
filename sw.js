@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v155-bottomnav-shadow';
+const CACHE_NAME = 'wow-furniture-v156-bottomnav-surface-shadow';
 const urlsToCache = [
   './workspace-surfaces.css?v=28',
   './context-nav.js?v=2',
