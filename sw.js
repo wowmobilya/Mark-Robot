@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v130-visible-market-trends';
+const CACHE_NAME = 'wow-furniture-v132-cashbox-settings-nav';
 const urlsToCache = [
   './workspace-surfaces.css?v=17',
   './context-nav.js?v=1',
@@ -12,6 +12,7 @@ const urlsToCache = [
   './settings-navigation.js?v=9',
   './dashboard-visuals.css?v=18',
   './rate-refresh.js?v=6',
+  './cashboxes.mjs',
   './section-headings.css?v=7',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
@@ -39,7 +40,7 @@ const urlsToCache = [
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE_NAME).then(async cache => {
-    await cache.addAll(urlsToCache.filter(u=>u.startsWith('./')));
+    await cache.addAll(urlsToCache.filter(u=>u.startsWith('./')).map(url=>new Request(url,{cache:'reload'})));
     await Promise.all(urlsToCache.filter(u=>!u.startsWith('./')).map(u=>cache.add(u).catch(()=>{})));
   }));
 });

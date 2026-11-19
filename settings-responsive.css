@@ -96,7 +96,7 @@
 }
 /* Inline section tiles replace the native picker; the form never sits behind a modal. */
 @media screen {
- html.wf-settings-open body #bottomNav {display:none!important}
+ /* Settings shares the dashboard navigation. */
  html body #page-settings.wf-settings-inline-ready .wf-settings-picker {display:none!important}
  html body #page-settings.wf-settings-inline-ready .wf-settings-save-footer {
   display:flex;justify-content:flex-end;max-width:1240px;margin:16px auto 24px;
@@ -315,4 +315,17 @@
     color: var(--ink); font-size: 16px;
     overflow-wrap: anywhere; font-variant-numeric: tabular-nums;
   }
+}
+
+@media screen {
+ html.wf-settings-open body #bottomNav #bnav-2 .bnav-label:not(.settings-save-label),
+ html.wf-settings-open body #bottomNav #bnavCircleIcon > * { display:none!important }
+ html.wf-settings-open body #bottomNav .settings-save-label { display:inline!important }
+ html:not(.wf-settings-open) body #bottomNav #bnav-2 .settings-save-label { display:none!important }
+ html.wf-settings-open body #bottomNav #bnavCircleIcon { font-size:0 }
+ html.wf-settings-open body #bottomNav #bnavCircleIcon::after {
+   content:""; width:23px; height:23px; background:currentColor;
+   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M3 3h14l4 4v14H3zM7 3v6h10V3M7 21v-8h10v8'/%3E%3C/svg%3E") center/contain no-repeat;
+ }
+ .cashbox-shortcut { margin-block:6px 12px }
 }

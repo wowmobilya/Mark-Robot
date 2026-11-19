@@ -17,6 +17,22 @@
   save.prepend(symbol);
   footer.append(save);document.body.append(footer);
  }
+ const center=document.getElementById('bnav-2');
+ if (save && center) {
+   const label=document.createElement('span');
+   label.className='bnav-label settings-save-label';
+   function translateSave(){
+     label.textContent=({ar:'حفظ',en:'Save',tr:'Kaydet',fr:'Enregistrer',ru:'Сохранить'})[document.documentElement.lang] || 'Save';
+   }
+   translateSave();
+   new MutationObserver(translateSave).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+   center.append(label);
+   center.addEventListener('click',event=>{
+     if (!page.classList.contains('active')) return;
+     event.stopImmediatePropagation();
+     save.click();
+   },true);
+ }
  const content = workspace.querySelector('.wf-settings-content');
  const dialog = document.createElement('dialog');
  dialog.id = 'wfSettingsDialog';
