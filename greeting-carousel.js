@@ -194,6 +194,11 @@
   panel.append(toolbar,design);
   menu.append(trigger,panel);
   document.body.append(menu);
+  const backdrop=document.createElement('div');
+  backdrop.className='wf-dashboard-dock-backdrop';backdrop.hidden=true;
+  document.body.insertBefore(backdrop,menu);
+  backdrop.addEventListener('pointerdown',()=>{menu.open=false;});
+  menu.addEventListener('toggle',()=>{backdrop.hidden=!menu.open;});
   const positionKey='wf.dashboard.dockPosition';
   let position,drag,suppressClick=false;
   try {position=JSON.parse(localStorage.getItem(positionKey));}catch{}
