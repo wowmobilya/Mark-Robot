@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v151-dashboard-contrast';
+const CACHE_NAME = 'wow-furniture-v152-sidebar-spacing';
 const urlsToCache = [
-  './workspace-surfaces.css?v=23',
+  './workspace-surfaces.css?v=24',
   './context-nav.js?v=1',
   './context-nav.css?v=1',
   './',
