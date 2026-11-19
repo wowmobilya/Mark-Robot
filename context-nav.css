@@ -36,3 +36,13 @@
  #bottomNav .wf-task-action svg {width:22px;height:22px}
  #bottomNav .wf-task-action:disabled {opacity:.6}
 }
+
+/* Universal mobile navigation state: never hide the dock on scanning or read-only screens. */
+@media screen and (max-width:1024px) {
+ html body #bottomNav[data-task-mode="screen"] {display:flex!important;}
+ html.wf-context-nav-open body #bottomNav {display:flex!important;}
+ html body #bottomNav[data-task-mode="main"] .wf-task-action {display:none!important;}
+ html body #bottomNav.wf-nav-secondary #bnavCircle {display:none!important;}
+ html body #bottomNav.wf-nav-secondary .bnav-btn.bnav-active {background:transparent!important;}
+ html body #page-quick-barcode.active {padding-bottom:calc(126px + env(safe-area-inset-bottom,0px))!important;}
+}

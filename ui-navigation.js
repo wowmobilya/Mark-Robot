@@ -563,3 +563,21 @@
     };
   }
 })();
+
+/* Sync the mobile browser's native toolbar color with WOW light/dark surfaces.
+   Browser/OS decides whether it controls both system bars or only the top one. */
+(() => {
+ const root=document.documentElement;
+ let meta=document.querySelector('meta[name="theme-color"]');
+ if(!meta){
+   meta=document.createElement('meta');meta.name='theme-color';
+   document.head.append(meta);
+ }
+ const sync=()=>{
+   const dark=root.getAttribute('data-theme')==='dark';
+   meta.setAttribute('content',dark?'#112532':'#153847');
+   root.style.setProperty('--wf-mobile-chrome',dark?'#112532':'#153847');
+ };
+ sync();
+ new MutationObserver(sync).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();
