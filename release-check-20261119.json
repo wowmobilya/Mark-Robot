@@ -1,0 +1,10 @@
+{
+  "app": "WOW-Galeri",
+  "release": "2026-11-19-v157",
+  "branch": "main",
+  "description": "Bottom navigation shadow fix and resilient service-worker cache install",
+  "expected_assets": [
+    "ui-identity.css",
+    "sw.js"
+  ]
+}
