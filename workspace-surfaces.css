@@ -986,3 +986,9 @@
  @keyframes wfSearchReveal {from {opacity:.25;transform:translateY(5px);}to {opacity:1;transform:none;}}
  }
 }
+
+/* Align the desktop drawer and the content with the dashboard header. */
+@media screen and (min-width:1025px) {
+ html:not(.wf-section-mode) body {--nav-h:72px;}
+ html:not(.wf-section-mode) body aside#sidebar {top:72px!important;bottom:0!important;height:auto!important;max-height:calc(100dvh - 72px)!important;}
+}

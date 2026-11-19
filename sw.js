@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v148-edge-tab';
+const CACHE_NAME = 'wow-furniture-v149-dashboard-surfaces';
 const urlsToCache = [
-  './workspace-surfaces.css?v=20',
+  './workspace-surfaces.css?v=21',
   './context-nav.js?v=1',
   './context-nav.css?v=1',
   './',
@@ -11,7 +11,7 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=9',
-  './dashboard-visuals.css?v=22',
+  './dashboard-visuals.css?v=23',
   './rate-refresh.js?v=6',
   './cashboxes.mjs',
   './section-headings.css?v=7',
