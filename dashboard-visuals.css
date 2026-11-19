@@ -930,6 +930,20 @@
    grid-area:sales;min-width:0;min-height:0;
  }
  #page-dashboard .wf-sales-command-card > .stat-icon {display:none!important;}
+ #page-dashboard .wf-sales-command-card .wf-sales-summary {
+   display:flex;align-items:center;justify-content:center;gap:12px;
+   padding-block:3px 5px;min-width:0;
+ }
+ #page-dashboard .wf-sales-command-card .wf-sales-summary > .stat-icon {
+   display:grid!important;place-items:center!important;flex:0 0 42px!important;
+   width:42px!important;height:42px!important;font-size:22px!important;border-radius:14px!important;
+ }
+ #page-dashboard .wf-sales-command-card .wf-sales-summary > div:last-child {
+   min-width:0;display:grid;justify-items:start;gap:3px;
+ }
+ #page-dashboard .wf-sales-command-card .wf-sales-summary .stat-lbl {
+   margin:0!important;font-size:12px;font-weight:750;
+ }
  #page-dashboard .wf-sales-command-card > :not(.stats-grid) {min-width:0;}
  #page-dashboard .wf-sales-command-card > .stats-grid {
    display:grid!important;grid-area:auto!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
