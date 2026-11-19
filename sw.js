@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v158-mobile-nav-and-barcode';
+const CACHE_NAME = 'wow-furniture-v159-nav-shadow-only';
 const urlsToCache = [
-  './workspace-surfaces.css?v=27',
+  './workspace-surfaces.css?v=28',
   './context-nav.js?v=2',
   './context-nav.css?v=2',
   './',
