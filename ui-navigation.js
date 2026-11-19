@@ -488,36 +488,52 @@
   }
 
   const home=document.getElementById('bnav-2');
+  const homeIcon=home?.querySelector('.bnav-icon');
+  const homeGraphic=homeIcon?.innerHTML||'🏠';
   const topIcon=document.getElementById('bnavCircleIcon');
   const arrow='<svg data-wf-home-up="true" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V4m-7 7 7-7 7 7"/></svg>';
+  const scrollAmount=()=>{
+    const active=main?.querySelector('.page.active');
+    return Math.max(0,window.scrollY||0,document.scrollingElement?.scrollTop||0,main?.scrollTop||0,active?.scrollTop||0);
+  };
   function syncHome(){
-    const onHome=dashboard?.classList.contains('active');
-    const scrolled=!!onHome&&(window.scrollY>110 || main?.scrollTop>110);
-    if(onHome&&topIcon){
+    // The bottom HOME button itself changes, across every screen, not just Dashboard.
+    const scrolled=scrollAmount()>90;
+    if(homeIcon){
+      const arrowShowing=!!homeIcon.querySelector('[data-wf-home-up]');
+      if(scrolled&&!arrowShowing)homeIcon.innerHTML=arrow;
+      else if(!scrolled&&arrowShowing)homeIcon.innerHTML=homeGraphic;
+    }
+    // The raised bottom-nav circle follows the selected tab. Only change its
+    // symbol when it is directly over Home, never overwrite another tab's icon.
+    if(home?.classList.contains('bnav-active')&&topIcon){
       const arrowShowing=!!topIcon.querySelector('[data-wf-home-up]');
       if(scrolled&&!arrowShowing)topIcon.innerHTML=arrow;
-      else if(!scrolled&&arrowShowing){
-        const svg=home?.querySelector('.bnav-icon svg');
-        if(svg)topIcon.replaceChildren(svg.cloneNode(true));
-        else topIcon.textContent='🏠';
-      }
+      else if(!scrolled&&arrowShowing)topIcon.innerHTML=homeGraphic;
     }
     if(home){
       const label=scrolled?
         ({ar:'الصعود للأعلى',en:'Scroll to top',tr:'Yukarı çık',fr:'Retour en haut',ru:'Наверх'}[root.lang]||'Scroll to top'):
         ({ar:'الرئيسية',en:'Home',tr:'Ana sayfa',fr:'Accueil',ru:'Главная'}[root.lang]||'Home');
-      home.setAttribute('aria-label',label);home.title=label;
+      home.setAttribute('aria-label',label);
+      home.title=label;
+      home.classList.toggle('wf-home-up',scrolled);
     }
     root.classList.toggle('wf-home-scroll-top',scrolled);
   }
   home?.addEventListener('click',event=>{
-    if(!dashboard?.classList.contains('active') || !(window.scrollY>30 || main?.scrollTop>30))return;
-    event.preventDefault();event.stopImmediatePropagation();
+    if(scrollAmount()<=90)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
     const behavior=matchMedia('(prefers-reduced-motion:reduce)').matches||root.dataset.wfMotion==='reduced'?'instant':'smooth';
-    window.scrollTo({top:0,behavior});if(main?.scrollTop)main.scrollTo({top:0,behavior});
+    window.scrollTo({top:0,behavior});
+    if(main?.scrollTop)main.scrollTo({top:0,behavior});
+    const active=main?.querySelector('.page.active');
+    if(active?.scrollTop)active.scrollTo({top:0,behavior});
   },true);
+  // Capture scrolls within nested page containers as well as the document.
+  document.addEventListener('scroll',syncHome,true);
   window.addEventListener('scroll',syncHome,{passive:true});
-  main?.addEventListener('scroll',syncHome,{passive:true});
   window.addEventListener('resize',syncHome,{passive:true});
   new MutationObserver(()=>{updatePosition();syncHome()}).observe(root,{attributes:true,attributeFilter:['lang']});
   const before=window.showPage;
