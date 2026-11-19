@@ -1061,7 +1061,7 @@
    color:var(--ui-accent)!important;
    border:2px solid #b77b56!important;
    box-shadow:none!important;
-   filter:drop-shadow(0 0 1px rgba(151,79,44,.35))!important;
+   filter:none!important;
    transition:border-color .18s ease,background-color .18s ease!important;
  }
  html body .dash-visibility summary svg {
