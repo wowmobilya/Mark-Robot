@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v158-mobile-nav-and-barcode';
+const CACHE_NAME = 'wow-furniture-v160-nav-grip-outline';
 const urlsToCache = [
-  './workspace-surfaces.css?v=27',
+  './workspace-surfaces.css?v=28',
   './context-nav.js?v=2',
   './context-nav.css?v=2',
   './',
@@ -11,7 +11,7 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=9',
-  './dashboard-visuals.css?v=28',
+  './dashboard-visuals.css?v=29',
   './rate-refresh.js?v=6',
   './cashboxes.mjs',
   './section-headings.css?v=7',

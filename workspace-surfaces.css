@@ -1338,48 +1338,22 @@
   #page-quick-barcode #qblCameraWrap * {animation:none!important;transition:none!important;}
  }
 }
-/* Uniform, flat bottom buttons: selected item stands out by color, not a drop shadow. */
+/* Shadow-only correction: retain the original raised circle, carved curve,
+   geometry, backgrounds, accents and adaptive icon. */
 @media screen and (max-width:1024px) {
  html body #bottomNav {
-   --wf-nav-focus:#276c7a;
-   min-height:72px!important;
-   background:var(--card)!important;
-   box-shadow:none!important;filter:none!important;
-   border-top:1px solid var(--border)!important;
- }
- html body #bottomNav :is(.bnav-btn,.bnav-btn.bnav-active,#bnavCircle,.wf-task-action) {
-   box-shadow:none!important;filter:none!important;
- }
- html body #bottomNav #bnavCircle {
-   background:var(--wf-nav-focus)!important;
-   color:#fff!important;border:1px solid var(--wf-nav-focus)!important;
-   box-shadow:none!important;filter:none!important;
- }
- html body #bottomNav .bnav-btn.bnav-active {
-   background:color-mix(in srgb,var(--wf-nav-focus) 9%,transparent)!important;
-   border-radius:14px!important;
- }
- html body #bottomNav .bnav-btn.bnav-active .bnav-label {
-   color:var(--wf-nav-focus)!important;font-weight:850!important;
- }
- html body #bottomNav :is(.bnav-btn.bnav-active .bnav-icon::before,.bnav-btn.bnav-active::before) {
-   box-shadow:none!important;filter:none!important;
- }
- html body #bottomNav :is(.bnav-btn:focus-visible,.wf-task-action:focus-visible) {
-   outline:2px solid var(--wf-nav-focus)!important;outline-offset:-2px!important;
- }
- html body #bottomNav[data-task-mode="action"] .wf-task-action {
-   min-width:0;min-height:62px;color:var(--text)!important;
- }
- html body #bottomNav[data-task-mode="action"] .wf-task-action > span:first-child {
-   background:var(--wf-nav-focus)!important;color:white!important;
    box-shadow:none!important;
+   filter:none!important;
  }
- html body #bottomNav[data-task-mode="action"] .wf-task-action:disabled {
-   opacity:.52;cursor:not-allowed;
+ html body #bottomNav #bnavCircle,
+ html body #bottomNav .bnav-btn,
+ html body #bottomNav .bnav-btn.bnav-active,
+ html body #bottomNav .bnav-btn.bnav-active::before,
+ html body #bottomNav .bnav-btn.bnav-active .bnav-icon::before,
+ html body #bottomNav .wf-task-action,
+ html body #bottomNav .wf-task-action > span:first-child {
+   box-shadow:none!important;
+   filter:none!important;
+   text-shadow:none!important;
  }
- html body #bottomNav.wf-nav-secondary .bnav-btn .bnav-label {color:var(--text2)!important;}
- html body #bottomNav.wf-nav-secondary .bnav-btn {background:transparent!important;}
- #page-quick-barcode.active ~ #bottomNav {visibility:visible;}
- .qbl-cart-fab {bottom:calc(92px + env(safe-area-inset-bottom,0px))!important;}
 }
