@@ -1052,3 +1052,28 @@
    position:relative;z-index:1;
  }
 }
+
+/* Distinct copper finish for the narrow angled grip. */
+@media screen {
+ html body .dash-visibility summary {
+   background:linear-gradient(180deg,#c88152 0%,#ad613e 52%,#8f4936 100%)!important;
+   border:1px solid #9f573f!important;color:#fff!important;
+   box-shadow:0 5px 16px rgba(117,62,42,.3)!important;
+   transition:filter .18s ease,box-shadow .18s ease!important;
+ }
+ html body .dash-visibility summary svg {
+   color:#fff!important;stroke:#fff!important;
+   filter:drop-shadow(0 1px 1px rgba(65,28,18,.2));
+ }
+ html body .dash-visibility[open] summary {
+   background:linear-gradient(180deg,#d09162,#a4513b)!important;border-color:#8e4b37!important;
+ }
+ html body .dash-visibility summary:is(:hover,:focus-visible) {filter:brightness(1.07);}
+ html body .dash-visibility summary:focus-visible {outline:2px solid #f2ba84!important;outline-offset:3px!important;}
+ html[data-theme="dark"] body .dash-visibility summary {
+   background:linear-gradient(180deg,#ba7854,#92503d)!important;border-color:#c88b65!important;
+ }
+ @media(prefers-reduced-motion:reduce) {
+  html body .dash-visibility summary {transition:none!important;}
+ }
+}
