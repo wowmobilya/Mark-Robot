@@ -69,7 +69,12 @@
     const mapped=['dashboard','companies','products','invoices','quick-barcode',
       'select-client-type','add-company','add-product','select-invoice-type',
       'create-invoice','payment-management'];
-    nav.classList.toggle('wf-nav-secondary',mode==='main'&&!mapped.includes(key));
+    const secondary=mode==='main'&&!mapped.includes(key);
+    nav.classList.toggle('wf-nav-secondary',secondary);
+    if(secondary)nav.querySelectorAll('.bnav-btn').forEach(tab=>{
+      tab.classList.remove('bnav-active');
+      tab.removeAttribute('aria-current');
+    });
     button.hidden=!target;
     if (!target) return;
     const svg=target.querySelector('svg');
