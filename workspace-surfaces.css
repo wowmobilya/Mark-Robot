@@ -1358,41 +1358,73 @@
  }
 }
 
-/* Remove the conspicuous green/teal cylinder from the mobile dock only.
-   Keep the existing cutout, moving symbol, geometry, and page-aware Home arrow. */
+/* Compact brand-colored dock. Keep the cutout, floating circle and adaptive icon;
+   cast one soft shadow from the shaped surface, never from the circular button. */
 @media screen and (max-width:1024px) {
+ html:root body #bottomNav {
+   height:calc(64px + env(safe-area-inset-bottom,0px))!important;
+   padding-top:0!important;
+ }
+ html:root body #bottomNav .bnav-btn {padding-top:7px!important;gap:3px!important;}
  html:root body #bottomNav::before {
    filter:none!important;box-shadow:none!important;
  }
+ html:root body #bottomNav .bottom-nav-bg {
+   display:block!important;z-index:-1;pointer-events:none;
+   background:transparent!important;box-shadow:none!important;border:0!important;
+   backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+   filter:drop-shadow(0 -3px 6px rgb(18 42 55 / 18%))!important;
+ }
+ html:root body #bottomNav .bottom-nav-bg::before {
+   content:"";position:absolute;inset:0;background:var(--card);
+   mask:var(--wf-dock-cutout) calc(var(--nav-x) - 5000px) 0 / 10000px 160px no-repeat;
+   -webkit-mask:var(--wf-dock-cutout) calc(var(--nav-x) - 5000px) 0 / 10000px 160px no-repeat;
+ }
+ html[data-theme="dark"] body #bottomNav .bottom-nav-bg {
+   filter:drop-shadow(0 -3px 7px rgb(0 0 0 / 32%))!important;
+ }
  html:root body #bottomNav #bnavCircle {
-   background:var(--card)!important;
-   color:var(--text)!important;
+   background:var(--brand-primary)!important;
+   color:#fff!important;
    border:0!important;outline:0!important;
    box-shadow:none!important;filter:none!important;
  }
  html:root body #bottomNav #bnavCircleIcon,
  html:root body #bottomNav #bnavCircleIcon svg,
  html:root body #bottomNav #bnavCircleIcon [data-wf-home-up] {
-   color:#14273e!important;stroke:currentColor!important;
+   color:#fff!important;stroke:currentColor!important;
  }
  html[data-theme="dark"] body #bottomNav #bnavCircleIcon,
  html[data-theme="dark"] body #bottomNav #bnavCircleIcon svg,
  html[data-theme="dark"] body #bottomNav #bnavCircleIcon [data-wf-home-up] {
-   color:#e4edf4!important;stroke:currentColor!important;
+   color:#fff!important;stroke:currentColor!important;
  }
  html:root body #bottomNav .bnav-btn.bnav-active {
-   background:color-mix(in srgb,var(--text) 4%,transparent)!important;
+   background:color-mix(in srgb,var(--brand-primary) 8%,transparent)!important;
  }
  html:root body #bottomNav .bnav-btn.bnav-active .bnav-label {
-   color:var(--text)!important;
+   color:var(--ui-accent)!important;
  }
  html:root body #bottomNav[data-task-mode="action"] .wf-task-action > span:first-child {
-   background:var(--card)!important;color:var(--text)!important;
-   border:1px solid #172a40!important;
+   background:var(--brand-primary)!important;color:#fff!important;
+   border:0!important;
    box-shadow:none!important;
  }
  html:root body #bottomNav #bnavCircle::before,
  html:root body #bottomNav #bnavCircle::after {
    content:none!important;display:none!important;
+ }
+ html body #mainContent .page {padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))!important;}
+ html body .co-form-sticky-bar {bottom:calc(64px + env(safe-area-inset-bottom,0px))!important;}
+ html body .qbl-cart-fab {bottom:calc(80px + env(safe-area-inset-bottom,0px))!important;}
+}
+
+/* Leave eight pixels between the original 18px grip and dashboard card edges. */
+@media screen {
+ html body:has(> .dash-visibility[data-side="left"]) #mainContent.main:has(#page-dashboard.active) {
+   padding-left:max(var(--workspace-inset),26px)!important;
+ }
+ html body:has(> .dash-visibility[data-side="right"]) #mainContent.main:has(#page-dashboard.active) {
+   padding-right:max(var(--workspace-inset),26px)!important;
  }
 }

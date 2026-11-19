@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v161-flush-navy-edge-neutral-bottom';
+const CACHE_NAME = 'wow-furniture-v162-compact-brand-dock-smart-card';
 const urlsToCache = [
-  './workspace-surfaces.css?v=29',
+  './workspace-surfaces.css?v=30',
   './context-nav.js?v=2',
   './context-nav.css?v=2',
   './',
@@ -11,7 +11,7 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=9',
-  './dashboard-visuals.css?v=31',
+  './dashboard-visuals.css?v=32',
   './rate-refresh.js?v=6',
   './cashboxes.mjs',
   './section-headings.css?v=7',

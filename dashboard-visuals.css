@@ -1165,3 +1165,121 @@
    outline:2px solid #15243b!important;outline-offset:2px!important;
  }
 }
+
+/* One stable smart-card frame for greeting, tip, weather and logo faces. */
+@media screen {
+ html body #mainContent #page-dashboard .wf-greeting-flip {
+   --wf-smart-card-height:clamp(13.5rem,24cqi,14.5rem);
+   --wf-smart-card-padding:clamp(12px,3cqi,18px);
+   container-type:inline-size;
+   block-size:var(--wf-smart-card-height);
+   min-block-size:0;
+   min-inline-size:0;
+   align-self:start;
+   border-radius:20px;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces {
+   block-size:100%;min-block-size:0;min-inline-size:0;
+   grid-template-columns:minmax(0,1fr);
+   grid-template-rows:minmax(0,1fr);
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces > * {
+   grid-area:1 / 1;
+   box-sizing:border-box;
+   inline-size:100%;block-size:100%;min-inline-size:0;min-block-size:0;
+   margin:0!important;padding:var(--wf-smart-card-padding)!important;
+   border:1px solid var(--dash-line)!important;
+   border-radius:20px!important;
+   background:var(--dashboard-card-wash)!important;
+   box-shadow:none!important;
+   backface-visibility:hidden;
+   overflow:auto!important;
+   overscroll-behavior:contain;
+   scrollbar-width:thin;
+   scrollbar-color:var(--dash-line) transparent;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces > #tipCardStandalone {
+   align-content:stretch;
+   transform:none!important;
+ }
+ html body #mainContent #page-dashboard #greetingCard {
+   align-items:stretch;
+   grid-template-rows:minmax(0,1fr);
+ }
+ html body #mainContent #page-dashboard #greetingCard .greeting-top {
+   display:block;block-size:100%;min-block-size:0;margin:0;
+ }
+ html body #mainContent #page-dashboard #greetingCard .greeting-left {
+   display:grid;grid-template-rows:auto minmax(0,1fr) auto;
+   block-size:100%;min-block-size:0;gap:8px;
+ }
+ html body #mainContent #page-dashboard #greetingCard .greeting-time-badge {
+   justify-self:start;margin:0;font-size:13px;
+ }
+ html body #mainContent #page-dashboard #greetingCard .greeting-msg {
+   min-block-size:0;margin:0;
+   font-size:clamp(1.125rem,5cqi,1.625rem)!important;
+   line-height:1.4;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;
+ }
+ html body #mainContent #page-dashboard #greetingCard .greeting-sub {
+   margin:0;font-size:13px;line-height:1.4;overflow-wrap:anywhere;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-inner {
+   display:grid;grid-template-columns:36px minmax(0,1fr);
+   grid-template-rows:minmax(0,1fr) auto;
+   align-items:start;min-block-size:0;gap:8px 12px;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-icon {
+   grid-area:1 / 1;width:36px;height:36px;font-size:22px;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-content {
+   display:grid;grid-template-rows:auto minmax(0,1fr);
+   block-size:100%;min-block-size:0;min-inline-size:0;gap:6px;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-label {
+   margin:0;font-size:13px;line-height:1.4;letter-spacing:normal;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-text {
+   min-block-size:0;font-size:14px;line-height:1.55;
+   overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-badge {
+   grid-column:2;justify-self:start;align-self:end;font-size:12px;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces .wf-weather {
+   grid-template-rows:auto minmax(0,1fr) auto;
+   align-content:stretch;gap:8px;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces .wf-weather-head {
+   align-items:start;gap:8px;
+ }
+ html body #mainContent #page-dashboard .wf-weather-head > div {min-inline-size:0;}
+ html body #mainContent #page-dashboard #wfWeatherTitle {font-size:14px;line-height:1.4;}
+ html body #mainContent #page-dashboard #wfWeatherStatus {font-size:12px;line-height:1.4;}
+ html body #mainContent #page-dashboard #wfWeatherTemp {
+   flex:none;font-size:clamp(1.125rem,5.5cqi,1.5rem);line-height:1.3;
+ }
+ html body #mainContent #page-dashboard .wf-weather-days {
+   grid-template-columns:repeat(7,minmax(0,1fr));
+   min-block-size:0;gap:clamp(2px,1cqi,6px);
+ }
+ html body #mainContent #page-dashboard .wf-weather-days > div {
+   min-inline-size:0;align-content:center;
+   padding:6px 2px;font-size:12px;line-height:1.3;overflow-wrap:anywhere;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces .wf-greeting-logo {
+   grid-template-rows:minmax(0,1fr) auto;
+   place-content:stretch;justify-items:center;gap:12px;
+ }
+ html body #mainContent #page-dashboard #wfGreetingLogoImage {
+   display:grid;place-items:center;align-self:stretch;justify-self:stretch;
+   min-block-size:0;min-inline-size:0;font-size:48px;
+ }
+ html body #mainContent #page-dashboard #wfGreetingLogoImage img {
+   width:min(100%,180px)!important;height:96px!important;
+   max-width:100%;max-height:100%;object-fit:contain;
+ }
+ html body #mainContent #page-dashboard #wfGreetingLogoTitle {
+   font-size:14px;line-height:1.4;overflow-wrap:anywhere;
+ }
+}
