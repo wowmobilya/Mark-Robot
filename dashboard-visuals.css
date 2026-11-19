@@ -845,3 +845,20 @@
  }
  html body #page-dashboard .stats-grid .stat-card {background:var(--dashboard-detail-wash)!important;}
 }
+
+@media screen {
+ #page-dashboard {--dash-caption:#425765;--dash-gain:#135e46;--dash-loss:#933440;}
+ [data-theme="dark"] #page-dashboard {--dash-caption:#c0d1d8;--dash-gain:#95e2bc;--dash-loss:#ffb3bc;}
+ html body #page-dashboard :is(.stat-val,.sales-currencies dd,.curr-item .curr-rate,.wf-insight-row b,.wf-catalog-row b,.wf-catalog-total b) {
+   color:var(--ink)!important;font-variant-numeric:lining-nums tabular-nums;unicode-bidi:isolate;
+ }
+ html body #page-dashboard :is(.stat-lbl,.sales-currencies dt,.sales-currencies small,.curr-item .curr-label,.wf-insight-row>span,.wf-catalog-label,.wf-catalog-row>span,.greeting-sub) {
+   color:var(--dash-caption)!important;
+ }
+ html body #page-dashboard .sales-currencies dt {font-size:11px;font-weight:700;}
+ html body #page-dashboard .sales-currencies dd {font-size:clamp(15px,1.2vw,18px);line-height:1.35;}
+ #page-dashboard .curr-item {--quote-color:var(--dash-caption);}
+ #page-dashboard .curr-item[data-quote-trend="up"] {--quote-color:var(--dash-gain);}
+ #page-dashboard .curr-item[data-quote-trend="down"] {--quote-color:var(--dash-loss);}
+ html body #page-dashboard .curr-item .wf-quote-trend {color:var(--quote-color)!important;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;}
+}
