@@ -28,11 +28,11 @@
     ru: ['Инегёль, Бурса', 'Дождь на 7 дней', 'Загрузка погоды…', 'Погода недоступна', 'WOW Furniture', 'мм'],
   };
   const carouselWords = {
-    ar: {card:'البطاقة الذكية',pages:'صفحات البطاقة الذكية',slide:'صفحة',open:'عرض',names:['الترحيب','نصيحة اليوم','الطقس','شعار الشركة','روبوت WOW'],hint:'اختر صفحة من المؤشر الجانبي. استخدم الأسهم للتنقل، أو اضغط المساحة الخالية لعرض الصفحة التالية.'},
-    tr: {card:'Akıllı kart',pages:'Akıllı kart sayfaları',slide:'Sayfa',open:'Göster',names:['Karşılama','Günün önerisi','Hava durumu','Şirket logosu','WOW robotu'],hint:'Yandaki göstergeden bir sayfa seçin. Ok tuşlarıyla ilerleyin veya sonraki sayfa için boş alana dokunun.'},
-    en: {card:'Smart card',pages:'Smart card pages',slide:'Slide',open:'Show',names:['Welcome','Today’s tip','Weather','Company logo','WOW robot'],hint:'Choose a page with the side indicator. Use the arrow keys, or press the empty card area to show the next page.'},
-    fr: {card:'Carte intelligente',pages:'Pages de la carte',slide:'Page',open:'Afficher',names:['Accueil','Conseil du jour','Météo','Logo de l’entreprise','Robot WOW'],hint:'Choisissez une page avec l’indicateur latéral. Utilisez les flèches ou appuyez sur une zone vide pour passer à la page suivante.'},
-    ru: {card:'Умная карточка',pages:'Страницы карточки',slide:'Слайд',open:'Показать',names:['Приветствие','Совет дня','Погода','Логотип компании','Робот WOW'],hint:'Выберите страницу боковым индикатором. Используйте стрелки или нажмите на свободную область для перехода дальше.'}
+    ar: {card:'البطاقة الذكية',pages:'صفحات البطاقة الذكية',slide:'صفحة',open:'عرض',names:['الترحيب','نصيحة اليوم','الطقس','شعار الشركة','إنفنتي روبوت'],hint:'اختر صفحة من المؤشر الجانبي. استخدم الأسهم للتنقل، أو اضغط المساحة الخالية لعرض الصفحة التالية.'},
+    tr: {card:'Akıllı kart',pages:'Akıllı kart sayfaları',slide:'Sayfa',open:'Göster',names:['Karşılama','Günün önerisi','Hava durumu','Şirket logosu','Infinity Robot'],hint:'Yandaki göstergeden bir sayfa seçin. Ok tuşlarıyla ilerleyin veya sonraki sayfa için boş alana dokunun.'},
+    en: {card:'Smart card',pages:'Smart card pages',slide:'Slide',open:'Show',names:['Welcome','Today’s tip','Weather','Company logo','Infinity Robot'],hint:'Choose a page with the side indicator. Use the arrow keys, or press the empty card area to show the next page.'},
+    fr: {card:'Carte intelligente',pages:'Pages de la carte',slide:'Page',open:'Afficher',names:['Accueil','Conseil du jour','Météo','Logo de l’entreprise','Robot Infinity'],hint:'Choisissez une page avec l’indicateur latéral. Utilisez les flèches ou appuyez sur une zone vide pour passer à la page suivante.'},
+    ru: {card:'Умная карточка',pages:'Страницы карточки',slide:'Слайд',open:'Показать',names:['Приветствие','Совет дня','Погода','Логотип компании','Робот Инфинити'],hint:'Выберите страницу боковым индикатором. Используйте стрелки или нажмите на свободную область для перехода дальше.'}
   };
   const playbackWords = {
     ar:['تشغيل التنقل التلقائي','إيقاف التنقل التلقائي'],

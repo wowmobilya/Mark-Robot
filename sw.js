@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v168-overview-layout-accessibility';
+const CACHE_NAME = 'wow-furniture-v169-local-report-copy';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
   './context-nav.js?v=5',
@@ -24,9 +24,9 @@ const urlsToCache = [
   './product-categories.css?v=1',
   './branding-settings.js?v=1',
   './branding-settings.css?v=1',
-  './business-overview.js?v=1',
+  './business-overview.js?v=2',
   './business-overview.css?v=2',
-  './greeting-carousel.js?v=15',
+  './greeting-carousel.js?v=16',
   './currency-calculator.css?v=11',
   './currency-calculator.js?v=7',
   './ui-i18n.js?v=26',

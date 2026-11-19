@@ -144,7 +144,7 @@
   }
   function localize(snapshot, locale = 'en') {
     const lang = own(text, locale) ? locale : 'en', L = text[lang];
-    const amount = (value, code = 'USD') => new Intl.NumberFormat(lang, { style: 'currency', currency: /^[A-Z]{3}$/.test(code) ? code : 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+    const amount = (value, code = 'USD') => new Intl.NumberFormat(lang, { style: 'currency', currencyDisplay: 'name', currency: /^[A-Z]{3}$/.test(code) ? code : 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
     const count = value => new Intl.NumberFormat(lang).format(value);
     const reportDate = new Intl.DateTimeFormat(lang, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(snapshot.date + 'T12:00:00Z'));
     const result = { ...snapshot, locale: lang, narration: '' };
