@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v156-unified-navigation-sales-ui';
+const CACHE_NAME = 'wow-furniture-v157-bottom-home-and-angled-tab';
 const urlsToCache = [
-  './workspace-surfaces.css?v=25',
+  './workspace-surfaces.css?v=26',
   './context-nav.js?v=1',
   './context-nav.css?v=1',
   './',
@@ -11,7 +11,7 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=9',
-  './dashboard-visuals.css?v=26',
+  './dashboard-visuals.css?v=27',
   './rate-refresh.js?v=6',
   './cashboxes.mjs',
   './section-headings.css?v=7',
@@ -23,7 +23,7 @@ const urlsToCache = [
   './ui-i18n.js?v=26',
   './modern-ui.css?v=47',
   './ui-identity.css?v=32',
-  './ui-navigation.js?v=21',
+  './ui-navigation.js?v=22',
   './ui-logo.js?v=3',
   './ui-settings.js?v=2',
   './ui-icons.js?v=47',
