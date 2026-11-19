@@ -1105,3 +1105,62 @@
  html body #sidebar.wf-searching #wfSearchResults {margin-top:0;}
  html body #sidebar.wf-searching #wfSearchResults button {min-height:44px;}
 }
+
+/* WOW shared rounded controls. Keep circular controls, dock and edge grip intact. */
+@media screen {
+ html {--wf-control-radius:14px;}
+ html body #mainContent .page :is(.btn,.btn-p,.btn-g,.btn-s,.btn-b,.co-stat-pill,.co-details-toggle,.tab-btn,.wf-search-toggle,.qbl-modes button,.tg-opt) {
+   border-radius:var(--wf-control-radius)!important;
+ }
+ html body #mainContent .page :is(.co-actions,.pr-card-new-actions,.inv-card-actions,.co-toolbar-row,.page-toolbar-row,.wf-heading-actions) :is(button,.btn) {
+   border-radius:var(--wf-control-radius)!important;
+ }
+ html body #sidebar :is(.nav-item,.wf-group-toggle,.wf-context-actions button,#wfSidebarSearchToggle),
+ html body #sidebar #wfSearchResults button,
+ html body #sidebar > .wf-search-inline,
+ html body #sidebar .wf-search-inline-clear {
+   border-radius:var(--wf-control-radius)!important;
+ }
+ html body #mainContent .page :is(.btn,.co-stat-pill,.stat-card,.wf-sales-action,.wf-search-toggle):focus-visible {
+   outline:2px solid var(--brand-primary);outline-offset:2px;
+ }
+ @media(prefers-reduced-motion:no-preference) {
+  html:not([data-wf-motion="reduced"]) body #mainContent .page :is(.btn,.co-stat-pill,.stat-card,.wf-sales-action) {
+    transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,translate .18s ease!important;
+  }
+ }
+}
+@media screen {
+ html body #mainContent .page .wf-page-position,
+ html body .wf-nav-wordmark .wf-page-position {
+   display:inline-flex;align-items:center;justify-content:center;max-width:100%;
+   min-width:0;margin-inline:7px;padding:2px 8px;box-sizing:border-box;
+   border:1px solid color-mix(in srgb,var(--brand-primary) 18%,var(--border));
+   border-radius:999px;background:color-mix(in srgb,var(--brand-primary) 7%,var(--card));
+   color:var(--text2);font-size:10px!important;font-weight:700!important;
+   line-height:1.5;white-space:normal;overflow-wrap:anywhere;text-align:center;
+ }
+ html body .wf-nav-wordmark .wf-page-position {display:flex;margin:3px auto 0;width:max-content;max-width:100%;font-size:9px!important;}
+ html body #mainContent .page > .wf-page-position {display:flex;width:max-content;margin:0 0 9px;}
+ @media(max-width:480px) {
+  html body #mainContent .page .wf-page-position {font-size:9px!important;padding-inline:5px;margin-inline:4px;}
+ }
+}
+@media screen and (max-width:1024px) {
+ html body #toastBox {max-width:min(92vw,330px);box-sizing:border-box;}
+ html body #toastBox .toast {max-width:100%;overflow-wrap:anywhere;}
+}
+
+/* Final consistent bottom-nav identity after dashboard style overrides. */
+@media screen and (max-width:1024px) {
+ html:root body #bottomNav #bnavCircle {
+   background:var(--brand-primary)!important;
+   border-color:var(--brand-primary)!important;
+   color:white!important;
+ }
+ html:root body #bottomNav #bnavCircleIcon,
+ html:root body #bottomNav #bnavCircleIcon svg {color:#fff!important;}
+ html[data-theme="dark"] body #bottomNav .bnav-btn.bnav-active .bnav-label {
+   color:#8ccfe2!important;
+ }
+}
