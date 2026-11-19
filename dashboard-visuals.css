@@ -1035,3 +1035,20 @@
  }
  html body .wf-dashboard-dock-backdrop[hidden] {display:none!important;}
 }
+
+/* Angled dashboard side grip: a pronounced tapered shoulder, still only 18px wide. */
+@media screen {
+ html body .dash-visibility[data-side="left"] summary {
+   border-radius:0 15px 15px 0!important;
+   clip-path:polygon(0 0,59% 0,100% 14%,100% 86%,59% 100%,0 100%);
+   -webkit-clip-path:polygon(0 0,59% 0,100% 14%,100% 86%,59% 100%,0 100%);
+ }
+ html body .dash-visibility[data-side="right"] summary {
+   border-radius:15px 0 0 15px!important;
+   clip-path:polygon(41% 0,100% 0,100% 100%,41% 100%,0 86%,0 14%);
+   -webkit-clip-path:polygon(41% 0,100% 0,100% 100%,41% 100%,0 86%,0 14%);
+ }
+ html body .dash-visibility summary svg {
+   position:relative;z-index:1;
+ }
+}
