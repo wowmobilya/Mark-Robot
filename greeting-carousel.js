@@ -285,12 +285,14 @@
   picker.append(title,select);
   const summaryPicker=document.createElement('label'),summaryTitle=document.createElement('span'),summarySelect=document.createElement('select');
   summaryPicker.className='overview-style';
-  ['list','tiles'].forEach(value=>summarySelect.add(new Option('',value)));
+  const summaryModes=['list','tiles','spotlight','ledger','columns'];
+  const summaryLabels={ar:['بطاقة بارزة','سجل','أعمدة'],en:['Spotlight','Ledger','Columns'],fr:['En vedette','Registre','Colonnes'],ru:['Акцент','Реестр','Колонки'],tr:['Vurgu','Defter','Sütunlar']};
+  summaryModes.forEach(value=>summarySelect.add(new Option('',value)));
   summaryPicker.append(summaryTitle,summarySelect);
   const summaryKey='wf.dashboard.summaryStyle';
   const names={ar:['ملخّص الأعمال','توزيع المنتجات'],en:['Business summary','Product breakdown'],tr:['İş özeti','Ürün dağılımı'],fr:['Résumé d’activité','Répartition des produits'],ru:['Сводка бизнеса','Распределение товаров']};
   let summaryMode='list';
-  try{if(localStorage.getItem(summaryKey)==='tiles')summaryMode='tiles';}catch{}
+  try{const saved=localStorage.getItem(summaryKey);if(summaryModes.includes(saved))summaryMode=saved;}catch{}
   summarySelect.value=summaryMode;
   summarySelect.onchange=()=>{
     summaryMode=summarySelect.value;
@@ -309,7 +311,8 @@
     if(heads[1]&&!heads[1].contains(picker))heads[1].append(picker);
     summaryTitle.textContent=labels[0];
     title.textContent=labels[1];
-    Array.from(summarySelect.options).forEach((opt,i)=>opt.textContent=words[i+1]);
+    const summaryWords=[words[1],words[2],...(summaryLabels[document.documentElement.lang]||summaryLabels.en)];
+    Array.from(summarySelect.options).forEach((opt,i)=>opt.textContent=summaryWords[i]);
     host.dataset.summaryView=summaryMode;
     Array.from(select.options).forEach((opt,i)=>opt.textContent=words[i+1]);
     host.dataset.view=mode;
