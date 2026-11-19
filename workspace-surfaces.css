@@ -1357,3 +1357,42 @@
    text-shadow:none!important;
  }
 }
+
+/* Remove the conspicuous green/teal cylinder from the mobile dock only.
+   Keep the existing cutout, moving symbol, geometry, and page-aware Home arrow. */
+@media screen and (max-width:1024px) {
+ html:root body #bottomNav::before {
+   filter:none!important;box-shadow:none!important;
+ }
+ html:root body #bottomNav #bnavCircle {
+   background:var(--card)!important;
+   color:var(--text)!important;
+   border:0!important;outline:0!important;
+   box-shadow:none!important;filter:none!important;
+ }
+ html:root body #bottomNav #bnavCircleIcon,
+ html:root body #bottomNav #bnavCircleIcon svg,
+ html:root body #bottomNav #bnavCircleIcon [data-wf-home-up] {
+   color:#14273e!important;stroke:currentColor!important;
+ }
+ html[data-theme="dark"] body #bottomNav #bnavCircleIcon,
+ html[data-theme="dark"] body #bottomNav #bnavCircleIcon svg,
+ html[data-theme="dark"] body #bottomNav #bnavCircleIcon [data-wf-home-up] {
+   color:#e4edf4!important;stroke:currentColor!important;
+ }
+ html:root body #bottomNav .bnav-btn.bnav-active {
+   background:color-mix(in srgb,var(--text) 4%,transparent)!important;
+ }
+ html:root body #bottomNav .bnav-btn.bnav-active .bnav-label {
+   color:var(--text)!important;
+ }
+ html:root body #bottomNav[data-task-mode="action"] .wf-task-action > span:first-child {
+   background:var(--card)!important;color:var(--text)!important;
+   border:1px solid #172a40!important;
+   box-shadow:none!important;
+ }
+ html:root body #bottomNav #bnavCircle::before,
+ html:root body #bottomNav #bnavCircle::after {
+   content:none!important;display:none!important;
+ }
+}
