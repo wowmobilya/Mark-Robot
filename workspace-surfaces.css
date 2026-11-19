@@ -908,3 +908,24 @@
  html body #wfSettingsDialog > #bottomNav {margin-block-start:30px!important;}
 }
 @media screen and (max-width:350px){#page-cashboxes .cashboxes form,#page-cashboxes .cashbox-overview {grid-template-columns:minmax(0,1fr);}}
+
+@media screen and (min-width:1025px) {
+  html:not(.wf-section-mode) body nav.navbar {
+    display:grid!important; grid-template-columns:104px minmax(0,1fr) 48px 48px;
+    align-items:center; gap:8px; padding-inline:16px!important;
+    inset-inline:0!important; width:auto!important; box-sizing:border-box;
+  }
+  html body nav.navbar .wf-header-controls {display:contents!important;}
+  html body nav.navbar .wf-nav-wordmark {
+    position:static; transform:none; grid-area:1 / 2; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis;
+  }
+  html body nav.navbar .wf-header-controls :is(#desktopSidebarToggle,#themeBtn,#headerSettingsBtn),
+  html body nav.navbar .wf-header-controls :is(#desktopSidebarToggle,#themeBtn,#headerSettingsBtn):is(:hover,:active) {
+    display:inline-flex!important; position:static!important; transform:none!important;
+    align-items:center; justify-content:center; pointer-events:auto; grid-row:1;
+  }
+  html body nav.navbar #desktopSidebarToggle {grid-column:1;justify-self:start;}
+  html body nav.navbar #themeBtn {grid-column:3;}
+  html body nav.navbar #headerSettingsBtn {grid-column:4;}
+}
