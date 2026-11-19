@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v158-grip-edge-isolation';
+const CACHE_NAME = 'wow-furniture-v161-flush-navy-edge-neutral-bottom';
 const urlsToCache = [
-  './workspace-surfaces.css?v=28',
+  './workspace-surfaces.css?v=29',
   './context-nav.js?v=2',
   './context-nav.css?v=2',
   './',
@@ -11,13 +11,13 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=9',
-  './dashboard-visuals.css?v=30',
+  './dashboard-visuals.css?v=31',
   './rate-refresh.js?v=6',
   './cashboxes.mjs',
   './section-headings.css?v=7',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
-  './greeting-carousel.js?v=9',
+  './greeting-carousel.js?v=10',
   './currency-calculator.css?v=11',
   './currency-calculator.js?v=7',
   './ui-i18n.js?v=26',
