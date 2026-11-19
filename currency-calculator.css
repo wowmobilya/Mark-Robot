@@ -150,3 +150,35 @@ html body #currCalcModal .cc-copy-result {
 }
 html body #currCalcModal .cc-copy-result:disabled { opacity: .55; cursor: default; }
 html body #currCalcModal :is(.curr-calc-close,.cc-swap,.cc-copy-result):hover:not(:disabled) { background: var(--input) !important; }
+
+/* Currency calculator touch ergonomics and stronger result hierarchy. */
+@media screen {
+ html body #currCalcModal .curr-calc-modal {max-width:min(420px,calc(100vw - 20px))!important;}
+ html body #currCalcModal .curr-calc-header {padding-block:10px!important;}
+ html body #currCalcModal .curr-calc-body {gap:9px!important;padding:12px!important;}
+ html body #currCalcModal :is(.curr-calc-input-section,.curr-calc-result-section) {
+   padding:10px!important;border-radius:14px!important;min-height:65px;
+ }
+ html body #currCalcModal .curr-calc-result-section {
+   background:color-mix(in srgb,var(--brand-primary) 11%,var(--card))!important;
+   border-color:color-mix(in srgb,var(--brand-primary) 28%,var(--border))!important;
+ }
+ html body #currCalcModal .curr-calc-result-val {color:var(--brand-primary)!important;font-weight:850!important;}
+ html body #currCalcModal .curr-calc-quick-btn {min-height:38px!important;border-radius:12px!important;font-size:12px!important;}
+ html body #currCalcModal .cc-number-pad {gap:6px;}
+ html body #currCalcModal .cc-number-pad button {
+   min-height:45px!important;border-radius:13px!important;font-size:18px!important;
+   touch-action:manipulation;
+ }
+ html body #currCalcModal .cc-number-pad button:active {background:color-mix(in srgb,var(--brand-primary) 18%,var(--input))!important;}
+ html body #currCalcModal .cc-copy-result {border-radius:14px!important;}
+ html body #currCalcModal .cc-swap {border-radius:50%!important;}
+ @media(max-height:690px) {
+  html body #currCalcModal .curr-calc-body {gap:5px!important;padding:8px!important;}
+  html body #currCalcModal .cc-number-pad button {min-height:38px!important;}
+  html body #currCalcModal .curr-calc-quick-btn {min-height:30px!important;}
+ }
+ @media(prefers-reduced-motion:reduce) {
+  html body #currCalcModal .cc-number-pad button {transition:none!important;}
+ }
+}
