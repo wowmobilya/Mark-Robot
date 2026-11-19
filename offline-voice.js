@@ -205,6 +205,7 @@
   const core={CACHE,VERSION,runtime,catalog,retiredArabic,localeKey,error,aborted,checkAbort,hex,splitText,speechChunks,pcmToWav,createWavSequence,MAX_RENDERED_AUDIO_BYTES,validAsset,createManager};
   if(typeof module!=='undefined'&&module.exports){module.exports=core;return;}
   if(typeof document==='undefined'){self.WFOfflineVoiceCore=core;return;}
+  window.WFOfflineVoiceCore=Object.freeze(core);
   function supported(){
     try{return !!(window.isSecureContext&&window.caches&&window.crypto?.subtle&&window.Worker&&window.WebAssembly&&WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11])));}catch(_){return false;}
   }
@@ -218,7 +219,7 @@
     const engine=catalog.find(voice=>voice.locale===localeKey(locale))?.engine||'piper';
     if(worker&&workerEngine!==engine)terminate();
     if(!worker){
-      worker=engine==='nabra'?new Worker(new URL('nabra-report-worker.js?v=2',document.baseURI),{type:'module'}):new Worker(new URL('offline-voice-worker.js?v=4',document.baseURI));
+      worker=engine==='nabra'?new Worker(new URL('nabra-report-worker.js?v=3',document.baseURI),{type:'module'}):new Worker(new URL('offline-voice-worker.js?v=5',document.baseURI));
       workerEngine=engine;
       const instance=worker;
       worker.onmessage=event=>{if(worker!==instance||!job||event.data?.id!==job.id)return;const task=job;job=null;clearTimeout(task.timeout);task.cleanup();if(event.data.error){worker?.terminate();worker=null;task.reject(error(event.data.error));}else task.resolve(event.data.blob);};
@@ -249,14 +250,18 @@
     catch(_){URL.revokeObjectURL(silence);lease.unlock=Promise.resolve();}
     return lease;
   }
-  function speak(options={}){
+  function speak(options={},source=null){
+    const readStatus=source?.getStatus||manager.getStatus;
+    const renderSpeech=source?.synthesize||synthesize;
     activeSpeech?.cancel();
     const lease=playbackLeases.has(options.playback)&&!options.playback.disposed?options.playback:preparePlayback();
     playbackLeases.delete(lease);
-    const controller=new AbortController(),audio=lease.audio;let stopped=false,url='',finished=false;
+    const controller=new AbortController(),audio=lease.audio;let stopped=false,url='',finished=false,sourceReleased=false;
     const text=typeof options.text==='string'?options.text:'',locale=options.locale||'ar';
     const clearAudioEvents=()=>{audio.onplaying=audio.onwaiting=audio.onended=audio.onerror=audio.ontimeupdate=null;};
-    const cleanup=()=>{clearAudioEvents();lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;};
+    const cleanup=()=>{clearAudioEvents();lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;
+      if(!sourceReleased){sourceReleased=true;try{source?.dispose?.();}catch(_){}}
+    };
     const handle={cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();}};activeSpeech=handle;
     async function playClip(blob,boundaries){
       checkAbort(controller.signal);
@@ -280,13 +285,13 @@
     }
     (async()=>{
       try{
-        if(!text.trim()||text.length>16000)throw error('text-length');if(!manager.getStatus(locale).ready)throw error('pack-not-installed');
+        if(!text.trim()||text.length>16000)throw error('text-length');if(!readStatus(locale).ready)throw error('pack-not-installed');
         const chunks=speechChunks(text,options.chunks);
         await lease.unlock;checkAbort(controller.signal);
         if(options.continuous===true){
           const sequence=createWavSequence();options.onWaiting?.();
           for(let index=0;index<chunks.length;index++){
-            const blob=await synthesize(chunks[index].text,{locale,signal:controller.signal});checkAbort(controller.signal);
+            const blob=await renderSpeech(chunks[index].text,{locale,signal:controller.signal});checkAbort(controller.signal);
             await sequence.append(blob,chunks[index]);checkAbort(controller.signal);
             options.onProgress?.({completed:index+1,total:chunks.length,phase:'preparing'});
           }
@@ -294,7 +299,7 @@
         }else{
           // The compatibility path prepares one sentence ahead while it plays.
           // Settling errors here avoids an unhandled rejection during playback.
-          const generate=chunk=>{const pending={ready:false,promise:null};pending.promise=synthesize(chunk.text,{locale,signal:controller.signal}).then(blob=>({blob}),problem=>({problem})).then(result=>{pending.ready=true;return result;});return pending;};
+          const generate=chunk=>{const pending={ready:false,promise:null};pending.promise=renderSpeech(chunk.text,{locale,signal:controller.signal}).then(blob=>({blob}),problem=>({problem})).then(result=>{pending.ready=true;return result;});return pending;};
           let next=generate(chunks[0]);
           for(let index=0;index<chunks.length;index++){
             const chunk=chunks[index];
@@ -309,7 +314,7 @@
     })();
     return handle;
   }
-  window.WFOfflineVoice={...manager,synthesize,speak,preparePlayback,remove:async locale=>{activeSpeech?.cancel();terminate();return manager.remove(locale);}};
+  window.WFOfflineVoice={...manager,synthesize,speak,preparePlayback,speakGenerated:(options,source)=>speak(options,source),remove:async locale=>{activeSpeech?.cancel();terminate();return manager.remove(locale);}};
   window.addEventListener('pagehide',()=>{activeSpeech?.cancel();terminate();});
   manager.refresh();
 })();

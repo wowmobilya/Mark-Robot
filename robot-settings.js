@@ -3,7 +3,7 @@
 (() => {
   'use strict';
   const defaults = {autoExpressions: true, idleMotion: true, trackingSensitivity: 'normal',
-    speechEnabled: true, speechRate: 1, speechVolume: 1, arabicDialect: 'sy', speechBackend: 'local', continuousSpeech: true};
+    speechEnabled: true, speechRate: 1, speechVolume: 1, arabicDialect: 'sy', speechBackend: 'reference', continuousSpeech: true};
   const object = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   const bounded = (value, min, max, fallback) => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
   function normalize(value) {
@@ -16,14 +16,15 @@
       speechRate: bounded(input.speechRate, .75, 1.25, 1),
       speechVolume: bounded(input.speechVolume, 0, 1, 1),
       arabicDialect: input.arabicDialect === 'eg' ? 'eg' : 'sy',
-      speechBackend: input.speechBackend === 'device' ? 'device' : 'local',
+      speechBackend: ['reference', 'local', 'device'].includes(input.speechBackend) ? input.speechBackend : 'reference',
       continuousSpeech: input.continuousSpeech !== false,
     };
   }
   function mergeSettings(stored, memory, preferences) {
     const previous = object(stored), current = object(memory);
+    const robot = {...object(current.robot), ...object(previous.robot), ...object(preferences)};
     return {...current, ...previous, id: 'main', robot: {
-      ...object(current.robot), ...object(previous.robot), ...normalize(preferences),
+      ...robot, ...normalize(robot),
     }};
   }
   function packActionDisabled(status, anyDownloading, ownsDownload) {
@@ -36,6 +37,7 @@
       'integrity-failed': 'voiceIntegrity', 'download-failed': 'voiceDownloadFailed',
       'storage-full': 'voiceStorageFull', 'storage-unavailable': 'voiceStorageUnavailable',
       'browser-unsupported': 'voiceUnsupported', 'locale-unsupported': 'voiceLocaleUnavailable',
+      'webgpu-unavailable': 'voiceWebGPU', 'reference-unavailable': 'voiceReferenceUnavailable',
       'download-busy': 'voiceDownloadBusy', 'pack-not-installed': 'voiceMissing', cancelled: 'voiceCancelled',
     };
     if (['error', 'unsupported'].includes(status.state) || status.reason === 'cancelled') {
@@ -50,6 +52,24 @@
       store: 'voicePhaseStore', 'final-check': 'voicePhaseVerify', marker: 'voicePhaseStore',
     };
     return stages[status.stage] || {download: 'voicePhaseDownload', verify: 'voicePhaseVerify', store: 'voicePhaseStore'}[status.phase] || '';
+  }
+  function voicePackEntries(localApi, referenceApi, locale = 'ar') {
+    const supported = ['ar', 'en', 'tr', 'fr', 'ru'];
+    locale = supported.includes(locale) ? locale : 'ar';
+    const list = api => { try { return typeof api?.list === 'function' ? api.list() : []; } catch (_) { return []; } };
+    const status = (api, key, backend) => {
+      try { if (typeof api?.getStatus === 'function') { const value = api.getStatus(key); if (value && typeof value === 'object') return value; } } catch (_) {}
+      return {state: 'unsupported', ready: false, reason: backend === 'reference' ? 'reference-unavailable' : 'browser-unsupported'};
+    };
+    const shared = list(referenceApi);
+    const pack = shared.find(item => item.locale === locale || item.locales?.includes(locale)) || shared[0] ||
+      {name: 'Mark · local reference', bytes: 921000000, approximate: true};
+    const entries = [{key: 'reference', backend: 'reference', locale, api: referenceApi, pack, status: status(referenceApi, locale, 'reference')}];
+    for (const pack of list(localApi)) {
+      if (supported.includes(pack.locale)) entries.push({key: 'local:' + pack.locale, backend: 'local', locale: pack.locale,
+        api: localApi, pack, status: status(localApi, pack.locale, 'local')});
+    }
+    return entries;
   }
   function createPreferenceStore({getState, connect}) {
     let busy = false;
@@ -189,7 +209,7 @@
     };
   }
 
-  const core = {defaults, normalize, mergeSettings, packActionDisabled, voiceStatusKey, voicePhaseKey, createPreferenceStore, movement, createMotionTracker};
+  const core = {defaults, normalize, mergeSettings, packActionDisabled, voiceStatusKey, voicePhaseKey, voicePackEntries, createPreferenceStore, movement, createMotionTracker};
   if (typeof module === 'object' && module.exports) module.exports = core;
   if (typeof document === 'undefined' || window.WFRobotSettings) return;
   const root = document.documentElement;
@@ -207,15 +227,25 @@
     speechEnabled: ['تشغيل الصوت في البرنامج', 'Enable program speech', 'Program sesini aç', 'Activer la lecture vocale', 'Включить речь в программе'],
     speechRate: ['سرعة القراءة', 'Reading speed', 'Okuma hızı', 'Vitesse de lecture', 'Скорость чтения'],
     speechVolume: ['مستوى الصوت', 'Volume', 'Ses düzeyi', 'Volume', 'Громкость'],
-    arabicDialect: ['لهجة الترحيب العربي', 'Arabic greeting dialect', 'Arapça karşılama lehçesi', 'Dialecte du message arabe', 'Диалект арабского приветствия'],
+    arabicDialect: ['لهجة الترحيب والصوت المرجعي العربي', 'Arabic greeting and reference dialect', 'Arapça karşılama ve referans lehçesi', 'Dialecte arabe du message et de la voix de référence', 'Диалект арабского приветствия и голоса по образцу'],
     sy: ['سوري', 'Syrian', 'Suriye', 'Syrien', 'Сирийский'],
     eg: ['مصري', 'Egyptian', 'Mısır', 'Égyptien', 'Египетский'],
     speechBackend: ['صوت قراءة النصوص الجديدة', 'Voice for new text', 'Yeni metinleri okuyan ses', 'Voix pour les nouveaux textes', 'Голос для новых текстов'],
-    local: ['حزمة اللغة المثبتة', 'Installed language pack', 'Yüklü dil paketi', 'Pack de langue installé', 'Установленный языковой пакет'],
+    reference: ['صوت محلي من عينة Mark', 'Local voice based on the Mark sample', 'Mark örneğine dayalı yerel ses', 'Voix locale fondée sur l’extrait Mark', 'Локальный голос по образцу Mark'],
+    local: ['الخيار الخفيف: Nabra / Piper', 'Lightweight option: Nabra / Piper', 'Hafif seçenek: Nabra / Piper', 'Option légère : Nabra / Piper', 'Лёгкий вариант: Nabra / Piper'],
     device: ['صوت الجهاز المحلي', 'Local device voice', 'Cihazın çevrimdışı sesi', 'Voix locale de l’appareil', 'Локальный голос устройства'],
     continuousSpeech: ['تجهيز النص كاملًا قبل القراءة لتقليل الانقطاع', 'Prepare the full text before reading to reduce interruptions', 'Kesintileri azaltmak için metnin tamamını önceden hazırla', 'Préparer tout le texte pour limiter les interruptions', 'Готовить весь текст до чтения для уменьшения пауз'],
-    markScope: ['Mark للترحيب المحفوظ، ويعمل دون إنترنت. التقارير والنصوص الجديدة تُقرأ بالصوت المحلي المختار أدناه؛ صوته مختلف عن Mark.', 'Saved Mark greetings work offline. New reports and text use the local reading voice selected below; that voice differs from Mark.', 'Kayıtlı Mark karşılamaları çevrimdışı çalışır. Yeni raporlar ve metinler aşağıda seçilen yerel sesle okunur; bu ses Mark’tan farklıdır.', 'Les messages Mark enregistrés fonctionnent hors ligne. Les nouveaux rapports et textes utilisent la voix locale choisie ci-dessous, différente de Mark.', 'Сохранённые приветствия Mark работают без интернета. Новые отчёты и тексты читает выбранный ниже локальный голос, отличающийся от Mark.'],
-    speechPreview: ['تجربة الترحيب بالإعدادات المحفوظة', 'Preview saved greeting settings', 'Kayıtlı karşılama ayarlarını dene', 'Écouter le message avec les réglages enregistrés', 'Прослушать сохранённые настройки приветствия'],
+    markScope: ['الترحيب هو تسجيل Mark الأصلي المحفوظ. صوت العينة المحلية يولّد التقارير والنصوص اعتمادًا على العينة؛ ليس نسخة مُصدّرة من صوت Mark وقد تختلف نبرته. لا ينتقل إلى صوت آخر تلقائيًا.', 'The greeting is the saved original Mark recording. The local reference voice generates new reports and text from that sample; it is not an exported Mark voice and its sound may differ. It never switches to another voice automatically.', 'Karşılama, kayıtlı özgün Mark sesidir. Yerel referans sesi bu örneğe dayanarak yeni rapor ve metin üretir; dışa aktarılmış Mark sesi değildir ve tınısı farklı olabilir. Otomatik olarak başka sese geçmez.', 'Le message d’accueil est l’enregistrement Mark original. La voix locale génère les rapports et textes à partir de cet extrait ; ce n’est pas une exportation de la voix Mark et son timbre peut différer. Aucun changement automatique de voix.', 'Приветствие — сохранённая оригинальная запись Mark. Локальный голос создаёт отчёты и тексты по этому образцу; это не экспорт голоса Mark, и звучание может отличаться. Автоматической замены другим голосом нет.'],
+    speechPreview: ['سماع تسجيل Mark المحفوظ', 'Play the saved Mark recording', 'Kayıtlı Mark sesini dinle', 'Écouter l’enregistrement Mark', 'Прослушать сохранённую запись Mark'],
+    speechReadingPreview: ['تجربة صوت القراءة المحفوظ', 'Try the saved reading voice', 'Kayıtlı okuma sesini dene', 'Tester la voix de lecture enregistrée', 'Проверить сохранённый голос чтения'],
+    previewSaveFirst: ['احفظ التغييرات أولًا لتجربة صوت القراءة المختار.', 'Save changes first to try the selected reading voice.', 'Seçilen okuma sesini denemek için önce değişiklikleri kaydedin.', 'Enregistrez les modifications avant de tester cette voix.', 'Сначала сохраните изменения, чтобы проверить выбранный голос.'],
+    previewPreparing: ['جارٍ تجهيز عينة القراءة بالصوت المحفوظ…', 'Preparing a sample with the saved reading voice…', 'Kayıtlı okuma sesiyle örnek hazırlanıyor…', 'Préparation d’un extrait avec la voix enregistrée…', 'Подготовка примера сохранённым голосом…'],
+    previewSpeaking: ['تعمل عينة القراءة الآن', 'The reading sample is playing', 'Okuma örneği çalıyor', 'Lecture de l’extrait', 'Пример чтения воспроизводится'],
+    previewFinished: ['انتهت عينة القراءة.', 'Reading sample finished.', 'Okuma örneği tamamlandı.', 'Extrait terminé.', 'Пример чтения завершён.'],
+    previewStopped: ['أُوقفت عينة القراءة.', 'Reading sample stopped.', 'Okuma örneği durduruldu.', 'Extrait arrêté.', 'Пример чтения остановлен.'],
+    previewInstall: ['نزّل حزمة الصوت المختارة أدناه، ثم جرّب القراءة.', 'Download the selected voice pack below, then try reading.', 'Aşağıdaki seçili ses paketini indirin, ardından okumayı deneyin.', 'Téléchargez le pack sélectionné ci-dessous, puis testez la lecture.', 'Загрузите выбранный голосовой пакет ниже и повторите проверку.'],
+    previewDisabled: ['فعّل الصوت وارفع مستوى الصوت قبل التجربة.', 'Enable speech and increase the volume before trying.', 'Denemeden önce sesi açın ve ses düzeyini artırın.', 'Activez la voix et augmentez le volume avant le test.', 'Включите речь и увеличьте громкость перед проверкой.'],
+    referenceHint: ['حزمة واحدة مشتركة للعربية والتركية والإنجليزية والفرنسية والروسية. تحتاج WebGPU وتنزيلًا أوليًا يقارب {size} MB؛ بعدها يولّد جهازك الكلام دون إنترنت.', 'One shared pack for Arabic, Turkish, English, French and Russian. Requires WebGPU and an initial download of about {size} MB; then your device generates speech offline.', 'Arapça, Türkçe, İngilizce, Fransızca ve Rusça için tek ortak paket. WebGPU ve yaklaşık {size} MB ilk indirme gerekir; sonra cihazınız çevrimdışı konuşma üretir.', 'Un pack commun pour l’arabe, le turc, l’anglais, le français et le russe. WebGPU et un premier téléchargement d’environ {size} Mo sont requis ; la parole est ensuite générée hors ligne.', 'Один общий пакет для арабского, турецкого, английского, французского и русского. Нужны WebGPU и первоначальная загрузка около {size} МБ; затем речь создаётся на устройстве без интернета.'],
     speechStop: ['إيقاف القراءة', 'Stop reading', 'Okumayı durdur', 'Arrêter la lecture', 'Остановить чтение'],
     speechHint: ['تُطبّق السرعة ومستوى الصوت على الترحيب والتقارير وقراءة النص المحدد في أي صفحة. التجهيز الكامل قد يزيد انتظار البداية.', 'Speed and volume apply to greetings, reports and selected text on every page. Full preparation can take longer before playback starts.', 'Hız ve ses düzeyi karşılamalara, raporlara ve tüm sayfalardaki seçili metne uygulanır. Tam hazırlık başlangıçta daha uzun sürebilir.', 'La vitesse et le volume s’appliquent aux messages, rapports et textes sélectionnés sur toutes les pages. La préparation complète peut retarder le démarrage.', 'Скорость и громкость действуют для приветствий, отчётов и выделенного текста на любой странице. Полная подготовка может увеличить ожидание перед чтением.'],
     title: ['الروبوت', 'Robot', 'Robot', 'Robot', 'Робот'],
@@ -255,6 +285,8 @@
     voiceChecking: ['جارٍ فحص الحزمة على الجهاز…', 'Checking this device…', 'Cihazdaki paket kontrol ediliyor…', 'Vérification sur cet appareil…', 'Проверка пакета на устройстве…'],
     voiceReady: ['جاهز للعمل دون اتصال', 'Ready offline', 'Çevrimdışı kullanıma hazır', 'Prête hors ligne', 'Готов к работе без сети'],
     voiceMissing: ['غير مثبت', 'Not installed', 'Yüklü değil', 'Non installée', 'Не установлен'],
+    voiceWebGPU: ['WebGPU غير متاح هنا لهذا الصوت. استخدم متصفحًا وجهازًا يدعمانه، أو اختر محركًا آخر يدويًا.', 'WebGPU is unavailable for this voice here. Use a compatible browser and device, or explicitly choose another engine.', 'Bu ses için WebGPU kullanılamıyor. Uyumlu bir tarayıcı ve cihaz kullanın veya başka bir motoru kendiniz seçin.', 'WebGPU est indisponible pour cette voix. Utilisez un navigateur et un appareil compatibles ou choisissez un autre moteur.', 'WebGPU недоступен для этого голоса. Используйте совместимые браузер и устройство либо выберите другой движок вручную.'],
+    voiceReferenceUnavailable: ['محرك الصوت المرجعي غير متاح. أعد تحميل البرنامج أو اختر محركًا آخر يدويًا.', 'The reference voice engine is unavailable. Reload the app or explicitly choose another engine.', 'Referans ses motoru kullanılamıyor. Uygulamayı yeniden yükleyin veya başka bir motor seçin.', 'Le moteur de voix de référence est indisponible. Rechargez l’application ou choisissez un autre moteur.', 'Движок голоса по образцу недоступен. Перезагрузите приложение или выберите другой движок вручную.'],
     voiceDownloading: ['جارٍ التنزيل…', 'Downloading…', 'İndiriliyor…', 'Téléchargement…', 'Загрузка…'],
     voiceError: ['تعذّر إكمال الحزمة. حاول مجددًا.', 'Could not complete the pack. Please retry.', 'Paket tamamlanamadı. Yeniden deneyin.', 'Impossible de terminer le téléchargement du pack. Réessayez.', 'Не удалось завершить загрузку пакета. Повторите попытку.'],
     voiceIntegrity: ['لم يطابق أحد ملفات الحزمة النسخة المطلوبة. أعد التنزيل.', 'A pack file did not match the required version. Download again.', 'Bir paket dosyası gereken sürümle eşleşmedi. Yeniden indirin.', 'Un fichier ne correspond pas à la version attendue. Relancez le téléchargement.', 'Файл пакета не соответствует требуемой версии. Загрузите снова.'],
@@ -293,7 +325,7 @@
   const fields = {};
   const speechControls = create('section', 'wf-robot-speech-controls');
   speechControls.append(text('h3', 'speechTitle'));
-  const selectedVoice = create('strong', 'wf-robot-selected-voice'); selectedVoice.textContent = 'Mark · Natural Conversations';
+  const selectedVoice = create('strong', 'wf-robot-selected-voice');
   speechControls.append(selectedVoice, text('p', 'markScope', 'wf-robot-camera-hint'));
   for (const key of ['speechEnabled', 'continuousSpeech']) {
     const row = create('label', 'wf-robot-preference'), input = create('input'); input.type = 'checkbox'; input.name = key;
@@ -306,17 +338,20 @@
     input.addEventListener('input', () => { output.textContent = Math.round(Number(input.value) * 100) + '%'; changed(); });
     row.append(text('span', key), output, input); speechControls.append(row); fields[key] = input; rangeOutputs[key] = output;
   }
-  for (const [key, choices] of [['arabicDialect', ['sy', 'eg']], ['speechBackend', ['local', 'device']]]) {
+  for (const [key, choices] of [['arabicDialect', ['sy', 'eg']], ['speechBackend', ['reference', 'local', 'device']]]) {
     const row = create('label', 'wf-robot-sensitivity'), input = create('select'); input.name = key;
     for (const value of choices) { const option = text('option', value); option.value = value; input.append(option); }
     input.addEventListener('change', changed); row.append(text('span', key), input); speechControls.append(row); fields[key] = input;
   }
   speechControls.append(text('p', 'speechHint', 'wf-robot-camera-hint'));
-  const speechActions = create('div', 'wf-robot-speech-actions'), previewSpeech = text('button', 'speechPreview'), stopSpeech = text('button', 'speechStop');
-  previewSpeech.type = stopSpeech.type = 'button';
+  const speechActions = create('div', 'wf-robot-speech-actions'), previewSpeech = text('button', 'speechPreview'), previewReading = text('button', 'speechReadingPreview'), stopSpeech = text('button', 'speechStop');
+  previewSpeech.type = previewReading.type = stopSpeech.type = 'button';
+  previewReading.dataset.wfReadingPreview = 'true';
   previewSpeech.addEventListener('click', event => window.WFProgramSpeech?.preview?.({event}));
+  previewReading.addEventListener('click', previewReadingClick);
   stopSpeech.addEventListener('click', event => { if (event.isTrusted) window.WFProgramSpeech?.stop?.(); });
-  speechActions.append(previewSpeech, stopSpeech); speechControls.append(speechActions); preferencesFieldset.append(speechControls);
+  const readingStatus = create('p', 'wf-robot-reading-preview-status'); readingStatus.setAttribute('role', 'status');
+  speechActions.append(previewReading, previewSpeech, stopSpeech); speechControls.append(speechActions, readingStatus); preferencesFieldset.append(speechControls);
   for (const [key, label] of [['autoExpressions', 'expressions'], ['idleMotion', 'idle']]) {
     const row = create('label', 'wf-robot-preference'); const input = create('input'); input.type = 'checkbox'; input.name = key;
     input.addEventListener('change', changed); row.append(input, text('span', label)); preferencesFieldset.append(row); fields[key] = input;
@@ -342,7 +377,51 @@
   const voiceList = create('div', 'wf-robot-voice-list'); voiceSection.append(voiceList); panel.append(voiceSection);
   const voiceRows = new Map(), downloads = new Map();
   let dirty = false, saveState = '', latestMotion = {active: false, state: 'off', x: 0, y: 0}, disposed = false;
+  let readingRequested = false, readingStarted = false, readingStatusKey = '', readingVoiceName = '';
   const getPreferences = () => normalize(state()?.settings?.robot);
+  function setReadingStatus(key, voiceName = '') {
+    readingStatusKey = key; readingVoiceName = voiceName;
+    readingStatus.textContent = t(key) + (voiceName ? ' · ' + voiceName : '');
+  }
+  function previewReadingClick(event) {
+    if (event.isTrusted !== true || disposed) return;
+    if (dirty) { setReadingStatus('previewSaveFirst'); return; }
+    const preferences = getPreferences();
+    if (!preferences.speechEnabled || preferences.speechVolume === 0) { setReadingStatus('previewDisabled'); return; }
+    const samples = {
+      ar: 'أُسْتَاذ حَسَن الْحُلْو، هَذَا اِخْتِبَارٌ لِصَوْتِ الْقِرَاءَة. الْمَبْلَغُ التَّجْرِيبِيُّ مِلْيُون دُولَار أَمْرِيكِيّ وَخَمْسَة سِنْتَات. اِنْتَهَى الْاِخْتِبَار.',
+      en: 'This is a reading voice sample. The example amount is one million US dollars and five cents. The sample is complete.',
+      tr: 'Bu bir okuma sesi örneğidir. Örnek tutar bir milyon Amerikan doları ve beş senttir. Ses örneği tamamlandı.',
+      fr: 'Ceci est un exemple de voix de lecture. Le montant d’exemple est un million de dollars américains et cinq cents. L’extrait est terminé.',
+      ru: 'Это пример голоса чтения. Пример суммы: один миллион долларов США и пять центов. Пример завершён.'
+    };
+    let sample = samples[language()];
+    if (language() === 'ar' && preferences.speechBackend === 'reference') sample = preferences.arabicDialect === 'eg' ?
+      'يا أستاذ حسن الحلو، دي تجربة لصوت القراءة المحلي. المبلغ التجريبي مليون دولار أمريكي وخمسة سنتات. كده التجربة خلصت.' :
+      'أستاذ حسن الحلو، هاي تجربة لصوت القراءة المحلي. المبلغ التجريبي مليون دولار أمريكي وخمسة سنتات. هيك خلصت التجربة.';
+    readingRequested = true; readingStarted = false;
+    let accepted = false;
+    try { accepted = window.WFProgramSpeech?.speak?.({text: sample, event, locale: language()}) === true; } catch (_) {}
+    if (accepted) {
+      if (!readingStarted) setReadingStatus('previewPreparing');
+    } else {
+      readingRequested = false;
+      const entry = voicePackEntries(window.WFOfflineVoice, window.WFReferenceVoice, language()).find(item => item.backend === preferences.speechBackend && (item.backend === 'reference' || item.locale === language()));
+      setReadingStatus(entry?.status.state === 'unsupported' ? voiceStatusKey(entry.status) : preferences.speechBackend === 'device' ? 'voiceLocaleUnavailable' : 'previewInstall');
+      if (preferences.speechBackend !== 'device') { voiceSection.open = true; renderVoicePacks(); }
+    }
+  }
+  function readingStateChanged(event) {
+    if (!readingRequested) return;
+    const current = event.detail || {};
+    if (current.active) {
+      readingStarted = true;
+      setReadingStatus(current.state === 'speaking' ? 'previewSpeaking' : 'previewPreparing', current.voiceName || '');
+    } else if (readingStarted) {
+      setReadingStatus(current.state === 'ready' ? 'previewFinished' : current.state === 'stopped' ? 'previewStopped' : 'voiceError');
+      readingRequested = readingStarted = false;
+    }
+  }
   const store = createPreferenceStore({getState: state, connect: () => initDB()});
   function isVisible() {
     if (disposed || document.hidden) return false;
@@ -393,45 +472,55 @@
   }
   function translate() {
     for (const [node, key] of textNodes) node.textContent = t(key);
+    selectedVoice.textContent = t(getPreferences().speechBackend);
+    if (readingStatusKey) setReadingStatus(readingStatusKey, readingVoiceName);
     if (store.busy) save.textContent = t('saving');
     saveStatus.textContent = saveState ? t(saveState) : '';
     cameraUI(); updatePreview(); renderVoicePacks();
   }
   function renderVoicePacks() {
-    const api = window.WFOfflineVoice;
-    if (!api || typeof api.list !== 'function' || typeof api.getStatus !== 'function') return;
+    const entries = voicePackEntries(window.WFOfflineVoice, window.WFReferenceVoice, language());
     voiceSection.hidden = false;
-    const packs = api.list();
-    const anyDownloading = packs.some(pack => api.getStatus(pack.locale).state === 'downloading');
-    for (const pack of packs) {
-      if (!locales.includes(pack.locale)) continue;
-      let row = voiceRows.get(pack.locale);
+    const anyDownloading = entries.some(entry => entry.status.state === 'downloading');
+    for (const entry of entries) {
+      const {pack, key, backend} = entry;
+      let row = voiceRows.get(key);
       if (!row) {
         const card = create('div', 'wf-robot-voice-row'), heading = create('strong'), action = create('button', 'wf-robot-voice-action');
-        const status = create('small', 'wf-robot-voice-status'), progress = create('progress'), links = create('div', 'wf-robot-voice-links');
-        heading.textContent = ({ar: 'العربية', en: 'English', tr: 'Türkçe', fr: 'Français', ru: 'Русский'})[pack.locale];
+        const note = create('p', 'wf-robot-reference-hint'), status = create('small', 'wf-robot-voice-status'), progress = create('progress'), links = create('div', 'wf-robot-voice-links');
+        card.dataset.backend = backend;
         action.type = 'button'; progress.max = 1;
-        card.append(heading, action, status, progress, links); voiceList.append(card);
-        row = {card, heading, action, status, progress, links, pack}; voiceRows.set(pack.locale, row);
+        card.append(heading, action, note, status, progress, links); voiceList.append(card);
+        row = {card, heading, action, note, status, progress, links, entry}; voiceRows.set(key, row);
         action.addEventListener('click', async event => {
           if (!event.isTrusted || disposed) return;
-          const current = api.getStatus(pack.locale);
-          if (current.state === 'downloading') { downloads.get(pack.locale)?.abort(); return; }
+          const {api, locale, key} = row.entry;
+          if (typeof api?.getStatus !== 'function') return;
+          const current = api.getStatus(locale);
+          if (current.state === 'downloading') { downloads.get(key)?.abort(); return; }
           action.disabled = true;
           try {
-            if (current.ready) await api.remove(pack.locale);
+            if (current.ready) {
+              // Pack removal can release the shared player even when another
+              // backend owns it. Release its UI session before deleting files.
+              window.WFProgramSpeech?.stop?.();
+              await api.remove(locale);
+            }
             else {
-              const controller = new AbortController(); downloads.set(pack.locale, controller);
-              await api.download(pack.locale, {signal: controller.signal, onProgress: renderVoicePacks});
+              const controller = new AbortController(); downloads.set(key, controller);
+              await api.download(locale, {signal: controller.signal, onProgress: renderVoicePacks});
             }
           } catch (_) { /* The adapter exposes its actual error state below. */ }
-          finally { downloads.delete(pack.locale); action.disabled = false; renderVoicePacks(); }
+          finally { downloads.delete(key); action.disabled = false; renderVoicePacks(); }
         });
       }
-      row.heading.textContent = ({ar: 'العربية', en: 'English', tr: 'Türkçe', fr: 'Français', ru: 'Русский'})[pack.locale] + ' · ' + pack.name + (pack.gender === 'female' ? ' · ' + t('voiceFemale') : '');
-      const current = api.getStatus(pack.locale);
+      row.entry = entry;
+      row.heading.textContent = backend === 'reference' ? t('reference') : ({ar: 'العربية', en: 'English', tr: 'Türkçe', fr: 'Français', ru: 'Русский'})[pack.locale] + ' · ' + pack.name + (pack.gender === 'female' ? ' · ' + t('voiceFemale') : '');
+      const current = entry.status;
       const statusKey = voiceStatusKey(current);
-      const mb = Math.ceil((Number(pack.bytes || 0) + Number(pack.sharedBytes || 0)) / 1000000);
+      const mb = Math.ceil((Number(current.total || 0) || Number(pack.bytes || 0) + Number(pack.sharedBytes || 0)) / 1000000);
+      row.note.hidden = backend !== 'reference';
+      if (backend === 'reference') row.note.textContent = t('referenceHint').replace('{size}', new Intl.NumberFormat(language()).format(mb || 921));
       const phaseKey = voicePhaseKey(current);
       row.status.textContent = t(statusKey) + (current.state === 'error' && phaseKey ? ` ${t(phaseKey)}.` : '') +
         (!current.ready && current.state !== 'error' && current.state !== 'unsupported' && mb ? ` · ${mb} MB` : '');
@@ -448,7 +537,7 @@
       }
       row.action.textContent = t(current.state === 'downloading' ? 'voiceCancel' : current.ready ? 'voiceRemove' : 'voiceInstall');
       row.action.setAttribute('aria-label', `${row.action.textContent}: ${row.heading.textContent}`);
-      row.action.disabled = packActionDisabled(current, anyDownloading, downloads.has(pack.locale));
+      row.action.disabled = packActionDisabled(current, anyDownloading, downloads.has(key));
       row.progress.hidden = current.state !== 'downloading';
       row.progress.setAttribute('aria-label', `${t('voiceDownloading')} ${row.heading.textContent}`);
       if (current.total > 0) row.progress.value = Math.min(1, Math.max(0, current.loaded / current.total));
@@ -511,12 +600,17 @@
   window.addEventListener('wf-robot-ready', populatePreview);
   window.addEventListener('wf-offline-voice-change', renderVoicePacks);
   window.addEventListener('wf-offline-voice-progress', renderVoicePacks);
+  window.addEventListener('wf-reference-voice-change', renderVoicePacks);
+  window.addEventListener('wf-reference-voice-progress', renderVoicePacks);
+  window.addEventListener('wf-program-speech-state', readingStateChanged);
   window.addEventListener('pagehide', event => {
     tracker.stop('hidden');
     if (!event.persisted) { disposed = true; tracker.destroy(); observer.disconnect(); dialogObserver.disconnect(); languageObserver.disconnect();
       for (const controller of downloads.values()) controller.abort(); downloads.clear();
       document.removeEventListener('visibilitychange', checkVisibility); window.removeEventListener('wf-robot-ready', populatePreview);
-      window.removeEventListener('wf-offline-voice-change', renderVoicePacks); window.removeEventListener('wf-offline-voice-progress', renderVoicePacks); }
+      window.removeEventListener('wf-offline-voice-change', renderVoicePacks); window.removeEventListener('wf-offline-voice-progress', renderVoicePacks);
+      window.removeEventListener('wf-reference-voice-change', renderVoicePacks); window.removeEventListener('wf-reference-voice-progress', renderVoicePacks);
+      window.removeEventListener('wf-program-speech-state', readingStateChanged); }
   });
   window.WFRobotSettings = {getPreferences, stopTracking: () => tracker.stop('off'), checkVisibility};
   syncFields(); translate(); populatePreview(); publishPreferences();

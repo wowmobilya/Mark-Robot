@@ -158,7 +158,7 @@
     let expressionStep = 0;
     let voices = [];
     let disposed = false;
-    let preferences = {autoExpressions: true, idleMotion: true, speechEnabled: true, speechRate: 1, speechVolume: 1, arabicDialect: 'sy', speechBackend: 'local', continuousSpeech: true};
+    let preferences = {autoExpressions: true, idleMotion: true, speechEnabled: true, speechRate: 1, speechVolume: 1, arabicDialect: 'sy', speechBackend: 'reference', continuousSpeech: true};
     let speakerName = '';
     let lastMotion = {active: false, x: 0, y: 0};
 
@@ -168,6 +168,8 @@
     }
 
     function currentVoice() {
+      // A reference-voice choice must never become a different device voice.
+      if (preferences.speechBackend === 'reference') return null;
       // The user requested offline speech: never select a network-backed system voice.
       const local = voices.filter(voice => voice.localService === true &&
         String(voice.lang || '').toLowerCase().split(/[-_]/)[0] === locale);
@@ -183,28 +185,35 @@
 
     function greeting() { return locale === 'ar' && preferences.arabicDialect === 'eg' ? egyptianGreeting : messages[locale]; }
 
+    function voiceManager() { return preferences.speechBackend === 'reference' ? window.WFReferenceVoice : window.WFOfflineVoice; }
+
     function offlineReady() {
-      try { return preferences.speechBackend !== 'device' && typeof window.WFOfflineVoice?.speak === 'function' && window.WFOfflineVoice.getStatus(locale).ready === true; }
+      try { const manager = voiceManager(); return preferences.speechBackend !== 'device' && typeof manager?.speak === 'function' && manager.getStatus(locale).ready === true; }
       catch (_) { return false; }
     }
 
     function voicePackState() {
-      try { return window.WFOfflineVoice?.getStatus(locale) || {state: 'unsupported'}; }
-      catch (_) { return {state: 'unsupported'}; }
+      const missing = {state: 'unsupported', reason: preferences.speechBackend === 'reference' ? 'reference-unavailable' : 'browser-unsupported'};
+      try { return voiceManager()?.getStatus(locale) || missing; }
+      catch (_) { return missing; }
     }
 
     function reportVoice(state, pack = voicePackState()) {
       reportEvent('wf-robot-report-voice', {state, locale, progress: pack.progress || 0,
-        loaded: pack.loaded || 0, total: pack.total || 0, reason: pack.reason || '', voiceName: speakerName});
+        loaded: pack.loaded || 0, total: pack.total || 0, reason: pack.reason || '', voiceName: pack.name || speakerName});
     }
 
     function active() { return !!utterance || !!recording || !!offlineRequest || !!reportRequest; }
 
+    function robotVisible() {
+      return !disposed && !document.hidden && face.isConnected &&
+        face.getAttribute('aria-hidden') === 'false' && !!dashboard?.classList.contains('active');
+    }
+
     function visible() {
       if (disposed || document.hidden) return false;
       if (sessionKind === 'program' || sessionKind === 'preview') return sessionPage === document.querySelector('.page.active');
-      return face.isConnected &&
-        face.getAttribute('aria-hidden') === 'false' && !!dashboard?.classList.contains('active');
+      return robotVisible();
     }
 
     function setExpression(expression) {
@@ -223,7 +232,7 @@
       const bounded = (value, min, max, fallback) => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
       preferences = {autoExpressions: stored.autoExpressions !== false, idleMotion: stored.idleMotion !== false,
         speechEnabled: stored.speechEnabled !== false, speechRate: bounded(stored.speechRate, .75, 1.25, 1), speechVolume: bounded(stored.speechVolume, 0, 1, 1),
-        arabicDialect: stored.arabicDialect === 'eg' ? 'eg' : 'sy', speechBackend: stored.speechBackend === 'device' ? 'device' : 'local', continuousSpeech: stored.continuousSpeech !== false};
+        arabicDialect: stored.arabicDialect === 'eg' ? 'eg' : 'sy', speechBackend: ['reference', 'local', 'device'].includes(stored.speechBackend) ? stored.speechBackend : 'reference', continuousSpeech: stored.continuousSpeech !== false};
       if (active() && ['speechEnabled', 'speechRate', 'speechVolume', 'arabicDialect', 'speechBackend', 'continuousSpeech'].some(key => previous[key] !== preferences[key])) finish('stopped', true);
       face.dataset.idleMotion = String(preferences.idleMotion);
       if (!preferences.autoExpressions) {
@@ -331,14 +340,17 @@
     function refreshVoices() {
       if (disposed) return;
       try { voices = supported ? synth.getVoices() : []; } catch (_) { voices = []; }
-      if (!active() && (currentVoice() || recordingURL() || offlineReady()) && ['unavailable', 'reportUnavailable'].includes(state)) state = 'ready';
+      const available = currentVoice() || offlineReady() || ((sessionKind === 'intro' || sessionKind === 'preview') && recordingURL());
+      if (!active() && available && ['unavailable', 'reportUnavailable'].includes(state)) state = 'ready';
       render();
     }
 
     function refreshOfflineStatus(event) {
+      const selectedEvent = preferences.speechBackend === 'reference' ? 'wf-reference-voice-change' : 'wf-offline-voice-change';
+      if (event?.type && event.type !== selectedEvent) return;
       refreshVoices();
-      const pack = event?.detail;
-      if (sessionKind !== 'report' || pack?.locale !== locale) return;
+      if (sessionKind !== 'report' || (preferences.speechBackend !== 'reference' && event?.detail?.locale !== locale)) return;
+      const pack = voicePackState();
       const state = pack.ready || currentVoice() ? 'ready' : pack.state === 'downloading' ? 'downloading' :
         pack.state === 'error' ? 'error' : pack.state === 'unsupported' ? 'unsupported' : 'missing';
       reportVoice(state, pack);
@@ -434,7 +446,8 @@
       if (!event.isTrusted) return;
       if (active()) { finish('stopped', true); return; }
       if (!speechAllowed()) return;
-      if ((!supported && !recordingURL() && !offlineReady()) || !visible()) return;
+      // A new dashboard action must not inherit a finished Settings session.
+      if ((!supported && !recordingURL() && !offlineReady()) || !robotVisible()) return;
       refreshVoices();
       // Do not interrupt speech owned by another part of the page.
       if (synth?.speaking || synth?.pending || synth?.paused) { state = 'busy'; render(); return; }
@@ -447,7 +460,9 @@
 
     function speakOffline(text, alreadyActive = false, chunks, playback) {
       const request = {handle: null, started: false};
-      speakerName = window.WFOfflineVoice?.list?.().find(item => item.locale === locale)?.name || 'Local · ' + locale;
+      const manager = voiceManager();
+      speakerName = voicePackState().name || manager?.list?.().find(item => item.locale === locale || item.locales?.includes(locale))?.name ||
+        (preferences.speechBackend === 'reference' ? 'Mark · local reference' : 'Local · ' + locale);
       offlineRequest = request;
       state = 'preparing';
       automaticExpression('thinking');
@@ -462,8 +477,8 @@
       resetPreparationTimer();
       if (sessionKind === 'report') reportVoice('ready');
       try {
-        request.handle = window.WFOfflineVoice.speak({text, locale, chunks, playback,
-          rate: preferences.speechRate, volume: preferences.speechVolume, continuous: preferences.continuousSpeech,
+        request.handle = manager.speak({text, locale, chunks, playback,
+          rate: preferences.speechRate, volume: preferences.speechVolume, continuous: preferences.continuousSpeech, dialect: preferences.arabicDialect,
           onProgress(progress) {
             if (offlineRequest !== request || request.started) return;
             resetPreparationTimer();
@@ -494,7 +509,7 @@
             if (offlineRequest !== request) return;
             // A ready local system voice can recover a pack failure before audio starts.
             const fallback = currentVoice();
-            if (!request.started && state === 'preparing' && fallback) {
+            if (preferences.speechBackend !== 'reference' && !request.started && state === 'preparing' && fallback) {
               offlineRequest = null; clearTimeout(startTimer); startTimer = null;
               request.handle?.cancel(); speakText(text, fallback, true, chunks);
             } else finish('failed', true);
@@ -504,7 +519,7 @@
       } catch (_) {
         if (offlineRequest !== request) return;
         const fallback = currentVoice();
-        if (!request.started && state === 'preparing' && fallback) {
+        if (preferences.speechBackend !== 'reference' && !request.started && state === 'preparing' && fallback) {
           offlineRequest = null; clearTimeout(startTimer); startTimer = null;
           request.handle?.cancel(); speakText(text, fallback, true, chunks);
         } else finish('failed', true);
@@ -568,11 +583,11 @@
       event.stopPropagation();
       if (active()) { if (sessionKind === 'report') finish('stopped', true); return; }
       if (!speechAllowed()) return;
-      if (!visible()) return;
+      if (!robotVisible()) return;
       refreshVoices();
       const token = {controller: null, playback: null};
       // Prime audio in the click itself, before reading records or downloading a pack.
-      try { token.playback = window.WFOfflineVoice?.preparePlayback?.(); } catch (_) {}
+      try { token.playback = voiceManager()?.preparePlayback?.(); } catch (_) {}
       reportRequest = token;
       sessionKind = 'report';
       speakerName = '';
@@ -597,14 +612,14 @@
         clearTimeout(startTimer); startTimer = null;
         const pack = voicePackState();
         if (preferences.speechBackend === 'device') { reportVoice('unsupported', {...pack, reason: 'device-voice-unavailable'}); finish('reportUnavailable'); return; }
-        if (pack.state === 'unsupported' || typeof window.WFOfflineVoice?.download !== 'function') {
+        if (pack.state === 'unsupported' || typeof voiceManager()?.download !== 'function') {
           reportVoice('unsupported', pack); finish('reportUnavailable'); return;
         }
         if (!event.install) { reportVoice(pack.state === 'downloading' ? 'downloading' : 'missing', pack); finish('reportUnavailable'); return; }
         token.controller = new AbortController();
         reportVoice('downloading', pack);
         try {
-          await window.WFOfflineVoice.download(locale, {signal: token.controller.signal,
+          await voiceManager().download(locale, {signal: token.controller.signal,
             onProgress(value) { if (reportRequest === token) reportVoice('downloading', value); }});
         } catch (problem) {
           if (reportRequest !== token) return;
@@ -638,7 +653,7 @@
     function reportControl(event) {
       if (event.detail?.action === 'stop' || event.detail?.action === 'cancel-download') {
         if (active() && sessionKind === 'report') finish('stopped', true);
-        if (event.detail?.action === 'cancel-download') { window.WFOfflineVoice?.cancelDownload?.(locale); reportVoice('missing'); }
+        if (event.detail?.action === 'cancel-download') { voiceManager()?.cancelDownload?.(locale); reportVoice('missing'); }
       } else if (event.detail?.action === 'replay' || event.detail?.action === 'install') {
         if (active()) finish('stopped', true);
         toggleReport({stopPropagation() {}, install: event.detail.action === 'install'});
@@ -659,7 +674,7 @@
       text = text.trim();
       if (offlineReady()) {
         let playback;
-        try { playback = window.WFOfflineVoice.preparePlayback?.(); } catch (_) {}
+        try { playback = voiceManager()?.preparePlayback?.(); } catch (_) {}
         speakOffline(text, false, undefined, playback); return true;
       }
       const voice = currentVoice();
@@ -720,6 +735,7 @@
       window.removeEventListener('wf-robot-motion', applyMotion);
       window.removeEventListener('wf-robot-report-control', reportControl);
       window.removeEventListener('wf-offline-voice-change', refreshOfflineStatus);
+      window.removeEventListener('wf-reference-voice-change', refreshOfflineStatus);
       synth?.removeEventListener?.('voiceschanged', refreshVoices);
       if (window.WFProgramSpeech === programSpeech) delete window.WFProgramSpeech;
     }
@@ -742,6 +758,7 @@
     window.addEventListener('wf-robot-motion', applyMotion);
     window.addEventListener('wf-robot-report-control', reportControl);
     window.addEventListener('wf-offline-voice-change', refreshOfflineStatus);
+    window.addEventListener('wf-reference-voice-change', refreshOfflineStatus);
     synth?.addEventListener?.('voiceschanged', refreshVoices);
     applyPreferences();
     refreshVoices();

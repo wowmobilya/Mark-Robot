@@ -1,0 +1,434 @@
+{
+  "input": {
+    "sourceModule": "arabic-report-speech.js",
+    "sourceModuleSha256": "3cbd78bb6fcb725d06b9df71f4523724611dfcc4922459c1d44a5ffc6b5e7bf1",
+    "amounts": [
+      {
+        "value": 1000000.05,
+        "currency": "USD",
+        "words": "مِلْيُون دُولَار أَمْرِيكِيّ وَخَمْسَة سِنْتَات"
+      },
+      {
+        "value": 0,
+        "currency": "USD",
+        "words": "صِفْر دُولَار أَمْرِيكِيّ"
+      },
+      {
+        "value": 5.5,
+        "currency": "USD",
+        "words": "خَمْسَة دُولَارَات أَمْرِيكِيَّة وَخَمْسُون سِنْتًا"
+      }
+    ],
+    "text": "أُسْتَاذ حَسَن الحِلو، المبيعات مِلْيُون دُولَار أَمْرِيكِيّ وَخَمْسَة سِنْتَات. الرصيد صِفْر دُولَار أَمْرِيكِيّ. الدفعة خَمْسَة دُولَارَات أَمْرِيكِيَّة وَخَمْسُون سِنْتًا.",
+    "textSha256": "42307def1c4351db98ad49ff5e7eee1f24cb46d3a1f0c04025a10599ddfc50c7"
+  },
+  "speakerEmbedding": "native-probe/mark-ar.embedding.npy",
+  "audio": {
+    "path": "native-probe/zonos-mark-ar-financial-normalized.wav",
+    "sha256": "36f9faa2773f586d11c02c808871dc171fdb8272cb9e38fde626335fe882188e",
+    "bytes": 1123124,
+    "sampleRate": 44100,
+    "channels": 1,
+    "samples": 561540,
+    "durationSeconds": 12.733333333333333,
+    "peakAmplitude": 0.680267333984375,
+    "generationWallSeconds": 13.393732407999778,
+    "generatedFrames": 202,
+    "eosFrame": 194,
+    "seed": 1
+  },
+  "automatedASR": [
+    {
+      "label": "app-normalized-Arabic",
+      "audioPath": "native-probe/zonos-mark-ar-financial-normalized.wav",
+      "audioSha256": "36f9faa2773f586d11c02c808871dc171fdb8272cb9e38fde626335fe882188e",
+      "detectedLanguage": "ar",
+      "languageProbability": 0.9976020455360413,
+      "modelRepository": "Systran/faster-whisper-small",
+      "modelRevision": "536b0662742c02347bc0e980a01041f333bce120",
+      "software": {
+        "faster-whisper": "1.2.1",
+        "ctranslate2": "4.9.0"
+      },
+      "expectedTextPrompt": false,
+      "languageForced": false,
+      "beamSize": 5,
+      "temperature": 0,
+      "wallSeconds": 5.851742869002919,
+      "transcript": "أستاد حسن الحلو المبيعات مليون دولار أمريكي وخمسة سنتات الرسيد صفر دولار أمريكية الدفعة خمسة دولارات أمريكية وخمسون سنتن",
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 5.34,
+          "text": " أستاد حسن الحلو المبيعات مليون دولار أمريكي وخمسة سنتات",
+          "avgLogprob": -0.23547828309237956,
+          "words": [
+            {
+              "start": 0.0,
+              "end": 0.58,
+              "text": " أستاد",
+              "probability": 0.7045877973238627
+            },
+            {
+              "start": 0.58,
+              "end": 0.98,
+              "text": " حسن",
+              "probability": 0.9240880608558655
+            },
+            {
+              "start": 0.98,
+              "end": 1.54,
+              "text": " الحلو",
+              "probability": 0.9622517029444376
+            },
+            {
+              "start": 1.54,
+              "end": 2.28,
+              "text": " المبيعات",
+              "probability": 0.8530955761671066
+            },
+            {
+              "start": 2.28,
+              "end": 2.7,
+              "text": " مليون",
+              "probability": 0.9372545679410299
+            },
+            {
+              "start": 2.7,
+              "end": 3.12,
+              "text": " دولار",
+              "probability": 0.9660295248031616
+            },
+            {
+              "start": 3.12,
+              "end": 3.66,
+              "text": " أمريكي",
+              "probability": 0.8497539639472962
+            },
+            {
+              "start": 3.66,
+              "end": 4.36,
+              "text": " وخمسة",
+              "probability": 0.9219880938529968
+            },
+            {
+              "start": 4.36,
+              "end": 5.34,
+              "text": " سنتات",
+              "probability": 0.7546881623566151
+            }
+          ]
+        },
+        {
+          "start": 5.34,
+          "end": 8.08,
+          "text": " الرسيد صفر دولار أمريكية",
+          "avgLogprob": -0.23547828309237956,
+          "words": [
+            {
+              "start": 5.34,
+              "end": 6.32,
+              "text": " الرسيد",
+              "probability": 0.6134849091370901
+            },
+            {
+              "start": 6.32,
+              "end": 6.72,
+              "text": " صفر",
+              "probability": 0.9679907560348511
+            },
+            {
+              "start": 6.72,
+              "end": 7.14,
+              "text": " دولار",
+              "probability": 0.9897607366243998
+            },
+            {
+              "start": 7.14,
+              "end": 8.08,
+              "text": " أمريكية",
+              "probability": 0.9250373125076294
+            }
+          ]
+        },
+        {
+          "start": 8.08,
+          "end": 12.62,
+          "text": " الدفعة خمسة دولارات أمريكية وخمسون سنتن",
+          "avgLogprob": -0.23547828309237956,
+          "words": [
+            {
+              "start": 8.08,
+              "end": 9.32,
+              "text": " الدفعة",
+              "probability": 0.7126138582825661
+            },
+            {
+              "start": 9.32,
+              "end": 9.78,
+              "text": " خمسة",
+              "probability": 0.9464184194803238
+            },
+            {
+              "start": 9.78,
+              "end": 10.36,
+              "text": " دولارات",
+              "probability": 0.9744923263788223
+            },
+            {
+              "start": 10.36,
+              "end": 11.1,
+              "text": " أمريكية",
+              "probability": 0.9881316184997558
+            },
+            {
+              "start": 11.1,
+              "end": 12.12,
+              "text": " وخمسون",
+              "probability": 0.9890450954437255
+            },
+            {
+              "start": 12.12,
+              "end": 12.62,
+              "text": " سنتن",
+              "probability": 0.7764750048518181
+            }
+          ]
+        }
+      ],
+      "audioUnchanged": true
+    },
+    {
+      "label": "accepted-Mark-reference-name-baseline",
+      "audioPath": "assets/robot-identity/ar.mp3",
+      "audioSha256": "890d644129456c4f77cefe9402ecdb380944a401a11ca1e9681269f1a636d0b7",
+      "detectedLanguage": "ar",
+      "languageProbability": 0.9994468092918396,
+      "modelRepository": "Systran/faster-whisper-small",
+      "modelRevision": "536b0662742c02347bc0e980a01041f333bce120",
+      "software": {
+        "faster-whisper": "1.2.1",
+        "ctranslate2": "4.9.0"
+      },
+      "expectedTextPrompt": false,
+      "languageForced": false,
+      "beamSize": 5,
+      "temperature": 0,
+      "wallSeconds": 6.849602312999195,
+      "transcript": "أهداين أستاذ حسن الحلو أنا مساعدك الذكي في WowFurniture هون لساعدك بتنظيم الشغل وكراءة التقارير بوضوح صممني وبرمجني المهندس مع تزب الله حاد شعبان أنا جاهز خلينا بلش",
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 1.9,
+          "text": " أهداين أستاذ حسن الحلو",
+          "avgLogprob": -0.22992780864840806,
+          "words": [
+            {
+              "start": 0.0,
+              "end": 0.48,
+              "text": " أهداين",
+              "probability": 0.7447330355644226
+            },
+            {
+              "start": 0.48,
+              "end": 0.76,
+              "text": " أستاذ",
+              "probability": 0.6314619779586792
+            },
+            {
+              "start": 0.76,
+              "end": 1.08,
+              "text": " حسن",
+              "probability": 0.946104089419047
+            },
+            {
+              "start": 1.08,
+              "end": 1.9,
+              "text": " الحلو",
+              "probability": 0.960853656133016
+            }
+          ]
+        },
+        {
+          "start": 1.9,
+          "end": 3.96,
+          "text": " أنا مساعدك الذكي في WowFurniture",
+          "avgLogprob": -0.22992780864840806,
+          "words": [
+            {
+              "start": 1.9,
+              "end": 2.06,
+              "text": " أنا",
+              "probability": 0.7243273258209229
+            },
+            {
+              "start": 2.06,
+              "end": 2.58,
+              "text": " مساعدك",
+              "probability": 0.9510036557912827
+            },
+            {
+              "start": 2.58,
+              "end": 2.96,
+              "text": " الذكي",
+              "probability": 0.8843702872594198
+            },
+            {
+              "start": 2.96,
+              "end": 3.08,
+              "text": " في",
+              "probability": 0.9926766157150269
+            },
+            {
+              "start": 3.08,
+              "end": 3.96,
+              "text": " WowFurniture",
+              "probability": 0.6258535236120224
+            }
+          ]
+        },
+        {
+          "start": 3.96,
+          "end": 8.36,
+          "text": " هون لساعدك بتنظيم الشغل وكراءة التقارير بوضوح",
+          "avgLogprob": -0.22992780864840806,
+          "words": [
+            {
+              "start": 3.96,
+              "end": 4.88,
+              "text": " هون",
+              "probability": 0.6143248677253723
+            },
+            {
+              "start": 4.88,
+              "end": 5.72,
+              "text": " لساعدك",
+              "probability": 0.8766493678092957
+            },
+            {
+              "start": 5.72,
+              "end": 6.22,
+              "text": " بتنظيم",
+              "probability": 0.9311979413032532
+            },
+            {
+              "start": 6.22,
+              "end": 6.66,
+              "text": " الشغل",
+              "probability": 0.9837268590927124
+            },
+            {
+              "start": 6.66,
+              "end": 7.24,
+              "text": " وكراءة",
+              "probability": 0.8573064804077148
+            },
+            {
+              "start": 7.24,
+              "end": 7.78,
+              "text": " التقارير",
+              "probability": 0.989495575428009
+            },
+            {
+              "start": 7.78,
+              "end": 8.36,
+              "text": " بوضوح",
+              "probability": 0.976249635219574
+            }
+          ]
+        },
+        {
+          "start": 9.0,
+          "end": 12.54,
+          "text": " صممني وبرمجني المهندس مع تزب الله حاد شعبان",
+          "avgLogprob": -0.22992780864840806,
+          "words": [
+            {
+              "start": 8.8,
+              "end": 9.3,
+              "text": " صممني",
+              "probability": 0.8789748996496201
+            },
+            {
+              "start": 9.3,
+              "end": 10.0,
+              "text": " وبرمجني",
+              "probability": 0.8159841060638428
+            },
+            {
+              "start": 10.0,
+              "end": 10.9,
+              "text": " المهندس",
+              "probability": 0.8512080609798431
+            },
+            {
+              "start": 10.9,
+              "end": 11.08,
+              "text": " مع",
+              "probability": 0.9037025570869446
+            },
+            {
+              "start": 11.08,
+              "end": 11.42,
+              "text": " تزب",
+              "probability": 0.7086928089459738
+            },
+            {
+              "start": 11.42,
+              "end": 11.68,
+              "text": " الله",
+              "probability": 0.6037154197692871
+            },
+            {
+              "start": 11.68,
+              "end": 12.06,
+              "text": " حاد",
+              "probability": 0.8581783175468445
+            },
+            {
+              "start": 12.06,
+              "end": 12.54,
+              "text": " شعبان",
+              "probability": 0.9576703757047653
+            }
+          ]
+        },
+        {
+          "start": 12.54,
+          "end": 15.06,
+          "text": " أنا جاهز خلينا بلش",
+          "avgLogprob": -0.22992780864840806,
+          "words": [
+            {
+              "start": 12.54,
+              "end": 13.32,
+              "text": " أنا",
+              "probability": 0.9829794764518738
+            },
+            {
+              "start": 13.32,
+              "end": 13.82,
+              "text": " جاهز",
+              "probability": 0.993581493695577
+            },
+            {
+              "start": 13.82,
+              "end": 14.64,
+              "text": " خلينا",
+              "probability": 0.7603671103715897
+            },
+            {
+              "start": 14.64,
+              "end": 15.06,
+              "text": " بلش",
+              "probability": 0.7222292621930441
+            }
+          ]
+        }
+      ],
+      "audioUnchanged": true
+    }
+  ],
+  "humanListeningVerified": false,
+  "exactMarkIdentityVerified": false
+}

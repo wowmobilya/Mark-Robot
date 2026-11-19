@@ -39,9 +39,19 @@ html body #stab-robot .wf-robot-voice-action { min-block-size: 42px; margin: 0; 
 #stab-robot .wf-robot-voice-links a { color: var(--brand-primary); font-size: 10px; line-height: 1.6; }
 #stab-robot .wf-robot-speech-controls { border-block-end: 1px solid var(--border); padding-block-end: 16px; margin-block-end: 8px; }
 #stab-robot .wf-robot-speech-controls h3 { margin: 0 0 10px; font-size: 15px; }
-#stab-robot .wf-robot-selected-voice { display: block; direction: ltr; text-align: start; color: var(--brand-primary); font-size: 13px; }
+#stab-robot .wf-robot-selected-voice { display: block; text-align: start; color: var(--brand-primary); font-size: 13px; }
 #stab-robot .wf-robot-speech-range { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-block: 14px; font-size: 13px; }
 #stab-robot .wf-robot-speech-range input { grid-column: 1 / -1; width: 100%; accent-color: var(--brand-primary); direction: ltr; }
 #stab-robot .wf-robot-speech-range output { font-variant-numeric: tabular-nums; direction: ltr; }
 #stab-robot .wf-robot-speech-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 #stab-robot .wf-robot-speech-actions button { padding: 9px 12px; min-block-size: 40px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
+#stab-robot .wf-robot-speech-actions [data-wf-reading-preview="true"] { border-color: var(--brand-primary); color: var(--brand-primary); font-weight: 650; }
+#stab-robot .wf-robot-reading-preview-status { min-block-size: 20px; margin: 6px 0 0; color: var(--text2); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+#stab-robot .wf-robot-voice-row[data-backend="reference"] { border-color: color-mix(in srgb, var(--brand-primary) 45%, var(--border)); }
+#stab-robot .wf-robot-reference-hint { grid-column: 1 / -1; margin: 4px 0; color: var(--text2); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+#stab-robot .wf-robot-reference-hint[hidden] { display: none; }
+@media (max-width: 420px) {
+  #stab-robot .wf-robot-speech-actions button { flex: 1 1 100%; }
+  #stab-robot .wf-robot-voice-row[data-backend="reference"] { grid-template-columns: minmax(0, 1fr); }
+  #stab-robot .wf-robot-voice-row[data-backend="reference"] .wf-robot-voice-action { justify-self: start; }
+}

@@ -1,0 +1,78 @@
+{
+  "modelRevision": "2921b8821772b0bd10a04456863d21abf9d2f283",
+  "speakerEncoderSha256": "9539f340b70be246005403b9c254732e180e85e0b3c57fb1973f0d6bc6c59bdc",
+  "sourceCommit": "a50e14117d99181ba7f28047b451ba03ba1a09a9",
+  "shape": [
+    192
+  ],
+  "dtype": "float32",
+  "exactMarkIdentityVerified": false,
+  "voices": {
+    "ar": {
+      "path": "native-probe/mark-ar.embedding.npy",
+      "bytes": 896,
+      "sha256": "915c372c406ea1952b72d8faeab97620e227d4f81f17cdd1776a52f91930b8ea",
+      "source": "assets/robot-identity/ar.mp3",
+      "sourceSHA256": "890d644129456c4f77cefe9402ecdb380944a401a11ca1e9681269f1a636d0b7",
+      "sourceVoice": "Mark - Natural Conversations",
+      "sourceGenerationId": "01a1f54b-787b-72e1-816b-3ff922f4f45e",
+      "wallSeconds": 7.647299629999907,
+      "norm": 4.363018116443222
+    },
+    "ar-EG": {
+      "path": "native-probe/mark-ar-EG.embedding.npy",
+      "bytes": 896,
+      "sha256": "85173f08792946fd8cf841c92a24d9f18672ce81249ceaa6992c1b611da35622",
+      "source": "assets/robot-identity/ar-EG.mp3",
+      "sourceSHA256": "35a368e0204cd198400b058c71a0b90895cab6d24d3ec2635059984d0e1bd6f0",
+      "sourceVoice": "Mark - Natural Conversations",
+      "sourceGenerationId": "01a1f54b-7d4b-77e8-8c3d-40d00313f43a",
+      "wallSeconds": 6.999089865999849,
+      "norm": 4.392285760101026
+    },
+    "tr": {
+      "path": "native-probe/mark-tr.embedding.npy",
+      "bytes": 896,
+      "sha256": "cc0ba1c7df03f19221d21d1b5ca39379504f5f1255f19242c0336b64a4d21a2e",
+      "source": "assets/robot-identity/tr.mp3",
+      "sourceSHA256": "c008b713a1d709b7a6bbffb706dcc52f2a4cc8ba40ac6770fb0068e3e936577f",
+      "sourceVoice": "Mark - Natural Conversations",
+      "sourceGenerationId": "01a1f54b-8578-790d-9073-8723fe6782c0",
+      "wallSeconds": 7.148903023000457,
+      "norm": 4.426562877281775
+    },
+    "en": {
+      "path": "native-probe/mark-en.embedding.npy",
+      "bytes": 896,
+      "sha256": "2e436225dd4d699cb4e9d9c4f79d28cba40cad6b8854c21b0c9695b224c34da3",
+      "source": "assets/robot-identity/en.mp3",
+      "sourceSHA256": "21c5ab66df021868c8915c68ea985177ba891d76a8de140644deb2bef0b92016",
+      "sourceVoice": "Mark - Natural Conversations",
+      "sourceGenerationId": "01a1f54b-8f1b-72b2-ae96-c2799a045d21",
+      "wallSeconds": 17.4595293880011,
+      "norm": 4.233122703660383
+    },
+    "fr": {
+      "path": "native-probe/mark-fr.embedding.npy",
+      "bytes": 896,
+      "sha256": "d328b77907717e67b5ffff23a3dbcd32c1e0760af93663b1f14b6d52af24db0e",
+      "source": "assets/robot-identity/fr.mp3",
+      "sourceSHA256": "ed75c74a4894840b33bdd10058b99d9ab6690ab26591238f2b35d4f4b9ff78b2",
+      "sourceVoice": "Mark - Natural Conversations",
+      "sourceGenerationId": "01a1f54b-89cd-7c49-897b-2fc691a33889",
+      "wallSeconds": 23.94849872999839,
+      "norm": 4.137909939340164
+    },
+    "ru": {
+      "path": "native-probe/mark-ru.embedding.npy",
+      "bytes": 896,
+      "sha256": "73a8ff680c99ffecb732923580942c7cc39ee5a8555151085e325f72c037aa2d",
+      "source": "assets/robot-identity/ru.mp3",
+      "sourceSHA256": "64a5cf3804c5d609b441fe3056ca400e455d772b4f3d5ab4cabab94ba1bc0f6d",
+      "sourceVoice": "Mark - Natural Conversations",
+      "sourceGenerationId": "01a1f54b-8134-7b72-8d64-a06861eec20d",
+      "wallSeconds": 9.539266606003366,
+      "norm": 4.168590744839266
+    }
+  }
+}

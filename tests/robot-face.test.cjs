@@ -12,7 +12,7 @@ const source = fs.readFileSync(process.argv[2] || path.resolve(__dirname, '../ro
 let assertionCount = 0;
 function check(condition, message) { assertionCount++; assert.ok(condition, message); }
 
-function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], supported = true, recordings = false, audioPlay, snapshot, preferences = {autoExpressions:true,idleMotion:true}, offline = false, offlineReady = true} = {}) {
+function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], supported = true, recordings = false, audioPlay, snapshot, preferences = {autoExpressions:true,idleMotion:true}, offline = false, offlineReady = true, reference = false, referenceReady = true} = {}) {
   const observers = [];
   const timers = new Map();
   let timerId = 0;
@@ -71,10 +71,12 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   }
   const root = new Element('html'); root.lang = lang;
   const dashboard = new Element('section'); dashboard.classes.add('active');
+  const settingsPage = new Element('section');
+  let activePage = dashboard;
   const track = new Element('div'); track.parentNode = dashboard;
   for (let i = 0; i < 4; i++) track.append(new Element());
   const doc = new Element('document'); doc.documentElement = root; doc.hidden = false;
-  doc.querySelector = selector => selector === '.wf-greeting-faces' ? track : selector === '.page.active' && dashboard.classes.has('active') ? dashboard : null;
+  doc.querySelector = selector => selector === '.wf-greeting-faces' ? track : selector === '.page.active' && activePage.classes.has('active') ? activePage : null;
   doc.getElementById = id => track.children.find(child => child.id === id) || null;
   doc.createElement = tag => new Element(tag);
   const win = new Element('window');
@@ -99,12 +101,21 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   }
   if (recordings) win.Audio = Audio;
   win.wfBusinessOverviewSnapshot = snapshot;
-  win.WFRobotSettings = {getPreferences:()=>preferences};
+  // Legacy scenarios explicitly choose the lightweight backend. Reference
+  // scenarios override it, including undefined to exercise the new default.
+  win.WFRobotSettings = {getPreferences:()=>({speechBackend:'local',...preferences})};
   // Lifecycle fixtures use a transparent pronunciation adapter; separate suites
   // validate real financial snapshots and the exact money wording.
   win.WFArabicReportSpeech = win.WFTurkishReportSpeech = {prepare:value=>[{text:value.narration,charIndex:0,charLength:value.narration.length}]};
   const offlineVoice = {calls:[],cancels:0,getStatus:()=>({ready:offlineReady}),speak(request){this.calls.push(request);return{cancel:()=>{this.cancels++;}};}};
   if (offline) win.WFOfflineVoice = offlineVoice;
+  const referenceVoice = {calls:[],cancels:0,unlocks:0,disposals:0,cancelledDownloads:[],
+    list:()=>[{locale:'ar',locales:['ar','en','tr','fr','ru'],name:'Mark · local reference',bytes:921000000}],
+    getStatus:()=>({locale:lang,ready:referenceReady,state:referenceReady?'ready':'not-installed',name:'Mark · local reference',total:921000000}),
+    preparePlayback(){this.unlocks++;return{dispose:()=>this.disposals++};},
+    cancelDownload(locale){this.cancelledDownloads.push(locale);},
+    speak(request){this.calls.push(request);return{cancel:()=>{this.cancels++;}};}};
+  if (reference) win.WFReferenceVoice = referenceVoice;
   const reportEvents = [];
   for (const type of ['wf-robot-report-open','wf-robot-report-playback','wf-robot-report-boundary','wf-robot-report-voice']) win.addEventListener(type,event=>reportEvents.push({type,...event.detail}));
   const activity = [];
@@ -116,7 +127,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   });
   const face = doc.getElementById('wfGreetingRobot');
   return {
-    face, track, doc, win, root, dashboard, synth, activity, observers, timers, audioRequests, reportEvents, offlineVoice,
+    face, track, doc, win, root, dashboard, synth, activity, observers, timers, audioRequests, reportEvents, offlineVoice, referenceVoice,
     speak: face.querySelector('.wf-robot-speak'),
     report: face.querySelector('.wf-robot-report'),
     send(type,detail) { win.dispatchEvent(new CustomEvent(type,{detail})); },
@@ -125,6 +136,13 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
     hide() { face.setAttribute('aria-hidden', 'true'); face.inert = true; },
     language(next) { root.lang = next; changed(root, 'lang'); },
     leaveDashboard() { dashboard.classes.delete('active'); changed(dashboard, 'class'); },
+    visitPage(name) {
+      const previous = activePage;
+      activePage = name === 'settings' ? settingsPage : dashboard;
+      if (previous === activePage) return;
+      previous.classes.delete('active'); activePage.classes.add('active');
+      changed(previous, 'class'); changed(activePage, 'class');
+    },
     hideDocument() { doc.hidden = true; doc.dispatchEvent(new CustomEvent('visibilitychange')); },
     voicesChanged(next) { synth.voices = next; synth.dispatchEvent(new CustomEvent('voiceschanged')); },
     timeout() { for (const timer of [...timers.values()]) timer.fn(); },
@@ -455,6 +473,109 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
   {
     const f=fixture({offline:true,preferences:{speechVolume:0}});
     check(f.win.WFProgramSpeech.getState().state==='muted'&&!f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:true}})&&!f.offlineVoice.calls.length,'Muted audio reports mute without generating an inaudible report');
+  }
+  for (const origin of ['preview', 'program']) {
+    for (const ending of ['completed', 'cancelled']) {
+      for (const next of ['report', 'identity']) {
+        let reads = 0;
+        const f = fixture({recordings:true,offline:true,snapshot:()=>{reads++;return{narration:'Fresh daily figures'};}});
+        f.visitPage('settings');
+        const accepted = origin === 'preview' ? f.win.WFProgramSpeech.preview({event:{isTrusted:true}}) :
+          f.win.WFProgramSpeech.speak({text:'Selected settings text',event:{isTrusted:true}});
+        check(accepted, origin+' starts in Settings');
+        if (origin === 'preview') f.audioRequests[0].onplaying(); else f.offlineVoice.calls[0].onStart();
+        if (ending === 'cancelled') f.win.WFProgramSpeech.stop();
+        else if (origin === 'preview') f.audioRequests[0].onended(); else f.offlineVoice.calls[0].onEnd();
+        check(!f.win.WFProgramSpeech.getState().active, origin+' is inactive after '+ending);
+        const recordings = f.audioRequests.length, requests = f.offlineVoice.calls.length;
+        f.visitPage('dashboard'); f.reveal();
+        (next === 'report' ? f.report : f.speak).click(); await flush();
+        if (next === 'report') {
+          check(reads===1 && f.offlineVoice.calls.length===requests+1 && f.offlineVoice.calls.at(-1).text==='Fresh daily figures',
+            'Dashboard report starts after '+ending+' Settings '+origin);
+          check(f.audioRequests.length===recordings, 'A recovered report still uses its dynamic speech engine');
+          f.offlineVoice.calls.at(-1).onStart();
+        } else {
+          check(f.audioRequests.length===recordings+1 && f.offlineVoice.calls.length===requests,
+            'Dashboard identity starts after '+ending+' Settings '+origin);
+          f.audioRequests.at(-1).onplaying();
+        }
+        check(f.face.dataset.voiceKind===(next==='report'?'report':'intro'), 'New dashboard action owns its own session kind');
+        f.hide();
+        check(!f.win.WFProgramSpeech.getState().active, 'Hiding the face still cancels recovered '+next+' playback');
+      }
+    }
+    for (const gate of ['hidden face', 'inactive dashboard']) {
+      let reads = 0;
+      const f = fixture({recordings:true,offline:true,snapshot:()=>{reads++;return{narration:'Fresh daily figures'};}});
+      f.visitPage('settings');
+      if (origin === 'preview') {f.win.WFProgramSpeech.preview({event:{isTrusted:true}});f.audioRequests[0].onended();}
+      else {f.win.WFProgramSpeech.speak({text:'Selected settings text',event:{isTrusted:true}});f.offlineVoice.calls[0].onEnd();}
+      const recordings = f.audioRequests.length, requests = f.offlineVoice.calls.length;
+      if (gate === 'hidden face') f.visitPage('dashboard'); else f.reveal();
+      f.report.click(); f.speak.click(); await flush();
+      check(reads===0 && f.audioRequests.length===recordings && f.offlineVoice.calls.length===requests,
+        'Dashboard buttons retain the '+gate+' gate after Settings '+origin);
+    }
+    {
+      const f = fixture({recordings:true,offline:true}); f.visitPage('settings');
+      if (origin === 'preview') {f.win.WFProgramSpeech.preview({event:{isTrusted:true}});f.audioRequests[0].onplaying();}
+      else {f.win.WFProgramSpeech.speak({text:'Selected settings text',event:{isTrusted:true}});f.offlineVoice.calls[0].onStart();}
+      f.visitPage('dashboard');
+      check(!f.win.WFProgramSpeech.getState().active && (origin==='preview'?f.audioRequests[0].pauseCount===1:f.offlineVoice.cancels===1),
+        'Leaving Settings still cancels its active '+origin+' session');
+    }
+  }
+  {
+    const f=fixture({offline:true,reference:true,preferences:{speechBackend:undefined,arabicDialect:'eg',speechRate:1.1,speechVolume:.6},snapshot:()=>({narration:'Reference report'})});
+    f.reveal();f.report.click();await flush();
+    check(f.referenceVoice.calls.length===1&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'An unset backend selects the verified reference pack for reports');
+    const request=f.referenceVoice.calls[0];
+    check(request.dialect==='eg'&&request.rate===1.1&&request.volume===.6&&request.continuous===true,'Reference synthesis receives dialect and shared playback controls');
+    check(f.referenceVoice.unlocks===1&&f.win.WFProgramSpeech.getState().voiceName==='Mark · local reference','Reference playback uses its own audio lease and truthful voice name');
+    request.onError(new Error('inference-failed'));
+    check(!f.win.WFProgramSpeech.getState().active&&f.win.WFProgramSpeech.getState().state==='failed'&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Reference inference failure never silently switches to Nabra or a device voice');
+    check(f.win.WFProgramSpeech.speak({text:'Selected reference text',event:{isTrusted:true}})===true&&f.referenceVoice.calls.length===2,'The shared program reader uses the chosen reference engine too');
+  }
+  {
+    const f=fixture({offline:true,recordings:true,preferences:{speechBackend:'reference'},snapshot:()=>({narration:'No reference pack'})});
+    f.reveal();f.report.click();await flush();
+    check(!f.offlineVoice.calls.length&&!f.synth.calls.length&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.state==='unsupported'),'A missing reference adapter is shown instead of using another installed voice');
+    check(!f.win.WFProgramSpeech.speak({text:'No replacement voice',event:{isTrusted:true}})&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Program reading also refuses silent reference replacement');
+    f.voicesChanged([{lang:'ar-SA',localService:true}]);
+    f.send('wf-offline-voice-change',{locale:'ar',ready:true,state:'ready',name:'Nabra'});
+    check(f.win.WFProgramSpeech.getState().state==='unavailable','Device discovery and a ready Nabra pack cannot reset unavailable reference speech to ready');
+    check(f.win.WFProgramSpeech.preview({event:{isTrusted:true}})&&f.audioRequests.length===1,'The explicitly labelled fixed Mark greeting remains available separately');
+  }
+  for(const cancel of [false,true]) {
+    let resolveDownload,signal,ready=false,downloads=0;
+    const f=fixture({offline:true,reference:true,referenceReady:false,preferences:{speechBackend:'reference'},snapshot:()=>({narration:'Download reference report'})});
+    f.referenceVoice.getStatus=()=>({locale:'ar',name:'Mark · local reference',ready,state:ready?'ready':'not-installed',total:921000000});
+    f.referenceVoice.download=(_locale,options)=>{downloads++;signal=options.signal;return new Promise(resolve=>{resolveDownload=()=>{ready=true;resolve();};});};
+    f.reveal();f.report.click();await flush();
+    check(downloads===0&&!f.referenceVoice.calls.length&&!f.offlineVoice.calls.length&&!f.synth.calls.length&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.state==='missing'&&event.total===921000000),'The report explicitly offers the selected reference download despite other voices being ready');
+    f.send('wf-robot-report-control',{action:'install'});await flush();
+    check(downloads===1,'Only an explicit install action starts the reference download');
+    if(cancel)f.send('wf-robot-report-control',{action:'cancel-download'});
+    resolveDownload();await flush();
+    if(cancel)check(signal.aborted&&f.referenceVoice.cancelledDownloads[0]==='ar'&&!f.referenceVoice.calls.length&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Cancelling reference installation prevents late playback and cancels the selected manager');
+    else check(f.referenceVoice.calls.length===1&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'A verified reference download resumes the fresh report with that engine only');
+  }
+  {
+    const preferences={speechBackend:'reference',arabicDialect:'sy'};
+    const f=fixture({offline:true,reference:true,preferences});
+    f.win.WFProgramSpeech.speak({text:'Reference selection',event:{isTrusted:true}});
+    const old=f.referenceVoice.calls[0];old.onStart();
+    preferences.speechBackend='local';f.send('wf-robot-preferences',{});old.onStart();
+    check(f.referenceVoice.cancels===1&&!f.win.WFProgramSpeech.getState().active,'Changing the explicit backend cancels reference work and ignores old callbacks');
+    f.win.WFProgramSpeech.speak({text:'Explicit lightweight selection',event:{isTrusted:true}});
+    check(f.offlineVoice.calls.length===1&&f.referenceVoice.calls.length===1,'Nabra is available only after an explicit lightweight selection');
+  }
+  {
+    const f=fixture({offline:true,reference:true,preferences:{speechBackend:'reference'}});
+    f.referenceVoice.speak=()=>{throw new Error('reference-init-failed');};
+    f.win.WFProgramSpeech.speak({text:'Reference initialization',event:{isTrusted:true}});
+    check(f.win.WFProgramSpeech.getState().state==='failed'&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Synchronous reference initialization failure also cannot select a different voice');
   }
   console.log(`${assertionCount} robot offline speech/report lifecycle assertions passed.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

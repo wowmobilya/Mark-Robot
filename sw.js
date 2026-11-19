@@ -1,5 +1,5 @@
 importScripts('./install-identity.js?v=1');
-const CACHE_NAME = 'wow-furniture-v178-mark-clear-speech';
+const CACHE_NAME = 'wow-furniture-v179-local-reference-voice';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
   './context-nav.js?v=5',
@@ -18,7 +18,7 @@ const urlsToCache = [
   './section-headings.css?v=7',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
-  './robot-face.js?v=7',
+  './robot-face.js?v=8',
   './robot-face.css?v=5',
   './dialog-surfaces.css?v=1',
   './product-categories.js?v=2',
@@ -48,17 +48,19 @@ const urlsToCache = [
   './ui-motion.css?v=1',
   './annual-sales.js?v=2',
   './annual-sales.css?v=1',
-  './offline-voice.js?v=4',
-  './offline-voice-worker.js?v=4',
+  './offline-voice.js?v=5',
+  './offline-voice-worker.js?v=5',
+  './reference-voice-assets.js?v=1',
+  './reference-voice.js?v=1',
   './arabic-report-speech.js?v=2',
   './turkish-report-speech.js?v=1',
   './program-speech.js?v=1',
   './program-speech.css?v=1',
-  './nabra-report-worker.js?v=2',
+  './nabra-report-worker.js?v=3',
   './nabra-phonemizer.js?v=1',
-  './robot-settings.js?v=5',
-  './robot-settings.css?v=2',
-  './robot-report.js?v=3',
+  './robot-settings.js?v=6',
+  './robot-settings.css?v=3',
+  './robot-report.js?v=4',
   './robot-report.css?v=2',
   './developer-profile.js?v=1',
   './developer-profile.css?v=1',
@@ -121,6 +123,16 @@ self.addEventListener('fetch', event => {
   }
 
   const sameOrigin = url.origin === self.location.origin;
+  // The reference installer is the only network path for its runtime modules.
+  // Worker imports then stay offline too; a missing module is a failed pack,
+  // never a reason to fetch a different engine or silently change the voice.
+  const referenceRuntime = sameOrigin &&
+    ((url.pathname.includes('/vendor/zonos3/') && /\.(?:m?js|json|bin|gguf)$/.test(url.pathname)) || url.pathname.endsWith('/reference-voice-host.js'));
+  if (referenceRuntime && request.mode !== 'navigate') {
+    event.respondWith(request.cache === 'no-store' ? fetch(request) :
+      caches.open('infinity-offline-voice-v1').then(cache => cache.match(request)).then(response => response || Response.error()));
+    return;
+  }
   // The explicit voice installer verifies and owns these downloads in its own cache.
   // Avoid a duplicate runtime or a large source archive in the application cache.
   if (sameOrigin && url.pathname.includes('/vendor/nabra/')) { event.respondWith(fetch(request)); return; }

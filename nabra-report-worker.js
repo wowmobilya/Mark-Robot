@@ -1,7 +1,7 @@
 /* Arabic report speech, exclusively local. This is a module worker.
    Runtime, phonemizer, model and voice bytes are read from CacheStorage and
    SHA-256 checked before execution. There is no network inference or fallback. */
-import './offline-voice.js?v=4';
+import './offline-voice.js?v=5';
 import { prepareArabicPhonemes, validateArabicWaveform } from './nabra-phonemizer.js?v=1';
 
 const core = self.WFOfflineVoiceCore;

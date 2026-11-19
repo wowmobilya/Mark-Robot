@@ -18,8 +18,10 @@ speed edits or word/number splicing. These are fixed recordings, not voice model
 
 The application service worker can cache these small audio files with the app
 shell. Playing the fixed introduction then needs neither an installed voice
-pack nor a remote speech service. Variable reports still require an available
-local system voice or an installed offline voice pack.
+pack nor a remote speech service. Variable reports require an installed speech
+engine. The selectable reference pack below synthesizes new text from the
+selected recording's speaker embedding; lightweight packs and local system
+voices remain explicit alternative settings.
 
 `assets/robot-identity/metadata.json` records exact scripts, hashes, generation
 IDs, encoding, file sizes and measured decoded durations. Every MP3 is fully
@@ -31,6 +33,49 @@ Mark's hosted generator is not a bundled offline inference engine. Newly
 changing reports and selected text use the installed local pack or a local
 device voice, visibly identified in the reading status and settings. No API
 key, invented remote endpoint or hidden remote speech fallback is included.
+
+## Local reading based on the selected sample
+
+Release 179 adds a shared ZONOS3-Mini pack for changing reports and selected text.
+It uses 192-value speaker embeddings extracted locally from the six approved
+Mark recordings. This is a locally generated approximation, not an export of
+the original Artlist/ElevenLabs Mark engine. Timbre, pronunciation and accents
+can differ. The settings and report download sheet state that distinction.
+
+The pack is approximately 922 MB, downloaded only after an explicit action, and
+requires WebGPU with a compatible adapter. All five app languages share its
+backbone and decoder. Arabic's Syrian/Egyptian preference selects the matching
+reference embedding; the model language remains Arabic and there is no claim
+of independently certified dialect accuracy. Existing saved `local` and
+`device` choices are preserved. To switch an existing installation, select the
+local voice based on the Mark sample, save, then download the shared pack.
+
+`reference-voice-assets.js` pins the runtime and model revisions and every
+download's size and SHA-256. The installer checks available space, verifies
+all bytes, and marks the pack ready only after the complete inventory is saved.
+`reference-voice-host.js` and the guarded vendor worker use only verified cache
+entries for all model metadata, shards, companions and embeddings. They have
+no network fallback. Runtime module imports are also restricted to installed
+cache entries by the service worker. Business report text and synthesized audio
+never leave the device and are not retained in the model cache.
+
+The common audio owner buffers a complete report into one validated PCM WAV,
+uses the saved rate/volume, and releases the reference worker tree on stop,
+replacement, removal or page exit. An idle timeout releases its GPU allocation
+after 30 seconds. Selecting this reference voice never falls back automatically
+to Nabra, Piper or a device voice. Its unsupported-device message explains the
+WebGPU requirement. A missing pack presents the selected pack's download action.
+
+Official native CPU generation produced unseen Arabic and Turkish financial
+samples from these embeddings. The Arabic review sample at
+`assets/reference-voice/samples/ar.wav` uses this app's actual vocalized
+`moneyWords()` output. An independent local ASR check recognized
+1,000,000.05 USD, zero USD and 5.50 USD; Turkish recognized a million dollars, zero
+dollars and 5.50 USD. The checks still contain Arabic spelling/inflection
+differences, so they do not establish flawless pronunciation, exact Mark
+similarity, target-phone speed, or complete WebGPU offline execution. The
+samples and technical provenance are retained for review. See the pinned
+runtime's `vendor/zonos3/a50e141/README.md`, `LICENSE` and `NOTICE`.
 
 ## Shared controls and program text
 

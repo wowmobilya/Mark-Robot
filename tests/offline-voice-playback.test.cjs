@@ -27,6 +27,24 @@ test('continuous rendering rejects malformed audio, changed format and unbounded
  assert.throws(()=>createWavSequence().finish(),/invalid-audio/);
 });
 
+test('reference playback uses its generator and releases its engine on stop and replacement',async()=>{
+ const f=await fixture();let rendered=0,released=0,started=0;
+ const source={getStatus:()=>({ready:true}),synthesize:async()=>{rendered++;return wav([0,.2,-.2]);},dispose(){released++;}};
+ const old=f.api.speakGenerated({text:'Reference report.',locale:'ar',continuous:true,onStart(){started++;}},source);
+ await flushUntil(()=>started===1);
+ assert.equal(rendered,1);assert.equal(f.requests.length,0,'no Nabra/Piper generation occurs');
+ const next=f.api.speak({text:'Explicit local voice.',locale:'ar',continuous:true});
+ await flushUntil(()=>f.requests.length===1);
+ assert.equal(released,1,'switching voices releases the reference engine');
+ old.cancel();assert.equal(released,1,'a stale handle cannot release a newer engine');
+ next.cancel();
+ const current=f.api.speakGenerated({text:'Reference again.',locale:'ar',continuous:true,onStart(){started++;}},source);
+ await flushUntil(()=>started===2);current.cancel();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(released,2,'ordinary stop releases the engine after buffered audio starts');
+ assert.equal(f.urls.size,0);
+});
+
 async function flushUntil(check){for(let i=0;i<40&&!check();i++)await new Promise(resolve=>setImmediate(resolve));assert(check(),'asynchronous operation reached expected state');}
 async function fixture(){
  const clips=[],urls=new Map(),revoked=[],workers=[],audioElements=[],requests=[],events=[];let id=0;

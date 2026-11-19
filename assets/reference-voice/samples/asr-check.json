@@ -1,0 +1,455 @@
+{
+  "kind": "automated local ASR diagnostic",
+  "model": {
+    "repository": "Systran/faster-whisper-small",
+    "revision": "536b0662742c02347bc0e980a01041f333bce120",
+    "files": [
+      {
+        "path": "config.json",
+        "bytes": 2370,
+        "sha256": "b55496ac7940a7ae47d2c01eab40edfd8701feec1229d9cce3b40014383fb828",
+        "url": "https://huggingface.co/Systran/faster-whisper-small/resolve/536b0662742c02347bc0e980a01041f333bce120/config.json"
+      },
+      {
+        "path": "model.bin",
+        "bytes": 483546902,
+        "sha256": "3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671",
+        "url": "https://huggingface.co/Systran/faster-whisper-small/resolve/536b0662742c02347bc0e980a01041f333bce120/model.bin"
+      },
+      {
+        "path": "tokenizer.json",
+        "bytes": 2203239,
+        "sha256": "fb7b63191e9bb045082c79fd742a3106a12c99513ab30df4a0d47fa6cb6fd0ab",
+        "url": "https://huggingface.co/Systran/faster-whisper-small/resolve/536b0662742c02347bc0e980a01041f333bce120/tokenizer.json"
+      },
+      {
+        "path": "vocabulary.txt",
+        "bytes": 459861,
+        "sha256": "34ce3fe1c5041027b3f8d42912270993f986dbc4bb34cf27f951e34a1e453913",
+        "url": "https://huggingface.co/Systran/faster-whisper-small/resolve/536b0662742c02347bc0e980a01041f333bce120/vocabulary.txt"
+      }
+    ]
+  },
+  "software": {
+    "faster-whisper": "1.2.1",
+    "ctranslate2": "4.9.0"
+  },
+  "device": "CPU",
+  "computeType": "int8",
+  "cpuThreads": 6,
+  "decoding": {
+    "language": "automatic detection",
+    "beamSize": 5,
+    "temperature": 0,
+    "conditionOnPreviousText": false,
+    "vadFilter": false,
+    "wordTimestamps": true,
+    "expectedTextPrompt": false,
+    "audioDecode": "System ffmpeg to16kHz mono float32 in memory; source WAV unchanged"
+  },
+  "limitations": [
+    "ASR is fallible and is not human listening verification.",
+    "Speaker identity, voice similarity and subjective naturalness are not tested by transcription.",
+    "Results cover only these two generated samples, not all future reports."
+  ],
+  "samples": [
+    {
+      "expectedLanguage": "ar",
+      "detectedLanguage": "ar",
+      "languageProbability": 0.9984563589096069,
+      "audioPath": "native-probe/zonos-mark-ar-financial.wav",
+      "audioSha256": "b965d112598988c3845e246db7f78de5dd56cc751543b00d277c70fa57703e0a",
+      "durationSeconds": 8.8666875,
+      "wallSeconds": 4.886142488998303,
+      "transcript": "أستاد هسن الحلو المبيعات مليون دولار أمريكي والرصيد صفر دولار الدفع خمس دولارات وخمسة ونسانة",
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 6.0,
+          "text": " أستاد هسن الحلو المبيعات مليون دولار أمريكي والرصيد صفر دولار",
+          "avgLogprob": -0.24392164662732915,
+          "noSpeechProbability": 0.006576238665729761,
+          "words": [
+            {
+              "start": 0.0,
+              "end": 0.82,
+              "text": " أستاد",
+              "probability": 0.6437332034111023
+            },
+            {
+              "start": 0.82,
+              "end": 1.16,
+              "text": " هسن",
+              "probability": 0.7320406635602316
+            },
+            {
+              "start": 1.16,
+              "end": 1.7,
+              "text": " الحلو",
+              "probability": 0.9383580485979716
+            },
+            {
+              "start": 1.7,
+              "end": 2.58,
+              "text": " المبيعات",
+              "probability": 0.7967718690633774
+            },
+            {
+              "start": 2.58,
+              "end": 2.96,
+              "text": " مليون",
+              "probability": 0.9355495770772299
+            },
+            {
+              "start": 2.96,
+              "end": 3.38,
+              "text": " دولار",
+              "probability": 0.9767366846402487
+            },
+            {
+              "start": 3.38,
+              "end": 4.04,
+              "text": " أمريكي",
+              "probability": 0.9101429343223572
+            },
+            {
+              "start": 4.04,
+              "end": 4.82,
+              "text": " والرصيد",
+              "probability": 0.888780415058136
+            },
+            {
+              "start": 4.82,
+              "end": 5.18,
+              "text": " صفر",
+              "probability": 0.9823040167490641
+            },
+            {
+              "start": 5.18,
+              "end": 6.0,
+              "text": " دولار",
+              "probability": 0.9866368571917216
+            }
+          ]
+        },
+        {
+          "start": 6.0,
+          "end": 8.34,
+          "text": " الدفع خمس دولارات وخمسة ونسانة",
+          "avgLogprob": -0.24392164662732915,
+          "noSpeechProbability": 0.006576238665729761,
+          "words": [
+            {
+              "start": 6.0,
+              "end": 6.52,
+              "text": " الدفع",
+              "probability": 0.7903252343336741
+            },
+            {
+              "start": 6.52,
+              "end": 6.94,
+              "text": " خمس",
+              "probability": 0.8495584925015768
+            },
+            {
+              "start": 6.94,
+              "end": 7.46,
+              "text": " دولارات",
+              "probability": 0.9341215342283249
+            },
+            {
+              "start": 7.46,
+              "end": 7.96,
+              "text": " وخمسة",
+              "probability": 0.8865293979644775
+            },
+            {
+              "start": 7.96,
+              "end": 8.34,
+              "text": " ونسانة",
+              "probability": 0.8392624855041504
+            }
+          ]
+        }
+      ],
+      "audioUnchanged": true
+    },
+    {
+      "expectedLanguage": "tr",
+      "detectedLanguage": "tr",
+      "languageProbability": 0.9948348999023438,
+      "audioPath": "native-probe/zonos-mark-tr-financial.wav",
+      "audioSha256": "e66478718d068904c9728d9af6197520abe5e5b22b75c0485036246ef3c02bc2",
+      "durationSeconds": 6.0,
+      "wallSeconds": 3.4820726300022216,
+      "transcript": "Hasan Bey, satışlar 1 milyon dolar, kalan bakiye 0 dolar. Ödeme 5 dolar 50 cent.",
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 5.72,
+          "text": " Hasan Bey, satışlar 1 milyon dolar, kalan bakiye 0 dolar. Ödeme 5 dolar 50 cent.",
+          "avgLogprob": -0.287534948438406,
+          "noSpeechProbability": 0.04553821682929993,
+          "words": [
+            {
+              "start": 0.0,
+              "end": 0.4,
+              "text": " Hasan",
+              "probability": 0.5144928693771362
+            },
+            {
+              "start": 0.4,
+              "end": 0.68,
+              "text": " Bey,",
+              "probability": 0.4609794616699219
+            },
+            {
+              "start": 0.82,
+              "end": 1.38,
+              "text": " satışlar",
+              "probability": 0.9853664437929789
+            },
+            {
+              "start": 1.38,
+              "end": 1.58,
+              "text": " 1",
+              "probability": 0.5186223387718201
+            },
+            {
+              "start": 1.58,
+              "end": 2.04,
+              "text": " milyon",
+              "probability": 0.9685603082180023
+            },
+            {
+              "start": 2.04,
+              "end": 2.38,
+              "text": " dolar,",
+              "probability": 0.982141524553299
+            },
+            {
+              "start": 2.54,
+              "end": 2.86,
+              "text": " kalan",
+              "probability": 0.9760433733463287
+            },
+            {
+              "start": 2.86,
+              "end": 3.32,
+              "text": " bakiye",
+              "probability": 0.6424838602542877
+            },
+            {
+              "start": 3.32,
+              "end": 3.5,
+              "text": " 0",
+              "probability": 0.8878467679023743
+            },
+            {
+              "start": 3.5,
+              "end": 4.04,
+              "text": " dolar.",
+              "probability": 0.9841208755970001
+            },
+            {
+              "start": 4.28,
+              "end": 4.64,
+              "text": " Ödeme",
+              "probability": 0.9783052206039429
+            },
+            {
+              "start": 4.64,
+              "end": 4.88,
+              "text": " 5",
+              "probability": 0.9514004588127136
+            },
+            {
+              "start": 4.88,
+              "end": 5.2,
+              "text": " dolar",
+              "probability": 0.9817253649234772
+            },
+            {
+              "start": 5.2,
+              "end": 5.46,
+              "text": " 50",
+              "probability": 0.7853676676750183
+            },
+            {
+              "start": 5.46,
+              "end": 5.72,
+              "text": " cent.",
+              "probability": 0.7527101039886475
+            }
+          ]
+        }
+      ],
+      "audioUnchanged": true
+    }
+  ],
+  "arabicAmbiguityRechecks": [
+    {
+      "name": "whole-ar-beam10",
+      "sourceStartSeconds": 0,
+      "language": "ar",
+      "beamSize": 10,
+      "expectedTextPrompt": false,
+      "wallSeconds": 4.2211501659985515,
+      "transcript": "أستاد هسن الحلو المبيعات مليون دولار أمريكي والرصيد صفر دولار الدفع خمس دولارات وخمسة ونسانة",
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 6.0,
+          "text": " أستاد هسن الحلو المبيعات مليون دولار أمريكي والرصيد صفر دولار",
+          "words": [
+            {
+              "start": 0.0,
+              "end": 0.82,
+              "text": " أستاد",
+              "probability": 0.6437332034111023
+            },
+            {
+              "start": 0.82,
+              "end": 1.16,
+              "text": " هسن",
+              "probability": 0.7320406635602316
+            },
+            {
+              "start": 1.16,
+              "end": 1.7,
+              "text": " الحلو",
+              "probability": 0.9383580485979716
+            },
+            {
+              "start": 1.7,
+              "end": 2.58,
+              "text": " المبيعات",
+              "probability": 0.7967718690633774
+            },
+            {
+              "start": 2.58,
+              "end": 2.96,
+              "text": " مليون",
+              "probability": 0.9355495770772299
+            },
+            {
+              "start": 2.96,
+              "end": 3.38,
+              "text": " دولار",
+              "probability": 0.9767366846402487
+            },
+            {
+              "start": 3.38,
+              "end": 4.04,
+              "text": " أمريكي",
+              "probability": 0.9101429343223572
+            },
+            {
+              "start": 4.04,
+              "end": 4.82,
+              "text": " والرصيد",
+              "probability": 0.888780415058136
+            },
+            {
+              "start": 4.82,
+              "end": 5.18,
+              "text": " صفر",
+              "probability": 0.9823040167490641
+            },
+            {
+              "start": 5.18,
+              "end": 6.0,
+              "text": " دولار",
+              "probability": 0.9866368571917216
+            }
+          ]
+        },
+        {
+          "start": 6.0,
+          "end": 8.34,
+          "text": " الدفع خمس دولارات وخمسة ونسانة",
+          "words": [
+            {
+              "start": 6.0,
+              "end": 6.52,
+              "text": " الدفع",
+              "probability": 0.7903252343336741
+            },
+            {
+              "start": 6.52,
+              "end": 6.94,
+              "text": " خمس",
+              "probability": 0.8495584925015768
+            },
+            {
+              "start": 6.94,
+              "end": 7.46,
+              "text": " دولارات",
+              "probability": 0.9341215342283249
+            },
+            {
+              "start": 7.46,
+              "end": 7.96,
+              "text": " وخمسة",
+              "probability": 0.8865293979644775
+            },
+            {
+              "start": 7.96,
+              "end": 8.34,
+              "text": " ونسانة",
+              "probability": 0.8392624855041504
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "final-clause-ar-beam10",
+      "sourceStartSeconds": 5.8,
+      "language": "ar",
+      "beamSize": 10,
+      "expectedTextPrompt": false,
+      "wallSeconds": 2.2247477159980917,
+      "transcript": "الدفع خمس دولارات وخمسون سنة",
+      "segments": [
+        {
+          "start": 5.8,
+          "end": 8.34,
+          "text": " الدفع خمس دولارات وخمسون سنة",
+          "words": [
+            {
+              "start": 5.8,
+              "end": 6.54,
+              "text": " الدفع",
+              "probability": 0.8957997560501099
+            },
+            {
+              "start": 6.54,
+              "end": 6.9399999999999995,
+              "text": " خمس",
+              "probability": 0.7303803612788519
+            },
+            {
+              "start": 6.9399999999999995,
+              "end": 7.46,
+              "text": " دولارات",
+              "probability": 0.8906599283218384
+            },
+            {
+              "start": 7.46,
+              "end": 7.98,
+              "text": " وخمسون",
+              "probability": 0.8454308986663819
+            },
+            {
+              "start": 7.98,
+              "end": 8.34,
+              "text": " سنة",
+              "probability": 0.8714004755020142
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
