@@ -916,6 +916,14 @@
 
 /* Six dashboard actions nested within sales, preserving live statistics and links. */
 @media screen {
+ #page-dashboard .wf-dash-overview:has(.wf-sales-command-card) {
+   grid-template-areas:"welcome sales"!important;
+ }
+ @container (max-width:510px) {
+   #page-dashboard .wf-dash-overview:has(.wf-sales-command-card) {
+     grid-template-areas:"welcome" "sales"!important;
+   }
+ }
  html body #page-dashboard .wf-dash-sales.wf-sales-command-card {
    display:flex!important;flex-direction:column;align-items:stretch;justify-content:flex-start;
    gap:10px!important;padding:clamp(12px,1.6vw,20px)!important;overflow:hidden;
