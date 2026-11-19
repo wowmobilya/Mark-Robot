@@ -172,8 +172,7 @@
   const menu=document.createElement('details');
   menu.className='dash-visibility';
   const trigger=document.createElement('summary'),panel=document.createElement('div');
-  const toolbar=document.createElement('div'), design=document.createElement('div'), overview=document.createElement('div');
-  const layoutButton=document.createElement('button'), overviewButton=document.createElement('button'), move=document.createElement('button');
+  const toolbar=document.createElement('div'),design=document.createElement('div'),move=document.createElement('button');
   const wordsByLanguage={
     ar:['التصميم','الملخّص','تبديل جانب اللوحة'],en:['Layout','Summary','Move panel to the other side'],
     tr:['Düzen','Özet','Paneli diğer tarafa taşı'],fr:['Disposition','Résumé','Déplacer le panneau'],
@@ -182,36 +181,59 @@
   panel.className='dash-dock-panel';
   toolbar.className='dash-dock-toolbar';
   design.className='dash-dock-layout';
-  overview.className='dash-dock-styles';
-  overview.id='dashboard-summary-controls';
-  design.id='dashboard-layout-controls';
   panel.id='dashboard-customization-panel';
   trigger.setAttribute('aria-controls',panel.id);
-  layoutButton.type=overviewButton.type=move.type='button';
-  layoutButton.setAttribute('aria-controls',design.id);
-  overviewButton.setAttribute('aria-controls',overview.id);
-  move.className='dash-dock-move';
+  move.type='button';
   move.textContent='⇆';
-  function selectTab(summary){
-    design.hidden=summary;
-    overview.hidden=!summary;
-    layoutButton.setAttribute('aria-pressed',String(!summary));
-    overviewButton.setAttribute('aria-pressed',String(summary));
-  }
-  layoutButton.onclick=()=>selectTab(false);
-  overviewButton.onclick=()=>selectTab(true);
-  toolbar.append(layoutButton,overviewButton,move);
-  panel.append(toolbar,design,overview);
+  toolbar.append(move);
+  panel.append(toolbar,design);
   menu.append(trigger,panel);
-  selectTab(false);
-  const sideKey='wf.dashboard.dockSide';
-  menu.dataset.side=document.documentElement.dir==='rtl'?'left':'right';
-  try {const saved=localStorage.getItem(sideKey);if(['left','right'].includes(saved))menu.dataset.side=saved;} catch {}
-  move.onclick=()=>{
-    menu.dataset.side=menu.dataset.side==='right'?'left':'right';
-    try{localStorage.setItem(sideKey,menu.dataset.side);}catch{}
-  };
   document.body.append(menu);
+  const positionKey='wf.dashboard.dockPosition';
+  let position,drag,suppressClick=false;
+  try {position=JSON.parse(localStorage.getItem(positionKey));}catch{}
+  function place(){
+    const width=document.documentElement.clientWidth,height=window.innerHeight;
+    const maxX=Math.max(0,width-trigger.offsetWidth-12);
+    const maxY=Math.max(0,height-trigger.offsetHeight-12);
+    const x=Number.isFinite(position?.x)?position.x:document.documentElement.dir==='rtl'?0:1;
+    const y=Number.isFinite(position?.y)?position.y:0.52;
+    menu.style.left=(6+Math.max(0,Math.min(1,x))*maxX)+'px';
+    menu.style.top=(6+Math.max(0,Math.min(1,y))*maxY)+'px';
+    menu.dataset.side=x<0.5?'left':'right';
+    panel.style.left=Math.max(6-menu.offsetLeft,Math.min(0,width-panel.offsetWidth-menu.offsetLeft-6))+'px';
+    panel.style.right='auto';
+    const below=height-menu.offsetTop-trigger.offsetHeight;
+    const down=below>=menu.offsetTop;
+    panel.style.top=down?'calc(100% + 5px)':'auto';
+    panel.style.bottom=down?'auto':'calc(100% + 5px)';
+    panel.style.maxHeight=Math.max(0,(down?below:menu.offsetTop)-12)+'px';
+  }
+  function save(){try{localStorage.setItem(positionKey,JSON.stringify(position));}catch{}}
+  move.onclick=()=>{position={x:menu.dataset.side==='left'?1:0,y:position?.y??0.52};place();save();};
+  trigger.addEventListener('pointerdown',e=>{
+    if(e.button!==0||!e.isPrimary)return;
+    suppressClick=false;
+    drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:menu.offsetLeft,top:menu.offsetTop};
+    trigger.setPointerCapture(e.pointerId);
+  });
+  trigger.addEventListener('pointermove',e=>{
+    if(!drag||drag.id!==e.pointerId)return;
+    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+    if(!suppressClick&&Math.hypot(dx,dy)<5)return;
+    suppressClick=true;
+    menu.open=false;
+    const fraction=(n,max)=>Math.max(0,Math.min(1,n/Math.max(1,max)));
+    position={x:fraction(drag.left+dx-6,document.documentElement.clientWidth-trigger.offsetWidth-12),
+      y:fraction(drag.top+dy-6,innerHeight-trigger.offsetHeight-12)};
+    place();
+  });
+  trigger.addEventListener('lostpointercapture',()=>{if(drag&&suppressClick)save();drag=null;});
+  trigger.addEventListener('click',e=>{if(suppressClick&&e.detail){e.preventDefault();}suppressClick=false;});
+  menu.addEventListener('toggle',place);
+  new ResizeObserver(place).observe(trigger);
+  window.addEventListener('resize',place);
+  place();
   const captions=[];
   sections.forEach(([key,selector],index)=>{
     const region=dashboard.querySelector(selector);
@@ -233,10 +255,9 @@
   });
   function translate(){
     const words=translations[document.documentElement.lang]||translations.ar;
-    trigger.textContent=words[0];
-    const [layoutLabel,summaryLabel,moveLabel]=wordsByLanguage[document.documentElement.lang]||wordsByLanguage.en;
-    layoutButton.textContent=layoutLabel;
-    overviewButton.textContent=summaryLabel;
+    trigger.title=words[0];trigger.setAttribute('aria-label',words[0]);
+    const [,,moveLabel]=wordsByLanguage[document.documentElement.lang]||wordsByLanguage.en;
+
     move.title=moveLabel;
     move.setAttribute('aria-label',moveLabel);
     for(const [caption,index] of captions)caption.textContent=words[index];
@@ -261,13 +282,11 @@
   const picker=document.createElement('label'),title=document.createElement('span'),select=document.createElement('select');
   picker.className='overview-style';
   modes.forEach(mode=>select.add(new Option('',mode)));
-  const controls=document.getElementById('dashboard-summary-controls');
-  if(!controls)return;
-  picker.append(title,select);controls.append(picker);
+  picker.append(title,select);
   const summaryPicker=document.createElement('label'),summaryTitle=document.createElement('span'),summarySelect=document.createElement('select');
   summaryPicker.className='overview-style';
   ['list','tiles'].forEach(value=>summarySelect.add(new Option('',value)));
-  summaryPicker.append(summaryTitle,summarySelect);controls.prepend(summaryPicker);
+  summaryPicker.append(summaryTitle,summarySelect);
   const summaryKey='wf.dashboard.summaryStyle';
   const names={ar:['ملخّص الأعمال','توزيع المنتجات'],en:['Business summary','Product breakdown'],tr:['İş özeti','Ürün dağılımı'],fr:['Résumé d’activité','Répartition des produits'],ru:['Сводка бизнеса','Распределение товаров']};
   let summaryMode='list';
@@ -285,6 +304,9 @@
   function draw(){
     const words=copy[document.documentElement.lang]||copy.en;
     const labels=names[document.documentElement.lang]||names.en;
+    const heads=host.querySelectorAll('.wf-insight-head');
+    if(heads[0]&&!heads[0].contains(summaryPicker))heads[0].append(summaryPicker);
+    if(heads[1]&&!heads[1].contains(picker))heads[1].append(picker);
     summaryTitle.textContent=labels[0];
     title.textContent=labels[1];
     Array.from(summarySelect.options).forEach((opt,i)=>opt.textContent=words[i+1]);
