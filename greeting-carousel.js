@@ -188,8 +188,10 @@
   const heading=document.createElement('strong'),close=document.createElement('button');
   close.type='button';
   close.textContent='×';
-  close.onclick=()=>{menu.open=false;trigger.focus();};
+  close.onclick=()=>closeMenu(true);
   trigger.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h7m5 0h4M4 17h2m5 0h9"/><circle cx="13.5" cy="7" r="2.5"/><circle cx="8.5" cy="17" r="2.5"/></svg>';
+  // Draw the complete tapered outline instead of clipping a rectangular border.
+  trigger.insertAdjacentHTML('afterbegin','<svg class="wf-dock-shape" viewBox="0 0 18 86" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M3 1H10.7C11.6 1 12.3 1.6 12.7 2.4L16.1 12.5C16.7 14.1 17 15.8 17 17.5V68.5C17 70.2 16.7 71.9 16.1 73.5L12.7 83.6C12.3 84.4 11.6 85 10.7 85H3C1.9 85 1 84.1 1 83V3C1 1.9 1.9 1 3 1Z" stroke-width="1.5" stroke-linejoin="round"/></svg>');
   toolbar.append(heading,move,close);
   panel.append(toolbar,design);
   menu.append(trigger,panel);
@@ -197,36 +199,113 @@
   const backdrop=document.createElement('div');
   backdrop.className='wf-dashboard-dock-backdrop';backdrop.hidden=true;
   document.body.insertBefore(backdrop,menu);
-  backdrop.addEventListener('pointerdown',()=>{menu.open=false;});
-  menu.addEventListener('toggle',()=>{backdrop.hidden=!menu.open;});
+  backdrop.addEventListener('pointerdown',()=>closeMenu(false));
   const positionKey='wf.dashboard.dockPosition';
-  let position,drag,suppressClick=false;
+  const root=document.documentElement,viewport=window.visualViewport;
+  const topbar=document.querySelector('.navbar'),bottomNav=document.getElementById('bottomNav');
+  const inset=8,gripInset=6;
+  let position,drag,suppressClick=false,placeFrame=0;
   try {position=JSON.parse(localStorage.getItem(positionKey));}catch{}
+  for(const side of ['top','right','bottom','left']){
+    menu.style.setProperty('--wf-dock-safe-'+side,'env(safe-area-inset-'+side+',0px)');
+  }
+  const clamp=(value,min,max)=>Math.max(min,Math.min(Math.max(min,max),value));
+  function setPixels(element,property,value,priority=''){
+    const next=Math.round(value*100)/100+'px';
+    if(element.style.getPropertyValue(property)!==next || element.style.getPropertyPriority(property)!==priority){
+      element.style.setProperty(property,next,priority);
+    }
+  }
+  function visibleRect(element,view){
+    if(!element || !element.getClientRects().length)return null;
+    const style=getComputedStyle(element),rect=element.getBoundingClientRect();
+    if(style.display==='none' || style.visibility==='hidden' || Number(style.opacity)===0 ||
+      rect.width<=0 || rect.height<=0 || rect.bottom<=view.top || rect.top>=view.bottom ||
+      rect.right<=view.left || rect.left>=view.right)return null;
+    return rect;
+  }
+  function bounds(){
+    const left=viewport?.offsetLeft||0,top=viewport?.offsetTop||0;
+    const view={left,top,right:left+(viewport?.width||root.clientWidth),
+      bottom:top+(viewport?.height||window.innerHeight)};
+    const style=getComputedStyle(menu);
+    const safe=side=>parseFloat(style.getPropertyValue('--wf-dock-safe-'+side))||0;
+    const area={left:view.left+safe('left'),right:view.right-safe('right'),
+      top:view.top+safe('top')+inset,bottom:view.bottom-safe('bottom')-inset};
+    const header=visibleRect(topbar,view),nav=visibleRect(bottomNav,view);
+    if(header)area.top=Math.max(area.top,header.bottom+inset);
+    if(nav){
+      const circle=visibleRect(document.getElementById('bnavCircle'),view);
+      area.bottom=Math.min(area.bottom,Math.min(nav.top,circle?.top??nav.top)-inset);
+    }
+    // On an exceptionally short viewport keep the unchanged grip visible, even
+    // when the header and dock leave less room than its own height.
+    if(area.bottom-area.top<(trigger.offsetHeight||86)){
+      area.top=view.top+safe('top')+inset;
+      area.bottom=Math.max(area.top,view.bottom-safe('bottom')-inset);
+    }
+    return area;
+  }
+  function updateScrollHints(){
+    const above=menu.open && design.scrollTop>1;
+    const below=menu.open && design.scrollHeight-design.clientHeight-design.scrollTop>1;
+    for(const element of [panel,design]){
+      if(element.dataset.scrollTop!==String(above))element.dataset.scrollTop=String(above);
+      if(element.dataset.scrollBottom!==String(below))element.dataset.scrollBottom=String(below);
+    }
+  }
+  function closeMenu(returnFocus){
+    menu.open=false;backdrop.hidden=true;
+    trigger.setAttribute('aria-expanded','false');
+    updateScrollHints();
+    if(returnFocus)trigger.focus({preventScroll:true});
+  }
   function place(){
-    const width=document.documentElement.clientWidth,height=window.innerHeight;
-    // Keep the grip physically flush to either screen edge (zero gutter).
-    const maxX=Math.max(0,width-trigger.offsetWidth);
-    const maxY=Math.max(0,height-trigger.offsetHeight-12);
-    const x=Number.isFinite(position?.x)?position.x:document.documentElement.dir==='rtl'?0:1;
-    const y=Number.isFinite(position?.y)?position.y:0.52;
+    if(!dashboard.classList.contains('active') || root.classList.contains('wf-mobile-menu-open')){
+      if(menu.open)closeMenu(false);
+    }
+    const area=bounds(),gripWidth=trigger.offsetWidth||18,gripHeight=trigger.offsetHeight||86;
+    const x=Number.isFinite(position?.x)?clamp(position.x,0,1):root.dir==='rtl'?0:1;
+    const y=Number.isFinite(position?.y)?clamp(position.y,0,1):0.48;
+    const side=x<0.5?'left':'right';
+    const firstX=area.left+gripInset,lastX=Math.max(firstX,area.right-gripWidth-gripInset);
+    const left=firstX+x*(lastX-firstX);
+    const top=area.top+y*Math.max(0,area.bottom-area.top-gripHeight);
+    // The CSS uses this value on both sides so viewport panning is respected.
+    setPixels(menu,'--wf-dock-left',left);
+    setPixels(menu,'left',left);
+    setPixels(menu,'top',top);
     menu.style.right='auto';
-    menu.style.left=(x<0.5?0:maxX)+'px';
-    menu.style.top=(6+Math.max(0,Math.min(1,y))*maxY)+'px';
-    menu.dataset.side=x<0.5?'left':'right';
-    panel.style.left=Math.max(6-menu.offsetLeft,Math.min(0,width-panel.offsetWidth-menu.offsetLeft-6))+'px';
+    menu.style.bottom='auto';
+    if(menu.dataset.side!==side)menu.dataset.side=side;
+    if(!menu.open){updateScrollHints();return;}
+    // Keep the existing half-screen width, but cap it inside the visual viewport.
+    const panelSpace=Math.max(0,side==='left'?area.right-left-gripWidth-inset*2:left-area.left-inset*2);
+    setPixels(panel,'max-width',panelSpace,'important');
+    setPixels(panel,'max-height',Math.max(0,area.bottom-area.top));
+    const panelWidth=panel.offsetWidth,panelHeight=panel.offsetHeight;
+    const inward=side==='left'?left+gripWidth+inset:left-inset-panelWidth;
+    const panelLeft=clamp(inward,area.left+inset,area.right-inset-panelWidth);
+    const panelTop=clamp(top+(gripHeight-panelHeight)/2,area.top,area.bottom-panelHeight);
+    setPixels(panel,'left',panelLeft-left);
+    setPixels(panel,'top',panelTop-top);
     panel.style.right='auto';
-    const below=height-menu.offsetTop-trigger.offsetHeight;
-    const down=below>=menu.offsetTop;
-    panel.style.top=down?'calc(100% + 5px)':'auto';
-    panel.style.bottom=down?'auto':'calc(100% + 5px)';
-    panel.style.maxHeight=Math.max(0,(down?below:menu.offsetTop)-12)+'px';
+    panel.style.bottom='auto';
+    updateScrollHints();
+  }
+  function schedulePlace(){
+    if(!placeFrame)placeFrame=requestAnimationFrame(()=>{placeFrame=0;place();});
   }
   function save(){try{localStorage.setItem(positionKey,JSON.stringify(position));}catch{}}
-  move.onclick=()=>{position={x:menu.dataset.side==='left'?1:0,y:position?.y??0.52};place();save();};
+  move.onclick=()=>{
+    position={x:menu.dataset.side==='left'?1:0,y:Number.isFinite(position?.y)?clamp(position.y,0,1):0.48};
+    schedulePlace();save();
+  };
   trigger.addEventListener('pointerdown',e=>{
     if(e.button!==0||!e.isPrimary)return;
     suppressClick=false;
-    drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:menu.offsetLeft,top:menu.offsetTop};
+    const rect=trigger.getBoundingClientRect();
+    drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:rect.left,top:rect.top};
     trigger.setPointerCapture(e.pointerId);
   });
   trigger.addEventListener('pointermove',e=>{
@@ -234,18 +313,34 @@
     const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
     if(!suppressClick&&Math.hypot(dx,dy)<5)return;
     suppressClick=true;
-    menu.open=false;
-    const fraction=(n,max)=>Math.max(0,Math.min(1,n/Math.max(1,max)));
-    position={x:fraction(drag.left+dx,document.documentElement.clientWidth-trigger.offsetWidth),
-      y:fraction(drag.top+dy-6,innerHeight-trigger.offsetHeight-12)};
-    place();
+    closeMenu(false);
+    const area=bounds();
+    const fraction=(n,max)=>clamp(n/Math.max(1,max),0,1);
+    position={x:fraction(drag.left+dx-area.left-gripInset,area.right-area.left-trigger.offsetWidth-gripInset*2),
+      y:fraction(drag.top+dy-area.top,area.bottom-area.top-trigger.offsetHeight)};
+    schedulePlace();
   });
-  trigger.addEventListener('lostpointercapture',()=>{if(drag&&suppressClick)save();drag=null;place();});
+  function finishDrag(){if(drag&&suppressClick)save();drag=null;schedulePlace();}
+  trigger.addEventListener('lostpointercapture',finishDrag);
+  trigger.addEventListener('pointercancel',finishDrag);
   trigger.addEventListener('click',e=>{if(suppressClick&&e.detail){e.preventDefault();}suppressClick=false;});
-  menu.addEventListener('toggle',place);
-  new ResizeObserver(place).observe(trigger);
-  window.addEventListener('resize',place);
-  place();
+  menu.addEventListener('toggle',()=>{
+    backdrop.hidden=!menu.open;
+    trigger.setAttribute('aria-expanded',String(menu.open));
+    schedulePlace();
+  });
+  design.addEventListener('scroll',updateScrollHints,{passive:true});
+  const resizeObserver=new ResizeObserver(schedulePlace);
+  for(const element of [trigger,panel,topbar,bottomNav])if(element)resizeObserver.observe(element);
+  window.addEventListener('resize',schedulePlace,{passive:true});
+  viewport?.addEventListener('resize',schedulePlace,{passive:true});
+  viewport?.addEventListener('scroll',schedulePlace,{passive:true});
+  document.addEventListener('scroll',event=>{if(!menu.contains(event.target))schedulePlace();},{capture:true,passive:true});
+  topbar?.addEventListener('transitionend',schedulePlace);
+  new MutationObserver(schedulePlace).observe(dashboard,{attributes:true,attributeFilter:['class']});
+  new MutationObserver(schedulePlace).observe(root,{attributes:true,attributeFilter:['class','dir']});
+  trigger.setAttribute('aria-expanded','false');
+  schedulePlace();
   const captions=[];
   sections.forEach(([key,selector],index)=>{
     const region=dashboard.querySelector(selector);
@@ -275,9 +370,12 @@
     move.title=moveLabel;
     move.setAttribute('aria-label',moveLabel);
     for(const [caption,index] of captions)caption.textContent=words[index];
+    schedulePlace();
   }
-  menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;trigger.focus();}});
-  document.addEventListener('pointerdown',event=>{if(menu.open&&!menu.contains(event.target))menu.open=false;});
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&menu.open){event.preventDefault();event.stopPropagation();closeMenu(true);}
+  });
+  document.addEventListener('pointerdown',event=>{if(menu.open&&!menu.contains(event.target))closeMenu(false);});
   new MutationObserver(translate).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   translate();
 })();
