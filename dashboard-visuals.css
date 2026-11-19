@@ -1088,3 +1088,24 @@
    html body .dash-visibility summary {transition:none!important;}
  }
 }
+
+
+/* Isolated dashboard customization grip: slight edge gap is set by place() in JS. */
+@media screen {
+ html body .dash-visibility summary {
+   width:16px!important;
+   min-height:84px!important;
+   height:84px!important;
+   border-radius:9px!important;
+ }
+ html body .dash-visibility[data-side="left"] summary {
+   border-radius:9px!important;
+   clip-path:polygon(0 8%,55% 3%,100% 17%,100% 83%,55% 97%,0 92%)!important;
+   -webkit-clip-path:polygon(0 8%,55% 3%,100% 17%,100% 83%,55% 97%,0 92%)!important;
+ }
+ html body .dash-visibility[data-side="right"] summary {
+   border-radius:9px!important;
+   clip-path:polygon(45% 3%,100% 8%,100% 92%,45% 97%,0 83%,0 17%)!important;
+   -webkit-clip-path:polygon(45% 3%,100% 8%,100% 92%,45% 97%,0 83%,0 17%)!important;
+ }
+}
