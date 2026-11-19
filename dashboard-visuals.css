@@ -771,3 +771,15 @@
   #dashIntelligence[data-view="strip"] .overview-chart {width:100%;height:12px;border-radius:12px;}
   #dashIntelligence:is([data-view="ring"],[data-view="strip"]) .wf-catalog-row span::before {content:'';display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:5px;background:var(--category-color);}
 }
+
+@media screen and (min-width:1025px) {
+  html[dir="rtl"]:not(.wf-sidebar-collapsed) .dash-visibility[data-side="right"] {
+    right:calc(var(--side-w) + 10px);
+  }
+  html[dir="ltr"]:not(.wf-sidebar-collapsed) .dash-visibility[data-side="left"] {
+    left:calc(var(--side-w) + 10px);
+  }
+}
+@media screen and (max-width:1024px) {
+  html.wf-mobile-menu-open .dash-visibility {display:none;}
+}
