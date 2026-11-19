@@ -457,7 +457,9 @@
     const link=[...document.querySelectorAll('#sidebar .nav-item')].find(button=>button.getAttribute('onclick')?.includes("'"+active.id.slice(5)+"'"));
     const local=link?.querySelector('[data-i18n],[data-wf-ui]')?.textContent?.trim();
     const heading=active.querySelector('.sct-sticky-title,.co-toolbar-title,.page-toolbar-title');
-    const title=local || heading?.querySelector('h1,h2')?.textContent?.trim() || heading?.textContent?.trim() ||
+    const headingText=heading?.querySelector('h1,h2')?.textContent?.trim() ||
+      [...(heading?.childNodes||[])].filter(node=>node!==position).map(node=>node.textContent||'').join(' ').trim();
+    const title=local || headingText ||
       ({dashboard:{ar:'الرئيسية',en:'Home',tr:'Ana sayfa',fr:'Accueil',ru:'Главная'},cashboxes:{ar:'صناديق العملات',en:'Currency boxes',tr:'Para kasaları',fr:'Caisses',ru:'Кассы'}}[active.id.slice(5)]?.[lang]) || active.id.slice(5).replaceAll('-',' ');
     const format=new Intl.NumberFormat(({ar:'ar-SY',tr:'tr-TR',fr:'fr-FR',ru:'ru-RU'}[lang]||'en-US'),{useGrouping:false});
     position.textContent=title+' · '+format.format(number)+' / '+format.format(pages.length);
@@ -473,20 +475,17 @@
 
   const home=document.getElementById('bnav-2');
   const topIcon=document.getElementById('bnavCircleIcon');
-  const arrow='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V4m-7 7 7-7 7 7"/></svg>';
-  let topMode=false;
+  const arrow='<svg data-wf-home-up="true" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V4m-7 7 7-7 7 7"/></svg>';
   function syncHome(){
     const onHome=dashboard?.classList.contains('active');
     const scrolled=!!onHome&&(window.scrollY>110 || main?.scrollTop>110);
-    if(scrolled!==topMode){
-      topMode=scrolled;
-      if(onHome&&topIcon){
-        if(scrolled)topIcon.innerHTML=arrow;
-        else{
-          const svg=home?.querySelector('.bnav-icon svg');
-          if(svg)topIcon.replaceChildren(svg.cloneNode(true));
-          else topIcon.textContent='🏠';
-        }
+    if(onHome&&topIcon){
+      const arrowShowing=!!topIcon.querySelector('[data-wf-home-up]');
+      if(scrolled&&!arrowShowing)topIcon.innerHTML=arrow;
+      else if(!scrolled&&arrowShowing){
+        const svg=home?.querySelector('.bnav-icon svg');
+        if(svg)topIcon.replaceChildren(svg.cloneNode(true));
+        else topIcon.textContent='🏠';
       }
     }
     if(home){
