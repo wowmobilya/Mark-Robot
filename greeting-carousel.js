@@ -317,7 +317,15 @@
       tray.id=key+'-choices';tray.setAttribute('role','group');
       trigger.setAttribute('aria-controls',tray.id);
       trigger.setAttribute('aria-expanded','false');
-      trigger.onclick=()=>{tray.hidden=!tray.hidden;trigger.setAttribute('aria-expanded',String(!tray.hidden));};
+      trigger.onclick=()=>{
+        const opening=tray.hidden;
+        host.querySelectorAll('.view-choices').forEach(other=>{
+          other.hidden=true;
+          other.parentElement?.querySelector('.view-trigger')?.setAttribute('aria-expanded','false');
+        });
+        tray.hidden=!opening;
+        trigger.setAttribute('aria-expanded',String(opening));
+      };
       head.append(trigger,tray);
       values.forEach(value=>{
         const button=document.createElement('button');button.type='button';
@@ -372,6 +380,14 @@
     if(stops.length)chart.style.backgroundImage=(mode==='ring'?'conic-gradient(':'linear-gradient(to right,')+stops.join(',')+')';
     catalog.querySelector('.wf-catalog-label').after(chart);
   }
+  // Close floating display choices when working elsewhere in the dashboard.
+  document.addEventListener('pointerdown',event=>{
+    if(event.target.closest?.('#dashIntelligence .view-trigger, #dashIntelligence .view-choices'))return;
+    host.querySelectorAll('.view-choices:not([hidden])').forEach(tray=>{
+      tray.hidden=true;
+      tray.parentElement?.querySelector('.view-trigger')?.setAttribute('aria-expanded','false');
+    });
+  });
   new MutationObserver(draw).observe(host,{childList:true});
   new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   draw();
