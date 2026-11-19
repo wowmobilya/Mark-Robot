@@ -46,7 +46,7 @@ html body #mainContent #page-dashboard #wfGreetingRobot {
   white-space: nowrap;
 }
 
-/* Match the user's robot-screen reference: dark oval eyes on plain white. */
+/* Keep the reference face while letting the card's continuous background show through. */
 #wfGreetingRobot .wf-robot-display {
   display: grid;
   place-items: center;
@@ -58,7 +58,7 @@ html body #mainContent #page-dashboard #wfGreetingRobot {
   overflow: hidden;
   border: 0;
   border-radius: 16px;
-  background: #fff;
+  background: transparent;
   box-shadow: none;
 }
 
@@ -160,6 +160,7 @@ html body #mainContent #page-dashboard #wfGreetingRobot .wf-robot-expression { f
 #wfGreetingRobot .wf-robot-expression span { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 #wfGreetingRobot .wf-robot-button span { overflow: hidden; text-overflow: ellipsis; min-inline-size: 0; }
+#wfGreetingRobot .wf-robot-report span { white-space: normal; text-overflow: clip; line-height: 1.15; }
 #wfGreetingRobot .wf-robot-button svg { flex: 0 0 17px; inline-size: 17px; block-size: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 #wfGreetingRobot .wf-robot-button .wf-robot-stop-icon { display: none; fill: currentColor; stroke: none; }
 #wfGreetingRobot[data-voice-active="true"][data-voice-kind="intro"] .wf-robot-speak-icon,
@@ -173,6 +174,10 @@ html body #mainContent #page-dashboard #wfGreetingRobot .wf-robot-button:focus-v
 }
 
 html body #mainContent #page-dashboard #wfGreetingRobot .wf-robot-button:disabled { opacity: .5; cursor: default; }
+
+@media (max-width: 380px) {
+  #wfGreetingRobot .wf-robot-report .wf-robot-report-icon { display: none; }
+}
 
 @media (hover: hover) {
   html body #mainContent #page-dashboard #wfGreetingRobot .wf-robot-expression:hover {
