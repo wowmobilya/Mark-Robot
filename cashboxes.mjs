@@ -46,6 +46,12 @@ function mountSales() {
   const total=document.getElementById('s-total');
   const card=total?.closest('.wf-dash-sales');
   if (!card || card.querySelector('.sales-currencies')) return;
+  const heading=document.createElement('div');
+  heading.className='sales-heading';
+  const icon=card.querySelector('.stat-icon');
+  if(icon)heading.append(icon);
+  heading.append(total.parentElement);
+  card.prepend(heading);
   const list=document.createElement('dl');
   list.className='sales-currencies';
   card.append(list);
