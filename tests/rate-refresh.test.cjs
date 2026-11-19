@@ -32,3 +32,13 @@ test('quote history validates observations and replaces duplicate provider times
  assert.equal(sparkPoints([40,40]),'2.00,12.00 98.00,12.00');
  assert.equal(sparkPoints([40,41]),'2.00,22.00 98.00,2.00');
 });
+
+test('daily feed supplies two comparable observations on first visit and skips missing days',async()=>{
+ const {dailyQuotes}=require('../rate-refresh');
+ const feed={base:'USD',rates:{'2025-01-10':{EUR:.98,TRY:36},'2025-01-08':{EUR:.97,TRY:35},'2025-01-09':{EUR:0,TRY:35}}};
+ const fetcher=async()=>({ok:true,json:async()=>feed});
+ const points=await dailyQuotes(fetcher,new Date('2025-01-12'));
+ assert.deepEqual(points.map(p=>p.try),[35,36]);
+ feed.base='EUR';
+ await assert.rejects(()=>dailyQuotes(fetcher,new Date('2025-01-12')));
+});

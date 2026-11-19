@@ -34,6 +34,21 @@
   points.push(quote);
   return points.sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)).slice(-18);
  }
+ async function dailyQuotes(fetcher,now=new Date()){
+  const end=now.toISOString().slice(0,10);
+  const start=new Date(now.getTime()-10*86400000).toISOString().slice(0,10);
+  const response=await fetcher('https://api.frankfurter.dev/v1/'+start+'..'+end+'?base=USD&symbols=EUR,TRY',{signal:AbortSignal.timeout(4500)});
+  if(!response.ok)throw Error('daily-quotes-unavailable');
+  const data=await response.json();
+  const quotes=[];
+  if(data.base==='USD')for(const [date,rates] of Object.entries(data.rates||{})){
+   if(date<start||date>end||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!positive(rates?.TRY)||!positive(rates?.EUR))continue;
+   quotes.push({at:date+'T00:00:00.000Z',try:rates.TRY,eur:rates.EUR,source:'frankfurter'});
+  }
+  quotes.sort((a,b)=>a.at.localeCompare(b.at));
+  if(quotes.length<2)throw Error('incomplete-daily-quotes');
+  return quotes;
+ }
  function sparkPoints(values) {
   if(values.length<2)return '';
   const min=Math.min(...values),max=Math.max(...values);
@@ -43,7 +58,7 @@
    return x.toFixed(2)+','+y.toFixed(2);
   }).join(' ');
  }
- if(typeof module!=='undefined'&&module.exports){module.exports={formatTime,requestRates,appendQuote,sparkPoints};return;}
+ if(typeof module!=='undefined'&&module.exports){module.exports={formatTime,requestRates,appendQuote,sparkPoints,dailyQuotes};return;}
  const copy={
   ar:{refresh:'تحديث الأسعار',loading:'جارٍ تحديث الأسعار…',ok:'تم تحديث الأسعار',failed:'تعذر التحديث؛ الأسعار السابقة محفوظة',manual:'تم التحديث مع إبقاء الأسعار اليدوية',unsaved:'تم التحديث؛ تعذر حفظه على الجهاز',last:'آخر تحديث'},
   tr:{refresh:'Kurları yenile',loading:'Kurlar güncelleniyor…',ok:'Kurlar güncellendi',failed:'Güncellenemedi; önceki kurlar korundu',manual:'Manuel kurlar korunarak güncellendi',unsaved:'Güncellendi; cihaza kaydedilemedi',last:'Son güncelleme'},
@@ -87,11 +102,12 @@
   for(const quote of cards){
    const {pair,card,trend}=quote;
    const manual=(pair.includes('try')&&S.settings.manualUsdTry)||(pair.includes('eur')&&S.settings.manualUsdEur);
-   const prices=manual?[]:history.map(pairs[pair]);
+   const latest=history.at(-1);
+   const prices=manual?[]:history.filter(p=>p.source===latest?.source).map(pairs[pair]);
    const hasTrend=prices.length>1;
    const delta=hasTrend?(prices.at(-1)-prices.at(-2))/prices.at(-2):0;
-   const change=arrows.format(delta);
-   const direction=!hasTrend?'empty':Number(Math.abs(delta*100).toFixed(2))===0?'flat':delta>0?'up':'down';
+   const change=delta!==0 && Math.abs(delta)<0.0001 ? (delta>0?'+':'−')+'<0.01%' : arrows.format(delta);
+   const direction=!hasTrend?'empty':delta===0?'flat':delta>0?'up':'down';
    const signature=hasTrend?JSON.stringify([history.at(-1).at,direction,change]):'empty';
    if(quote.lastTrend===signature)continue;
    quote.lastTrend=signature;
@@ -99,7 +115,13 @@
    const arrow = document.createElement('span');
    arrow.className = 'wf-quote-arrow';
    arrow.setAttribute('aria-hidden', 'true');
-   arrow.textContent = direction === 'up' ? '↗' : direction === 'down' ? '↘' : '–';
+   if(direction==='up'||direction==='down'){
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 20 16');
+    const path=document.createElementNS(svg.namespaceURI,'path');
+    path.setAttribute('d',direction==='up'?'M2 13l5-6 4 3 7-8m-6 0h6v6':'M2 3l5 6 4-3 7 8m-6 0h6V8');
+    svg.append(path);arrow.append(svg);
+   }else arrow.textContent='–';
    trend.replaceChildren(arrow, document.createTextNode(hasTrend ? change : ''));
    trend.hidden=false;
    trend.title=hasTrend ? '' : ({ar:'الاتجاه غير متاح بعد',en:'Trend unavailable',tr:'Yön henüz mevcut değil',fr:'Tendance indisponible',ru:'Тенденция недоступна'}[S.lang] || 'Trend unavailable');
@@ -125,11 +147,23 @@
   state='loading';
   pending=(async()=>{
    const previous={usdTry:S.usdTry,usdEur:S.usdEur};
-   let rates;try{rates=await requestRates(root.fetch.bind(root));}catch(_){state='failed';return false;}
+   let rates, daily;
+   try {
+    daily=await dailyQuotes(root.fetch.bind(root));
+    const quote=daily.at(-1);
+    rates={usdTry:quote.try,usdEur:quote.eur,updatedAt:quote.at};
+   } catch {
+    try{rates=await requestRates(root.fetch.bind(root));}catch(_){state='failed';return false;}
+   }
    S.usdTry=S.settings.manualUsdTry||rates.usdTry;S.usdEur=S.settings.manualUsdEur||rates.usdEur;
    S.rateTime=new Date().toISOString();S.rateUpdatedAt=rates.updatedAt;
    const last=history.at(-1);
-   if(rates.updatedAt||last?.try!==rates.usdTry||last?.eur!==rates.usdEur){
+   if(daily){
+    history=[];
+    for(const point of daily)history=appendQuote(history,point);
+    remember(daily.at(-1));
+   }else if(last?.source||rates.updatedAt||last?.try!==rates.usdTry||last?.eur!==rates.usdEur){
+    if(last?.source)history=[];
     remember({at:rates.updatedAt||S.rateTime,try:rates.usdTry,eur:rates.usdEur});
    }
    root.updateRateUI();

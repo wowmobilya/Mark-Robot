@@ -645,3 +645,11 @@
   .sales-currencies small { display:block; font-size:10px; }
   @media(max-width:639px){ .wf-dash-sales .sales-currencies {grid-template-columns:repeat(2,minmax(0,1fr))} }
 }
+
+@media screen {
+  #currBar .wf-quote-arrow svg { display:block; width:1.2em; height:1em; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  #currBar .wf-quote-trend { display:inline-flex; align-items:center; gap:3px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  html body #page-dashboard .curr-item .curr-label {grid-area:1 / 1 / 2 / -1;}
+  html body #page-dashboard .curr-item .curr-rate {grid-area:2 / 1;}
+  html body #page-dashboard .curr-item .wf-quote-trend {grid-area:2 / 2; align-self:center; padding:2px 3px!important;}
+}
