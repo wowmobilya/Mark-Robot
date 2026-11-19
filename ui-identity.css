@@ -448,3 +448,22 @@ html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-
 }
 
 @media(prefers-reduced-motion:reduce){html:not(.wf-section-mode) .navbar::after{transition:none!important}}
+
+/* Clear and unified active bottom navigation in light and dark themes. */
+@media screen and (max-width:1024px) {
+ html body #bottomNav {--wf-nav-active:var(--brand-primary);}
+ html body #bottomNav #bnavCircle {
+   background:var(--wf-nav-active)!important;border-color:transparent!important;
+   box-shadow:0 5px 16px color-mix(in srgb,var(--wf-nav-active) 32%,transparent)!important;
+ }
+ html body #bottomNav #bnavCircleIcon,
+ html body #bottomNav #bnavCircleIcon svg {color:#fff!important;stroke:currentColor;}
+ html body #bottomNav .bnav-btn.bnav-active {background:color-mix(in srgb,var(--wf-nav-active) 8%,transparent)!important;border-radius:14px!important;}
+ html body #bottomNav .bnav-btn.bnav-active .bnav-label {
+   color:var(--wf-nav-active)!important;font-weight:850!important;
+ }
+ html body #bottomNav .bnav-btn:not(.bnav-active) .bnav-label {color:var(--text2)!important;}
+ html body #bottomNav .bnav-btn:focus-visible {outline:2px solid var(--wf-nav-active)!important;outline-offset:-2px;}
+ html body #bottomNav .bnav-btn {min-width:0;}
+ html body #bottomNav #bnavCircleIcon svg {width:23px;height:23px;}
+}
