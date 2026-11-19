@@ -1164,3 +1164,25 @@
    color:#8ccfe2!important;
  }
 }
+
+/* The bottom HOME slot itself follows scroll; never add a floating button. */
+@media screen and (max-width:1024px) {
+ html body #bottomNav #bnav-2.wf-home-up .bnav-icon svg {
+   display:block;width:24px;height:24px;fill:none;stroke:currentColor;
+ }
+ html body #bottomNav #bnav-2.wf-home-up:not(.bnav-active) {
+   background:color-mix(in srgb,var(--brand-primary) 9%,transparent)!important;
+   border-radius:14px!important;
+ }
+ html body #bottomNav #bnav-2.wf-home-up:not(.bnav-active) .bnav-icon {
+   color:var(--brand-primary)!important;
+   opacity:1!important;
+ }
+ html body #bottomNav #bnav-2.wf-home-up .bnav-label {
+   color:var(--brand-primary)!important;
+ }
+ html body #bottomNav #bnavCircleIcon [data-wf-home-up] {
+   display:block;width:24px;height:24px;fill:none;
+   stroke:#fff!important;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;
+ }
+}
