@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wow-furniture-v150-context-actions';
+const CACHE_NAME = 'wow-furniture-v151-dashboard-contrast';
 const urlsToCache = [
-  './workspace-surfaces.css?v=22',
+  './workspace-surfaces.css?v=23',
   './context-nav.js?v=1',
   './context-nav.css?v=1',
   './',
@@ -11,7 +11,7 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=9',
-  './dashboard-visuals.css?v=23',
+  './dashboard-visuals.css?v=24',
   './rate-refresh.js?v=6',
   './cashboxes.mjs',
   './section-headings.css?v=7',
@@ -23,7 +23,7 @@ const urlsToCache = [
   './ui-i18n.js?v=26',
   './modern-ui.css?v=47',
   './ui-identity.css?v=31',
-  './ui-navigation.js?v=19',
+  './ui-navigation.js?v=20',
   './ui-logo.js?v=3',
   './ui-settings.js?v=2',
   './ui-icons.js?v=47',

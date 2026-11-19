@@ -312,28 +312,54 @@
   const dialog=document.getElementById('wfSearchDialog');
   const toggle=document.getElementById('wfSidebarSearchToggle');
   const results=document.getElementById('wfSearchResults');
+  const main=document.getElementById('mainContent');
+  const shade=document.createElement('div');
+  shade.className='wf-search-shade';
+  shade.hidden=true;
+  document.body.insertBefore(shade,drawer);
+  shade.onclick=()=>closeSearch();
+  let originalInert=false,scrollPosition=0;
+  function terms(text){
+    return normalize(text).replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ـ/g,'');
+  }
   function renderResults(){
-    const words=normalize(search.value.trim()).split(/\s+/);
-    results.replaceChildren();
-    items.forEach(item=>{
+    const query=terms(search.value.trim());
+    const words=query.split(/\s+/);
+    const matches=items.map(item=>{
       const caption=item.children[1].textContent.trim();
-      if(!words.every(word=>normalize(caption).includes(word)))return;
+      const name=terms(caption);
+      const score=name===query?3:name.startsWith(query)?2:1;
+      return {item,caption,name,score};
+    }).filter(entry=>words.every(word=>entry.name.includes(word))).sort((a,b)=>b.score-a.score);
+    results.replaceChildren();
+    for(const {item,caption} of matches){
       const result=document.createElement('button');
-      result.textContent=caption;
+      const icon=document.createElement('span');
+      icon.className='wf-result-icon';
+      icon.setAttribute('aria-hidden','true');
+      icon.innerHTML=item.children[0].innerHTML;
+      result.append(icon,document.createTextNode(caption));
       result.onclick=()=>{closeSearch(false);expanded=item.parentElement;layout();item.onclick.call(item);};
       results.append(result);
-    });
-    if(!results.childElementCount)results.textContent=empty.textContent;
+    }
+    if(!matches.length)results.textContent=empty.textContent;
   }
   function closeSearch(focus=true){
+    if(dialog.hidden)return;
+    shade.hidden=true;
+    main.inert=originalInert;
     dialog.hidden=true;
     drawer.classList.remove('wf-searching');
     toggle.setAttribute('aria-expanded','false');
-    if(focus)toggle.focus();
+    nav.scrollTop=scrollPosition;
+    if(focus)toggle.focus({preventScroll:true});
   }
   toggle.onclick=()=>{
     if(!dialog.hidden){closeSearch();return;}
     if(isRail())window.wfToggleDesktopSidebar();
+    originalInert=main.inert;
+    scrollPosition=nav.scrollTop;
+    if(!root.classList.contains('wf-section-mode')){shade.hidden=false;main.inert=true;}
     search.value='';
     renderResults();
     dialog.hidden=false;
@@ -348,6 +374,12 @@
   new MutationObserver(()=>{if(!dialog.hidden&&(drawer.inert||drawer.classList.contains('wf-icon-rail')))closeSearch(false);}).observe(drawer,{attributes:true,attributeFilter:['inert','class']});
   search.oninput=renderResults;
   search.onkeydown=e=>{if(e.key==='Enter')results.querySelector('button')?.click();if(e.key==='ArrowDown'){e.preventDefault();results.querySelector('button')?.focus();}};
+  results.addEventListener('keydown',event=>{
+    const current=event.target.closest('button');
+    if(!current)return;
+    const next=event.key==='ArrowDown'?current.nextElementSibling:event.key==='ArrowUp'?(current.previousElementSibling||search):null;
+    if(next){event.preventDefault();next.focus();}
+  });
   document.getElementById('wfDevCredit').onclick=()=>document.getElementById('wfDevDialog').showModal();
   document.querySelectorAll('.wf-nav-dialog').forEach(modal=>{
     modal.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();modal.close();}});

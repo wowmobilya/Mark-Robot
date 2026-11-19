@@ -1035,3 +1035,15 @@
  #wfDevDialog h2 {margin:0;font-size:clamp(16px,3vw,23px);line-height:1.45;}
  #wfDevDialog p {margin:6px 0 0;font-size:clamp(12px,2vw,14px);}
 }
+
+@media screen {
+ .wf-search-shade:not([hidden]) {position:fixed;inset:0;z-index:1000;background:rgb(24 47 56 / 34%);}
+ [data-theme="dark"] .wf-search-shade {background:rgb(4 13 20 / 62%);}
+ html body #sidebar.wf-searching {z-index:1250!important;}
+ #sidebar .wf-search-pane header button {display:grid;place-items:center;border-radius:11px;color:var(--text);background:var(--card);font-size:24px;line-height:1;}
+ #wfSearchResults button {display:flex;align-items:center;gap:8px;background:var(--card);}
+ #wfSearchResults button:is(:focus-visible,:hover) {background:var(--wash);outline:2px solid var(--ui-accent);outline-offset:-2px;}
+ .wf-result-icon {display:grid;place-items:center;width:30px;height:30px;background:var(--input);color:var(--ui-accent);border-radius:9px;}
+ .wf-result-icon svg {width:18px;height:18px;}
+ @media(prefers-reduced-motion:no-preference){html:not([data-wf-motion="reduced"]) .wf-search-shade:not([hidden]) {animation:wfShadeIn .16s ease-out;}@keyframes wfShadeIn {from{opacity:0}to{opacity:1}}}
+}
