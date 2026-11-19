@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v170-integrated-robot-surface';
+const CACHE_NAME = 'wow-furniture-v171-ikea-categories';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
   './context-nav.js?v=5',
@@ -18,9 +18,9 @@ const urlsToCache = [
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
   './robot-face.js?v=2',
-  './robot-face.css?v=3',
+  './robot-face.css?v=4',
   './dialog-surfaces.css?v=1',
-  './product-categories.js?v=1',
+  './product-categories.js?v=2',
   './product-categories.css?v=1',
   './branding-settings.js?v=1',
   './branding-settings.css?v=1',

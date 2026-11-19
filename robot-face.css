@@ -68,6 +68,8 @@ html body #mainContent #page-dashboard #wfGreetingRobot {
   block-size: 100%;
   max-block-size: 88px;
   overflow: visible;
+  transform: scale(1.2);
+  transform-origin: center;
 }
 
 #wfGreetingRobot .wf-robot-eye-open { stroke: none; }

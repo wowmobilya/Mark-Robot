@@ -12,10 +12,10 @@
     {id:'tv_table',labels:{ar:'طاولة تلفاز',en:'TV Table',tr:'TV Ünitesi',fr:'Meuble TV',ru:'Тумба под телевизор'}}
   ];
   const temporaryImages={
-    coffee_table:{url:'https://images.unsplash.com/photo-1793613345163-f77dcb7f9ba2?auto=format&fit=crop&fm=jpg&ixid=NHwxMjA3fDA%3D&ixlib=rb-4.1.0&q=60&w=3000',author:'Salvador Godoy',site:'Unsplash',source:'https://unsplash.com/photos/j1e_8-0FTE8'},
-    side_table:{url:'https://images.unsplash.com/photo-1766751447949-e33036ab09d6?auto=format&fit=crop&fm=jpg&ixid=NHwxMjA3fDA%3D&ixlib=rb-4.1.0&q=60&w=3000',author:'Sebastian Morelli-Peyton',site:'Unsplash',source:'https://unsplash.com/photos/efhBw_BRimk'},
-    dresser:{url:'https://images.pexels.com/photos/31038558/pexels-photo-31038558/free-photo-of-elegant-minimalist-console-table-with-floral-decor.jpeg?auto=compress&dpr=1&h=750&w=1260',author:'Şeydanur Yıldız',site:'Pexels',source:'https://www.pexels.com/photo/31038558/'},
-    tv_table:{url:'https://images.pexels.com/photos/19866408/pexels-photo-19866408/free-photo-of-tv-and-cabinets-in-a-living-room.jpeg?auto=compress&dpr=1&h=750&w=1260',author:'Lisa Anna',site:'Pexels',source:'https://www.pexels.com/photo/19866408/'}
+    coffee_table:{url:'https://image-ikea.mncdn.com/urunler/500_500/PE746803.jpg',author:'IKEA',site:'IKEA Türkiye',product:'LACK 90×55 cm',source:'https://www.ikea.com.tr/p90449905'},
+    side_table:{url:'https://image-ikea.mncdn.com/urunler/500_500/PE724345.jpg',author:'IKEA',site:'IKEA Türkiye',product:'LACK 55×55 cm',source:'https://www.ikea.com.tr/urun/lack-beyaz-55x55-cm-yan-sehpa-30449908'},
+    dresser:{url:'https://image-ikea.mncdn.com/urunler/500_500/PE554244.jpg',author:'IKEA',site:'IKEA Türkiye',product:'LACK 140×39 cm',source:'https://www.ikea.com.tr/p10257448'},
+    tv_table:{url:'https://image-ikea.mncdn.com/urunler/500_500/PE803708.jpg',author:'IKEA',site:'IKEA Türkiye',product:'LACK 160×35×36 cm',source:'https://www.ikea.com.tr/urun/lack-beyaz-160x35x36-cm-tv-sehpasi-30498927'}
   };
   const validId=id=>typeof id==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,79}$/.test(id)&&!['constructor','prototype','__proto__'].includes(id);
   const cleanText=(value,max)=>typeof value==='string'?value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g,'').trim().slice(0,max):'';
@@ -157,7 +157,7 @@
     archiveSaved:['تم تحديث حالة القسم، مع الاحتفاظ بالمنتجات والفواتير.','Category status updated; products and invoices are preserved.','Kategori durumu güncellendi; ürün ve faturalar korundu.','État mis à jour ; produits et factures conservés.','Статус обновлён; товары и счета сохранены.'],
     saving:['جارٍ الحفظ…','Saving…','Kaydediliyor…','Enregistrement…','Сохранение…'],
     imageLoading:['جارٍ تجهيز الصورة…','Preparing image…','Görsel hazırlanıyor…','Préparation de l’image…','Подготовка изображения…'],
-    imageSources:['مصادر الصور المؤقتة','Temporary photo sources','Geçici görsel kaynakları','Sources des photos temporaires','Источники временных фотографий'],
+    imageSources:['مصادر صور الأقسام','Category image sources','Kategori görsel kaynakları','Sources des images de catégories','Источники изображений категорий'],
     nameRequired:['اكتب اسمًا للقسم من 1 إلى 80 حرفًا.','Enter a category name between 1 and 80 characters.','1–80 karakterlik kategori adı girin.','Saisissez un nom de 1 à 80 caractères.','Введите название длиной от 1 до 80 символов.'],
     descriptionLong:['الوصف يجب ألا يتجاوز 240 حرفًا.','Description must be at most 240 characters.','Açıklama en fazla 240 karakter olabilir.','La description est limitée à 240 caractères.','Описание должно содержать не более 240 символов.'],
     duplicate:['يوجد قسم بهذا الاسم. اختر اسمًا آخر.','A category already uses this name. Choose another name.','Bu adla bir kategori var. Başka bir ad seçin.','Ce nom existe déjà. Choisissez un autre nom.','Категория с таким названием уже существует.'],
@@ -185,7 +185,7 @@
     // replace a loaded photograph, and a failed image reveals the same icon.
     fallback.dataset.wfProductType=defaults.some(item=>item.id===category?.id)?category.id:'other';wrap.append(fallback);
     const source=cleanImage(category?.image);
-    if(source){const img=create('img');img.src=source;img.alt='';img.loading='lazy';img.decoding='async';img.addEventListener('error',()=>img.remove(),{once:true});wrap.append(img);}
+    if(source){const img=create('img');img.src=source;img.alt='';img.loading='lazy';img.decoding='async';if(Object.values(temporaryImages).some(reference=>reference.url===source))img.style.objectFit='contain';img.addEventListener('error',()=>img.remove(),{once:true});wrap.append(img);}
     window.wfRefreshIcons?.();return wrap;
   }
   const usedCategories=()=>manager.list().filter(category=>!category.archived||category.count>0||category.id===state().prTabFilter);
@@ -338,7 +338,7 @@
     status=create('p','wf-category-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     const credits=create('details','wf-category-credits');credits.append(text('summary','imageSources'));
     const creditList=create('ul');
-    for(const source of Object.values(temporaryImages)){const item=create('li'),link=create('a','',source.author+' · '+source.site);link.href=source.source;link.target='_blank';link.rel='noopener noreferrer';item.append(link);creditList.append(item);}
+    for(const source of Object.values(temporaryImages)){const item=create('li'),link=create('a','',source.site+' · '+source.product);link.href=source.source;link.target='_blank';link.rel='noopener noreferrer';item.append(link);creditList.append(item);}
     credits.append(creditList);panel.append(heading,list,form,status,credits);content.append(panel);
     nameField.addEventListener('input',rememberFields);descriptionField.addEventListener('input',rememberFields);
     languageField.addEventListener('change',()=>{rememberFields();editingLanguage=languageField.value;nameField.value=draft.labels[editingLanguage]||'';descriptionField.value=draft.descriptions[editingLanguage]||'';});
