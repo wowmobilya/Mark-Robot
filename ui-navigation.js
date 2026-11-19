@@ -424,15 +424,21 @@
     sales.append(metrics);
     sales.classList.add('wf-sales-command-card');
     metrics.classList.add('wf-sales-six-actions');
+    const icons={
+      'select-client-type':'<circle cx="9" cy="8" r="4"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M20 8v8m-4-4h8"/>',
+      'add-product':'<path d="m12 2 9 5-9 5-9-5 9-5ZM3 7v10l9 5 9-5V7M12 12v10M18 11v6m-3-3h6"/>',
+      'select-invoice-type':'<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 13v6m-3-3h6"/>'
+    };
     const actions=[
-      {page:'select-client-type',symbol:'＋',label:{ar:'إضافة عميل',tr:'Müşteri ekle',en:'Add client',fr:'Ajouter client',ru:'Добавить клиента'}},
-      {page:'add-product',symbol:'◇',label:{ar:'إضافة منتج',tr:'Ürün ekle',en:'Add product',fr:'Ajouter produit',ru:'Добавить товар'}},
-      {page:'select-invoice-type',symbol:'✎',label:{ar:'إنشاء فاتورة',tr:'Fatura oluştur',en:'Create invoice',fr:'Créer facture',ru:'Создать счёт'}}
+      {page:'select-client-type',label:{ar:'إضافة عميل',tr:'Müşteri ekle',en:'Add client',fr:'Ajouter client',ru:'Добавить клиента'}},
+      {page:'add-product',label:{ar:'إضافة منتج',tr:'Ürün ekle',en:'Add product',fr:'Ajouter produit',ru:'Добавить товар'}},
+      {page:'select-invoice-type',label:{ar:'إنشاء فاتورة',tr:'Fatura oluştur',en:'Create invoice',fr:'Créer facture',ru:'Создать счёт'}}
     ];
     for(const action of actions){
       const button=document.createElement('button');
       button.type='button';button.className='stat-card wf-sales-action';
-      const icon=document.createElement('span');icon.className='stat-icon wf-sales-action-icon';icon.setAttribute('aria-hidden','true');icon.textContent=action.symbol;
+      const icon=document.createElement('span');icon.className='stat-icon wf-sales-action-icon';icon.setAttribute('aria-hidden','true');
+      icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icons[action.page]+'</svg>';
       const label=document.createElement('span');label.className='wf-sales-action-label';
       button.append(icon,label);
       button.addEventListener('click',()=>window.showPage(action.page));
