@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v152-sidebar-spacing';
+const CACHE_NAME = 'wow-furniture-v153-card-options';
 const urlsToCache = [
   './workspace-surfaces.css?v=24',
   './context-nav.js?v=1',
@@ -11,13 +11,13 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=9',
-  './dashboard-visuals.css?v=24',
+  './dashboard-visuals.css?v=25',
   './rate-refresh.js?v=6',
   './cashboxes.mjs',
   './section-headings.css?v=7',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
-  './greeting-carousel.js?v=6',
+  './greeting-carousel.js?v=7',
   './currency-calculator.css?v=10',
   './currency-calculator.js?v=7',
   './ui-i18n.js?v=26',
