@@ -90,6 +90,12 @@
  tabs.removeAttribute('role');
  const localeOrder = ['ar', 'en', 'tr', 'fr', 'ru'];
  const descriptions = new Map();
+ const groupTitles={
+   company:['الأعمال والمالية','Business and finance','İşletme ve finans','Activité et finances','Бизнес и финансы'],
+   appearance:['تفضيلات البرنامج','App preferences','Uygulama tercihleri','Préférences','Настройки приложения'],
+   data:['البيانات والنظام','Data and system','Veriler ve sistem','Données et système','Данные и система']
+ };
+ const headings=new Map();
  const saveSections = new Set(['company', 'bank', 'invoice', 'currency']);
  let opener;
  function updateDialogTitle() {
@@ -101,12 +107,19 @@
  function translateDescriptions() {
    const locale = Math.max(0, localeOrder.indexOf(document.documentElement.lang));
    for (const [key, description] of descriptions) description.textContent = sections[key][locale];
+   for (const [key,heading] of headings) heading.textContent=groupTitles[key][locale];
    updateDialogTitle();
  }
  for (const key of Object.keys(sections)) {
    const entry = entries.find(value => value.key === key);
    if (!entry) continue;
    const {button} = entry;
+   if(groupTitles[key]){
+     const heading=document.createElement('h2');
+     heading.className='settings-group-title';
+     headings.set(key,heading);
+     tabs.append(heading);
+   }
    tabs.append(button);
    button.removeAttribute('role');
    button.removeAttribute('aria-selected');

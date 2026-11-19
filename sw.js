@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v135-daily-market-arrows';
+const CACHE_NAME = 'wow-furniture-v136-settings-drawer';
 const urlsToCache = [
   './workspace-surfaces.css?v=17',
   './context-nav.js?v=1',
