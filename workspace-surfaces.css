@@ -1150,3 +1150,17 @@
  html body #toastBox {max-width:min(92vw,330px);box-sizing:border-box;}
  html body #toastBox .toast {max-width:100%;overflow-wrap:anywhere;}
 }
+
+/* Final consistent bottom-nav identity after dashboard style overrides. */
+@media screen and (max-width:1024px) {
+ html:root body #bottomNav #bnavCircle {
+   background:var(--brand-primary)!important;
+   border-color:var(--brand-primary)!important;
+   color:white!important;
+ }
+ html:root body #bottomNav #bnavCircleIcon,
+ html:root body #bottomNav #bnavCircleIcon svg {color:#fff!important;}
+ html[data-theme="dark"] body #bottomNav .bnav-btn.bnav-active .bnav-label {
+   color:#8ccfe2!important;
+ }
+}
