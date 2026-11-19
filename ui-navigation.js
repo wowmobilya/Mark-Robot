@@ -413,6 +413,14 @@
   const metrics=dashboard?.querySelector('.stats-grid');
   const root=document.documentElement;
   if(sales&&metrics){
+    const total=sales.querySelector(':scope > div:not(.stats-grid)');
+    const symbol=sales.querySelector(':scope > .stat-icon');
+    if(total&&symbol){
+      const header=document.createElement('div');
+      header.className='wf-sales-summary';
+      header.append(symbol,total);
+      sales.prepend(header);
+    }
     sales.append(metrics);
     sales.classList.add('wf-sales-command-card');
     metrics.classList.add('wf-sales-six-actions');
