@@ -306,6 +306,27 @@
     ring:'M12 3a9 9 0 1 0 9 9h-9z M15 3.5v5.5h5.5a8 8 0 0 0-5.5-5.5z',
     strip:'M2 8h20v8H2z M8 8v8m7-8v8'
   };
+  const backLabels={ar:'رجوع',en:'Back',tr:'Geri',fr:'Retour',ru:'Назад'};
+  function setChoicesOpen(head,open){
+    if(!head)return;
+    const tray=head.querySelector('.view-choices');
+    const trigger=head.querySelector('.view-trigger');
+    if(!tray||!trigger)return;
+    tray.hidden=!open;
+    trigger.setAttribute('aria-expanded',String(open));
+    const card=head.closest('.wf-insight-card');
+    if(card){
+      if(open && !card.classList.contains('wf-view-picking'))
+        card.style.minHeight=Math.ceil(card.getBoundingClientRect().height)+'px';
+      if(!open)card.style.removeProperty('min-height');
+      card.classList.toggle('wf-view-picking',open);
+    }
+    if(open){
+      const back=backLabels[document.documentElement.lang]||backLabels.en;
+      trigger.replaceChildren(document.createTextNode('× '+back));
+      trigger.setAttribute('aria-label',back);
+    }
+  }
   function mountChoices(head,values,labels,current,key,caption,onChoose){
     if(!head)return;
     let trigger=head.querySelector('.view-trigger');
@@ -319,29 +340,32 @@
       trigger.setAttribute('aria-expanded','false');
       trigger.onclick=()=>{
         const opening=tray.hidden;
-        host.querySelectorAll('.view-choices').forEach(other=>{
-          other.hidden=true;
-          other.parentElement?.querySelector('.view-trigger')?.setAttribute('aria-expanded','false');
-        });
-        tray.hidden=!opening;
-        trigger.setAttribute('aria-expanded',String(opening));
+        host.querySelectorAll('.wf-insight-head').forEach(other=>setChoicesOpen(other,false));
+        setChoicesOpen(head,opening);
+        if(!opening)draw();
       };
       head.append(trigger,tray);
       values.forEach(value=>{
         const button=document.createElement('button');button.type='button';
         button.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="'+paths[value]+'"/></svg><b></b>';
-        button.onclick=()=>{onChoose(value);try{localStorage.setItem(key,value);}catch{}tray.hidden=true;trigger.setAttribute('aria-expanded','false');draw();trigger.focus();};
+        button.onclick=()=>{onChoose(value);try{localStorage.setItem(key,value);}catch{}setChoicesOpen(head,false);draw();trigger.focus();};
         tray.append(button);
       });
-      head.addEventListener('keydown',event=>{if(event.key==='Escape'&&!tray.hidden){event.stopPropagation();tray.hidden=true;trigger.setAttribute('aria-expanded','false');trigger.focus();}});
+      head.addEventListener('keydown',event=>{if(event.key==='Escape'&&!tray.hidden){event.stopPropagation();setChoicesOpen(head,false);draw();trigger.focus();}});
     }
     tray.setAttribute('aria-label',caption);
     Array.from(tray.children).forEach((button,i)=>{
       button.querySelector('b').textContent=labels[i];
       button.setAttribute('aria-pressed',String(values[i]===current));
     });
-    trigger.replaceChildren(tray.children[values.indexOf(current)].firstChild.cloneNode(true),document.createTextNode(labels[values.indexOf(current)]));
-    trigger.setAttribute('aria-label',caption+' · '+labels[values.indexOf(current)]);
+    if(!tray.hidden){
+      const back=backLabels[document.documentElement.lang]||backLabels.en;
+      trigger.replaceChildren(document.createTextNode('× '+back));
+      trigger.setAttribute('aria-label',back);
+    }else{
+      trigger.replaceChildren(tray.children[values.indexOf(current)].firstChild.cloneNode(true),document.createTextNode(labels[values.indexOf(current)]));
+      trigger.setAttribute('aria-label',caption+' · '+labels[values.indexOf(current)]);
+    }
   }
   function draw(){
     const words=copy[document.documentElement.lang]||copy.en;
@@ -383,10 +407,9 @@
   // Close floating display choices when working elsewhere in the dashboard.
   document.addEventListener('pointerdown',event=>{
     if(event.target.closest?.('#dashIntelligence .view-trigger, #dashIntelligence .view-choices'))return;
-    host.querySelectorAll('.view-choices:not([hidden])').forEach(tray=>{
-      tray.hidden=true;
-      tray.parentElement?.querySelector('.view-trigger')?.setAttribute('aria-expanded','false');
-    });
+    const opened=host.querySelectorAll('.view-choices:not([hidden])');
+    opened.forEach(tray=>setChoicesOpen(tray.parentElement,false));
+    if(opened.length)draw();
   });
   new MutationObserver(draw).observe(host,{childList:true});
   new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
