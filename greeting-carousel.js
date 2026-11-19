@@ -150,3 +150,56 @@
   showFace(0);
   schedule();
 })();
+
+// Visibility choices affect the dashboard only. The exchange view reuses its rate card.
+(() => {
+  const dashboard=document.getElementById('page-dashboard');
+  if (!dashboard) return;
+  const sections=[
+    ['welcome','.wf-greeting-flip'],['sales','.wf-dash-sales'],['metrics','.stats-grid'],
+    ['rates','#wfDashRates'],['recent','.wf-dash-primary'],['insights','.wf-dash-secondary']
+  ];
+  const translations={
+    ar:['تخصيص الرئيسية','البطاقة الذكية','إجمالي المبيعات','إحصاءات النشاط','أسعار الصرف','آخر الفواتير','نظرة على الأعمال'],
+    tr:['Paneli düzenle','Karşılama','Toplam satış','İstatistikler','Döviz kurları','Son faturalar','İş görünümü'],
+    en:['Customize dashboard','Welcome card','Total sales','Activity counts','Exchange rates','Recent invoices','Business overview'],
+    fr:['Personnaliser l’accueil','Accueil','Ventes','Statistiques','Taux de change','Factures récentes','Vue d’ensemble'],
+    ru:['Настроить панель','Приветствие','Продажи','Статистика','Курсы валют','Последние счета','Обзор бизнеса']
+  };
+  const storageKey='wf.dashboard.hiddenSections';
+  let hidden=[];
+  try { const saved=JSON.parse(localStorage.getItem(storageKey)); if(Array.isArray(saved)) hidden=saved; } catch {}
+  const menu=document.createElement('details');
+  menu.className='dash-visibility';
+  const trigger=document.createElement('summary'),panel=document.createElement('div');
+  menu.append(trigger,panel);
+  dashboard.prepend(menu);
+  const captions=[];
+  sections.forEach(([key,selector],index)=>{
+    const region=dashboard.querySelector(selector);
+    if(!region)return;
+    const label=document.createElement('label'),input=document.createElement('input'),caption=document.createElement('span');
+    if(!region.id)region.id='dash-section-'+key;
+    input.type='checkbox';input.setAttribute('aria-controls',region.id);
+    input.checked=!hidden.includes(key);
+    region.classList.toggle('dashboard-off',!input.checked);
+    input.onchange=()=>{
+      region.classList.toggle('dashboard-off',!input.checked);
+      if(input.checked && !matchMedia('(prefers-reduced-motion: reduce)').matches && document.documentElement.dataset.wfMotion!=='reduced'){
+        region.animate([{opacity:.45,transform:'translateY(-3px)'},{opacity:1,transform:'translateY(0)'}],{duration:170});
+      }
+      hidden=sections.filter(([,s])=>dashboard.querySelector(s)?.classList.contains('dashboard-off')).map(([id])=>id);
+      try{localStorage.setItem(storageKey,JSON.stringify(hidden));}catch{}
+    };
+    captions.push([caption,index+1]);label.append(input,caption);panel.append(label);
+  });
+  function translate(){
+    const words=translations[document.documentElement.lang]||translations.ar;
+    trigger.textContent=words[0];
+    for(const [caption,index] of captions)caption.textContent=words[index];
+  }
+  menu.addEventListener('keydown',event=>{if(event.key==='Escape'){menu.open=false;trigger.focus();}});
+  document.addEventListener('pointerdown',event=>{if(menu.open&&!menu.contains(event.target))menu.open=false;});
+  new MutationObserver(translate).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+  translate();
+})();
