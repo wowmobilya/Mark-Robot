@@ -21,3 +21,19 @@
  const active=nav.querySelector('.bnav-active');if(active)target=Number(active.id.replace('bnav-',''))||0;
  schedule();
 })();
+
+// Check for a published release when the installed app returns to the dashboard.
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  let lastCheck=0;
+  async function checkRelease() {
+    if (document.hidden || !document.getElementById('page-dashboard')?.classList.contains('active') ||
+        document.querySelector('dialog[open]') || Date.now()-lastCheck<60000) return;
+    lastCheck=Date.now();
+    try { const registration=await navigator.serviceWorker.getRegistration(); await registration?.update(); }
+    catch { /* The next online or foreground event retries. */ }
+  }
+  document.addEventListener('visibilitychange',checkRelease);
+  window.addEventListener('online',checkRelease);
+  window.addEventListener('pageshow',checkRelease);
+  setInterval(checkRelease,60000);
+}

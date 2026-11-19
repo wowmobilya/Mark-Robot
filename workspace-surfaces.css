@@ -809,3 +809,14 @@
     #sidebar .wf-sidebar-search { padding-block: 2px 4px; }
   }
 }
+
+@media screen and (max-width:1024px) {
+  html body #wfSettingsDialog:has(> #bottomNav) > footer { display:none!important }
+  html body #wfSettingsDialog > #bottomNav {
+    position:relative!important; inset:auto!important; width:100%!important;
+    display:flex!important; flex:none; margin-block-start:26px;
+  }
+  html.wf-settings-open body #bottomNav.settings-close-action #bnavCircleIcon::after {
+    mask:none; background:none; content:"×"; font:26px/23px sans-serif; text-align:center;
+  }
+}

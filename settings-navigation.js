@@ -30,7 +30,8 @@
    center.addEventListener('click',event=>{
      if (!page.classList.contains('active')) return;
      event.stopImmediatePropagation();
-     save.click();
+     if (dialog.open && actions?.hidden) dialog.close();
+     else save.click();
    },true);
  }
  const content = workspace.querySelector('.wf-settings-content');
@@ -55,6 +56,21 @@
    actions.append(save);
    dialog.append(actions);
  }
+ const nav=document.getElementById('bottomNav');
+ const anchor=document.createComment('dashboard navigation');
+ nav?.before(anchor);
+ const mobile=matchMedia('(max-width:1024px)');
+ function placeNavigation(){
+   if (!nav) return;
+   if (dialog.open && mobile.matches) dialog.append(nav);
+   else if (anchor.nextSibling!==nav) anchor.after(nav);
+   const done=dialog.open && actions?.hidden;
+   const label=center?.querySelector('.settings-save-label');
+   if (label) label.textContent=done ? close.getAttribute('aria-label') :
+     (({ar:'حفظ',en:'Save',tr:'Kaydet',fr:'Enregistrer',ru:'Сохранить'})[document.documentElement.lang] || 'Save');
+   nav.classList.toggle('settings-close-action',!!done);
+ }
+ mobile.addEventListener('change',placeNavigation);
  const restore = document.getElementById('wfRestoreModal');
  if (restore) {
    new MutationObserver(() => {
@@ -107,6 +123,7 @@
      updateDialogTitle();
      if (actions) actions.hidden = !saveSections.has(key);
      if (!dialog.open) dialog.showModal();
+     placeNavigation();
      content.scrollTop = 0;
      close.focus();
    });
@@ -115,6 +132,7 @@
  new MutationObserver(translateDescriptions).observe(document.documentElement, {attributes: true, attributeFilter: ['lang']});
  new MutationObserver(updateDialogTitle).observe(tabs, {childList: true, subtree: true, characterData: true});
  dialog.addEventListener('close', () => {
+   placeNavigation();
    if (page.classList.contains('active')) opener?.focus();
  });
  const original=window.switchTab;

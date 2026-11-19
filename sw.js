@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v132-cashbox-settings-nav';
+const CACHE_NAME = 'wow-furniture-v133-live-settings-dock';
 const urlsToCache = [
   './workspace-surfaces.css?v=17',
   './context-nav.js?v=1',
@@ -41,7 +41,7 @@ self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE_NAME).then(async cache => {
     await cache.addAll(urlsToCache.filter(u=>u.startsWith('./')).map(url=>new Request(url,{cache:'reload'})));
-    await Promise.all(urlsToCache.filter(u=>!u.startsWith('./')).map(u=>cache.add(u).catch(()=>{})));
+    // Third-party assets are cached on first use without delaying activation.
   }));
 });
 self.addEventListener('activate', event => {
@@ -74,7 +74,7 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    fetch(request)
+    fetch(request, sameOrigin && (request.mode === 'navigate' || /\.(?:m?js|css)$/.test(url.pathname)) ? {cache:'no-cache'} : {})
       .then(response => {
         if (response && response.ok) {
           const clone = response.clone();
@@ -82,6 +82,7 @@ self.addEventListener('fetch', event => {
         }
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(async () => (await caches.match(request)) ||
+        (sameOrigin && request.mode === 'navigate' ? await caches.match('./index.html') : undefined) || Response.error())
   );
 });
