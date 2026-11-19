@@ -883,3 +883,28 @@
   html body #sidebar {width:min(360px,calc(100vw - 12px))!important;}
   html body #sidebar .nav-item .nav-badge {justify-self:end;}
 }
+
+@media screen {
+ html body #page-dashboard #currBar .curr-bar-top,
+ html body #page-exchange #currBar .curr-bar-top {
+   padding-block-end:8px!important; margin-block-end:8px!important;border-block-end:1px solid var(--border);
+ }
+ html body #sidebar {padding-inline-end:42px!important;--wf-close-center:calc(100% - 21px);}
+ html[dir="rtl"] body #sidebar {--wf-close-center:21px;}
+ html body #sidebar > #wfSidebarClose {width:38px!important;height:42px!important;inset-inline-end:2px!important}
+ #page-cashboxes .cashboxes {width:min(100%,46rem);margin:12px auto;padding:clamp(12px,2vw,22px);}
+ #page-cashboxes .cashboxes form {grid-template-columns:repeat(2,minmax(0,1fr));margin:0;gap:12px;}
+ #page-cashboxes .cashbox-overview {grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:12px;background:var(--wash);border-radius:12px;padding:12px;}
+ #page-cashboxes :is(input,select) {min-width:0;width:100%;min-height:44px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:7px;border-radius:9px;font:inherit;}
+ #page-cashboxes output {text-align:center;overflow-wrap:anywhere;}
+ #page-cashboxes ol {padding:0;list-style:none;max-height:none;}
+ #page-cashboxes li {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;padding:9px 0;border-block-end:1px solid var(--border);}
+ #page-cashboxes li small {grid-column:1/-1;color:var(--text2);}
+ #page-cashboxes .cashboxes form button {min-height:44px;}
+}
+@media screen and (max-width:1024px){
+ html body #sidebar {width:min(286px,82vw)!important;}
+ html.wf-settings-open:not(:has(#wfSettingsDialog[open])) body #bottomNav[data-task-mode="settings"] {display:none!important;}
+ html body #wfSettingsDialog > #bottomNav {margin-block-start:30px!important;}
+}
+@media screen and (max-width:350px){#page-cashboxes .cashboxes form,#page-cashboxes .cashbox-overview {grid-template-columns:minmax(0,1fr);}}

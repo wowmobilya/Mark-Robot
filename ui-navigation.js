@@ -1,3 +1,27 @@
+// Register the cash desk before navigation, search and pagination bind their controls.
+(() => {
+ const exchange=document.getElementById('page-exchange');
+ const group=document.querySelector('#sidebar .wf-nav-settings');
+ if(!exchange || !group)return;
+ const page=document.createElement('section');
+ page.id='page-cashboxes';page.className='page';
+ page.innerHTML='<header class="sct-sticky-header"><button type="button" class="sct-back-btn" onclick="goBack()"><span data-i18n="btn_back">رجوع</span></button><div class="sct-sticky-title"><h1>صناديق العملات</h1></div></header>';
+ exchange.after(page);
+ const link=document.createElement('button');
+ link.type='button';link.className='nav-item';
+ link.innerHTML='<span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M16 11h5v4h-5zM5 5V3h12"/></svg></span><span>صناديق العملات</span>';
+ link.onclick=()=>showPage('cashboxes');
+ group.append(link);
+ new MutationObserver(()=>link.classList.toggle('active',page.classList.contains('active'))).observe(page,{attributes:true,attributeFilter:['class']});
+ const oldLink=location.hash==='#exchange' && new URLSearchParams(location.search).has('cashboxes');
+ if(location.hash==='#cashboxes'||oldLink){
+   const open=()=>{showPage('cashboxes',false);history.replaceState({page:'cashboxes'},'','#cashboxes');};
+   if(document.documentElement.classList.contains('wf-booting')){
+     const boot=new MutationObserver(()=>{if(!document.documentElement.classList.contains('wf-booting')){boot.disconnect();open();}});
+     boot.observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+   }else open();
+ }
+})();
 /* Keep dashboard controls steady and show reading progress while scrolling. */
 (()=>{'use strict';
  const root=document.documentElement;

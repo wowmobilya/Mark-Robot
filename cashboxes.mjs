@@ -87,23 +87,13 @@ function mountSales() {
 
 export function mount() {
   mountSales();
-  const page = document.querySelector('#page-exchange');
+  const page = document.querySelector('#page-cashboxes');
   if (!page || page.querySelector('.cashboxes')) return;
-  const box = document.createElement('details');
+  const box = document.createElement('section');
   box.className='card cashboxes';
   box.dir='rtl';
-  box.innerHTML='<summary>صناديق العملات</summary><form><label>الصندوق<select name="currency"></select></label><output aria-live="polite"></output><label>نوع الحركة<select name="type"></select></label><label>المبلغ<input name="amount" type="number" min=".01" step=".01" required inputmode="decimal"></label><label hidden>إلى صندوق<select name="target"></select></label><label hidden>المبلغ المستلم بعملة الوجهة<input name="received" type="number" min=".01" step=".01" inputmode="decimal"></label><label>البيان<input name="note" maxlength="180"></label><button class="btn btn-p" type="submit">حفظ الحركة</button></form><p role="status"></p><h3>سجل الصندوق</h3><ol></ol>';
+  box.innerHTML='<form><div class="cashbox-overview"><label>الصندوق<select name="currency"></select></label><output aria-live="polite"></output></div><label>نوع الحركة<select name="type"></select></label><label>المبلغ<input name="amount" type="number" min=".01" step=".01" required inputmode="decimal"></label><label hidden>إلى صندوق<select name="target"></select></label><label hidden>المبلغ المستلم بعملة الوجهة<input name="received" type="number" min=".01" step=".01" inputmode="decimal"></label><label>البيان<input name="note" maxlength="180"></label><button class="btn btn-p" type="submit">حفظ الحركة</button></form><p role="status"></p><h3>سجل الصندوق</h3><ol></ol>';
   page.querySelector('header').after(box);
-  const shortcut = document.createElement('button');
-  shortcut.type = 'button';
-  shortcut.className = 'btn btn-s cashbox-shortcut';
-  shortcut.textContent = 'صناديق العملات';
-  shortcut.onclick = () => {
-    showPage('exchange');
-    box.open = true;
-    box.querySelector('summary').focus();
-  };
-  document.querySelector('#currBar .curr-refresh')?.before(shortcut);
   const form=box.querySelector('form'), fields=form.elements, status=box.querySelector('[role=status]');
   for (const key of currencies) fields.currency.add(new Option(names[key]+' · '+key,key));
   for (const key of ['receipt','expense','transfer','opening']) fields.type.add(new Option(labels[key],key));
@@ -132,7 +122,11 @@ export function mount() {
       box.querySelector('output').textContent='الرصيد المسجّل  '+format(rows.reduce((sum,r)=>sum+r.units,0),currency);
       for (const row of rows) {
         const li=document.createElement('li');
-        li.textContent=[String(row.date).slice(0,10),labels[row.type],format(row.units,currency),row.note].filter(Boolean).join(' · ');
+        const detail=document.createElement('span'), value=document.createElement('bdi'), meta=document.createElement('small');
+        detail.textContent=labels[row.type];
+        value.textContent=format(row.units,currency);
+        meta.textContent=[String(row.date).slice(0,10),row.note].filter(Boolean).join(' · ');
+        li.append(detail,value,meta);
         list.append(li);
       }
       if (!rows.length) list.textContent='لا توجد حركات مسجّلة في هذا الصندوق.';
@@ -140,8 +134,9 @@ export function mount() {
       if (revision===version) box.querySelector('output').textContent='تعذّرت قراءة الرصيد. أعد فتح الصندوق.';
     }
   }
-  box.addEventListener('toggle',()=>{if(box.open) render();});
-  if (location.hash === '#exchange' && new URLSearchParams(location.search).has('cashboxes')) box.open = true;
+  const refreshWhenOpen=()=>{if(page.classList.contains('active')) render();};
+  new MutationObserver(refreshWhenOpen).observe(page,{attributes:true,attributeFilter:['class']});
+  refreshWhenOpen();
   fields.currency.onchange=fields.type.onchange=render;
   form.onsubmit=async event=>{
     event.preventDefault();

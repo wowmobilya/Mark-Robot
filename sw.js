@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v141-centered-quotes';
+const CACHE_NAME = 'wow-furniture-v142-cash-desk';
 const urlsToCache = [
   './workspace-surfaces.css?v=17',
   './context-nav.js?v=1',
