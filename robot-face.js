@@ -1,4 +1,4 @@
-/* WOW's compact, optional speaking face. No microphone or application data is used. */
+/* Infinity Robot's optional local speech and read-only daily report. No microphone access. */
 (() => {
   'use strict';
 
@@ -11,10 +11,9 @@
       preparing: 'جارٍ تشغيل الصوت…', stopped: 'تم إيقاف الصوت',
       unsupported: 'الصوت غير مدعوم في هذا المتصفح', unavailable: 'لا يتوفر صوت عربي دون اتصال على جهازك',
       failed: 'تعذّر تشغيل الصوت، حاول مجددًا', busy: 'الصوت مشغول الآن، حاول بعد قليل',
-      speak: 'اسمعني', stop: 'إيقاف', expression: 'تغيير تعبير الوجه',
+      speak: 'هوية الروبوت', stop: 'إيقاف',
       report: 'اسمع التقرير اليومي', reportUnavailable: 'التقرير يحتاج صوتًا عربيًا مثبتًا يعمل دون اتصال',
       reportEmpty: 'بيانات التقرير اليومي غير متاحة الآن',
-      calm: 'هادئ', happy: 'سعيد', thinking: 'يفكّر', surprised: 'متفاجئ',
       audioURL: '', // Optional bundled recording; never use a remote speech service.
       greeting: 'مرحبًا سيد أحمد. أنا مساعدك الذكي إنفنتي روبوت، وأنا هنا من أجل تنظيم سير العمل. وأنا من تصميم المهندس معتز بالله حاج شعبان، مطوّري ومبرمجي. وشكرًا لك.',
     },
@@ -23,10 +22,9 @@
       preparing: 'Ses başlatılıyor…', stopped: 'Ses durduruldu',
       unsupported: 'Bu tarayıcı sesi desteklemiyor', unavailable: 'Cihazınızda çevrimdışı Türkçe ses yok',
       failed: 'Ses başlatılamadı, tekrar deneyin', busy: 'Ses meşgul, biraz sonra deneyin',
-      speak: 'Dinle', stop: 'Durdur', expression: 'Yüz ifadesini değiştir',
+      speak: 'Robot kimliği', stop: 'Durdur',
       report: 'Günlük raporu dinle', reportUnavailable: 'Rapor için cihazda çevrimdışı Türkçe ses gerekir',
       reportEmpty: 'Günlük rapor verileri şu anda kullanılamıyor',
-      calm: 'Sakin', happy: 'Mutlu', thinking: 'Düşünceli', surprised: 'Şaşkın',
       audioURL: '', // Optional bundled recording; never use a remote speech service.
       greeting: 'Merhaba Ahmet Bey. Ben akıllı asistanınız Infinity Robot. İş akışını düzenlemek için buradayım. Beni geliştiren ve programlayan mühendis Moataz Bellah Haj Shaaban tarafından tasarlandım. Teşekkür ederim.',
     },
@@ -35,10 +33,9 @@
       preparing: 'Starting voice…', stopped: 'Voice stopped',
       unsupported: 'Voice is unsupported in this browser', unavailable: 'No offline English voice on this device',
       failed: 'Voice could not start. Please retry', busy: 'Voice is busy. Please try shortly',
-      speak: 'Listen', stop: 'Stop', expression: 'Change facial expression',
+      speak: 'Robot identity', stop: 'Stop',
       report: 'Daily report', reportUnavailable: 'The report needs an installed offline English voice',
       reportEmpty: 'Daily report data is unavailable right now',
-      calm: 'Calm', happy: 'Happy', thinking: 'Thinking', surprised: 'Surprised',
       audioURL: '', // Optional bundled recording; never use a remote speech service.
       greeting: 'Hello, Mr. Ahmed. I am your smart assistant, Infinity Robot, and I am here to organize the workflow. I was designed by engineer Moataz Bellah Haj Shaaban, my developer and programmer. Thank you.',
     },
@@ -47,10 +44,9 @@
       preparing: 'Démarrage de la voix…', stopped: 'Voix arrêtée',
       unsupported: 'Ce navigateur ne prend pas la voix en charge', unavailable: 'Aucune voix française hors ligne disponible',
       failed: 'La voix ne démarre pas. Réessayez', busy: 'La voix est occupée. Réessayez bientôt',
-      speak: 'Écouter', stop: 'Arrêter', expression: 'Changer l’expression du visage',
+      speak: 'Identité du robot', stop: 'Arrêter',
       report: 'Rapport du jour', reportUnavailable: 'Le rapport nécessite une voix française hors ligne installée',
       reportEmpty: 'Le rapport du jour est indisponible pour le moment',
-      calm: 'Calme', happy: 'Heureux', thinking: 'Pensif', surprised: 'Surpris',
       audioURL: '', // Optional bundled recording; never use a remote speech service.
       greeting: 'Bonjour, Monsieur Ahmed. Je suis votre assistant intelligent, Infinity Robot, et je suis ici pour organiser le déroulement du travail. J’ai été conçu par l’ingénieur Moataz Bellah Haj Shaaban, mon développeur et programmeur. Merci à vous.',
     },
@@ -59,15 +55,13 @@
       preparing: 'Запускаю голос…', stopped: 'Голос остановлен',
       unsupported: 'Этот браузер не поддерживает голос', unavailable: 'Нет русского голоса для работы без сети',
       failed: 'Не удалось включить голос. Повторите', busy: 'Голос занят. Повторите чуть позже',
-      speak: 'Слушать', stop: 'Стоп', expression: 'Изменить выражение лица',
+      speak: 'О роботе', stop: 'Стоп',
       report: 'Отчёт за день', reportUnavailable: 'Для отчёта нужен установленный русский голос без сети',
       reportEmpty: 'Данные дневного отчёта сейчас недоступны',
-      calm: 'Спокойно', happy: 'Радостно', thinking: 'Думаю', surprised: 'Удивлён',
       audioURL: '', // Optional bundled recording; never use a remote speech service.
       greeting: 'Здравствуйте, господин Ахмед. Я ваш умный помощник, робот Infinity, и я здесь, чтобы организовать рабочий процесс. Меня создал инженер Моатаз Беллах Хадж Шаабан, мой разработчик и программист. Спасибо вам.',
     },
   };
-  const expressions = ['calm', 'happy', 'thinking', 'surprised'];
   // Original WOW ROBOT face proportions, with the dark-on-white identity from the user’s reference photo.
   const mouthShapes = {
     calm: 'M 274 252.72 Q 300 273.72 326 252.72',
@@ -136,10 +130,7 @@
           <svg class="wf-robot-stop-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="6" width="12" height="12" rx="3"/></svg>
           <span></span>
         </button>
-        <button type="button" class="wf-robot-button wf-robot-expression">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="6"/><path d="M 8 9 V 11 M 16 9 V 11 M 8 15 Q 12 18 16 15"/></svg>
-          <span></span>
-        </button>
+
       </div>`;
     container.append(face);
 
@@ -147,16 +138,15 @@
     const status = face.querySelector('.wf-robot-status');
     const speakButton = face.querySelector('.wf-robot-speak');
     const reportButton = face.querySelector('.wf-robot-report');
-    const expressionButton = face.querySelector('.wf-robot-expression');
     const mouth = face.querySelector('.wf-robot-mouth');
     const synth = window.speechSynthesis;
     const supported = !!synth && typeof synth.speak === 'function' && typeof synth.cancel === 'function' &&
       typeof synth.getVoices === 'function' && typeof window.SpeechSynthesisUtterance === 'function';
     let locale = language();
-    let selectedExpression = 'calm';
     let state = 'ready';
     let utterance = null;
     let recording = null;
+    let offlineRequest = null;
     let reportRequest = null;
     let sessionKind = 'intro';
     let startTimer = null;
@@ -165,6 +155,8 @@
     let expressionStep = 0;
     let voices = [];
     let disposed = false;
+    let preferences = {autoExpressions: true, idleMotion: true};
+    let lastMotion = {active: false, x: 0, y: 0};
 
     function language() {
       const lang = (root.lang || 'ar').toLowerCase().split(/[-_]/)[0];
@@ -185,7 +177,12 @@
         /^\.?\/?audio\/[a-zA-Z0-9_./-]+$/.test(value) && !value.includes('..') ? value : '';
     }
 
-    function active() { return !!utterance || !!recording || !!reportRequest; }
+    function offlineReady() {
+      try { return typeof window.WFOfflineVoice?.speak === 'function' && window.WFOfflineVoice.getStatus(locale).ready === true; }
+      catch (_) { return false; }
+    }
+
+    function active() { return !!utterance || !!recording || !!offlineRequest || !!reportRequest; }
 
     function visible() {
       return !disposed && face.isConnected && !document.hidden &&
@@ -197,19 +194,53 @@
       mouth.setAttribute('d', mouthShapes[expression]);
     }
 
+    function automaticExpression(expression) {
+      setExpression(preferences.autoExpressions ? expression : 'calm');
+    }
+
+    function applyPreferences() {
+      const stored = window.WFRobotSettings?.getPreferences?.() ||
+        (typeof S === 'object' ? S.settings?.robot : null) || {};
+      preferences = {autoExpressions: stored.autoExpressions !== false, idleMotion: stored.idleMotion !== false};
+      face.dataset.idleMotion = String(preferences.idleMotion);
+      if (!preferences.autoExpressions) {
+        clearTimeout(expressionTimer);
+        expressionTimer = null;
+        setExpression('calm');
+      }
+    }
+
+    function applyMotion(event) {
+      if (event?.detail) lastMotion = event.detail;
+      const tracking = lastMotion.active === true && visible();
+      face.dataset.tracking = String(tracking);
+      const bound = value => Math.max(-1, Math.min(1, Number(value) || 0));
+      face.style?.setProperty('--wf-robot-look-x', `${tracking ? bound(lastMotion.x) * 22 : 0}px`);
+      face.style?.setProperty('--wf-robot-look-y', `${tracking ? bound(lastMotion.y) * 12 : 0}px`);
+    }
+
+    function reportEvent(type, detail) {
+      window.dispatchEvent(new CustomEvent(type, {detail}));
+    }
+
+    function reportPlayback(playbackState, reason) {
+      if (sessionKind === 'report') reportEvent('wf-robot-report-playback', {state: playbackState, ...(reason ? {reason} : {})});
+    }
+
     function render() {
       const copy = messages[locale];
       title.textContent = copy.title;
-      const statusKey = state === 'ready' && !supported && !recordingURL() ? 'unsupported' :
-        state === 'ready' && !currentVoice() && !recordingURL() ? 'unavailable' : state;
+      const statusKey = state === 'ready' && !supported && !recordingURL() && !offlineReady() ? 'unsupported' :
+        state === 'ready' && !currentVoice() && !recordingURL() && !offlineReady() ? 'unavailable' : state;
       status.textContent = copy[statusKey];
       status.title = copy[statusKey];
       const introActive = active() && sessionKind === 'intro';
       const reportActive = active() && sessionKind === 'report';
       speakButton.querySelector('span').textContent = copy[introActive ? 'stop' : 'speak'];
       speakButton.setAttribute('aria-label', copy[introActive ? 'stop' : 'speak']);
+      speakButton.title = copy[introActive ? 'stop' : 'speak'];
       speakButton.setAttribute('aria-pressed', String(introActive));
-      speakButton.disabled = (!supported && !recordingURL()) || reportActive;
+      speakButton.disabled = (!supported && !recordingURL() && !offlineReady()) || reportActive;
       if (reportButton) {
         reportButton.querySelector('span').textContent = copy[reportActive ? 'stop' : 'report'];
         reportButton.setAttribute('aria-label', copy[reportActive ? 'stop' : 'report']);
@@ -219,9 +250,6 @@
       }
       face.dataset.voiceActive = String(active());
       face.dataset.voiceKind = sessionKind;
-      expressionButton.querySelector('span').textContent = copy[selectedExpression];
-      expressionButton.setAttribute('aria-label', `${copy.expression}: ${copy[selectedExpression]}`);
-      expressionButton.title = copy.expression;
     }
 
     function announceActivity(active) {
@@ -232,9 +260,11 @@
       const wasActive = active();
       const ownedSpeech = !!utterance;
       const oldRecording = recording;
+      const oldOffline = offlineRequest;
       // Invalidate callbacks before cancel() because some engines dispatch synchronously.
       utterance = null;
       recording = null;
+      offlineRequest = null;
       reportRequest = null;
       clearTimeout(startTimer);
       startTimer = null;
@@ -245,24 +275,31 @@
       face.dataset.speaking = 'false';
       face.dataset.speechBeat = 'false';
       state = nextState;
-      setExpression(selectedExpression);
+      setExpression('calm');
       if (oldRecording) {
         oldRecording.onplaying = oldRecording.onwaiting = oldRecording.onended = oldRecording.onerror = null;
         oldRecording.pause();
         oldRecording.removeAttribute('src');
         oldRecording.load();
       }
+      oldOffline?.handle?.cancel();
       if (cancel && ownedSpeech) {
         try { synth.cancel(); } catch (_) { /* The visible state still returns to idle. */ }
       }
       render();
       if (wasActive) announceActivity(false);
+      if (wasActive) {
+        const playbackState = nextState === 'failed' ? 'failed' :
+          ['reportUnavailable', 'reportEmpty'].includes(nextState) ? 'unavailable' :
+          cancel || nextState === 'stopped' ? 'stopped' : 'finished';
+        reportPlayback(playbackState, ['unavailable', 'failed'].includes(playbackState) ? messages[locale][nextState] : '');
+      }
     }
 
     function refreshVoices() {
       if (disposed) return;
       try { voices = supported ? synth.getVoices() : []; } catch (_) { voices = []; }
-      if (!active() && (currentVoice() || recordingURL()) && state === 'unavailable') state = 'ready';
+      if (!active() && (currentVoice() || recordingURL() || offlineReady()) && ['unavailable', 'reportUnavailable'].includes(state)) state = 'ready';
       render();
     }
 
@@ -272,24 +309,25 @@
       state = 'speaking';
       face.dataset.speaking = 'true';
       expressionStep = 0;
-      setExpression('happy');
+      automaticExpression('happy');
       clearTimeout(expressionTimer);
       const sequence = ['happy', 'calm', 'thinking', 'happy'];
       const nextExpression = () => {
         if (!active() || state !== 'speaking') return;
-        if (root.dataset.wfMotion === 'reduced' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-        setExpression(sequence[++expressionStep % sequence.length]);
+        if (!preferences.autoExpressions || root.dataset.wfMotion === 'reduced' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+        automaticExpression(sequence[++expressionStep % sequence.length]);
         expressionTimer = setTimeout(nextExpression, 3200);
       };
       expressionTimer = setTimeout(nextExpression, 3200);
       render();
+      reportPlayback('speaking');
     }
 
     function playRecording(url) {
       const request = new window.Audio(url);
       recording = request;
       state = 'preparing';
-      setExpression('thinking');
+      automaticExpression('thinking');
       render();
       announceActivity(true);
       const waiting = () => {
@@ -320,11 +358,12 @@
     function toggleSpeech(event) {
       event.stopPropagation();
       if (active()) { finish('stopped', true); return; }
-      if ((!supported && !recordingURL()) || !visible()) return;
+      if ((!supported && !recordingURL() && !offlineReady()) || !visible()) return;
       refreshVoices();
       const voice = currentVoice();
       // Do not interrupt speech owned by another part of the page.
       if (synth?.speaking || synth?.pending || synth?.paused) { state = 'busy'; render(); return; }
+      if (offlineReady()) { sessionKind = 'intro'; speakOffline(messages[locale].greeting); return; }
       if (!voice) {
         const url = recordingURL();
         if (url) { sessionKind = 'intro'; playRecording(url); return; }
@@ -333,6 +372,63 @@
 
       sessionKind = 'intro';
       speakText(messages[locale].greeting, voice);
+    }
+
+    function speakOffline(text, alreadyActive = false) {
+      const request = {handle: null, started: false};
+      offlineRequest = request;
+      state = 'preparing';
+      automaticExpression('thinking');
+      render();
+      if (!alreadyActive) announceActivity(true);
+      startTimer = setTimeout(() => {
+        if (offlineRequest === request && state === 'preparing') finish('failed', true);
+      }, 45000);
+      try {
+        request.handle = window.WFOfflineVoice.speak({text, locale,
+          onStart() {
+            if (offlineRequest !== request) return;
+            if (!visible()) { finish('ready', true); return; }
+            request.started = true;
+            beginTalking();
+          },
+          onWaiting() {
+            if (offlineRequest !== request) return;
+            face.dataset.speaking = 'false';
+            state = 'preparing';
+            clearTimeout(expressionTimer); expressionTimer = null;
+            clearTimeout(startTimer);
+            startTimer = setTimeout(() => {
+              if (offlineRequest === request && state === 'preparing') finish('failed', true);
+            }, 45000);
+            automaticExpression('thinking'); render(); reportPlayback('preparing');
+          },
+          onBoundary(boundary) {
+            if (offlineRequest !== request || sessionKind !== 'report') return;
+            const charIndex = Math.max(0, Math.min(text.length, Number(boundary?.charIndex) || 0));
+            const charLength = Math.max(0, Math.min(text.length - charIndex, Number(boundary?.charLength) || 0));
+            reportEvent('wf-robot-report-boundary', {charIndex, charLength});
+          },
+          onEnd() { if (offlineRequest === request) finish(); },
+          onError() {
+            if (offlineRequest !== request) return;
+            // A ready local system voice can recover a pack failure before audio starts.
+            const fallback = currentVoice();
+            if (!request.started && state === 'preparing' && fallback) {
+              offlineRequest = null; clearTimeout(startTimer); startTimer = null;
+              request.handle?.cancel(); speakText(text, fallback, true);
+            } else finish('failed', true);
+          },
+        });
+        if (offlineRequest !== request) request.handle?.cancel();
+      } catch (_) {
+        if (offlineRequest !== request) return;
+        const fallback = currentVoice();
+        if (!request.started && state === 'preparing' && fallback) {
+          offlineRequest = null; clearTimeout(startTimer); startTimer = null;
+          request.handle?.cancel(); speakText(text, fallback, true);
+        } else finish('failed', true);
+      }
     }
 
     function speakText(text, voice, alreadyActive = false) {
@@ -344,7 +440,7 @@
       request.volume = 1;
       utterance = request;
       state = 'preparing';
-      setExpression('thinking');
+      automaticExpression('thinking');
       render();
       // Pause the carousel while queued; mouth animation begins only when audio starts.
       if (!alreadyActive) announceActivity(true);
@@ -355,6 +451,12 @@
       };
       request.onend = () => { if (utterance === request) finish(); };
       request.onboundary = event => {
+        if (utterance === request && sessionKind === 'report') {
+          reportEvent('wf-robot-report-boundary', {
+            charIndex: Number.isFinite(event.charIndex) ? event.charIndex : 0,
+            charLength: Number.isFinite(event.charLength) ? event.charLength : 0,
+          });
+        }
         if (utterance !== request || state !== 'speaking' || event.name === 'sentence') return;
         face.dataset.speechBeat = 'true';
         clearTimeout(beatTimer);
@@ -377,16 +479,14 @@
       if (active()) { if (sessionKind === 'report') finish('stopped', true); return; }
       if (!visible()) return;
       refreshVoices();
-      const voice = currentVoice();
-      if (!voice) { state = 'reportUnavailable'; render(); return; }
-      if (synth?.speaking || synth?.pending || synth?.paused) { state = 'busy'; render(); return; }
       const token = {};
       reportRequest = token;
       sessionKind = 'report';
       state = 'preparing';
-      setExpression('thinking');
+      automaticExpression('thinking');
       render();
       announceActivity(true);
+      reportPlayback('preparing');
       startTimer = setTimeout(() => {
         if (reportRequest === token) finish('reportEmpty');
       }, 8000);
@@ -394,23 +494,32 @@
       try { snapshot = await window.wfBusinessOverviewSnapshot?.({locale}); } catch (_) { /* A failed report never starts speech. */ }
       if (reportRequest !== token) return;
       if (!visible()) { finish('ready', true); return; }
+      reportEvent('wf-robot-report-open', {snapshot: snapshot || {narration: '', unavailableReason: messages[locale].reportEmpty}, locale});
+      if (reportRequest !== token) return;
       const narration = typeof snapshot?.narration === 'string' ? snapshot.narration.trim() : '';
       if (!narration) { finish('reportEmpty'); return; }
+      const voice = currentVoice();
+      if (!voice && !offlineReady()) { finish('reportUnavailable'); return; }
+      if (synth?.speaking || synth?.pending || synth?.paused) { finish('failed'); return; }
       clearTimeout(startTimer);
       startTimer = null;
       reportRequest = null;
-      speakText(narration, voice, true);
+      if (offlineReady()) speakOffline(narration, true);
+      else speakText(narration, voice, true);
     }
 
-    function changeExpression(event) {
-      event.stopPropagation();
-      selectedExpression = expressions[(expressions.indexOf(selectedExpression) + 1) % expressions.length];
-      setExpression(selectedExpression);
-      render();
+    function reportControl(event) {
+      if (event.detail?.action === 'stop') {
+        if (active() && sessionKind === 'report') finish('stopped', true);
+      } else if (event.detail?.action === 'replay') {
+        if (active()) finish('stopped', true);
+        toggleReport({stopPropagation() {}});
+      }
     }
 
     function checkVisibility() {
       if (active() && !visible()) finish('ready', true);
+      applyMotion();
     }
 
     function syncLanguage() {
@@ -435,9 +544,12 @@
       languageObserver.disconnect();
       speakButton.removeEventListener('click', toggleSpeech);
       reportButton?.removeEventListener('click', toggleReport);
-      expressionButton.removeEventListener('click', changeExpression);
       document.removeEventListener('visibilitychange', checkVisibility);
       window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('wf-robot-preferences', applyPreferences);
+      window.removeEventListener('wf-robot-motion', applyMotion);
+      window.removeEventListener('wf-robot-report-control', reportControl);
+      window.removeEventListener('wf-offline-voice-change', refreshVoices);
       synth?.removeEventListener?.('voiceschanged', refreshVoices);
     }
 
@@ -448,11 +560,16 @@
     languageObserver.observe(root, {attributes: true, attributeFilter: ['lang']});
     speakButton.addEventListener('click', toggleSpeech);
     reportButton?.addEventListener('click', toggleReport);
-    expressionButton.addEventListener('click', changeExpression);
     document.addEventListener('visibilitychange', checkVisibility);
     window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('wf-robot-preferences', applyPreferences);
+    window.addEventListener('wf-robot-motion', applyMotion);
+    window.addEventListener('wf-robot-report-control', reportControl);
+    window.addEventListener('wf-offline-voice-change', refreshVoices);
     synth?.addEventListener?.('voiceschanged', refreshVoices);
+    applyPreferences();
     refreshVoices();
+    window.dispatchEvent(new CustomEvent('wf-robot-ready'));
     return {element: face, destroy};
   }
 

@@ -1,0 +1,69 @@
+/* One native dialog, with its original close/focus behavior and genuine photo. */
+@media screen {
+  html:root body #wfDevDialog.wf-developer-profile {
+    inline-size: min(640px, calc(100vw - 28px)); max-inline-size: calc(100vw - 28px);
+    max-block-size: min(820px, calc(100dvh - 28px)); padding: 0 !important;
+    border-radius: 20px !important; overflow: hidden; text-align: start;
+  }
+  html:root body #wfDevDialog.wf-developer-profile[open] { display: flex; flex-direction: column; }
+  html body #wfDevDialog.wf-developer-profile > header {
+    display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto;
+    gap: 12px; padding: 13px 18px; margin: 0; border-block-end: 1px solid var(--dialog-line, var(--border));
+    background: var(--window-surface, var(--card));
+  }
+  #wfDevDialog.wf-developer-profile > header > strong { color: var(--text); font-size: 14px; line-height: 1.6; }
+  html body #wfDevDialog.wf-developer-profile > header > button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 11px; padding: 0; display: grid; place-items: center; cursor: pointer; }
+  #wfDevDialog.wf-developer-profile .wf-dev-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px; scrollbar-width: thin; }
+  #wfDevDialog.wf-developer-profile .wf-dev-profile { grid-template-columns: 96px minmax(0, 1fr); align-items: start; gap: 17px; }
+  #wfDevDialog.wf-developer-profile .wf-dev-photo { display: block; padding: 4px; border: 1px solid var(--dialog-line, var(--border)); background: var(--input); border-radius: 18px; }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-photo img { display: block; width: 86px; height: 98px; max-width: 100%; aspect-ratio: auto; object-fit: cover; border-radius: 13px; }
+  #wfDevDialog.wf-developer-profile .wf-dev-bio { display: block; padding: 0; min-width: 0; }
+  #wfDevDialog.wf-developer-profile .wf-dev-role { display: block; font-size: 10px; line-height: 1.6; color: var(--ui-accent, var(--brand-primary)); font-weight: 750; margin-block-end: 4px; }
+  #wfDevDialog.wf-developer-profile #wfDevName { font-size: 20px; line-height: 1.5; font-weight: 800; color: var(--text); margin: 0 0 6px; overflow-wrap: anywhere; }
+  html body #wfDevDialog.wf-developer-profile :is(.wf-dev-description, .wf-dev-approach) { color: var(--text2); font-size: 12px; line-height: 1.85; margin: 0; }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-approach { margin-block: 12px 18px; }
+  #wfDevDialog.wf-developer-profile .wf-dev-focus h3 { color: var(--text); font-size: 13px; line-height: 1.6; margin: 0 0 10px; }
+  #wfDevDialog.wf-developer-profile .wf-dev-areas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; list-style: none; padding: 0; margin: 0; }
+  #wfDevDialog.wf-developer-profile .wf-dev-areas > li { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 13px; background: var(--card); }
+  #wfDevDialog.wf-developer-profile .wf-dev-areas strong { display: block; font-size: 12px; line-height: 1.6; color: var(--text); margin-block-start: 8px; }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-areas p { font-size: 11px; line-height: 1.8; margin: 5px 0 0; color: var(--text2); }
+  #wfDevDialog.wf-developer-profile .wf-dev-icon { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; color: var(--ui-accent, var(--brand-primary)); background: var(--input); }
+  #wfDevDialog.wf-developer-profile .wf-dev-icon svg { display: block; width: 20px; height: 20px; }
+  #wfDevDialog.wf-developer-profile .wf-dev-tone-business { color: #26777d; background: color-mix(in srgb, #26777d 10%, var(--card)); }
+  #wfDevDialog.wf-developer-profile .wf-dev-tone-robotics { color: #a06b22; background: color-mix(in srgb, #bb8737 11%, var(--card)); }
+  #wfDevDialog.wf-developer-profile .wf-dev-tone-ai { color: #627db3; background: color-mix(in srgb, #627db3 11%, var(--card)); }
+  #wfDevDialog.wf-developer-profile .wf-dev-app { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center; padding: 13px; margin-block: 16px; border: 1px solid var(--dialog-line, var(--border)); border-radius: 14px; background: var(--window-muted, var(--input)); }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-app > img { display: block; width: 52px; height: 52px; padding: 3px; border-radius: 11px; object-fit: contain; background: #fff; }
+  #wfDevDialog.wf-developer-profile .wf-dev-app > div { min-width: 0; }
+  #wfDevDialog.wf-developer-profile .wf-dev-app small { display: block; font-size: 10px; color: var(--text2); margin-block-end: 2px; }
+  #wfDevDialog.wf-developer-profile .wf-dev-app strong { display: block; font-size: 15px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-app p { font-size: 11px; line-height: 1.75; margin: 4px 0 0; }
+  #wfDevDialog.wf-developer-profile .wf-dev-code { overflow: hidden; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--brand-primary) 25%, #17333e); border-radius: 14px; color: #c4d6de; background: #142c37; }
+  #wfDevDialog.wf-developer-profile .wf-dev-code-header { display: flex; align-items: center; justify-content: space-between; color: #9bb7c3; font-size: 10px; line-height: 1.5; margin-block-end: 8px; }
+  #wfDevDialog.wf-developer-profile .wf-dev-code-header .wf-dev-icon { color: #92c8c7; width: 24px; height: 24px; background: transparent; }
+  #wfDevDialog.wf-developer-profile .wf-dev-code pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; text-align: left; }
+  #wfDevDialog.wf-developer-profile .wf-dev-code-line { display: block; animation: none; }
+  #wfDevDialog.wf-developer-profile .wf-dev-code-line:first-child { color: #8fc9c7; }
+  #wfDevDialog.wf-developer-profile .wf-dev-code-identity { color: #e4c58d; }
+  #wfDevDialog.wf-developer-profile .wf-dev-code-cursor { color: #e4c58d; animation: none; }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-footer { font-size: 10px; line-height: 1.8; margin: 11px 0 0; color: var(--text2); text-align: center; }
+  #wfDevDialog.wf-developer-profile .wf-dev-body a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ui-accent, var(--brand-primary)); }
+  @media (max-width: 560px) {
+    #wfDevDialog.wf-developer-profile .wf-dev-areas { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-areas > li { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-areas strong { margin-block-start: 0; }
+    #wfDevDialog.wf-developer-profile .wf-dev-areas p { margin-block-start: 2px; }
+  }
+  @media (max-width: 400px) {
+    #wfDevDialog.wf-developer-profile .wf-dev-body { padding: 14px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-profile { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; }
+    html body #wfDevDialog.wf-developer-profile .wf-dev-photo img { width: 66px; height: 80px; }
+    #wfDevDialog.wf-developer-profile #wfDevName { font-size: 18px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-wf-motion="reduced"]) #wfDevDialog.wf-developer-profile[open][data-motion="on"] .wf-dev-code-line { animation: wfDeveloperLine .55s ease both; animation-delay: calc(var(--line-index) * .09s); }
+    html:not([data-wf-motion="reduced"]) #wfDevDialog.wf-developer-profile[open][data-motion="on"] .wf-dev-code-cursor { animation: wfDeveloperCursor 1.5s steps(2, jump-none) infinite; }
+  }
+  @keyframes wfDeveloperLine { from { opacity: .25; transform: translateX(4px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes wfDeveloperCursor { 50% { opacity: .2; } }
+}

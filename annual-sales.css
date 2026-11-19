@@ -1,0 +1,61 @@
+/* A full calendar year remains readable without oversized report components. */
+@media screen {
+  html body #mainContent #page-reports .wf-report-sales.wf-annual-sales { padding: 18px !important; min-width: 0; container: wf-annual / inline-size; }
+  #page-reports .wf-annual-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-block-end: 14px; }
+  #page-reports .wf-annual-title { min-width: 0; }
+  #page-reports .wf-annual-title h2 { margin: 0 0 6px; font-size: 17px; line-height: 1.5; }
+  #page-reports .wf-annual-asof { color: var(--text2); font-size: 11px; line-height: 1.7; margin: 0; }
+  #page-reports .wf-annual-controls { display: flex; align-items: end; gap: 8px; flex: 0 0 auto; }
+  #page-reports .wf-annual-year { display: grid; gap: 4px; font-size: 11px; color: var(--text2); }
+  #page-reports .wf-annual-year select { width: 108px; min-height: 44px; padding: 8px 10px; font-size: 14px; font-family: inherit; color: var(--text); }
+  #page-reports .wf-annual-refresh { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 11px; padding: 0; background: var(--input); color: var(--text); cursor: pointer; }
+  #page-reports .wf-annual-refresh:disabled { opacity: .5; cursor: default; }
+  #page-reports .wf-annual-controls :focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
+  #page-reports .wf-annual-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 12px; }
+  #page-reports .wf-annual-metric { display: flex; gap: 10px; align-items: flex-start; min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--input); }
+  #page-reports .wf-annual-metric > div { min-width: 0; }
+  #page-reports .wf-annual-metric dt { font-size: 11px; line-height: 1.7; color: var(--text2); }
+  #page-reports .wf-annual-metric dd { font-size: 19px; line-height: 1.6; font-weight: 800; color: var(--text); margin: 2px 0 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  #page-reports .wf-annual-metric small { color: var(--text2); font-size: 10px; line-height: 1.6; }
+  #page-reports .wf-annual-icon { display: inline-grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 10px; color: var(--text2); background: var(--card); }
+  #page-reports .wf-annual-icon svg { width: 20px; height: 20px; display: block; }
+  #page-reports .wf-annual-tone-sales { color: #26777d; background: color-mix(in srgb, #26777d 11%, var(--card)); }
+  #page-reports .wf-annual-tone-invoice { color: #a06b22; background: color-mix(in srgb, #bb8737 12%, var(--card)); }
+  #page-reports .wf-annual-tone-calendar { color: #627db3; background: color-mix(in srgb, #627db3 12%, var(--card)); }
+  #page-reports .wf-annual-tone-negative { color: #c05750; background: color-mix(in srgb, #c05750 11%, var(--card)); }
+  #page-reports :is(.wf-annual-note, .wf-annual-status) { margin: 0 0 10px; color: var(--text2); font-size: 11px; line-height: 1.8; }
+  #page-reports .wf-annual-status:empty { display: none; }
+  #page-reports .wf-annual-status.needs-review { padding: 10px 12px; border-inline-start: 3px solid var(--brand-primary); background: var(--input); border-radius: 9px; }
+  #page-reports .wf-annual-months { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr); margin: 0; padding: 0; gap: 0 18px; }
+  #page-reports .wf-annual-month { display: grid; grid-template-columns: 28px minmax(72px, .65fr) minmax(24px, 1fr) minmax(80px, auto); align-items: center; gap: 9px; min-width: 0; min-height: 59px; padding: 9px 0; border-block-end: 1px solid var(--border); }
+  #page-reports .wf-annual-month:last-child { border-block-end: 0; }
+  #page-reports .wf-annual-month .wf-annual-icon { width: 26px; height: 26px; border-radius: 8px; }
+  #page-reports .wf-annual-month .wf-annual-icon svg { width: 17px; height: 17px; }
+  #page-reports .wf-annual-month-label { display: grid; gap: 3px; min-width: 0; }
+  #page-reports .wf-annual-month-label strong { font-size: 12px; line-height: 1.4; color: var(--text); font-weight: 650; }
+  #page-reports .wf-annual-month-label small { font-size: 10px; line-height: 1.5; color: var(--text2); }
+  #page-reports .wf-annual-amount { font-size: 12px; font-weight: 750; line-height: 1.5; font-variant-numeric: tabular-nums; color: var(--text); text-align: end; overflow-wrap: anywhere; }
+  #page-reports .wf-annual-bar { display: block; height: 6px; border-radius: 4px; background: var(--input); overflow: hidden; }
+  #page-reports .wf-annual-bar > span { display: block; height: 100%; background: #448b8e; border-radius: inherit; }
+  #page-reports .wf-annual-month.is-negative .wf-annual-bar > span { background: #c05750; }
+  #page-reports .wf-annual-month.is-negative .wf-annual-amount { color: #c05750; }
+  #page-reports .wf-annual-month.is-future .wf-annual-amount { color: var(--text2); }
+  @container wf-annual (min-width: 700px) {
+    #page-reports .wf-annual-months { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(6, auto); grid-auto-flow: column; column-gap: 24px; }
+    #page-reports .wf-annual-month:nth-child(6) { border-block-end: 0; }
+  }
+  @container wf-annual (max-width: 520px) {
+    #page-reports .wf-annual-header { flex-wrap: wrap; }
+    #page-reports .wf-annual-controls { width: 100%; justify-content: space-between; }
+    #page-reports .wf-annual-year { grid-template-columns: auto 108px; align-items: center; gap: 10px; }
+    #page-reports .wf-annual-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #page-reports .wf-annual-metric:first-child { grid-column: 1 / -1; }
+    #page-reports .wf-annual-metric { padding: 10px; }
+    #page-reports .wf-annual-metric dd { font-size: 17px; }
+  }
+  @media (max-width: 380px) {
+    html body #mainContent #page-reports .wf-report-sales.wf-annual-sales { padding: 12px !important; }
+    #page-reports .wf-annual-month { grid-template-columns: 24px minmax(64px, .65fr) minmax(16px, 1fr) minmax(72px, auto); gap: 6px; }
+    #page-reports .wf-annual-metric { gap: 7px; }
+  }
+}

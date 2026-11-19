@@ -16,12 +16,20 @@
   }
   .wf-business-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .wf-business-heading h3 { margin: 0; font-size: 17px; line-height: 1.5; color: var(--text); }
+  .wf-business-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; }
   .wf-business-refresh { flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 1px solid var(--border); border-radius: 12px; color: var(--ui-accent, var(--brand-primary)); background: var(--input); font-family: inherit; font-size: 24px; line-height: 1; cursor: pointer; }
   .wf-business-refresh:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+  .wf-business-toggle { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; padding: 0; border: 1px solid var(--border); border-radius: 12px; color: var(--ui-accent, var(--brand-primary)); background: var(--input); cursor: pointer; }
+  .wf-business-toggle svg { width: 22px; height: 22px; transition: transform .18s ease; }
+  .wf-business-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .wf-business-toggle:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+  .wf-business-toggle:disabled { opacity: .5; cursor: default; }
+  html body #mainContent .wf-business-details[hidden] { display: none !important; }
+  .wf-business-details { padding-block-start: 10px; }
   .wf-business-basis { margin: 2px 0 12px; font-size: 11px; line-height: 1.7; color: var(--text2); }
   .wf-business-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
   .wf-business-metric { display: grid; align-content: start; gap: 6px; min-width: 0; padding: 11px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
-  .wf-business-metric dt { font-size: 12px; line-height: 1.6; color: var(--text2); }
+  .wf-business-metric dt { display: flex; align-items: center; gap: 7px; font-size: 12px; line-height: 1.6; color: var(--text2); }
   .wf-business-metric dd { margin: 0; font-size: clamp(16px, 1.5vw, 20px); font-weight: 800; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
   .wf-business-emphasis { background: color-mix(in srgb, var(--brand-primary) 8%, var(--card)); border-color: color-mix(in srgb, var(--brand-primary) 40%, var(--border)); }
   .wf-business-emphasis dd { color: var(--ui-accent, var(--brand-primary)); }
@@ -32,7 +40,7 @@
   .wf-business-daily small { font-size: 10px; line-height: 1.7; color: var(--text2); }
   .wf-business-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; margin: 0 0 14px; }
   .wf-business-counts > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 8px 0; border-block-end: 1px solid var(--border); }
-  .wf-business-counts dt { font-size: 11px; line-height: 1.6; color: var(--text2); }
+  .wf-business-counts dt { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; line-height: 1.6; color: var(--text2); }
   .wf-business-counts dd { margin: 0; font-size: 14px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
   .wf-business-currencies { overflow-x: auto; overscroll-behavior-inline: contain; }
   .wf-business-currencies table { border-collapse: collapse; width: 100%; font-size: 11px; line-height: 1.6; }
@@ -48,6 +56,15 @@
   .wf-business-definitions p { margin: 0 0 8px; }
   .wf-business-note, .wf-business-review { font-size: 12px; line-height: 1.8; color: var(--text2); margin: 8px 0 12px; }
   .wf-business-review { padding: 10px; border-inline-start: 3px solid var(--brand-primary); background: var(--input); border-radius: 8px; }
+  .wf-business-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; flex: 0 0 28px; border-radius: 9px; color: var(--text2); background: var(--input); }
+  .wf-business-icon svg { display: block; width: 18px; height: 18px; }
+  .wf-business-tone-sales { color: #26777d; background: color-mix(in srgb, #26777d 11%, var(--card)); }
+  .wf-business-tone-credit { color: #c05750; background: color-mix(in srgb, #c05750 11%, var(--card)); }
+  .wf-business-tone-invoice { color: #a06b22; background: color-mix(in srgb, #bb8737 12%, var(--card)); }
+  .wf-business-tone-calendar { color: #627db3; background: color-mix(in srgb, #627db3 12%, var(--card)); }
+  .wf-business-counts .wf-business-icon { width: 24px; height: 24px; flex-basis: 24px; border-radius: 7px; }
+  .wf-business-counts .wf-business-icon svg { width: 16px; height: 16px; }
+  .wf-business-primary-metrics > :last-child { grid-column: 1 / -1; }
 
   /* Give the detailed summary the full workspace before the two shorter cards.
      Flatten presentation wrappers only while their insight section is visible;
@@ -95,6 +112,7 @@
   }
   @container wf-business (min-width: 480px) {
     .wf-business-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .wf-business-primary-metrics > :last-child { grid-column: auto; }
     .wf-business-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .wf-business-counts > div { align-items: flex-start; }
     .wf-business-daily { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 12px; }
@@ -108,4 +126,6 @@
     .wf-business-metric dt { font-size: 11px; }
     .wf-business-counts { column-gap: 8px; }
   }
+  html[data-wf-motion="reduced"] .wf-business-toggle svg { transition: none; }
+  @media (prefers-reduced-motion: reduce) { .wf-business-toggle svg { transition: none; } }
 }

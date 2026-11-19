@@ -12,7 +12,7 @@ const source = fs.readFileSync(process.argv[2] || path.resolve(__dirname, '../ro
 let assertionCount = 0;
 function check(condition, message) { assertionCount++; assert.ok(condition, message); }
 
-function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], supported = true, recordings = false, snapshot} = {}) {
+function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], supported = true, recordings = false, snapshot, preferences = {autoExpressions:true,idleMotion:true}, offline = false, offlineReady = true} = {}) {
   const observers = [];
   const timers = new Map();
   let timerId = 0;
@@ -28,7 +28,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
     constructor(tag = 'div') {
       this.tagName = tag.toUpperCase();
       this.attributes = {}; this.dataset = {}; this.children = []; this.listeners = {}; this.map = {};
-      this.isConnected = true; this.textContent = ''; this.classes = new Set();
+      this.isConnected = true; this.textContent = ''; this.classes = new Set(); this.style = {setProperty:(key,value)=>{this.styles ||= {}; this.styles[key]=value;}};
       this.classList = {contains: name => this.classes.has(name)};
     }
     setAttribute(name, value) { this.attributes[name] = String(value); changed(this, name); }
@@ -48,8 +48,8 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
     click() { this.dispatchEvent(new CustomEvent('click', {bubbles: true})); }
     set innerHTML(value) {
       this.html = value;
-      for (const selector of ['#wfRobotTitle span', '.wf-robot-status', '.wf-robot-speak', '.wf-robot-report', '.wf-robot-expression', '.wf-robot-mouth']) {
-        const node = new Element(selector.includes('speak') || selector.includes('report') || selector.includes('expression') ? 'button' : 'span');
+      for (const selector of ['#wfRobotTitle span', '.wf-robot-status', '.wf-robot-speak', '.wf-robot-report', '.wf-robot-mouth']) {
+        const node = new Element(selector.includes('speak') || selector.includes('report') ? 'button' : 'span');
         node.parentNode = this;
         this.map[selector] = node;
         if (node.tagName === 'BUTTON') node.map.span = new Element('span');
@@ -98,6 +98,11 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   }
   if (recordings) win.Audio = Audio;
   win.wfBusinessOverviewSnapshot = snapshot;
+  win.WFRobotSettings = {getPreferences:()=>preferences};
+  const offlineVoice = {calls:[],cancels:0,getStatus:()=>({ready:offlineReady}),speak(request){this.calls.push(request);return{cancel:()=>{this.cancels++;}};}};
+  if (offline) win.WFOfflineVoice = offlineVoice;
+  const reportEvents = [];
+  for (const type of ['wf-robot-report-open','wf-robot-report-playback','wf-robot-report-boundary']) win.addEventListener(type,event=>reportEvents.push({type,...event.detail}));
   const activity = [];
   track.addEventListener('wf-robot-speaking', event => activity.push(event.detail.active));
   vm.runInNewContext(recordings ? source.replaceAll("audioURL: ''", "audioURL: 'audio/test.mp3'") : source, {
@@ -107,10 +112,10 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   });
   const face = doc.getElementById('wfGreetingRobot');
   return {
-    face, track, doc, win, root, dashboard, synth, activity, observers, timers, audioRequests,
+    face, track, doc, win, root, dashboard, synth, activity, observers, timers, audioRequests, reportEvents, offlineVoice,
     speak: face.querySelector('.wf-robot-speak'),
     report: face.querySelector('.wf-robot-report'),
-    expression: face.querySelector('.wf-robot-expression'),
+    send(type,detail) { win.dispatchEvent(new CustomEvent(type,{detail})); },
     status: face.querySelector('.wf-robot-status'),
     reveal() { face.setAttribute('aria-hidden', 'false'); face.inert = false; },
     hide() { face.setAttribute('aria-hidden', 'true'); face.inert = true; },
@@ -130,9 +135,8 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   f.speak.click();
   check(f.synth.calls.length === 0, 'Hidden face cannot start speech');
   f.reveal();
-  for (const expected of ['happy', 'thinking', 'surprised', 'calm']) {
-    f.expression.click(); check(f.face.dataset.expression === expected, 'Expression cycle: ' + expected);
-  }
+  check(!f.face.html.includes('wf-robot-expression'), 'Manual expression control is removed');
+  check(f.speak.getAttribute('aria-label') === 'هوية الروبوت', 'Identity control uses the requested full Arabic label');
   f.speak.click();
   check(f.synth.calls.length === 1 && f.synth.calls[0].lang === 'ar-SA', 'User action selects a matching Arabic voice');
   check(f.face.dataset.voiceActive === 'true' && f.face.dataset.speaking === 'false', 'Queued voice has no fake mouth animation');
@@ -175,8 +179,8 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
   check(f.synth.calls[0]?.lang === prefix && f.synth.calls[0]?.text.length > 60, 'Localized speech selection: ' + lang);
 }
 {
-  const f = fixture({supported: false}); f.reveal(); f.speak.click(); f.expression.click();
-  check(f.speak.disabled && f.synth.calls.length === 0 && f.face.dataset.expression === 'happy', 'Unsupported browsers retain expressions and disable audio');
+  const f = fixture({supported: false}); f.reveal(); f.speak.click();
+  check(f.speak.disabled && f.synth.calls.length === 0 && f.face.dataset.expression === 'calm', 'Unsupported browsers retain the idle face and disable speech');
 }
 {
   const f = fixture(); f.reveal(); f.synth.speaking = true; f.speak.click();
@@ -213,7 +217,8 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
     let reads = 0;
     const f = fixture({voices:[{lang:'ar',localService:false}], recordings:true, snapshot:()=>{reads++; return {narration:'actual report'};}});
     f.reveal(); f.report.click(); await flush();
-    check(reads === 0 && f.synth.calls.length === 0 && f.audioRequests.length === 0 && f.status.textContent.includes('التقرير يحتاج'), 'Dynamic report requires installed local voice and cannot substitute a static intro');
+    check(reads === 1 && f.synth.calls.length === 0 && f.audioRequests.length === 0 && f.status.textContent.includes('التقرير يحتاج'), 'Written report opens without a local voice and never substitutes a static intro');
+    check(f.reportEvents.some(event=>event.type==='wf-robot-report-open' && event.snapshot.narration==='actual report') && f.reportEvents.at(-1).state==='unavailable', 'No-voice report emits its snapshot and an honest unavailable playback state');
   }
   {
     let resolve;
@@ -235,14 +240,62 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
     f.synth.start();
     const [expressionId, expressionTimer] = [...f.timers.entries()].find(([,timer])=>timer.ms===3200); f.timers.delete(expressionId); expressionTimer.fn();
     check(f.face.dataset.speaking === 'true' && f.face.dataset.expression === 'calm', 'Actual speech automatically changes expression without another click');
-    f.synth.current.onboundary({name:'word'});
+    f.synth.current.onboundary({name:'sentence',charIndex:0,charLength:25});
+    f.synth.current.onboundary({name:'word',charIndex:26,charLength:8});
+    check(f.reportEvents.filter(event=>event.type==='wf-robot-report-boundary').length === 2 && f.reportEvents.at(-1).charIndex===26, 'Every real sentence and word boundary reaches the report reader');
     check(f.face.dataset.speechBeat === 'true', 'Word boundary drives a mouth beat');
-    f.report.click();
-    check(f.synth.cancelCount === 1 && f.face.dataset.speaking === 'false' && f.timers.size === 0, 'Report Stop cancels owned speech and animation timers');
+    f.send('wf-robot-report-control',{action:'stop'});
+    check(f.synth.cancelCount === 1 && f.face.dataset.speaking === 'false' && f.timers.size === 0, 'Report reader Stop cancels owned speech and animation timers');
+    check(f.reportEvents.at(-1).state==='stopped', 'Reader receives stopped state');
+    f.send('wf-robot-report-control',{action:'replay'}); await flush();
+    check(f.synth.calls.length===2 && f.synth.calls[1].text===narration, 'Reader replay follows the normal fresh-report path');
+    f.synth.start(); f.synth.end();
+    check(f.reportEvents.at(-1).state==='finished', 'Natural report completion reaches reader');
   }
   {
     const f = fixture({snapshot:()=>Promise.resolve({narration:'',unavailableReason:'partial data'})}); f.reveal(); f.report.click(); await flush();
     check(f.synth.calls.length === 0 && f.face.dataset.voiceActive === 'false' && f.status.textContent.includes('غير متاحة'), 'Incomplete report does not invent or speak totals');
+    check(f.reportEvents.find(event=>event.type==='wf-robot-report-open')?.snapshot.unavailableReason==='partial data', 'Incomplete report still exposes its actual qualification to the reader');
+  }
+  {
+    const f = fixture({preferences:{autoExpressions:false,idleMotion:false}});f.reveal();f.speak.click();f.synth.start();
+    check(f.face.dataset.expression==='calm' && f.face.dataset.idleMotion==='false', 'Saved expression and idle motion preferences are respected');
+    f.send('wf-robot-motion',{active:true,x:2,y:-2});
+    check(f.face.dataset.tracking==='true' && f.face.styles['--wf-robot-look-x']==='22px' && f.face.styles['--wf-robot-look-y']==='-12px', 'Camera gaze coordinates are bounded');
+    f.hide();check(f.face.dataset.tracking==='false' && f.face.styles['--wf-robot-look-x']==='0px', 'Hidden face immediately drops camera gaze');
+  }
+  {
+    const f = fixture({offline:true, supported:false}); f.reveal(); f.speak.click();
+    check(!f.speak.disabled && f.offlineVoice.calls.length===1 && f.face.dataset.speaking==='false', 'Installed pack can generate while unsupported system speech remains unused');
+    const request = f.offlineVoice.calls[0]; request.onStart();
+    check(f.face.dataset.speaking==='true' && f.face.dataset.expression==='happy', 'Pack mouth starts only when actual audio starts');
+    request.onWaiting();
+    check(f.face.dataset.speaking==='false' && f.face.dataset.voiceActive==='true', 'Sentence generation gaps stop the mouth without losing Stop');
+    request.onStart(); f.hide(); request.onStart(); request.onEnd();
+    check(f.offlineVoice.cancels===1 && f.face.dataset.voiceActive==='false' && f.face.dataset.speaking==='false', 'Hide cancels pack playback and rejects stale callbacks');
+  }
+  {
+    const f = fixture({offline:true});f.reveal();f.speak.click();f.offlineVoice.calls[0].onError();
+    check(f.synth.calls.length===1 && f.synth.calls[0].voice.localService===true && f.activity.join(',')==='true', 'Pack failure before audio falls back to a local system voice without restarting carousel');
+    f.synth.start();f.synth.end();
+  }
+  {
+    const f = fixture({offline:true});f.reveal();f.speak.click();const request=f.offlineVoice.calls[0];request.onStart();request.onWaiting();request.onError();
+    check(f.synth.calls.length===0 && f.face.dataset.voiceActive==='false' && f.status.textContent.includes('تعذّر'), 'Failure after a spoken sentence does not repeat the report through fallback');
+  }
+  {
+    const f = fixture({offline:true,offlineReady:false});f.reveal();f.speak.click();
+    check(f.offlineVoice.calls.length===0 && f.synth.calls.length===1, 'Partially installed packs never replace a ready native local voice');
+  }
+  {
+    const text='First sentence. Second sentence.';
+    const f=fixture({offline:true,voices:[],snapshot:()=>({narration:text})});f.reveal();f.report.click();await flush();
+    check(f.offlineVoice.calls[0]?.text===text && f.offlineVoice.calls[0]?.locale==='ar', 'Ready local pack receives the current report in the selected language');
+    const request=f.offlineVoice.calls[0];request.onStart();request.onBoundary({charIndex:0,charLength:15});request.onWaiting();request.onStart();request.onBoundary({charIndex:16,charLength:16});
+    const boundaries=f.reportEvents.filter(event=>event.type==='wf-robot-report-boundary');
+    check(boundaries.length===2 && boundaries[1].charIndex===16 && boundaries[1].charLength===16, 'Only actual sentence offsets from playback reach the reader');
+    request.onEnd();
+    check(f.reportEvents.at(-1).state==='finished' && f.face.dataset.speaking==='false', 'Pack completion releases reader and mouth state');
   }
   console.log(`${assertionCount} robot offline speech/report lifecycle assertions passed.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

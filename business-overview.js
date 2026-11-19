@@ -147,7 +147,7 @@
     const amount = (value, code = 'USD') => new Intl.NumberFormat(lang, { style: 'currency', currencyDisplay: 'name', currency: /^[A-Z]{3}$/.test(code) ? code : 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
     const count = value => new Intl.NumberFormat(lang).format(value);
     const reportDate = new Intl.DateTimeFormat(lang, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(snapshot.date + 'T12:00:00Z'));
-    const result = { ...snapshot, locale: lang, narration: '' };
+    const result = { ...snapshot, locale: lang, narration: '', narrationSegments: [] };
     if (!snapshot.reportComplete) { result.unavailableReason = L.reportUnavailable; return result; }
     const sentences = [L.report + '. ' + L.reportDate + ': ' + reportDate + '.',
       L.dailySales + ': ' + amount(snapshot.daily.salesUSD) + '.',
@@ -162,9 +162,35 @@
     if (snapshot.daily.excludedUndatedDeposits) sentences.push(L.depositNote);
     if (!snapshot.counts.invoices && !snapshot.daily.paymentCount && !snapshot.cashboxes.some(row => row.entries)) sentences.push(L.noData);
     result.narration = sentences.join(' ');
+    let offset = 0;
+    result.narrationSegments = sentences.map(sentence => {
+      const segment = { text: sentence, start: offset, end: offset + sentence.length };
+      offset = segment.end + 1;
+      return segment;
+    });
     return result;
   }
-  const api = { build, localize };
+  function createDisclosurePreferences(storage) {
+    const values = new Map();
+    const key = host => 'wf-business-details:' + host;
+    return {
+      get(host) {
+        if (!values.has(host)) {
+          let expanded = false;
+          try { expanded = storage?.getItem(key(host)) === 'open'; } catch (_) {}
+          values.set(host, expanded);
+        }
+        return values.get(host);
+      },
+      set(host, expanded) {
+        const value = expanded === true;
+        values.set(host, value);
+        try { storage?.setItem(key(host), value ? 'open' : 'closed'); } catch (_) {}
+        return value;
+      }
+    };
+  }
+  const api = { build, localize, createDisclosurePreferences };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
 
@@ -192,9 +218,10 @@
       } catch (error) { reject(error); }
     });
   }
+  root.WFBusinessOverview = { build, localize, readCommitted };
   root.wfBusinessOverviewSnapshot = async function ({ locale = document.documentElement.lang || 'en', date = Core.today() } = {}) {
     try { return localize(build(await readCommitted(), { date }), locale); }
-    catch (_) { return { date, locale, narration: '', unavailableReason: (text[locale] || text.en).unavailable }; }
+    catch (_) { return { date, locale, narration: '', narrationSegments: [], unavailableReason: (text[locale] || text.en).unavailable }; }
   };
   const node = (tag, className, content) => {
     const element = document.createElement(tag);
@@ -204,6 +231,54 @@
   };
   let revision = 0, queued = false;
   const hosts = new Set();
+  let preferenceStorage;
+  try { preferenceStorage = root.localStorage; } catch (_) {}
+  const disclosure = createDisclosurePreferences(preferenceStorage);
+  const detailLabels = {
+    ar: ['عرض تفاصيل الأعمال', 'إخفاء تفاصيل الأعمال'],
+    en: ['Show business details', 'Hide business details'],
+    tr: ['İşletme ayrıntılarını göster', 'İşletme ayrıntılarını gizle'],
+    fr: ['Afficher les détails de l’activité', 'Masquer les détails de l’activité'],
+    ru: ['Показать подробности бизнеса', 'Скрыть подробности бизнеса']
+  };
+  const symbols = {
+    receivables: ['sales', '<path d="M3 7h18v13H3zM7 7V4h10v3M8 12h8m-4-3v6m-3-3 3 3 3-3"/>'],
+    customerCredits: ['credit', '<path d="M3 7h18v13H3zM7 7V4h10v3M8 12h8m-4 3V9m-3 3 3-3 3 3"/>'],
+    sales: ['sales', '<path d="M4 18V6m0 12h16M8 14l4-4 3 2 5-7M16 5h4v4"/>'],
+    collections: ['sales', '<rect x="3" y="5" width="18" height="15" rx="3"/><path d="M16 10h5v5h-5zM7 5V3h10"/>'],
+    refunds: ['credit', '<path d="M9 7 5 11l4 4M5 11h10a5 5 0 0 1 0 10M6 3h12"/>'],
+    net: ['calendar', '<path d="M12 3v18M5 7h14M4 7l-3 7h6l-3-7m16 0-3 7h6l-3-7M8 21h8"/>'],
+    clients: ['calendar', '<circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5"/>'],
+    products: ['invoice', '<path d="m12 3 9 5v9l-9 5-9-5V8l9-5ZM3 8l9 5 9-5m-9 5v9M7 5l9 5"/>'],
+    invoices: ['invoice', '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 7h6M9 11h6M9 15h3"/>'],
+    unpaid: ['invoice', '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M7 14h4m5-2v5"/>'],
+    overdue: ['credit', '<circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/>'],
+    pendingDelivery: ['invoice', '<path d="M3 6h11v12H3zM14 10h4l3 4v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>'],
+    delivered: ['sales', '<path d="m12 3 9 5v9l-9 5-9-5V8l9-5ZM3 8l9 5 9-5m-9 5v9m-5-6 3 3 5-5"/>'],
+    archived: ['neutral', '<rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v13h14V8M9 12h6"/>']
+  };
+  function metricIcon(key) {
+    const [tone, path] = symbols[key] || symbols.invoices;
+    const icon = node('span', 'wf-business-icon wf-business-tone-' + tone);
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
+    return icon;
+  }
+  function alignExpandedCard(panel) {
+    root.requestAnimationFrame(() => {
+      if (!panel.isConnected || panel.dataset.expanded !== 'true') return;
+      const page = panel.closest('.page');
+      const headers = [document.querySelector('.navbar'), page?.querySelector(':scope > .sct-sticky-header')].filter(Boolean);
+      const bottom = Math.max(0, ...headers.map(header => {
+        const style = root.getComputedStyle(header), rect = header.getBoundingClientRect();
+        return ['fixed', 'sticky'].includes(style.position) && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0 && rect.height && rect.bottom > 0 && rect.top < root.innerHeight ? rect.bottom : 0;
+      }));
+      const gap = bottom + 12;
+      panel.style.scrollMarginBlockStart = gap + 'px';
+      const reduced = document.documentElement.dataset.wfMotion === 'reduced' || root.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      root.scrollTo({ top: Math.max(0, root.scrollY + panel.getBoundingClientRect().top - gap), behavior: reduced ? 'auto' : 'smooth' });
+    });
+  }
   function syncSalesHeadline(snapshot) {
     const total = document.getElementById('s-total');
     if (!total) return;
@@ -246,43 +321,63 @@
   function render(host, snapshot) {
     const panel = panelFor(host); if (!panel) return;
     const lang = snapshot.locale || document.documentElement.lang || 'en', L = text[lang] || text.en;
+    const focusedAction = panel.contains(document.activeElement) ? document.activeElement?.dataset.businessAction : null;
+    const hostKey = host.id || 'business-overview';
+    let expanded = disclosure.get(hostKey);
     const heading = node('div', 'wf-business-heading');
     const title = node('h3', '', L.title);
     const refresh = node('button', 'wf-business-refresh', '↻');
+    refresh.dataset.businessAction = 'refresh';
     refresh.type = 'button'; refresh.title = L.refresh; refresh.setAttribute('aria-label', L.refresh); refresh.addEventListener('click', schedule);
-    heading.append(title, refresh);
+    const details = node('div', 'wf-business-details');
+    details.id = 'wf-business-details-' + hostKey.replace(/[^a-zA-Z0-9_-]/g, '-');
+    const toggle = node('button', 'wf-business-toggle');
+    toggle.type = 'button'; toggle.dataset.businessAction = 'toggle'; toggle.setAttribute('aria-controls', details.id);
+    toggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+    const updateDisclosure = () => {
+      const caption = (detailLabels[lang] || detailLabels.en)[expanded ? 1 : 0];
+      details.hidden = !expanded; panel.dataset.expanded = String(expanded);
+      toggle.setAttribute('aria-expanded', String(expanded)); toggle.setAttribute('aria-label', caption); toggle.title = caption;
+    };
+    toggle.addEventListener('click', () => { expanded = disclosure.set(hostKey, !expanded); updateDisclosure(); if (expanded) alignExpandedCard(panel); });
+    updateDisclosure();
+    const actions = node('div', 'wf-business-actions'); actions.append(refresh, toggle);
+    heading.append(title, actions);
     panel.replaceChildren(heading);
-    if (!snapshot.balances) { panel.append(node('p', 'wf-business-note', snapshot.unavailableReason || L.loading)); return; }
+    if (!snapshot.balances) { toggle.disabled = true; panel.append(node('p', 'wf-business-note', snapshot.unavailableReason || L.loading), details); return; }
     const format = (value, code = 'USD') => new Intl.NumberFormat(lang, { style: 'currency', currency: /^[A-Z]{3}$/.test(code) ? code : 'USD', maximumFractionDigits: 2 }).format(value);
     const count = value => new Intl.NumberFormat(lang).format(value);
     panel.append(node('p', 'wf-business-basis', L.asOf + ' ' + snapshot.date + ' · ' + L.base));
     if (!snapshot.complete) panel.append(node('p', 'wf-business-review', L.review));
-    const metrics = node('dl', 'wf-business-metrics');
-    const metric = (key, value, emphasis = false) => {
+    const metrics = node('dl', 'wf-business-metrics wf-business-primary-metrics');
+    const extraMetrics = node('dl', 'wf-business-metrics');
+    const metric = (target, key, value, emphasis = false) => {
       const cell = node('div', emphasis ? 'wf-business-metric wf-business-emphasis' : 'wf-business-metric');
-      cell.append(node('dt', '', L[key]), node('dd', '', snapshot.complete ? format(value) : '—'));
-      metrics.append(cell);
+      const label = node('dt'); label.append(metricIcon(key), node('span', '', L[key]));
+      cell.append(label, node('dd', '', snapshot.complete ? format(value) : '—'));
+      target.append(cell);
     };
-    metric('receivables', snapshot.balances.receivables, true);
-    metric('customerCredits', snapshot.balances.customerCredits);
-    metric('sales', snapshot.totals.salesUSD);
-    metric('collections', snapshot.totals.collectionsUSD);
-    metric('refunds', snapshot.totals.refundsUSD);
-    metric('net', snapshot.balances.net);
+    metric(metrics, 'receivables', snapshot.balances.receivables, true);
+    metric(metrics, 'customerCredits', snapshot.balances.customerCredits);
+    metric(metrics, 'sales', snapshot.totals.salesUSD);
+    metric(extraMetrics, 'collections', snapshot.totals.collectionsUSD);
+    metric(extraMetrics, 'refunds', snapshot.totals.refundsUSD);
+    metric(extraMetrics, 'net', snapshot.balances.net);
     panel.append(metrics);
+    details.append(extraMetrics);
     const daily = node('div', 'wf-business-daily');
     daily.append(node('h4', '', L.today));
     for (const [key, value] of [['dailySales', snapshot.daily.salesUSD], ['dailyCollections', snapshot.daily.collectionsUSD], ['dailyRefunds', snapshot.daily.refundsUSD]]) {
       const row = node('div'); row.append(node('span', '', L[key]), node('bdi', '', snapshot.complete ? format(value) : '—')); daily.append(row);
     }
     if (snapshot.daily.excludedUndatedDeposits) daily.append(node('small', '', L.depositNote));
-    panel.append(daily);
+    details.append(daily);
     const quantities = node('dl', 'wf-business-counts');
     for (const key of ['clients', 'products', 'invoices', 'unpaid', 'overdue', 'pendingDelivery', 'delivered', 'archived']) {
       const value = !snapshot.complete && ['unpaid', 'overdue'].includes(key) ? '—' : count(snapshot.counts[key]);
-      const item = node('div'); item.append(node('dt', '', L[key]), node('dd', '', value)); quantities.append(item);
+      const item = node('div'), label = node('dt'); label.append(metricIcon(key), node('span', '', L[key])); item.append(label, node('dd', '', value)); quantities.append(item);
     }
-    panel.append(quantities);
+    details.append(quantities);
     const tableWrap = node('div', 'wf-business-currencies');
     const table = node('table'); table.append(node('caption', '', L.currencies));
     const head = node('thead'), headRow = node('tr');
@@ -298,10 +393,11 @@
       }
       body.append(tr);
     }
-    table.append(body); tableWrap.append(table); panel.append(tableWrap);
+    table.append(body); tableWrap.append(table); details.append(tableWrap);
     const notes = node('details', 'wf-business-definitions');
     notes.append(node('summary', '', L.base), node('p', '', L.basisNote), node('p', '', L.cashNote));
-    panel.append(notes);
+    details.append(notes); panel.append(details);
+    if (focusedAction) actions.querySelector('[data-business-action="' + focusedAction + '"]')?.focus({ preventScroll: true });
   }
   async function refresh() {
     const current = ++revision;

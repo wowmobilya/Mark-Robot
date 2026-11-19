@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { build, localize } = require('../business-overview.js');
+const { build, localize, createDisclosurePreferences } = require('../business-overview.js');
 
 const date = '2026-11-19';
 const invoice = { id: 'i', companyId: 'c', grandTotal: 100, depositUSD: 20, date,
@@ -134,4 +134,55 @@ test('duplicate invoices and conflicting copies of a payment require review and 
   assert.equal(result.totals.collectionsUSD, 70);
   assert.equal(result.reportComplete, false);
   assert.equal(localize(result).narration, '');
+});
+
+test('narration segments preserve exact multilingual text and UTF-16 offsets, including decimal amounts', () => {
+  const snapshot = build(fixture({ invoices: [{ ...invoice, grandTotal: 1234.56, depositUSD: 0 }], payments: [] }), { date });
+  const originalFinancials = structuredClone(snapshot);
+  for (const locale of ['ar', 'tr', 'en', 'fr', 'ru']) {
+    const report = localize(snapshot, locale);
+    assert(report.narrationSegments.length >= 11);
+    assert.equal(report.narrationSegments.map(segment => segment.text).join(' '), report.narration);
+    assert.equal(report.narrationSegments[0].start, 0);
+    for (const [index, segment] of report.narrationSegments.entries()) {
+      assert.equal(report.narration.slice(segment.start, segment.end), segment.text);
+      assert.equal(segment.end - segment.start, segment.text.length);
+      if (index) assert.equal(segment.start, report.narrationSegments[index - 1].end + 1);
+    }
+    assert.equal(report.narrationSegments.at(-1).end, report.narration.length);
+    if (locale === 'en') assert(report.narrationSegments[1].text.includes('1,234.56'));
+  }
+  assert.deepEqual(snapshot, originalFinancials);
+});
+
+test('incomplete snapshots never expose playable narration segments', () => {
+  const snapshot = build(fixture({ payments: [{ ...payment, invoiceId: 'unknown' }] }), { date });
+  for (const locale of ['ar', 'en', 'tr', 'fr', 'ru']) {
+    const report = localize(snapshot, locale);
+    assert.equal(report.narration, '');
+    assert.deepEqual(report.narrationSegments, []);
+    assert(report.unavailableReason);
+  }
+});
+
+test('overview disclosure starts compact, remembers each host independently, and survives storage restrictions', () => {
+  const saved = new Map(), writes = [];
+  const storage = { getItem: key => saved.get(key) ?? null, setItem: (key, value) => { saved.set(key, value); writes.push([key, value]); } };
+  const first = createDisclosurePreferences(storage);
+  assert.equal(first.get('dashIntelligence'), false);
+  assert.equal(first.get('wfReportsOverview'), false);
+  assert.equal(writes.length, 0);
+  first.set('dashIntelligence', true);
+  assert.equal(first.get('dashIntelligence'), true);
+  assert.equal(first.get('wfReportsOverview'), false);
+  const reloaded = createDisclosurePreferences(storage);
+  assert.equal(reloaded.get('dashIntelligence'), true);
+  assert.equal(reloaded.get('wfReportsOverview'), false);
+  reloaded.set('dashIntelligence', false);
+  assert.equal(createDisclosurePreferences(storage).get('dashIntelligence'), false);
+  const restricted = createDisclosurePreferences({ getItem() { throw new Error('Disabled'); }, setItem() { throw new Error('Disabled'); } });
+  assert.equal(restricted.get('dashIntelligence'), false);
+  assert.equal(restricted.set('dashIntelligence', true), true);
+  assert.equal(restricted.get('dashIntelligence'), true);
+  assert.equal(restricted.get('wfReportsOverview'), false);
 });

@@ -1,0 +1,39 @@
+/* Robot preferences own their save action; camera activation is session-only. */
+#wf-settings-tab-robot .wf-robot-settings-icon { display: inline-grid; place-items: center; inline-size: 28px; block-size: 28px; }
+#wf-settings-tab-robot .wf-robot-settings-icon svg { inline-size: 22px; block-size: 22px; }
+#stab-robot { min-inline-size: 0; color: var(--text); }
+#stab-robot .wf-robot-settings-hint,
+#stab-robot .wf-robot-camera-hint { margin: 0; color: var(--text2); font-size: 13px; line-height: 1.7; }
+#stab-robot .wf-robot-settings-preview { display: grid; place-items: center; min-block-size: 134px; margin-block: 12px; overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: color-mix(in srgb, var(--brand-primary) 4%, var(--card)); }
+#stab-robot .wf-robot-settings-preview .wf-robot-display { inline-size: min(100%, 300px); block-size: 124px; }
+#stab-robot .wf-robot-settings-preview .wf-robot-face { max-block-size: 124px; }
+#stab-robot .wf-robot-preferences { display: grid; gap: 12px; margin: 0; padding: 0; border: 0; min-inline-size: 0; }
+#stab-robot .wf-robot-preference { display: flex; align-items: center; gap: 12px; min-block-size: 48px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); font-size: 13px; cursor: pointer; }
+#stab-robot .wf-robot-preference input { flex: 0 0 20px; inline-size: 20px; block-size: 20px; accent-color: var(--brand-primary); }
+#stab-robot .wf-robot-sensitivity { display: grid; gap: 8px; font-size: 13px; }
+#stab-robot .wf-robot-sensitivity select { box-sizing: border-box; inline-size: 100%; min-block-size: 46px; border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; background: var(--card); color: var(--text); font: inherit; }
+#stab-robot .wf-robot-settings-save { display: grid; gap: 6px; margin-block-start: 16px; }
+html body #stab-robot :is(.wf-robot-settings-save-button, .wf-robot-camera-toggle) { display: flex; align-items: center; justify-content: center; min-block-size: 46px; inline-size: 100%; margin: 0; padding: 10px 14px; border: 1px solid var(--brand-primary); border-radius: 12px; background: var(--brand-primary); color: #fff; font: inherit; font-size: 13px; font-weight: 650; line-height: 1.4; cursor: pointer; box-shadow: none; white-space: normal; }
+#stab-robot :is(.wf-robot-settings-save-button, .wf-robot-camera-toggle):focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
+#stab-robot .wf-robot-settings-save-button:disabled { opacity: .6; cursor: wait; }
+#stab-robot .wf-robot-settings-feedback { min-block-size: 20px; margin: 0; color: var(--text2); font-size: 12px; line-height: 1.6; }
+#stab-robot .wf-robot-camera-settings { display: grid; gap: 12px; margin-block-start: 18px; padding-block-start: 18px; border-block-start: 1px solid var(--border); }
+#stab-robot .wf-robot-camera-settings h3 { margin: 0; color: var(--text); font-size: 15px; line-height: 1.5; }
+#stab-robot .wf-robot-camera-preview { display: block; inline-size: min(100%, 176px); aspect-ratio: 4 / 3; justify-self: center; object-fit: cover; border-radius: 12px; background: var(--card); transform: scaleX(-1); }
+#stab-robot .wf-robot-camera-preview[hidden] { display: none; }
+html body #stab-robot .wf-robot-camera-toggle { background: color-mix(in srgb, var(--brand-primary) 8%, var(--card)); color: var(--text); border-color: color-mix(in srgb, var(--brand-primary) 30%, var(--border)); }
+html body #stab-robot .wf-robot-camera-toggle[aria-checked="true"] { background: var(--brand-primary); color: #fff; }
+#stab-robot .wf-robot-camera-status { margin: 0; color: var(--text2); font-size: 12px; line-height: 1.7; }
+#stab-robot .wf-robot-voice-settings { margin-block-start: 20px; padding-block-start: 18px; border-block-start: 1px solid var(--border); }
+#stab-robot .wf-robot-voice-settings[hidden] { display: none; }
+#stab-robot .wf-robot-voice-settings summary { padding-block: 10px; color: var(--text); font-size: 15px; font-weight: 700; cursor: pointer; }
+#stab-robot .wf-robot-voice-list { display: grid; gap: 10px; margin-block-start: 14px; }
+#stab-robot .wf-robot-voice-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+#stab-robot .wf-robot-voice-row strong { color: var(--text); font-size: 14px; }
+html body #stab-robot .wf-robot-voice-action { min-block-size: 42px; margin: 0; padding: 7px 11px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--brand-primary) 8%, var(--card)); color: var(--text); font: inherit; font-size: 12px; line-height: 1.4; cursor: pointer; }
+#stab-robot .wf-robot-voice-action:disabled { opacity: .55; cursor: default; }
+#stab-robot .wf-robot-voice-status { grid-column: 1 / -1; color: var(--text2); font-size: 11px; line-height: 1.6; }
+#stab-robot .wf-robot-voice-row progress { grid-column: 1 / -1; inline-size: 100%; block-size: 7px; accent-color: var(--brand-primary); }
+#stab-robot .wf-robot-voice-row progress[hidden] { display: none; }
+#stab-robot .wf-robot-voice-links { grid-column: 1 / -1; display: flex; gap: 12px; }
+#stab-robot .wf-robot-voice-links a { color: var(--brand-primary); font-size: 10px; line-height: 1.6; }

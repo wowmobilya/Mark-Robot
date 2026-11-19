@@ -28,11 +28,11 @@
     ru: ['Инегёль, Бурса', 'Дождь на 7 дней', 'Загрузка погоды…', 'Погода недоступна', 'WOW Furniture', 'мм'],
   };
   const carouselWords = {
-    ar: {card:'البطاقة الذكية',pages:'صفحات البطاقة الذكية',slide:'صفحة',open:'عرض',names:['الترحيب','نصيحة اليوم','الطقس','شعار الشركة','إنفنتي روبوت'],hint:'اختر صفحة من المؤشر الجانبي. استخدم الأسهم للتنقل، أو اضغط المساحة الخالية لعرض الصفحة التالية.'},
-    tr: {card:'Akıllı kart',pages:'Akıllı kart sayfaları',slide:'Sayfa',open:'Göster',names:['Karşılama','Günün önerisi','Hava durumu','Şirket logosu','Infinity Robot'],hint:'Yandaki göstergeden bir sayfa seçin. Ok tuşlarıyla ilerleyin veya sonraki sayfa için boş alana dokunun.'},
-    en: {card:'Smart card',pages:'Smart card pages',slide:'Slide',open:'Show',names:['Welcome','Today’s tip','Weather','Company logo','Infinity Robot'],hint:'Choose a page with the side indicator. Use the arrow keys, or press the empty card area to show the next page.'},
-    fr: {card:'Carte intelligente',pages:'Pages de la carte',slide:'Page',open:'Afficher',names:['Accueil','Conseil du jour','Météo','Logo de l’entreprise','Robot Infinity'],hint:'Choisissez une page avec l’indicateur latéral. Utilisez les flèches ou appuyez sur une zone vide pour passer à la page suivante.'},
-    ru: {card:'Умная карточка',pages:'Страницы карточки',slide:'Слайд',open:'Показать',names:['Приветствие','Совет дня','Погода','Логотип компании','Робот Инфинити'],hint:'Выберите страницу боковым индикатором. Используйте стрелки или нажмите на свободную область для перехода дальше.'}
+    ar: {card:'البطاقة الذكية',pages:'صفحات البطاقة الذكية',slide:'صفحة',open:'عرض',names:['الترحيب','نصيحة اليوم','الطقس','هوية البرنامج','إنفنتي روبوت'],hint:'اختر صفحة من المؤشر الجانبي. استخدم الأسهم للتنقل، أو اضغط المساحة الخالية لعرض الصفحة التالية.'},
+    tr: {card:'Akıllı kart',pages:'Akıllı kart sayfaları',slide:'Sayfa',open:'Göster',names:['Karşılama','Günün önerisi','Hava durumu','Uygulama kimliği','Infinity Robot'],hint:'Yandaki göstergeden bir sayfa seçin. Ok tuşlarıyla ilerleyin veya sonraki sayfa için boş alana dokunun.'},
+    en: {card:'Smart card',pages:'Smart card pages',slide:'Slide',open:'Show',names:['Welcome','Today’s tip','Weather','App identity','Infinity Robot'],hint:'Choose a page with the side indicator. Use the arrow keys, or press the empty card area to show the next page.'},
+    fr: {card:'Carte intelligente',pages:'Pages de la carte',slide:'Page',open:'Afficher',names:['Accueil','Conseil du jour','Météo','Identité de l’application','Robot Infinity'],hint:'Choisissez une page avec l’indicateur latéral. Utilisez les flèches ou appuyez sur une zone vide pour passer à la page suivante.'},
+    ru: {card:'Умная карточка',pages:'Страницы карточки',slide:'Слайд',open:'Показать',names:['Приветствие','Совет дня','Погода','Оформление приложения','Робот Инфинити'],hint:'Выберите страницу боковым индикатором. Используйте стрелки или нажмите на свободную область для перехода дальше.'}
   };
   const playbackWords = {
     ar:['تشغيل التنقل التلقائي','إيقاف التنقل التلقائي'],
@@ -82,7 +82,7 @@
   try { savedAutoplay = localStorage.getItem(autoplayKey); } catch (_) {}
   let autoplay = savedAutoplay !== 'false';
   let motionOptIn = savedAutoplay === 'true';
-  let face = initialFace, robotSpeaking = false, interacting = false;
+  let face = initialFace, robotSpeaking = false, reportOpen = false, interacting = false;
   let pendingFace = null, destination = null, transition = 0;
 
   function autoplayEnabled() {
@@ -136,7 +136,7 @@
     const locale = document.documentElement.lang || 'ar';
     const [place, rain, pending, unavailable, brand, unit] = words[locale] || words.en;
     weatherTitle.textContent = place;
-    logoTitle.textContent = brand;
+    logoTitle.textContent = window.WFAppIdentity?.current?.()?.name || brand;
     weatherStatus.textContent = forecast ? rain : failed ? unavailable : pending;
     document.getElementById('wfGreetingWeather').dataset.weatherState = forecast ? 'ready' : failed ? 'unavailable' : 'loading';
     syncPager();
@@ -188,7 +188,9 @@
 
   function syncLogo() {
     const image = navLogo?.querySelector('img');
-    logoTarget.replaceChildren(image ? image.cloneNode(false) : document.createTextNode('W'));
+    logoTarget.replaceChildren(image ? image.cloneNode(false) : document.createTextNode('∞'));
+    const identity = window.WFAppIdentity?.current?.();
+    if (identity?.name) logoTitle.textContent = identity.name;
   }
 
   function showFace(index) {
@@ -258,7 +260,7 @@
 
   function schedule() {
     clearTimeout(timer);
-    if (!autoplayEnabled() || interacting || document.hidden || !dashboard.classList.contains('active') || animation || robotSpeaking || robot?.dataset.speaking === 'true' ||
+    if (!autoplayEnabled() || interacting || document.hidden || !dashboard.classList.contains('active') || animation || robotSpeaking || reportOpen || robot?.dataset.speaking === 'true' || robot?.dataset.tracking === 'true' ||
         (card.matches(':focus-within') && document.activeElement !== playback) ||
         (card.matches(':hover') && !playback.matches(':hover'))) return;
     const duration = {greetingCard:8000,tipCardStandalone:14000,wfGreetingWeather:14000,wfGreetingLogo:8000,wfGreetingRobot:14000};
@@ -302,6 +304,15 @@
     if (robotSpeaking && animation) { cancelFlip(); showFace(face); }
     schedule();
   });
+  window.addEventListener('wf-robot-motion', event => {
+    if (event.detail?.active && animation) { cancelFlip(); showFace(face); }
+    schedule();
+  });
+  window.addEventListener('wf-robot-report-visibility', event => {
+    reportOpen = Boolean(event.detail?.open);
+    if (reportOpen && animation) { cancelFlip(); showFace(face); }
+    schedule();
+  });
   function syncMotion() {
     if (animation && (reduced.matches || document.documentElement.dataset.wfMotion === 'reduced')) {
       const next = pendingFace ?? destination ?? face;
@@ -326,6 +337,8 @@
   }).observe(dashboard, {attributes:true, attributeFilter:['class']});
   new MutationObserver(() => { render(); syncMotion(); }).observe(document.documentElement, {attributes:true, attributeFilter:['lang', 'dir', 'data-wf-motion']});
   if (navLogo) new MutationObserver(syncLogo).observe(navLogo, {childList:true, subtree:true, attributes:true, attributeFilter:['src']});
+  const appName = document.querySelector('.navbar .wf-nav-wordmark > bdi');
+  if (appName) new MutationObserver(syncLogo).observe(appName, {childList:true, subtree:true, characterData:true});
   syncLogo();
   render();
   showFace(initialFace);
