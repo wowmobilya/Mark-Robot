@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v157-reliable-cache-install';
+const CACHE_NAME = 'wow-furniture-v158-grip-edge-isolation';
 const urlsToCache = [
   './workspace-surfaces.css?v=28',
   './context-nav.js?v=2',
@@ -11,18 +11,18 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=9',
-  './dashboard-visuals.css?v=29',
+  './dashboard-visuals.css?v=30',
   './rate-refresh.js?v=6',
   './cashboxes.mjs',
   './section-headings.css?v=7',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
-  './greeting-carousel.js?v=8',
+  './greeting-carousel.js?v=9',
   './currency-calculator.css?v=11',
   './currency-calculator.js?v=7',
   './ui-i18n.js?v=26',
   './modern-ui.css?v=47',
-  './ui-identity.css?v=32',
+  './ui-identity.css?v=33',
   './ui-navigation.js?v=23',
   './ui-logo.js?v=3',
   './ui-settings.js?v=2',
