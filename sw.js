@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v156-bottomnav-surface-shadow';
+const CACHE_NAME = 'wow-furniture-v157-reliable-cache-install';
 const urlsToCache = [
   './workspace-surfaces.css?v=28',
   './context-nav.js?v=2',
@@ -41,7 +41,11 @@ const urlsToCache = [
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE_NAME).then(async cache => {
-    await cache.addAll(urlsToCache.filter(u=>u.startsWith('./')).map(url=>new Request(url,{cache:'reload'})));
+    // One unavailable asset must never block the entire new version from activating.
+    await Promise.allSettled(
+      urlsToCache.filter(u=>u.startsWith('./'))
+        .map(url=>cache.add(new Request(url,{cache:'reload'})))
+    );
     // Third-party assets are cached on first use without delaying activation.
   }));
 });
