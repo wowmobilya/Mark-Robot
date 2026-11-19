@@ -1,0 +1,107 @@
+const currencies = ['TRY', 'SYP', 'USD', 'EUR'];
+const names = {TRY:'الليرة التركية', SYP:'الليرة السورية', USD:'الدولار الأمريكي', EUR:'اليورو'};
+const prefix = 'cashbox-entry/';
+const labels = {receipt:'قبض', expense:'صرف', transfer:'تحويل', opening:'رصيد افتتاحي', invoice:'دفعة فاتورة نقدية'};
+
+function minor(value) {
+  const match = /^(\d{1,12})(?:\.(\d{1,2}))?$/.exec(String(value).trim());
+  if (!match) throw Error('أدخل مبلغًا موجبًا بدقة منزلتين على الأكثر.');
+  const amount = Number(match[1])*100 + Number((match[2] || '').padEnd(2,'0'));
+  if (!amount) throw Error('أدخل مبلغًا أكبر من صفر.');
+  return amount;
+}
+
+export function makeEntry({currency,type,amount,target,received,note}, id, date) {
+  if (!currencies.includes(currency) || !Object.hasOwn(labels,type) || type==='invoice') throw Error('اختر الصندوق ونوع الحركة.');
+  const units = minor(amount);
+  const legs = [{currency, units:['expense','transfer'].includes(type) ? -units : units}];
+  if (type==='transfer') {
+    if (!currencies.includes(target) || target===currency) throw Error('اختر صندوقًا آخر للتحويل.');
+    legs.push({currency:target, units:minor(received)});
+  }
+  return {id:prefix+id, date, type, note, legs};
+}
+
+export function cashRows(entries, payments, currency) {
+  const rows = [];
+  for (const entry of entries) {
+    if (!entry.id?.startsWith(prefix)) continue;
+    for (const leg of entry.legs || []) {
+      if (leg.currency===currency && Number.isSafeInteger(leg.units))
+        rows.push({date:entry.date, type:entry.type, units:leg.units, note:entry.note});
+    }
+  }
+  for (const {raw:p} of payments) {
+    if (p.receiptType!=='cash') continue;
+    const original = p.originalAmount!=null && !!p.originalCurrency;
+    const denomination = original ? p.originalCurrency : p.amountBasis==='USD' ? 'USD' : p.currency;
+    if ((denomination==='TL'?'TRY':denomination)!==currency) continue;
+    const units = Math.round(Number(original?p.originalAmount:p.amount)*100);
+    if (Number.isSafeInteger(units) && units) rows.push({date:p.date || '',type:'invoice', units, note:p.note || ''});
+  }
+  return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+}
+
+export function mount() {
+  const page = document.querySelector('#page-exchange');
+  if (!page || page.querySelector('.cashboxes')) return;
+  const box = document.createElement('details');
+  box.className='card cashboxes';
+  box.dir='rtl';
+  box.innerHTML='<summary>صناديق العملات</summary><form><label>الصندوق<select name="currency"></select></label><output aria-live="polite"></output><label>نوع الحركة<select name="type"></select></label><label>المبلغ<input name="amount" type="number" min=".01" step=".01" required inputmode="decimal"></label><label hidden>إلى صندوق<select name="target"></select></label><label hidden>المبلغ المستلم بعملة الوجهة<input name="received" type="number" min=".01" step=".01" inputmode="decimal"></label><label>البيان<input name="note" maxlength="180"></label><button class="btn btn-p" type="submit">حفظ الحركة</button></form><p role="status"></p><h3>سجل الصندوق</h3><ol></ol>';
+  page.querySelector('header').after(box);
+  const form=box.querySelector('form'), fields=form.elements, status=box.querySelector('[role=status]');
+  for (const key of currencies) fields.currency.add(new Option(names[key]+' · '+key,key));
+  for (const key of ['receipt','expense','transfer','opening']) fields.type.add(new Option(labels[key],key));
+  let version=0, saving=false;
+  const format=(units,currency)=>new Intl.NumberFormat('ar-u-nu-latn',{style:'currency',currency}).format(units/100);
+  async function render() {
+    const revision=++version, currency=fields.currency.value;
+    const transfer=fields.type.value==='transfer';
+    const previous=fields.target.value;
+    fields.target.replaceChildren(...currencies.filter(c=>c!==currency).map(c=>new Option(names[c],c)));
+    if (previous && previous!==currency) fields.target.value=previous;
+    for (const input of [fields.target,fields.received]) {
+      input.closest('label').hidden=!transfer;
+      input.disabled=!transfer;
+      input.required=transfer;
+    }
+    box.querySelector('output').textContent='جارٍ قراءة الرصيد…';
+    const list=box.querySelector('ol');
+    list.replaceChildren();
+    try {
+      const [keys,invoices,payments]=await Promise.all([dbGetAllKeysRaw('settings'),dbGetAll('invoices'),dbGetAll('payments')]);
+      const entries=await Promise.all(keys.filter(k=>String(k).startsWith(prefix)).map(k=>dbGet('settings',k)));
+      if (revision!==version) return;
+      const {groups,unattached}=WOWStatementCore.collectPayments(invoices,payments);
+      const rows=cashRows(entries.filter(Boolean),[...Array.from(groups.values()).flat(),...unattached],currency);
+      box.querySelector('output').textContent='الرصيد المسجّل  '+format(rows.reduce((sum,r)=>sum+r.units,0),currency);
+      for (const row of rows) {
+        const li=document.createElement('li');
+        li.textContent=[String(row.date).slice(0,10),labels[row.type],format(row.units,currency),row.note].filter(Boolean).join(' · ');
+        list.append(li);
+      }
+      if (!rows.length) list.textContent='لا توجد حركات مسجّلة في هذا الصندوق.';
+    } catch {
+      if (revision===version) box.querySelector('output').textContent='تعذّرت قراءة الرصيد. أعد فتح الصندوق.';
+    }
+  }
+  box.addEventListener('toggle',()=>{if(box.open) render();});
+  fields.currency.onchange=fields.type.onchange=render;
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    if (saving) return;
+    saving=true;
+    const button=form.querySelector('button');
+    button.disabled=true;
+    try {
+      const data=Object.fromEntries(new FormData(form));
+      const entry=makeEntry(data,wfNewRecordId(),new Date().toISOString());
+      await dbPut('settings',entry);
+      fields.amount.value=fields.received.value=fields.note.value='';
+      status.textContent='تم حفظ الحركة.';
+      await render();
+    } catch(error) { status.textContent=error.message || 'تعذّر حفظ الحركة.'; }
+    finally { saving=false; button.disabled=false; }
+  };
+}

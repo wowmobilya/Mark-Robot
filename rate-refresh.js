@@ -145,3 +145,7 @@
  new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:['lang','dir']});
  render();renderTrends();
 })(typeof window==='undefined'?globalThis:window);
+
+if (typeof document !== 'undefined' && document.getElementById('page-exchange')) {
+  import('./cashboxes.mjs').then(module => module.mount()).catch(console.error);
+}

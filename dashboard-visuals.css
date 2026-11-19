@@ -620,3 +620,12 @@
     justify-self: end;
   }
 }
+
+.cashboxes { margin: 12px auto; padding: 14px; width: min(100%, 48rem); box-sizing: border-box; }
+.cashboxes summary { cursor: pointer; font-weight: 700; }
+.cashboxes form { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,12rem),1fr)); gap: 12px; margin-block: 16px; align-items: end; }
+.cashboxes label { display: grid; gap: 4px; }
+.cashboxes [hidden] { display: none; }
+.cashboxes output { align-self: center; font-weight: 700; color: var(--brand-primary); }
+.cashboxes ol { max-height: 18rem; overflow: auto; padding-inline-start: 1.5rem; }
+.cashboxes li { padding-block: .4rem; overflow-wrap: anywhere; }
