@@ -23,6 +23,18 @@
       (anyDownloading && status.state !== 'downloading') ||
       (status.state === 'downloading' && !ownsDownload);
   }
+  function voiceStatusKey(status) {
+    const reasons = {
+      'integrity-failed': 'voiceIntegrity', 'download-failed': 'voiceDownloadFailed',
+      'storage-full': 'voiceStorageFull', 'storage-unavailable': 'voiceStorageUnavailable',
+      'browser-unsupported': 'voiceUnsupported', 'locale-unsupported': 'voiceLocaleUnavailable',
+      'download-busy': 'voiceDownloadBusy', 'pack-not-installed': 'voiceMissing', cancelled: 'voiceCancelled',
+    };
+    if (['error', 'unsupported'].includes(status.state) || status.reason === 'cancelled') {
+      return reasons[status.reason] || (status.state === 'unsupported' ? 'voiceUnsupported' : 'voiceError');
+    }
+    return {checking: 'voiceChecking', ready: 'voiceReady', downloading: 'voiceDownloading'}[status.state] || 'voiceMissing';
+  }
   function createPreferenceStore({getState, connect}) {
     let busy = false;
     return {
@@ -161,7 +173,7 @@
     };
   }
 
-  const core = {defaults, normalize, mergeSettings, packActionDisabled, createPreferenceStore, movement, createMotionTracker};
+  const core = {defaults, normalize, mergeSettings, packActionDisabled, voiceStatusKey, createPreferenceStore, movement, createMotionTracker};
   if (typeof module === 'object' && module.exports) module.exports = core;
   if (typeof document === 'undefined' || window.WFRobotSettings) return;
   const root = document.documentElement;
@@ -212,7 +224,17 @@
     voiceReady: ['جاهز للعمل دون اتصال', 'Ready offline', 'Çevrimdışı kullanıma hazır', 'Prête hors ligne', 'Готов к работе без сети'],
     voiceMissing: ['غير مثبت', 'Not installed', 'Yüklü değil', 'Non installée', 'Не установлен'],
     voiceDownloading: ['جارٍ التنزيل…', 'Downloading…', 'İndiriliyor…', 'Téléchargement…', 'Загрузка…'],
-    voiceError: ['تعذّر إكمال الحزمة. تحقق من الاتصال والمساحة المتاحة، ثم حاول مجددًا.', 'Could not complete the pack. Check your connection and free storage, then retry.', 'Paket tamamlanamadı. Bağlantıyı ve boş alanı kontrol edip yeniden deneyin.', 'Téléchargement incomplet. Vérifiez la connexion et l’espace libre, puis réessayez.', 'Не удалось загрузить пакет. Проверьте соединение и свободное место, затем повторите.'],
+    voiceError: ['تعذّر إكمال الحزمة. حاول مجددًا.', 'Could not complete the pack. Please retry.', 'Paket tamamlanamadı. Yeniden deneyin.', 'Impossible de terminer le téléchargement du pack. Réessayez.', 'Не удалось завершить загрузку пакета. Повторите попытку.'],
+    voiceIntegrity: ['لم يطابق أحد ملفات الحزمة النسخة المطلوبة. أعد التنزيل.', 'A pack file did not match the required version. Download again.', 'Bir paket dosyası gereken sürümle eşleşmedi. Yeniden indirin.', 'Un fichier ne correspond pas à la version attendue. Relancez le téléchargement.', 'Файл пакета не соответствует требуемой версии. Загрузите снова.'],
+    voiceDownloadFailed: ['تعذّر تنزيل أحد ملفات الحزمة. حاول مجددًا.', 'A pack file could not be downloaded. Please retry.', 'Paket dosyası indirilemedi. Yeniden deneyin.', 'Impossible de télécharger un fichier du pack. Réessayez.', 'Не удалось скачать файл пакета. Повторите попытку.'],
+    voiceStorageFull: ['المساحة المتاحة لا تكفي لحفظ الحزمة. وفّر مساحة أو احذف حزمة أخرى ثم حاول مجددًا.', 'There is not enough storage for the pack. Free space or remove another pack, then retry.', 'Paket için yeterli boş alan yok. Yer açın veya başka bir paketi kaldırıp yeniden deneyin.', 'Espace insuffisant pour le pack. Libérez de l’espace ou supprimez un autre pack, puis réessayez.', 'Недостаточно места для пакета. Освободите место или удалите другой пакет и повторите.'],
+    voiceStorageUnavailable: ['تعذّر الوصول إلى التخزين المحلي للصوت في هذا المتصفح.', 'Local voice storage is unavailable in this browser.', 'Bu tarayıcıda yerel ses depolamasına erişilemiyor.', 'Le stockage local des voix est indisponible dans ce navigateur.', 'Локальное хранилище голосов недоступно в этом браузере.'],
+    voiceLocaleUnavailable: ['لا توجد حزمة متاحة لهذه اللغة.', 'No pack is available for this language.', 'Bu dil için paket yok.', 'Aucun pack disponible pour cette langue.', 'Для этого языка нет доступного пакета.'],
+    voiceDownloadBusy: ['انتظر اكتمال التنزيل الجاري أو ألغِه أولًا.', 'Wait for the current download or cancel it first.', 'Mevcut indirmeyi bekleyin veya önce iptal edin.', 'Attendez la fin du téléchargement ou annulez-le d’abord.', 'Дождитесь текущей загрузки или сначала отмените её.'],
+    voiceCancelled: ['أُلغي التنزيل. يمكنك المحاولة مجددًا.', 'Download cancelled. You can retry.', 'İndirme iptal edildi. Yeniden deneyebilirsiniz.', 'Téléchargement annulé. Vous pouvez réessayer.', 'Загрузка отменена. Можно повторить попытку.'],
+    voicePhaseDownload: ['المرحلة: التنزيل', 'Stage: downloading', 'Aşama: indirme', 'Étape : téléchargement', 'Этап: загрузка'],
+    voicePhaseVerify: ['المرحلة: التحقق من الملف', 'Stage: file verification', 'Aşama: dosya doğrulaması', 'Étape : vérification du fichier', 'Этап: проверка файла'],
+    voicePhaseStore: ['المرحلة: الحفظ على الجهاز', 'Stage: saving on this device', 'Aşama: cihaza kaydetme', 'Étape : stockage sur l’appareil', 'Этап: сохранение на устройстве'],
     voiceUnsupported: ['هذا المتصفح لا يدعم الحزم المحلية. تبقى أصوات الجهاز المتاحة قابلة للاستخدام.', 'This browser cannot use local packs. Available system voices can still be used.', 'Bu tarayıcı yerel paketleri desteklemiyor. Cihazdaki mevcut sesler kullanılabilir.', 'Ce navigateur ne permet pas les packs locaux. Les voix disponibles sur l’appareil restent utilisables.', 'Браузер не поддерживает локальные пакеты. Доступные системные голоса по-прежнему работают.'],
     voiceSource: ['المصدر', 'Source', 'Kaynak', 'Source', 'Источник'],
     voiceLicense: ['الترخيص', 'License', 'Lisans', 'Licence', 'Лицензия'],
@@ -345,9 +367,22 @@
         });
       }
       const current = api.getStatus(pack.locale);
-      const statusKey = {checking: 'voiceChecking', ready: 'voiceReady', downloading: 'voiceDownloading', error: 'voiceError', unsupported: 'voiceUnsupported'}[current.state] || 'voiceMissing';
+      const statusKey = voiceStatusKey(current);
       const mb = Math.ceil((Number(pack.bytes || 0) + Number(pack.sharedBytes || 0)) / 1000000);
-      row.status.textContent = t(statusKey) + (!current.ready && current.state !== 'error' && current.state !== 'unsupported' && mb ? ` · ${mb} MB` : '');
+      const phaseKey = {download: 'voicePhaseDownload', verify: 'voicePhaseVerify', store: 'voicePhaseStore'}[current.phase];
+      row.status.textContent = t(statusKey) + (current.state === 'error' && phaseKey ? ` ${t(phaseKey)}.` : '') +
+        (!current.ready && current.state !== 'error' && current.state !== 'unsupported' && mb ? ` · ${mb} MB` : '');
+      const file = current.fileId || current.assetId || current.asset?.id || current.file?.id || (typeof current.file === 'string' ? current.file : '');
+      for (const element of [row.status, row.progress]) {
+        element.dataset.state = String(current.state || '');
+        element.dataset.reason = String(current.reason || '');
+        element.dataset.loaded = String(Number.isFinite(current.loaded) ? current.loaded : 0);
+        element.dataset.total = String(Number.isFinite(current.total) ? current.total : 0);
+        element.dataset.phase = String(current.phase || '');
+        element.dataset.stage = String(current.stage || '');
+        element.dataset.errorName = String(current.errorName || '');
+        element.dataset.file = String(file || '');
+      }
       row.action.textContent = t(current.state === 'downloading' ? 'voiceCancel' : current.ready ? 'voiceRemove' : 'voiceInstall');
       row.action.setAttribute('aria-label', `${row.action.textContent}: ${row.heading.textContent}`);
       row.action.disabled = packActionDisabled(current, anyDownloading, downloads.has(pack.locale));

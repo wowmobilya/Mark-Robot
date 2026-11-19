@@ -1,5 +1,5 @@
 importScripts('./install-identity.js?v=1');
-const CACHE_NAME = 'wow-furniture-v173-robot-reports';
+const CACHE_NAME = 'wow-furniture-v174-reliable-updates';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
   './context-nav.js?v=5',
@@ -44,18 +44,20 @@ const urlsToCache = [
   './install-identity.js?v=1',
   './app-identity.js?v=1',
   './app-identity.css?v=1',
-  './settings-unified.css?v=1',
+  './settings-unified.css?v=2',
   './ui-motion.css?v=1',
-  './annual-sales.js?v=1',
+  './annual-sales.js?v=2',
   './annual-sales.css?v=1',
-  './offline-voice.js?v=1',
-  './offline-voice-worker.js?v=1',
-  './robot-settings.js?v=1',
+  './offline-voice.js?v=2',
+  './offline-voice-worker.js?v=2',
+  './robot-settings.js?v=2',
   './robot-settings.css?v=1',
   './robot-report.js?v=1',
   './robot-report.css?v=1',
   './developer-profile.js?v=1',
   './developer-profile.css?v=1',
+  './app-updates.js?v=1',
+  './app-updates.css?v=1',
   './assets/infinity-logo.svg',
   './assets/infinity-logo.png',
   './app-icon-maskable-512.png?v=172',

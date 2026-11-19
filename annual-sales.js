@@ -120,7 +120,9 @@
     const through = report.asOf ? new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC', calendar: 'gregory' }).format(new Date(report.asOf + 'T12:00:00Z')) : L.future;
     dateLine.textContent = L.fullYear + ' · ' + (report.asOf ? L.through + ' ' : '') + through;
     function metric(key, symbol, tone, value, detail = '') {
-      const item = node('div', 'wf-annual-metric'), content = node('div'); content.append(node('dt', '', L[key]), node('dd', '', value)); if (detail) content.append(node('small', '', detail)); item.append(icon(symbol, tone), content); return item;
+      const item = node('div', 'wf-annual-metric'), content = node('div'), amount = node('dd', '', value);
+      if (key === 'active') { const ratio = node('bdi', '', value); ratio.dir = 'ltr'; amount.replaceChildren(ratio); }
+      content.append(node('dt', '', L[key]), amount); if (detail) content.append(node('small', '', detail)); item.append(icon(symbol, tone), content); return item;
     }
     metrics.replaceChildren(metric('net', 'sales', report.totalUSD < 0 ? 'negative' : 'sales', report.complete ? money.format(report.totalUSD) : '—', report.complete ? 'USD' : L.partial), metric('invoices', 'invoice', 'invoice', number.format(report.invoiceCount), report.creditNoteCount ? number.format(report.creditNoteCount) + ' ' + L.credits : ''), metric('active', 'calendar', 'calendar', number.format(report.activeMonths) + ' / ' + number.format(12)));
     const peak = Math.max(1, ...report.months.filter(month => month.complete && !month.future).map(month => Math.abs(month.totalUSD)));

@@ -1,6 +1,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {normalize, mergeSettings, packActionDisabled, createPreferenceStore, movement, createMotionTracker} = require('../robot-settings.js');
+const {normalize, mergeSettings, packActionDisabled, voiceStatusKey, createPreferenceStore, movement, createMotionTracker} = require('../robot-settings.js');
+
+test('voice failures use the actual adapter reason without guessing a cause', () => {
+  assert.equal(voiceStatusKey({state: 'error', reason: 'integrity-failed'}), 'voiceIntegrity');
+  assert.equal(voiceStatusKey({state: 'error', reason: 'download-failed'}), 'voiceDownloadFailed');
+  assert.equal(voiceStatusKey({state: 'error', reason: 'storage-full'}), 'voiceStorageFull');
+  assert.equal(voiceStatusKey({state: 'unsupported', reason: 'storage-unavailable'}), 'voiceStorageUnavailable');
+  assert.equal(voiceStatusKey({state: 'unsupported', reason: 'browser-unsupported'}), 'voiceUnsupported');
+  assert.equal(voiceStatusKey({state: 'not-installed', reason: 'cancelled'}), 'voiceCancelled');
+  assert.equal(voiceStatusKey({state: 'error', reason: 'unknown-error'}), 'voiceError');
+  assert.equal(voiceStatusKey({state: 'ready', reason: ''}), 'voiceReady');
+});
 
 test('one pack download disables other actions while leaving its own Cancel available', () => {
   assert.equal(packActionDisabled({state: 'not-installed'}, true, false), true);

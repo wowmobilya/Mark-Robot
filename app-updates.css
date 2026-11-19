@@ -1,0 +1,49 @@
+@media screen {
+  #wfAppUpdate {
+    position: fixed;
+    inset-block-start: var(--wf-update-top, 76px);
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    z-index: 90000;
+    box-sizing: border-box;
+    inline-size: min(32rem, calc(100vw - 24px));
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--brand-primary, #153847) 28%, var(--border, #d6e0e5));
+    border-radius: 16px;
+    background: var(--card, #fff);
+    color: var(--text, #17303d);
+    box-shadow: 0 8px 26px -14px rgb(12 32 42 / 28%);
+    font: inherit;
+  }
+  #wfAppUpdate[hidden] { display: none !important; }
+  #wfAppUpdate .wf-app-update-copy { min-inline-size: 0; flex: 1; }
+  #wfAppUpdate strong { display: block; font-size: 14px; line-height: 1.5; }
+  #wfAppUpdate p { margin: 3px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted, #566b77); }
+  #wfAppUpdate .wf-app-update-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  #wfAppUpdate button, #wfCheckAppUpdates {
+    min-block-size: 44px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  #wfAppUpdate .wf-app-update-refresh { border: 1px solid transparent; background: var(--brand-primary, #153847); color: #fff; }
+  #wfAppUpdate .wf-app-update-later { border: 1px solid var(--border, #d6e0e5); background: transparent; color: inherit; }
+  #wfAppUpdate button:disabled, #wfCheckAppUpdates:disabled { opacity: .55; cursor: default; }
+  #wfAppUpdate button:focus-visible, #wfCheckAppUpdates:focus-visible { outline: 2px solid var(--brand-primary, #153847); outline-offset: 3px; }
+  #wfCheckAppUpdates { display: block; margin: 12px auto 0; border: 1px solid var(--border, #d6e0e5); background: var(--input, #f4f7f9); color: var(--text, #17303d); max-inline-size: 100%; }
+  #wfAppRelease { font-variant-numeric: tabular-nums; }
+  @media (max-width: 480px) {
+    #wfAppUpdate { flex-wrap: wrap; gap: 8px; padding: 12px; }
+    #wfAppUpdate .wf-app-update-copy { flex-basis: 100%; }
+    #wfAppUpdate .wf-app-update-actions { inline-size: 100%; justify-content: flex-end; }
+  }
+  html[dir="rtl"] #wfAppUpdate { transform: translateX(50%); }
+}
+@media print { #wfAppUpdate, #wfCheckAppUpdates { display: none !important; } }

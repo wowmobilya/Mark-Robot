@@ -61,9 +61,11 @@
     const map=new Map(voices.map(voice=>[voice.locale,voice])),states=new Map();let active=null;
     const find=locale=>map.get(localeKey(locale));
     const marker=voice=>new URL('/__infinity_voice__/'+voice.id+'.json',origin).href;
-    const initial=voice=>({locale:voice.locale,id:voice.id,state:supported?'checking':'unsupported',installed:false,ready:false,available:false,loaded:0,total:voice.bytes+voice.sharedBytes,progress:0,reason:supported?'':'browser-unsupported'});
+    const diagnosticToken=(value,fallback='')=>typeof value==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(value)?value:fallback;
+    const clearDiagnostics={stage:'',file:'',errorName:''};
+    const initial=voice=>({locale:voice.locale,id:voice.id,state:supported?'checking':'unsupported',installed:false,ready:false,available:false,loaded:0,total:voice.bytes+voice.sharedBytes,progress:0,reason:supported?'':'browser-unsupported',...clearDiagnostics});
     for(const voice of voices)states.set(voice.locale,initial(voice));
-    const getStatus=locale=>({...states.get(localeKey(locale))||{locale:localeKey(locale),id:'',state:'unsupported',installed:false,ready:false,available:false,loaded:0,total:0,progress:0,reason:'locale-unsupported'}});
+    const getStatus=locale=>({...states.get(localeKey(locale))||{locale:localeKey(locale),id:'',state:'unsupported',installed:false,ready:false,available:false,loaded:0,total:0,progress:0,reason:'locale-unsupported',...clearDiagnostics}});
     function set(voice,patch){const value={...getStatus(voice.locale),...patch};states.set(voice.locale,value);onChange({...value});return {...value};}
     async function refresh(locale){
       if(!supported)return locale?getStatus(locale):voices.map(voice=>getStatus(voice.locale));
@@ -74,52 +76,66 @@
           if(active?.locale===voice.locale)continue;
           let marked=false;try{const record=await cache.match(marker(voice));const data=record?await record.json():null;marked=data?.version===VERSION&&data?.model===voice.files[0].sha256;}catch(_){}
           const ready=marked&&runtimeReady&&(await Promise.all(voice.files.map(asset=>validAsset(cache,asset)))).every(Boolean);
-          set(voice,{state:ready?'ready':'not-installed',installed:ready,ready,available:ready,reason:'',loaded:ready?voice.bytes+voice.sharedBytes:0,total:voice.bytes+voice.sharedBytes,progress:ready?1:0});
+          set(voice,{state:ready?'ready':'not-installed',installed:ready,ready,available:ready,reason:'',loaded:ready?voice.bytes+voice.sharedBytes:0,total:voice.bytes+voice.sharedBytes,progress:ready?1:0,...clearDiagnostics});
         }
-      }catch(_){for(const voice of selected)set(voice,{state:'unsupported',ready:false,installed:false,available:false,reason:'storage-unavailable'});}
+      }catch(_){for(const voice of selected)set(voice,{state:'unsupported',ready:false,installed:false,available:false,reason:'storage-unavailable',...clearDiagnostics});}
       return locale?getStatus(locale):voices.map(voice=>getStatus(voice.locale));
     }
     async function download(locale,options={}){
       const voice=find(locale);if(!voice)throw error('locale-unsupported');if(!supported)throw error('browser-unsupported');if(active)throw error('download-busy');checkAbort(options.signal);
       const controller=new AbortController(),relay=()=>controller.abort();options.signal?.addEventListener('abort',relay,{once:true});active={locale:voice.locale,controller};
-      set(voice,{state:'downloading',ready:false,installed:false,available:false,reason:'',loaded:0,progress:0});
+      let diagnostic={stage:'open-cache',file:''};
+      const at=(stage,asset)=>{
+        diagnostic={stage,file:diagnosticToken(asset?.id)};
+        set(voice,{...diagnostic,errorName:'',phase:['verify','store','final-check','marker'].includes(stage)?'verify':'download'});
+      };
+      set(voice,{state:'downloading',ready:false,installed:false,available:false,reason:'',loaded:0,progress:0,phase:'download',...diagnostic,errorName:''});
       try{
         const cache=await caches.open(CACHE),assets=[...shared,...voice.files],missing=[];
-        for(const asset of assets)if(!await validAsset(cache,asset))missing.push(asset);
+        for(const asset of assets){at('check-cache',asset);if(!await validAsset(cache,asset))missing.push(asset);}
         const total=missing.reduce((sum,asset)=>sum+asset.bytes,0);let completed=0;
+        at('check-storage');
         if(estimate){let storage;try{storage=await estimate();}catch(_){}if(Number.isFinite(storage?.quota)&&Number.isFinite(storage?.usage)&&storage.quota-storage.usage<total*1.15)throw error('storage-full');}
         const report=(loaded,phase='download')=>{const value=set(voice,{loaded,total,progress:total?Math.min(1,loaded/total):1,phase});onProgress(value);options.onProgress?.(value);};
         report(0);
         for(const asset of missing){
+          at('fetch',asset);
           checkAbort(controller.signal);
           const response=await fetch(asset.url,{signal:controller.signal,credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'});
           if(!response.ok||response.type==='opaque')throw error('download-failed');
+          at('stream',asset);
           const chunks=[];let loaded=0;
           if(response.body?.getReader){
             const reader=response.body.getReader();
             try{while(true){checkAbort(controller.signal);const result=await reader.read();if(result.done)break;loaded+=result.value.byteLength;if(loaded>asset.bytes)throw error('integrity-failed');chunks.push(result.value);report(completed+loaded);}}
             catch(problem){try{await reader.cancel();}catch(_){}throw problem;}
           }else{const bytes=new Uint8Array(await response.arrayBuffer());loaded=bytes.byteLength;chunks.push(bytes);report(completed+loaded);}
-          checkAbort(controller.signal);if(loaded!==asset.bytes)throw error('integrity-failed');report(completed+loaded,'verify');
+          checkAbort(controller.signal);if(loaded!==asset.bytes)throw error('integrity-failed');at('verify',asset);report(completed+loaded,'verify');
           const blob=new Blob(chunks,{type:asset.type});const bytes=await blob.arrayBuffer();
           if(hex(await digest(bytes))!==asset.sha256)throw error('integrity-failed');checkAbort(controller.signal);
+          at('store',asset);
           await cache.put(asset.url,new Response(blob,{headers:{'Content-Type':asset.type,'Content-Length':String(asset.bytes),'X-WF-SHA256':asset.sha256}}));
           completed+=loaded;
         }
         checkAbort(controller.signal);
-        if(!(await Promise.all(assets.map(asset=>validAsset(cache,asset)))).every(Boolean))throw error('integrity-failed');
+        for(const asset of assets){at('final-check',asset);if(!await validAsset(cache,asset))throw error('integrity-failed');}
+        at('marker');
         await cache.put(marker(voice),new Response(JSON.stringify({version:VERSION,model:voice.files[0].sha256}),{headers:{'Content-Type':'application/json'}}));
-        set(voice,{state:'ready',installed:true,ready:true,available:true,loaded:total,total,progress:1,phase:'ready',reason:''});return getStatus(locale);
+        set(voice,{state:'ready',installed:true,ready:true,available:true,loaded:total,total,progress:1,phase:'ready',reason:'',stage:'ready',file:'',errorName:''});return getStatus(locale);
       }catch(problem){
-        const reason=problem?.name==='AbortError'?'cancelled':problem?.name==='QuotaExceededError'?'storage-full':problem.code||'download-failed';
-        set(voice,{state:reason==='cancelled'?'not-installed':'error',installed:false,ready:false,available:false,reason});throw Object.assign(problem,{code:reason});
+        const errorName=diagnosticToken(problem?.name,'Error');
+        const reason=errorName==='AbortError'?'cancelled':errorName==='QuotaExceededError'?'storage-full':['cancelled','storage-full','integrity-failed','download-failed','storage-unavailable'].includes(problem?.code)?problem.code:'download-failed';
+        set(voice,{state:reason==='cancelled'?'not-installed':'error',installed:false,ready:false,available:false,reason,...diagnostic,errorName});
+        // DOMException.code is read-only. Wrap rather than mutate the browser's
+        // exception; status exposes only bounded identifiers, never its message.
+        const failure=error(reason);Object.defineProperty(failure,'cause',{value:problem,configurable:true});if(reason==='cancelled')failure.name='AbortError';throw failure;
       }finally{options.signal?.removeEventListener('abort',relay);active=null;}
     }
     async function remove(locale){
       const voice=find(locale);if(!voice)throw error('locale-unsupported');if(active)throw error('download-busy');
       const cache=await caches.open(CACHE);await cache.delete(marker(voice));await Promise.all(voice.files.map(asset=>cache.delete(asset.url)));
       // Runtime files are shared by other packs and remain useful after removal.
-      return set(voice,{state:'not-installed',installed:false,ready:false,available:false,loaded:0,total:voice.bytes+voice.sharedBytes,progress:0,reason:''});
+      return set(voice,{state:'not-installed',installed:false,ready:false,available:false,loaded:0,total:voice.bytes+voice.sharedBytes,progress:0,reason:'',...clearDiagnostics});
     }
     return {list:()=>voices.map(({files,...voice})=>({...voice})),getStatus,refresh,download,remove,cancelDownload:locale=>{if(active?.locale===localeKey(locale))active.controller.abort();}};
   }
@@ -137,7 +153,7 @@
   function workerRequest(locale,text,signal){
     if(job)return Promise.reject(error('speech-busy'));checkAbort(signal);
     if(!worker){
-      worker=new Worker(new URL('offline-voice-worker.js?v=1',document.baseURI));
+      worker=new Worker(new URL('offline-voice-worker.js?v=2',document.baseURI));
       worker.onmessage=event=>{if(!job||event.data?.id!==job.id)return;const task=job;job=null;clearTimeout(task.timeout);task.cleanup();if(event.data.error){worker?.terminate();worker=null;task.reject(error(event.data.error));}else task.resolve(event.data.blob);};
       worker.onerror=()=>{if(job){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();task.reject(error('engine-failed'));}worker?.terminate();worker=null;};
     }

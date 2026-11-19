@@ -2,9 +2,9 @@ const test=require('node:test'),assert=require('node:assert/strict'),{webcrypto}
 const {CACHE,runtime,catalog,localeKey,splitText,pcmToWav,createManager}=require('../offline-voice.js');
 const origin='https://example.test';
 function cacheFixture(){
- const entries=new Map();let failure='';
- const cache={async match(url){return entries.get(String(url))?.clone();},async put(url,response){if(failure&&String(url).includes(failure))throw Object.assign(new Error('quota'),{name:'QuotaExceededError'});entries.set(String(url),response.clone());},async delete(url){return entries.delete(String(url));}};
- return {entries,cache,caches:{open:async name=>{assert.equal(name,CACHE);return cache;}},set failure(value){failure=value;}};
+ const entries=new Map();let failure='',failureException=null;
+ const cache={async match(url){return entries.get(String(url))?.clone();},async put(url,response){if(failure&&String(url).includes(failure))throw failureException||Object.assign(new Error('quota'),{name:'QuotaExceededError'});entries.set(String(url),response.clone());},async delete(url){return entries.delete(String(url));}};
+ return {entries,cache,caches:{open:async name=>{assert.equal(name,CACHE);return cache;}},set failure(value){failure=value;},set failureException(value){failureException=value;}};
 }
 async function fixture(options={}){
  const cache=cacheFixture(),payload=new TextEncoder().encode('verified local asset'),sha256=Buffer.from(await webcrypto.subtle.digest('SHA-256',payload)).toString('hex');
@@ -43,6 +43,44 @@ test('corrupt or oversized files never become executable or mark a pack ready',a
 test('storage failure and insufficient quota remain honest errors without touching unrelated data',async()=>{
  const a=await fixture();a.cache.failure='ar-config';await assert.rejects(a.manager.download('ar'));assert.equal(a.manager.getStatus('ar').reason,'storage-full');assert.equal(a.manager.getStatus('ar').ready,false);assert(!a.cache.entries.has(origin+'/__infinity_voice__/ar-voice.json'));
  const low=await fixture({estimate:async()=>({quota:1,usage:0})});await assert.rejects(low.manager.download('ar'),/storage-full/);assert.equal(low.requests.length,0);
+});
+test('native CacheStorage quota exceptions retain their cause and identify the stored file',async()=>{
+ const original=new DOMException('Private browser storage detail','QuotaExceededError'),nativeCode=original.code;
+ const a=await fixture();a.cache.failure='ar-model';a.cache.failureException=original;
+ await assert.rejects(a.manager.download('ar'),problem=>problem!==original&&problem.code==='storage-full'&&problem.cause===original);
+ const status=a.manager.getStatus('ar');
+ assert.equal(original.code,nativeCode);assert.equal(status.reason,'storage-full');assert.equal(status.errorName,'QuotaExceededError');assert.equal(status.stage,'store');assert.equal(status.file,'ar-model');assert.equal(status.progress,2/3);assert.equal(status.ready,false);
+ assert(!a.cache.entries.has(a.voices[0].files[0].url));assert(!a.cache.entries.has(origin+'/__infinity_voice__/ar-voice.json'));assert(!JSON.stringify(status).includes(original.message));
+ a.cache.failure='';await a.manager.download('ar');assert.equal(a.manager.getStatus('ar').ready,true);assert.equal(a.manager.getStatus('ar').errorName,'');assert.equal(a.manager.getStatus('ar').file,'');assert.equal(a.manager.getStatus('ar').stage,'ready');
+ assert.equal(a.requests.filter(request=>request.url.endsWith('/runtime')).length,1);
+});
+test('native AbortError preserves cancellation and the fetch stage without mutating its read-only code',async()=>{
+ const original=new DOMException('Aborted by browser','AbortError'),nativeCode=original.code;
+ const a=await fixture({fetch:async(url,_init,payload)=>{if(url.endsWith('/ar-config'))throw original;return new Response(payload);}});
+ await assert.rejects(a.manager.download('ar'),problem=>problem!==original&&problem.code==='cancelled'&&problem.name==='AbortError'&&problem.cause===original);
+ const status=a.manager.getStatus('ar');assert.equal(original.code,nativeCode);assert.equal(status.state,'not-installed');assert.equal(status.errorName,'AbortError');assert.equal(status.reason,'cancelled');assert.equal(status.stage,'fetch');assert.equal(status.file,'ar-config');assert.equal(status.progress,2/3);assert.equal(status.ready,false);
+});
+test('native NetworkError numeric code becomes a localized reason and retains exact failure context',async()=>{
+ const original=new DOMException('Network detail must not enter status','NetworkError'),nativeCode=original.code;
+ const a=await fixture({fetch:async(url,_init,payload)=>{if(url.endsWith('/ar-config'))throw original;return new Response(payload);}});
+ await assert.rejects(a.manager.download('ar'),problem=>problem.code==='download-failed'&&problem.cause===original);
+ const status=a.manager.getStatus('ar');assert.equal(original.code,nativeCode);assert.equal(typeof status.reason,'string');assert.equal(status.reason,'download-failed');assert.equal(status.errorName,'NetworkError');assert.equal(status.stage,'fetch');assert.equal(status.file,'ar-config');assert.equal(status.progress,2/3);assert.equal(status.state,'error');assert(!JSON.stringify(status).includes(original.message));
+});
+test('diagnostics distinguish same-length corrupt bytes from a final marker storage failure',async()=>{
+ const corrupt=await fixture({fetch:async(url,_init,payload)=>{const bytes=payload.slice();if(url.endsWith('/ar-model'))bytes[0]^=1;return new Response(bytes);}});
+ await assert.rejects(corrupt.manager.download('ar'),problem=>problem.code==='integrity-failed');
+ assert.equal(corrupt.manager.getStatus('ar').stage,'verify');assert.equal(corrupt.manager.getStatus('ar').file,'ar-model');assert.equal(corrupt.manager.getStatus('ar').progress,2/3);assert(!corrupt.cache.entries.has(corrupt.voices[0].files[0].url));
+ const marker=await fixture(),original=new DOMException('Storage full','QuotaExceededError');marker.cache.failure='__infinity_voice__';marker.cache.failureException=original;
+ await assert.rejects(marker.manager.download('ar'),problem=>problem.code==='storage-full'&&problem.cause===original);
+ const status=marker.manager.getStatus('ar');assert.equal(status.stage,'marker');assert.equal(status.file,'');assert.equal(status.progress,1);assert.equal(status.ready,false);assert.equal(status.errorName,'QuotaExceededError');
+});
+test('status diagnostics never copy arbitrary exception messages, names, or codes',async()=>{
+ const original=Object.assign(new Error('sensitive payload'),{name:'<img src=private>',code:'private-value'});
+ const a=await fixture({fetch:async()=>{throw original;}});
+ await assert.rejects(a.manager.download('ar'),problem=>problem.code==='download-failed'&&problem.cause===original);
+ const status=a.manager.getStatus('ar');assert.equal(status.errorName,'Error');assert.equal(status.stage,'fetch');assert.equal(status.file,'runtime');assert.equal(status.reason,'download-failed');
+ for(const value of [original.message,original.name,original.code])assert(!JSON.stringify(status).includes(value));
+ await a.manager.refresh('ar');assert.equal(a.manager.getStatus('ar').errorName,'');assert.equal(a.manager.getStatus('ar').file,'');assert.equal(a.manager.getStatus('ar').stage,'');
 });
 test('cancelling a download cannot report a complete installation',async()=>{
  const controller=new AbortController();const a=await fixture({fetch:async(_url,_options,payload)=>{controller.abort();return new Response(payload);}});

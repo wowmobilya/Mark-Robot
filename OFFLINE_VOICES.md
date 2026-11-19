@@ -19,8 +19,8 @@ again; the UI checks local availability instead of trusting a saved preference.
 
 ## Browser integration
 
-Load `offline-voice.js?v=1` before the robot script. Precache this small script
-and `offline-voice-worker.js?v=1` in the existing service worker. Do not precache
+Load `offline-voice.js?v=2` before the robot script. Precache this small script
+and `offline-voice-worker.js?v=2` in the existing service worker. Do not precache
 voice models or runtime binaries during page load.
 
 The worker obtains runtime scripts, WASM, data, and model bytes directly from

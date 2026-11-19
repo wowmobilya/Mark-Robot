@@ -1,7 +1,7 @@
 /* Piper/ONNX inference worker. Runtime and models are explicitly downloaded and
    SHA-256 verified by offline-voice.js. This worker has no network fallback. */
 'use strict';
-importScripts('./offline-voice.js?v=1');
+importScripts('./offline-voice.js?v=2');
 const core=self.WFOfflineVoiceCore;
 let runtimeReady=null,session=null,voiceKey='',config=null,phonemizeFactory=null,piperBinary=null,piperData=null;
 const objectURLs=[];

@@ -16,4 +16,27 @@
  #page-settings .wf-settings-group-label {min-width:0;text-align:center;}
  html body #page-settings .settings-group-title:first-child {margin-block-start:0;}
  html body #page-settings .wf-settings-card-description {line-height:1.45;}
+
+ /* These two headings wrap their icon differently from the other section cards. */
+ html body #mainContent #page-settings #wfLanguageTab,
+ html body #mainContent #page-settings #wfLanguageTab > [data-wf-ui] {
+   display:inline-flex;align-items:center;gap:8px;min-inline-size:0;
+ }
+ html body #mainContent #page-settings #wfLanguageTab {flex:1 1 auto;}
+ html body #mainContent #page-settings #wfLanguageTab .wf-ui-icon {
+   inline-size:26px!important;block-size:26px!important;flex:0 0 26px!important;
+   color:var(--brand-primary)!important;
+ }
+ html body #mainContent #page-settings #wf-settings-tab-app-identity {align-items:center;}
+ html body #mainContent #page-settings #wf-settings-tab-app-identity > .wf-app-identity-mark {
+   display:grid;place-items:center;inline-size:26px;block-size:26px;flex:0 0 26px;
+   color:var(--brand-primary);font-size:0;line-height:1;
+ }
+ html body #mainContent #page-settings #wf-settings-tab-app-identity > .wf-app-identity-mark::before {
+   content:'';inline-size:19px;block-size:19px;background:currentColor;
+   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 16c5 0 7-8 12-8a4 4 0 0 1 0 8c-5 0-7-8-12-8a4 4 0 1 0 0 8Z'/%3E%3C/svg%3E") center/contain no-repeat;
+ }
+ html body #mainContent #page-settings #wf-settings-tab-app-identity > .wf-app-identity-mark + span {
+   flex:1 1 0;min-inline-size:0;
+ }
 }
