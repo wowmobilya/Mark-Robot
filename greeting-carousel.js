@@ -34,6 +34,13 @@
     fr: {card:'Carte intelligente',pages:'Pages de la carte',slide:'Page',open:'Afficher',names:['Accueil','Conseil du jour','Météo','Logo de l’entreprise','Robot WOW'],hint:'Choisissez une page avec l’indicateur latéral. Utilisez les flèches ou appuyez sur une zone vide pour passer à la page suivante.'},
     ru: {card:'Умная карточка',pages:'Страницы карточки',slide:'Слайд',open:'Показать',names:['Приветствие','Совет дня','Погода','Логотип компании','Робот WOW'],hint:'Выберите страницу боковым индикатором. Используйте стрелки или нажмите на свободную область для перехода дальше.'}
   };
+  const playbackWords = {
+    ar:['تشغيل التنقل التلقائي','إيقاف التنقل التلقائي'],
+    tr:['Otomatik geçişi başlat','Otomatik geçişi duraklat'],
+    en:['Play automatic switching','Pause automatic switching'],
+    fr:['Démarrer le défilement automatique','Mettre en pause le défilement automatique'],
+    ru:['Включить автоматическое переключение','Приостановить автоматическое переключение']
+  };
   const faceNames = ['greetingCard','tipCardStandalone','wfGreetingWeather','wfGreetingLogo','wfGreetingRobot'];
   const interactive = 'button,a,input,select,textarea,summary,[role="button"],[role="link"],[contenteditable="true"]';
   const pager = document.createElement('nav');
@@ -59,18 +66,48 @@
     if (labelIds[panel.id]) panel.setAttribute('aria-labelledby', labelIds[panel.id]);
     return button;
   });
+  const playback = document.createElement('button');
+  playback.type = 'button';
+  playback.className = 'wf-smart-playback';
+  playback.innerHTML = '<svg class="wf-smart-play-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 10 7-10 7Z"/></svg><svg class="wf-smart-pause-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14M16 5v14"/></svg>';
+  track.id ||= 'wfSmartCardFaces';
+  playback.setAttribute('aria-controls', track.id);
+  pager.append(playback);
   card.querySelectorAll('.greeting-msg,.tip-card-text').forEach(text => { text.tabIndex = 0; });
   card.append(pager, hint);
   const endpoint = 'https://api.open-meteo.com/v1/forecast?latitude=40.08&longitude=29.51&timezone=Europe%2FIstanbul&forecast_days=7&current=temperature_2m,weather_code,is_day&daily=rain_sum,showers_sum,weather_code';
   let timer, animation, forecast, fetched = 0, loading = false, failed = false;
-  let face = initialFace, manual = false, robotSpeaking = false;
+  const autoplayKey = 'wf.smartCard.autoplay';
+  let savedAutoplay = null;
+  try { savedAutoplay = localStorage.getItem(autoplayKey); } catch (_) {}
+  let autoplay = savedAutoplay !== 'false';
+  let motionOptIn = savedAutoplay === 'true';
+  let face = initialFace, robotSpeaking = false, interacting = false;
   let pendingFace = null, destination = null, transition = 0;
+
+  function autoplayEnabled() {
+    return autoplay && (motionOptIn || !(reduced.matches || document.documentElement.dataset.wfMotion === 'reduced'));
+  }
+
+  function setAutoplay(enabled) {
+    autoplay = enabled;
+    if (enabled) motionOptIn = true;
+    try { localStorage.setItem(autoplayKey, String(enabled)); } catch (_) {}
+    clearTimeout(timer);
+    if (!enabled) { cancelFlip(); showFace(face); }
+    syncPager();
+    schedule();
+  }
 
   function syncPager() {
     const locale = document.documentElement.lang || 'ar';
     const text = carouselWords[locale] || carouselWords.en;
     const number = new Intl.NumberFormat(locale);
     pager.setAttribute('aria-label', text.pages);
+    const action = (playbackWords[locale] || playbackWords.en)[autoplayEnabled() ? 1 : 0];
+    playback.setAttribute('aria-label', action);
+    playback.title = action;
+    playback.dataset.autoplay = String(autoplayEnabled());
     hint.textContent = text.hint;
     card.setAttribute('aria-label', text.card);
     faces.forEach((panel, index) => {
@@ -206,8 +243,7 @@
 
   function chooseFace(index, focusPager = false) {
     const next = (index + faces.length) % faces.length;
-    manual = true;
-    clearTimeout(timer);
+    setAutoplay(false);
     if (focusPager) pageButtons[next].focus({preventScroll:true});
     flip(next);
   }
@@ -222,13 +258,21 @@
 
   function schedule() {
     clearTimeout(timer);
-    if (manual || document.hidden || !dashboard.classList.contains('active') || animation || robotSpeaking || robot?.dataset.speaking === 'true' ||
-        reduced.matches || document.documentElement.dataset.wfMotion === 'reduced' ||
-        card.matches(':focus-within, :hover')) return;
+    if (!autoplayEnabled() || interacting || document.hidden || !dashboard.classList.contains('active') || animation || robotSpeaking || robot?.dataset.speaking === 'true' ||
+        (card.matches(':focus-within') && document.activeElement !== playback) ||
+        (card.matches(':hover') && !playback.matches(':hover'))) return;
     const duration = {greetingCard:8000,tipCardStandalone:14000,wfGreetingWeather:14000,wfGreetingLogo:8000,wfGreetingRobot:14000};
     timer = setTimeout(() => flip(), duration[faces[face].id] || 14000);
   }
 
+  playback.addEventListener('click', event => {
+    event.stopPropagation();
+    setAutoplay(!autoplayEnabled());
+  });
+  card.addEventListener('pointerdown', () => { interacting = true; clearTimeout(timer); });
+  for (const name of ['pointerup', 'pointercancel']) document.addEventListener(name, () => {
+    if (interacting) { interacting = false; schedule(); }
+  });
   card.addEventListener('click', event => {
     const selection = window.getSelection();
     if (event.target.closest(interactive) || (selection && !selection.isCollapsed)) return;
@@ -255,6 +299,7 @@
   card.addEventListener('focusout', () => queueMicrotask(schedule));
   card.addEventListener('wf-robot-speaking', event => {
     robotSpeaking = Boolean(event.detail?.active);
+    if (robotSpeaking && animation) { cancelFlip(); showFace(face); }
     schedule();
   });
   function syncMotion() {
@@ -263,16 +308,17 @@
       cancelFlip();
       showFace(next);
     }
+    syncPager();
     schedule();
   }
   reduced.addEventListener('change', syncMotion);
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) cancelFlip();
+    if (document.hidden) { interacting = false; cancelFlip(); }
     schedule();
   });
   new MutationObserver(() => {
     if (!dashboard.classList.contains('active')) {
-      manual = false;
+      interacting = false;
       cancelFlip();
       showFace(initialFace);
     }
@@ -325,8 +371,8 @@
   close.textContent='×';
   close.onclick=()=>closeMenu(true);
   trigger.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h7m5 0h4M4 17h2m5 0h9"/><circle cx="13.5" cy="7" r="2.5"/><circle cx="8.5" cy="17" r="2.5"/></svg>';
-  // A full capsule outline keeps both rounded ends visible at the screen edge.
-  trigger.insertAdjacentHTML('afterbegin','<svg class="wf-dock-shape" viewBox="0 0 18 86" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect x=".75" y=".75" width="16.5" height="84.5" rx="8.25" stroke-width="1.5"/></svg>');
+  // The screen-facing edge is straight; the inward-facing corners are rounded.
+  trigger.insertAdjacentHTML('afterbegin','<svg class="wf-dock-shape" viewBox="0 0 18 86" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M.75 .75H7.25A10 10 0 0 1 17.25 10.75V75.25A10 10 0 0 1 7.25 85.25H.75Z" stroke-width="1.5" stroke-linejoin="round"/></svg>');
   toolbar.append(heading,move,close);
   panel.append(toolbar,design);
   menu.append(trigger,panel);

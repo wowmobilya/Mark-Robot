@@ -9,6 +9,7 @@
  exchange.after(page);
  const link=document.createElement('button');
  link.type='button';link.className='nav-item';
+ link.dataset.page='cashboxes';
  link.innerHTML='<span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M16 11h5v4h-5zM5 5V3h12"/></svg></span><span>صناديق العملات</span>';
  link.onclick=()=>showPage('cashboxes');
  group.append(link);
@@ -59,7 +60,13 @@
   sidebar.inert=compact.matches && !open;
   const handle=document.getElementById('wfSidebarClose');
   if(handle)handle.hidden=!open;
+  const current=document.querySelector('.page.active')?.id.slice(5);
+  const selected=({'add-company':'select-client-type','create-invoice':'select-invoice-type','payment-management':'invoices'})[current]||current;
   sidebar.querySelectorAll('.nav-item').forEach(button=>{
+   const handler=button.getAttribute('onclick')||'';
+   const destination=button.dataset.page||handler.match(/showPage\(\s*['"]([^'"]+)['"]/)?.[1]||(/openSettingsPage\(/.test(handler)?'settings':'');
+   if(destination)button.dataset.page=destination;
+   button.classList.toggle('active',Boolean(destination)&&destination===selected);
    const caption=button.children[1]?.textContent.trim();
    if(caption){button.setAttribute('aria-label',caption);button.title=caption;}
    if(button.classList.contains('active'))button.setAttribute('aria-current','page');
@@ -178,7 +185,7 @@
     // Measure full translated rows with the real drawer width and current font.
     empty.hidden = matchingItems.length !== 0;
     for (const item of items) item.hidden = !matchingItems.includes(item);
-    for (const group of groups) group.hidden = !matchingItems.some(item => item.parentElement === group);
+    for (const group of groups) group.hidden = !matchingItems.some(item => item.closest('.wf-nav-group') === group);
     pager.hidden = true;
     nav.classList.remove('wf-nav-paged');
     const partitions = [[]];
@@ -206,7 +213,7 @@
     activePage = Math.max(0, Math.min(activePage, pages - 1));
     const visible = partitions[activePage];
     for (const item of items) item.hidden = !visible.includes(item);
-    for (const group of groups) group.hidden = !visible.some(item => item.parentElement === group);
+    for (const group of groups) group.hidden = !visible.some(item => item.closest('.wf-nav-group') === group);
     pager.hidden = pages === 1;
     previous.disabled = activePage === 0;
     next.disabled = activePage + 1 === pages;
@@ -261,9 +268,15 @@
     submenu.className='wf-context-actions';
     submenu.id='actions-'+section;
     submenu.hidden=true;
-    parent.after(submenu);
-    parent.setAttribute('aria-controls',submenu.id);
-    parent.setAttribute('aria-expanded','false');
+    const row=document.createElement('div');
+    row.className='wf-destination-row';
+    const expander=document.createElement('button');
+    expander.type='button';expander.className='wf-destination-toggle';
+    expander.setAttribute('aria-controls',submenu.id);
+    expander.setAttribute('aria-expanded','false');
+    expander.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7 10 5 5 5-5"/></svg>';
+    parent.before(row);row.append(parent,expander);row.after(submenu);
+    parent.removeAttribute('aria-controls');parent.removeAttribute('aria-expanded');
     for(const key of [section,...actions]){
       const source=find(key);
       if(!source)continue;
@@ -274,28 +287,30 @@
       button.onclick=()=>source.onclick.call(source);
       submenu.append(button);
     }
-    submenus.push({parent,submenu});
-    parent.addEventListener('click',event=>{
-      event.stopImmediatePropagation();
+    submenus.push({parent,submenu,row,expander});
+    expander.addEventListener('click',()=>{
       const open=submenu.hidden||isRail();
       if(isRail())window.wfToggleDesktopSidebar();
-      expanded=parent.parentElement;
+      expanded=parent.closest('.wf-nav-group');
       layout();
       for(const entry of submenus){
         const show=open&&entry.parent===parent;
         entry.submenu.hidden=!show;
-        entry.parent.setAttribute('aria-expanded',String(show));
+        entry.expander.setAttribute('aria-expanded',String(show));
       }
-    },true);
+    });
   }
   function layout(){
     drawer.style.setProperty('--drawer-viewport',(window.visualViewport?.height||innerHeight)+'px');
     const rail=matchMedia('(min-width:1025px)').matches&&root.classList.contains('wf-sidebar-collapsed');
     drawer.classList.toggle('wf-icon-rail',rail);
-    submenus.forEach(({parent,submenu})=>{
-      if(rail||parent.parentElement!==expanded){submenu.hidden=true;parent.setAttribute('aria-expanded','false');}
+    submenus.forEach(({parent,submenu,expander})=>{
+      if(rail||parent.closest('.wf-nav-group')!==expanded){submenu.hidden=true;expander.setAttribute('aria-expanded','false');}
+      const action={ar:'إجراءات',en:'Actions',tr:'İşlemler',fr:'Actions',ru:'Действия'}[root.lang]||'Actions';
+      const label=action+': '+(parent.children[1]?.textContent.trim()||'');
+      expander.setAttribute('aria-label',label);expander.title=label;
     });
-    if(rail){filter();return;}
+    if(rail){filter();submenus.forEach(({parent,row,expander})=>{row.hidden=parent.hidden;expander.hidden=true;});return;}
     pager.hidden=true;
     nav.classList.remove('wf-nav-paged');
     groups.forEach((group,i)=>{
@@ -303,10 +318,27 @@
       headings[i].setAttribute('aria-expanded',String(group===expanded));
       group.querySelectorAll('.nav-item').forEach(item=>item.hidden=group!==expanded);
     });
+    submenus.forEach(({parent,row,expander})=>{row.hidden=parent.hidden;expander.hidden=false;});
   }
   new ResizeObserver(layout).observe(nav);
   new MutationObserver(layout).observe(root,{attributes:true,attributeFilter:['class','lang']});
   window.visualViewport?.addEventListener('resize',layout);
+  let lastDestination='';
+  function followDestination(){
+    const destination=document.querySelector('.page.active')?.id||'';
+    if(destination===lastDestination)return;
+    lastDestination=destination;
+    const selected=items.find(item=>item.classList.contains('active'));
+    expanded=selected?.closest('.wf-nav-group')||expanded;
+    layout();
+  }
+  const previousShowPage=window.showPage;
+  if(typeof previousShowPage==='function')window.showPage=function(...args){
+    const result=previousShowPage.apply(this,args);followDestination();return result;
+  };
+  const destinationObserver=new MutationObserver(followDestination);
+  document.querySelectorAll('.page').forEach(page=>destinationObserver.observe(page,{attributes:true,attributeFilter:['class']}));
+  followDestination();
   layout();
 
   const dialog=document.getElementById('wfSearchDialog');
@@ -351,7 +383,7 @@
       icon.setAttribute('aria-hidden','true');
       icon.innerHTML=item.children[0].innerHTML;
       result.append(icon,document.createTextNode(caption));
-      result.onclick=()=>{closeSearch(false);expanded=item.parentElement;layout();item.onclick.call(item);};
+      result.onclick=()=>{closeSearch(false);expanded=item.closest('.wf-nav-group');layout();item.onclick.call(item);};
       results.append(result);
     }
     if(!matches.length)results.textContent=empty.textContent;

@@ -1410,3 +1410,32 @@
    font-size:16px!important;
  }
 }
+
+/* One compact playback control below the smart card's five page indicators. */
+@media screen {
+ html body #mainContent #page-dashboard .wf-smart-pager:has(> .wf-smart-playback) {
+   grid-template-rows:repeat(var(--wf-smart-pages,5),28px) 32px;
+ }
+ html body #mainContent #page-dashboard .wf-smart-playback {
+   appearance:none;display:grid;place-items:center;position:relative;
+   inline-size:44px;block-size:32px;min-inline-size:44px;min-block-size:32px;
+   margin:0!important;padding:0!important;
+   border:0!important;border-radius:8px!important;
+   color:var(--wf-smart-accent);background:transparent!important;box-shadow:none!important;
+   cursor:pointer;touch-action:manipulation;
+ }
+ html body #mainContent #page-dashboard .wf-smart-playback::before {
+   content:'';position:absolute;inline-size:26px;block-size:26px;border-radius:9px;
+   background:color-mix(in srgb,var(--wf-smart-accent) 9%,transparent);
+ }
+ html body #mainContent #page-dashboard .wf-smart-playback svg {
+   position:relative;inline-size:15px;block-size:15px;fill:none;
+   stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;
+ }
+ html body #mainContent #page-dashboard .wf-smart-playback .wf-smart-play-icon {fill:currentColor;stroke:none;}
+ html body #mainContent #page-dashboard .wf-smart-playback[data-autoplay="true"] .wf-smart-play-icon,
+ html body #mainContent #page-dashboard .wf-smart-playback[data-autoplay="false"] .wf-smart-pause-icon {display:none;}
+ html body #mainContent #page-dashboard .wf-smart-playback:focus-visible {
+   outline:2px solid var(--wf-smart-accent);outline-offset:-5px;
+ }
+}

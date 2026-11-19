@@ -1,0 +1,326 @@
+/* Shared dialog chrome. Screen-only rules deliberately leave print documents,
+   image-viewer transforms, camera framing and each dialog's open state intact. */
+@media screen {
+  :root {
+    --dialog-line: color-mix(in srgb, var(--brand-primary) 22%, var(--border));
+    --dialog-shadow: 0 20px 64px -28px rgb(12 32 42 / 42%), 0 4px 16px -10px rgb(12 32 42 / 18%);
+  }
+
+  html:root body :is(#wfSettingsDialog, #wfDevDialog,
+    #currCalcModal > .curr-calc-modal, #pdfModal > .modal, #scannerModal > .modal,
+    #printOptionsModal > .modal, #deleteModal > .delete-modal,
+    #deliverModal > .deliver-modal, #wfRestoreModal > .wf-restore-modal,
+    #wfUnifiedShareOverlay > .wf-share-panel, #wfExcelShareReady > .modal) {
+    box-sizing: border-box;
+    min-inline-size: 0;
+    border: 1px solid var(--dialog-line) !important;
+    background: var(--window-surface, var(--card)) !important;
+    color: var(--text);
+    box-shadow: var(--dialog-shadow) !important;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  html body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal,
+    #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
+    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady) :is(button, .btn):not(#bottomNav *) {
+    min-block-size: 44px !important;
+    touch-action: manipulation;
+  }
+  html body :is(#wfSettingsDialog, #wfDevDialog, #printOptionsModal,
+    #scannerModal, #deleteModal) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea) {
+    min-block-size: 44px;
+    max-inline-size: 100%;
+    box-sizing: border-box;
+  }
+  html body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal,
+    #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
+    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady) :is(button, input, select, textarea):focus-visible {
+    outline: 2px solid var(--ui-accent, var(--brand-primary)) !important;
+    outline-offset: 2px;
+  }
+  html body :is(#wfSettingsDialog > header > button, #wfDevDialog header > button,
+    #printOptionsModal .modal-close, #scannerModal .modal-close,
+    #wfUnifiedShareOverlay .wf-share-close, #wfRestoreModal .wf-restore-close) {
+    min-inline-size: 44px;
+    inline-size: 44px;
+    block-size: 44px;
+    flex: 0 0 44px;
+    border-radius: 11px;
+    line-height: 1;
+  }
+
+  /* A single settings surface: the dialog header supplies the panel title. */
+  html body #mainContent #page-settings #wfSettingsDialog {
+    inline-size: min(42rem, calc(100vw - 28px));
+    max-inline-size: calc(100vw - 28px);
+    max-block-size: calc(100dvh - 28px);
+    overflow: hidden;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog > header {
+    gap: 12px;
+    padding: 10px 16px;
+    flex: none;
+    background: var(--window-muted);
+    border-block-end: 1px solid var(--dialog-line);
+  }
+  html body #mainContent #page-settings #wfSettingsDialog > header h2 {
+    min-inline-size: 0;
+    font-size: 18px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog > .wf-settings-content {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    min-inline-size: 0;
+    padding: clamp(16px, 2vw, 20px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scroll-padding-block: 16px;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog .wf-settings-content > [role="tabpanel"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog .wf-settings-panel-title {
+    display: none !important;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog [role="tabpanel"] > .card {
+    padding: 16px !important;
+    box-shadow: none !important;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog :is(#stab-company, #stab-bank, #stab-invoice) > .card {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog :is(.card-title, .card-header) {
+    font-size: 16px !important;
+    line-height: 1.5;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog .fg {
+    min-inline-size: 0;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog .fc {
+    min-block-size: 46px !important;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog > footer[hidden] {
+    display: none !important;
+  }
+
+  /* Structured windows keep their chrome visible while only their body scrolls. */
+  html:root body #currCalcModal > .curr-calc-modal {
+    max-block-size: calc(100dvh - 24px) !important;
+    overflow: hidden !important;
+  }
+  html body #currCalcModal .curr-calc-body {
+    min-block-size: 0;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  html body #currCalcModal :is(.curr-calc-header, .curr-calc-footer) {
+    flex-shrink: 0;
+  }
+  html body #currCalcModal .curr-calc-footer {
+    padding: 10px 12px !important;
+    border-block-start: 1px solid var(--dialog-line) !important;
+  }
+  html body #currCalcModal :is(.curr-calc-input, .curr-calc-quick-btn, .cc-number-pad button) {
+    min-block-size: 44px !important;
+  }
+  html:root body #pdfModal > .modal {
+    display: flex;
+    flex-direction: column;
+    max-block-size: calc(100dvh - 28px);
+    overflow: hidden !important;
+  }
+  html body #pdfModal > .modal > .pdf-bar {
+    flex: none;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 12px 16px;
+    background: var(--window-muted);
+    border-block-end: 1px solid var(--dialog-line);
+  }
+  html body #pdfModal > .modal > [data-i18n="excel_hint"] {
+    flex: none;
+    line-height: 1.6;
+  }
+  html body #pdfModal > .modal > div:has(> #invoicePaperWrap) {
+    min-block-size: 0;
+    max-block-size: none !important;
+    overflow: auto !important;
+    overscroll-behavior: contain;
+  }
+  html body #pdfModal .pdf-bar :is(button, select) {
+    min-block-size: 44px !important;
+  }
+  html body #pdfModal .pdf-bar .wf15-preview-icon {
+    min-inline-size: 44px !important;
+  }
+
+  /* Unwrapped confirmations scroll naturally, with an anchored action row. */
+  html:root body :is(#printOptionsModal > .modal, #deleteModal > .delete-modal,
+    #deliverModal > .deliver-modal, #wfRestoreModal > .wf-restore-modal,
+    #wfUnifiedShareOverlay > .wf-share-panel, #wfExcelShareReady > .modal) {
+    max-block-size: calc(100dvh - 24px);
+    overflow-y: auto !important;
+    scroll-padding-block: 72px;
+  }
+  html body :is(#deleteModal > .delete-modal, #wfRestoreModal > .wf-restore-modal) {
+    padding: 24px 20px 18px;
+    max-inline-size: 440px;
+  }
+  html body :is(#deleteModal .dm-icon-wrap, #wfRestoreModal .wf-restore-icon, #deliverModal .deliver-modal-icon) {
+    inline-size: 56px;
+    block-size: 56px;
+    font-size: 26px;
+    margin-block-end: 12px;
+  }
+  html body #deliverModal .deliver-modal-icon-wrap { padding: 20px 20px 0; }
+  html body #deliverModal .deliver-modal-content { padding: 4px 20px 18px; }
+  html body :is(#deleteModal .dm-title, #deliverModal .deliver-modal-title, #wfRestoreModal .wf-restore-title) {
+    font-size: 18px;
+    line-height: 1.5;
+    margin-block-end: 6px;
+  }
+  html body #deleteModal .dm-item-name {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    margin-block-end: 14px;
+  }
+  html body :is(#deleteModal .dm-confirm-label, #deleteModal .dm-warning, #deliverModal .deliver-modal-info-box) {
+    text-align: start;
+    line-height: 1.6;
+  }
+  html body :is(#deleteModal .dm-btns, #deliverModal .deliver-modal-btns, #wfRestoreModal .wf-restore-actions) {
+    position: sticky;
+    inset-block-end: -18px;
+    z-index: 2;
+    gap: 8px;
+    margin-inline: -20px;
+    margin-block-end: -18px;
+    padding: 12px 20px max(14px, env(safe-area-inset-bottom));
+    background: var(--window-surface, var(--card));
+    border-block-start: 1px solid var(--dialog-line);
+  }
+  html body #printOptionsModal > .modal { padding: 20px; }
+  html body #printOptionsModal .modal-hdr {
+    position: sticky;
+    inset-block-start: -20px;
+    z-index: 3;
+    gap: 12px;
+    margin: -20px -20px 16px;
+    padding: 10px 16px;
+  }
+  html body #printOptionsModal > .modal > div:last-child:has(> #poSaveActionBtn) {
+    position: sticky;
+    inset-block-end: -20px;
+    z-index: 2;
+    margin: 16px -20px -20px;
+    padding: 12px 20px max(14px, env(safe-area-inset-bottom));
+    border-block-start: 1px solid var(--dialog-line);
+    background: var(--window-surface, var(--card));
+  }
+  html body #printOptionsModal :is(.print-opt-item, .print-lang-btn) { min-block-size: 44px; }
+  html body #wfUnifiedShareOverlay .wf-share-head {
+    position: sticky;
+    inset-block-start: -18px;
+    z-index: 2;
+    margin: -18px -18px 14px;
+    padding: 12px 16px;
+    gap: 10px;
+  }
+  html body #wfUnifiedShareOverlay :is(.wf-share-sub, .wf-share-choice-copy small, .wf-share-note) {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  html body #wfUnifiedShareOverlay .wf-share-choice { padding: 12px; }
+  html body #scannerModal > .modal > :first-child {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
+    gap: 10px;
+  }
+  html body #scannerModal .scanner-actions { padding: 14px 16px; }
+  html body #wfDevDialog { padding: 18px; max-block-size: calc(100dvh - 28px); }
+
+  @media (min-width: 1025px) {
+    html body #mainContent #page-settings #wfSettingsDialog > footer:not([hidden]) {
+      margin: 0;
+      min-block-size: 0;
+      padding: 12px 16px;
+      justify-content: flex-end;
+      background: var(--window-muted);
+      border-block-start: 1px solid var(--dialog-line);
+    }
+    html body #mainContent #page-settings #wfSettingsDialog > footer::before { content: none; }
+    html body #mainContent #page-settings #wfSettingsDialog > footer > button {
+      align-items: center;
+      gap: 8px;
+      inline-size: auto;
+      min-inline-size: 120px;
+      block-size: auto;
+      min-block-size: 44px;
+      padding: 10px 18px !important;
+      border-radius: 11px;
+      background: var(--sales-gradient) !important;
+      color: white !important;
+    }
+    html body #mainContent #page-settings #wfSettingsDialog > footer .wf-settings-save-symbol {
+      display: inline-flex;
+      position: static;
+      flex: 0 0 20px;
+      inline-size: 20px;
+      block-size: 20px;
+      background: none;
+      box-shadow: none;
+      color: inherit;
+    }
+    html body #mainContent #page-settings #wfSettingsDialog > footer .wf-settings-save-symbol svg {
+      inline-size: 20px;
+      block-size: 20px;
+    }
+  }
+  @media (max-width: 600px) {
+    html body #mainContent #page-settings #wfSettingsDialog {
+      inline-size: 100%;
+      max-inline-size: 100%;
+      max-block-size: min(90dvh, calc(100dvh - 12px));
+    }
+    html body #mainContent #page-settings #wfSettingsDialog > .wf-settings-content { padding: 16px; }
+    html body #mainContent #page-settings #wfSettingsDialog [role="tabpanel"] > .card { padding: 14px !important; }
+    html body #mainContent #page-settings #wfSettingsDialog :is(#stab-company, #stab-bank, #stab-invoice) > .card { padding: 0 !important; }
+    html body :is(#scannerModal, #deleteModal, #printOptionsModal) :is(input.fc, select.fc, .dm-input) { font-size: 16px; }
+    html body #wfUnifiedShareOverlay .wf-share-head {
+      inset-block-start: -14px;
+      margin: 0 -16px 14px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal, #pdfModal,
+      #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
+      #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady),
+    html body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal, #pdfModal,
+      #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
+      #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady) * {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  html[data-wf-motion="reduced"] body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal, #pdfModal,
+    #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
+    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady),
+  html[data-wf-motion="reduced"] body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal, #pdfModal,
+    #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
+    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady) * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
