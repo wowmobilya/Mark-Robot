@@ -99,8 +99,10 @@ function browserFixture(){
   const registration=Object.assign(events(),{updates:0,async update(){this.updates++;}});
   const sw=Object.assign(events(),{controller:Object.assign(events(),worker()),async register(...args){registerArgs=args;return registration;}});
   const context=Object.assign(events(),{document,navigator:{serviceWorker:sw,onLine:true},S:{settings:{},invoices:[],payments:[]},location:{reload:()=>reloads++},getComputedStyle:()=>({visibility:'visible'}),sessionStorage:{getItem:()=>null,setItem(){}},MutationObserver:class{observe(){}},URL,queueMicrotask,console,setTimeout:fn=>{timers.set(++timerID,fn);return timerID;},clearTimeout:id=>timers.delete(id),setInterval:fn=>{timers.set(++timerID,fn);return timerID;},clearInterval:id=>timers.delete(id)});
-  context.window=context;vm.runInNewContext(fs.readFileSync(require.resolve('../app-updates.js'),'utf8'),context);
-  return {context,sw,registration,robot,page,ids,get registerArgs(){return registerArgs;},get reloads(){return reloads;}};
+  context.window=context;vm.createContext(context);
+  vm.runInContext('let wfPendingSettingsLogo; const DEFAULT_WOW_LOGO="default-logo"; function resetSettingsLogo(){wfPendingSettingsLogo=DEFAULT_WOW_LOGO;}',context);
+  vm.runInContext(fs.readFileSync(require.resolve('../app-updates.js'),'utf8'),context);
+  return {context,document,node,evaluate:source=>vm.runInContext(source,context),sw,registration,robot,page,ids,get registerArgs(){return registerArgs;},get reloads(){return reloads;}};
 }
 test('browser integration registers the real worker without cache reuse or an extra initial update fetch',async()=>{
   const f=browserFixture();await Promise.resolve();await Promise.resolve();await Promise.resolve();
@@ -120,4 +122,54 @@ test('previously viewed saved product and company images do not prevent refreshi
   Object.assign(f.context.S,{prImgData:'data:saved',logoData:'data:saved',editPrId:'saved-product',editCoId:'saved-company',editInvId:'saved-invoice',invItems:[{saved:true}]});
   f.sw.controller={state:'activated',addEventListener(){}};f.sw.emit('controllerchange');assert.equal(f.context.WFAppUpdates.status().canReload,true);
   f.page.id='page-add-product';assert.equal(f.context.WFAppUpdates.status().canReload,false);
+});
+function draftRoot(f,id,fields=[]){
+  const root=f.node('section');root.id=id;root.isConnected=true;root.querySelectorAll=()=>fields;f.ids.set(id,root);
+  const target=f.node('button');target.closest=selector=>selector==='button'?target:root;target.matches=()=>false;
+  return {root,target};
+}
+test('a pending lexical company-logo reset blocks refresh until reverted or saved',async()=>{
+  const f=browserFixture();await new Promise(setImmediate);f.context.S.settings.logo='custom-company-logo';
+  const {target}=draftRoot(f,'stab-company');target.setAttribute('onclick','resetSettingsLogo()');
+  f.document.emit('pointerdown',{target});f.evaluate('resetSettingsLogo()');f.document.emit('click',{target});
+  f.sw.controller={state:'activated',addEventListener(){}};f.sw.emit('controllerchange');
+  assert.equal(f.context.wfPendingSettingsLogo,undefined,'pending logo is lexical, not a window property');
+  assert.equal(f.context.WFAppUpdates.status().reason,'draft');assert.equal(f.context.WFAppUpdates.refresh(),false);assert.equal(f.reloads,0);
+  f.evaluate('wfPendingSettingsLogo=undefined');assert.equal(f.context.WFAppUpdates.status().canReload,true);
+});
+test('resetting an already-default company logo does not manufacture an unsaved draft',async()=>{
+  for(const saved of ['default-logo',undefined]){
+    const f=browserFixture();await new Promise(setImmediate);f.context.S.settings.logo=saved;
+    const {target}=draftRoot(f,'stab-company');target.setAttribute('onclick','resetSettingsLogo()');
+    f.document.emit('pointerdown',{target});f.evaluate('resetSettingsLogo()');f.document.emit('click',{target});
+    f.sw.controller={state:'activated',addEventListener(){}};f.sw.emit('controllerchange');assert.equal(f.context.WFAppUpdates.status().canReload,true);
+  }
+});
+test('only a cashbox commit acknowledgment clears its draft, and later edits block refresh again',async()=>{
+  const f=browserFixture();await new Promise(setImmediate);
+  const currency={name:'currency',value:'TRY'},type={name:'type',value:'receipt'},amount={name:'amount',value:''};
+  const {target}=draftRoot(f,'page-cashboxes',[currency,type,amount]);
+  f.document.emit('pointerdown',{target});currency.value='USD';type.value='expense';amount.value='15';f.document.emit('input',{target});f.document.emit('submit',{target});
+  f.sw.controller={state:'activated',addEventListener(){}};f.sw.emit('controllerchange');
+  assert.equal(f.context.WFAppUpdates.refresh(),false,'pending or failed save has no commit acknowledgment');
+  amount.value='';f.document.emit('wf-cashbox-entry-saved',{target});
+  assert.equal(currency.value,'USD');assert.equal(type.value,'expense');assert.equal(f.context.WFAppUpdates.status().canReload,true,'retained selectors are no longer a dirty draft');
+  amount.value='8';f.document.emit('input',{target});assert.equal(f.context.WFAppUpdates.refresh(),false);assert.equal(f.reloads,0);
+});
+test('cashbox module emits its acknowledgment after committed clearing, never after a failed write',async()=>{
+  const vm=require('node:vm'),fs=require('node:fs');
+  function cashFixture(){
+    const notices=[];let finish,fail;
+    const field=value=>({value,add(option){if(!this.value)this.value=option.value;},replaceChildren(...options){this.value=options[0]?.value||'';},closest:()=>({hidden:false})});
+    const fields={currency:field('USD'),type:field('expense'),amount:field('15'),target:field('TRY'),received:field(''),note:field('draft')},button={disabled:false},status={},output={},list={replaceChildren(){},append(){}};
+    const form={elements:fields,querySelector:()=>button,dispatchEvent:event=>notices.push({type:event.type,bubbles:event.bubbles,amount:fields.amount.value,note:fields.note.value})};
+    const box={querySelector:selector=>({'form':form,'[role=status]':status,'output':output,'ol':list})[selector]};
+    const page={querySelector:selector=>selector==='header'?{after(){}}:null,classList:{contains:()=>false}};
+    const context={document:{getElementById:()=>null,querySelector:()=>page,createElement:()=>box},MutationObserver:class{observe(){}},Option:class{constructor(_label,value){this.value=value;}},CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}},FormData:class{constructor(){return Object.entries(fields).map(([key,field])=>[key,field.value]);}},wfNewRecordId:()=> 'test',dbPut:()=>new Promise((resolve,reject)=>{finish=resolve;fail=reject;}),dbGetAllKeysRaw:async()=>[],dbGetAll:async()=>[],WOWStatementCore:{collectPayments:()=>({groups:new Map(),unattached:[]})},Intl,Date};
+    vm.runInNewContext(fs.readFileSync(require.resolve('../cashboxes.mjs'),'utf8').replaceAll('export function ','function ')+'\nmount();',context);
+    return {fields,notices,submit:()=>form.onsubmit({preventDefault(){}}),commit:()=>finish(),reject:()=>fail(new Error('write failed'))};
+  }
+  const success=cashFixture(),pending=success.submit();assert.deepEqual(success.notices,[]);assert.equal(success.fields.amount.value,'15');success.commit();await pending;
+  assert.deepEqual(success.notices,[{type:'wf-cashbox-entry-saved',bubbles:true,amount:'',note:''}]);assert.equal(success.fields.currency.value,'USD');assert.equal(success.fields.type.value,'expense');
+  const failure=cashFixture(),rejected=failure.submit();failure.reject();await rejected;assert.deepEqual(failure.notices,[]);assert.equal(failure.fields.amount.value,'15');assert.equal(failure.fields.note.value,'draft');
 });

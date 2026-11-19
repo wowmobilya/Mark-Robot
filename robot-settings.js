@@ -35,6 +35,14 @@
     }
     return {checking: 'voiceChecking', ready: 'voiceReady', downloading: 'voiceDownloading'}[status.state] || 'voiceMissing';
   }
+  function voicePhaseKey(status) {
+    const stages = {
+      'open-cache': 'voicePhaseStorage', 'check-cache': 'voicePhaseStorage', 'check-storage': 'voicePhaseStorage',
+      fetch: 'voicePhaseDownload', stream: 'voicePhaseDownload', verify: 'voicePhaseVerify',
+      store: 'voicePhaseStore', 'final-check': 'voicePhaseVerify', marker: 'voicePhaseStore',
+    };
+    return stages[status.stage] || {download: 'voicePhaseDownload', verify: 'voicePhaseVerify', store: 'voicePhaseStore'}[status.phase] || '';
+  }
   function createPreferenceStore({getState, connect}) {
     let busy = false;
     return {
@@ -173,7 +181,7 @@
     };
   }
 
-  const core = {defaults, normalize, mergeSettings, packActionDisabled, voiceStatusKey, createPreferenceStore, movement, createMotionTracker};
+  const core = {defaults, normalize, mergeSettings, packActionDisabled, voiceStatusKey, voicePhaseKey, createPreferenceStore, movement, createMotionTracker};
   if (typeof module === 'object' && module.exports) module.exports = core;
   if (typeof document === 'undefined' || window.WFRobotSettings) return;
   const root = document.documentElement;
@@ -235,6 +243,7 @@
     voicePhaseDownload: ['المرحلة: التنزيل', 'Stage: downloading', 'Aşama: indirme', 'Étape : téléchargement', 'Этап: загрузка'],
     voicePhaseVerify: ['المرحلة: التحقق من الملف', 'Stage: file verification', 'Aşama: dosya doğrulaması', 'Étape : vérification du fichier', 'Этап: проверка файла'],
     voicePhaseStore: ['المرحلة: الحفظ على الجهاز', 'Stage: saving on this device', 'Aşama: cihaza kaydetme', 'Étape : stockage sur l’appareil', 'Этап: сохранение на устройстве'],
+    voicePhaseStorage: ['المرحلة: فحص التخزين على الجهاز', 'Stage: checking device storage', 'Aşama: cihaz depolamasını kontrol etme', 'Étape : vérification du stockage sur l’appareil', 'Этап: проверка хранилища устройства'],
     voiceUnsupported: ['هذا المتصفح لا يدعم الحزم المحلية. تبقى أصوات الجهاز المتاحة قابلة للاستخدام.', 'This browser cannot use local packs. Available system voices can still be used.', 'Bu tarayıcı yerel paketleri desteklemiyor. Cihazdaki mevcut sesler kullanılabilir.', 'Ce navigateur ne permet pas les packs locaux. Les voix disponibles sur l’appareil restent utilisables.', 'Браузер не поддерживает локальные пакеты. Доступные системные голоса по-прежнему работают.'],
     voiceSource: ['المصدر', 'Source', 'Kaynak', 'Source', 'Источник'],
     voiceLicense: ['الترخيص', 'License', 'Lisans', 'Licence', 'Лицензия'],
@@ -369,7 +378,7 @@
       const current = api.getStatus(pack.locale);
       const statusKey = voiceStatusKey(current);
       const mb = Math.ceil((Number(pack.bytes || 0) + Number(pack.sharedBytes || 0)) / 1000000);
-      const phaseKey = {download: 'voicePhaseDownload', verify: 'voicePhaseVerify', store: 'voicePhaseStore'}[current.phase];
+      const phaseKey = voicePhaseKey(current);
       row.status.textContent = t(statusKey) + (current.state === 'error' && phaseKey ? ` ${t(phaseKey)}.` : '') +
         (!current.ready && current.state !== 'error' && current.state !== 'unsupported' && mb ? ` · ${mb} MB` : '');
       const file = current.fileId || current.assetId || current.asset?.id || current.file?.id || (typeof current.file === 'string' ? current.file : '');

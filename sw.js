@@ -1,5 +1,5 @@
 importScripts('./install-identity.js?v=1');
-const CACHE_NAME = 'wow-furniture-v174-reliable-updates';
+const CACHE_NAME = 'wow-furniture-v175-bundled-identity';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
   './context-nav.js?v=5',
@@ -18,7 +18,7 @@ const urlsToCache = [
   './section-headings.css?v=7',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
-  './robot-face.js?v=3',
+  './robot-face.js?v=4',
   './robot-face.css?v=5',
   './dialog-surfaces.css?v=1',
   './product-categories.js?v=2',
@@ -50,14 +50,19 @@ const urlsToCache = [
   './annual-sales.css?v=1',
   './offline-voice.js?v=2',
   './offline-voice-worker.js?v=2',
-  './robot-settings.js?v=2',
+  './robot-settings.js?v=3',
   './robot-settings.css?v=1',
   './robot-report.js?v=1',
   './robot-report.css?v=1',
   './developer-profile.js?v=1',
   './developer-profile.css?v=1',
-  './app-updates.js?v=1',
+  './app-updates.js?v=2',
   './app-updates.css?v=1',
+  './assets/robot-identity/ar.mp3?v=1',
+  './assets/robot-identity/tr.mp3?v=1',
+  './assets/robot-identity/en.mp3?v=1',
+  './assets/robot-identity/fr.mp3?v=1',
+  './assets/robot-identity/ru.mp3?v=1',
   './assets/infinity-logo.svg',
   './assets/infinity-logo.png',
   './app-icon-maskable-512.png?v=172',

@@ -150,6 +150,8 @@ export function mount() {
       await dbPut('settings',entry);
       fields.amount.value=fields.received.value=fields.note.value='';
       status.textContent='تم حفظ الحركة.';
+      // A committed save clears this draft; later edits remain independently dirty.
+      form.dispatchEvent(new CustomEvent('wf-cashbox-entry-saved',{bubbles:true}));
       await render();
     } catch(error) { status.textContent=error.message || 'تعذّر حفظ الحركة.'; }
     finally { saving=false; button.disabled=false; }

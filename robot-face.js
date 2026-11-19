@@ -14,7 +14,7 @@
       speak: 'هوية الروبوت', stop: 'إيقاف',
       report: 'اسمع التقرير اليومي', reportUnavailable: 'التقرير يحتاج صوتًا عربيًا مثبتًا يعمل دون اتصال',
       reportEmpty: 'بيانات التقرير اليومي غير متاحة الآن',
-      audioURL: '', // Optional bundled recording; never use a remote speech service.
+      audioURL: 'assets/robot-identity/ar.mp3?v=1',
       greeting: 'مرحبًا سيد أحمد. أنا مساعدك الذكي إنفنتي روبوت، وأنا هنا من أجل تنظيم سير العمل. وأنا من تصميم المهندس معتز بالله حاج شعبان، مطوّري ومبرمجي. وشكرًا لك.',
     },
     tr: {
@@ -25,7 +25,7 @@
       speak: 'Robot kimliği', stop: 'Durdur',
       report: 'Günlük raporu dinle', reportUnavailable: 'Rapor için cihazda çevrimdışı Türkçe ses gerekir',
       reportEmpty: 'Günlük rapor verileri şu anda kullanılamıyor',
-      audioURL: '', // Optional bundled recording; never use a remote speech service.
+      audioURL: 'assets/robot-identity/tr.mp3?v=1',
       greeting: 'Merhaba Ahmet Bey. Ben akıllı asistanınız Infinity Robot. İş akışını düzenlemek için buradayım. Beni geliştiren ve programlayan mühendis Moataz Bellah Haj Shaaban tarafından tasarlandım. Teşekkür ederim.',
     },
     en: {
@@ -36,7 +36,7 @@
       speak: 'Robot identity', stop: 'Stop',
       report: 'Daily report', reportUnavailable: 'The report needs an installed offline English voice',
       reportEmpty: 'Daily report data is unavailable right now',
-      audioURL: '', // Optional bundled recording; never use a remote speech service.
+      audioURL: 'assets/robot-identity/en.mp3?v=1',
       greeting: 'Hello, Mr. Ahmed. I am your smart assistant, Infinity Robot, and I am here to organize the workflow. I was designed by engineer Moataz Bellah Haj Shaaban, my developer and programmer. Thank you.',
     },
     fr: {
@@ -47,7 +47,7 @@
       speak: 'Identité du robot', stop: 'Arrêter',
       report: 'Rapport du jour', reportUnavailable: 'Le rapport nécessite une voix française hors ligne installée',
       reportEmpty: 'Le rapport du jour est indisponible pour le moment',
-      audioURL: '', // Optional bundled recording; never use a remote speech service.
+      audioURL: 'assets/robot-identity/fr.mp3?v=1',
       greeting: 'Bonjour, Monsieur Ahmed. Je suis votre assistant intelligent, Infinity Robot, et je suis ici pour organiser le déroulement du travail. J’ai été conçu par l’ingénieur Moataz Bellah Haj Shaaban, mon développeur et programmeur. Merci à vous.',
     },
     ru: {
@@ -58,7 +58,7 @@
       speak: 'О роботе', stop: 'Стоп',
       report: 'Отчёт за день', reportUnavailable: 'Для отчёта нужен установленный русский голос без сети',
       reportEmpty: 'Данные дневного отчёта сейчас недоступны',
-      audioURL: '', // Optional bundled recording; never use a remote speech service.
+      audioURL: 'assets/robot-identity/ru.mp3?v=1',
       greeting: 'Здравствуйте, господин Ахмед. Я ваш умный помощник, робот Infinity, и я здесь, чтобы организовать рабочий процесс. Меня создал инженер Моатаз Беллах Хадж Шаабан, мой разработчик и программист. Спасибо вам.',
     },
   };
@@ -174,7 +174,7 @@
       // Only recordings bundled with this application are allowed for offline playback.
       const value = messages[locale].audioURL;
       return typeof window.Audio === 'function' && typeof value === 'string' &&
-        /^\.?\/?audio\/[a-zA-Z0-9_./-]+$/.test(value) && !value.includes('..') ? value : '';
+        /^assets\/robot-identity\/(ar|tr|en|fr|ru)\.mp3\?v=1$/.test(value) ? value : '';
     }
 
     function offlineReady() {
@@ -256,6 +256,12 @@
       face.dispatchEvent(new CustomEvent('wf-robot-speaking', {bubbles: true, detail: {active}}));
     }
 
+    function releaseRecording(request) {
+      request.onplaying = request.onwaiting = request.onpause = request.onended = request.onerror = null;
+      try { request.pause(); request.removeAttribute('src'); request.load(); }
+      catch (_) { /* Its callbacks are already detached and the session invalidated. */ }
+    }
+
     function finish(nextState = 'ready', cancel = false) {
       const wasActive = active();
       const ownedSpeech = !!utterance;
@@ -276,12 +282,7 @@
       face.dataset.speechBeat = 'false';
       state = nextState;
       setExpression('calm');
-      if (oldRecording) {
-        oldRecording.onplaying = oldRecording.onwaiting = oldRecording.onended = oldRecording.onerror = null;
-        oldRecording.pause();
-        oldRecording.removeAttribute('src');
-        oldRecording.load();
-      }
+      if (oldRecording) releaseRecording(oldRecording);
       oldOffline?.handle?.cancel();
       if (cancel && ownedSpeech) {
         try { synth.cancel(); } catch (_) { /* The visible state still returns to idle. */ }
@@ -324,54 +325,79 @@
     }
 
     function playRecording(url) {
-      const request = new window.Audio(url);
+      let request;
+      try { request = new window.Audio(url); }
+      catch (_) {
+        if (!speakIdentityFallback()) { state = 'failed'; render(); }
+        return;
+      }
+      let started = false;
       recording = request;
       state = 'preparing';
       automaticExpression('thinking');
       render();
       announceActivity(true);
+      const failed = () => {
+        if (recording !== request) return;
+        // Recover only before audible playback. Never replay a partially spoken identity.
+        const canFallback = !started && visible() && (offlineReady() || currentVoice()) &&
+          !(synth?.speaking || synth?.pending || synth?.paused);
+        if (canFallback) {
+          recording = null;
+          clearTimeout(startTimer); startTimer = null;
+          releaseRecording(request);
+          speakIdentityFallback(true);
+        } else finish('failed', true);
+      };
       const waiting = () => {
         if (recording !== request) return;
         face.dataset.speaking = 'false';
         state = 'preparing';
+        clearTimeout(expressionTimer); expressionTimer = null;
+        automaticExpression('thinking');
         render();
         clearTimeout(startTimer);
         startTimer = setTimeout(() => {
-          if (recording === request && state === 'preparing') finish('failed', true);
+          if (recording === request && state === 'preparing') failed();
         }, 8000);
       };
       request.onplaying = () => {
         if (recording !== request) return;
         if (!visible()) { finish('ready', true); return; }
+        started = true;
         beginTalking();
       };
       request.onwaiting = waiting;
+      request.onpause = waiting;
       request.onended = () => { if (recording === request) finish(); };
-      request.onerror = () => { if (recording === request) finish('failed', true); };
+      request.onerror = failed;
       waiting();
       try {
         const playing = request.play();
-        playing?.catch(() => { if (recording === request) finish('failed', true); });
-      } catch (_) { finish('failed', true); }
+        playing?.catch(failed);
+      } catch (_) { failed(); }
+    }
+
+    function speakIdentityFallback(alreadyActive = false) {
+      if (offlineReady()) { speakOffline(messages[locale].greeting, alreadyActive); return true; }
+      const voice = currentVoice();
+      if (voice) { speakText(messages[locale].greeting, voice, alreadyActive); return true; }
+      return false;
     }
 
     function toggleSpeech(event) {
       event.stopPropagation();
+      if (!event.isTrusted) return;
       if (active()) { finish('stopped', true); return; }
       if ((!supported && !recordingURL() && !offlineReady()) || !visible()) return;
       refreshVoices();
-      const voice = currentVoice();
       // Do not interrupt speech owned by another part of the page.
       if (synth?.speaking || synth?.pending || synth?.paused) { state = 'busy'; render(); return; }
-      if (offlineReady()) { sessionKind = 'intro'; speakOffline(messages[locale].greeting); return; }
-      if (!voice) {
-        const url = recordingURL();
-        if (url) { sessionKind = 'intro'; playRecording(url); return; }
-        state = 'unavailable'; render(); return;
-      }
-
       sessionKind = 'intro';
-      speakText(messages[locale].greeting, voice);
+      // Invoke play synchronously in the trusted click; downloaded packs are for dynamic text.
+      const url = recordingURL();
+      if (url) { playRecording(url); return; }
+      if (!speakIdentityFallback()) { state = 'unavailable'; render(); }
     }
 
     function speakOffline(text, alreadyActive = false) {

@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "source": "Exact messages[locale].greeting in robot-face.js",
+  "engine": "Pinned Piper / ONNX Runtime Web, local WASM inference",
+  "modelRevision": "840e38a7e26d813bd6221b78cfbaefa3585b3f71",
+  "codec": "MP3",
+  "sampleRate": 22050,
+  "channels": 1,
+  "bitRate": 64000,
+  "timestamps": null,
+  "timingNote": "No word or sentence alignment is provided by these models. Duration is measured from the fully decoded audio.",
+  "voices": {
+    "ar": {
+      "path": "assets/robot-identity/ar.mp3",
+      "text": "مرحبًا سيد أحمد. أنا مساعدك الذكي إنفنتي روبوت، وأنا هنا من أجل تنظيم سير العمل. وأنا من تصميم المهندس معتز بالله حاج شعبان، مطوّري ومبرمجي. وشكرًا لك.",
+      "textSha256": "03b343cbe81fe35e908c56458e55a813f58d8cc6de00c8d1b6c9ec128e6f1829",
+      "voice": "ar_JO-kareem-medium",
+      "source": "https://huggingface.co/diffusionstudio/piper-voices/tree/840e38a7e26d813bd6221b78cfbaefa3585b3f71/ar/ar_JO/kareem/medium/",
+      "license": "https://huggingface.co/diffusionstudio/piper-voices/resolve/840e38a7e26d813bd6221b78cfbaefa3585b3f71/ar/ar_JO/kareem/medium/MODEL_CARD",
+      "bytes": 136506,
+      "sha256": "68a07a162b2f251d5da155c73a1c8dfb41e177b5b5eb567ca30c6937c1acaabc",
+      "samples": 374272,
+      "durationSeconds": 16.973786848072564
+    },
+    "tr": {
+      "path": "assets/robot-identity/tr.mp3",
+      "text": "Merhaba Ahmet Bey. Ben akıllı asistanınız Infinity Robot. İş akışını düzenlemek için buradayım. Beni geliştiren ve programlayan mühendis Moataz Bellah Haj Shaaban tarafından tasarlandım. Teşekkür ederim.",
+      "textSha256": "eda4f2d054eea53cf9add4a891b7025c8946e3abdd960c57b5860ab3db654c7a",
+      "voice": "tr_TR-fettah-medium",
+      "source": "https://huggingface.co/diffusionstudio/piper-voices/tree/840e38a7e26d813bd6221b78cfbaefa3585b3f71/tr/tr_TR/fettah/medium/",
+      "license": "https://huggingface.co/diffusionstudio/piper-voices/resolve/840e38a7e26d813bd6221b78cfbaefa3585b3f71/tr/tr_TR/fettah/medium/MODEL_CARD",
+      "bytes": 105786,
+      "sha256": "a42eb1033e9dcccdb4e81d70db4cb479cc0121a6ee149d77d437255b071a31dd",
+      "samples": 289280,
+      "durationSeconds": 13.119274376417234
+    },
+    "en": {
+      "path": "assets/robot-identity/en.mp3",
+      "text": "Hello, Mr. Ahmed. I am your smart assistant, Infinity Robot, and I am here to organize the workflow. I was designed by engineer Moataz Bellah Haj Shaaban, my developer and programmer. Thank you.",
+      "textSha256": "4745cc591a2978ae351cd454b3ada49bd90bd324828b1cc4dc5cea7906f30d03",
+      "voice": "en_US-ljspeech-medium",
+      "source": "https://huggingface.co/diffusionstudio/piper-voices/tree/840e38a7e26d813bd6221b78cfbaefa3585b3f71/en/en_US/ljspeech/medium/",
+      "license": "https://huggingface.co/diffusionstudio/piper-voices/resolve/840e38a7e26d813bd6221b78cfbaefa3585b3f71/en/en_US/ljspeech/medium/MODEL_CARD",
+      "bytes": 99517,
+      "sha256": "988a71c4b6f5645966ca88e30e57cd4a260393de0fa5f29ae0e6036c3dd14f69",
+      "samples": 272384,
+      "durationSeconds": 12.353015873015874
+    },
+    "fr": {
+      "path": "assets/robot-identity/fr.mp3",
+      "text": "Bonjour, Monsieur Ahmed. Je suis votre assistant intelligent, Infinity Robot, et je suis ici pour organiser le déroulement du travail. J’ai été conçu par l’ingénieur Moataz Bellah Haj Shaaban, mon développeur et programmeur. Merci à vous.",
+      "textSha256": "c3296ebc52d32955900bdbcd393c6cb2cc6e685766d89338e92f6fce4f6091ed",
+      "voice": "fr_FR-siwis-medium",
+      "source": "https://huggingface.co/diffusionstudio/piper-voices/tree/840e38a7e26d813bd6221b78cfbaefa3585b3f71/fr/fr_FR/siwis/medium/",
+      "license": "https://huggingface.co/diffusionstudio/piper-voices/resolve/840e38a7e26d813bd6221b78cfbaefa3585b3f71/fr/fr_FR/siwis/medium/MODEL_CARD",
+      "bytes": 111847,
+      "sha256": "5b9a6f6b3845356cb53f7cd98959bc45af35b02fce26ce38a679181f426e1bd1",
+      "samples": 305920,
+      "durationSeconds": 13.87392290249433
+    },
+    "ru": {
+      "path": "assets/robot-identity/ru.mp3",
+      "text": "Здравствуйте, господин Ахмед. Я ваш умный помощник, робот Infinity, и я здесь, чтобы организовать рабочий процесс. Меня создал инженер Моатаз Беллах Хадж Шаабан, мой разработчик и программист. Спасибо вам.",
+      "textSha256": "0cb0b825063353142f3bd305fb90cba101768f53a8637a8e1cea34c396fa55be",
+      "voice": "ru_RU-dmitri-medium",
+      "source": "https://huggingface.co/diffusionstudio/piper-voices/tree/840e38a7e26d813bd6221b78cfbaefa3585b3f71/ru/ru_RU/dmitri/medium/",
+      "license": "https://huggingface.co/diffusionstudio/piper-voices/resolve/840e38a7e26d813bd6221b78cfbaefa3585b3f71/ru/ru_RU/dmitri/medium/MODEL_CARD",
+      "bytes": 88859,
+      "sha256": "afe7498ce236004b4390b981468d003f895f720137888ea705c734d4e4316830",
+      "samples": 242944,
+      "durationSeconds": 11.017868480725623
+    }
+  },
+  "totalBytes": 542515
+}

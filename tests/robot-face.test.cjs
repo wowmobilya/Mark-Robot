@@ -12,7 +12,7 @@ const source = fs.readFileSync(process.argv[2] || path.resolve(__dirname, '../ro
 let assertionCount = 0;
 function check(condition, message) { assertionCount++; assert.ok(condition, message); }
 
-function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], supported = true, recordings = false, snapshot, preferences = {autoExpressions:true,idleMotion:true}, offline = false, offlineReady = true} = {}) {
+function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], supported = true, recordings = false, audioPlay, snapshot, preferences = {autoExpressions:true,idleMotion:true}, offline = false, offlineReady = true} = {}) {
   const observers = [];
   const timers = new Map();
   let timerId = 0;
@@ -45,7 +45,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
       if (event.bubbles && !event.stopped && this.parentNode) this.parentNode.dispatchEvent(event);
       return true;
     }
-    click() { this.dispatchEvent(new CustomEvent('click', {bubbles: true})); }
+    click(isTrusted = true) { this.dispatchEvent(new CustomEvent('click', {bubbles: true, isTrusted})); }
     set innerHTML(value) {
       this.html = value;
       for (const selector of ['#wfRobotTitle span', '.wf-robot-status', '.wf-robot-speak', '.wf-robot-report', '.wf-robot-mouth']) {
@@ -59,6 +59,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   class CustomEvent {
     constructor(type, options = {}) {
       this.type = type; this.bubbles = !!options.bubbles; this.detail = options.detail;
+      this.isTrusted = options.isTrusted === true;
       this.persisted = options.persisted; this.stopped = false;
     }
     stopPropagation() { this.stopped = true; }
@@ -91,7 +92,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   const audioRequests = [];
   class Audio {
     constructor(url) { this.src = url; this.pauseCount = 0; audioRequests.push(this); }
-    play() { this.playCount = (this.playCount || 0) + 1; return Promise.resolve(); }
+    play() { this.playCount = (this.playCount || 0) + 1; return audioPlay ? audioPlay(this) : Promise.resolve(); }
     pause() { this.pauseCount++; }
     removeAttribute(name) { delete this[name]; }
     load() { this.loaded = true; }
@@ -105,7 +106,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   for (const type of ['wf-robot-report-open','wf-robot-report-playback','wf-robot-report-boundary']) win.addEventListener(type,event=>reportEvents.push({type,...event.detail}));
   const activity = [];
   track.addEventListener('wf-robot-speaking', event => activity.push(event.detail.active));
-  vm.runInNewContext(recordings ? source.replaceAll("audioURL: ''", "audioURL: 'audio/test.mp3'") : source, {
+  vm.runInNewContext(source, {
     document: doc, window: win, MutationObserver, CustomEvent,
     setTimeout: (fn, ms) => { const id = ++timerId; timers.set(id, {fn, ms}); return id; },
     clearTimeout: id => timers.delete(id),
@@ -197,6 +198,24 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
 (async () => {
   const flush = async () => { await Promise.resolve(); await Promise.resolve(); };
   {
+    const f = fixture({recordings:true, offline:true}); f.reveal();
+    check(f.audioRequests.length === 0 && f.offlineVoice.calls.length === 0, 'Bundled identity never auto-starts during mount');
+    f.speak.click(false);
+    check(f.audioRequests.length === 0, 'Programmatic identity clicks cannot start audio');
+    f.speak.click();
+    check(f.audioRequests[0]?.src === 'assets/robot-identity/ar.mp3?v=1' && f.audioRequests[0].playCount === 1, 'Trusted click synchronously plays the versioned bundled identity');
+    check(f.offlineVoice.calls.length === 0 && f.synth.calls.length === 0, 'Identity prefers the small recording over both pack generation and native speech');
+    f.audioRequests[0].onplaying();
+    check(f.reportEvents.length === 0 && f.face.dataset.speechBeat !== 'true', 'Recorded identity does not fabricate report or word timing events');
+    f.speak.click();
+    check(f.audioRequests[0].pauseCount === 1 && f.face.dataset.voiceActive === 'false' && f.timers.size === 0, 'Identity Stop releases recorded audio and every animation timer');
+  }
+  for (const lang of ['ar','tr','en','fr','ru']) {
+    const f = fixture({lang, supported:false, recordings:true}); f.reveal(); f.speak.click();
+    check(f.audioRequests[0]?.src === `assets/robot-identity/${lang}.mp3?v=1`, 'Exact bundled recording selected for '+lang);
+    check(!f.speak.disabled && f.face.dataset.voiceActive === 'true', 'Bundled '+lang+' identity remains available without platform voices');
+  }
+  {
     const f = fixture({voices: [{lang:'ar', localService:false}], recordings:true}); f.reveal(); f.speak.click();
     check(f.synth.calls.length === 0 && f.audioRequests.length === 1, 'No local voice uses bundled recording, never network speech');
     check(f.face.dataset.voiceActive === 'true' && f.face.dataset.speaking === 'false', 'Recording waits for actual playback before mouth movement');
@@ -207,8 +226,57 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
     audio.onplaying(); audio.onended();
     check(f.face.dataset.voiceActive === 'false' && f.synth.cancelCount === 0 && audio.pauseCount === 1, 'Recording completion releases resources without canceling global speech');
   }
+  for (const [name, stop] of [
+    ['hidden face', f=>f.hide()], ['dashboard exit', f=>f.leaveDashboard()],
+    ['hidden tab', f=>f.hideDocument()], ['language switch', f=>f.language('en')],
+    ['page hide', f=>f.pagehide(true)], ['repeated identity click', f=>f.speak.click()],
+  ]) {
+    const f = fixture({recordings:true}); f.reveal(); f.speak.click();
+    const audio = f.audioRequests[0]; const staleStart = audio.onplaying; const staleError = audio.onerror;
+    audio.onplaying(); stop(f); staleStart(); staleError();
+    check(audio.pauseCount === 1 && !audio.src && f.face.dataset.voiceActive === 'false' && f.face.dataset.speaking === 'false' && f.synth.calls.length === 0,
+      'Recording cancels safely on '+name+' and ignores stale callbacks');
+  }
   {
-    const f = fixture({supported:false, recordings:true}); f.reveal(); f.speak.click();
+    const f = fixture({recordings:true, offline:true}); f.reveal(); f.speak.click();
+    const audio = f.audioRequests[0]; const staleStart = audio.onplaying; audio.onerror(); staleStart();
+    check(audio.pauseCount === 1 && f.offlineVoice.calls.length === 1 && f.synth.calls.length === 0 && f.activity.join(',') === 'true', 'Recording failure before start falls back to the installed pack without releasing the carousel');
+    check(f.face.dataset.speaking === 'false', 'Stale recorded playing callback cannot fake playback during pack fallback');
+    f.offlineVoice.calls[0].onStart(); f.offlineVoice.calls[0].onEnd();
+    check(f.activity.join(',') === 'true,false', 'Pack fallback has one continuous owned speech session');
+  }
+  {
+    const f = fixture({recordings:true, audioPlay:()=>Promise.reject(new Error('blocked'))}); f.reveal(); f.speak.click(); await flush();
+    check(f.synth.calls.length === 1 && f.audioRequests[0].pauseCount === 1 && f.activity.join(',') === 'true', 'Rejected audio play recovers through an available local system voice');
+    f.synth.start(); f.synth.end();
+  }
+  {
+    const f = fixture({recordings:true, audioPlay:()=>{throw new Error('unsupported codec');}}); f.reveal(); f.speak.click();
+    check(f.synth.calls.length === 1 && f.audioRequests[0].pauseCount === 1, 'Synchronous audio failure has the same local-only fallback');
+  }
+  {
+    const f = fixture({recordings:true}); f.reveal(); f.speak.click(); f.timeout();
+    check(f.synth.calls.length === 1 && f.audioRequests[0].pauseCount === 1, 'A recording that never starts times out into the local fallback');
+  }
+  {
+    const f = fixture({recordings:true, offline:true}); f.reveal(); f.speak.click(); const audio=f.audioRequests[0];
+    audio.onplaying(); audio.onwaiting(); audio.onerror();
+    check(f.synth.calls.length === 0 && f.offlineVoice.calls.length === 0 && f.face.dataset.voiceActive === 'false', 'A partially heard identity is never repeated through another voice');
+  }
+  {
+    const f = fixture({recordings:true, voices:[]}); f.reveal(); f.speak.click(); f.audioRequests[0].onerror();
+    check(f.face.dataset.voiceActive === 'false' && f.face.dataset.speaking === 'false' && f.status.textContent.includes('تعذّر'), 'No fallback voice produces an honest failure with no mouth animation');
+  }
+  {
+    const f = fixture({recordings:true}); f.reveal(); f.speak.click(); const audio=f.audioRequests[0];
+    audio.onplaying(); audio.onpause();
+    check(f.face.dataset.speaking === 'false' && f.face.dataset.voiceActive === 'true', 'Media pause immediately suspends the mouth while retaining Stop');
+    audio.onplaying(); f.speak.click();
+  }
+  {
+    const f = fixture({supported:false, recordings:true});
+    check(f.status.textContent === 'صوت وتعبيرات بلمسة منك', 'Built-in identity keeps the initial header ready without any installed voice');
+    f.reveal(); f.speak.click();
     check(f.audioRequests.length === 1 && !f.speak.disabled, 'Bundled intro works without Speech Synthesis support');
     const audio = f.audioRequests[0]; audio.onplaying(); f.hideDocument();
     check(audio.pauseCount === 1 && f.face.dataset.voiceActive === 'false', 'Tab hide cancels recording');

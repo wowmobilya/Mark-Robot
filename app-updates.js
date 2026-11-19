@@ -83,9 +83,15 @@
   const isVisible=element=>{const view=window.visualViewport;return visibleElement(element,getComputedStyle,{left:view?.offsetLeft||0,top:view?.offsetTop||0,right:(view?.offsetLeft||0)+(view?.width||window.innerWidth),bottom:(view?.offsetTop||0)+(view?.height||window.innerHeight)});};
   const roots='#page-add-company,#page-add-product,#page-create-invoice,#page-payment-management,#page-cashboxes,#stab-company,#stab-bank,#stab-invoice,#stab-currency,#stab-app-identity,#stab-product-categories';
   const editor=element=>element?.closest?.(roots)||element?.closest?.('form')||null;
+  function settingsLogoSource(){
+    let fallback='',pending;
+    try{if(typeof DEFAULT_WOW_LOGO==='string')fallback=DEFAULT_WOW_LOGO;}catch(_){}
+    try{if(typeof wfPendingSettingsLogo!=='undefined')pending=wfPendingSettingsLogo;}catch(_){}
+    return pending!==undefined?pending:state().settings?.logo||fallback;
+  }
   function snapshot(root){
     const fields=[...root.querySelectorAll('input,select,textarea,[contenteditable="true"]')].map(field=>[field.id||field.name||field.tagName,field.type==='checkbox'||field.type==='radio'?field.checked:field.type==='file'?[...(field.files||[])].map(file=>file.name+':'+file.size):field.value??field.textContent]);
-    const data=state(),extra=root.id==='page-create-invoice'?[data.invItems,data.currentInvPayments,data.invTier]:root.id==='page-add-product'?[data.prImgData,data.selColor]:root.id==='page-add-company'?[data.logoData]:null;
+    const data=state(),extra=root.id==='page-create-invoice'?[data.invItems,data.currentInvPayments,data.invTier]:root.id==='page-add-product'?[data.prImgData,data.selColor]:root.id==='page-add-company'?[data.logoData]:root.id==='stab-company'?[settingsLogoSource()]:null;
     return JSON.stringify([fields,extra]);
   }
   function revision(root){const settings=state().settings||{};return root.id==='stab-app-identity'?settings.appIdentity:root.id==='stab-product-categories'?settings.productCategories:null;}
@@ -161,10 +167,15 @@
   for(const type of ['input','change'])document.addEventListener(type,event=>{interaction();const root=editor(event.target);drafts.touch(root,event.target.type==='file'||root?.id==='stab-product-categories');render();},true);
   document.addEventListener('submit',event=>drafts.submitted(editor(event.target)),true);
   document.addEventListener('reset',event=>{const root=editor(event.target);queueMicrotask(()=>{if(!event.defaultPrevented)drafts.clean(root);});},true);
+  document.addEventListener('wf-cashbox-entry-saved',event=>{
+    const root=editor(event.target);if(root?.id!=='page-cashboxes')return;
+    drafts.clean(root);render();scheduleAuto();
+  });
   document.addEventListener('click',event=>{
     const target=event.target.closest?.('button');if(!target)return;
     const root=editor(target);if(!root)return;
-    if(target.matches('.wf-app-identity-actions button[type="button"],.wf-category-form-actions button[type="button"],.wf-category-new,.wf-category-edit'))drafts.clean(root);
+    if(root.id==='stab-company'&&/^\s*resetSettingsLogo\s*\(\s*\)\s*;?\s*$/.test(target.getAttribute('onclick')||'')){drafts.touch(root);render();}
+    else if(target.matches('.wf-app-identity-actions button[type="button"],.wf-category-form-actions button[type="button"],.wf-category-new,.wf-category-edit'))drafts.clean(root);
     else if(target.closest('.wf-app-identity-cards,.wf-category-image-controls'))drafts.touch(root,true);
   });
   function wrap(name,after){const original=window[name];if(typeof original!=='function')return;window[name]=function(...args){const before=after.before?.();const result=original.apply(this,args);if(result&&typeof result.then==='function')return result.then(value=>{after(value,before);return value;});after(result,before);return result;};}

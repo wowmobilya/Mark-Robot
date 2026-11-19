@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {normalize, mergeSettings, packActionDisabled, voiceStatusKey, createPreferenceStore, movement, createMotionTracker} = require('../robot-settings.js');
+const {normalize, mergeSettings, packActionDisabled, voiceStatusKey, voicePhaseKey, createPreferenceStore, movement, createMotionTracker} = require('../robot-settings.js');
 
 test('voice failures use the actual adapter reason without guessing a cause', () => {
   assert.equal(voiceStatusKey({state: 'error', reason: 'integrity-failed'}), 'voiceIntegrity');
@@ -11,6 +11,16 @@ test('voice failures use the actual adapter reason without guessing a cause', ()
   assert.equal(voiceStatusKey({state: 'not-installed', reason: 'cancelled'}), 'voiceCancelled');
   assert.equal(voiceStatusKey({state: 'error', reason: 'unknown-error'}), 'voiceError');
   assert.equal(voiceStatusKey({state: 'ready', reason: ''}), 'voiceReady');
+});
+
+test('actual storage failure stage takes priority over the previous verification phase', () => {
+  assert.equal(voicePhaseKey({stage:'store',phase:'verify'}), 'voicePhaseStore');
+  assert.equal(voicePhaseKey({stage:'marker',phase:'verify'}), 'voicePhaseStore');
+  assert.equal(voicePhaseKey({stage:'check-storage',phase:'download'}), 'voicePhaseStorage');
+  assert.equal(voicePhaseKey({stage:'fetch',phase:'verify'}), 'voicePhaseDownload');
+  assert.equal(voicePhaseKey({stage:'final-check',phase:'download'}), 'voicePhaseVerify');
+  assert.equal(voicePhaseKey({phase:'verify'}), 'voicePhaseVerify');
+  assert.equal(voicePhaseKey({}), '');
 });
 
 test('one pack download disables other actions while leaving its own Cancel available', () => {
