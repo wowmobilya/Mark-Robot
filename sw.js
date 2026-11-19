@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v143-dashboard-visibility';
+const CACHE_NAME = 'wow-furniture-v144-overview-views';
 const urlsToCache = [
   './workspace-surfaces.css?v=17',
   './context-nav.js?v=1',

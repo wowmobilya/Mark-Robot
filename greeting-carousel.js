@@ -203,3 +203,61 @@
   new MutationObserver(translate).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   translate();
 })();
+
+(() => {
+  const host=document.getElementById('dashIntelligence');
+  if (!host) return;
+  const modes=['list','tiles','bars','ring','strip'];
+  const copy={
+    ar:['شكل العرض','قائمة','بطاقات','أشرطة','حلقة','شريط نسبي','أنواع أخرى'],
+    en:['Display style','List','Cards','Bars','Ring','Proportions','Other types'],
+    tr:['Görünüm','Liste','Kartlar','Çubuklar','Halka','Oranlar','Diğer türler'],
+    fr:['Présentation','Liste','Cartes','Barres','Anneau','Proportions','Autres types'],
+    ru:['Вид','Список','Карточки','Полосы','Кольцо','Доли','Другие типы']
+  };
+  const picker=document.createElement('label'),title=document.createElement('span'),select=document.createElement('select');
+  picker.className='overview-style';
+  modes.forEach(mode=>select.add(new Option('',mode)));
+  picker.append(title,select);host.before(picker);
+  const key='wf.dashboard.overviewStyle';
+  let mode='bars';
+  try{const saved=localStorage.getItem(key);if(modes.includes(saved))mode=saved;}catch{}
+  select.value=mode;
+  function draw(){
+    const words=copy[document.documentElement.lang]||copy.en;
+    title.textContent=words[0];
+    Array.from(select.options).forEach((opt,i)=>opt.textContent=words[i+1]);
+    host.dataset.view=mode;
+    const catalog=host.querySelector('.wf-catalog-total')?.parentElement;
+    if(!catalog)return;
+    catalog.querySelectorAll('.overview-chart,.overview-other').forEach(el=>el.remove());
+    const rows=[...catalog.querySelectorAll('.wf-catalog-row')];
+    const count=row=>Number(row.querySelector('b').textContent)||0;
+    const total=Number(catalog.querySelector('.wf-catalog-total b').textContent)||0;
+    const other=total-rows.reduce((sum,row)=>sum+count(row),0);
+    if(other>0 && rows.length){
+      const extra=rows[0].cloneNode(true);
+      extra.classList.add('overview-other');extra.querySelector('span').textContent=words[6];
+      extra.querySelector('b').textContent=String(other);catalog.append(extra);rows.push(extra);
+    }
+    const colors=['#37768a','#82649a','#ad713c','#46816a','#787f8c'];
+    const max=Math.max(1,...rows.map(count)),stops=[];
+    let cumulative=0;
+    rows.forEach((row,i)=>{
+      const n=count(row),color=colors[i%colors.length],start=cumulative;
+      cumulative+=total?n*100/total:0;
+      if(n)stops.push(color+' '+start+'% '+cumulative+'%');
+      row.style.setProperty('--category-color',color);
+      row.querySelector('em').style.width=(100*n/max)+'%';
+    });
+    if(!['ring','strip'].includes(mode))return;
+    const chart=document.createElement('div');chart.className='overview-chart';
+    chart.setAttribute('aria-hidden','true');
+    if(stops.length)chart.style.backgroundImage=(mode==='ring'?'conic-gradient(':'linear-gradient(to right,')+stops.join(',')+')';
+    catalog.querySelector('.wf-catalog-label').after(chart);
+  }
+  select.onchange=()=>{mode=select.value;try{localStorage.setItem(key,mode);}catch{}draw();};
+  new MutationObserver(draw).observe(host,{childList:true});
+  new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+  draw();
+})();
