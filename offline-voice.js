@@ -1,4 +1,4 @@
-/* Optional local Piper speech. Only download() uses the network; synthesis reads
+/* Optional local speech. Only download() uses the network; synthesis reads
    verified CacheStorage files in a worker. Business data is never sent or stored. */
 (() => {
   'use strict';
@@ -11,20 +11,24 @@
     {id:'piper-wasm',url:'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.wasm',bytes:635212,sha256:'b777cd107a91d2bcc6a1ea46f2c26a662a7407394fe84589198aeaa83dd7a9d6',type:'application/wasm'},
     {id:'piper-data',url:'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.data',bytes:18077249,sha256:'29f1025eb23a5b5c192cd14a6efbce4509402ff265405072ee6f7d1a09b78f8c',type:'application/octet-stream'}
   ];
+  const arabicReportVoice={"locale":"ar","engine":"nabra","id":"ar-nabra-7m-af-msa-fp16","name":"Nabra","language":"العربية","quality":"fp16","gender":"female","runtime":[{"id":"nabra-ort-js","url":"https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort.wasm.bundle.min.mjs","bytes":77024,"sha256":"51bd7168175767324ab0acfcfc4ca94a096a3826e3ebac9ccc4f195eb865f8dd","type":"text/javascript"},{"id":"nabra-ort-wasm","url":"https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort-wasm-simd-threaded.wasm","bytes":14848852,"sha256":"4b884c203b0fa48d057be3332c65513ff85aa3c5bddd6946acc0fab7ecda001d","type":"application/wasm"},{"id":"nabra-g2p","url":"./vendor/nabra/phonemizer.mjs?v=1","bytes":2109197,"sha256":"33c3675f0e340d5498656044509fd24045d7165797d1a4ac49934492ed09ebb1","type":"text/javascript"}],"files":[{"id":"model","url":"https://huggingface.co/oddadmix/Nabra-7M-Distill-ONNX/resolve/bbac0f1e6b001bfae89871be366a4b000180deb2/onnx/model_fp16.onnx","bytes":15969086,"sha256":"cafb38ee0d39629c1e228fd7f120bb8dbec896342880f3ac8318cfc10e3f19ff","type":"application/octet-stream"},{"id":"voice","url":"https://huggingface.co/oddadmix/Nabra-7M-Distill-ONNX/resolve/bbac0f1e6b001bfae89871be366a4b000180deb2/voices/af_msa.bin","bytes":522240,"sha256":"129d447a7c9bdce1d5b6cb5ecb789bbfd9f427b7775131a97dfa5638583b3b92","type":"application/octet-stream"}],"bytes":16491326,"sharedBytes":17035073,"sourceURL":"https://huggingface.co/oddadmix/Nabra-7M-Distill-ONNX/tree/bbac0f1e6b001bfae89871be366a4b000180deb2","licenseURL":"https://huggingface.co/oddadmix/Nabra-7M-Distill-ONNX/resolve/bbac0f1e6b001bfae89871be366a4b000180deb2/README.md","workerType":"module"};
   const definitions=[
-    ['ar','ar_JO-kareem-medium','Kareem','العربية','ar/ar_JO/kareem/medium/',63201294,'9e95cab07b679da603bba17c4dec7ab3111320571964ee95c0379603c086491e',5024,'ea6d9b9d9076dbdb6bf5c98c6a141ef154959d2359709b37855727964e7d6c4d'],
     ['tr','tr_TR-fettah-medium','Fettah','Türkçe','tr/tr_TR/fettah/medium/',63201294,'5d14d5222f36aea2b8fc8dba097fcb18dcf8f5b33e5b2aa76b5e0b44602aa8d7',4877,'0738ecd770d4102fa967a784ae89f64d846b1b5f104076e410c978fefa70b3e7'],
     ['en','en_US-ljspeech-medium','LJ Speech','English','en/en_US/ljspeech/medium/',63531379,'6f52a751e2349abe7a76735eb09dc1875298c77ea2342ffd2fef79ff81b87f22',4972,'141d612cc0a95ed7efc1ca936b845c2364967f2e9217c5dbfcf69fc4d6c65860'],
     ['fr','fr_FR-siwis-medium','Siwis','Français','fr/fr_FR/siwis/medium/',63201294,'641d1ab097da2b81128c076810edb052b385decc8be3381814802a64a73baf99',4875,'39479916c2db192b5ac9764daddd0c744d83e023ad890c6976c0633ae4df8959'],
     ['ru','ru_RU-dmitri-medium','Dmitri','Русский','ru/ru_RU/dmitri/medium/',63201294,'f073356ebc4bd0f80c5af58df2953a5988bd5bdab1eb38635ce960b071fbefcb',4824,'667ef3117bc642c2892dff7690d8bdc8ca4228aeaa783b2dc1416df632855e0d']
   ];
   const sharedBytes=runtime.reduce((sum,item)=>sum+item.bytes,0);
-  const catalog=definitions.map(([locale,id,name,language,path,bytes,sha256,configBytes,configHash])=>({locale,id,name,language,quality:'medium',bytes:bytes+configBytes,sharedBytes,
+  const retiredArabic={id:'ar_JO-kareem-medium',files:[
+    MODEL_BASE+'ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx',
+    MODEL_BASE+'ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx.json'
+  ]};
+  const catalog=[arabicReportVoice,...definitions.map(([locale,id,name,language,path,bytes,sha256,configBytes,configHash])=>({locale,id,name,language,quality:'medium',bytes:bytes+configBytes,sharedBytes,
     sourceURL:'https://huggingface.co/diffusionstudio/piper-voices/tree/840e38a7e26d813bd6221b78cfbaefa3585b3f71/'+path,
     licenseURL:MODEL_BASE+path+'MODEL_CARD',files:[
       {id:'model',url:MODEL_BASE+path+id+'.onnx',bytes,sha256,type:'application/octet-stream'},
       {id:'config',url:MODEL_BASE+path+id+'.onnx.json',bytes:configBytes,sha256:configHash,type:'application/json'}
-    ]}));
+    ]}))];
   const localeKey=value=>String(value||'').toLowerCase().split(/[-_]/)[0];
   const error=code=>Object.assign(new Error(code),{code});
   const aborted=()=>Object.assign(new Error('cancelled'),{name:'AbortError',code:'cancelled'});
@@ -53,6 +57,19 @@
     for(let i=0;i<samples.length;i++){const sample=Math.max(-1,Math.min(1,Number.isFinite(samples[i])?samples[i]:0));view.setInt16(44+i*2,Math.round(sample*(sample<0?32768:32767)),true);}
     return buffer;
   }
+  function speechChunks(text,chunks){
+    if(chunks===undefined)return splitText(text);
+    if(!Array.isArray(chunks)||!chunks.length||chunks.length>160)throw error('invalid-speech-chunks');
+    let end=0,previous=null;
+    return chunks.map(chunk=>{
+      if(!chunk||typeof chunk.text!=='string'||!chunk.text.trim()||chunk.text.length>800||
+        !Number.isInteger(chunk.charIndex)||!Number.isInteger(chunk.charLength)||
+        (chunk.charIndex<end&&!(previous&&chunk.charIndex===previous.charIndex&&chunk.charLength===previous.charLength))||
+        chunk.charLength<1||chunk.charIndex+chunk.charLength>text.length)throw error('invalid-speech-chunks');
+      end=chunk.charIndex+chunk.charLength;previous=chunk;
+      return {text:chunk.text,charIndex:chunk.charIndex,charLength:chunk.charLength};
+    });
+  }
   async function validAsset(cache,asset){
     const response=await cache.match(asset.url);
     return !!response&&response.ok&&response.headers.get('X-WF-SHA256')===asset.sha256&&Number(response.headers.get('Content-Length'))===asset.bytes;
@@ -60,6 +77,7 @@
   function createManager({caches,fetch,digest,origin,supported=true,onChange=()=>{},onProgress=()=>{},voices=catalog,shared=runtime,estimate}){
     const map=new Map(voices.map(voice=>[voice.locale,voice])),states=new Map();let active=null;
     const find=locale=>map.get(localeKey(locale));
+    const runtimeFor=voice=>voice.runtime||shared;
     const marker=voice=>new URL('/__infinity_voice__/'+voice.id+'.json',origin).href;
     const diagnosticToken=(value,fallback='')=>typeof value==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(value)?value:fallback;
     const clearDiagnostics={stage:'',file:'',errorName:''};
@@ -71,9 +89,10 @@
       if(!supported)return locale?getStatus(locale):voices.map(voice=>getStatus(voice.locale));
       const selected=locale?[find(locale)].filter(Boolean):voices;
       try{
-        const cache=await caches.open(CACHE),runtimeReady=(await Promise.all(shared.map(asset=>validAsset(cache,asset)))).every(Boolean);
+        const cache=await caches.open(CACHE);
         for(const voice of selected){
           if(active?.locale===voice.locale)continue;
+          const runtimeReady=(await Promise.all(runtimeFor(voice).map(asset=>validAsset(cache,asset)))).every(Boolean);
           let marked=false;try{const record=await cache.match(marker(voice));const data=record?await record.json():null;marked=data?.version===VERSION&&data?.model===voice.files[0].sha256;}catch(_){}
           const ready=marked&&runtimeReady&&(await Promise.all(voice.files.map(asset=>validAsset(cache,asset)))).every(Boolean);
           set(voice,{state:ready?'ready':'not-installed',installed:ready,ready,available:ready,reason:'',loaded:ready?voice.bytes+voice.sharedBytes:0,total:voice.bytes+voice.sharedBytes,progress:ready?1:0,...clearDiagnostics});
@@ -91,7 +110,19 @@
       };
       set(voice,{state:'downloading',ready:false,installed:false,available:false,reason:'',loaded:0,progress:0,phase:'download',...diagnostic,errorName:''});
       try{
-        const cache=await caches.open(CACHE),assets=[...shared,...voice.files],missing=[];
+        const cache=await caches.open(CACHE),assets=[...runtimeFor(voice),...voice.files],missing=[];
+        if(voice.locale==='ar'&&voice.engine==='nabra'){
+          // Only an explicit Arabic pack installation retires the replaced voice.
+          // Preserve other languages, their partial downloads, and all business data.
+          await Promise.all(retiredArabic.files.map(url=>cache.delete(url)));
+          await cache.delete(marker(retiredArabic));
+          let piperNeeded=false;
+          for(const other of voices.filter(item=>item.locale!=='ar'&&item.engine!=='nabra')){
+            if(await cache.match(marker(other))){piperNeeded=true;break;}
+            if((await Promise.all(other.files.map(asset=>cache.match(asset.url)))).some(Boolean)){piperNeeded=true;break;}
+          }
+          if(!piperNeeded)await Promise.all(shared.map(asset=>cache.delete(asset.url)));
+        }
         for(const asset of assets){at('check-cache',asset);if(!await validAsset(cache,asset))missing.push(asset);}
         const total=missing.reduce((sum,asset)=>sum+asset.bytes,0);let completed=0;
         at('check-storage');
@@ -137,9 +168,9 @@
       // Runtime files are shared by other packs and remain useful after removal.
       return set(voice,{state:'not-installed',installed:false,ready:false,available:false,loaded:0,total:voice.bytes+voice.sharedBytes,progress:0,reason:'',...clearDiagnostics});
     }
-    return {list:()=>voices.map(({files,...voice})=>({...voice})),getStatus,refresh,download,remove,cancelDownload:locale=>{if(active?.locale===localeKey(locale))active.controller.abort();}};
+    return {list:()=>voices.map(({files,runtime:voiceRuntime,...voice})=>({...voice})),getStatus,refresh,download,remove,cancelDownload:locale=>{if(active?.locale===localeKey(locale))active.controller.abort();}};
   }
-  const core={CACHE,VERSION,runtime,catalog,localeKey,error,aborted,checkAbort,hex,splitText,pcmToWav,validAsset,createManager};
+  const core={CACHE,VERSION,runtime,catalog,retiredArabic,localeKey,error,aborted,checkAbort,hex,splitText,speechChunks,pcmToWav,validAsset,createManager};
   if(typeof module!=='undefined'&&module.exports){module.exports=core;return;}
   if(typeof document==='undefined'){self.WFOfflineVoiceCore=core;return;}
   function supported(){
@@ -148,12 +179,15 @@
   const emit=(type,detail)=>window.dispatchEvent(new CustomEvent(type,{detail}));
   const manager=createManager({caches:window.caches,fetch:window.fetch.bind(window),digest:bytes=>crypto.subtle.digest('SHA-256',bytes),origin:location.origin,supported:supported(),
     estimate:navigator.storage?.estimate?()=>navigator.storage.estimate():null,onChange:value=>emit('wf-offline-voice-change',value),onProgress:value=>emit('wf-offline-voice-progress',value)});
-  let worker=null,requestId=0,job=null,activeSpeech=null;
-  function terminate(){if(worker){worker.terminate();worker=null;}if(job){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();task.reject(aborted());}}
+  let worker=null,workerEngine='',requestId=0,job=null,activeSpeech=null;
+  function terminate(){if(worker){worker.terminate();worker=null;}workerEngine='';if(job){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();task.reject(aborted());}}
   function workerRequest(locale,text,signal){
     if(job)return Promise.reject(error('speech-busy'));checkAbort(signal);
+    const engine=catalog.find(voice=>voice.locale===localeKey(locale))?.engine||'piper';
+    if(worker&&workerEngine!==engine)terminate();
     if(!worker){
-      worker=new Worker(new URL('offline-voice-worker.js?v=2',document.baseURI));
+      worker=engine==='nabra'?new Worker(new URL('nabra-report-worker.js?v=1',document.baseURI),{type:'module'}):new Worker(new URL('offline-voice-worker.js?v=3',document.baseURI));
+      workerEngine=engine;
       worker.onmessage=event=>{if(!job||event.data?.id!==job.id)return;const task=job;job=null;clearTimeout(task.timeout);task.cleanup();if(event.data.error){worker?.terminate();worker=null;task.reject(error(event.data.error));}else task.resolve(event.data.blob);};
       worker.onerror=()=>{if(job){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();task.reject(error('engine-failed'));}worker?.terminate();worker=null;};
     }
@@ -168,25 +202,45 @@
     if(!manager.getStatus(locale).ready)throw error('pack-not-installed');checkAbort(options.signal);
     return workerRequest(locale,text,options.signal);
   }
+  const playbackLeases=new WeakSet();
+  function preparePlayback(){
+    // Call synchronously from the user's tap, before IndexedDB or a first download.
+    // The same unlocked element plays the later report on mobile browsers.
+    const audio=new Audio(),lease={audio,unlock:null,disposed:false,dispose(){
+      if(lease.disposed)return;lease.disposed=true;audio.pause();audio.removeAttribute('src');audio.load();
+    }};
+    playbackLeases.add(lease);
+    const silence=URL.createObjectURL(new Blob([pcmToWav(new Float32Array(441),22050)],{type:'audio/wav'}));
+    audio.src=silence;
+    try{lease.unlock=Promise.resolve(audio.play()).then(()=>audio.pause()).catch(()=>{}).finally(()=>URL.revokeObjectURL(silence));}
+    catch(_){URL.revokeObjectURL(silence);lease.unlock=Promise.resolve();}
+    return lease;
+  }
   function speak(options={}){
     activeSpeech?.cancel();
-    const controller=new AbortController(),audio=new Audio();let stopped=false,url='',finished=false;
+    const lease=playbackLeases.has(options.playback)&&!options.playback.disposed?options.playback:preparePlayback();
+    playbackLeases.delete(lease);
+    const controller=new AbortController(),audio=lease.audio;let stopped=false,url='',finished=false;
     const text=typeof options.text==='string'?options.text:'',locale=options.locale||'ar';
-    const cleanup=()=>{audio.pause();audio.removeAttribute('src');audio.load();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;};
+    const cleanup=()=>{lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;};
     const handle={cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();}};activeSpeech=handle;
-    // Unlock the same audio element during the explicit click; no mouth/start event
-    // is emitted for this short silent buffer while the model is preparing speech.
-    const silence=URL.createObjectURL(new Blob([pcmToWav(new Float32Array(441),22050)],{type:'audio/wav'}));
-    audio.src=silence;let unlock;
-    try{unlock=Promise.resolve(audio.play()).then(()=>audio.pause()).catch(()=>{}).finally(()=>URL.revokeObjectURL(silence));}catch(_){URL.revokeObjectURL(silence);unlock=Promise.resolve();}
     (async()=>{
       try{
         if(!text.trim()||text.length>16000)throw error('text-length');if(!manager.getStatus(locale).ready)throw error('pack-not-installed');
-        await unlock;checkAbort(controller.signal);
-        for(const chunk of splitText(text)){
-          options.onWaiting?.();
-          const blob=await synthesize(chunk.text,{locale,signal:controller.signal});checkAbort(controller.signal);
+        const chunks=speechChunks(text,options.chunks);
+        await lease.unlock;checkAbort(controller.signal);
+        // Prepare one sentence ahead in the worker while the previous one plays.
+        // Settling errors here avoids an unhandled rejection during playback.
+        const generate=chunk=>{const pending={ready:false,promise:null};pending.promise=synthesize(chunk.text,{locale,signal:controller.signal}).then(blob=>({blob}),problem=>({problem})).then(result=>{pending.ready=true;return result;});return pending;};
+        let next=generate(chunks[0]);
+        for(let index=0;index<chunks.length;index++){
+          const chunk=chunks[index];
+          if(!next.ready)options.onWaiting?.();
+          const result=await next.promise;checkAbort(controller.signal);if(result.problem)throw result.problem;
+          const blob=result.blob;
+          next=index+1<chunks.length?generate(chunks[index+1]):null;
           url=URL.createObjectURL(blob);audio.src=url;audio.volume=Number.isFinite(options.volume)?Math.max(0,Math.min(1,options.volume)):1;
+          audio.preservesPitch=true;
           audio.playbackRate=Number.isFinite(options.rate)?Math.max(.75,Math.min(1.3,options.rate)):1;
           await new Promise((resolve,reject)=>{
             let boundary=false;
@@ -199,11 +253,11 @@
           URL.revokeObjectURL(url);url='';checkAbort(controller.signal);
         }
         finished=true;cleanup();options.onEnd?.();
-      }catch(problem){finished=true;cleanup();if(!stopped&&problem?.name!=='AbortError')options.onError?.(problem);}
+      }catch(problem){finished=true;controller.abort();cleanup();if(!stopped&&problem?.name!=='AbortError')options.onError?.(problem);}
     })();
     return handle;
   }
-  window.WFOfflineVoice={...manager,synthesize,speak,remove:async locale=>{activeSpeech?.cancel();terminate();return manager.remove(locale);}};
+  window.WFOfflineVoice={...manager,synthesize,speak,preparePlayback,remove:async locale=>{activeSpeech?.cancel();terminate();return manager.remove(locale);}};
   window.addEventListener('pagehide',()=>{activeSpeech?.cancel();terminate();});
   manager.refresh();
 })();

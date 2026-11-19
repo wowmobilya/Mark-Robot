@@ -183,6 +183,16 @@
       catch (_) { return false; }
     }
 
+    function voicePackState() {
+      try { return window.WFOfflineVoice?.getStatus(locale) || {state: 'unsupported'}; }
+      catch (_) { return {state: 'unsupported'}; }
+    }
+
+    function reportVoice(state, pack = voicePackState()) {
+      reportEvent('wf-robot-report-voice', {state, locale, progress: pack.progress || 0,
+        loaded: pack.loaded || 0, total: pack.total || 0, reason: pack.reason || ''});
+    }
+
     function active() { return !!utterance || !!recording || !!offlineRequest || !!reportRequest; }
 
     function visible() {
@@ -268,6 +278,7 @@
       const ownedSpeech = !!utterance;
       const oldRecording = recording;
       const oldOffline = offlineRequest;
+      const oldReport = reportRequest;
       // Invalidate callbacks before cancel() because some engines dispatch synchronously.
       utterance = null;
       recording = null;
@@ -285,6 +296,8 @@
       setExpression('calm');
       if (oldRecording) releaseRecording(oldRecording);
       oldOffline?.handle?.cancel();
+      oldReport?.controller?.abort();
+      oldReport?.playback?.dispose();
       if (cancel && ownedSpeech) {
         try { synth.cancel(); } catch (_) { /* The visible state still returns to idle. */ }
       }
@@ -303,6 +316,15 @@
       try { voices = supported ? synth.getVoices() : []; } catch (_) { voices = []; }
       if (!active() && (currentVoice() || recordingURL() || offlineReady()) && ['unavailable', 'reportUnavailable'].includes(state)) state = 'ready';
       render();
+    }
+
+    function refreshOfflineStatus(event) {
+      refreshVoices();
+      const pack = event?.detail;
+      if (sessionKind !== 'report' || pack?.locale !== locale) return;
+      const state = pack.ready || currentVoice() ? 'ready' : pack.state === 'downloading' ? 'downloading' :
+        pack.state === 'error' ? 'error' : pack.state === 'unsupported' ? 'unsupported' : 'missing';
+      reportVoice(state, pack);
     }
 
     function beginTalking() {
@@ -401,7 +423,7 @@
       if (!speakIdentityFallback()) { state = 'unavailable'; render(); }
     }
 
-    function speakOffline(text, alreadyActive = false) {
+    function speakOffline(text, alreadyActive = false, chunks, playback) {
       const request = {handle: null, started: false};
       offlineRequest = request;
       state = 'preparing';
@@ -412,7 +434,8 @@
         if (offlineRequest === request && state === 'preparing') finish('failed', true);
       }, 45000);
       try {
-        request.handle = window.WFOfflineVoice.speak({text, locale,
+        request.handle = window.WFOfflineVoice.speak({text, locale, chunks, playback,
+          rate: sessionKind === 'report' && locale === 'ar' ? 1.12 : 1,
           onStart() {
             if (offlineRequest !== request) return;
             if (!visible()) { finish('ready', true); return; }
@@ -462,7 +485,7 @@
       const request = new window.SpeechSynthesisUtterance(text);
       request.voice = voice;
       request.lang = voice.lang;
-      request.rate = locale === 'ar' ? 0.94 : 1;
+      request.rate = locale === 'ar' ? (sessionKind === 'report' ? 1.05 : 0.94) : 1;
       request.pitch = 1.02;
       request.volume = 1;
       utterance = request;
@@ -506,7 +529,9 @@
       if (active()) { if (sessionKind === 'report') finish('stopped', true); return; }
       if (!visible()) return;
       refreshVoices();
-      const token = {};
+      const token = {controller: null, playback: null};
+      // Prime audio in the click itself, before reading records or downloading a pack.
+      try { token.playback = window.WFOfflineVoice?.preparePlayback?.(); } catch (_) {}
       reportRequest = token;
       sessionKind = 'report';
       state = 'preparing';
@@ -526,21 +551,51 @@
       const narration = typeof snapshot?.narration === 'string' ? snapshot.narration.trim() : '';
       if (!narration) { finish('reportEmpty'); return; }
       const voice = currentVoice();
-      if (!voice && !offlineReady()) { finish('reportUnavailable'); return; }
+      if (!voice && !offlineReady()) {
+        clearTimeout(startTimer); startTimer = null;
+        const pack = voicePackState();
+        if (pack.state === 'unsupported' || typeof window.WFOfflineVoice?.download !== 'function') {
+          reportVoice('unsupported', pack); finish('reportUnavailable'); return;
+        }
+        if (!event.install) { reportVoice(pack.state === 'downloading' ? 'downloading' : 'missing', pack); finish('reportUnavailable'); return; }
+        token.controller = new AbortController();
+        reportVoice('downloading', pack);
+        try {
+          await window.WFOfflineVoice.download(locale, {signal: token.controller.signal,
+            onProgress(value) { if (reportRequest === token) reportVoice('downloading', value); }});
+        } catch (problem) {
+          if (reportRequest !== token) return;
+          reportVoice(problem?.name === 'AbortError' ? 'missing' : 'error', voicePackState());
+          finish('reportUnavailable'); return;
+        }
+        if (reportRequest !== token) return;
+        if (!visible()) { finish('ready', true); return; }
+      }
       if (synth?.speaking || synth?.pending || synth?.paused) { finish('failed'); return; }
+      let chunks;
+      const pack = window.WFOfflineVoice?.list?.().find(item => item.locale === locale);
+      if (offlineReady() && pack?.engine === 'nabra') {
+        try { chunks = window.WFArabicReportSpeech.prepare(snapshot); }
+        catch (_) {
+          // Unknown or incomplete report text must never be guessed by a speech template.
+          if (!voice) { reportVoice('unsupported', {...voicePackState(), reason: 'report-text-unsupported'}); finish('reportEmpty'); return; }
+        }
+      }
       clearTimeout(startTimer);
       startTimer = null;
       reportRequest = null;
-      if (offlineReady()) speakOffline(narration, true);
-      else speakText(narration, voice, true);
+      reportVoice('ready');
+      if (offlineReady() && (pack?.engine !== 'nabra' || chunks)) speakOffline(narration, true, chunks, token.playback);
+      else { token.playback?.dispose(); speakText(narration, voice, true); }
     }
 
     function reportControl(event) {
-      if (event.detail?.action === 'stop') {
+      if (event.detail?.action === 'stop' || event.detail?.action === 'cancel-download') {
         if (active() && sessionKind === 'report') finish('stopped', true);
-      } else if (event.detail?.action === 'replay') {
+        if (event.detail?.action === 'cancel-download') { window.WFOfflineVoice?.cancelDownload?.(locale); reportVoice('missing'); }
+      } else if (event.detail?.action === 'replay' || event.detail?.action === 'install') {
         if (active()) finish('stopped', true);
-        toggleReport({stopPropagation() {}});
+        toggleReport({stopPropagation() {}, install: event.detail.action === 'install'});
       }
     }
 
@@ -576,7 +631,7 @@
       window.removeEventListener('wf-robot-preferences', applyPreferences);
       window.removeEventListener('wf-robot-motion', applyMotion);
       window.removeEventListener('wf-robot-report-control', reportControl);
-      window.removeEventListener('wf-offline-voice-change', refreshVoices);
+      window.removeEventListener('wf-offline-voice-change', refreshOfflineStatus);
       synth?.removeEventListener?.('voiceschanged', refreshVoices);
     }
 
@@ -592,7 +647,7 @@
     window.addEventListener('wf-robot-preferences', applyPreferences);
     window.addEventListener('wf-robot-motion', applyMotion);
     window.addEventListener('wf-robot-report-control', reportControl);
-    window.addEventListener('wf-offline-voice-change', refreshVoices);
+    window.addEventListener('wf-offline-voice-change', refreshOfflineStatus);
     synth?.addEventListener?.('voiceschanged', refreshVoices);
     applyPreferences();
     refreshVoices();

@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),{webcrypto}=require('node:crypto');
-const {CACHE,runtime,catalog,localeKey,splitText,pcmToWav,createManager}=require('../offline-voice.js');
+const {CACHE,runtime,catalog,retiredArabic,localeKey,splitText,speechChunks,pcmToWav,createManager}=require('../offline-voice.js');
 const origin='https://example.test';
 function cacheFixture(){
  const entries=new Map();let failure='',failureException=null;
@@ -18,7 +18,8 @@ async function fixture(options={}){
 test('five pinned packs include complete model/config and shared runtime hashes with declared download sizes',()=>{
  assert.deepEqual(catalog.map(item=>item.locale),['ar','tr','en','fr','ru']);assert.equal(catalog[1].id,'tr_TR-fettah-medium');
  assert.equal(runtime.reduce((sum,item)=>sum+item.bytes,0),29608649);
- for(const voice of catalog){assert.equal(voice.files.length,2);assert.equal(voice.bytes,voice.files.reduce((sum,item)=>sum+item.bytes,0));for(const asset of [...runtime,...voice.files]){assert(/^[a-f0-9]{64}$/.test(asset.sha256));assert(asset.bytes>0);assert(asset.url.startsWith('https://'));assert(!asset.url.includes('/resolve/main/'));}}
+ for(const voice of catalog){const ownRuntime=voice.runtime||runtime;assert.equal(voice.files.length,2);assert.equal(voice.bytes,voice.files.reduce((sum,item)=>sum+item.bytes,0));assert.equal(voice.sharedBytes,ownRuntime.reduce((sum,item)=>sum+item.bytes,0));for(const asset of [...ownRuntime,...voice.files]){assert(/^[a-f0-9]{64}$/.test(asset.sha256));assert(asset.bytes>0);assert(asset.url.startsWith('https://')||asset.url==='./vendor/nabra/phonemizer.mjs?v=1');assert(!asset.url.includes('/resolve/main/'));}}
+ assert.equal(catalog[0].engine,'nabra');assert.equal(catalog[0].bytes+catalog[0].sharedBytes,33526399);assert.equal(catalog[0].gender,'female');
  assert.equal(localeKey('ar-JO'),'ar');assert.equal(localeKey('en_US'),'en');
 });
 test('loading and checking pack availability performs no network requests',async()=>{
@@ -32,6 +33,27 @@ test('explicit download verifies the entire runtime and voice before exposing re
 });
 test('a second language reuses verified runtime without downloading it again',async()=>{
  const a=await fixture();await a.manager.download('ar');await a.manager.download('tr');assert.equal(a.requests.length,5);assert.equal(a.requests.filter(request=>request.url.endsWith('/runtime')).length,1);assert(a.manager.getStatus('ar').ready&&a.manager.getStatus('tr').ready);
+});
+test('Arabic engine checks and downloads its own runtime without requiring another engine',async()=>{
+ const a=await fixture();const arabicRuntime={...a.shared[0],id:'arabic-runtime',url:'https://assets.example/arabic-runtime'};a.voices[0].runtime=[arabicRuntime];
+ await a.manager.download('ar');assert(a.requests.some(item=>item.url===arabicRuntime.url));assert(!a.requests.some(item=>item.url===a.shared[0].url));
+ await a.manager.refresh();assert.equal(a.manager.getStatus('ar').ready,true);assert.equal(a.manager.getStatus('tr').ready,false);
+ await a.manager.download('tr');assert(a.requests.some(item=>item.url===a.shared[0].url));
+ await a.cache.cache.delete(arabicRuntime.url);await a.manager.refresh();assert.equal(a.manager.getStatus('ar').ready,false);assert.equal(a.manager.getStatus('tr').ready,true);
+ assert.equal(a.manager.list()[0].runtime,undefined);
+});
+test('explicit Arabic upgrade releases retired files but preserves every other language and unrelated cache entry',async()=>{
+ for(const otherInstalled of [false,true]){
+  const a=await fixture();a.voices[0].engine='nabra';a.voices[0].runtime=[{...a.shared[0],url:'https://assets.example/nabra'}];
+  await a.cache.cache.put('https://example.test/unrelated',new Response('retain'));
+  for(const url of retiredArabic.files)await a.cache.cache.put(url,new Response('retired'));
+  await a.cache.cache.put(origin+'/__infinity_voice__/'+retiredArabic.id+'.json',new Response('{}'));
+  if(otherInstalled)await a.manager.download('tr');else await a.cache.cache.put(a.shared[0].url,new Response('old partial runtime'));
+  await a.manager.refresh('ar');assert(a.cache.entries.has(retiredArabic.files[0]),'Opening or checking never removes a pack');
+  await a.manager.download('ar');assert(!a.cache.entries.has(retiredArabic.files[0]));assert(!a.cache.entries.has(retiredArabic.files[1]));assert(a.cache.entries.has('https://example.test/unrelated'));
+  assert.equal(a.cache.entries.has(a.shared[0].url),otherInstalled);
+  if(otherInstalled){await a.manager.refresh('tr');assert.equal(a.manager.getStatus('tr').ready,true);}
+ }
 });
 test('missing runtime or config invalidates a previously installed pack',async()=>{
  const a=await fixture();await a.manager.download('ar');await a.cache.cache.delete(a.shared[0].url);await a.manager.refresh('ar');assert.equal(a.manager.getStatus('ar').ready,false);
@@ -96,4 +118,11 @@ test('sentence boundaries refer to original text and keep decimals and emoji int
 });
 test('WAV output declares real PCM length/rate and clips invalid samples safely',()=>{
  const buffer=pcmToWav(Float32Array.from([0,1,-1,2,NaN]),22050),view=new DataView(buffer);assert.equal(new TextDecoder().decode(new Uint8Array(buffer).slice(0,4)),'RIFF');assert.equal(buffer.byteLength,54);assert.equal(view.getUint32(24,true),22050);assert.equal(view.getInt16(46,true),32767);assert.equal(view.getInt16(48,true),-32768);assert.equal(view.getInt16(50,true),32767);assert.equal(view.getInt16(52,true),0);
+});
+test('vocalized speech accepts bounded original spans and exact repeats, rejects reordered or overlapping display ranges',()=>{
+ const text='المبلغ: ١٢٫٥٠ دولار. العدد: ٢.';
+ const chunks=[{text:'الْمَبْلَغُ اثْنَا عَشَرَ',charIndex:0,charLength:19},{text:'فَاصِلَة خَمْسَة صِفْر',charIndex:0,charLength:19},{text:'الْعَدَدُ اثْنَانِ',charIndex:20,charLength:9}];
+ assert.deepEqual(speechChunks(text,chunks),chunks);
+ for(const bad of [[],[{text:'أ',charIndex:-1,charLength:3}],[{text:'أ',charIndex:0,charLength:999}],chunks.concat({text:'أ',charIndex:2,charLength:3}),[{text:'أ'.repeat(801),charIndex:0,charLength:2}]])assert.throws(()=>speechChunks(text,bad),/invalid-speech-chunks/);
+ assert.deepEqual(speechChunks(text),splitText(text));
 });

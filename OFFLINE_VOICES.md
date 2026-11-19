@@ -35,45 +35,85 @@ identity recording is bundled, so phones do not download its model weights.
 ## User-installed packs for variable speech
 
 The application downloads a voice only after the user selects **Download** in
-Robot Settings. Synthesis runs in `offline-voice-worker.js` on the user's device.
-Report text and generated speech are never sent to a speech service.
+Robot Settings or **Download report voice** inside the written report. Opening a
+report never starts a model download. Its progress, cancellation and retry are
+visible in the same sheet. After the explicit first download completes, that
+report can begin speaking without another settings visit.
 
-The first pack also downloads the shared runtime (29,608,649 bytes, about
-29.6 MB). Later packs reuse it. Each pack is about 63.2 MB (English is about
-63.5 MB). The exact model and runtime byte counts and SHA-256 hashes are pinned
-in `offline-voice.js`. Both byte length and hash must match before a file is
-cached. A pack becomes available only after its model, configuration, and all
-shared runtime files are present and verified.
+### Arabic report voice
+
+The Arabic pack uses the female Modern Standard Arabic `af_msa` voice from
+Nabra-7M-Distill-ONNX, pinned to revision
+`bbac0f1e6b001bfae89871be366a4b000180deb2`. The FP16 model is 15,969,086 bytes;
+voice styles are 522,240 bytes. Its own ONNX Runtime Web 1.31.1 and Arabic
+phonemizer add 17,035,073 bytes. The complete first download is **33,526,399
+bytes** (about 33.5 MB), independent of Piper's larger runtime.
+
+`arabic-report-speech.js` validates the exact Arabic narration and segment
+offsets against the committed report snapshot. It supplies vowel-marked phrases
+and numbers derived from the exact displayed digits, including sign and both
+decimal places. Unsupported or inconsistent text is never guessed. The visible
+report and accounting calculations are unchanged. Longer spoken clauses may
+share one original display span; highlighting is at actual audio chunk start,
+not invented word timing. The worker rejects phoneme overflow instead of
+truncating speech.
+
+`nabra-report-worker.js` runs inference entirely on the device. It verifies all
+cached runtime/model bytes again, provides WASM bytes directly, and rejects
+network fetches. Speech text and generated audio are never sent to a service or
+saved in the voice cache. One following chunk is prepared while the current
+chunk plays. Arabic reports play at 1.12 times the generated audio's speed with
+pitch preservation enabled. The native Arabic report fallback uses a speech
+rate of 1.05 instead of the previous 0.94. Identity recordings and other
+languages retain their existing speed. A trusted tap primes the same audio
+element before asynchronous record reads or downloads, for mobile playback
+compatibility.
+
+The first explicit Arabic upgrade removes retired Kareem model/config/marker
+entries. It removes the old Piper runtime only when no other language has an
+installed or partial pack that needs it. Other language packs, unrelated caches,
+and business records are preserved. No migration runs merely on page load.
+
+Nabra's model/client and the embedded eSpeak phonemizer have separate licenses.
+See [third-party notices and corresponding source](vendor/nabra/README.md).
+The source archive is not included in the voice download or application cache.
+
+### Other languages
+
+Turkish, English, French and Russian retain their Piper models. Their first pack
+also downloads the shared runtime (29,608,649 bytes, about 29.6 MB); later Piper
+packs reuse it. Each voice is about 63.2 MB (English about 63.5 MB). Exact byte
+counts and SHA-256 hashes are pinned in `offline-voice.js`. All files must pass
+both checks before a voice becomes ready. Piper inference uses
+`offline-voice-worker.js` on the user's device, with no remote inference.
 
 The dedicated `infinity-offline-voice-v1` cache is independent from application
-release caches and from the financial database. Removing a pack deletes only
-that pack's model, configuration, and readiness record. Shared runtime files are
-retained for other packs. Browser site-storage eviction can require a download
-again; the UI checks local availability instead of trusting a saved preference.
+release caches and the financial database. Removing a pack deletes its model,
+configuration or style data, and readiness record. Shared runtime files remain
+available for reuse. Browser storage eviction can require a new download; the
+UI checks actual local availability rather than trusting a saved preference.
 
 ## Browser integration
 
-Load `offline-voice.js?v=2` before the robot script. Precache this small script
-and `offline-voice-worker.js?v=2` in the existing service worker. Do not precache
-voice models or runtime binaries during page load.
+Load `offline-voice.js?v=3` and `arabic-report-speech.js?v=1` before the robot
+script. Precache those small modules, both speech workers, and
+`nabra-phonemizer.js?v=1`. Never precache models, large runtime binaries or source
+archives during page load. The optional Arabic phonemizer bundle is installed
+into the verified voice cache with the pack and imported from those bytes.
 
-The worker obtains runtime scripts, WASM, data, and model bytes directly from
-CacheStorage. Runtime scripts use local Blob URLs; Piper receives its WASM and
-data buffers directly, and ONNX receives a local Blob URL for its WASM. The
-worker's `fetch` permits only Blob URLs and has no network fallback. It verifies
-cached bytes again before executing runtime code or loading a model.
+Both engines use one CPU/WASM thread, without cross-origin isolation or
+SharedArrayBuffer. Secure context, CacheStorage, Web Workers, Web Crypto and
+WebAssembly SIMD are required; Arabic additionally uses a module worker.
+Unsupported browsers may still use an available native voice marked
+`localService === true`. Network-backed system voices are never selected.
 
-Inference uses one CPU/WASM thread, so cross-origin isolation headers and
-SharedArrayBuffer are not required. Secure context, CacheStorage, Web Workers,
-Web Crypto and WebAssembly SIMD are required. A browser that lacks them receives
-an unsupported status; it can continue using an available local system voice.
-Speed and voice pronunciation depend on the selected model, text, and device.
-
-`speak()` returns a cancellable handle immediately. Cancellation stops playback
-and terminates an in-flight inference worker. Mouth/reader callbacks begin on
-actual media `playing` events; waiting between sentence chunks is reported
-separately. Sentence offsets refer to the original supplied text. The models do
-not provide word timestamps, and the application does not invent them.
+`speak()` returns a cancellable handle immediately. Cancelling stops playback
+and in-flight inference; report close, route/language changes and visibility
+changes also cancel an owned first download. Mouth/reader callbacks begin only
+on actual media `playing` events. Word timestamps are not fabricated.
+Pronunciation and speed remain model- and device-dependent; local synthetic
+fixtures verify complete playback and value-preserving text, not perfect accent
+or pronunciation for every possible amount or name.
 
 ## Pinned runtime sources
 
@@ -104,7 +144,7 @@ replace those notices.
 
 | Language | Model | Original model-card dataset notice |
 |---|---|---|
-| Arabic | `ar_JO-kareem-medium` | AliMokhammad/arabicttstrain; the upstream card refers to that dataset for licensing |
+| Arabic (retired variable-speech pack) | `ar_JO-kareem-medium` | AliMokhammad/arabicttstrain; retained here for attribution to earlier releases |
 | Turkish | `tr_TR-fettah-medium` | Nabu Casa voice datasets, CC0 |
 | English | `en_US-ljspeech-medium` | LJ Speech dataset, public domain; model contributed by Bryce Beattie |
 | French | `fr_FR-siwis-medium` | SIWIS French Speech Synthesis Database, CC BY 4.0; Junichi Yamagishi, Pierre-Edouard Honnet, Philip Garner and Alexandros Lazaridis, University of Edinburgh |

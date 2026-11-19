@@ -224,7 +224,8 @@
     changed: ['لديك تغييرات غير محفوظة.', 'You have unsaved changes.', 'Kaydedilmemiş değişiklikler var.', 'Des modifications ne sont pas enregistrées.', 'Есть несохранённые изменения.'],
     saveFailed: ['تعذّر الحفظ. بقيت الإعدادات السابقة كما هي؛ حاول مجددًا.', 'Could not save. Previous settings are unchanged; please retry.', 'Kaydedilemedi. Önceki ayarlar korundu; yeniden deneyin.', 'Enregistrement impossible. Les anciens réglages sont conservés ; réessayez.', 'Не удалось сохранить. Прежние настройки сохранены; повторите.'],
     voices: ['أصوات تعمل دون إنترنت', 'Offline voices', 'Çevrimdışı sesler', 'Voix hors ligne', 'Голоса без интернета'],
-    voiceHint: ['نزّل حزمة اللغة على هذا الجهاز مرة واحدة. بعد اكتمالها تُقرأ الهوية والتقارير محليًا، وتبقى بيانات العمل على جهازك. الأرقام أدناه هي حجم التنزيل التقريبي.', 'Download a language pack once on this device. When ready, identity and reports are spoken locally and business data stays on your device. Sizes below are approximate downloads.', 'Dil paketini bu cihaza bir kez indirin. Hazır olduğunda kimlik ve raporlar yerel olarak okunur; iş verileri cihazınızda kalır. Aşağıdaki boyutlar yaklaşık indirme boyutudur.', 'Téléchargez une fois le pack de langue sur cet appareil. Une fois prêt, identité et rapports sont lus localement ; vos données restent sur votre appareil. Les tailles sont approximatives.', 'Один раз загрузите языковой пакет на это устройство. Затем представление и отчёты озвучиваются локально, а рабочие данные остаются на устройстве. Указан приблизительный объём загрузки.'],
+    voiceHint: ['هوية الروبوت جاهزة. نزّل صوت التقارير مرة واحدة على هذا الجهاز؛ بعدها يقرأ التقرير محليًا دون إرسال بيانات العمل. يمكنك التنزيل أيضًا من نافذة التقرير.', 'Robot identity is ready. Download the report voice once on this device; reports are then read locally without sending business data. You can also download from the report window.', 'Robot kimliği hazır. Rapor sesini bu cihaza bir kez indirin; raporlar iş verileri gönderilmeden yerel olarak okunur. Rapor penceresinden de indirebilirsiniz.', 'L’identité du robot est prête. Téléchargez une fois la voix des rapports sur cet appareil ; ils seront lus localement sans envoyer vos données. Le téléchargement est aussi disponible dans le rapport.', 'Представление робота готово. Один раз загрузите голос отчётов на это устройство; отчёты будут читаться локально без передачи рабочих данных. Загрузить голос можно и в окне отчёта.'],
+    voiceFemale: ['صوت نسائي', 'Female voice', 'Kadın sesi', 'Voix féminine', 'Женский голос'],
     voiceInstall: ['تنزيل', 'Download', 'İndir', 'Télécharger', 'Скачать'],
     voiceRemove: ['حذف الحزمة', 'Remove pack', 'Paketi kaldır', 'Supprimer', 'Удалить'],
     voiceCancel: ['إلغاء التنزيل', 'Cancel download', 'İndirmeyi iptal et', 'Annuler', 'Отменить'],
@@ -375,6 +376,7 @@
           finally { downloads.delete(pack.locale); action.disabled = false; renderVoicePacks(); }
         });
       }
+      row.heading.textContent = ({ar: 'العربية', en: 'English', tr: 'Türkçe', fr: 'Français', ru: 'Русский'})[pack.locale] + ' · ' + pack.name + (pack.gender === 'female' ? ' · ' + t('voiceFemale') : '');
       const current = api.getStatus(pack.locale);
       const statusKey = voiceStatusKey(current);
       const mb = Math.ceil((Number(pack.bytes || 0) + Number(pack.sharedBytes || 0)) / 1000000);

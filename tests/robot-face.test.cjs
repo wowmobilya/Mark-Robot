@@ -103,11 +103,11 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   const offlineVoice = {calls:[],cancels:0,getStatus:()=>({ready:offlineReady}),speak(request){this.calls.push(request);return{cancel:()=>{this.cancels++;}};}};
   if (offline) win.WFOfflineVoice = offlineVoice;
   const reportEvents = [];
-  for (const type of ['wf-robot-report-open','wf-robot-report-playback','wf-robot-report-boundary']) win.addEventListener(type,event=>reportEvents.push({type,...event.detail}));
+  for (const type of ['wf-robot-report-open','wf-robot-report-playback','wf-robot-report-boundary','wf-robot-report-voice']) win.addEventListener(type,event=>reportEvents.push({type,...event.detail}));
   const activity = [];
   track.addEventListener('wf-robot-speaking', event => activity.push(event.detail.active));
   vm.runInNewContext(source, {
-    document: doc, window: win, MutationObserver, CustomEvent,
+    document: doc, window: win, MutationObserver, CustomEvent, AbortController,
     setTimeout: (fn, ms) => { const id = ++timerId; timers.set(id, {fn, ms}); return id; },
     clearTimeout: id => timers.delete(id),
   });
@@ -364,6 +364,43 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
     check(boundaries.length===2 && boundaries[1].charIndex===16 && boundaries[1].charLength===16, 'Only actual sentence offsets from playback reach the reader');
     request.onEnd();
     check(f.reportEvents.at(-1).state==='finished' && f.face.dataset.speaking==='false', 'Pack completion releases reader and mouth state');
+  }
+  {
+    const order=[],leases=[];let downloads=0,ready=false,resolveDownload,downloadOptions;
+    const snapshot={narration:'المبيعات: ١٢٫٥٠ دولار.'},chunks=[{text:'الْمَبِيعَاتُ اثْنَا عَشَرَ فَاصِلَة خَمْسَة صِفْر دُولَار',charIndex:0,charLength:snapshot.narration.length}];
+    const f=fixture({offline:true,offlineReady:false,voices:[],snapshot:()=>{order.push('read');return snapshot;}});
+    f.offlineVoice.getStatus=()=>({state:ready?'ready':'not-installed',ready,total:33526399});
+    f.offlineVoice.list=()=>[{locale:'ar',engine:'nabra'}];
+    f.offlineVoice.preparePlayback=()=>{order.push('prime');const lease={disposed:false,dispose(){this.disposed=true;}};leases.push(lease);return lease;};
+    f.offlineVoice.download=(_locale,options)=>{downloads++;downloadOptions=options;return new Promise(resolve=>resolveDownload=()=>{ready=true;resolve();});};
+    f.win.WFArabicReportSpeech={prepare:value=>{check(value===snapshot,'Arabic speech uses the exact displayed committed snapshot');return chunks;}};
+    f.reveal();f.report.click();await flush();
+    check(order.join(',')==='prime,read'&&leases[0].disposed,'Report primes audio inside the tap before asynchronous records and releases an unused lease');
+    check(downloads===0&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.state==='missing'&&event.total===33526399),'Opening a missing report pack only offers its real download size');
+    f.send('wf-robot-report-control',{action:'install'});await flush();
+    check(downloads===1&&!downloadOptions.signal.aborted&&f.face.dataset.speaking==='false','Explicit installation owns a cancellable download and does not animate speech');
+    downloadOptions.onProgress({progress:.5,loaded:100,total:200});
+    check(f.reportEvents.at(-1).state==='downloading'&&f.reportEvents.at(-1).progress===.5,'Download progress is forwarded as a ratio and exact byte totals');
+    resolveDownload();await flush();
+    const request=f.offlineVoice.calls[0];
+    check(request.text===snapshot.narration&&request.chunks===chunks&&request.playback===leases[1],'Completed install passes vocalized chunks and the same primed audio lease into local speech');
+    check(f.face.dataset.speaking==='false','Successful installation alone never marks the robot as speaking');
+    request.onStart();check(f.face.dataset.speaking==='true','Downloaded report mouth begins at actual playback');request.onEnd();
+  }
+  for(const [name,stop] of [['Cancel',f=>f.send('wf-robot-report-control',{action:'cancel-download'})],['hidden robot',f=>f.hide()],['language change',f=>f.language('tr')],['route change',f=>f.leaveDashboard()]]){
+    let resolveDownload,signal,disposed=0;
+    const f=fixture({offline:true,offlineReady:false,voices:[],snapshot:()=>({narration:'actual report'})});
+    f.offlineVoice.getStatus=()=>({ready:false,state:'not-installed',total:33526399});
+    f.offlineVoice.preparePlayback=()=>({dispose(){disposed++;}});
+    f.offlineVoice.download=(_locale,options)=>{signal=options.signal;return new Promise(resolve=>resolveDownload=resolve);};
+    f.reveal();f.send('wf-robot-report-control',{action:'install'});await flush();stop(f);resolveDownload();await flush();
+    check(signal.aborted&&disposed===1&&f.offlineVoice.calls.length===0&&f.face.dataset.voiceActive==='false','First voice download cancels without late playback on '+name);
+  }
+  {
+    const f=fixture({offline:true,voices:[],snapshot:()=>({narration:'unexpected report template'})});
+    f.offlineVoice.list=()=>[{locale:'ar',engine:'nabra'}];f.win.WFArabicReportSpeech={prepare(){throw new Error('unsupported-report');}};
+    f.reveal();f.report.click();await flush();
+    check(!f.offlineVoice.calls.length&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.reason==='report-text-unsupported'),'Unrecognized financial text never produces guessed speech');
   }
   console.log(`${assertionCount} robot offline speech/report lifecycle assertions passed.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

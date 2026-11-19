@@ -1,5 +1,5 @@
 importScripts('./install-identity.js?v=1');
-const CACHE_NAME = 'wow-furniture-v176-clear-arabic-voice';
+const CACHE_NAME = 'wow-furniture-v177-spoken-daily-report';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
   './context-nav.js?v=5',
@@ -18,7 +18,7 @@ const urlsToCache = [
   './section-headings.css?v=7',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
-  './robot-face.js?v=5',
+  './robot-face.js?v=6',
   './robot-face.css?v=5',
   './dialog-surfaces.css?v=1',
   './product-categories.js?v=2',
@@ -48,12 +48,15 @@ const urlsToCache = [
   './ui-motion.css?v=1',
   './annual-sales.js?v=2',
   './annual-sales.css?v=1',
-  './offline-voice.js?v=2',
-  './offline-voice-worker.js?v=2',
-  './robot-settings.js?v=3',
+  './offline-voice.js?v=3',
+  './offline-voice-worker.js?v=3',
+  './arabic-report-speech.js?v=1',
+  './nabra-report-worker.js?v=1',
+  './nabra-phonemizer.js?v=1',
+  './robot-settings.js?v=4',
   './robot-settings.css?v=1',
-  './robot-report.js?v=1',
-  './robot-report.css?v=1',
+  './robot-report.js?v=2',
+  './robot-report.css?v=2',
   './developer-profile.js?v=1',
   './developer-profile.css?v=1',
   './app-updates.js?v=2',
@@ -114,6 +117,9 @@ self.addEventListener('fetch', event => {
   }
 
   const sameOrigin = url.origin === self.location.origin;
+  // The explicit voice installer verifies and owns these downloads in its own cache.
+  // Avoid a duplicate runtime or a large source archive in the application cache.
+  if (sameOrigin && url.pathname.includes('/vendor/nabra/')) { event.respondWith(fetch(request)); return; }
   const safeExternal = url.hostname === 'cdnjs.cloudflare.com' || url.hostname === 'h.top4top.io';
   if (!sameOrigin && !safeExternal) {
     event.respondWith(fetch(request));
