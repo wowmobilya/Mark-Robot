@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v153-card-options';
+const CACHE_NAME = 'wow-furniture-v154-dashboard-picker-accessibility';
 const urlsToCache = [
   './workspace-surfaces.css?v=24',
   './context-nav.js?v=1',
