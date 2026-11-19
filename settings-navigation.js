@@ -82,6 +82,7 @@
    bank: ['الحسابات البنكية وIBAN', 'Bank accounts and IBAN', 'Banka hesapları ve IBAN', 'Comptes bancaires et IBAN', 'Банковские счета и IBAN'],
    invoice: ['الترقيم والضريبة', 'Numbering and tax', 'Numaralandırma ve vergi', 'Numérotation et taxe', 'Нумерация и налог'],
    currency: ['أسعار الصرف اليدوية', 'Manual exchange rates', 'Manuel döviz kurları', 'Taux de change manuels', 'Ручные курсы валют'],
+   'product-categories': ['تنظيم أقسام المنتجات وصورها', 'Manage product categories and images', 'Ürün kategorileri ve görsellerini yönetin', 'Gérer les catégories et leurs images', 'Управление категориями товаров и изображениями'],
    appearance: ['المظهر والكثافة والحركة', 'Theme, density and motion', 'Tema, yoğunluk ve hareket', 'Thème, densité et animations', 'Тема, плотность и анимация'],
    language: ['لغة واجهة البرنامج', 'Interface language', 'Arayüz dili', 'Langue de l’interface', 'Язык интерфейса'],
    data: ['النسخ الاحتياطي والاستعادة', 'Backup and restore', 'Yedekleme ve geri yükleme', 'Sauvegarde et restauration', 'Резервное копирование'],

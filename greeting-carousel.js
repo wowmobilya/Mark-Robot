@@ -372,7 +372,7 @@
   close.onclick=()=>closeMenu(true);
   trigger.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h7m5 0h4M4 17h2m5 0h9"/><circle cx="13.5" cy="7" r="2.5"/><circle cx="8.5" cy="17" r="2.5"/></svg>';
   // The screen-facing edge is straight; the inward-facing corners are rounded.
-  trigger.insertAdjacentHTML('afterbegin','<svg class="wf-dock-shape" viewBox="0 0 18 86" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M.75 .75H7.25A10 10 0 0 1 17.25 10.75V75.25A10 10 0 0 1 7.25 85.25H.75Z" stroke-width="1.5" stroke-linejoin="round"/></svg>');
+  trigger.insertAdjacentHTML('afterbegin','<svg class="wf-dock-shape" viewBox="0 0 14 86" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M.75 .75H5.25A8 8 0 0 1 13.25 8.75V77.25A8 8 0 0 1 5.25 85.25H.75Z" stroke-width="1.5" stroke-linejoin="round"/></svg>');
   toolbar.append(heading,move,close);
   panel.append(toolbar,design);
   menu.append(trigger,panel);
@@ -447,7 +447,7 @@
     if(!dashboard.classList.contains('active') || root.classList.contains('wf-mobile-menu-open')){
       if(menu.open)closeMenu(false);
     }
-    const area=bounds(),gripWidth=trigger.offsetWidth||18,gripHeight=trigger.offsetHeight||86;
+    const area=bounds(),gripWidth=trigger.offsetWidth||14,gripHeight=trigger.offsetHeight||86;
     const x=Number.isFinite(position?.x)?clamp(position.x,0,1):root.dir==='rtl'?0:1;
     const y=Number.isFinite(position?.y)?clamp(position.y,0,1):0.48;
     const side=x<0.5?'left':'right';
