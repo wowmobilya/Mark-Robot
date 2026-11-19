@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v133-live-settings-dock';
+const CACHE_NAME = 'wow-furniture-v134-currency-sales';
 const urlsToCache = [
   './workspace-surfaces.css?v=17',
   './context-nav.js?v=1',

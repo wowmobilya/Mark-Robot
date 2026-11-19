@@ -42,7 +42,45 @@ export function cashRows(entries, payments, currency) {
   return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 }
 
+function mountSales() {
+  const total=document.getElementById('s-total');
+  const card=total?.closest('.wf-dash-sales');
+  if (!card || card.querySelector('.sales-currencies')) return;
+  const list=document.createElement('dl');
+  list.className='sales-currencies';
+  card.append(list);
+  const words={ar:['المبيعات حسب عملة الفاتورة','سعر أو مبلغ مفقود'],en:['Sales by invoice currency','Missing rate or amount'],tr:['Fatura para birimine göre satış','Kur veya tutar eksik'],fr:['Ventes par devise de facture','Taux ou montant manquant'],ru:['Продажи по валюте счёта','Нет курса или суммы']};
+  function render(){
+    if(typeof S==='undefined' || !globalThis.WOWStatementCore?.salesByCurrency)return;
+    const lang=S.lang || 'ar', copy=words[lang] || words.en;
+    list.setAttribute('aria-label',copy[0]);
+    const regionNames=new Intl.DisplayNames([lang],{type:'currency'});
+    const format=new Intl.NumberFormat(lang,{maximumFractionDigits:2});
+    const cells=[];
+    for(const [code,row] of WOWStatementCore.salesByCurrency(S.invoices || [])){
+      const cell=document.createElement('div'), label=document.createElement('dt'), amount=document.createElement('dd');
+      label.textContent=code;
+      let name=code;
+      if (/^[A-Z]{3}$/.test(code)) name=regionNames.of(code);
+      label.title=name;
+      label.setAttribute('aria-label',name);
+      amount.textContent=row.missing?'—':format.format(row.units/100);
+      if(row.missing){
+        const reason=document.createElement('small');
+        reason.textContent=copy[1];
+        amount.append(reason);
+      }
+      cell.append(label,amount);cells.push(cell);
+    }
+    list.replaceChildren(...cells);
+  }
+  new MutationObserver(render).observe(total,{childList:true,characterData:true,subtree:true});
+  new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+  render();
+}
+
 export function mount() {
+  mountSales();
   const page = document.querySelector('#page-exchange');
   if (!page || page.querySelector('.cashboxes')) return;
   const box = document.createElement('details');

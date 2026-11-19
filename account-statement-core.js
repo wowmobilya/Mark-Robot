@@ -26,6 +26,26 @@ const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMon
 function dateOf(r,kind){const list=kind==='invoice'?[r.regDate,r.orderDate,r.createdAt,r.date]:[r.date,r.paymentDate,r.createdAt];for(const v of list){const d=day(v);if(d)return d;}return null;}
 function currency(v){const s=String(v||'USD').toUpperCase();return s==='TL'?'TRY':s;}
 function rateFrom(r,cur){if(cur==='USD')return 1;const key=cur==='TRY'?'usdTry':cur==='EUR'?'usdEur':null;if(!key)return null;for(const n of [r?.[key],r?.rates?.[key],r?.exchangeRates?.[key],r?.fx?.[key]]){const v=value(n);if(valid(v)&&v>0)return v;}return null;}
+function excludedInvoice(i){return i.deleted||i.isDeleted||i.cancelled||i.canceled||i.voided||['draft','void','cancelled','canceled'].includes(String(i.status||'').toLowerCase());}
+function salesByCurrency(invoices){
+ const totals=new Map(['TRY','SYP','USD','EUR'].map(code=>[code,{units:0,missing:0}]));
+ const seen=new Set();
+ for(const invoice of invoices){
+  if(!invoice || excludedInvoice(invoice))continue;
+  const key=id(invoice.id);
+  if(key && seen.has(key))continue;
+  if(key)seen.add(key);
+  const code=currency(invoice.currency);
+  if(!totals.has(code))totals.set(code,{units:0,missing:0});
+  const row=totals.get(code);
+  const usd=cents(invoice.grandTotal??invoice.grandTotalUSD);
+  const rate=code==='SYP'?value(invoice.usdSyp??invoice.rates?.usdSyp):rateFrom(invoice,code);
+  const units=usd!==null && rate>0 ? cents(money(usd)*rate) : null;
+  if(units===null)row.missing++;
+  else row.units+=units;
+ }
+ return totals;
+}
 function paymentValue(p,inv={}){
  const cur=currency(p.currency||'USD');let c,rate=1,estimated=false,source='USD';
  if(own(p,'amountUSD')&&p.amountUSD!==null&&p.amountUSD!=='')c=cents(p.amountUSD);
@@ -82,7 +102,7 @@ function build(state,companyId,options={}){
  for(const i of state.invoices||[]){
   if(id(i.companyId)!==key||(cur!=='ALL'&&currency(i.currency)!==cur))continue;
   if(seenInv.has(id(i.id))){warn('duplicateInvoice',i.invNo||i.id,'review');continue;}seenInv.add(id(i.id));
-  if(i.deleted||i.isDeleted||i.cancelled||i.canceled||i.voided||['draft','void','cancelled','canceled'].includes(String(i.status||'').toLowerCase())){excludedInvoices.push(i);continue;}
+  if(excludedInvoice(i)){excludedInvoices.push(i);continue;}
   allInvoices.push(i);
  }
  const allInvIds=new Set(allInvoices.map(i=>id(i.id)));
@@ -175,5 +195,5 @@ function financialIndex(state){
  const out=new Map();for(const [key,data] of co){const m=build(data,key,{to:'9999-12-31'});out.set(key,{count:m.invoices.length,totalInvoiced:m.totals.invoiced-m.totals.creditNotes,
   totalPaid:m.totals.received-m.totals.refunded,remaining:m.totals.due,credit:m.totals.credit,balance:m.totals.closing,incomplete:m.incomplete||m.estimated});}return out;
 }
-return {build,newPayment,paymentValue,collectPayments,financialIndex,day,days,today,cents,version:22};
+return {salesByCurrency,build,newPayment,paymentValue,collectPayments,financialIndex,day,days,today,cents,version:22};
 });
