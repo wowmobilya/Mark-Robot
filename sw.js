@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v153-card-options';
+const CACHE_NAME = 'wow-furniture-v155-inline-dashboard-search';
 const urlsToCache = [
   './workspace-surfaces.css?v=24',
   './context-nav.js?v=1',

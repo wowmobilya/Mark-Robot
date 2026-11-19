@@ -312,13 +312,25 @@
   const dialog=document.getElementById('wfSearchDialog');
   const toggle=document.getElementById('wfSidebarSearchToggle');
   const results=document.getElementById('wfSearchResults');
-  const main=document.getElementById('mainContent');
-  const shade=document.createElement('div');
-  shade.className='wf-search-shade';
-  shade.hidden=true;
-  document.body.insertBefore(shade,drawer);
-  shade.onclick=()=>closeSearch();
-  let originalInert=false,scrollPosition=0;
+  // The search field takes over the existing search button's footprint.
+  // Results stay in the drawer, without a popup, overlay or extra header.
+  const searchField=document.createElement('div');
+  searchField.className='wf-search-inline';
+  searchField.hidden=true;
+  const clearSearch=document.createElement('button');
+  clearSearch.type='button';
+  clearSearch.className='wf-search-inline-clear';
+  clearSearch.textContent='×';
+  toggle.after(searchField);
+  searchField.append(search,clearSearch);
+  searchField.after(dialog);
+  let scrollPosition=0;
+  function translateClear(){
+    const label={ar:'مسح البحث أو إغلاقه',en:'Clear or close search',tr:'Aramayı temizle veya kapat',fr:'Effacer ou fermer la recherche',ru:'Очистить или закрыть поиск'};
+    clearSearch.setAttribute('aria-label',label[root.lang]||label.en);
+  }
+  new MutationObserver(translateClear).observe(root,{attributes:true,attributeFilter:['lang']});
+  translateClear();
   function terms(text){
     return normalize(text).replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ـ/g,'');
   }
@@ -346,9 +358,8 @@
   }
   function closeSearch(focus=true){
     if(dialog.hidden)return;
-    shade.hidden=true;
-    main.inert=originalInert;
     dialog.hidden=true;
+    searchField.hidden=true;
     drawer.classList.remove('wf-searching');
     toggle.setAttribute('aria-expanded','false');
     nav.scrollTop=scrollPosition;
@@ -357,15 +368,21 @@
   toggle.onclick=()=>{
     if(!dialog.hidden){closeSearch();return;}
     if(isRail())window.wfToggleDesktopSidebar();
-    originalInert=main.inert;
     scrollPosition=nav.scrollTop;
-    if(!root.classList.contains('wf-section-mode')){shade.hidden=false;main.inert=true;}
     search.value='';
     renderResults();
+    searchField.hidden=false;
     dialog.hidden=false;
     drawer.classList.add('wf-searching');
     toggle.setAttribute('aria-expanded','true');
     search.focus();
+  };
+  clearSearch.onclick=()=>{
+    if(search.value.trim()){
+      search.value='';
+      renderResults();
+      search.focus();
+    }else closeSearch();
   };
   dialog.querySelector('[data-dialog-close]').onclick=()=>closeSearch();
   drawer.addEventListener('keydown',event=>{

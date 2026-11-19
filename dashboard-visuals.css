@@ -876,3 +876,40 @@
  #dashIntelligence .view-choices button[aria-pressed=true] {color:var(--view-accent);border:2px solid currentColor;background:var(--paper);}
  #dashIntelligence :is(.view-trigger,.view-choices button):focus-visible {outline:2px solid var(--view-accent);outline-offset:1px;}
 }
+
+/* Compact dashboard display pickers: readable labels and flexible touch targets. */
+@media screen {
+ #dashIntelligence .wf-insight-head > :first-child:not(.view-trigger):not(.view-choices) {min-width:0;overflow-wrap:anywhere;}
+ #dashIntelligence .view-trigger {max-width:100%;min-width:0;line-height:1.3;white-space:normal;text-align:start;}
+ #dashIntelligence .view-trigger svg {flex:none;}
+ #dashIntelligence .view-choices:not([hidden]) {grid-template-columns:repeat(auto-fit,minmax(min(100%,92px),1fr));}
+ #dashIntelligence .view-choices button {min-width:0;min-height:58px;line-height:1.35;text-align:center;overflow-wrap:anywhere;word-break:normal;}
+ #dashIntelligence .view-choices button svg {flex:none;}
+}
+
+/* View selectors replace each card's content while active, never stack on it. */
+@media screen {
+ #dashIntelligence .wf-insight-card.wf-view-picking {display:block!important;min-width:0;}
+ #dashIntelligence .wf-insight-card.wf-view-picking > :not(.wf-insight-head) {display:none!important;}
+ #dashIntelligence .wf-insight-card.wf-view-picking > .wf-insight-head {display:flex!important;align-items:flex-start;flex-wrap:wrap;gap:10px;width:100%;box-sizing:border-box;}
+ #dashIntelligence .wf-insight-card.wf-view-picking > .wf-insight-head > :not(.view-trigger):not(.view-choices) {display:none!important;}
+ #dashIntelligence .wf-view-picking .view-trigger {margin-inline-start:0;min-height:36px;padding:5px 12px;justify-content:center;}
+ #dashIntelligence .wf-view-picking .view-choices:not([hidden]) {
+   flex:1 0 100%;width:100%;max-height:min(270px,40dvh);overflow:auto;
+   grid-template-columns:repeat(auto-fit,minmax(min(100%,112px),1fr));
+   gap:8px;padding:8px;border:1px solid var(--hairline);
+ }
+ #dashIntelligence .wf-view-picking .view-choices button {min-height:72px;gap:7px;font-weight:700;}
+ #dashIntelligence .wf-view-picking .view-choices button svg {width:24px;height:24px;}
+ @media(max-width:480px) {
+  #dashIntelligence .wf-view-picking .view-choices:not([hidden]) {grid-template-columns:repeat(2,minmax(0,1fr));}
+  #dashIntelligence .wf-view-picking .view-choices button {min-height:62px;}
+ }
+}
+/* Slim, taller edge grip for dashboard customization. */
+@media screen {
+ html body .dash-visibility summary {width:22px!important;height:86px!important;min-height:86px!important;padding:0!important;border-radius:0 10px 10px 0!important;}
+ html body .dash-visibility[data-side="right"] summary {border-radius:10px 0 0 10px!important;}
+ html body .dash-visibility summary svg {width:16px;height:16px;}
+ .dash-visibility .dash-dock-panel {max-width:calc(100vw - 24px);}
+}
