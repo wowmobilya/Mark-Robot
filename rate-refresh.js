@@ -98,6 +98,13 @@
   card.append(trend);
   return {pair,card,trend,lastTrend:''};
  });
+ // Keep each quote beside its inverse in both the visual and keyboard order.
+ const pairOrder=['usd-try','try-usd','eur-usd','usd-eur','eur-try','try-eur'];
+ const grid=top.parentElement.querySelector('.curr-bar-grid');
+ for(const pair of pairOrder){
+  const item=cards.find(item=>item.pair===pair);
+  if(item)grid.append(item.card);
+ }
  function renderTrends(){
   for(const quote of cards){
    const {pair,card,trend}=quote;

@@ -847,3 +847,18 @@
   html body #sidebar .nav-item[hidden] {display:none!important}
   @media(max-width:330px){html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) > .tabs {grid-template-columns:1fr!important}}
 }
+
+@media screen {
+  html body #sidebar .wf-sidebar-links {grid-auto-rows:max-content; overflow:hidden!important;}
+  html body #sidebar .wf-nav-paged .wf-nav-group:not([hidden]) {display:contents!important}
+  html body #sidebar .wf-nav-paged .nav-item {align-self:start; height:auto!important;}
+  html body #sidebar .nav-item > span:nth-child(2) {white-space:normal!important; text-overflow:clip; overflow:visible; line-height:1.3;}
+}
+@media screen and (max-width:1024px) {
+  html body #sidebar {max-height:min(100dvh,var(--drawer-viewport,100dvh))!important;box-sizing:border-box;}
+}
+@media screen and (max-height:450px) and (max-width:1024px) {
+  html body #sidebar .wf-sidebar-brand {min-height:28px!important; padding-block:0!important; grid-template-columns:24px 1fr!important;}
+  html body #sidebar .wf-sidebar-brand img {width:24px!important;height:24px!important;}
+  html body #sidebar {padding-block:4px!important;}
+}

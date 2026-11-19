@@ -97,7 +97,7 @@ export function mount() {
     box.open = true;
     box.querySelector('summary').focus();
   };
-  document.getElementById('wfDashRates')?.append(shortcut);
+  document.querySelector('#currBar .curr-refresh')?.before(shortcut);
   const form=box.querySelector('form'), fields=form.elements, status=box.querySelector('[role=status]');
   for (const key of currencies) fields.currency.add(new Option(names[key]+' · '+key,key));
   for (const key of ['receipt','expense','transfer','opening']) fields.type.add(new Option(labels[key],key));

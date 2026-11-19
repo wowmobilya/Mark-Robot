@@ -38,3 +38,23 @@ test('back arrow follows RTL/LTR and updates without duplicate icons',()=>{
  }
  assert.equal(f.button.childNodes.length,3);assert.equal(f.button.onclick,f.handler);
 });
+
+test('drawer pagination fits translated rows at measured heights and preserves every destination',()=>{
+ const filter=source.slice(source.indexOf('  function filter()'),source.indexOf('  for (const [button, step]'));
+ const group={}, heights=[44,69,48,54],items=heights.map(height=>({
+   parentElement:group,querySelector:()=>null,textContent:'entry',
+   getBoundingClientRect:()=>({height})
+ }));
+ const pager={hidden:true},nav={
+   get clientHeight(){return pager.hidden?170:122},scrollHeight:236,
+   classList:{add(){},remove(){}}
+ };
+ const context=vm.createContext({nav,pager,items,groups:[group],search:{value:''},normalize:s=>s,
+   activePage:0,matchingItems:[],empty:{},previous:{setAttribute(){}},next:{setAttribute(){}},
+   pageNumber:{},document:{documentElement:{lang:'en'}},getComputedStyle:()=>({paddingTop:'0',paddingBottom:'0',rowGap:'3'})});
+ vm.runInContext(filter+';filter()',context);
+ assert.deepEqual(items.map(i=>i.hidden),[false,false,true,true]);
+ assert.equal(context.pageNumber.textContent,'1 / 2');
+ vm.runInContext('activePage++;filter()',context);
+ assert.deepEqual(items.map(i=>i.hidden),[true,true,false,false]);
+});

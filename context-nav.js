@@ -24,3 +24,56 @@
  new MutationObserver(schedule).observe(root,{attributes:true,attributeFilter:['lang','dir']});
  sync();
 })();
+
+// On task screens, forward the dock action to the screen's own validated button.
+(() => {
+  const nav=document.getElementById('bottomNav');
+  if (!nav) return;
+  const pages=Array.from(document.querySelectorAll('.page'));
+  const selectors={
+    'add-company':'#coSaveBtn',
+    'add-product':'button[onclick="savePr()"]',
+    'create-invoice':'button[onclick="saveInvoice()"]',
+    'payment-management':'button[onclick="addPaymentToInv()"]',
+    exchange:'.curr-refresh',
+    reports:'.sct-back-btn',
+    'select-client-type':'.sct-back-btn',
+    'select-invoice-type':'.sct-back-btn'
+  };
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='wf-task-action';
+  const icon=document.createElement('span'), label=document.createElement('span');
+  icon.setAttribute('aria-hidden','true');
+  button.append(icon,label);
+  nav.append(button);
+  let target;
+  const observer=new MutationObserver(updateLabel);
+  function updateLabel(){
+    if (!target) return;
+    const words=target.innerText.trim() || target.getAttribute('aria-label') || target.title;
+    label.textContent=words;
+    button.disabled=target.disabled || !target.getClientRects().length;
+  }
+  function sync(){
+    const page=pages.find(item=>item.classList.contains('active'));
+    const key=page?.id.slice(5);
+    observer.disconnect();
+    target=selectors[key] && page.querySelector(selectors[key]);
+    const mode=target?'action':key==='settings'?'settings':
+      ['dashboard','companies','products','invoices'].includes(key)?'main':'screen';
+    nav.dataset.taskMode=mode;
+    button.hidden=!target;
+    if (!target) return;
+    const svg=target.querySelector('svg');
+    icon.replaceChildren();
+    if(svg) icon.append(svg.cloneNode(true));
+    else icon.textContent=key==='exchange'?'↻':key==='payment-management'?'+':key==='reports'||key.startsWith('select-')?'‹':'✓';
+    updateLabel();
+    observer.observe(target,{attributes:true,childList:true,subtree:true,characterData:true});
+  }
+  button.addEventListener('click',()=>{if(target && !target.disabled && target.getClientRects().length)target.click();});
+  const pageObserver=new MutationObserver(sync);
+  pages.forEach(page=>pageObserver.observe(page,{attributes:true,attributeFilter:['class']}));
+  sync();
+})();

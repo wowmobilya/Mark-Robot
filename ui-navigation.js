@@ -149,13 +149,36 @@
       const caption = item.querySelector('[data-i18n], [data-wf-ui]')?.textContent || item.textContent;
       return normalize(caption).includes(query);
     });
-    const height = nav.clientHeight + pager.offsetHeight;
-    const paged = matchingItems.length * 46 + 80 > height && matchingItems.length > 1;
-    const capacity = paged ? Math.max(1, Math.floor((height - 44) / 46)) : Math.max(1, matchingItems.length);
-    const pages = Math.max(1, Math.ceil(matchingItems.length / capacity));
-    activePage = Math.min(activePage, pages - 1);
-    const visible = matchingItems.slice(activePage * capacity, (activePage + 1) * capacity);
-    nav.classList.toggle('wf-nav-paged', paged);
+    // Measure full translated rows with the real drawer width and current font.
+    empty.hidden = matchingItems.length !== 0;
+    for (const item of items) item.hidden = !matchingItems.includes(item);
+    for (const group of groups) group.hidden = !matchingItems.some(item => item.parentElement === group);
+    pager.hidden = true;
+    nav.classList.remove('wf-nav-paged');
+    const partitions = [[]];
+    if (nav.clientHeight && nav.scrollHeight > nav.clientHeight) {
+      nav.classList.add('wf-nav-paged');
+      pager.hidden = false;
+      const style = getComputedStyle(nav);
+      const space = nav.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      const gap = parseFloat(style.rowGap) || 0;
+      let used = 0;
+      for (const item of matchingItems) {
+        const height = item.getBoundingClientRect().height;
+        let page = partitions[partitions.length - 1];
+        if (page.length && used + gap + height > space) {
+          partitions.push(page = []);
+          used = 0;
+        }
+        used += height + (page.length ? gap : 0);
+        page.push(item);
+      }
+    } else {
+      partitions[0] = matchingItems;
+    }
+    const pages = partitions.length;
+    activePage = Math.max(0, Math.min(activePage, pages - 1));
+    const visible = partitions[activePage];
     for (const item of items) item.hidden = !visible.includes(item);
     for (const group of groups) group.hidden = !visible.some(item => item.parentElement === group);
     pager.hidden = pages === 1;
@@ -178,6 +201,14 @@
     });
   }
   new ResizeObserver(filter).observe(nav);
+  document.fonts?.ready.then(filter);
+  const drawer = nav.closest('#sidebar');
+  function fitViewport(){
+    drawer.style.setProperty('--drawer-viewport', (window.visualViewport?.height || window.innerHeight)+'px');
+    filter();
+  }
+  window.visualViewport?.addEventListener('resize',fitViewport);
+  fitViewport();
   const toggle = document.getElementById('wfSidebarSearchToggle');
   function setSearchOpen(open, restoreFocus = false) {
     search.hidden = !open;
