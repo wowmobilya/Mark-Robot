@@ -3,8 +3,15 @@
   if (!card) return;
   const dashboard = card.closest('.page');
   const track = card.querySelector('.wf-greeting-faces');
+  if (!dashboard || !track) return;
   const faces = [...track.children];
-  const labels = ['greetingSub', 'tipLabel tipText', 'wfWeatherTitle', 'wfGreetingLogoTitle'];
+  if (!faces.length) return;
+  const labelIds = {
+    greetingCard:'greetingSub', tipCardStandalone:'tipLabel tipText',
+    wfGreetingWeather:'wfWeatherTitle', wfGreetingLogo:'wfGreetingLogoTitle', wfGreetingRobot:'wfRobotTitle'
+  };
+  const robot = faces.find(panel => panel.id === 'wfGreetingRobot');
+  const initialFace = Math.max(0, faces.indexOf(robot));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const weatherTitle = document.getElementById('wfWeatherTitle');
   const weatherStatus = document.getElementById('wfWeatherStatus');
@@ -20,9 +27,62 @@
     fr: ['İnegöl, Bursa', 'Pluie sur 7 jours', 'Météo en cours…', 'Météo indisponible', 'WOW Furniture', 'mm'],
     ru: ['Инегёль, Бурса', 'Дождь на 7 дней', 'Загрузка погоды…', 'Погода недоступна', 'WOW Furniture', 'мм'],
   };
+  const carouselWords = {
+    ar: {card:'البطاقة الذكية',pages:'صفحات البطاقة الذكية',slide:'صفحة',open:'عرض',names:['الترحيب','نصيحة اليوم','الطقس','شعار الشركة','روبوت WOW'],hint:'اختر صفحة من المؤشر الجانبي. استخدم الأسهم للتنقل، أو اضغط المساحة الخالية لعرض الصفحة التالية.'},
+    tr: {card:'Akıllı kart',pages:'Akıllı kart sayfaları',slide:'Sayfa',open:'Göster',names:['Karşılama','Günün önerisi','Hava durumu','Şirket logosu','WOW robotu'],hint:'Yandaki göstergeden bir sayfa seçin. Ok tuşlarıyla ilerleyin veya sonraki sayfa için boş alana dokunun.'},
+    en: {card:'Smart card',pages:'Smart card pages',slide:'Slide',open:'Show',names:['Welcome','Today’s tip','Weather','Company logo','WOW robot'],hint:'Choose a page with the side indicator. Use the arrow keys, or press the empty card area to show the next page.'},
+    fr: {card:'Carte intelligente',pages:'Pages de la carte',slide:'Page',open:'Afficher',names:['Accueil','Conseil du jour','Météo','Logo de l’entreprise','Robot WOW'],hint:'Choisissez une page avec l’indicateur latéral. Utilisez les flèches ou appuyez sur une zone vide pour passer à la page suivante.'},
+    ru: {card:'Умная карточка',pages:'Страницы карточки',slide:'Слайд',open:'Показать',names:['Приветствие','Совет дня','Погода','Логотип компании','Робот WOW'],hint:'Выберите страницу боковым индикатором. Используйте стрелки или нажмите на свободную область для перехода дальше.'}
+  };
+  const faceNames = ['greetingCard','tipCardStandalone','wfGreetingWeather','wfGreetingLogo','wfGreetingRobot'];
+  const interactive = 'button,a,input,select,textarea,summary,[role="button"],[role="link"],[contenteditable="true"]';
+  const pager = document.createElement('nav');
+  pager.className = 'wf-smart-pager';
+  pager.style.setProperty('--wf-smart-pages', String(faces.length));
+  const hint = document.createElement('span');
+  hint.id = 'wfSmartCardHint';
+  hint.className = 'wf-smart-sr-only';
+  card.setAttribute('role', 'group');
+  card.removeAttribute('aria-labelledby');
+  card.setAttribute('aria-describedby', hint.id);
+  card.setAttribute('aria-keyshortcuts', 'ArrowDown ArrowUp ArrowRight ArrowLeft Home End Enter Space');
+  card.tabIndex = 0;
+  const pageButtons = faces.map((panel, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'wf-smart-page';
+    button.dataset.faceIndex = String(index);
+    button.setAttribute('aria-controls', panel.id);
+    button.addEventListener('click', event => { event.stopPropagation(); chooseFace(index); });
+    pager.append(button);
+    panel.setAttribute('role', 'group');
+    if (labelIds[panel.id]) panel.setAttribute('aria-labelledby', labelIds[panel.id]);
+    return button;
+  });
+  card.querySelectorAll('.greeting-msg,.tip-card-text').forEach(text => { text.tabIndex = 0; });
+  card.append(pager, hint);
   const endpoint = 'https://api.open-meteo.com/v1/forecast?latitude=40.08&longitude=29.51&timezone=Europe%2FIstanbul&forecast_days=7&current=temperature_2m,weather_code,is_day&daily=rain_sum,showers_sum,weather_code';
   let timer, animation, forecast, fetched = 0, loading = false, failed = false;
-  let face = 0, manual = false;
+  let face = initialFace, manual = false, robotSpeaking = false;
+  let pendingFace = null, destination = null, transition = 0;
+
+  function syncPager() {
+    const locale = document.documentElement.lang || 'ar';
+    const text = carouselWords[locale] || carouselWords.en;
+    const number = new Intl.NumberFormat(locale);
+    pager.setAttribute('aria-label', text.pages);
+    hint.textContent = text.hint;
+    card.setAttribute('aria-label', text.card);
+    faces.forEach((panel, index) => {
+      const name = text.names[faceNames.indexOf(panel.id)] || text.slide;
+      const button = pageButtons[index];
+      button.setAttribute('aria-label', `${text.open} ${name} (${number.format(index + 1)} / ${number.format(faces.length)})`);
+      button.title = name;
+      button.setAttribute('aria-current', index === face ? 'page' : 'false');
+      button.tabIndex = index === face ? 0 : -1;
+      panel.setAttribute('aria-roledescription', text.slide);
+    });
+  }
 
   function weatherIcon(code, daylight = true) {
     if (!Number.isFinite(code)) return '';
@@ -41,6 +101,8 @@
     weatherTitle.textContent = place;
     logoTitle.textContent = brand;
     weatherStatus.textContent = forecast ? rain : failed ? unavailable : pending;
+    document.getElementById('wfGreetingWeather').dataset.weatherState = forecast ? 'ready' : failed ? 'unavailable' : 'loading';
+    syncPager();
     if (!forecast) { temperature.textContent = ''; week.replaceChildren(); return; }
     const format = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
     const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'Europe/Istanbul' });
@@ -52,6 +114,8 @@
       const amount = document.createElement('strong');
       const mm = rain_sum[i] + showers_sum[i];
       label.textContent = weekday.format(new Date(date + 'T12:00:00Z'));
+      label.className = 'wf-weather-day-label';
+      amount.className = 'wf-weather-amount';
       amount.textContent = format.format(mm) + ' ' + unit;
       day.classList.toggle('rainy', mm > 0);
       const icon = document.createElement('span');
@@ -92,62 +156,133 @@
 
   function showFace(index) {
     face = index;
-    faces.forEach((panel, i) => panel.setAttribute('aria-hidden', String(i !== face)));
-    card.setAttribute('aria-labelledby', labels[face]);
-    if (face === 2) refreshWeather();
+    faces.forEach((panel, i) => {
+      panel.inert = i !== face;
+      panel.setAttribute('aria-hidden', String(i !== face));
+    });
+    card.dataset.smartFace = faces[face].id;
+    syncPager();
+    if (faces[face].id === 'wfGreetingWeather') refreshWeather();
   }
 
-  async function flip() {
-    if (animation) return;
-    const next = (face + 1) % faces.length;
+  async function flip(index = (face + 1) % faces.length) {
+    const next = (index + faces.length) % faces.length;
+    if (animation) { pendingFace = next; return; }
+    if (next === face) { schedule(); return; }
+    const turn = ++transition;
+    destination = next;
     if (reduced.matches || document.documentElement.dataset.wfMotion === 'reduced' || !track.animate) {
       showFace(next);
+      destination = null;
       schedule();
       return;
     }
-    animation = track.animate([{transform:'rotateX(0deg)'}, {transform:'rotateX(90deg)'}], {duration:220, easing:'ease-in', fill:'forwards'});
+    animation = track.animate([
+      {transform:'rotateX(0deg) translateY(0)',opacity:1},
+      {transform:'rotateX(32deg) translateY(-3px)',opacity:0}
+    ], {duration:160, easing:'cubic-bezier(.4,0,1,1)', fill:'forwards'});
     try {
       await animation.finished;
+      if (turn !== transition) return;
       showFace(next);
       animation.cancel();
-      animation = track.animate([{transform:'rotateX(-90deg)'}, {transform:'rotateX(0deg)'}], {duration:280, easing:'ease-out'});
+      animation = track.animate([
+        {transform:'rotateX(-24deg) translateY(3px)',opacity:0},
+        {transform:'rotateX(0deg) translateY(0)',opacity:1}
+      ], {duration:220, easing:'cubic-bezier(.2,.7,.2,1)'});
       await animation.finished;
     } catch (_) {
       // Leaving the dashboard cancels the in-progress transition.
     } finally {
+      if (turn !== transition) return;
       animation = null;
-      schedule();
+      destination = null;
+      const queued = pendingFace;
+      pendingFace = null;
+      if (queued !== null && queued !== face && dashboard.classList.contains('active')) flip(queued);
+      else schedule();
     }
+  }
+
+  function chooseFace(index, focusPager = false) {
+    const next = (index + faces.length) % faces.length;
+    manual = true;
+    clearTimeout(timer);
+    if (focusPager) pageButtons[next].focus({preventScroll:true});
+    flip(next);
+  }
+
+  function cancelFlip() {
+    transition++;
+    animation?.cancel();
+    animation = null;
+    pendingFace = null;
+    destination = null;
   }
 
   function schedule() {
     clearTimeout(timer);
-    if (manual || document.hidden || !dashboard.classList.contains('active') || animation ||
+    if (manual || document.hidden || !dashboard.classList.contains('active') || animation || robotSpeaking || robot?.dataset.speaking === 'true' ||
         reduced.matches || document.documentElement.dataset.wfMotion === 'reduced' ||
-        card.matches(':focus, :hover')) return;
-    timer = setTimeout(flip, [8000, 14000, 14000, 8000][face]);
+        card.matches(':focus-within, :hover')) return;
+    const duration = {greetingCard:8000,tipCardStandalone:14000,wfGreetingWeather:14000,wfGreetingLogo:8000,wfGreetingRobot:14000};
+    timer = setTimeout(() => flip(), duration[faces[face].id] || 14000);
   }
 
-  card.addEventListener('click', () => { manual = true; clearTimeout(timer); flip(); });
-  card.addEventListener('keydown', event => {
-    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); card.click(); }
+  card.addEventListener('click', event => {
+    const selection = window.getSelection();
+    if (event.target.closest(interactive) || (selection && !selection.isCollapsed)) return;
+    const text = event.target.closest('.greeting-msg,.tip-card-text');
+    if (text && text.scrollHeight > text.clientHeight + 1) return;
+    chooseFace((pendingFace ?? destination ?? face) + 1);
   });
-  for (const name of ['focus', 'blur', 'pointerenter', 'pointerleave']) card.addEventListener(name, schedule);
-  reduced.addEventListener('change', schedule);
-  document.addEventListener('visibilitychange', schedule);
+  card.addEventListener('keydown', event => {
+    const pageButton = event.target.closest('.wf-smart-page');
+    if (event.target !== card && !pageButton) return;
+    const current = pageButton ? Number(pageButton.dataset.faceIndex) : pendingFace ?? destination ?? face;
+    const rtl = document.documentElement.dir === 'rtl';
+    let target = null;
+    if (event.key === 'ArrowDown') target = current + 1;
+    else if (event.key === 'ArrowUp') target = current - 1;
+    else if (event.key === 'ArrowRight') target = current + (rtl ? -1 : 1);
+    else if (event.key === 'ArrowLeft') target = current + (rtl ? 1 : -1);
+    else if (event.key === 'Home') target = 0;
+    else if (event.key === 'End') target = faces.length - 1;
+    else if (!pageButton && (event.key === 'Enter' || event.key === ' ')) target = current + 1;
+    if (target !== null) { event.preventDefault(); chooseFace(target, Boolean(pageButton)); }
+  });
+  for (const name of ['focusin', 'pointerenter', 'pointerleave']) card.addEventListener(name, schedule);
+  card.addEventListener('focusout', () => queueMicrotask(schedule));
+  card.addEventListener('wf-robot-speaking', event => {
+    robotSpeaking = Boolean(event.detail?.active);
+    schedule();
+  });
+  function syncMotion() {
+    if (animation && (reduced.matches || document.documentElement.dataset.wfMotion === 'reduced')) {
+      const next = pendingFace ?? destination ?? face;
+      cancelFlip();
+      showFace(next);
+    }
+    schedule();
+  }
+  reduced.addEventListener('change', syncMotion);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) cancelFlip();
+    schedule();
+  });
   new MutationObserver(() => {
     if (!dashboard.classList.contains('active')) {
       manual = false;
-      animation?.cancel();
-      showFace(0);
+      cancelFlip();
+      showFace(initialFace);
     }
     schedule();
   }).observe(dashboard, {attributes:true, attributeFilter:['class']});
-  new MutationObserver(() => { render(); schedule(); }).observe(document.documentElement, {attributes:true, attributeFilter:['lang', 'data-wf-motion']});
+  new MutationObserver(() => { render(); syncMotion(); }).observe(document.documentElement, {attributes:true, attributeFilter:['lang', 'dir', 'data-wf-motion']});
   if (navLogo) new MutationObserver(syncLogo).observe(navLogo, {childList:true, subtree:true, attributes:true, attributeFilter:['src']});
   syncLogo();
   render();
-  showFace(0);
+  showFace(initialFace);
   schedule();
 })();
 
@@ -191,7 +326,7 @@
   close.onclick=()=>closeMenu(true);
   trigger.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h7m5 0h4M4 17h2m5 0h9"/><circle cx="13.5" cy="7" r="2.5"/><circle cx="8.5" cy="17" r="2.5"/></svg>';
   // Draw the complete tapered outline instead of clipping a rectangular border.
-  trigger.insertAdjacentHTML('afterbegin','<svg class="wf-dock-shape" viewBox="0 0 18 86" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M3 1H10.7C11.6 1 12.3 1.6 12.7 2.4L16.1 12.5C16.7 14.1 17 15.8 17 17.5V68.5C17 70.2 16.7 71.9 16.1 73.5L12.7 83.6C12.3 84.4 11.6 85 10.7 85H3C1.9 85 1 84.1 1 83V3C1 1.9 1.9 1 3 1Z" stroke-width="1.5" stroke-linejoin="round"/></svg>');
+  trigger.insertAdjacentHTML('afterbegin','<svg class="wf-dock-shape" viewBox="0 0 18 86" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M9 1C14.5 1 17.25 14 17.25 43C17.25 72 14.5 85 9 85C3.5 85 .75 72 .75 43C.75 14 3.5 1 9 1Z" stroke-width="1.5" stroke-linejoin="round"/></svg>');
   toolbar.append(heading,move,close);
   panel.append(toolbar,design);
   menu.append(trigger,panel);
@@ -203,9 +338,11 @@
   const positionKey='wf.dashboard.dockPosition';
   const root=document.documentElement,viewport=window.visualViewport;
   const topbar=document.querySelector('.navbar'),bottomNav=document.getElementById('bottomNav');
-  const inset=8,gripInset=6;
+  const inset=8,gripInset=0;
   let position,drag,suppressClick=false,placeFrame=0;
   try {position=JSON.parse(localStorage.getItem(positionKey));}catch{}
+  // Upgrade saved free-floating positions to the nearest screen edge.
+  if(Number.isFinite(position?.x))position.x=position.x<0.5?0:1;
   for(const side of ['top','right','bottom','left']){
     menu.style.setProperty('--wf-dock-safe-'+side,'env(safe-area-inset-'+side+',0px)');
   }
@@ -230,7 +367,7 @@
       bottom:top+(viewport?.height||window.innerHeight)};
     const style=getComputedStyle(menu);
     const safe=side=>parseFloat(style.getPropertyValue('--wf-dock-safe-'+side))||0;
-    const area={left:view.left+safe('left'),right:view.right-safe('right'),
+    const area={edgeLeft:view.left,edgeRight:view.right,left:view.left+safe('left'),right:view.right-safe('right'),
       top:view.top+safe('top')+inset,bottom:view.bottom-safe('bottom')-inset};
     const header=visibleRect(topbar,view),nav=visibleRect(bottomNav,view);
     if(header)area.top=Math.max(area.top,header.bottom+inset);
@@ -268,7 +405,7 @@
     const x=Number.isFinite(position?.x)?clamp(position.x,0,1):root.dir==='rtl'?0:1;
     const y=Number.isFinite(position?.y)?clamp(position.y,0,1):0.48;
     const side=x<0.5?'left':'right';
-    const firstX=area.left+gripInset,lastX=Math.max(firstX,area.right-gripWidth-gripInset);
+    const firstX=area.edgeLeft+gripInset,lastX=Math.max(firstX,area.edgeRight-gripWidth-gripInset);
     const left=firstX+x*(lastX-firstX);
     const top=area.top+y*Math.max(0,area.bottom-area.top-gripHeight);
     // The CSS uses this value on both sides so viewport panning is respected.
@@ -313,14 +450,18 @@
     const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
     if(!suppressClick&&Math.hypot(dx,dy)<5)return;
     suppressClick=true;
+    menu.dataset.dragging='true';
     closeMenu(false);
     const area=bounds();
     const fraction=(n,max)=>clamp(n/Math.max(1,max),0,1);
-    position={x:fraction(drag.left+dx-area.left-gripInset,area.right-area.left-trigger.offsetWidth-gripInset*2),
+    position={x:fraction(drag.left+dx-area.edgeLeft-gripInset,area.edgeRight-area.edgeLeft-trigger.offsetWidth-gripInset*2),
       y:fraction(drag.top+dy-area.top,area.bottom-area.top-trigger.offsetHeight)};
     schedulePlace();
   });
-  function finishDrag(){if(drag&&suppressClick)save();drag=null;schedulePlace();}
+  function finishDrag(){
+    if(drag&&suppressClick){position.x=position.x<0.5?0:1;save();}
+    drag=null;delete menu.dataset.dragging;schedulePlace();
+  }
   trigger.addEventListener('lostpointercapture',finishDrag);
   trigger.addEventListener('pointercancel',finishDrag);
   trigger.addEventListener('click',e=>{if(suppressClick&&e.detail){e.preventDefault();}suppressClick=false;});

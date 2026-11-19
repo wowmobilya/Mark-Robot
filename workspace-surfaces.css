@@ -1422,7 +1422,7 @@
 /* A complete outlined grip and a viewport-aware, naturally scrollable panel. */
 @media screen {
  html body .dash-visibility[data-side] {
-   left:var(--wf-dock-left,6px)!important;right:auto!important;
+   left:var(--wf-dock-left,0px)!important;right:auto!important;
  }
  html body .dash-visibility[data-side] summary {
    position:relative;background:transparent!important;border:0!important;
@@ -1483,6 +1483,9 @@
  html:not([data-wf-motion="reduced"]) body #bottomNav #bnavCircle {transition:left .36s cubic-bezier(.22,.61,.36,1)!important;}
 }
 @media screen and (prefers-reduced-motion:no-preference) {
+ html:not([data-wf-motion="reduced"]) body .dash-visibility:not([data-dragging="true"]) {
+   transition:left .24s cubic-bezier(.22,.61,.36,1);
+ }
  html:not([data-wf-motion="reduced"]) body .dash-visibility[open] .dash-dock-panel {
    animation:wfDockReveal .2s cubic-bezier(.22,.61,.36,1) both!important;
  }

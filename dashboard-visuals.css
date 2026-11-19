@@ -1171,6 +1171,8 @@
  html body #mainContent #page-dashboard .wf-greeting-flip {
    --wf-smart-card-height:clamp(12.5rem,18vw,13rem);
    --wf-smart-card-padding:clamp(14px,1.5vw,16px);
+   --wf-smart-accent:var(--ui-accent,var(--brand-primary));
+   position:relative;isolation:isolate;
    display:grid;
    grid-template-rows:minmax(0,1fr);
    block-size:var(--wf-smart-card-height);
@@ -1182,18 +1184,51 @@
    height:100%;block-size:100%;min-inline-size:0;min-block-size:0;align-self:stretch;
    grid-template-columns:minmax(0,1fr);
    grid-template-rows:minmax(0,1fr);
+   transform-origin:center;transition:none!important;
  }
  html body #mainContent #page-dashboard .wf-greeting-faces > * {
    grid-area:1 / 1;
    box-sizing:border-box;
    inline-size:100%;block-size:100%;min-inline-size:0;min-block-size:0;align-self:stretch;
    margin:0!important;padding:var(--wf-smart-card-padding)!important;
+   padding-inline-end:48px!important;
    border:1px solid var(--dash-line)!important;
    border-radius:20px!important;
    background:var(--dashboard-card-wash)!important;
    box-shadow:none!important;
    backface-visibility:hidden;
    overflow:hidden!important;
+ }
+ html body #mainContent #page-dashboard .wf-smart-pager {
+   position:absolute;z-index:3;inset-inline-end:0;inset-block-start:50%;
+   transform:translateY(-50%);
+   display:grid;grid-template-rows:repeat(var(--wf-smart-pages,5),28px);
+   justify-items:center;inline-size:44px;margin:0;padding:0;
+   border:0;background:transparent;box-shadow:none;
+ }
+ html body #mainContent #page-dashboard .wf-smart-page {
+   appearance:none;display:grid;place-items:center;position:relative;
+   inline-size:44px;block-size:28px;min-inline-size:44px;min-block-size:28px;
+   margin:0!important;padding:0!important;
+   border:0!important;border-radius:8px!important;
+   color:var(--wf-smart-accent);background:transparent!important;box-shadow:none!important;
+   cursor:pointer;touch-action:manipulation;
+ }
+ html body #mainContent #page-dashboard .wf-smart-page::before {
+   content:'';display:block;inline-size:6px;block-size:6px;border-radius:9px;
+   background:currentColor;opacity:.28;
+   transition:block-size .18s ease,opacity .18s ease;
+ }
+ html body #mainContent #page-dashboard .wf-smart-page[aria-current="page"]::before {
+   block-size:18px;opacity:1;
+ }
+ html body #mainContent #page-dashboard .wf-smart-page:hover::before {opacity:.7;}
+ html body #mainContent #page-dashboard .wf-smart-page:focus-visible {
+   outline:2px solid var(--wf-smart-accent);outline-offset:-5px;
+ }
+ html body #mainContent #page-dashboard .wf-smart-sr-only {
+   position:absolute;inline-size:1px;block-size:1px;overflow:hidden;
+   clip-path:inset(50%);white-space:nowrap;
  }
  html body #mainContent #page-dashboard .wf-greeting-faces > #tipCardStandalone {
    align-content:stretch;
@@ -1210,15 +1245,17 @@
    block-size:100%;min-block-size:0;gap:6px;
  }
  html body #mainContent #page-dashboard #greetingCard .greeting-time-badge {
-   justify-self:start;margin:0;font-size:13px;
+   justify-self:start;margin:0;font-size:13px;line-height:1.4;
  }
  html body #mainContent #page-dashboard #greetingCard .greeting-msg {
    min-block-size:0;margin:0;overflow-wrap:anywhere;
+   text-wrap:pretty;
    overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;
    scrollbar-color:var(--dash-line) transparent;
  }
  html body #mainContent #page-dashboard #greetingCard .greeting-sub {
    margin:0;font-size:13px;line-height:1.4;overflow-wrap:anywhere;
+   padding-block-start:6px;border-block-start:1px solid var(--dash-line);
  }
  html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-inner {
    display:grid;grid-template-columns:48px minmax(0,1fr);
@@ -1233,7 +1270,7 @@
    block-size:100%;min-block-size:0;min-inline-size:0;gap:6px;
  }
  html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-label {
-   margin:0;font-size:13px;line-height:1.4;letter-spacing:normal;
+   margin:0;font-size:14px;line-height:1.4;letter-spacing:normal;text-transform:none;
  }
  html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-text {
    min-block-size:0;font-size:14px;line-height:1.65;
@@ -1263,7 +1300,12 @@
  html body #mainContent #page-dashboard .wf-weather-days > div {
    min-inline-size:0;align-content:center;
    padding:6px 2px;font-size:12px;line-height:1.3;overflow-wrap:anywhere;
+   border:1px solid color-mix(in srgb,var(--dash-line) 70%,transparent);
+   border-radius:10px;
  }
+ html body #mainContent #page-dashboard .wf-weather-day-label {color:var(--text2);font-weight:600;}
+ html body #mainContent #page-dashboard .wf-weather-amount {color:var(--ink);font-variant-numeric:tabular-nums;}
+ html body #mainContent #page-dashboard .wf-weather[data-weather-state]:not([data-weather-state="ready"]) .wf-weather-days {display:none;}
  html body #mainContent #page-dashboard .wf-greeting-faces .wf-greeting-logo {
    grid-template-rows:auto auto;
    place-content:center;justify-items:center;gap:12px;
@@ -1279,4 +1321,11 @@
  html body #mainContent #page-dashboard #wfGreetingLogoTitle {
    font-size:16px;line-height:1.4;overflow-wrap:anywhere;
  }
+ html body #mainContent #page-dashboard :is(.greeting-msg,.tip-card-text):focus-visible {
+   outline:2px solid var(--wf-smart-accent);outline-offset:2px;border-radius:4px;
+ }
+ @media(prefers-reduced-motion:reduce) {
+   html body #mainContent #page-dashboard .wf-smart-page::before {transition:none;}
+ }
+ html[data-wf-motion="reduced"] body #mainContent #page-dashboard .wf-smart-page::before {transition:none;}
 }
