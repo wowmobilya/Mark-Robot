@@ -4,27 +4,33 @@
 
 `assets/robot-identity/ar.mp3`, `tr.mp3`, `en.mp3`, `fr.mp3`, and `ru.mp3`
 contain the application's fixed identity greeting in each supported language.
-The input is exactly the corresponding `messages[locale].greeting` string in
+The wording follows the corresponding `messages[locale].greeting` string in
 `robot-face.js`; no business records or report content were used to create them.
-These clips were synthesized locally using the same pinned Piper models and
-WASM runtime listed below, then encoded as mono 22,050 Hz MP3 at 64 kbit/s.
-They use the generic voices supplied by those models, without cloning or
-attempting to impersonate the user, developer, or another named individual.
+The Arabic recording uses Nabra-82M's native Modern Standard Arabic voice,
+with manually checked vowel marks and phrase-ending pauses. It is synthesized
+locally as one continuous utterance; the phonemizer's internal syllable dots
+are removed so they cannot introduce artificial pauses inside Arabic words.
+The other four recordings use the pinned Piper models and WASM runtime listed
+below. All five are fixed recordings played locally after the app caches them.
+They use generic model voices, without cloning or attempting to impersonate
+the user, developer, or another named individual.
 
 The application service worker can cache these small audio files with the app
 shell. Playing the fixed introduction then needs neither an installed voice
 pack nor a remote speech service. Variable reports still require an available
 local system voice or an installed offline voice pack.
 
-`assets/robot-identity/metadata.json` records the exact source text, text and
-audio SHA-256 hashes, voice/model source, file size, and duration measured from
-the fully decoded MP3. Each file was decoded after encoding and checked for
-nonzero audio, with its decoded sample count matching the original generated
-PCM. The models do not supply word or sentence alignment; the metadata does not
-invent such timings. The original model and dataset notices below also identify
-the sources used to generate these clips, including the SIWIS attribution for
-the French voice. No additional license for the source models is asserted by
-this application.
+`assets/robot-identity/metadata.json` records each voice's exact source text,
+the Arabic synthesis text with pronunciation marks, hashes, model source,
+encoding, file size, and duration measured from the fully decoded MP3. Each
+file is decoded after encoding and checked for nonzero audio. No word or
+sentence alignment is fabricated. The Arabic source is
+[Nabra-82M](https://huggingface.co/oddadmix/Nabra-82M-v0.1), using its
+[CPU ONNX export](https://huggingface.co/marwanelamami/Nabra-82M-v0.1-ONNX),
+both published under Apache-2.0. The original model and dataset notices below
+identify the other sources, including SIWIS attribution for the French voice.
+The application does not redistribute the Nabra model; only the generated
+identity recording is bundled, so phones do not download its model weights.
 
 ## User-installed packs for variable speech
 

@@ -14,7 +14,7 @@
       speak: 'هوية الروبوت', stop: 'إيقاف',
       report: 'اسمع التقرير اليومي', reportUnavailable: 'التقرير يحتاج صوتًا عربيًا مثبتًا يعمل دون اتصال',
       reportEmpty: 'بيانات التقرير اليومي غير متاحة الآن',
-      audioURL: 'assets/robot-identity/ar.mp3?v=1',
+      audioURL: 'assets/robot-identity/ar.mp3?v=2',
       greeting: 'مرحبًا سيد أحمد. أنا مساعدك الذكي إنفنتي روبوت، وأنا هنا من أجل تنظيم سير العمل. وأنا من تصميم المهندس معتز بالله حاج شعبان، مطوّري ومبرمجي. وشكرًا لك.',
     },
     tr: {
@@ -62,6 +62,7 @@
       greeting: 'Здравствуйте, господин Ахмед. Я ваш умный помощник, робот Infinity, и я здесь, чтобы организовать рабочий процесс. Меня создал инженер Моатаз Беллах Хадж Шаабан, мой разработчик и программист. Спасибо вам.',
     },
   };
+  const identityRecordings = new Set(Object.values(messages).map(copy => copy.audioURL));
   // Original WOW ROBOT face proportions, with the dark-on-white identity from the user’s reference photo.
   const mouthShapes = {
     calm: 'M 274 252.72 Q 300 273.72 326 252.72',
@@ -174,7 +175,7 @@
       // Only recordings bundled with this application are allowed for offline playback.
       const value = messages[locale].audioURL;
       return typeof window.Audio === 'function' && typeof value === 'string' &&
-        /^assets\/robot-identity\/(ar|tr|en|fr|ru)\.mp3\?v=1$/.test(value) ? value : '';
+        identityRecordings.has(value) ? value : '';
     }
 
     function offlineReady() {

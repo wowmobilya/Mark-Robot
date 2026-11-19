@@ -203,7 +203,7 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
     f.speak.click(false);
     check(f.audioRequests.length === 0, 'Programmatic identity clicks cannot start audio');
     f.speak.click();
-    check(f.audioRequests[0]?.src === 'assets/robot-identity/ar.mp3?v=1' && f.audioRequests[0].playCount === 1, 'Trusted click synchronously plays the versioned bundled identity');
+    check(f.audioRequests[0]?.src === 'assets/robot-identity/ar.mp3?v=2' && f.audioRequests[0].playCount === 1, 'Trusted click synchronously plays the versioned bundled identity');
     check(f.offlineVoice.calls.length === 0 && f.synth.calls.length === 0, 'Identity prefers the small recording over both pack generation and native speech');
     f.audioRequests[0].onplaying();
     check(f.reportEvents.length === 0 && f.face.dataset.speechBeat !== 'true', 'Recorded identity does not fabricate report or word timing events');
@@ -212,7 +212,7 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
   }
   for (const lang of ['ar','tr','en','fr','ru']) {
     const f = fixture({lang, supported:false, recordings:true}); f.reveal(); f.speak.click();
-    check(f.audioRequests[0]?.src === `assets/robot-identity/${lang}.mp3?v=1`, 'Exact bundled recording selected for '+lang);
+    check(f.audioRequests[0]?.src === `assets/robot-identity/${lang}.mp3?v=${lang === 'ar' ? 2 : 1}`, 'Exact bundled recording selected for '+lang);
     check(!f.speak.disabled && f.face.dataset.voiceActive === 'true', 'Bundled '+lang+' identity remains available without platform voices');
   }
   {
