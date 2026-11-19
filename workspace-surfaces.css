@@ -862,3 +862,24 @@
   html body #sidebar .wf-sidebar-brand img {width:24px!important;height:24px!important;}
   html body #sidebar {padding-block:4px!important;}
 }
+
+@media screen and (min-width:1025px) {
+  html.wf-sidebar-collapsed body #sidebar {
+    width:68px!important; transform:none!important; pointer-events:auto!important; visibility:visible!important;
+    padding:8px 6px!important; align-items:stretch;
+  }
+  html.wf-sidebar-collapsed body #sidebar::before {mask:none;}
+  html.wf-sidebar-collapsed body #mainContent {margin-inline-start:68px!important;margin-inline-end:0!important;}
+  html.wf-sidebar-collapsed body #sidebar :is(.wf-sidebar-brand,.wf-sidebar-search,.side-sec,.nav-badge,.nav-item > span:nth-child(2)) {display:none!important;}
+  html.wf-sidebar-collapsed body #sidebar .wf-nav-group {padding:0!important;background:transparent!important;}
+  html.wf-sidebar-collapsed body #sidebar .nav-item:not([hidden]) {
+    grid-template-columns:1fr!important;justify-items:center;padding:3px!important;
+  }
+  html.wf-sidebar-collapsed body #wfSidebarPager:not([hidden]) {display:grid;grid-template-columns:1fr 1fr;gap:1px;}
+  html.wf-sidebar-collapsed body #wfSidebarPager button {width:100%;min-width:0;}
+  html.wf-sidebar-collapsed body #wfSidebarPage {grid-column:1/-1;grid-row:2;text-align:center;}
+}
+@media screen and (max-width:1024px) {
+  html body #sidebar {width:min(360px,calc(100vw - 12px))!important;}
+  html body #sidebar .nav-item .nav-badge {justify-self:end;}
+}

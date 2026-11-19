@@ -32,10 +32,12 @@
   syncBackButtons();
   syncSectionHeadings();
   const open=compact.matches?sidebar.classList.contains('open'):!root.classList.contains('wf-sidebar-collapsed');
-  sidebar.inert=!open;
+  sidebar.inert=compact.matches && !open;
   const handle=document.getElementById('wfSidebarClose');
   if(handle)handle.hidden=!open;
   sidebar.querySelectorAll('.nav-item').forEach(button=>{
+   const caption=button.children[1]?.textContent.trim();
+   if(caption){button.setAttribute('aria-label',caption);button.title=caption;}
    if(button.classList.contains('active'))button.setAttribute('aria-current','page');
    else button.removeAttribute('aria-current');
   });
@@ -241,5 +243,9 @@
   new MutationObserver(() => {
     if (search.closest('#sidebar').inert && !search.hidden) setSearchOpen(false);
   }).observe(search.closest('#sidebar'), {attributes:true,attributeFilter:['inert']});
+  new MutationObserver(() => {
+    if (!search.hidden && !matchMedia('(max-width:1024px)').matches &&
+        document.documentElement.classList.contains('wf-sidebar-collapsed')) setSearchOpen(false);
+  }).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
   new MutationObserver(filter).observe(document.documentElement, {attributes:true, attributeFilter:['lang']});
 })();

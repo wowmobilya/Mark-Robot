@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-furniture-v139-balanced-exchange';
+const CACHE_NAME = 'wow-furniture-v140-balanced-sidebar';
 const urlsToCache = [
   './workspace-surfaces.css?v=17',
   './context-nav.js?v=1',
