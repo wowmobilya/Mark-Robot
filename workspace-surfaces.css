@@ -1250,3 +1250,136 @@
   html body #sidebar:not(.wf-icon-rail) #wfSidebarLogo {width:44px!important;height:44px!important;min-width:44px!important;}
  }
 }
+
+/* Modern barcode workbench with a permanent safe-area mobile dock.
+   Only spacing/surfaces are changed; camera, search, tier and cart handlers stay intact. */
+@media screen {
+ #page-quick-barcode .qbl-workbench {
+   width:min(100%,720px)!important;max-width:100%;margin:clamp(12px,2.5vw,22px) auto 20px!important;
+   display:grid;gap:11px;min-width:0;
+ }
+ #page-quick-barcode .qbl-modes {
+   display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));
+   gap:8px;padding:5px;background:var(--input);
+   border:1px solid var(--border);border-radius:17px;
+ }
+ #page-quick-barcode .qbl-modes button {
+   display:flex;align-items:center;justify-content:center;gap:6px;
+   min-width:0;min-height:46px!important;
+   padding:8px 10px!important;font:inherit;font-weight:750!important;font-size:13px!important;
+   line-height:1.3;white-space:normal!important;cursor:pointer;
+   color:var(--text2)!important;background:transparent!important;
+   border:1px solid transparent!important;border-radius:13px!important;
+   box-shadow:none!important;
+ }
+ #page-quick-barcode .qbl-modes button[aria-pressed="true"] {
+   color:#fff!important;background:linear-gradient(140deg,#276b7c,#365f78)!important;
+   border-color:transparent!important;box-shadow:none!important;
+ }
+ #page-quick-barcode .qbl-panel {
+   min-width:0;padding:clamp(9px,1.8vw,14px)!important;
+   background:var(--card);border:1px solid var(--border);
+   border-radius:21px;box-shadow:0 6px 25px rgba(19,50,63,.055);
+ }
+ #page-quick-barcode .qbl-view {
+   position:relative!important;isolation:isolate;min-width:0;
+   height:clamp(230px,42dvh,390px)!important;
+   overflow:hidden;border-radius:17px!important;
+   background:#142f3d;
+ }
+ #page-quick-barcode #qblCameraWrap,
+ #page-quick-barcode #qblDropdown {
+   border-radius:17px!important;overflow:hidden!important;
+ }
+ #page-quick-barcode #qblCameraWrap video {object-fit:cover!important;}
+ #page-quick-barcode #qblInput {
+   min-width:0;width:100%;min-height:50px!important;font-size:16px!important;
+   border-radius:13px!important;background:var(--input)!important;
+   border:1px solid var(--border)!important;
+ }
+ #page-quick-barcode .qbl-search-trigger {
+   flex:0 0 auto;min-height:50px!important;
+   border-radius:13px!important;padding-inline:16px!important;
+   background:var(--brand-primary)!important;color:#fff!important;
+ }
+ #page-quick-barcode .qbl-view + div {padding:12px 2px 2px!important;}
+ #page-quick-barcode .qbl-view + div > div {min-width:0;}
+ #page-quick-barcode #qblDdTabs {
+   display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important;
+ }
+ #page-quick-barcode #qblDdTabs button {min-width:0;overflow-wrap:anywhere;border-radius:11px!important;}
+ #page-quick-barcode #qblPhase3 > div {
+   max-width:680px!important;padding-inline:clamp(0px,2vw,18px)!important;
+ }
+ #page-quick-barcode #qblProductCard {
+   border:1px solid var(--border)!important;border-radius:19px!important;
+   box-shadow:0 7px 26px rgba(19,50,63,.08)!important;
+ }
+ #page-quick-barcode #qblFinalDetails {gap:8px!important;min-width:0;}
+ #page-quick-barcode #qblFinalPriceBox {
+   border-color:color-mix(in srgb,var(--brand-primary) 46%,var(--border))!important;
+   background:color-mix(in srgb,var(--brand-primary) 7%,var(--card))!important;
+   border-radius:14px!important;
+ }
+ #page-quick-barcode :is(#qblQtyWrap,.qbl-search-trigger,#qblNotFound button) {border-radius:14px!important;}
+ @media(max-width:480px) {
+  #page-quick-barcode .qbl-workbench {gap:8px;}
+  #page-quick-barcode .qbl-panel {padding:8px!important;border-radius:17px;}
+  #page-quick-barcode .qbl-view {height:clamp(220px,35dvh,320px)!important;}
+  #page-quick-barcode .qbl-view + div {padding:10px 1px 1px!important;}
+  #page-quick-barcode .qbl-search-trigger {padding-inline:11px!important;}
+  #page-quick-barcode #qblPhase3 > div {padding:9px 3px 110px!important;}
+  #page-quick-barcode #qblFinalDetails {grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  #page-quick-barcode #qblQtyWrap {flex-wrap:wrap!important;gap:9px!important;}
+  #page-quick-barcode #qblQtyWrap > :last-child {margin-inline-start:auto;}
+ }
+ @media(prefers-reduced-motion:reduce) {
+  #page-quick-barcode .qbl-modes button,
+  #page-quick-barcode #qblCameraWrap * {animation:none!important;transition:none!important;}
+ }
+}
+/* Uniform, flat bottom buttons: selected item stands out by color, not a drop shadow. */
+@media screen and (max-width:1024px) {
+ html body #bottomNav {
+   --wf-nav-focus:#276c7a;
+   min-height:72px!important;
+   background:var(--card)!important;
+   box-shadow:none!important;filter:none!important;
+   border-top:1px solid var(--border)!important;
+ }
+ html body #bottomNav :is(.bnav-btn,.bnav-btn.bnav-active,#bnavCircle,.wf-task-action) {
+   box-shadow:none!important;filter:none!important;
+ }
+ html body #bottomNav #bnavCircle {
+   background:var(--wf-nav-focus)!important;
+   color:#fff!important;border:1px solid var(--wf-nav-focus)!important;
+   box-shadow:none!important;filter:none!important;
+ }
+ html body #bottomNav .bnav-btn.bnav-active {
+   background:color-mix(in srgb,var(--wf-nav-focus) 9%,transparent)!important;
+   border-radius:14px!important;
+ }
+ html body #bottomNav .bnav-btn.bnav-active .bnav-label {
+   color:var(--wf-nav-focus)!important;font-weight:850!important;
+ }
+ html body #bottomNav :is(.bnav-btn.bnav-active .bnav-icon::before,.bnav-btn.bnav-active::before) {
+   box-shadow:none!important;filter:none!important;
+ }
+ html body #bottomNav :is(.bnav-btn:focus-visible,.wf-task-action:focus-visible) {
+   outline:2px solid var(--wf-nav-focus)!important;outline-offset:-2px!important;
+ }
+ html body #bottomNav[data-task-mode="action"] .wf-task-action {
+   min-width:0;min-height:62px;color:var(--text)!important;
+ }
+ html body #bottomNav[data-task-mode="action"] .wf-task-action > span:first-child {
+   background:var(--wf-nav-focus)!important;color:white!important;
+   box-shadow:none!important;
+ }
+ html body #bottomNav[data-task-mode="action"] .wf-task-action:disabled {
+   opacity:.52;cursor:not-allowed;
+ }
+ html body #bottomNav.wf-nav-secondary .bnav-btn .bnav-label {color:var(--text2)!important;}
+ html body #bottomNav.wf-nav-secondary .bnav-btn {background:transparent!important;}
+ #page-quick-barcode.active ~ #bottomNav {visibility:visible;}
+ .qbl-cart-fab {bottom:calc(92px + env(safe-area-inset-bottom,0px))!important;}
+}
