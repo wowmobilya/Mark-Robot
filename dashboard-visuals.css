@@ -1258,27 +1258,38 @@
    padding-block-start:6px;border-block-start:1px solid var(--dash-line);
  }
  html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-inner {
-   display:grid;grid-template-columns:48px minmax(0,1fr);
-   grid-template-rows:minmax(0,1fr) auto;
-   block-size:100%;min-block-size:0;align-items:start;gap:8px 12px;
+   display:grid;grid-template-columns:30px minmax(0,1fr);
+   grid-template-rows:30px minmax(0,1fr) auto;
+   block-size:100%;min-block-size:0;align-items:start;gap:8px;
  }
  html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-icon {
-   grid-area:1 / 1;width:48px;height:48px;font-size:28px;
+   grid-area:1 / 1;display:grid;place-items:center;
+   width:30px!important;height:30px!important;min-width:30px;
+   font-size:18px;border-radius:10px!important;
+ }
+ html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-icon .wf-ui-icon {
+   width:18px!important;height:18px!important;
  }
  html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-content {
-   display:grid;grid-template-rows:auto minmax(0,1fr);
-   block-size:100%;min-block-size:0;min-inline-size:0;gap:6px;
+   display:contents;
  }
  html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-label {
-   margin:0;font-size:14px;line-height:1.4;letter-spacing:normal;text-transform:none;
+   grid-area:1 / 2;align-self:center;
+   margin:0;font-size:13px;line-height:1.4;letter-spacing:normal;text-transform:none;
  }
  html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-text {
-   min-block-size:0;font-size:14px;line-height:1.65;
+   grid-column:1 / -1;grid-row:2;align-self:stretch;
+   min-block-size:0;margin:0;padding-block:2px;
+   font-size:14px;line-height:1.75;text-wrap:pretty;overflow-wrap:anywhere;
    overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;
    scrollbar-color:var(--dash-line) transparent;
  }
  html body #mainContent #page-dashboard .wf-greeting-faces .tip-card-badge {
-   grid-column:2;justify-self:start;align-self:end;font-size:12px;
+   grid-column:1 / -1;grid-row:3;justify-self:stretch;align-self:end;
+   margin:0!important;padding:6px 0 0!important;
+   border:0!important;border-block-start:1px solid var(--dash-line)!important;
+   border-radius:0!important;background:transparent!important;box-shadow:none!important;
+   color:var(--text2);font-size:11px;line-height:1.4;text-align:start;
  }
  html body #mainContent #page-dashboard .wf-greeting-faces .wf-weather {
    grid-template-rows:auto auto auto;
@@ -1328,4 +1339,74 @@
    html body #mainContent #page-dashboard .wf-smart-page::before {transition:none;}
  }
  html[data-wf-motion="reduced"] body #mainContent #page-dashboard .wf-smart-page::before {transition:none;}
+}
+
+/* Balance the desktop overview around the compact smart card.
+   The existing wrappers stay in the DOM; only their visual grid participation changes.
+   Customized dashboards with a hidden overview section retain their natural layout. */
+@media screen and (min-width:720px) {
+ html body #mainContent #page-dashboard {
+   max-width:1280px!important;max-inline-size:1280px!important;margin-inline:auto!important;
+ }
+ html body #mainContent #page-dashboard.active:has(.wf-greeting-flip:not(.dashboard-off)):has(.wf-sales-command-card:not(.dashboard-off)):has(> #wfDashRates:not(.dashboard-off)) {
+   display:grid!important;
+   grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+   grid-template-areas:"welcome sales" "rates sales" "workspace workspace";
+   grid-template-rows:auto auto auto;
+   align-items:start;gap:var(--dash-gap);
+ }
+ html body #mainContent #page-dashboard:has(.wf-greeting-flip:not(.dashboard-off)):has(.wf-sales-command-card:not(.dashboard-off)):has(> #wfDashRates:not(.dashboard-off)) > .wf-dash-overview {
+   display:contents!important;
+ }
+ html body #mainContent #page-dashboard:has(.wf-greeting-flip:not(.dashboard-off)):has(.wf-sales-command-card:not(.dashboard-off)):has(> #wfDashRates:not(.dashboard-off)) > #wfDashRates {
+   grid-area:rates;min-inline-size:0;
+ }
+ html body #mainContent #page-dashboard:has(.wf-greeting-flip:not(.dashboard-off)):has(.wf-sales-command-card:not(.dashboard-off)):has(> #wfDashRates:not(.dashboard-off)) > .wf-dash-workspace {
+   grid-area:workspace;min-inline-size:0;margin:0;
+ }
+ html body #mainContent #page-dashboard:has(.wf-greeting-flip:not(.dashboard-off)):has(.wf-sales-command-card:not(.dashboard-off)):has(> #wfDashRates:not(.dashboard-off)) .wf-greeting-flip {
+   grid-area:welcome;
+ }
+ html body #mainContent #page-dashboard:has(.wf-greeting-flip:not(.dashboard-off)):has(.wf-sales-command-card:not(.dashboard-off)):has(> #wfDashRates:not(.dashboard-off)) .wf-sales-command-card {
+   grid-area:sales;align-self:stretch;
+   justify-content:space-between!important;
+   padding:16px!important;gap:12px!important;
+ }
+ html body #mainContent #page-dashboard .wf-sales-command-card .wf-sales-summary:empty {
+   display:none!important;
+ }
+ html body #mainContent #page-dashboard .wf-sales-command-card #s-total {
+   font-size:clamp(24px,2vw,30px)!important;
+ }
+ html body #mainContent #page-dashboard #greetingCard .greeting-msg {
+   font-size:clamp(20px,1.8vw,28px)!important;
+ }
+ html body #mainContent #page-dashboard #wfDashRates #currBar {
+   margin:0!important;padding:14px!important;
+ }
+ html body #mainContent #page-dashboard #wfDashRates .curr-bar-grid {
+   grid-template-columns:repeat(3,minmax(0,1fr))!important;
+   gap:6px!important;
+ }
+ html body #mainContent #page-dashboard #wfDashRates .curr-bar-top h2 {
+   font-size:18px;
+ }
+ html body #mainContent #page-dashboard #wfDashRates .curr-item {
+   min-height:54px;padding:6px!important;
+ }
+ html body #mainContent #page-dashboard #wfDashRates .curr-item .curr-rate {
+   font-size:17px!important;
+ }
+}
+@media screen and (min-width:1440px) {
+ html body #mainContent #page-dashboard #wfDashRates .curr-bar-grid {
+   grid-template-columns:repeat(6,minmax(0,1fr))!important;
+   gap:5px!important;
+ }
+ html body #mainContent #page-dashboard #wfDashRates .curr-item {
+   padding:5px!important;
+ }
+ html body #mainContent #page-dashboard #wfDashRates .curr-item .curr-rate {
+   font-size:16px!important;
+ }
 }

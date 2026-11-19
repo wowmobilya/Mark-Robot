@@ -1494,3 +1494,32 @@
  from {opacity:0;transform:translateY(4px);}
  to {opacity:1;transform:translateY(0);}
 }
+
+/* Desktop content keeps a useful reading width; mobile controls keep their space. */
+@media screen and (min-width:1025px) {
+ html body #mainContent :is(#coGrid,#prGrid,#invListContainer) {
+   max-width:1440px!important;margin-inline:auto!important;
+   grid-template-columns:repeat(auto-fill,minmax(min(100%,285px),1fr))!important;
+ }
+ html body #mainContent #page-add-company > .card,
+ html body #mainContent #page-add-product #pr-form-view > :is(.card,#prSelectedTypeBanner) {
+   box-sizing:border-box;width:100%;max-width:1040px!important;margin-inline:auto!important;
+ }
+ html body #mainContent #page-create-invoice > .inv-builder,
+ html body #mainContent #page-reports > :is(#wfReportsOverview,.wf-report-sales) {
+   box-sizing:border-box;width:100%;max-width:1120px!important;margin-inline:auto!important;
+ }
+ html body #mainContent :is(#page-select-client-type,#page-select-invoice-type) > div:has(> .client-type-step-card) {
+   max-width:1024px!important;display:grid!important;
+   grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))!important;
+   gap:16px;align-items:stretch;
+ }
+ html body #mainContent :is(#page-select-client-type,#page-select-invoice-type) > div > .client-type-step-card {
+   min-width:0;margin:0!important;
+ }
+}
+@media screen and (min-width:1100px) {
+ html body #mainContent #page-add-company #coFormFields {
+   grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ }
+}

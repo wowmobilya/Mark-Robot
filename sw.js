@@ -1,8 +1,8 @@
-const CACHE_NAME = 'wow-furniture-v164-adaptive-wow-assistant';
+const CACHE_NAME = 'wow-furniture-v165-context-responsive-workspace';
 const urlsToCache = [
-  './workspace-surfaces.css?v=32',
-  './context-nav.js?v=3',
-  './context-nav.css?v=3',
+  './workspace-surfaces.css?v=33',
+  './context-nav.js?v=4',
+  './context-nav.css?v=4',
   './',
   './bottomnav-fit.css?v=1',
   './bottomnav-fit.js?v=1',
@@ -11,7 +11,7 @@ const urlsToCache = [
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './settings-navigation.js?v=9',
-  './dashboard-visuals.css?v=34',
+  './dashboard-visuals.css?v=35',
   './rate-refresh.js?v=6',
   './cashboxes.mjs',
   './section-headings.css?v=7',
@@ -19,7 +19,7 @@ const urlsToCache = [
   './topbar-dock.js?v=6',
   './robot-face.js?v=1',
   './robot-face.css?v=1',
-  './greeting-carousel.js?v=12',
+  './greeting-carousel.js?v=13',
   './currency-calculator.css?v=11',
   './currency-calculator.js?v=7',
   './ui-i18n.js?v=26',

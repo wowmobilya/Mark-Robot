@@ -325,8 +325,8 @@
   close.textContent='×';
   close.onclick=()=>closeMenu(true);
   trigger.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h7m5 0h4M4 17h2m5 0h9"/><circle cx="13.5" cy="7" r="2.5"/><circle cx="8.5" cy="17" r="2.5"/></svg>';
-  // Draw the complete tapered outline instead of clipping a rectangular border.
-  trigger.insertAdjacentHTML('afterbegin','<svg class="wf-dock-shape" viewBox="0 0 18 86" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M9 1C14.5 1 17.25 14 17.25 43C17.25 72 14.5 85 9 85C3.5 85 .75 72 .75 43C.75 14 3.5 1 9 1Z" stroke-width="1.5" stroke-linejoin="round"/></svg>');
+  // A full capsule outline keeps both rounded ends visible at the screen edge.
+  trigger.insertAdjacentHTML('afterbegin','<svg class="wf-dock-shape" viewBox="0 0 18 86" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect x=".75" y=".75" width="16.5" height="84.5" rx="8.25" stroke-width="1.5"/></svg>');
   toolbar.append(heading,move,close);
   panel.append(toolbar,design);
   menu.append(trigger,panel);

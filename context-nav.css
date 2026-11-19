@@ -19,30 +19,22 @@
 }
 @media print{#wfContextNav{display:none!important}}
 
-#bottomNav .wf-task-action {display:none}
+/* Section controls reuse the existing buttons, cutout and moving circle. */
+#bottomNav .wf-task-action {display:none!important}
 @media screen and (max-width:1024px){
- html body #bottomNav[data-task-mode="screen"] {display:none!important}
- html body #bottomNav[data-task-mode="settings"] .bnav-btn:not(#bnav-2),
- html body #bottomNav[data-task-mode="action"] :is(.bnav-btn,#bnavCircle) {display:none!important}
- html body #bottomNav:is([data-task-mode="action"],[data-task-mode="settings"]) {--nav-x:50%!important;justify-content:center}
+ html body #bottomNav[data-task-mode="settings"] .bnav-btn:not(#bnav-2) {display:none!important}
+ html body #bottomNav[data-task-mode="settings"] {--nav-x:50%!important;justify-content:center}
  html body #bottomNav[data-task-mode="settings"] #bnavCircle {left:calc(50% - 24px)!important}
  html body #bottomNav[data-task-mode="settings"] #bnav-2 {flex:0 1 11rem}
- html body #bottomNav[data-task-mode="action"] .wf-task-action {
-   display:flex; position:relative; flex-direction:column; align-items:center; justify-content:flex-end;
-   max-width:100%; padding:0 10px 6px; gap:4px; color:var(--text); background:transparent; border:0;
-   font:inherit; font-size:12px; font-weight:700; cursor:pointer;
+ html body #bottomNav[data-task-mode="context"] .bnav-btn[hidden] {display:none!important}
+ html body #bottomNav[data-task-mode="context"] .bnav-btn {
+   min-height:44px;touch-action:manipulation;
  }
- #bottomNav .wf-task-action > span:first-child {display:grid;place-items:center;position:absolute;bottom:calc(100% - 23px);width:48px;height:48px;border-radius:50%;background:var(--sales-gradient);color:white;font-size:22px;}
- #bottomNav .wf-task-action svg {width:22px;height:22px}
- #bottomNav .wf-task-action:disabled {opacity:.6}
-}
-
-/* Universal mobile navigation state: never hide the dock on scanning or read-only screens. */
-@media screen and (max-width:1024px) {
- html body #bottomNav[data-task-mode="screen"] {display:flex!important;}
- html.wf-context-nav-open body #bottomNav {display:flex!important;}
- html body #bottomNav[data-task-mode="main"] .wf-task-action {display:none!important;}
- html body #bottomNav.wf-nav-secondary #bnavCircle {display:none!important;}
- html body #bottomNav.wf-nav-secondary .bnav-btn.bnav-active {background:transparent!important;}
+ html body #bottomNav[data-task-mode="context"] .bnav-label {
+   max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+ }
+ html body #bottomNav[data-task-mode="context"] .bnav-icon svg {width:22px;height:22px;}
+ html body #bottomNav[data-task-mode="context"] .bnav-btn:disabled {opacity:.45;cursor:default;}
+ html body #bottomNav[data-task-mode="context"] .bnav-btn[aria-busy="true"] {cursor:wait;}
  html body #page-quick-barcode.active {padding-bottom:calc(126px + env(safe-area-inset-bottom,0px))!important;}
 }
