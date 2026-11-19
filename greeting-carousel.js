@@ -287,42 +287,62 @@
     fr:['Présentation','Liste','Cartes','Barres','Anneau','Proportions','Autres types'],
     ru:['Вид','Список','Карточки','Полосы','Кольцо','Доли','Другие типы']
   };
-  const picker=document.createElement('label'),title=document.createElement('span'),select=document.createElement('select');
-  picker.className='overview-style';
-  modes.forEach(mode=>select.add(new Option('',mode)));
-  picker.append(title,select);
-  const summaryPicker=document.createElement('label'),summaryTitle=document.createElement('span'),summarySelect=document.createElement('select');
-  summaryPicker.className='overview-style';
   const summaryModes=['list','tiles','spotlight','ledger','columns'];
   const summaryLabels={ar:['بطاقة بارزة','سجل','أعمدة'],en:['Spotlight','Ledger','Columns'],fr:['En vedette','Registre','Colonnes'],ru:['Акцент','Реестр','Колонки'],tr:['Vurgu','Defter','Sütunlar']};
-  summaryModes.forEach(value=>summarySelect.add(new Option('',value)));
-  summaryPicker.append(summaryTitle,summarySelect);
   const summaryKey='wf.dashboard.summaryStyle';
   const names={ar:['ملخّص الأعمال','توزيع المنتجات'],en:['Business summary','Product breakdown'],tr:['İş özeti','Ürün dağılımı'],fr:['Résumé d’activité','Répartition des produits'],ru:['Сводка бизнеса','Распределение товаров']};
   let summaryMode='list';
   try{const saved=localStorage.getItem(summaryKey);if(summaryModes.includes(saved))summaryMode=saved;}catch{}
-  summarySelect.value=summaryMode;
-  summarySelect.onchange=()=>{
-    summaryMode=summarySelect.value;
-    host.dataset.summaryView=summaryMode;
-    try{localStorage.setItem(summaryKey,summaryMode);}catch{}
-  };
   const key='wf.dashboard.overviewStyle';
   let mode='bars';
   try{const saved=localStorage.getItem(key);if(modes.includes(saved))mode=saved;}catch{}
-  select.value=mode;
+  const paths={
+    list:'M4 6h2m4 0h10M4 12h2m4 0h10M4 18h2m4 0h10',
+    tiles:'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
+    spotlight:'M3 4h18v10H3z M3 18h7m4 0h7',
+    ledger:'M4 3h16v18H4z M4 9h16M4 15h16M14 9v12',
+    columns:'M3 5h5v14H3z M10 5h4v14h-4z M16 5h5v14h-5z',
+    bars:'M4 5h10v3H4z M4 11h16v3H4z M4 17h7v3H4z',
+    ring:'M12 3a9 9 0 1 0 9 9h-9z M15 3.5v5.5h5.5a8 8 0 0 0-5.5-5.5z',
+    strip:'M2 8h20v8H2z M8 8v8m7-8v8'
+  };
+  function mountChoices(head,values,labels,current,key,caption,onChoose){
+    if(!head)return;
+    let trigger=head.querySelector('.view-trigger');
+    let tray=head.querySelector('.view-choices');
+    if(!trigger){
+      trigger=document.createElement('button');
+      trigger.type='button';trigger.className='view-trigger';
+      tray=document.createElement('div');tray.className='view-choices';tray.hidden=true;
+      tray.id=key+'-choices';tray.setAttribute('role','group');
+      trigger.setAttribute('aria-controls',tray.id);
+      trigger.setAttribute('aria-expanded','false');
+      trigger.onclick=()=>{tray.hidden=!tray.hidden;trigger.setAttribute('aria-expanded',String(!tray.hidden));};
+      head.append(trigger,tray);
+      values.forEach(value=>{
+        const button=document.createElement('button');button.type='button';
+        button.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="'+paths[value]+'"/></svg><b></b>';
+        button.onclick=()=>{onChoose(value);try{localStorage.setItem(key,value);}catch{}tray.hidden=true;trigger.setAttribute('aria-expanded','false');draw();trigger.focus();};
+        tray.append(button);
+      });
+      head.addEventListener('keydown',event=>{if(event.key==='Escape'&&!tray.hidden){event.stopPropagation();tray.hidden=true;trigger.setAttribute('aria-expanded','false');trigger.focus();}});
+    }
+    tray.setAttribute('aria-label',caption);
+    Array.from(tray.children).forEach((button,i)=>{
+      button.querySelector('b').textContent=labels[i];
+      button.setAttribute('aria-pressed',String(values[i]===current));
+    });
+    trigger.replaceChildren(tray.children[values.indexOf(current)].firstChild.cloneNode(true),document.createTextNode(labels[values.indexOf(current)]));
+    trigger.setAttribute('aria-label',caption+' · '+labels[values.indexOf(current)]);
+  }
   function draw(){
     const words=copy[document.documentElement.lang]||copy.en;
     const labels=names[document.documentElement.lang]||names.en;
     const heads=host.querySelectorAll('.wf-insight-head');
-    if(heads[0]&&!heads[0].contains(summaryPicker))heads[0].append(summaryPicker);
-    if(heads[1]&&!heads[1].contains(picker))heads[1].append(picker);
-    summaryTitle.textContent=labels[0];
-    title.textContent=labels[1];
     const summaryWords=[words[1],words[2],...(summaryLabels[document.documentElement.lang]||summaryLabels.en)];
-    Array.from(summarySelect.options).forEach((opt,i)=>opt.textContent=summaryWords[i]);
+    mountChoices(heads[0],summaryModes,summaryWords,summaryMode,summaryKey,labels[0]+' · '+words[0],value=>summaryMode=value);
+    mountChoices(heads[1],modes,words.slice(1,6),mode,key,labels[1]+' · '+words[0],value=>mode=value);
     host.dataset.summaryView=summaryMode;
-    Array.from(select.options).forEach((opt,i)=>opt.textContent=words[i+1]);
     host.dataset.view=mode;
     const catalog=host.querySelector('.wf-catalog-total')?.parentElement;
     if(!catalog)return;
@@ -352,7 +372,6 @@
     if(stops.length)chart.style.backgroundImage=(mode==='ring'?'conic-gradient(':'linear-gradient(to right,')+stops.join(',')+')';
     catalog.querySelector('.wf-catalog-label').after(chart);
   }
-  select.onchange=()=>{mode=select.value;try{localStorage.setItem(key,mode);}catch{}draw();};
   new MutationObserver(draw).observe(host,{childList:true});
   new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   draw();
