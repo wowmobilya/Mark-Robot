@@ -1075,3 +1075,33 @@
    html body #sidebar:not(.wf-icon-rail) .wf-sidebar-links:not(.wf-nav-paged) {gap:5px;}
  }
 }
+
+/* Inline sidebar search: exact same footprint as the search trigger. */
+@media screen {
+ html body #sidebar > .wf-search-inline[hidden] {display:none!important;}
+ html body #sidebar > .wf-search-inline {
+   display:flex!important;flex:0 0 auto;align-items:center;gap:6px;
+   min-width:0;box-sizing:border-box;margin:4px 6px 8px;
+   padding:4px 5px 4px 10px;min-height:44px;
+   border:1px solid var(--border);border-radius:12px;background:var(--input);
+ }
+ html body #sidebar > .wf-search-inline #wfSidebarSearch {
+   display:block!important;flex:1 1 auto;min-width:0;width:100%;height:36px;min-height:36px;
+   border:0!important;outline:0!important;box-shadow:none!important;
+   background:transparent!important;margin:0!important;padding:0 5px!important;
+   color:var(--text);font:inherit;font-size:16px;
+ }
+ html body #sidebar > .wf-search-inline:focus-within {outline:2px solid var(--ui-accent);outline-offset:1px;}
+ html body #sidebar > .wf-search-inline .wf-search-inline-clear {
+   flex:0 0 32px;width:32px;height:32px;min-height:32px;border:0;
+   border-radius:9px;font:24px/1 sans-serif;color:var(--text);background:var(--card);cursor:pointer;
+ }
+ html body #sidebar.wf-searching > #wfSidebarSearchToggle {display:none!important;}
+ html body #sidebar.wf-searching > #wfSearchDialog {
+   flex:1 1 0;min-height:0;overflow:auto;padding:6px 8px;
+   background:transparent;border:0;box-shadow:none;
+ }
+ html body #sidebar.wf-searching > #wfSearchDialog header {display:none!important;}
+ html body #sidebar.wf-searching #wfSearchResults {margin-top:0;}
+ html body #sidebar.wf-searching #wfSearchResults button {min-height:44px;}
+}
