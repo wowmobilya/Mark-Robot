@@ -833,3 +833,15 @@
  .dash-dock-layout input:checked {background:var(--ui-accent);}
  .dash-dock-layout input:checked::after {inset-inline-start:16px;background:white;}
 }
+
+@media screen {
+ #page-dashboard {
+   --dashboard-card-wash:linear-gradient(115deg,var(--dash-surface) 45%,var(--wash));
+   --dashboard-detail-wash:linear-gradient(115deg,var(--dash-surface) 52%,color-mix(in srgb,var(--wash) 65%,var(--dash-surface)));
+ }
+ html body #page-dashboard :is(.wf-dash-sales,.wf-dash-recent,#currBar,.wf-insight-card) {
+   background:var(--dashboard-card-wash)!important;
+   border-color:var(--dash-line)!important;
+ }
+ html body #page-dashboard .stats-grid .stat-card {background:var(--dashboard-detail-wash)!important;}
+}
