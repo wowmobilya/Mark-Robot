@@ -1053,27 +1053,38 @@
  }
 }
 
-/* Distinct copper finish for the narrow angled grip. */
+/* Original angled grip shape and card color, with a contrasting EDGE only.
+   Preserve the 18px width, curved/tapered geometry and half-screen drawer. */
 @media screen {
  html body .dash-visibility summary {
-   background:linear-gradient(180deg,#c88152 0%,#ad613e 52%,#8f4936 100%)!important;
-   border:1px solid #9f573f!important;color:#fff!important;
-   box-shadow:0 5px 16px rgba(117,62,42,.3)!important;
-   transition:filter .18s ease,box-shadow .18s ease!important;
+   background:var(--card)!important;
+   color:var(--ui-accent)!important;
+   border:2px solid #b77b56!important;
+   box-shadow:none!important;
+   filter:drop-shadow(0 0 1px rgba(151,79,44,.35))!important;
+   transition:border-color .18s ease,background-color .18s ease!important;
  }
  html body .dash-visibility summary svg {
-   color:#fff!important;stroke:#fff!important;
-   filter:drop-shadow(0 1px 1px rgba(65,28,18,.2));
+   color:inherit!important;
+   stroke:currentColor!important;
+   filter:none!important;
  }
  html body .dash-visibility[open] summary {
-   background:linear-gradient(180deg,#d09162,#a4513b)!important;border-color:#8e4b37!important;
+   background:var(--input)!important;
+   border-color:#a66343!important;
  }
- html body .dash-visibility summary:is(:hover,:focus-visible) {filter:brightness(1.07);}
- html body .dash-visibility summary:focus-visible {outline:2px solid #f2ba84!important;outline-offset:3px!important;}
+ html body .dash-visibility summary:focus-visible {
+   outline:2px solid #d5a07b!important;
+   outline-offset:2px!important;
+ }
  html[data-theme="dark"] body .dash-visibility summary {
-   background:linear-gradient(180deg,#ba7854,#92503d)!important;border-color:#c88b65!important;
+   background:var(--card)!important;
+   border-color:#d7a07c!important;
+ }
+ html[data-theme="dark"] body .dash-visibility[open] summary {
+   background:var(--input)!important;
  }
  @media(prefers-reduced-motion:reduce) {
-  html body .dash-visibility summary {transition:none!important;}
+   html body .dash-visibility summary {transition:none!important;}
  }
 }
