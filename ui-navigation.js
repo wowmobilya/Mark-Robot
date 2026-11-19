@@ -404,3 +404,133 @@
     modal.onclick=e=>{if(e.target===modal){const r=modal.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)modal.close();}};
   });
 })();
+
+
+/* WF dashboard six-link command deck, page identity and context-aware Home. */
+(() => {
+  const dashboard=document.getElementById('page-dashboard');
+  const sales=dashboard?.querySelector('.wf-dash-sales');
+  const metrics=dashboard?.querySelector('.stats-grid');
+  const root=document.documentElement;
+  if(sales&&metrics){
+    sales.append(metrics);
+    sales.classList.add('wf-sales-command-card');
+    metrics.classList.add('wf-sales-six-actions');
+    const actions=[
+      {page:'select-client-type',symbol:'＋',label:{ar:'إضافة عميل',tr:'Müşteri ekle',en:'Add client',fr:'Ajouter client',ru:'Добавить клиента'}},
+      {page:'add-product',symbol:'◇',label:{ar:'إضافة منتج',tr:'Ürün ekle',en:'Add product',fr:'Ajouter produit',ru:'Добавить товар'}},
+      {page:'select-invoice-type',symbol:'✎',label:{ar:'إنشاء فاتورة',tr:'Fatura oluştur',en:'Create invoice',fr:'Créer facture',ru:'Создать счёт'}}
+    ];
+    for(const action of actions){
+      const button=document.createElement('button');
+      button.type='button';button.className='stat-card wf-sales-action';
+      const icon=document.createElement('span');icon.className='stat-icon wf-sales-action-icon';icon.setAttribute('aria-hidden','true');icon.textContent=action.symbol;
+      const label=document.createElement('span');label.className='wf-sales-action-label';
+      button.append(icon,label);
+      button.addEventListener('click',()=>window.showPage(action.page));
+      action.button=button;action.text=label;
+      metrics.append(button);
+    }
+    const translateActions=()=>{
+      const lang=root.lang||'ar';
+      for(const action of actions){
+        const label=action.label[lang]||action.label.en;
+        action.text.textContent=label;action.button.title=label;action.button.setAttribute('aria-label',label);
+      }
+    };
+    translateActions();
+    new MutationObserver(translateActions).observe(root,{attributes:true,attributeFilter:['lang']});
+  }
+
+  const main=document.getElementById('mainContent');
+  const wordmark=document.querySelector('.navbar .wf-nav-wordmark');
+  const position=document.createElement('span');
+  position.className='wf-page-position';
+  position.setAttribute('aria-live','polite');
+  function updatePosition(){
+    if(!main)return;
+    const pages=[...main.querySelectorAll('.page[id^="page-"]')];
+    const active=pages.find(page=>page.classList.contains('active'));
+    if(!active)return;
+    const number=pages.indexOf(active)+1;
+    const lang=root.lang||'ar';
+    const link=[...document.querySelectorAll('#sidebar .nav-item')].find(button=>button.getAttribute('onclick')?.includes("'"+active.id.slice(5)+"'"));
+    const local=link?.querySelector('[data-i18n],[data-wf-ui]')?.textContent?.trim();
+    const heading=active.querySelector('.sct-sticky-title,.co-toolbar-title,.page-toolbar-title');
+    const title=local || heading?.querySelector('h1,h2')?.textContent?.trim() || heading?.textContent?.trim() ||
+      ({dashboard:{ar:'الرئيسية',en:'Home',tr:'Ana sayfa',fr:'Accueil',ru:'Главная'},cashboxes:{ar:'صناديق العملات',en:'Currency boxes',tr:'Para kasaları',fr:'Caisses',ru:'Кассы'}}[active.id.slice(5)]?.[lang]) || active.id.slice(5).replaceAll('-',' ');
+    const format=new Intl.NumberFormat(({ar:'ar-SY',tr:'tr-TR',fr:'fr-FR',ru:'ru-RU'}[lang]||'en-US'),{useGrouping:false});
+    position.textContent=title+' · '+format.format(number)+' / '+format.format(pages.length);
+    position.title=position.textContent;
+    if(active===dashboard&&wordmark){
+      wordmark.append(position);
+    }else if(heading){
+      heading.append(position);
+    }else{
+      active.prepend(position);
+    }
+  }
+
+  const home=document.getElementById('bnav-2');
+  const topIcon=document.getElementById('bnavCircleIcon');
+  const arrow='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V4m-7 7 7-7 7 7"/></svg>';
+  let topMode=false;
+  function syncHome(){
+    const onHome=dashboard?.classList.contains('active');
+    const scrolled=!!onHome&&(window.scrollY>110 || main?.scrollTop>110);
+    if(scrolled!==topMode){
+      topMode=scrolled;
+      if(onHome&&topIcon){
+        if(scrolled)topIcon.innerHTML=arrow;
+        else{
+          const svg=home?.querySelector('.bnav-icon svg');
+          if(svg)topIcon.replaceChildren(svg.cloneNode(true));
+          else topIcon.textContent='🏠';
+        }
+      }
+    }
+    if(home){
+      const label=scrolled?
+        ({ar:'الصعود للأعلى',en:'Scroll to top',tr:'Yukarı çık',fr:'Retour en haut',ru:'Наверх'}[root.lang]||'Scroll to top'):
+        ({ar:'الرئيسية',en:'Home',tr:'Ana sayfa',fr:'Accueil',ru:'Главная'}[root.lang]||'Home');
+      home.setAttribute('aria-label',label);home.title=label;
+    }
+    root.classList.toggle('wf-home-scroll-top',scrolled);
+  }
+  home?.addEventListener('click',event=>{
+    if(!dashboard?.classList.contains('active') || !(window.scrollY>30 || main?.scrollTop>30))return;
+    event.preventDefault();event.stopImmediatePropagation();
+    const behavior=matchMedia('(prefers-reduced-motion:reduce)').matches||root.dataset.wfMotion==='reduced'?'instant':'smooth';
+    window.scrollTo({top:0,behavior});if(main?.scrollTop)main.scrollTo({top:0,behavior});
+  },true);
+  window.addEventListener('scroll',syncHome,{passive:true});
+  main?.addEventListener('scroll',syncHome,{passive:true});
+  window.addEventListener('resize',syncHome,{passive:true});
+  new MutationObserver(()=>{updatePosition();syncHome()}).observe(root,{attributes:true,attributeFilter:['lang']});
+  const before=window.showPage;
+  if(typeof before==='function')window.showPage=function(...args){
+    const ret=before.apply(this,args);updatePosition();syncHome();return ret;
+  };
+  updatePosition();syncHome();
+
+  // Repeated mobile notifications should never pile up or interrupt every visit.
+  const originalToast=window.showToast;
+  if(typeof originalToast==='function'){
+    const shown=new Map();
+    window.showToast=function(message,type){
+      if(matchMedia('(max-width:1024px)').matches){
+        const key=String(type||'ok')+'|'+String(message);
+        const now=Date.now(),prev=shown.get(key)||0;
+        if(now-prev<5*60*1000)return;
+        shown.set(key,now);
+        if(shown.size>60)for(const [k,t] of shown)if(now-t>5*60*1000)shown.delete(k);
+        // Remove stale duplicates that may still be on-screen.
+        const box=document.getElementById('toastBox');
+        box?.querySelectorAll('.toast').forEach(el=>{
+          if(el.querySelector('[data-wf-toast-copy]')?.getAttribute('data-wf-toast-copy')===String(message))el.remove();
+        });
+      }
+      return originalToast.apply(this,arguments);
+    };
+  }
+})();
