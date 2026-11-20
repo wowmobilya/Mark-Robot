@@ -1,284 +1,163 @@
-/* Home customization belongs to the real dashboard. The familiar edge tab
-   enters editing; the header, navigation and original card interiors stay put. */
+/* The original edge tab and compact menu stay familiar. Reorder the existing
+   section-name rows directly; dashboard cards never receive editing chrome. */
 @media screen {
-  #page-dashboard,
-  #wfHomeCustomizerActions {
-    --home-editor-accent: var(--ui-accent, var(--brand-primary, #3f7c94));
-    --home-editor-tint: color-mix(in srgb, var(--brand-primary, #3f7c94) 6%, var(--card, #fff));
-    --home-editor-line: color-mix(in srgb, var(--brand-primary, #3f7c94) 30%, var(--border, #dce4e8));
-    --home-editor-drag-shadow: rgb(18 42 55 / 22%);
-  }
-
-  /* Keep the narrow tab. Its hit target stays in the edge gutter so it cannot
-     cover the smart-card pager or controls inside the cards. */
+  /* The desktop sidebar is 900; keep both saved dock sides usable above it. */
   #wfHomeDock { z-index: 920; }
-  #wfHomeDock[data-inline="true"] #wfHomeEdit::after {
-    inset-block: -10px; inset-inline: auto;
-    left: 0; right: -10px;
+  #wfHomeDockBackdrop { z-index: 919; }
+  /* A 24px edge target stays outside the smart-card pager. */
+  #wfHomeDock #wfHomeEdit::after { inset-block: -10px; inset-inline: auto; left: 0; right: -10px; }
+  #wfHomeDock[data-side="right"] #wfHomeEdit::after { left: -10px; right: 0; }
+  #wfHomeDock[hidden], #wfHomeDock:not([open]) > #wfHomeCustomizer,
+  #wfHomeCustomizer [hidden] { display: none !important; }
+  html body #wfHomeDock > #wfHomeCustomizer {
+    --home-editor-tint: color-mix(in srgb, var(--brand-primary) 7%, var(--card));
+    color: var(--text); font-family: inherit; text-align: start;
   }
-  #wfHomeDock[data-inline="true"][data-side="right"] #wfHomeEdit::after {
-    left: -10px; right: 0;
-  }
-  #wfHomeDock[data-inline="true"] .dash-dock-panel,
-  html.wf-home-editing #wfHomeDockBackdrop,
-  html.wf-home-editing .wf-dashboard-dock-backdrop {
-    display: none !important;
-  }
-  #wfHomeDock[hidden],
-  #wfHomeCustomizer[hidden],
-  #wfHomeCustomizerActions[hidden],
-  #wfHomeHiddenSections[hidden],
-  #wfHomeCustomizer [hidden],
-  #wfHomeCustomizerActions [hidden],
-  #wfHomeHiddenSections [hidden],
-  #wfHomeLayout .wf-home-card-tools[hidden],
-  #wfHomeLayout .wf-home-card-tools [hidden],
-  #wfHomeLayout .wf-home-drop-space[hidden],
-  #wfHomeLayout .wf-home-edit-shell[hidden],
-  #wfHomeLayout .wf-home-edit-card[hidden] {
-    display: none !important;
-  }
-
-  :is(#wfHomeCustomizer, #wfHomeCustomizerActions, #wfHomeHiddenSections),
-  :is(#wfHomeCustomizer, #wfHomeCustomizerActions, #wfHomeHiddenSections) *,
-  #wfHomeLayout .wf-home-card-tools,
-  #wfHomeLayout .wf-home-card-tools *,
-  #wfHomeLayout .wf-home-edit-shell,
-  #wfHomeLayout .wf-home-drop-space {
-    box-sizing: border-box;
-  }
-
-  /* A quiet, in-flow introduction; never a panel, overlay or separate list. */
-  html body #page-dashboard #wfHomeCustomizer.wf-home-inline-toolbar {
-    position: relative; display: grid;
-    grid-template-columns: minmax(0, 1fr) auto; align-items: center;
-    gap: 4px 12px; inline-size: 100%; min-inline-size: 0;
-    margin: 0 0 16px; padding: 12px 14px;
-    color: var(--text); background: var(--home-editor-tint);
-    border: 1px solid var(--home-editor-line); border-radius: 16px;
-    font-family: inherit; text-align: start;
-  }
-  #wfHomeCustomizer .wf-home-inline-heading { display: contents; }
-  #wfHomeCustomizerTitle {
-    min-inline-size: 0; margin: 0; outline: none;
-    color: var(--text); font-size: 15px; font-weight: 750; line-height: 1.5;
-    overflow-wrap: anywhere;
-  }
-  #wfHomeCustomizer .wf-home-editor-count {
-    margin: 0; color: var(--text2); font-size: 12px;
-    font-variant-numeric: tabular-nums; line-height: 1.6; text-align: end;
-  }
-  #wfHomeCustomizerHint {
-    grid-column: 1 / -1; margin: 0; color: var(--text2);
-    font-size: 13px; line-height: 1.7; overflow-wrap: anywhere;
-  }
-  #wfHomeCustomizerStatus {
-    grid-column: 1 / -1; margin: 4px 0 0; padding: 8px 10px;
-    color: var(--red, #ad3b43); background: var(--card);
-    border: 1px solid currentColor; border-radius: 10px;
-    font-size: 12px; line-height: 1.7; overflow-wrap: anywhere;
-  }
-  #wfHomeCustomizerStatus:empty { display: none; }
-
-  /* Shared controls use the app's tokens and retain a 44 px touch target. */
-  :is(#wfHomeCustomizer, #wfHomeCustomizerActions, #wfHomeHiddenSections, #wfHomeLayout) .wf-home-editor-button,
-  #wfHomeLayout :is(.wf-home-card-grip, .wf-home-card-hide, .wf-home-card-width),
-  #wfHomeHiddenSections .wf-home-restore-section {
-    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-    min-inline-size: 44px; min-block-size: 44px; margin: 0; padding: 8px 12px;
-    border: 1px solid var(--border); border-radius: 11px;
+  #wfHomeCustomizer * { box-sizing: border-box; }
+  #wfHomeCustomizerTitle { outline: none; }
+  #wfHomeCustomizer .wf-home-editor-button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    min-inline-size: 0; min-block-size: 40px; padding: 6px 8px;
+    border: 1px solid var(--border); border-radius: 9px;
     color: var(--text); background: var(--card);
-    font: inherit; font-size: 14px; font-weight: 700; line-height: 1.5;
-    text-decoration: none; cursor: pointer; touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+    font: inherit; font-size: 12px; font-weight: 700; line-height: 1.4;
+    cursor: pointer; touch-action: manipulation;
   }
-  :is(#wfHomeCustomizer, #wfHomeCustomizerActions, #wfHomeHiddenSections) button:focus-visible,
-  #wfHomeLayout :is(.wf-home-card-grip, .wf-home-card-hide, .wf-home-card-width):focus-visible {
-    outline: 2px solid var(--home-editor-accent); outline-offset: 3px;
+  #wfHomeCustomizer .wf-home-editor-button:focus-visible,
+  #wfHomeCustomizer .wf-home-visibility:focus-visible {
+    outline: 2px solid var(--ui-accent, var(--brand-primary)); outline-offset: 2px;
   }
-  :is(#wfHomeCustomizer, #wfHomeCustomizerActions, #wfHomeHiddenSections) button:is(:disabled, [aria-disabled="true"]),
-  #wfHomeLayout .wf-home-card-tools button:is(:disabled, [aria-disabled="true"]) {
-    opacity: .5; cursor: default;
+  #wfHomeCustomizer .wf-home-editor-button:hover {
+    border-color: var(--brand-primary); background: var(--home-editor-tint);
+  }
+  #wfHomeCustomizer .wf-home-editor-button[aria-disabled="true"] { opacity: .4; cursor: default; }
+  #wfHomeCustomizer .dash-dock-toolbar .wf-home-editor-button {
+    min-inline-size: 32px; min-block-size: 36px; padding: 0;
+    border-color: transparent; background: transparent; font-size: 21px;
   }
   .wf-home-editor-icon {
     display: inline-flex; flex: none; align-items: center; justify-content: center;
-    inline-size: 19px; block-size: 19px; pointer-events: none;
+    inline-size: 18px; block-size: 18px;
   }
   .wf-home-editor-icon svg { display: block; inline-size: 100%; block-size: 100%; }
-
-  /* Wrappers are neutral outside edit mode; each original card keeps its skin. */
-  #wfHomeLayout .wf-home-edit-shell { position: relative; min-inline-size: 0; }
-  #wfHomeLayout .wf-home-card-tools { display: none; }
-  html body #mainContent #page-dashboard.wf-home-editing {
-    padding-block-end: var(--wf-home-edit-clearance, 96px) !important;
+  #wfHomeCustomizer .wf-home-editor-count {
+    margin: 0 0 4px; color: var(--text2); font-size: 11px; line-height: 1.6;
   }
-  #page-dashboard.wf-home-editing #wfHomeLayout > .wf-home-edit-shell {
-    border-radius: 20px; outline: 1px solid var(--home-editor-line); outline-offset: 3px;
-    scroll-margin-block: 100px var(--wf-home-edit-clearance, 96px);
+  #wfHomeCustomizer .wf-home-editor-hint {
+    margin: 0; color: var(--text2); font-size: 11px; line-height: 1.6;
   }
-  #page-dashboard.wf-home-editing #wfHomeLayout .wf-home-card-tools {
-    display: flex; align-items: center; gap: 4px;
-    min-inline-size: 0; margin-block-end: 6px; padding: 4px;
-    color: var(--text); background: var(--home-editor-tint);
-    border: 1px solid var(--home-editor-line); border-radius: 14px;
+  #wfHomeCustomizer .wf-home-editor-body > .wf-home-editor-hint { margin-block-end: 6px; }
+  #wfHomeCustomizer .wf-home-editor-grid {
+    position: relative; display: grid; align-content: start; gap: 2px; min-inline-size: 0;
   }
-  #wfHomeLayout .wf-home-card-tools .wf-home-card-grip {
-    flex: 1 1 0; min-inline-size: 44px; justify-content: flex-start;
-    padding-inline: 8px; color: var(--text); background: transparent;
-    border-color: transparent; text-align: start;
+  #wfHomeCustomizer .wf-home-section-tile {
+    position: relative; min-inline-size: 0; margin: 0; padding: 0;
+    border: 1px solid transparent; border-radius: 9px;
+  }
+  html body #wfHomeCustomizer .wf-home-section-choice {
+    display: flex; flex-direction: row; align-items: center; gap: 6px; min-block-size: 44px;
+    margin: 0; padding: 0 2px; color: var(--text); font-size: 13px;
+    line-height: 1.5; font-weight: 600;
+  }
+  #wfHomeCustomizer .wf-home-section-choice span { min-inline-size: 0; overflow-wrap: anywhere; }
+  html body #wfHomeCustomizer .wf-home-visibility-target {
+    display: flex; order: 1; flex: 0 0 24px; align-items: center; justify-content: center;
+    min-inline-size: 24px; min-block-size: 44px; margin: 0; padding: 0 3px;
+    cursor: pointer; touch-action: pan-y;
+  }
+  html body #wfHomeCustomizer .wf-home-visibility {
+    flex: 0 0 18px; inline-size: 18px; block-size: 18px; margin: 0;
+    appearance: auto !important; -webkit-appearance: checkbox !important;
+    accent-color: var(--brand-primary); cursor: pointer; background: initial !important;
+  }
+  html body #wfHomeCustomizer .wf-home-visibility::before,
+  html body #wfHomeCustomizer .wf-home-visibility::after { content: none !important; display: none !important; }
+  #wfHomeCustomizer .wf-home-section-tile[data-visible="false"] .wf-home-section-choice { color: var(--text2); }
+  #wfHomeCustomizer .wf-home-section-controls {
+    display: grid; gap: 5px; padding: 0 0 8px; border-block-end: 1px solid var(--border);
+  }
+  #wfHomeCustomizer .wf-home-drag-handle {
+    display: flex; order: 0; flex: 1 1 auto; justify-content: space-between; gap: 5px;
+    min-inline-size: 0; min-block-size: 44px; margin: 0; padding: 5px 0;
+    border: 0; border-radius: 7px; color: inherit; background: transparent;
+    font: inherit; font-size: 13px; font-weight: 600; line-height: 1.5; text-align: start;
     cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
-  #wfHomeLayout .wf-home-card-grip .wf-home-editor-icon { color: var(--home-editor-accent); }
-  #wfHomeLayout .wf-home-card-name {
-    min-inline-size: 0; font-size: 14px; font-weight: 750;
-    line-height: 1.45; overflow-wrap: anywhere; pointer-events: none;
+  #wfHomeCustomizer .wf-home-drag-handle .wf-home-section-name { flex: 1; pointer-events: none; }
+  #wfHomeCustomizer .wf-home-drag-handle .wf-home-editor-icon {
+    inline-size: 12px; block-size: 18px; color: var(--text2); opacity: .6; pointer-events: none;
   }
-  #wfHomeLayout .wf-home-card-tools .wf-home-card-hide {
-    flex: 0 0 44px; inline-size: 44px; padding: 0; color: var(--text2);
+  #wfHomeCustomizer .wf-home-drag-handle:active { cursor: grabbing; }
+  #wfHomeCustomizer .wf-home-section-tile.is-selected {
+    border-color: var(--ui-accent, var(--brand-primary)); background: var(--home-editor-tint);
   }
-  #wfHomeLayout .wf-home-card-tools .wf-home-card-width {
-    flex: none; padding-inline: 9px; font-size: 14px; white-space: nowrap;
+  #wfHomeCustomizer .wf-home-section-tile.is-selected .wf-home-drag-handle .wf-home-editor-icon {
+    color: var(--ui-accent, var(--brand-primary)); opacity: 1;
   }
-  #wfHomeLayout .wf-home-card-width[aria-pressed="true"] {
-    color: var(--home-editor-accent); border-color: var(--home-editor-line);
-    background: var(--home-editor-tint);
+  #wfHomeCustomizer .wf-home-width-options {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px;
+    padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--input);
   }
-  #wfHomeLayout .wf-home-card-grip:active { cursor: grabbing; }
-  #page-dashboard.wf-home-editing #wfHomeLayout > .wf-home-edit-shell.is-selected {
-    outline: 2px solid var(--home-editor-accent);
+  #wfHomeCustomizer .wf-home-width-options .wf-home-editor-button {
+    padding: 4px; border-color: transparent; background: transparent; overflow-wrap: anywhere;
   }
-  #wfHomeLayout .wf-home-edit-shell.is-selected .wf-home-card-tools {
-    border-color: var(--home-editor-accent);
-    background: color-mix(in srgb, var(--brand-primary) 11%, var(--card));
+  #wfHomeCustomizer .wf-home-width-options .wf-home-editor-button[aria-pressed="true"] {
+    color: var(--ui-accent, var(--brand-primary)); background: var(--card); border-color: var(--border);
   }
-  #page-dashboard.wf-home-editing #wfHomeLayout > .wf-home-edit-shell.is-drop-target {
-    outline: 2px dashed var(--home-editor-accent);
+  #wfHomeCustomizer .wf-home-editor-footer {
+    display: grid; flex: none; gap: 6px; padding-block-start: 8px;
+    border-block-start: 1px solid var(--border); background: var(--card);
   }
-
-  /* The actual section follows the finger; only its empty destination is new. */
-  html body #mainContent #page-dashboard.wf-home-editing #wfHomeLayout > .wf-home-edit-shell.is-dragging {
-    position: fixed !important; z-index: 925;
-    margin: 0 !important; max-inline-size: none; pointer-events: none;
-    outline: 2px solid var(--home-editor-accent); outline-offset: 1px;
-    background: var(--card); box-shadow: 0 12px 32px var(--home-editor-drag-shadow);
-    cursor: grabbing; transition: none !important; will-change: transform;
+  #wfHomeCustomizer .wf-home-editor-tools { display: grid; grid-template-columns: minmax(0, 1fr) 32px; gap: 4px; }
+  #wfHomeCustomizer .wf-home-editor-tools .wf-home-editor-button { padding: 4px; }
+  #wfHomeCustomizer .wf-home-editor-advanced[aria-expanded="true"] { background: var(--home-editor-tint); border-color: var(--brand-primary); }
+  #wfHomeCustomizer .wf-home-editor-reset { color: var(--text2); }
+  #wfHomeCustomizer .wf-home-editor-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  #wfHomeCustomizer .wf-home-editor-actions .wf-home-editor-button { min-block-size: 44px; font-size: 13px; }
+  #wfHomeCustomizer .wf-home-editor-button.is-primary { color: var(--on-primary, #fff); background: var(--brand-primary); border-color: var(--brand-primary); }
+  #wfHomeCustomizer .wf-home-editor-empty, #wfHomeCustomizer .wf-home-editor-status {
+    margin: 0 0 5px; padding: 7px; border: 1px dashed var(--border); border-radius: 8px;
+    background: var(--home-editor-tint); color: var(--text); font-size: 12px; line-height: 1.65;
+  }
+  #wfHomeCustomizer .wf-home-editor-status { color: var(--red, #ad3b43); border-color: currentColor; }
+  /* The original row follows the finger within this same list. The measured
+     placeholder keeps the destination open without cloning any content. */
+  #wfHomeCustomizer .wf-home-section-tile.is-dragging {
+    position: absolute !important; z-index: 3; right: auto !important; bottom: auto !important;
+    margin: 0 !important; max-inline-size: none; transform: none !important;
+    border-color: var(--ui-accent, var(--brand-primary)); background: var(--card);
+    box-shadow: 0 5px 14px rgb(18 42 55 / 18%); opacity: 1;
+    pointer-events: none; cursor: grabbing; transition: none !important;
+  }
+  #wfHomeCustomizer .wf-home-drop-space {
+    min-inline-size: 0; margin: 0; border: 1px dashed var(--ui-accent, var(--brand-primary));
+    border-radius: 9px; background: var(--home-editor-tint); pointer-events: none;
+  }
+  #wfHomeCustomizer .wf-home-editor-grid.is-dragging {
     user-select: none; -webkit-user-select: none;
-  }
-  #wfHomeLayout .wf-home-drop-space {
-    display: grid; place-items: center; grid-column: auto; align-self: start;
-    min-inline-size: 0; min-block-size: 64px; margin: 0;
-    border: 2px dashed var(--home-editor-accent); border-radius: 20px;
-    color: var(--home-editor-accent); background: var(--home-editor-tint);
-    font-size: 12px; font-weight: 700; line-height: 1.6; text-align: center;
-    pointer-events: none;
-  }
-  #wfHomeLayout .wf-home-drop-space[data-home-size="wide"] { grid-column: 1 / -1; }
-  #wfHomeLayout.is-dragging { user-select: none; -webkit-user-select: none; }
-
-  /* Hidden sections remain recoverable on this same page. */
-  #page-dashboard #wfHomeHiddenSections.wf-home-hidden-sections {
-    display: grid; gap: 10px; margin-block-start: 18px; padding: 14px;
-    border: 1px dashed var(--home-editor-line); border-radius: 16px;
-    color: var(--text); background: var(--card); text-align: start;
-  }
-  #wfHomeHiddenSections h3 {
-    margin: 0; font-size: 14px; font-weight: 750; line-height: 1.6;
-  }
-  #wfHomeHiddenSections .wf-home-hidden-list {
-    display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px;
-    min-inline-size: 0;
-  }
-  #wfHomeHiddenSections .wf-home-restore-section {
-    max-inline-size: 100%; padding-inline: 12px;
-    color: var(--home-editor-accent); background: var(--home-editor-tint);
-    border-color: var(--home-editor-line); font-size: 14px;
-    white-space: normal; overflow-wrap: anywhere; text-align: start;
-  }
-  #wfHomeHiddenSections .wf-home-restore-section span { min-inline-size: 0; }
-
-  /* JS fits this bar to the content and positions it above existing navigation. */
-  html body #wfHomeCustomizerActions.wf-home-inline-actions {
-    position: fixed; z-index: 930; display: flex; align-items: center; gap: 8px;
-    left: var(--wf-home-actions-left, 12px); right: auto;
-    bottom: var(--wf-home-actions-bottom, calc(12px + env(safe-area-inset-bottom, 0px)));
-    width: var(--wf-home-actions-width, calc(100% - 24px));
-    max-width: calc(100vw - 16px); min-inline-size: 0; margin: 0; padding: 8px;
-    border: 1px solid var(--home-editor-line); border-radius: 16px;
-    color: var(--text); background: var(--card); font-family: inherit;
-    box-shadow: 0 5px 22px rgb(18 42 55 / 12%);
-  }
-  #wfHomeCustomizerActions .wf-home-action-state {
-    flex: 1 1 auto; min-inline-size: 0; padding-inline: 4px;
-    color: var(--text2); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere;
-  }
-  #wfHomeCustomizerActions #wfHomeCustomizerReset {
-    flex: 0 0 44px; inline-size: 44px; padding: 0; color: var(--text2);
-    background: transparent; border-color: transparent;
-  }
-  #wfHomeCustomizerActions :is(#wfHomeCustomizerSave, #wfHomeCustomizerCancel) {
-    flex: 0 0 auto; min-inline-size: 90px; padding-inline: 18px;
-  }
-  #wfHomeCustomizerActions #wfHomeCustomizerSave {
-    color: var(--on-primary, #fff); background: var(--brand-primary);
-    border-color: var(--brand-primary);
   }
   #wfHomeCustomizer .wf-home-editor-live {
     position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden;
     clip-path: inset(50%); white-space: nowrap; margin: -1px; padding: 0; border: 0;
   }
-
-  @media (hover: hover) {
-    :is(#wfHomeCustomizer, #wfHomeHiddenSections) button:not(:disabled):hover,
-    #wfHomeLayout .wf-home-card-tools button:not(:disabled):hover,
-    #wfHomeCustomizerActions #wfHomeCustomizerCancel:not(:disabled):hover,
-    #wfHomeCustomizerActions #wfHomeCustomizerReset:not(:disabled):hover {
-      color: var(--home-editor-accent); border-color: var(--home-editor-line);
-      background: var(--home-editor-tint);
-    }
-    #wfHomeCustomizerActions #wfHomeCustomizerSave:not(:disabled):hover { filter: brightness(.96); }
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    html:not([data-wf-motion="reduced"]) #wfHomeLayout .wf-home-card-tools,
-    html:not([data-wf-motion="reduced"]) #wfHomeLayout .wf-home-edit-shell:not(.is-dragging),
-    html:not([data-wf-motion="reduced"]) #wfHomeCustomizerActions button,
-    html:not([data-wf-motion="reduced"]) #wfHomeHiddenSections button {
-      transition: border-color 150ms ease, outline-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
-    }
-  }
-  @media (max-width: 700px) {
-    #wfHomeLayout .wf-home-card-tools .wf-home-card-width { display: none; }
-    #wfHomeCustomizerActions .wf-home-action-state { display: none; }
-    #wfHomeCustomizerActions :is(#wfHomeCustomizerSave, #wfHomeCustomizerCancel) {
-      flex: 1 1 0; min-inline-size: 0; padding-inline: 10px;
-    }
-  }
-  @media (max-width: 360px) {
-    html body #page-dashboard #wfHomeCustomizer.wf-home-inline-toolbar {
-      gap: 3px 8px; padding: 10px;
-    }
-    #wfHomeCustomizerTitle { font-size: 14px; }
-    #wfHomeCustomizer .wf-home-editor-count { max-inline-size: 88px; }
-    #page-dashboard #wfHomeHiddenSections.wf-home-hidden-sections { padding: 10px; }
-    html body #wfHomeCustomizerActions.wf-home-inline-actions { gap: 6px; padding: 6px; }
-  }
   @media (max-height: 440px) {
-    html body #wfHomeCustomizerActions.wf-home-inline-actions { padding-block: 6px; }
-    html body #page-dashboard #wfHomeCustomizer.wf-home-inline-toolbar { padding-block: 8px; }
-  }
-  html[data-theme="dark"] #wfHomeCustomizerActions.wf-home-inline-actions {
-    box-shadow: 0 6px 24px rgb(0 0 0 / 28%);
-  }
-  html[data-theme="dark"] #page-dashboard {
-    --home-editor-drag-shadow: rgb(0 0 0 / 38%);
+    html body #wfHomeDock > #wfHomeCustomizer { padding: 8px !important; gap: 5px; }
+    /* Keep the short scroll area available for actual rows. The count and
+       instructions remain readable by assistive technology and descriptions. */
+    #wfHomeCustomizer .wf-home-editor-body > .wf-home-editor-count,
+    #wfHomeCustomizer .wf-home-editor-body > .wf-home-editor-hint {
+      position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden;
+      clip-path: inset(50%); white-space: nowrap; margin: -1px; padding: 0; border: 0;
+    }
+    html body #wfHomeCustomizer .dash-dock-toolbar { padding-block-end: 4px; }
+    #wfHomeCustomizer .dash-dock-toolbar .wf-home-editor-button { min-block-size: 32px; }
+    #wfHomeCustomizer .wf-home-editor-footer { gap: 4px; padding-block-start: 5px; }
+    #wfHomeCustomizer .wf-home-editor-footer > .wf-home-editor-hint { display: none; }
+    #wfHomeCustomizer .wf-home-editor-tools .wf-home-editor-button { min-block-size: 32px; }
+    #wfHomeCustomizer .wf-home-editor-actions .wf-home-editor-button { min-block-size: 36px; }
   }
 }
-
 @media print {
-  #wfHomeDock, #wfHomeDockBackdrop, .wf-dashboard-dock-backdrop,
-  #wfHomeCustomizer, #wfHomeCustomizerActions, #wfHomeHiddenSections,
-  .wf-home-card-tools, .wf-home-drop-space { display: none !important; }
-  #wfHomeLayout .wf-home-edit-shell { outline: none !important; box-shadow: none !important; }
-  #wfHomeLayout .wf-home-edit-shell.is-dragging {
-    position: static !important; transform: none !important; width: auto !important;
-  }
+  #wfHomeDock, .wf-dashboard-dock-backdrop { display: none !important; }
 }

@@ -219,15 +219,21 @@ function uiFixture({viewport} = {}) {
     getBoundingClientRect() {
       const rect = (left, top, width, height) => ({x: left, y: top, left, right: left + width, top, bottom: top + height, width, height});
       if (this.rect) { const r = this.rect; return rect(r.left, r.top, r.width ?? r.right - r.left, r.height ?? r.bottom - r.top); }
-      if (this.id === 'wfHomeCustomizerActions') return rect(12, win.innerHeight - (parseFloat(this.style.getPropertyValue('--wf-home-actions-bottom')) || 12) - 62, win.innerWidth - 24, 62);
-      if (this.classList.contains('is-dragging')) return rect(parseFloat(this.style.left), parseFloat(this.style.top), parseFloat(this.style.width), 110);
+      if (this.classList.contains('wf-home-editor-body')) return rect(24, 140, 240, 260);
+      if (this.id === 'wfHomeCustomizerSections') return rect(28, 180 - this.parentNode.scrollTop, 232, 6 * 62);
+      if (this.classList.contains('is-dragging') && this.classList.contains('wf-home-section-tile')) { const r = this.parentNode.getBoundingClientRect(); return rect(r.left + parseFloat(this.style.left), r.top + parseFloat(this.style.top), parseFloat(this.style.width), parseFloat(this.style.height)); }
+      if (this.parentNode?.id === 'wfHomeCustomizerSections') {
+        const r = this.parentNode.getBoundingClientRect(), peers = this.parentNode.children.filter(el => !el.classList.contains('is-dragging')); let top = r.top;
+        for (const peer of peers) { if (peer === this) break; top += (parseFloat(peer.style.height) || 56) + 6; }
+        return rect(r.left, top, r.width, parseFloat(this.style.height) || 56);
+      }
       if (this.parentNode?.id === 'wfHomeLayout') {
         const peers = this.parentNode.children.filter(el => !el.hidden && !el.classList.contains('is-dragging'));
         let top = 100 - doc.scrollingElement.scrollTop;
         for (const peer of peers) { if (peer === this) break; top += (parseFloat(peer.style.height) || 110) + 10; }
         return rect(12, top, win.innerWidth - 24, parseFloat(this.style.height) || 110);
       }
-      if (this.classList.contains('wf-home-card-grip')) { const r = this.closest('.wf-home-edit-shell').getBoundingClientRect(); return rect(r.left + 4, r.top + 4, r.width - 100, 44); }
+      if (this.classList.contains('wf-home-drag-handle')) { const r = this.closest('.wf-home-section-tile').getBoundingClientRect(); return rect(r.left + 28, r.top + 4, r.width - 28, 44); }
       return rect(12, 80, win.innerWidth - 24, 640);
     }
   }
@@ -268,16 +274,16 @@ function uiFixture({viewport} = {}) {
   win.requestAnimationFrame = callback => { frames.set(++nextFrame, callback); return nextFrame; };
   win.cancelAnimationFrame = id => frames.delete(id);
   win.WFHomeDock = {create({panel, onOpen, onClose, inline}) {
-    assert.equal(inline, true); assert.equal(panel.parentNode, page);
+    assert.equal(inline, undefined); assert.equal(panel.parentNode, undefined);
     const menu = new Element('details'), trigger = new Element('summary');
-    menu.id = 'wfHomeDock'; menu.className = 'dash-visibility'; menu.dataset.inline = 'true'; trigger.id = 'wfHomeEdit';
+    menu.id = 'wfHomeDock'; menu.className = 'dash-visibility'; trigger.id = 'wfHomeEdit';
     trigger.setAttribute('aria-controls', panel.id); trigger.setAttribute('aria-expanded', 'false');
-    menu.append(trigger); doc.body.append(menu);
+    menu.append(trigger, panel); panel.hidden = true; doc.body.append(menu);
     const api = {
       menu, trigger, isOpen: () => menu.open,
       open() { if (menu.open) return true; menu.open = true; panel.hidden = false; trigger.setAttribute('aria-expanded', 'true'); onOpen(); return true; },
       close(returnFocus = false) { if (!menu.open) return false; menu.open = false; panel.hidden = true; trigger.setAttribute('aria-expanded', 'false'); onClose({returnFocus}); if (returnFocus) trigger.focus(); return true; },
-      reposition() {}
+      reposition() {}, swapSide() { menu.dataset.side = menu.dataset.side === 'right' ? 'left' : 'right'; return true; }
     };
     trigger.addEventListener('click', () => api.isOpen() ? api.close(true) : api.open());
     doc.addEventListener('keydown', event => { if (event.key === 'Escape' && menu.open) { event.preventDefault(); api.close(true); } });
@@ -286,14 +292,16 @@ function uiFixture({viewport} = {}) {
   class Clock extends Date { static now() { return clock; } }
   const context = vm.createContext({window: win, document: doc, Intl, Date: Clock, MutationObserver});
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../home-customizer.js'), 'utf8'), context);
-  const byId = id => doc.getElementById(id), tile = key => cards.get(key).closest('.wf-home-edit-shell');
-  const grip = key => tile(key).querySelector('.wf-home-card-grip');
-  const hide = key => tile(key).querySelector('.wf-home-card-hide');
-  const restore = key => byId('wfHomeHiddenSections').querySelectorAll('.wf-home-restore-section').find(el => el.getAttribute('aria-label') === text('show', doc.documentElement.lang, {name: text(key, doc.documentElement.lang)}));
+  const byId = id => doc.getElementById(id), tile = key => byId('wfHomeCustomizerSections').children.find(el => el.dataset.section === key);
+  const grip = key => tile(key).querySelector('.wf-home-drag-handle');
+  const visibility = key => byId('wfHomeVisibility-' + key);
   const emit = (target, type, values = {}) => { const event = new Event(type, {bubbles: true, ...values}); target.dispatchEvent(event); return event; };
   const order = () => grid.children.filter(el => el.dataset.homeSection).map(el => el.dataset.homeSection);
   return {
-    doc, win, model, guards, writes, records, page, grid, cards, originals, controls, activations, byId, tile, grip, hide, restore, emit, order, toasts,
+    doc, win, model, guards, writes, records, page, grid, cards, originals, controls, activations, byId, tile, grip, visibility, emit, order, toasts,
+    list: byId('wfHomeCustomizerSections'), body: byId('wfHomeCustomizerSections').parentNode,
+    listOrder: () => byId('wfHomeCustomizerSections').children.filter(el => el.dataset.section).map(el => el.dataset.section),
+    toggle(key) { const el = visibility(key); el.checked = !el.checked; emit(el, 'change'); },
     get preview() { return preview; }, set fail(value) { fail = value; },
     advance(ms) { clock += ms; },
     frame(ms = 16) { clock += ms; animationTime += ms; const pending = [...frames]; frames.clear(); for (const [, callback] of pending) callback(animationTime); },
@@ -320,209 +328,176 @@ function nativeTap(f, key, pointerId = 1) {
   return f.emit(target, 'click', {detail: 1});
 }
 
-test('two native heading taps select then move the first card without capture retargeting or clearing its selection', () => {
+test('the same edge entry opens the original menu with one six-name list and leaves actual cards unwrapped', () => {
+  const f = uiFixture(); f.byId('wfHomeEdit').click();
+  const panel = f.byId('wfHomeCustomizer');
+  assert.equal(panel.parentNode.id, 'wfHomeDock'); assert.equal(panel.getAttribute('role'), 'dialog');
+  assert.equal(f.byId('wfHomeCustomizerTitle').textContent, text('title'));
+  assert.equal(f.list.children.length, 6); assert.deepEqual(f.listOrder(), [...keys]);
+  assert.equal(f.byId('wfHomeCustomizerAdvanced').getAttribute('aria-expanded'), 'false');
+  assert.equal(f.byId('wfHomeCustomizerHint').hidden, false);
+  assert.equal(f.doc.querySelector('.wf-home-edit-shell'), null); assert.equal(f.doc.querySelector('.wf-home-card-tools'), null);
+  assert.equal(f.byId('wfHomeCustomizerActions'), null);
+  for (const key of keys) {
+    assert.equal(f.cards.get(key).parentNode, f.grid); assert.equal(f.grip(key).closest('label'), null);
+    assert.equal(f.grip(key).closest('[hidden]'), null); assert.equal(f.tile(key).querySelector('.wf-home-section-controls').hidden, true);
+  }
+  f.emit(f.doc, 'keydown', {key: 'Escape'}); assert.equal(f.win.WFHomeCustomizer.isOpen(), false);
+  assert.equal(f.doc.activeElement, f.byId('wfHomeEdit')); assert.equal(f.writes.length, 0);
+});
+
+test('two native name taps reorder the existing list and preview the dashboard without toggling visibility', () => {
   const f = uiFixture(); f.win.WFHomeCustomizer.open();
-  nativeTap(f, 'welcome', 1);
-  assert.equal(f.grip('welcome').getAttribute('aria-pressed'), 'true');
-  assert.equal(f.grid.hasPointerCapture(1), false);
+  nativeTap(f, 'welcome', 1); assert.equal(f.grip('welcome').getAttribute('aria-pressed'), 'true'); assert.equal(f.list.hasPointerCapture(1), false);
   nativeTap(f, 'rates', 2);
-  assert.deepEqual(f.order(), ['sales', 'metrics', 'rates', 'welcome', 'recent', 'insights']);
-  assert.equal(f.grip('welcome').getAttribute('aria-pressed'), 'false');
-  assert.equal(f.grid.hasPointerCapture(2), false); assert.equal(f.grid.querySelector('.wf-home-drop-space'), null);
-  assert.equal(f.writes.length, 0); assert.deepEqual(f.model.get(), defaults());
+  const expected = ['sales', 'metrics', 'rates', 'welcome', 'recent', 'insights'];
+  assert.deepEqual(f.listOrder(), expected); assert.deepEqual(f.order(), expected);
+  assert.equal(f.grip('welcome').getAttribute('aria-pressed'), 'false'); assert.equal(f.list.hasPointerCapture(2), false);
+  assert.equal(f.writes.length, 0); assert.deepEqual(f.model.get(), defaults()); assert.deepEqual(f.preview.hidden, []);
+  assert.equal(f.guards.get('home-customizer')(), true);
+  f.byId('wfHomeCustomizerCancel').click(); assert.deepEqual(f.order(), [...keys]); assert.equal(f.writes.length, 0);
 });
 
-test('the same edge entry edits live cards inline and Escape restores their original nodes and focus', () => {
-  const f = uiFixture(), edit = f.byId('wfHomeEdit'), toolbar = f.byId('wfHomeCustomizer'), actions = f.byId('wfHomeCustomizerActions');
-  assert.equal(edit.tagName, 'SUMMARY'); assert.equal(toolbar.tagName, 'SECTION'); assert.equal(toolbar.parentNode, f.page);
-  assert.equal(toolbar.nextSibling, f.grid); assert.equal(toolbar.hidden, true); assert.equal(actions.parentNode, f.doc.body); assert.equal(actions.hidden, true);
-  assert.equal(f.doc.querySelector('[role="dialog"]'), null); assert.equal(f.byId('wfHomeDockBackdrop'), null);
-  assert.equal(f.byId('wfHomeCustomizerAdvanced'), null); assert.equal(f.byId('wfHomeCustomizerMove'), null);
-  edit.focus(); edit.click();
-  assert(f.win.WFHomeCustomizer.isOpen()); assert.equal(f.doc.activeElement.id, 'wfHomeCustomizerTitle');
-  assert(f.page.classList.contains('wf-home-editing')); assert(f.doc.documentElement.classList.contains('wf-home-editing'));
-  assert.equal(actions.hidden, false); assert.equal(toolbar.hidden, false);
-  for (const key of keys) { assert.equal(f.model.element(key), f.cards.get(key)); assert.equal(f.cards.get(key).parentNode, f.tile(key)); assert(f.cards.get(key).contains(f.controls.get(key))); }
+test('a name can be selected and deselected, and Escape first cancels selection before closing the menu', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); nativeTap(f, 'sales'); nativeTap(f, 'sales');
+  assert.equal(f.grip('sales').getAttribute('aria-pressed'), 'false');
+  nativeTap(f, 'sales'); f.emit(f.doc, 'keydown', {key: 'Escape'});
+  assert.equal(f.win.WFHomeCustomizer.isOpen(), true); assert.equal(f.grip('sales').getAttribute('aria-pressed'), 'false');
+  f.emit(f.doc, 'keydown', {key: 'Escape'}); assert.equal(f.win.WFHomeCustomizer.isOpen(), false);
+});
+
+test('keyboard movement includes hidden list rows and preserves focus, boundaries and repeat behavior', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); f.toggle('sales');
+  const handle = f.grip('welcome'); handle.focus(); f.emit(handle, 'keydown', {key: 'ArrowDown'});
+  assert.deepEqual(f.listOrder(), ['sales', 'welcome', 'metrics', 'rates', 'recent', 'insights']);
+  assert.equal(f.doc.activeElement, handle); assert.equal(f.tile('sales').hidden, false); assert.equal(f.cards.get('sales').hidden, true);
+  const order = f.listOrder(); f.emit(handle, 'keydown', {key: 'ArrowDown', repeat: true}); assert.deepEqual(f.listOrder(), order);
+  f.emit(handle, 'keydown', {key: 'End'}); assert.equal(f.listOrder().at(-1), 'welcome');
+  f.emit(handle, 'keydown', {key: 'ArrowDown'}); assert.equal(f.listOrder().at(-1), 'welcome');
+  f.emit(handle, 'keydown', {key: 'Home'}); assert.equal(f.listOrder()[0], 'welcome'); assert.equal(f.writes.length, 0);
+});
+
+test('Save persists the same list order and Cancel restores the latest committed layout', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); f.emit(f.grip('welcome'), 'keydown', {key: 'End'});
+  f.byId('wfHomeCustomizerSave').click(); assert.equal(f.writes.length, 1); assert.equal(f.win.WFHomeCustomizer.isOpen(), false);
+  const saved = f.model.get(); assert.equal(saved.order.at(-1), 'welcome');
+  const reloaded = createModel({getItem: key => f.records.get(key), setItem() {}}, () => {}); assert.deepEqual(reloaded.get(), saved);
+  f.win.WFHomeCustomizer.open(); assert.deepEqual(f.listOrder(), saved.order); f.byId('wfHomeCustomizerReset').click();
+  assert.deepEqual(f.listOrder(), [...keys]); f.byId('wfHomeCustomizerCancel').click(); assert.deepEqual(f.order(), saved.order);
+});
+
+test('failed Save retains the menu and draft with reachable localized retry controls', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); f.emit(f.grip('recent'), 'keydown', {key: 'Home'}); f.fail = true;
+  f.body.scrollTop = 150; f.byId('wfHomeCustomizerSave').click();
+  assert.equal(f.win.WFHomeCustomizer.isOpen(), true); assert.equal(f.body.scrollTop, 0);
+  assert.equal(f.byId('wfHomeCustomizerStatus').hidden, false); assert.equal(f.byId('wfHomeCustomizerStatus').textContent, text('error'));
+  assert.deepEqual(f.model.get(), defaults()); assert.equal(f.listOrder()[0], 'recent');
+  f.translate('tr'); assert.equal(f.byId('wfHomeCustomizerStatus').textContent, text('error', 'tr'));
+  f.fail = false; f.byId('wfHomeCustomizerSave').click(); assert.equal(f.model.get().order[0], 'recent'); assert.equal(f.writes.length, 1);
+});
+
+test('all six sections remain in the same list when hidden, saved, reopened and reordered', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); for (const key of keys) f.toggle(key);
+  assert.equal(f.list.children.length, 6); assert.equal(f.byId('wfHomeCustomizer').querySelector('.wf-home-editor-empty').hidden, false);
+  for (const key of keys) { assert.equal(f.tile(key).hidden, false); assert.equal(f.visibility(key).checked, false); assert.equal(f.cards.get(key).hidden, true); }
+  f.byId('wfHomeCustomizerSave').click(); f.win.WFHomeCustomizer.open();
+  f.emit(f.grip('insights'), 'keydown', {key: 'Home'}); assert.equal(f.listOrder()[0], 'insights');
+  f.toggle('insights'); assert.equal(f.cards.get('insights').hidden, false); f.byId('wfHomeCustomizerSave').click();
+  assert.deepEqual(f.model.get().hidden, keys.filter(key => key !== 'insights'));
+});
+
+test('optional width controls expand inside the same six rows and never gate dragging', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); const list = f.list;
+  f.emit(f.grip('sales'), 'keydown', {key: 'Home'}); assert.equal(f.listOrder()[0], 'sales');
+  f.byId('wfHomeCustomizerAdvanced').click(); assert.equal(f.byId('wfHomeCustomizerAdvanced').getAttribute('aria-expanded'), 'true');
+  const controls = f.tile('welcome').querySelector('.wf-home-section-controls'); assert.equal(controls.hidden, false);
+  controls.querySelector('.wf-home-width-options').children[1].click(); assert.equal(f.preview.sizes.welcome, 'wide');
+  assert.equal(f.list, list); assert.equal(f.list.children.length, 6); assert.equal(controls.querySelector('.wf-home-move-controls'), null);
+  f.byId('wfHomeCustomizerAdvanced').click(); assert.equal(controls.hidden, true);
+  f.byId('wfHomeCustomizerReset').click(); assert.deepEqual(f.listOrder(), [...keys]); assert.equal(f.preview.sizes.welcome, 'normal'); assert.equal(f.writes.length, 0);
+});
+
+test('visibility and page-content touches do not start a drag and small name movement remains a tap', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open();
+  f.emit(f.visibility('welcome'), 'pointerdown', {pointerId: 1, button: 0, clientX: 35, clientY: 200});
+  f.emit(f.win, 'pointermove', {pointerId: 1, clientX: 35, clientY: 450}); assert.equal(f.list.hasPointerCapture(1), false);
   f.controls.get('welcome').click(); assert.equal(f.activations.get('welcome'), 1);
-  assert.equal(f.writes.length, 0); assert.equal(f.guards.get('home-customizer')(), false);
-  const escape = f.emit(toolbar, 'keydown', {key: 'Escape'}); assert(escape.defaultPrevented);
-  assert.equal(f.win.WFHomeCustomizer.isOpen(), false); assert.equal(f.doc.activeElement, edit);
-  assert.equal(f.doc.querySelectorAll('.wf-home-edit-shell').length, 0); assert.equal(f.doc.querySelectorAll('.wf-home-card-tools').length, 0);
-  for (const key of keys) { assert.equal(f.cards.get(key).parentNode, f.grid); assert.equal(f.cards.get(key).classList.contains('wf-home-edit-card'), false); }
-  assert.equal(f.page.classList.contains('wf-home-editing'), false); assert.equal(actions.hidden, true);
-  assert.equal(f.page.style.getPropertyValue('--wf-home-edit-clearance'), ''); assert.deepEqual(f.order(), [...keys]);
+  f.emit(f.grip('welcome'), 'pointerdown', {pointerId: 2, button: 0, clientX: 100, clientY: 200});
+  f.emit(f.win, 'pointermove', {pointerId: 2, clientX: 102, clientY: 203});
+  assert.equal(f.list.querySelector('.wf-home-drop-space'), null); assert.equal(f.list.hasPointerCapture(2), false);
+  f.emit(f.win, 'pointerup', {pointerId: 2, clientX: 102, clientY: 203}); f.emit(f.grip('welcome'), 'click', {detail: 1});
+  assert.equal(f.grip('welcome').getAttribute('aria-pressed'), 'true'); assert.deepEqual(f.preview.hidden, []);
 });
 
-test('tap selection reorders the actual card shells as a draft and Cancel restores the complete layout', () => {
-  const f = uiFixture(); f.win.WFHomeCustomizer.open();
-  const source = f.tile('welcome'), original = f.cards.get('welcome');
-  f.grip('welcome').click(); assert(source.classList.contains('is-selected')); assert.equal(f.grip('welcome').getAttribute('aria-pressed'), 'true');
-  f.grip('sales').click();
-  assert.deepEqual(f.order(), ['sales', 'welcome', 'metrics', 'rates', 'recent', 'insights']);
-  assert.equal(f.tile('welcome'), source); assert.equal(f.model.element('welcome'), original); assert.equal(f.doc.activeElement, f.grip('welcome'));
-  assert.equal(source.classList.contains('is-selected'), false); assert.deepEqual(f.model.get(), defaults()); assert.equal(f.writes.length, 0);
-  f.grip('rates').click(); f.grip('rates').click(); assert.equal(f.tile('rates').classList.contains('is-selected'), false);
-  f.hide('recent').click(); f.tile('welcome').querySelector('.wf-home-card-width').click(); assert(f.guards.get('home-customizer')());
-  f.byId('wfHomeCustomizerCancel').click();
-  assert.deepEqual(f.preview, defaults()); assert.deepEqual(f.order(), [...keys]); assert.equal(f.cards.get('recent').hidden, false);
-  assert.equal(f.cards.get('welcome').dataset.homeSize, 'normal'); assert.equal(f.writes.length, 0); assert.equal(f.guards.get('home-customizer')(), false);
+test('dragging lifts only the existing menu row, leaves a full-height slot and commits the draft on release', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); const original = f.cards.get('welcome'), row = f.tile('welcome');
+  startDrag(f); assert.equal(f.list.hasPointerCapture(1), true); assert.equal(row.classList.contains('is-dragging'), true);
+  assert.equal(original.parentNode, f.grid); assert.equal(original.classList.contains('is-dragging'), false);
+  assert.equal(row.parentNode, f.list); assert.equal(f.list.querySelector('.wf-home-drop-space').style.height, '56px');
+  assert.equal(f.writes.length, 0); assert.deepEqual(f.model.get(), defaults()); assert.deepEqual(f.order(), [...keys]);
+  assert.equal(f.guards.get('home-customizer')(), true);
+  f.emit(f.win, 'pointerup', {pointerId: 1, clientX: 100, clientY: 805});
+  assert.equal(f.listOrder().at(-1), 'welcome'); assert.deepEqual(f.order(), f.listOrder()); assert.equal(f.writes.length, 0);
+  assert.equal(f.list.hasPointerCapture(1), false); assert.equal(f.list.querySelector('.wf-home-drop-space'), null);
+  const trailing = f.emit(f.grip('welcome'), 'click', {detail: 1}); assert.equal(trailing.defaultPrevented, true);
+  assert.equal(f.grip('welcome').getAttribute('aria-pressed'), 'false'); assert.deepEqual(f.preview.hidden, []);
+  f.advance(401); nativeTap(f, 'welcome'); assert.equal(f.grip('welcome').getAttribute('aria-pressed'), 'true');
 });
 
-test('keyboard reordering skips hidden sections, preserves focused controls and respects ends and repeat events', () => {
-  const f = uiFixture(); f.win.WFHomeCustomizer.open(); f.hide('sales').click();
-  const handle = f.grip('metrics'); handle.focus();
-  const up = f.emit(handle, 'keydown', {key: 'ArrowUp', repeat: false}); assert(up.defaultPrevented);
-  assert.equal(f.preview.order[0], 'metrics'); assert.equal(f.order()[0], 'metrics'); assert.equal(f.doc.activeElement, handle);
-  f.emit(handle, 'keydown', {key: 'End'}); assert.equal(f.preview.order.at(-1), 'metrics');
-  const last = [...f.preview.order]; f.emit(handle, 'keydown', {key: 'ArrowDown'}); assert.deepEqual(f.preview.order, last);
-  f.emit(handle, 'keydown', {key: 'ArrowUp', repeat: true}); assert.deepEqual(f.preview.order, last);
-  f.emit(handle, 'keydown', {key: 'Home'}); assert.equal(f.preview.order[0], 'metrics'); assert(f.preview.hidden.includes('sales'));
-  assert.deepEqual(f.model.get(), defaults()); assert.equal(f.writes.length, 0);
-  f.win.WFHomeCustomizer.close(); assert.deepEqual(f.preview, defaults()); assert.equal(f.doc.activeElement, f.byId('wfHomeEdit'));
+test('touch capture transfer from name to stable list does not cancel the active drag', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); startDrag(f);
+  f.emit(f.grip('welcome'), 'lostpointercapture', {pointerId: 1});
+  assert.equal(f.tile('welcome').classList.contains('is-dragging'), true); assert.equal(f.list.hasPointerCapture(1), true);
+  f.emit(f.win, 'pointerup', {pointerId: 1, clientX: 100, clientY: 805}); assert.equal(f.listOrder().at(-1), 'welcome');
 });
 
-test('a save error keeps the inline draft and original cards available until a successful localized retry', () => {
-  const f = uiFixture(); f.win.WFHomeCustomizer.open(); f.hide('sales').click(); f.tile('welcome').querySelector('.wf-home-card-width').click();
-  f.fail = true; f.byId('wfHomeCustomizerSave').click();
-  const status = f.byId('wfHomeCustomizerStatus');
-  assert(f.win.WFHomeCustomizer.isOpen()); assert.equal(status.hidden, false); assert.equal(status.textContent, text('error', 'ar'));
-  assert(f.page.contains(status)); assert.equal(status.getAttribute('role'), 'alert'); assert.equal(status.scrollCalls.length, 1);
-  assert.deepEqual(f.model.get(), defaults()); assert(f.guards.get('home-customizer')()); assert.equal(f.writes.length, 0);
-  assert.equal(f.cards.get('sales').parentNode, f.tile('sales')); assert.equal(f.cards.get('sales').hidden, true);
-  f.translate('fr'); assert.equal(status.textContent, text('error', 'fr')); assert.equal(f.byId('wfHomeCustomizer').dir, 'ltr');
-  f.fail = false; f.byId('wfHomeCustomizerSave').click();
-  assert.equal(f.win.WFHomeCustomizer.isOpen(), false); assert.deepEqual(f.model.get().hidden, ['sales']); assert.equal(f.model.get().sizes.welcome, 'wide');
-  assert.equal(f.writes.length, 1); assert.equal(f.writes[0][0], storageKey); assert.equal(f.guards.get('home-customizer')(), false);
-  assert.equal(f.cards.get('sales').parentNode, f.grid); assert.equal(f.cards.get('sales').inert, true);
-  assert.equal(status.hidden, true); assert.equal(f.toasts[0][0], text('saved', 'fr'));
+test('dragging a hidden section changes its list position without showing it', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); f.toggle('welcome'); startDrag(f);
+  f.emit(f.win, 'pointerup', {pointerId: 1, clientX: 100, clientY: 805});
+  assert.equal(f.listOrder().at(-1), 'welcome'); assert.equal(f.cards.get('welcome').hidden, true); assert.equal(f.visibility('welcome').checked, false);
 });
 
-test('all sections can be hidden, saved and restored inline through the existing edge entry', () => {
-  const f = uiFixture(); f.win.WFHomeCustomizer.open();
-  for (const key of keys) f.hide(key).click();
-  assert.equal(f.grid.hidden, true); assert.equal(f.byId('wfHomeLayoutEmpty').hidden, false); assert.equal(f.byId('wfHomeHiddenSections').hidden, false);
-  for (const key of keys) { assert.equal(f.restore(key).hidden, false); assert.equal(f.cards.get(key).inert, true); }
-  f.byId('wfHomeCustomizerSave').click(); assert.equal(f.model.get().hidden.length, 6); assert.equal(f.grid.hidden, true);
-  f.byId('wfHomeEdit').click(); f.restore('metrics').click();
-  assert.equal(f.grid.hidden, false); assert.equal(f.byId('wfHomeLayoutEmpty').hidden, true); assert.equal(f.cards.get('metrics').hidden, false);
-  assert.equal(f.doc.activeElement, f.grip('metrics')); assert.equal(f.restore('metrics').hidden, true);
-  f.byId('wfHomeCustomizerSave').click();
-  assert.equal(f.model.get().hidden.length, 5); assert(!f.model.get().hidden.includes('metrics'));
-  assert.equal(f.cards.get('metrics').parentNode, f.grid); assert(f.cards.get('metrics').contains(f.originals.get('metrics')));
-});
-
-test('width and reset controls preview changes without persisting until Save', () => {
-  const f = uiFixture(); f.win.WFHomeCustomizer.open();
-  const width = f.tile('welcome').querySelector('.wf-home-card-width'); width.click();
-  assert.equal(f.preview.sizes.welcome, 'wide'); assert.equal(f.tile('welcome').dataset.homeSize, 'wide'); assert.equal(width.getAttribute('aria-pressed'), 'true');
-  assert.equal(f.model.get().sizes.welcome, 'normal'); assert.equal(f.writes.length, 0);
-  f.byId('wfHomeCustomizerSave').click(); assert.equal(f.model.get().sizes.welcome, 'wide');
-  f.win.WFHomeCustomizer.open(); f.byId('wfHomeCustomizerReset').click();
-  assert.deepEqual(f.preview, defaults()); assert.equal(f.model.get().sizes.welcome, 'wide'); assert.equal(f.writes.length, 1);
-  f.byId('wfHomeCustomizerCancel').click(); assert.equal(f.cards.get('welcome').dataset.homeSize, 'wide');
-});
-
-test('ordinary card touches do not drag and a handle tap remains a tap until the movement threshold is crossed', () => {
-  const f = uiFixture(); f.win.WFHomeCustomizer.open();
-  f.emit(f.controls.get('welcome'), 'pointerdown', {pointerId: 1, button: 0, isPrimary: true, clientX: 100, clientY: 150});
-  f.emit(f.win, 'pointermove', {pointerId: 1, clientX: 100, clientY: 300});
-  assert.equal(f.grid.querySelector('.wf-home-drop-space'), null); assert.equal(f.grid.hasPointerCapture(1), false);
-  f.emit(f.grip('welcome'), 'pointerdown', {pointerId: 2, button: 0, isPrimary: true, clientX: 100, clientY: 130});
-  const small = f.emit(f.win, 'pointermove', {pointerId: 2, clientX: 102, clientY: 133}); assert.equal(!!small.defaultPrevented, false);
-  assert.equal(f.grid.querySelector('.wf-home-drop-space'), null);
-  f.emit(f.win, 'pointerup', {pointerId: 2, clientX: 102, clientY: 133}); f.grip('welcome').click(1);
-  assert(f.tile('welcome').classList.contains('is-selected')); assert.equal(f.grid.hasPointerCapture(2), false); assert.deepEqual(f.preview.order, [...keys]);
-});
-
-test('a finger drag moves the real section, commits only the draft and suppresses its trailing click', () => {
-  const f = uiFixture(); f.win.WFHomeCustomizer.open(); const shell = f.tile('welcome'), card = f.cards.get('welcome');
-  startDrag(f);
-  assert(shell.classList.contains('is-dragging')); assert.equal(card.parentNode, shell); assert.equal(shell.parentNode, f.grid);
-  assert.equal(f.grid.querySelectorAll('.wf-home-drop-space').length, 1); assert.equal(f.doc.querySelector('.wf-home-drag-ghost'), null);
-  assert.equal(f.grid.querySelector('.wf-home-drop-space').style.height, '110px'); assert.equal(f.guards.get('home-customizer')(), true);
-  f.emit(f.win, 'pointerup', {pointerId: 1, clientX: 110, clientY: 805});
-  assert.equal(f.preview.order.at(-1), 'welcome'); assert.equal(f.order().at(-1), 'welcome'); assert.equal(f.tile('welcome'), shell);
-  assert.equal(f.grid.querySelector('.wf-home-drop-space'), null); assert.equal(shell.classList.contains('is-dragging'), false);
-  assert.equal(shell.getAttribute('style'), null); assert.equal(f.grid.hasPointerCapture(1), false); assert.equal(f.doc.activeElement, f.grip('welcome'));
-  assert.deepEqual(f.model.get().order, [...keys]); assert.equal(f.writes.length, 0);
-  const click = f.emit(f.hide('welcome'), 'click', {detail: 1}); assert(click.defaultPrevented); assert.deepEqual(f.preview.hidden, []);
-  f.advance(401); f.hide('welcome').click(1); assert(f.preview.hidden.includes('welcome'));
-});
-
-test('transferring implicit touch capture from the heading to the layout does not cancel the active drag', () => {
-  const f = uiFixture(); f.win.WFHomeCustomizer.open();
-  const handle = f.grip('welcome'), shell = f.tile('welcome');
-  // Touch starts with implicit capture on the touched heading. The first move
-  // activates the drag, and the following event transfers capture to layout.
-  handle.setPointerCapture(1);
-  f.emit(handle, 'pointerdown', {pointerId: 1, pointerType: 'touch', button: 0, isPrimary: true, clientX: 100, clientY: 130});
-  f.emit(f.win, 'pointermove', {pointerId: 1, pointerType: 'touch', target: handle, clientX: 110, clientY: 805});
-  assert(shell.classList.contains('is-dragging')); assert(f.grid.hasPointerCapture(1));
-  handle.releasePointerCapture(1);
-  const lost = f.emit(handle, 'lostpointercapture', {pointerId: 1, pointerType: 'touch'});
-  assert.equal(lost.target, handle);
-  assert(shell.classList.contains('is-dragging')); assert(f.grid.hasPointerCapture(1));
-  assert.equal(f.grid.querySelectorAll('.wf-home-drop-space').length, 1);
-  f.emit(f.grid, 'gotpointercapture', {pointerId: 1, pointerType: 'touch'}); f.frame();
-  f.emit(f.win, 'pointerup', {pointerId: 1, pointerType: 'touch', target: f.grid, clientX: 110, clientY: 805});
-  assert.equal(f.order().at(-1), 'welcome'); assert.equal(f.grid.querySelector('.wf-home-drop-space'), null);
-  assert.equal(f.grid.hasPointerCapture(1), false); assert.equal(f.writes.length, 0);
-});
-
-test('interrupted drags restore styles and leave no placeholder, capture or partial order', async t => {
-  const cancellations = {
-    pointercancel: f => f.emit(f.win, 'pointercancel', {pointerId: 1, clientX: 110, clientY: 805}),
-    lostcapture: f => f.emit(f.grid, 'lostpointercapture', {pointerId: 1}),
-    blur: f => f.emit(f.win, 'blur'),
-    resize: f => f.emit(f.win, 'resize'),
-    secondPointer: f => f.emit(f.grip('sales'), 'pointerdown', {pointerId: 2, button: 0, isPrimary: false, clientX: 100, clientY: 250}),
-    hiddenDocument: f => { f.doc.hidden = true; f.emit(f.doc, 'visibilitychange'); },
-    escape: f => f.emit(f.grip('welcome'), 'keydown', {key: 'Escape'})
-  };
-  for (const [name, interrupt] of Object.entries(cancellations)) await t.test(name, () => {
-    const f = uiFixture(); f.win.WFHomeCustomizer.open(); const shell = f.tile('welcome');
-    shell.setAttribute('style', '--original: retained;'); const originalStyle = shell.getAttribute('style'); f.doc.scrollingElement.style.scrollBehavior = 'smooth';
-    startDrag(f); assert.equal(f.doc.scrollingElement.style.scrollBehavior, 'auto'); interrupt(f);
-    assert(f.win.WFHomeCustomizer.isOpen()); assert.equal(shell.classList.contains('is-dragging'), false);
-    assert.equal(f.grid.querySelector('.wf-home-drop-space'), null); assert.equal(f.grid.hasPointerCapture(1), false);
-    assert.equal(shell.getAttribute('style'), originalStyle); assert.equal(f.doc.scrollingElement.style.scrollBehavior, 'smooth');
-    assert.deepEqual(f.order(), [...keys]); assert.deepEqual(f.preview, defaults()); assert.equal(f.writes.length, 0); assert.equal(f.guards.get('home-customizer')(), false);
-    f.byId('wfHomeCustomizerCancel').click(); assert.equal(f.doc.querySelector('.wf-home-edit-shell'), null); assert.equal(f.doc.querySelector('.wf-home-drop-space'), null);
+test('interrupted drags clear capture, styles and placeholder without a partial order or persistence', async t => {
+  for (const reason of ['pointercancel', 'blur', 'resize', 'capture-loss', 'second-pointer', 'hidden', 'escape', 'close']) await t.test(reason, () => {
+    const f = uiFixture(); f.win.WFHomeCustomizer.open(); const row = f.tile('welcome'); row.style.color = 'red'; const previousStyle = row.getAttribute('style'); startDrag(f);
+    if (reason === 'capture-loss') f.emit(f.list, 'lostpointercapture', {pointerId: 1});
+    else if (reason === 'second-pointer') f.emit(f.doc, 'pointerdown', {pointerId: 2, isPrimary: false});
+    else if (reason === 'hidden') { f.doc.hidden = true; f.emit(f.doc, 'visibilitychange'); }
+    else if (reason === 'escape') f.emit(f.doc, 'keydown', {key: 'Escape'});
+    else if (reason === 'close') f.byId('wfHomeCustomizerClose').click();
+    else f.emit(f.win, reason, {pointerId: 1, clientX: 100, clientY: 805});
+    assert.equal(f.list.hasPointerCapture(1), false); assert.equal(f.list.querySelector('.wf-home-drop-space'), null);
+    assert.equal(row.getAttribute('style'), previousStyle); assert.deepEqual(f.listOrder(), [...keys]); assert.deepEqual(f.order(), [...keys]); assert.equal(f.writes.length, 0);
   });
 });
 
-test('edge scrolling uses the actual page scroller and the action bar stays above the navigation circle', () => {
-  const f = uiFixture(); f.page.overflowY = 'auto'; f.page.scrollHeight = 2000; f.page.clientHeight = 600;
-  f.win.WFHomeCustomizer.open();
-  const actions = f.byId('wfHomeCustomizerActions');
-  assert.equal(actions.style.getPropertyValue('--wf-home-actions-bottom'), '98px');
-  assert.equal(actions.style.getPropertyValue('--wf-home-actions-width'), '366px');
-  assert.equal(f.page.style.getPropertyValue('--wf-home-edit-clearance'), '180px');
-  startDrag(f); f.frame();
-  assert(f.page.scrollTop > 0); assert.equal(f.doc.scrollingElement.scrollTop, 0);
-  f.emit(f.win, 'pointercancel', {pointerId: 1, clientX: 110, clientY: 805});
-  assert.equal(f.grid.querySelector('.wf-home-drop-space'), null); assert.deepEqual(f.model.get(), defaults());
+test('edge scrolling affects only the menu body and preserves pointer alignment under a transformed panel', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); f.body.clientHeight = 260; f.body.scrollHeight = 1100;
+  f.byId('wfHomeCustomizer').style.transform = 'translateY(0)'; startDrag(f);
+  const before = f.body.scrollTop; f.frame(32); f.frame(32); assert(f.body.scrollTop > before); assert.equal(f.doc.scrollingElement.scrollTop, 0);
+  f.emit(f.win, 'pointermove', {pointerId: 1, clientX: 100, clientY: 325}); f.frame(16);
+  const row = f.tile('welcome').getBoundingClientRect(); assert.equal(row.top, 325 - 30);
+  f.emit(f.win, 'pointermove', {pointerId: 1, clientX: 100, clientY: 145}); const down = f.body.scrollTop; f.frame(32); assert(f.body.scrollTop < down);
+  f.emit(f.win, 'pointercancel', {pointerId: 1, clientX: 100, clientY: 145}); const stopped = f.body.scrollTop; f.frame(32); assert.equal(f.body.scrollTop, stopped);
 });
 
-test('editor actions stay above a shortened visual viewport and follow its scroll offset', () => {
-  const f = uiFixture({viewport: {height: 400}}); f.win.WFHomeCustomizer.open();
-  const actions = f.byId('wfHomeCustomizerActions');
-  assert.equal(actions.style.getPropertyValue('--wf-home-actions-bottom'), '412px');
-  assert.equal(actions.getBoundingClientRect().bottom, 388, 'fixed CSS bottom is measured from the 800 px layout viewport');
-  f.win.visualViewport.offsetTop = 100; f.emit(f.win.visualViewport, 'scroll'); f.frame();
-  assert.equal(actions.style.getPropertyValue('--wf-home-actions-bottom'), '312px');
-  assert.equal(actions.getBoundingClientRect().bottom, 488, 'visual viewport panning moves the footer without a window resize');
+test('dragging below the final menu row cannot grow its scroll range or run beyond the original list', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); f.body.clientHeight = 260; f.body.scrollHeight = 600;
+  startDrag(f); const originalMaximum = 600 - 260;
+  // Absolute overflow would normally enlarge scrollHeight. Expose a larger
+  // measured value after activation to verify the drag retains its fixed bound.
+  f.body.scrollHeight = 2000;
+  for (let i = 0; i < 80; i++) f.frame(32);
+  assert.equal(f.body.scrollTop, originalMaximum);
+  const list = f.list.getBoundingClientRect(), row = f.tile('welcome').getBoundingClientRect();
+  assert(row.top >= list.top); assert(row.bottom <= list.bottom);
+  f.emit(f.win, 'pointercancel', {pointerId: 1, clientX: 100, clientY: 805});
+  assert.equal(f.list.querySelector('.wf-home-drop-space'), null); assert.deepEqual(f.order(), [...keys]);
 });
 
-test('editor actions avoid only navigation controls that intersect the visual viewport', () => {
-  const f = uiFixture({viewport: {height: 400}}); f.win.WFHomeCustomizer.open();
-  const nav = f.byId('bottomNav'), circle = f.byId('bnavCircle'), actions = f.byId('wfHomeCustomizerActions');
-  nav.rect = {left: 0, top: 380, right: 390, bottom: 450};
-  circle.rect = {left: 160, top: 360, right: 230, bottom: 430};
-  f.emit(f.win.visualViewport, 'resize'); f.frame();
-  assert.equal(actions.getBoundingClientRect().bottom, 352, 'visible circle has an eight pixel clearance');
-  nav.rect = {left: 450, top: 380, right: 840, bottom: 450};
-  circle.rect = {left: 610, top: 360, right: 680, bottom: 430};
-  f.emit(f.win.visualViewport, 'scroll'); f.frame();
-  assert.equal(actions.getBoundingClientRect().bottom, 388, 'offscreen navigation must not displace the footer');
+test('language changes update the existing menu and cancel an in-progress drag safely', () => {
+  const f = uiFixture(); f.win.WFHomeCustomizer.open(); startDrag(f); f.translate('fr');
+  assert.equal(f.byId('wfHomeCustomizer').dir, 'ltr'); assert.equal(f.byId('wfHomeCustomizerTitle').textContent, text('title', 'fr'));
+  assert.equal(f.grip('sales').getAttribute('aria-label'), text('drag', 'fr', {name: text('sales', 'fr')}));
+  assert.equal(f.list.querySelector('.wf-home-drop-space'), null); assert.deepEqual(f.listOrder(), [...keys]); assert.equal(f.writes.length, 0);
 });

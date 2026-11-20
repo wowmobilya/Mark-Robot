@@ -1,5 +1,5 @@
 importScripts('./install-identity.js?v=1');
-const CACHE_NAME = 'wow-furniture-v194-inline-home-robot-voice';
+const CACHE_NAME = 'wow-furniture-v195-existing-menu-drag';
 const urlsToCache = [
   './workspace-surfaces.css?v=37',
   './context-nav.js?v=9',
@@ -13,8 +13,8 @@ const urlsToCache = [
   './home-layout.js?v=2',
   './home-layout.css?v=2',
   './home-dock.js?v=2',
-  './home-customizer.js?v=3',
-  './home-customizer.css?v=4',
+  './home-customizer.js?v=4',
+  './home-customizer.css?v=5',
   './invoice-workspace.js?v=1',
   './invoice-workspace.css?v=1',
   './barcode-workspace.js?v=1',
