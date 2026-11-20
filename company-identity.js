@@ -10,7 +10,6 @@
     logoHint: ['الشعار وشكله وحجمه وخلفيته مع معاينة مباشرة', 'Logo, shape, size and background with a live preview', 'Canlı önizleme ile logo, şekil, boyut ve arka plan', 'Logo, forme, taille et fond avec aperçu immédiat', 'Логотип, форма, размер и фон с предпросмотром'],
     registrationHint: ['الرقم الضريبي والدائرة الضريبية ورقم MERSİS', 'Tax number, tax office and MERSİS number', 'Vergi numarası, vergi dairesi ve MERSİS numarası', 'Numéro fiscal, centre des impôts et numéro MERSİS', 'Налоговый номер, инспекция и номер MERSİS'],
     marksHint: ['رفع الختم والتوقيع ومعاينة ظهورهما في الفاتورة', 'Upload the stamp and signature and preview them on invoices', 'Kaşe ve imza yükleyin, faturadaki görünümü önizleyin', 'Importer le cachet et la signature et voir leur rendu sur la facture', 'Загрузите печать и подпись и проверьте их вид в счёте'],
-    back: ['رجوع', 'Back', 'Geri', 'Retour', 'Назад'],
     save: ['حفظ التغييرات', 'Save changes', 'Değişiklikleri kaydet', 'Enregistrer les modifications', 'Сохранить изменения'],
     saving: ['جارٍ الحفظ…', 'Saving…', 'Kaydediliyor…', 'Enregistrement…', 'Сохранение…'],
     registration: ['بيانات التسجيل الضريبي', 'Tax registration', 'Vergi kaydı', 'Immatriculation fiscale', 'Налоговая регистрация'],
@@ -249,19 +248,14 @@
   // Preserve the ID used by the colour/branding integrations, without creating
   // another modal or top-layer surface. The outer settings dialog owns focus.
   const editor = node('section', 'wf-company-editor'); editor.id = 'wfCompanySectionDialog'; editor.hidden = true;
-  editor.setAttribute('aria-labelledby', 'wfCompanySectionTitle'); editor.setAttribute('aria-describedby', 'wfCompanySectionHint');
-  const editorHeader = node('header'), editorTitles = node('div', 'wf-company-editor-titles');
-  const editorTitle = node('h2'), editorHint = node('p');
-  editorTitle.id = 'wfCompanySectionTitle'; editorHint.id = 'wfCompanySectionHint';
-  const back = button('back', requestClose, 'btn btn-s wf-company-back');
-  back.id = 'wfCompanySectionBack';
-  back.prepend(icon('<path d="m15 5-7 7 7 7"/>', 'wf-company-back-icon'));
-  editorTitles.append(editorTitle, editorHint); editorHeader.append(back, editorTitles);
+  editor.setAttribute('aria-labelledby', 'wfSettingsDialogTitle'); editor.setAttribute('aria-describedby', 'wfCompanySectionHint');
+  const editorHint = node('p', 'wf-company-editor-hint'); editorHint.id = 'wfCompanySectionHint';
   const editorBody = node('div', 'wf-company-editor-body'), footer = node('footer');
+  editorBody.append(editorHint);
   const cancel = button('cancel', requestClose), saveButton = button('save', saveSection, 'btn btn-p');
   cancel.id = 'wfCompanySectionCancel';
   saveButton.id = 'wfCompanySectionSave';
-  footer.append(cancel, saveButton); editor.append(editorHeader, editorBody, footer); company.replaceChildren(hub, editor, storage);
+  footer.append(cancel, saveButton); editor.append(editorBody, footer); company.replaceChildren(hub, editor, storage);
 
   function setLogo(src) {
     wfPendingSettingsLogo = src;
@@ -270,7 +264,7 @@
   function busy() { return writing || uploading; }
   function notifyActions() { window.dispatchEvent(new CustomEvent('wf-settings-actions-change')); }
   function syncBusy() {
-    back.disabled = cancel.disabled = saveButton.disabled = busy();
+    cancel.disabled = saveButton.disabled = busy();
     editorBody.inert = busy();
     editor.setAttribute('aria-busy', String(busy()));
     saveButton.querySelector('span').textContent = word(writing ? 'saving' : 'save', lang());
@@ -332,12 +326,12 @@
     }
     if (key === 'marks') { session.artChanges = { ...artChanges }; status.textContent = ''; }
     activeSession = session; editor.dataset.companySection = key;
-    editorTitle.textContent = word(section.title, lang()); editorHint.textContent = word(section.hint, lang());
+    editorHint.textContent = word(section.hint, lang());
     session.scrollTop = parentDialog.querySelector('.wf-settings-content')?.scrollTop || 0;
     hub.hidden = true; editor.hidden = false; section.tile.setAttribute('aria-expanded', 'true');
     company.classList.add('wf-company-editing'); parentDialog.classList.add('wf-company-section-active');
     editorBody.append(section.panel); section.panel.style.removeProperty('display');
-    editorBody.scrollTop = 0; syncBusy(); back.focus({ preventScroll: true });
+    editorBody.scrollTop = 0; syncBusy(); byId('wfSettingsDialogTitle')?.focus({ preventScroll: true });
   }
   function requestClose() { if (!busy()) closeSection(); }
   function restoreSection(session) {
@@ -497,7 +491,9 @@
     syncBusy();
   }
   new MutationObserver(translate).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
-  window.WFCompanyIdentity = { ...api, save, getSettingsActions };
+  // The existing window header owns the title; navigation stays in the bottom menu.
+  const getSectionTitle = () => activeSession ? word(sections[activeSession.key].title, lang()) : '';
+  window.WFCompanyIdentity = { ...api, save, getSettingsActions, getSectionTitle };
   load();
   document.addEventListener('DOMContentLoaded', () => {
     window.WFAppUpdates?.registerGuard('company-settings', () => {

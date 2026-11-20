@@ -40,6 +40,7 @@
  const bar = document.createElement('header');
  const title = document.createElement('h2');
  title.id = 'wfSettingsDialogTitle';
+ title.tabIndex = -1;
  dialog.setAttribute('aria-labelledby', title.id);
  const close = document.createElement('button');
  close.type = 'button';
@@ -101,17 +102,19 @@
  };
  const headings=new Map();
  const saveSections = new Set(['bank', 'invoice']);
- let opener, lastTitleOpener, lastTitleSource;
+ let opener, lastTitleOpener, lastTitleSource, lastSectionTitle;
  function updateDialogTitle() {
    if (!opener) return;
    const source = opener.textContent;
-   if (opener === lastTitleOpener && source === lastTitleSource) return;
-   lastTitleOpener = opener; lastTitleSource = source;
+   const sectionTitle = opener.id === 'wf-settings-tab-company' ? window.WFCompanyIdentity?.getSectionTitle?.() || '' : '';
+   if (opener === lastTitleOpener && source === lastTitleSource && sectionTitle === lastSectionTitle) return;
+   lastTitleOpener = opener; lastTitleSource = source; lastSectionTitle = sectionTitle;
    const copy = opener.cloneNode(true);
    copy.querySelectorAll('.wf-settings-card-description, .wf-ui-icon').forEach(node => node.remove());
-   const next = copy.textContent.trim();
+   const next = sectionTitle || copy.textContent.trim();
    if (title.textContent !== next) title.textContent = next;
  }
+ window.addEventListener('wf-settings-actions-change', updateDialogTitle);
  function translateDescriptions() {
    const locale = Math.max(0, localeOrder.indexOf(document.documentElement.lang));
    for (const [key, description] of descriptions) description.textContent = sections[key][locale];

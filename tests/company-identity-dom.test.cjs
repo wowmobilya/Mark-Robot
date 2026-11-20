@@ -59,6 +59,7 @@ function fixture(){
   const bankTab=make('button','wf-settings-tab-bank',tabs);bankTab.className='tab-btn';
   const invoiceTab=make('button','wf-settings-tab-invoice',tabs);invoiceTab.className='tab-btn';
   const parent=make('dialog','wfSettingsDialog',page),content=make('div','content',parent);content.className='wf-settings-content';
+  const header=make('header','',parent),title=make('h2','wfSettingsDialogTitle',header);title.tabIndex=-1;title.textContent='معلومات الشركة';
   const outerSave=make('button','settingsSave',parent);outerSave.setAttribute('onclick','saveSettings()');
   const company=make('section','stab-company',content);company.setAttribute('role','tabpanel');
   const bank=make('section','stab-bank',content);bank.style.display='none';const bankCard=make('div','bankCard',bank);bankCard.className='card';
@@ -84,14 +85,19 @@ function fixture(){
     set failWrite(value){failWrite=value;},blockWrite(){writeBarrier=new Promise(resolve=>this.releaseWrite=()=>{writeBarrier=null;resolve();});},get database(){return database;}};
 }
 
-test('all company sections navigate inside the one existing settings dialog and Back restores the hub',()=>{
+test('company sections use one window title and bottom actions return to the hub',()=>{
   const f=fixture(),editor=f.byId('wfCompanySectionDialog'),hub=f.byId('wfCompanyHub');
   assert.equal(editor.tagName,'SECTION');assert(f.company.contains(editor));assert.equal(editor.hidden,true);assert.equal(editor.getAttribute('aria-modal'),null);
+  assert.equal(editor.getAttribute('aria-labelledby'),'wfSettingsDialogTitle');
+  assert.equal(f.byId('wfCompanySectionBack'),null);assert.equal(editor.querySelector('h2'),null);
+  const titles={basic:'البيانات الأساسية',logo:'الشعار والهوية',registration:'بيانات التسجيل الضريبي',marks:'الختم والتوقيع',bank:'الحسابات البنكية'};
   for(const key of ['basic','logo','registration','marks','bank']){
     f.open(key);assert.equal(f.parent.open,true);assert.equal(hub.hidden,true);assert.equal(editor.hidden,false);assert.equal(editor.dataset.companySection,key);
+    assert.equal(f.window.WFCompanyIdentity.getSectionTitle(),titles[key]);assert.equal(f.doc.activeElement,f.byId('wfSettingsDialogTitle'));
     assert.deepEqual(f.modalCalls,['wfSettingsDialog']);assert.equal(f.parent.style.getPropertyValue('height'),'');assert.equal(f.parent.style.getPropertyValue('block-size'),'');
     const tile=f.byId(key==='bank'?'wfCompanyOpenBank':'wfCompanyOpen-'+key);assert.equal(tile.getAttribute('aria-haspopup'),null);assert.equal(tile.getAttribute('aria-expanded'),'true');
-    f.byId('wfCompanySectionBack').click();assert.equal(hub.hidden,false);assert.equal(editor.hidden,true);assert.equal(f.parent.open,true);assert.equal(f.doc.activeElement,tile);assert.equal(tile.getAttribute('aria-expanded'),'false');
+    f.window.WFCompanyIdentity.getSettingsActions().cancel.click();assert.equal(hub.hidden,false);assert.equal(editor.hidden,true);assert.equal(f.parent.open,true);assert.equal(f.doc.activeElement,tile);assert.equal(tile.getAttribute('aria-expanded'),'false');
+    assert.equal(f.window.WFCompanyIdentity.getSectionTitle(),'');
   }
 });
 

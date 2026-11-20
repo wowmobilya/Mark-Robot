@@ -20,7 +20,7 @@
   .wf-company-icon svg { inline-size: 22px; block-size: 22px; }
   .wf-company-chevron { color: var(--text2); display: grid; place-items: center; }
   .wf-company-chevron svg { inline-size: 14px; block-size: 14px; }
-  html[dir=rtl] .wf-company-chevron, html[dir=rtl] .wf-company-back-icon { transform: scaleX(-1); }
+  html[dir=rtl] .wf-company-chevron { transform: scaleX(-1); }
   html body #mainContent #page-settings #wfCompanyHub .wf-company-tile:is(:hover,:focus-visible) { border-color: var(--window-accent,var(--brand-primary)); background: var(--window-muted,var(--input)); }
   #wfCompanyHub .wf-company-tile:focus-visible, #wfCompanySectionDialog button:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
   html body #mainContent #page-settings #wfSettingsDialog.wf-company-section-active > .wf-settings-content {
@@ -34,14 +34,8 @@
     margin: 0; padding: 0; box-sizing: border-box; overflow: hidden;
     border: 0; border-radius: 0; background: transparent; color: var(--text); box-shadow: none;
   }
-  #wfCompanySectionDialog > header { display: flex; align-items: flex-start; gap: 14px; padding: 0 0 14px; flex: none; border-block-end: 1px solid var(--dialog-line,var(--border)); }
-  #wfCompanySectionDialog .wf-company-editor-titles { min-inline-size: 0; flex: 1; }
-  #wfCompanySectionDialog h2 { margin: 0; font-size: 18px; font-weight: 750; line-height: 1.5; }
-  #wfCompanySectionDialog .wf-company-editor-titles p { margin: 4px 0 0; font-size: 11px; color: var(--text2); line-height: 1.6; }
-  #wfCompanySectionDialog .wf-company-back { display: flex; align-items: center; gap: 7px; min-inline-size: 84px; flex: none; }
-  .wf-company-back-icon { display: inline-grid; place-items: center; }
-  .wf-company-back-icon svg { inline-size: 17px; block-size: 17px; }
-  #wfCompanySectionDialog .wf-company-editor-body { flex: 1 1 auto; min-block-size: 0; min-inline-size: 0; overflow: auto; overscroll-behavior: contain; padding: clamp(16px,2vw,24px) 2px; scroll-padding-block: 16px; }
+  #wfCompanySectionDialog .wf-company-editor-hint { margin: 0 0 18px; font-size: 12px; color: var(--text2); line-height: 1.7; }
+  #wfCompanySectionDialog .wf-company-editor-body { flex: 1 1 auto; min-block-size: 0; min-inline-size: 0; overflow: auto; overscroll-behavior: contain; padding: 0 2px clamp(16px,2vw,24px); scroll-padding-block: 16px; }
   html body #mainContent #page-settings #wfCompanySectionDialog .wf-company-editor-panel { margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; background: transparent !important; min-inline-size: 0; }
   html body #mainContent #page-settings #wfCompanySectionDialog #stab-bank > .card { margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; background: transparent !important; }
   html body #mainContent #page-settings #wfCompanySectionDialog .fgrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px !important; }
@@ -86,9 +80,6 @@
   @media (max-width: 540px) {
     #wfCompanyHub .wf-company-tiles { grid-template-columns: minmax(0,1fr); gap: 8px; }
     html body #mainContent #page-settings #wfCompanyHub .wf-company-tile { min-block-size: 86px; }
-    #wfCompanySectionDialog > header { flex-wrap: wrap; gap: 10px; padding: 0 0 12px; }
-    #wfCompanySectionDialog .wf-company-editor-titles { flex-basis: calc(100% - 100px); }
-    #wfCompanySectionDialog h2 { font-size: 16px; }
     html body #mainContent #page-settings #wfCompanySectionDialog .fgrid { grid-template-columns: minmax(0,1fr); }
     #wfCompanySectionDialog > footer .btn-p { flex: 1; min-inline-size: 0; }
     #wfCompanySectionDialog .wf-company-art-input { grid-template-columns: minmax(0,1fr) auto; }
