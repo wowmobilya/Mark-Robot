@@ -6,18 +6,21 @@
   const copy = {
     home: ['الرئيسية', 'Home', 'Ana sayfa', 'Accueil', 'Главная'],
     edit: ['تعديل', 'Edit', 'Düzenle', 'Modifier', 'Изменить'],
-    title: ['تعديل الصفحة الرئيسية', 'Edit your home page', 'Ana sayfayı düzenle', 'Modifier l’accueil', 'Настроить главную'],
+    title: ['تخصيص الرئيسية', 'Customize dashboard', 'Paneli düzenle', 'Personnaliser l’accueil', 'Настроить панель'],
+    advanced: ['الترتيب والحجم', 'Order and size', 'Sıra ve boyut', 'Ordre et taille', 'Порядок и размер'],
+    movePanel: ['تبديل جانب اللوحة', 'Move panel to the other side', 'Paneli diğer tarafa taşı', 'Déplacer le panneau', 'Переместить панель'],
+    draftHint: ['عاين التغييرات ثم احفظ', 'Preview changes, then save', 'Önizleyin, sonra kaydedin', 'Prévisualisez, puis enregistrez', 'Просмотрите и сохраните'],
     hint: ['اسحب الأقسام من المقبض لترتيبها، أو استخدم أزرار التحريك.', 'Drag sections by their handle, or use the move buttons.', 'Bölümleri tutamacından sürükleyin veya taşıma düğmelerini kullanın.', 'Faites glisser les sections par leur poignée ou utilisez les boutons de déplacement.', 'Перетаскивайте разделы за ручку или используйте кнопки перемещения.'],
     preview: ['ترتيب الأقسام', 'Section layout', 'Bölüm düzeni', 'Disposition des sections', 'Порядок разделов'],
     previewHint: ['اختر ما يظهر لك وعرض كل قسم، ثم احفظ الترتيب.', 'Choose which sections appear and their width, then save your layout.', 'Görünen bölümleri ve genişliklerini seçip düzeni kaydedin.', 'Choisissez les sections visibles et leur largeur, puis enregistrez.', 'Выберите видимые разделы и их ширину, затем сохраните порядок.'],
     count: ['{shown} من {total} أقسام ظاهرة', '{shown} of {total} sections visible', '{total} bölümden {shown} görünür', '{shown} sections visibles sur {total}', 'Видно разделов: {shown} из {total}'],
-    allHidden: ['كل الأقسام مخفية. يمكنك إظهارها هنا في أي وقت من زر «تعديل».', 'All sections are hidden. You can show them again here using Edit.', 'Tüm bölümler gizli. Düzenle düğmesiyle burada yeniden gösterebilirsiniz.', 'Toutes les sections sont masquées. Le bouton Modifier permet de les réafficher ici.', 'Все разделы скрыты. Нажмите «Изменить», чтобы снова показать их.'],
+    allHidden: ['كل الأقسام مخفية. يمكنك إظهارها مجددًا من الزر الجانبي.', 'All sections are hidden. Reopen the side tab to show them again.', 'Tüm bölümler gizli. Yeniden göstermek için yan sekmeyi açın.', 'Toutes les sections sont masquées. Rouvrez l’onglet latéral pour les afficher.', 'Все разделы скрыты. Откройте боковую вкладку, чтобы показать их снова.'],
     welcome: ['البطاقة الذكية', 'Smart card', 'Akıllı kart', 'Carte intelligente', 'Умная карточка'],
-    sales: ['ملخص المبيعات', 'Sales summary', 'Satış özeti', 'Résumé des ventes', 'Сводка продаж'],
-    metrics: ['الأرقام السريعة', 'Quick figures', 'Hızlı rakamlar', 'Chiffres clés', 'Основные показатели'],
+    sales: ['إجمالي المبيعات', 'Total sales', 'Toplam satış', 'Ventes', 'Продажи'],
+    metrics: ['إحصاءات النشاط', 'Activity counts', 'İstatistikler', 'Statistiques', 'Статистика'],
     rates: ['أسعار الصرف', 'Exchange rates', 'Döviz kurları', 'Taux de change', 'Курсы валют'],
     recent: ['آخر الفواتير', 'Recent invoices', 'Son faturalar', 'Factures récentes', 'Последние счета'],
-    insights: ['تحليلات العمل', 'Business insights', 'İş analizleri', 'Analyses de l’activité', 'Аналитика бизнеса'],
+    insights: ['نظرة على الأعمال', 'Business overview', 'İş görünümü', 'Vue d’ensemble', 'Обзор бизнеса'],
     welcomeHint: ['الترحيب والنصائح وبطاقاتك اليومية', 'Your welcome, tips and daily cards', 'Karşılama, ipuçları ve günlük kartlar', 'Accueil, conseils et cartes du jour', 'Приветствие, советы и ежедневные карточки'],
     salesHint: ['إجمالي المبيعات وملخص العملات', 'Sales totals and currency summary', 'Satış toplamları ve para birimi özeti', 'Total des ventes et résumé des devises', 'Итоги продаж по валютам'],
     metricsHint: ['الشركات والمنتجات والفواتير', 'Companies, products and invoices', 'Firmalar, ürünler ve faturalar', 'Entreprises, produits et factures', 'Компании, товары и счета'],
@@ -145,8 +148,8 @@
     element.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (paths[name] || paths.layout) + '</svg>';
     return element;
   };
-  let model, session, dialog, toolbar, body, list, status, live, summary, emptyHint, title, editButton, returnFocus;
-  let mounted = false, guarded = false, writing = false, errorKey = '', drag = null, autoFrame = 0, suppressClickUntil = 0;
+  let model, session, panel, dock, body, list, status, live, summary, emptyHint, title, editButton, advancedButton, advancedHint;
+  let mounted = false, guarded = false, writing = false, advanced = false, errorKey = '', drag = null, autoFrame = 0, suppressClickUntil = 0;
   const texts = [], tiles = new Map();
   function label(tag, key, className) {
     const element = node(tag, className); texts.push([element, key]); return element;
@@ -161,7 +164,6 @@
   function announce(key, values) { live.textContent = t(key, values); }
   function counter(prefs) {
     const value = t('count', {shown: number(prefs.order.length - prefs.hidden.length), total: number(prefs.order.length)});
-    toolbar.querySelector('.wf-home-toolbar-count').textContent = value;
     summary.textContent = value;
   }
   function registerGuard() {
@@ -178,17 +180,16 @@
       if (list.children[index] !== item.card) list.insertBefore(item.card, list.children[index] || null);
       item.card.dataset.size = wide ? 'wide' : 'normal'; item.card.dataset.visible = String(visible);
       item.rank.textContent = number(index + 1);
-      item.visibility.setAttribute('aria-checked', String(visible));
-      item.visibility.setAttribute('aria-label', t('show', {name: t(key)}));
+      item.visibility.checked = visible;
+      item.visibility.setAttribute('aria-label', t(key));
       item.visibility.title = t(visible ? 'hide' : 'show', {name: t(key)});
-      item.visibilityIcon.replaceChildren(icon(visible ? 'eye' : 'eyeOff'));
-      item.visibilityLabel.textContent = t(visible ? 'visible' : 'hidden');
       item.widths.forEach((control, i) => control.setAttribute('aria-pressed', String(wide === (i === 1))));
       item.up.setAttribute('aria-disabled', String(index === 0));
       item.down.setAttribute('aria-disabled', String(index === prefs.order.length - 1));
     });
     if (restoreFocus && focused.isConnected && document.activeElement !== focused) focused.focus({preventScroll: true});
     counter(prefs); emptyHint.hidden = prefs.hidden.length !== prefs.order.length;
+    dock?.reposition();
   }
   function changed(action, announcement, values) {
     if (!session?.get()) return;
@@ -203,19 +204,26 @@
     if (target < 0 || target >= prefs.order.length) return;
     changed(() => session.move(key, target), 'moved', {name: t(key), position: number(target + 1), total: number(prefs.order.length)});
   }
-  function miniature(key) {
-    const preview = node('div', 'wf-home-section-preview wf-home-section-preview--' + key);
-    preview.setAttribute('aria-hidden', 'true');
-    const count = key === 'welcome' ? 2 : key === 'recent' ? 3 : 4;
-    for (let i = 0; i < count; i++) {
-      const part = node('span', 'wf-home-preview-part');
-      part.append(node('i'), node('b')); preview.append(part);
-    }
-    return preview;
+  function setAdvanced(value) {
+    advanced = !!value;
+    advancedButton.setAttribute('aria-expanded', String(advanced));
+    advancedHint.hidden = !advanced;
+    for (const item of tiles.values()) item.controls.hidden = !advanced;
+    endDrag(false); dock?.reposition();
   }
   function buildTile(key) {
     const card = node('article', 'wf-home-section-tile'); card.dataset.section = key; card.setAttribute('role', 'listitem');
-    const header = node('div', 'wf-home-section-heading'), handle = button('', 'wf-home-drag-handle', null, 'grip');
+    const choice = node('label', 'wf-home-section-choice'), name = label('span', key);
+    const visibility = node('input', 'wf-home-visibility'); visibility.type = 'checkbox';
+    visibility.id = 'wfHomeVisibility-' + key;
+    const region = model.element?.(key); if (region?.id) visibility.setAttribute('aria-controls', region.id);
+    visibility.addEventListener('change', () => {
+      changed(() => session.toggle(key), 'visibilityChanged', {name: t(key), state: t(session.get().hidden.includes(key) ? 'visible' : 'hidden')});
+    });
+    name.id = 'wfHomeSectionTitle-' + key; card.setAttribute('aria-labelledby', name.id);
+    choice.append(visibility, name);
+    const controls = node('div', 'wf-home-section-controls'); controls.hidden = true;
+    const moves = node('div', 'wf-home-move-controls'), handle = button('', 'wf-home-drag-handle', null, 'grip');
     handle.dataset.section = key; handle.setAttribute('aria-describedby', 'wfHomeCustomizerHint');
     handle.addEventListener('pointerdown', event => pointerStart(event, key, handle));
     handle.addEventListener('lostpointercapture', () => { if (drag?.handle === handle) endDrag(false); });
@@ -224,34 +232,28 @@
       event.preventDefault(); event.stopPropagation(); if (!event.repeat) move(key, event.key === 'ArrowUp' ? -1 : 1);
     });
     handle.addEventListener('click', event => { if (event.detail === 0) announce('keyboard'); });
-    const heading = node('div', 'wf-home-section-name'), name = label('h3', key), description = label('p', key + 'Hint');
-    name.id = 'wfHomeSectionTitle-' + key; card.setAttribute('aria-labelledby', name.id);
-    heading.append(name, description);
     const rank = node('span', 'wf-home-section-rank'); rank.setAttribute('aria-hidden', 'true');
-    header.append(handle, icon(key), heading, rank);
-    const controls = node('div', 'wf-home-section-controls');
-    const visibility = button('', 'wf-home-visibility', () => {
-      changed(() => session.toggle(key), 'visibilityChanged', {name: t(key), state: t(session.get().hidden.includes(key) ? 'visible' : 'hidden')});
-    });
-    visibility.setAttribute('role', 'switch');
-    const visibilityIcon = node('span'), visibilityLabel = node('span'); visibility.append(visibilityIcon, visibilityLabel);
+    const up = button('', '', () => move(key, -1), 'up'), down = button('', '', () => move(key, 1), 'down');
+    moves.append(handle, rank, up, down);
     const widths = node('div', 'wf-home-width-options'); widths.setAttribute('role', 'group');
     const widthButtons = ['normal', 'wide'].map(size => {
       const control = button(size, '', () => changed(() => session.resize(key, size), 'widthChanged', {name: t(key), width: t(size)}));
       widths.append(control); return control;
     });
-    controls.append(visibility, widths);
-    const moves = node('div', 'wf-home-move-controls');
-    const up = button('', '', () => move(key, -1), 'up'), down = button('', '', () => move(key, 1), 'down');
-    moves.append(up, down); controls.append(moves);
-    card.append(header, miniature(key), controls); list.append(card);
-    tiles.set(key, {card, handle, rank, visibility, visibilityIcon, visibilityLabel, widthGroup: widths, widths: widthButtons, up, down});
+    controls.append(moves, widths);
+    card.append(choice, controls); list.append(card);
+    tiles.set(key, {card, handle, rank, visibility, controls, widthGroup: widths, widths: widthButtons, up, down});
   }
   function translate() {
     if (!mounted) return;
     for (const [element, key] of texts) element.textContent = t(key);
-    dialog.dir = lang() === 'ar' ? 'rtl' : 'ltr';
+    panel.dir = lang() === 'ar' ? 'rtl' : 'ltr';
+    editButton.title = t('title'); editButton.setAttribute('aria-label', t('title'));
     byId('wfHomeCustomizerClose').setAttribute('aria-label', t('close'));
+    byId('wfHomeCustomizerMove').setAttribute('aria-label', t('movePanel'));
+    byId('wfHomeCustomizerMove').title = t('movePanel');
+    byId('wfHomeCustomizerReset').setAttribute('aria-label', t('reset'));
+    byId('wfHomeCustomizerReset').title = t('reset');
     for (const [key, item] of tiles) {
       for (const control of ['handle', 'up', 'down']) {
         const caption = t(control === 'handle' ? 'drag' : control, {name: t(key)});
@@ -262,41 +264,37 @@
     status.textContent = errorKey ? t(errorKey) : '';
     if (session?.get()) draw(); else counter(model.get());
   }
-  function restoreFocus() {
-    const target = returnFocus?.isConnected ? returnFocus : editButton;
-    if (target?.isConnected) target.focus({preventScroll: true});
-    returnFocus = null;
-  }
   function finish() {
     endDrag(false);
     if (session?.get()) session.cancel();
     errorKey = ''; status.textContent = ''; status.hidden = true; live.textContent = '';
-    document.documentElement.classList.remove('wf-home-customizer-open');
-    counter(model.get()); restoreFocus();
+    counter(model.get());
   }
   function cancel() {
-    if (!dialog?.open) return false;
-    endDrag(false); session?.cancel(); dialog.close('cancel'); return true;
+    return dock?.close(true) || false;
   }
   function save() {
     if (writing || !session?.get()) return;
     endDrag(false); writing = true;
     try {
-      session.save(); dialog.close('save');
+      session.save(); dock.close(true);
       window.showToast?.(t('saved'), 'ok');
     } catch (_) {
       errorKey = 'error'; status.textContent = t('error'); status.hidden = false;
+      body.scrollTop = 0;
+      dock.reposition();
     } finally { writing = false; }
   }
   function open() {
     if (!mount()) return false;
+    if (dock.isOpen()) { title.focus({preventScroll: true}); return true; }
+    return dock.open();
+  }
+  function begin() {
     registerGuard();
-    if (dialog.open) { title.focus({preventScroll: true}); return true; }
-    returnFocus = document.activeElement;
     session = createSession(model); session.begin(); errorKey = ''; status.hidden = true; status.textContent = ''; live.textContent = '';
-    translate(); body.scrollTop = 0;
-    dialog.showModal(); document.documentElement.classList.add('wf-home-customizer-open');
-    title.focus({preventScroll: true}); return true;
+    setAdvanced(false); translate(); body.scrollTop = 0;
+    title.focus({preventScroll: true});
   }
   function clearDrop() {
     for (const item of tiles.values()) item.card.classList.remove('is-drop-before', 'is-drop-after');
@@ -318,7 +316,7 @@
     autoFrame = window.requestAnimationFrame(autoScroll);
   }
   function pointerStart(event, key, handle) {
-    if (!dialog.open || !session?.get() || event.isPrimary === false || event.button !== 0 || event.target.closest('button') !== handle) return;
+    if (!dock.isOpen() || !advanced || !session?.get() || event.isPrimary === false || event.button !== 0 || event.target.closest('button') !== handle) return;
     endDrag(false);
     drag = {key, handle, pointerId: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, active: false, target: null};
     try { handle.setPointerCapture(event.pointerId); } catch (_) {}
@@ -332,10 +330,10 @@
       drag.active = true;
       const ghost = node('div', 'wf-home-drag-ghost'); ghost.setAttribute('aria-hidden', 'true');
       const name = node('strong'); name.textContent = t(drag.key); ghost.append(icon(drag.key), name, icon('grip'));
-      dialog.append(ghost); drag.ghost = ghost; tiles.get(drag.key).card.classList.add('is-dragging');
+      document.body.append(ghost); drag.ghost = ghost; tiles.get(drag.key).card.classList.add('is-dragging');
       list.classList.add('is-dragging'); autoFrame = window.requestAnimationFrame(autoScroll);
     }
-    drag.ghost.style.left = Math.max(8, Math.min(window.innerWidth - 260, drag.x - 120)) + 'px';
+    drag.ghost.style.left = Math.max(8, Math.min(window.innerWidth - 188, drag.x - 90)) + 'px';
     drag.ghost.style.top = Math.max(8, Math.min(window.innerHeight - 72, drag.y - 30)) + 'px';
     updateDrop();
   }
@@ -351,7 +349,7 @@
       const total = session.get().order.length;
       changed(() => session.move(current.key, current.target.index), 'moved', {name: t(current.key), position: number(current.target.index + 1), total: number(total)});
     }
-    if (dialog.open) current.handle.focus({preventScroll: true});
+    if (dock.isOpen()) current.handle.focus({preventScroll: true});
   }
   function pointerEnd(event) {
     if (drag?.pointerId !== event.pointerId) return;
@@ -361,37 +359,37 @@
   function mount() {
     if (mounted) return true;
     const page = byId('page-dashboard'); model = window.WFHomeLayout;
-    if (!page || !model) return false;
-    toolbar = node('header', 'wf-home-toolbar'); toolbar.id = 'wfHomeToolbar';
-    const heading = node('div', 'wf-home-toolbar-copy');
-    heading.append(label('h1', 'home'), node('p', 'wf-home-toolbar-count'));
-    editButton = button('edit', 'wf-home-edit-button', open, 'edit'); editButton.id = 'wfHomeEdit';
-    editButton.setAttribute('aria-haspopup', 'dialog'); editButton.setAttribute('aria-controls', 'wfHomeCustomizer');
-    toolbar.append(heading, editButton); page.insertBefore(toolbar, byId('wfHomeLayout') || page.firstChild);
-    dialog = node('dialog', 'wf-home-customizer'); dialog.id = 'wfHomeCustomizer';
-    dialog.setAttribute('aria-labelledby', 'wfHomeCustomizerTitle'); dialog.setAttribute('aria-describedby', 'wfHomeCustomizerHint');
-    const header = node('header', 'wf-home-editor-header'), headingWrap = node('div', 'wf-home-editor-title');
-    title = label('h2', 'title'); title.id = 'wfHomeCustomizerTitle'; title.tabIndex = -1;
-    const hint = label('p', 'hint'); hint.id = 'wfHomeCustomizerHint'; headingWrap.append(title, hint);
-    const close = button('', 'wf-home-editor-close', cancel, 'close'); close.id = 'wfHomeCustomizerClose';
-    header.append(icon('layout'), headingWrap, close);
-    body = node('div', 'wf-home-editor-body');
-    const intro = node('div', 'wf-home-editor-intro'), introHeading = node('div');
-    introHeading.append(label('h3', 'preview'), label('p', 'previewHint')); summary = node('span', 'wf-home-editor-count');
-    intro.append(introHeading, summary); body.append(intro);
+    if (!page || !model || !window.WFHomeDock) return false;
+    panel = node('div', 'dash-dock-panel wf-home-customizer'); panel.id = 'wfHomeCustomizer';
+    panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-labelledby', 'wfHomeCustomizerTitle');
+    panel.setAttribute('aria-describedby', 'wfHomeCustomizerDraftHint');
+    const header = node('div', 'dash-dock-toolbar');
+    title = label('strong', 'title'); title.id = 'wfHomeCustomizerTitle'; title.tabIndex = -1;
+    const swap = button('', 'dash-dock-move', () => dock.swapSide()); swap.id = 'wfHomeCustomizerMove'; swap.textContent = '⇆';
+    const close = button('', 'wf-home-editor-close', cancel); close.id = 'wfHomeCustomizerClose'; close.textContent = '×';
+    header.append(title, swap, close);
+    body = node('div', 'dash-dock-layout wf-home-editor-body');
+    summary = node('p', 'wf-home-editor-count'); body.append(summary);
+    advancedHint = label('p', 'hint', 'wf-home-editor-hint'); advancedHint.id = 'wfHomeCustomizerHint'; advancedHint.hidden = true; body.append(advancedHint);
     emptyHint = label('p', 'allHidden', 'wf-home-editor-empty'); emptyHint.hidden = true; body.append(emptyHint);
-    list = node('div', 'wf-home-editor-grid'); list.setAttribute('role', 'list'); body.append(list);
+    list = node('div', 'wf-home-editor-grid'); list.id = 'wfHomeCustomizerSections'; list.setAttribute('role', 'list'); body.append(list);
     model.get().order.forEach(buildTile);
+    const tools = node('div', 'wf-home-editor-tools');
+    advancedButton = button('advanced', 'wf-home-editor-advanced', () => setAdvanced(!advanced)); advancedButton.id = 'wfHomeCustomizerAdvanced';
+    advancedButton.setAttribute('aria-expanded', 'false'); advancedButton.setAttribute('aria-controls', list.id);
+    const reset = button('', 'wf-home-editor-reset', () => changed(() => session.reset(), 'resetDone'), 'reset'); reset.id = 'wfHomeCustomizerReset';
+    tools.append(advancedButton, reset);
     const footer = node('footer', 'wf-home-editor-footer');
     status = node('p', 'wf-home-editor-status'); status.id = 'wfHomeCustomizerStatus'; status.setAttribute('role', 'alert'); status.hidden = true;
-    const reset = button('reset', 'wf-home-editor-reset', () => changed(() => session.reset(), 'resetDone'), 'reset'); reset.id = 'wfHomeCustomizerReset';
-    const actions = node('div', 'wf-home-editor-actions'), cancelButton = button('cancel', '', cancel), saveButton = button('save', 'is-primary', save, 'check');
-    cancelButton.id = 'wfHomeCustomizerCancel'; saveButton.id = 'wfHomeCustomizerSave'; actions.append(cancelButton, saveButton); footer.append(status, reset, actions);
+    body.insertBefore(status, body.firstChild);
+    const draftHint = label('p', 'draftHint', 'wf-home-editor-hint'); draftHint.id = 'wfHomeCustomizerDraftHint';
+    const actions = node('div', 'wf-home-editor-actions'), cancelButton = button('cancel', '', cancel), saveButton = button('save', 'is-primary', save);
+    cancelButton.id = 'wfHomeCustomizerCancel'; saveButton.id = 'wfHomeCustomizerSave'; actions.append(cancelButton, saveButton); footer.append(tools, draftHint, actions);
     live = node('p', 'wf-home-editor-live'); live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'polite'); live.setAttribute('aria-atomic', 'true');
-    dialog.append(header, body, footer, live); document.body.append(dialog);
-    dialog.addEventListener('cancel', event => { event.preventDefault(); cancel(); });
-    dialog.addEventListener('close', () => { if (!dialog.open) finish(); });
-    dialog.addEventListener('click', event => {
+    panel.append(header, body, footer, live);
+    dock = window.WFHomeDock.create({panel, onOpen: begin, onClose: finish}); editButton = dock.trigger;
+    editButton.setAttribute('aria-haspopup', 'dialog');
+    panel.addEventListener('click', event => {
       if (Date.now() < suppressClickUntil && event.detail !== 0) { event.preventDefault(); event.stopImmediatePropagation(); }
     }, true);
     window.addEventListener('pointermove', pointerMove, {passive: false});
@@ -401,7 +399,7 @@
     new MutationObserver(translate).observe(document.documentElement, {attributes: true, attributeFilter: ['lang']});
     return true;
   }
-  window.WFHomeCustomizer = {open, close: cancel, isOpen: () => !!dialog?.open};
+  window.WFHomeCustomizer = {open, close: cancel, isOpen: () => !!dock?.isOpen()};
   document.addEventListener('wf-home-layout-edit', open);
   window.addEventListener('wf-home-layout-ready', mount);
   window.addEventListener('wf-home-layout-change', event => { if (mounted && event.detail?.prefs) counter(event.detail.prefs); });
