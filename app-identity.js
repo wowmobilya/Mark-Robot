@@ -165,6 +165,7 @@
     panel.setAttribute('aria-busy', String(busy || fileLoading));
     installButton.disabled = dirty || busy || fileLoading || !!capability.preparing || !capability.canInstall;
     downloadButton.disabled = dirty || busy || fileLoading || !!capability.preparing || !capability.canDownloadIcon;
+    window.dispatchEvent(new CustomEvent('wf-settings-actions-change'));
   }
   function syncPreview() {
     const media = sources(draft); setImage(logoPreview, media.logo); setImage(iconPreview, media.icon);
@@ -175,6 +176,14 @@
   function changeDraft() { dirty = true; announce('unsaved'); syncPreview(); }
   function cancelUpload() { uploadRevision++; fileLoading = false; logoInput.value = ''; iconInput.value = ''; }
   function reloadDraft() { if (busy) return; cancelUpload(); draft = manager.current(); nameInput.value = draft.name; dirty = false; syncPreview(); }
+  function getSettingsActions() {
+    if (!document.getElementById('page-settings')?.classList.contains('active') || panel.hidden || panel.style.display === 'none') return null;
+    const host = document.getElementById('wfSettingsDialog');
+    if (host && !host.open) return null;
+    const stored = manager.current(), values = {...draft, name: cleanName(nameInput.value)};
+    const changed = ['name', 'logo', 'installIcon', 'installIconMode'].some(key => values[key] !== stored[key]);
+    return {key: 'app-identity', scope: panel, save, cancel: discard, dirty: changed, busy: busy || fileLoading};
+  }
   function sameSource(img, source) { try { return img.src === new URL(source, document.baseURI).href; } catch (_) { return false; } }
   function setImage(img, source) { if (!sameSource(img, source)) img.src = source; }
   async function readImage(file, square) {
@@ -247,7 +256,7 @@
   function queueApply() { if (queued) return; queued = true; queueMicrotask(() => { queued = false; apply(); }); }
   function translate() { textNodes.forEach(([el, key]) => { el.textContent = t(key); }); if (statusKey) announce(statusKey, statusError); }
   function hook(name, after) { const original = window[name]; if (typeof original === 'function') window[name] = function (...args) { const result = original.apply(this, args); after(...args); return result; }; }
-  window.WFAppIdentity = { apply, current: () => manager.current(), sources: () => sources(manager.current()) };
+  window.WFAppIdentity = { apply, current: () => manager.current(), sources: () => sources(manager.current()), getSettingsActions };
   hook('switchTab', key => { panel.style.display = key === 'app-identity' ? 'block' : 'none'; tab.classList.toggle('active', key === 'app-identity'); if (key === 'app-identity' && !dirty) reloadDraft(); });
   // init() calls applyTr only after loading settings/main. Do not reset a
   // returning device's installation manifest from the initial empty defaults.

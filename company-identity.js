@@ -146,6 +146,7 @@
   const company = byId('stab-company'), bank = byId('stab-bank'), branding = byId('wfBrandingSettings');
   if (!company || !bank || !branding) return;
   const settingsPage = byId('page-settings'), parentDialog = byId('wfSettingsDialog');
+  const settingsSaveButton = parentDialog?.querySelector('button[onclick="saveSettings()"]') || settingsPage.querySelector('button[onclick="saveSettings()"]');
   const lang = () => document.documentElement.lang || 'ar';
   const node = (tag, cls) => { const el = document.createElement(tag); if (cls) el.className = cls; return el; };
   const labels = [];
@@ -267,11 +268,13 @@
     const img = node('img'); img.alt = ''; img.src = src; logoPreview.replaceChildren(img);
   }
   function busy() { return writing || uploading; }
+  function notifyActions() { window.dispatchEvent(new CustomEvent('wf-settings-actions-change')); }
   function syncBusy() {
     back.disabled = cancel.disabled = saveButton.disabled = busy();
     editorBody.inert = busy();
     editor.setAttribute('aria-busy', String(busy()));
     saveButton.querySelector('span').textContent = word(writing ? 'saving' : 'save', lang());
+    notifyActions();
   }
   function deletePending(key) { pending.delete(key); uploading = pending.size > 0; syncBusy(); }
   async function upload(key, input) {
@@ -448,12 +451,43 @@
     }
     writing = true;
     const content = parentDialog.querySelector('.wf-settings-content'); if (content) content.inert = true;
+    notifyActions();
     try {
       await persist(patch); Object.assign(baseline, valuesFor(section));
       if (patch.manualUsdTry > 0) S.usdTry = patch.manualUsdTry;
       if (patch.manualUsdEur > 0) S.usdEur = patch.manualUsdEur;
       updateRateUI(); updateKdvDisplay(); parentDialog.close(); showToast(t('settings_saved'), 'ok'); return true;
-    } finally { writing = false; if (content) content.inert = false; }
+    } finally { writing = false; if (content) content.inert = false; notifyActions(); }
+  }
+  function cancelFields(section) {
+    if (busy() || activeSession || !parentDialog?.open || !settingsPage.classList.contains('active')) return false;
+    const selected = document.querySelector('#page-settings .tab-btn.active')?.id?.replace('wf-settings-tab-', '');
+    if (selected !== section) return false;
+    for (const key of fields[section] || []) {
+      const input = byId(idOf(key));
+      if (input && key in baseline) input.value = baseline[key];
+    }
+    window.WFAppUpdates?.markClean(byId('stab-' + section));
+    notifyActions();
+    return true;
+  }
+  function getSettingsActions() {
+    if (!settingsPage.classList.contains('active') || !parentDialog?.open) return null;
+    if (activeSession) {
+      if (editor.hidden || company.hidden || company.style.display === 'none') return null;
+      const session = activeSession;
+      return { key: 'company:' + session.key, scope: editor, save: saveButton, cancel,
+        dirty: Object.keys(sectionChanges(session.key, session.values, sectionValues(session.key, session.values))).length > 0,
+        busy: busy() };
+    }
+    const section = document.querySelector('#page-settings .tab-btn.active')?.id?.replace('wf-settings-tab-', '');
+    if (!['bank', 'invoice', 'currency'].includes(section) || !settingsSaveButton) return null;
+    const scope = byId('stab-' + section);
+    if (!scope || scope.hidden || scope.style.display === 'none') return null;
+    let dirty;
+    try { dirty = Object.keys(fieldChanges(section, baseline, valuesFor(section))).length > 0; }
+    catch (_) { dirty = true; }
+    return { key: 'company:' + section, scope, save: settingsSaveButton, cancel: () => cancelFields(section), dirty, busy: busy() };
   }
   function translate() {
     // Translation can rebuild other settings labels/controls. Finish the local
@@ -463,7 +497,7 @@
     syncBusy();
   }
   new MutationObserver(translate).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
-  window.WFCompanyIdentity = { ...api, save };
+  window.WFCompanyIdentity = { ...api, save, getSettingsActions };
   load();
   document.addEventListener('DOMContentLoaded', () => {
     window.WFAppUpdates?.registerGuard('company-settings', () => {

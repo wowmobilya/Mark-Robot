@@ -410,6 +410,36 @@
     });
     document.getElementById('wf-settings-tab-currency')?.addEventListener('click',()=>{if(!busy){view='picker';render();}});
     new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+    function discardChoice() {
+      if(busy)return;
+      const saved=normalizeSource(S.rateSource);
+      selected=saved?.id||'market';selectedSide=saved?.side||sides(selected)[0];
+      selectedMode=saved?.mode||modes(selected,selectedSide)[0];
+      clearManualFields();fields.url.value=saved?.url||'';result='';view='picker';render();
+      list.querySelector('[data-fx-provider="'+selected+'"]')?.focus({preventScroll:true});
+    }
+    function choiceChanged() {
+      const saved=normalizeSource(S.rateSource);
+      if(!saved||saved.id!==selected||saved.side!==selectedSide||saved.mode!==selectedMode)return true;
+      if(['manual','mizan'].includes(selected)){
+        const raw=fields.url.value.trim(),url=safeUrl(raw);
+        if(raw&&!url||(saved.url||'')!==url)return true;
+      }
+      if(selectedMode!=='manual'||!fields.usd.value.trim()&&!fields.eur.value.trim())return false;
+      try {
+        const quote=fromBoard(fields.usd.value,fields.eur.value);
+        return Math.abs(quote.usdTry-S.usdTry)>1e-8||Math.abs(quote.usdEur-S.usdEur)>1e-8;
+      } catch { return true; }
+    }
+    api.getSettingsActions=()=>{
+      if(view!=='details'||!document.getElementById('wfSettingsDialog')?.open||
+          !document.getElementById('page-settings')?.classList.contains('active')||
+          document.querySelector('#page-settings .tab-btn.active')?.id!=='wf-settings-tab-currency')return null;
+      const dirty=choiceChanged();
+      return {key:'currency:'+selected,scope:details,save:submit,cancel:discardChoice,dirty,busy,
+        canSave:dirty||selectedMode==='feed',intent:!dirty&&selectedMode==='feed'?'refresh':'save',
+        error:['invalid','failed','stale','unsaved'].includes(result)};
+    };
     render();
     return {render,setState(state,pending){result=state;busy=pending;render();},open(){root.openSettingsPage();document.querySelector('button[onclick="switchTab(\'currency\')"]')?.click();if(normalizeSource(S.rateSource)?.mode==='manual')selectProvider(S.rateSource.id);}};
   }

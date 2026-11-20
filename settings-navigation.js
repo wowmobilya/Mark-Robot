@@ -62,7 +62,7 @@
  const mobile=matchMedia('(max-width:1024px)');
  function placeNavigation(){
    if (!nav) return;
-   if (dialog.open && mobile.matches) dialog.append(nav);
+   if (dialog.open) dialog.append(nav);
    else if (anchor.nextSibling!==nav) anchor.after(nav);
    const done=dialog.open && actions?.hidden;
    const label=center?.querySelector('.settings-save-label');
@@ -175,9 +175,11 @@
   }
   return result;
  };
- // A class follows actual page visibility, including browser Back/Forward navigation.
- function syncPage(){if(dialog.open && !page.classList.contains('active')) dialog.close();document.documentElement.classList.toggle('wf-settings-open',page.classList.contains('active'));}
+ // The directory retains normal navigation. Save styling belongs only to an
+ // open editor, including when browser Back/Forward changes the active page.
+ function syncPage(){if(dialog.open && !page.classList.contains('active')) dialog.close();document.documentElement.classList.toggle('wf-settings-open',page.classList.contains('active')&&dialog.open);}
  new MutationObserver(syncPage).observe(page,{attributes:true,attributeFilter:['class']});
+ new MutationObserver(syncPage).observe(dialog,{attributes:true,attributeFilter:['open']});
  page.classList.add('wf-settings-inline-ready');syncPage();
 })();
 

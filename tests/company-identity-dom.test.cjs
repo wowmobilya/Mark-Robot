@@ -5,7 +5,7 @@ const tick=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
 // Execute the actual company, branding and colour transactions without browser
 // automation. The parent owns layout/top-layer verification on the live app.
 function fixture(){
-  const observers=[],modalCalls=[],writes=[],images=[],clean=[],toasts=[];let doc,database,writeBarrier,failWrite=false;
+  const observers=[],modalCalls=[],writes=[],images=[],clean=[],toasts=[],actionEvents=[];let doc,database,writeBarrier,failWrite=false;
   class Event{
     constructor(type,options={}){this.type=type;Object.assign(this,options);this.defaultPrevented=false;}
     preventDefault(){this.defaultPrevented=true;}stopPropagation(){this.stopped=true;}stopImmediatePropagation(){this.stopped=true;this.immediate=true;}
@@ -59,6 +59,7 @@ function fixture(){
   const bankTab=make('button','wf-settings-tab-bank',tabs);bankTab.className='tab-btn';
   const invoiceTab=make('button','wf-settings-tab-invoice',tabs);invoiceTab.className='tab-btn';
   const parent=make('dialog','wfSettingsDialog',page),content=make('div','content',parent);content.className='wf-settings-content';
+  const outerSave=make('button','settingsSave',parent);outerSave.setAttribute('onclick','saveSettings()');
   const company=make('section','stab-company',content);company.setAttribute('role','tabpanel');
   const bank=make('section','stab-bank',content);bank.style.display='none';const bankCard=make('div','bankCard',bank);bankCard.className='card';
   const invoice=make('section','stab-invoice',content);invoice.style.display='none';
@@ -68,15 +69,15 @@ function fixture(){
   const stored={id:'main',companyName:'WOW Furniture',address:'Old address',phone:'0123',email:'a@example.test',website:'example.test',mersis:'0001',taxNumber:'0017',taxOffice:'Old office',bankName:'Old bank',beneficiary:'Owner',ibanUSD:'USD',ibanTRY:'TRY',ibanEUR:'EUR',swift:'SWIFT',accountNo:'0012',nextNoExt:5000,logo:'data:image/png;base64,b2xk',signature:'data:image/png;base64,c2lnbg==',stamp:'data:image/png;base64,c3RhbXA=',branding:{logoBackground:'#ffffff',logoShape:'rounded',logoSize:'normal',extension:7}};
   for(const [scope,keys]of [[company,['companyName','address','phone','email','website','mersis']],[bankCard,['bankName','beneficiary','ibanUSD','ibanTRY','ibanEUR','swift','accountNo']],[invoice,['nextNoExt']]])for(const key of keys){const group=make('div','',scope);group.className='fg';const input=make('input','st'+key[0].toUpperCase()+key.slice(1),group);input.value=String(stored[key]);}
   const state={settings:structuredClone(stored)};database=structuredClone(stored);
-  const window={document:doc,WFAppIdentity:{apply(){}},WFAppUpdates:{markClean:node=>clean.push(node.id),registerGuard(){}},getComputedStyle:()=>({color:'rgb(63, 124, 148)'}),loadSettingsToForm(){for(const[key,value]of Object.entries(state.settings)){const input=doc.getElementById('st'+key[0].toUpperCase()+key.slice(1));if(input)input.value=String(value);}},switchTab(key){for(const node of [company,bank,invoice])node.style.display=node.id==='stab-'+key?'block':'none';for(const tab of [companyTab,bankTab,invoiceTab])tab.classList.toggle('active',tab.id==='wf-settings-tab-'+key);}};
-  const context=vm.createContext({window,document:doc,S:state,Event,DEFAULT_WOW_LOGO:'data:image/png;base64,ZGVmYXVsdA==',wfPendingSettingsLogo:undefined,
+  const window={document:doc,dispatchEvent:event=>{actionEvents.push(event.type);return true;},WFAppIdentity:{apply(){}},WFAppUpdates:{markClean:node=>clean.push(node.id),registerGuard(){}},getComputedStyle:()=>({color:'rgb(63, 124, 148)'}),loadSettingsToForm(){for(const[key,value]of Object.entries(state.settings)){const input=doc.getElementById('st'+key[0].toUpperCase()+key.slice(1));if(input)input.value=String(value);}},switchTab(key){for(const node of [company,bank,invoice])node.style.display=node.id==='stab-'+key?'block':'none';for(const tab of [companyTab,bankTab,invoiceTab])tab.classList.toggle('active',tab.id==='wf-settings-tab-'+key);}};
+  const context=vm.createContext({window,document:doc,S:state,Event,CustomEvent:Event,DEFAULT_WOW_LOGO:'data:image/png;base64,ZGVmYXVsdA==',wfPendingSettingsLogo:undefined,
     MutationObserver:class{constructor(callback){this.callback=callback;observers.push(this);}observe(target,options){this.target=target;this.options=options;}disconnect(){this.target=null;}},
     Image:class{constructor(){this.naturalWidth=100;this.naturalHeight=100;}decode(){return new Promise(resolve=>images.push(resolve));}},URL:{createObjectURL:()=> 'blob:test',revokeObjectURL(){}},
     wfWriteBatch:async operations=>{if(writeBarrier)await writeBarrier;if(failWrite)throw Error('storage full');writes.push(operations);database=operations[0].merge(database,operations[0].value);return[database];},wfHydrateDBValue:async row=>row,
     wfRunSave:async(key,action)=>{try{return await action();}catch{return false;}},showToast:(...args)=>toasts.push(args),t:key=>key,updateRateUI(){},updateKdvDisplay(){}});
   vm.runInContext(read('branding-settings.js'),context);vm.runInContext(read('company-identity.js'),context);vm.runInContext(read('color-picker.js'),context);parent.showModal();
   const byId=id=>doc.getElementById(id),dispatch=(node,type,extra={})=>node.dispatchEvent(new Event(type,{bubbles:true,...extra}));
-  return{window,doc,page,parent,company,content,state,context,byId,dispatch,writes,images,modalCalls,clean,toasts,logo,
+  return{window,doc,page,parent,company,content,state,context,byId,dispatch,writes,images,modalCalls,clean,toasts,logo,outerSave,actionEvents,
     flush(target,attributeName){for(const observer of [...observers])if(observer.target===target&&(!observer.options.attributeFilter||observer.options.attributeFilter.includes(attributeName)))observer.callback([{type:'attributes',target,attributeName}]);},
     open(key){byId(key==='bank'?'wfCompanyOpenBank':'wfCompanyOpen-'+key).click();},
     choose(value){const hex=byId('wfColorHex');hex.value=value;dispatch(hex,'input');},
@@ -136,4 +137,48 @@ test('failed saves keep the inline draft for retry and an already requested save
   assert.equal(await f.window.WFCompanyIdentity.save(),false);assert.equal(f.byId('wfCompanySectionDialog').hidden,false);assert.equal(f.byId('stBankName').value,'New bank');assert.equal(f.state.settings.bankName,'Old bank');
   f.failWrite=false;f.blockWrite();const saving=f.window.WFCompanyIdentity.save();f.parent.close();assert.equal(f.byId('wfCompanySectionDialog').hidden,true);f.releaseWrite();assert.equal(await saving,true);
   assert.equal(f.parent.open,false);assert.equal(f.byId('wfCompanySectionDialog').hidden,true);assert.equal(f.state.settings.bankName,'New bank');assert.equal(f.byId('stBankName').value,'New bank');assert.equal(f.writes.length,1);
+});
+
+test('company bottom-menu actions follow only the active draft and original transaction buttons',()=>{
+  const f=fixture(),api=f.window.WFCompanyIdentity;
+  assert.equal(typeof api.getSettingsActions,'function');
+  assert.equal(api.getSettingsActions(),null,'the company hub has no editable selection');
+  f.open('basic');let actions=api.getSettingsActions();
+  assert.equal(actions.key,'company:basic');assert.equal(actions.scope,f.byId('wfCompanySectionDialog'));
+  assert.equal(actions.save,f.byId('wfCompanySectionSave'));assert.equal(actions.cancel,f.byId('wfCompanySectionCancel'));
+  assert.equal(actions.dirty,false);assert.equal(actions.busy,false);
+  f.byId('stCompanyName').value='New name';assert.equal(api.getSettingsActions().dirty,true);
+  f.byId('stCompanyName').value='WOW Furniture';assert.equal(api.getSettingsActions().dirty,false);
+  actions.cancel.click();f.open('marks');f.byId('wfCompanyFile-stamp-clear').click();
+  assert.equal(api.getSettingsActions().dirty,true,'removing artwork is a pending change');
+  api.getSettingsActions().cancel.click();assert.equal(api.getSettingsActions(),null);
+  assert.equal(f.state.settings.stamp,'data:image/png;base64,c3RhbXA=');
+  f.page.classList.remove('active');assert.equal(api.getSettingsActions(),null);
+});
+
+test('invoice action cancellation restores its own baseline without discarding another section draft',()=>{
+  const f=fixture(),api=f.window.WFCompanyIdentity;
+  assert.equal(typeof api.getSettingsActions,'function');
+  f.window.switchTab('invoice');const actions=api.getSettingsActions();
+  assert.equal(actions.key,'company:invoice');assert.equal(actions.save,f.outerSave);
+  f.byId('stNextNoExt').value='7000';f.byId('stCompanyName').value='Keep this separate draft';
+  assert.equal(api.getSettingsActions().dirty,true);assert.equal(actions.cancel(),true);
+  assert.equal(f.byId('stNextNoExt').value,'5000');assert.equal(f.byId('stCompanyName').value,'Keep this separate draft');
+  assert.equal(api.getSettingsActions().dirty,false);assert.equal(f.parent.open,true);assert.equal(f.writes.length,0);
+  assert(f.actionEvents.includes('wf-settings-actions-change'));
+  f.parent.close();assert.equal(api.getSettingsActions(),null);
+});
+
+test('company action state blocks cancellation while saving and restores retry after failure',async()=>{
+  const f=fixture(),api=f.window.WFCompanyIdentity;
+  assert.equal(typeof api.getSettingsActions,'function');
+  f.open('basic');f.byId('stCompanyName').value='Pending company';f.blockWrite();f.failWrite=true;
+  const saving=api.save();let actions=api.getSettingsActions();
+  assert.equal(actions.busy,true);assert.equal(actions.save.disabled,true);assert.equal(actions.cancel.disabled,true);
+  actions.cancel.click();assert.equal(f.byId('wfCompanySectionDialog').hidden,false);
+  f.releaseWrite();assert.equal(await saving,false);actions=api.getSettingsActions();
+  assert.equal(actions.busy,false);assert.equal(actions.dirty,true);assert.equal(actions.save.disabled,false);
+  assert.equal(f.state.settings.companyName,'WOW Furniture');
+  f.failWrite=false;assert.equal(await api.save(),true);assert.equal(api.getSettingsActions(),null);
+  assert.equal(f.state.settings.companyName,'Pending company');
 });

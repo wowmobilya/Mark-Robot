@@ -570,6 +570,9 @@
     return Math.max(0,window.scrollY||0,document.scrollingElement?.scrollTop||0,main?.scrollTop||0,active?.scrollTop||0);
   };
   function syncHome(){
+    // The existing center button belongs to the active settings editor while
+    // its dock is mounted there. Scrolling must not replace Save with Home.
+    if(home?.closest?.('.wf-settings-dock'))return;
     // The bottom HOME button itself changes, across every screen, not just Dashboard.
     const scrolled=scrollAmount()>90;
     if(homeIcon){

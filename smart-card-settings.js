@@ -68,8 +68,10 @@
     queue = result.catch(() => {});
     return result;
   }
+  function notifyActions() { window.dispatchEvent(new CustomEvent('wf-settings-actions-change')); }
   function publish(prefs,resetFace = true) {
     window.dispatchEvent(new CustomEvent('wf-smart-card-change',{detail:{prefs,resetFace}}));
+    notifyActions();
   }
   function sync() {
     const prefs = current(), signature = JSON.stringify(prefs);
@@ -144,14 +146,21 @@
     if (!draft || writing) return;
     const changes = Object.fromEntries(Object.entries(draft).filter(([key,val])=>JSON.stringify(val)!==JSON.stringify(baseline[key])));
     writing=true; form.disabled=true;
+    notifyActions();
     try {
       if (Object.keys(changes).length) await saveChanges(changes);
       revision=JSON.stringify(current());
       draft=null; publish(current()); byId('wfSettingsDialog')?.close(); window.showToast?.(t('saved'),'ok');
     } catch (_) { status.textContent=t('error'); }
-    finally { writing=false; form.disabled=false; }
+    finally { writing=false; form.disabled=false; notifyActions(); }
   });
   actions.append(cancel,save); form.append(actions,status);
+  window.WFSmartCardSettings.getSettingsActions = () => {
+    const page = byId('page-settings'), dialog = byId('wfSettingsDialog');
+    if (!page.classList.contains('active') || panel.hidden || panel.style.display === 'none' || !draft || (dialog && !dialog.open)) return null;
+    return { key: 'smart-card', scope: panel, save, cancel,
+      dirty: JSON.stringify(baseline) !== JSON.stringify(draft), busy: writing };
+  };
   function change(changes) {
     draft=normalize({...draft,...changes},legacy); previewPage=draft.initial;
     status.textContent=''; draw(); publish(draft);
@@ -196,6 +205,7 @@
     panel.style.display=key==='smart-card'?'block':'none';
     if (key==='smart-card') {
       if(!draft){baseline=current(); draft=normalize(baseline,legacy); previewPage=draft.initial; status.textContent=''; draw();}
+      notifyActions();
     } else discard();
     return result;
   };

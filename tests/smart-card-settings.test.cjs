@@ -47,6 +47,72 @@ test('saving merges just edited fields into the current database row and leaves 
   assert.equal(state.settings.smartCard,saved);
 });
 
+function settingsFixture() {
+  const nodes=[],published=[],notifications=[];let stored={id:'main',companyName:'Keep company',smartCard:normalize()},barrier,failWrite=false;
+  class Element {
+    constructor(tag='div') { this.tagName=tag.toUpperCase();this.children=[];this.events={};this.dataset={};this.style={};this.attrs={};this.disabled=false;this.hidden=false;this.value='';this.classes=new Set();this.classList={contains:key=>this.classes.has(key),add:key=>this.classes.add(key),remove:key=>this.classes.delete(key)};nodes.push(this); }
+    append(...values) { for(const child of values){child.remove?.();this.children.push(child);child.parentNode=this;} }
+    remove() { if(this.parentNode){const siblings=this.parentNode.children;siblings.splice(siblings.indexOf(this),1);this.parentNode=null;} }
+    insertBefore(child,before) { child.remove();const at=this.children.indexOf(before);this.children.splice(at<0?this.children.length:at,0,child);child.parentNode=this; }
+    replaceChildren(...values) { for(const child of this.children)child.parentNode=null;this.children=[];this.append(...values); }
+    contains(child) { for(let node=child;node;node=node.parentNode)if(node===this)return true;return false; }
+    setAttribute(key,value) { this.attrs[key]=String(value); }
+    getAttribute(key) { return this.attrs[key]??null; }
+    querySelector(selector) { return this.map?.[selector]||null; }
+    addEventListener(type,callback) { (this.events[type]??=[]).push(callback); }
+    dispatchEvent(event) { this['on'+event.type]?.(event);return Promise.all((this.events[event.type]||[]).map(callback=>callback(event))); }
+    click() { for(let node=this;node;node=node.parentNode)if(node.disabled&&(node===this||node.tagName==='FIELDSET'))return Promise.resolve();return this.dispatchEvent({type:'click',target:this}); }
+    close() { if(this.open){this.open=false;this.dispatchEvent({type:'close'});} }
+    focus() { document.activeElement=this; }
+    get options() { return this.children; }
+  }
+  const document=new Element('document'),window=new Element('window'),root=new Element('html');root.lang='en';document.documentElement=root;document.activeElement=root;
+  const page=new Element('section');page.id='page-settings';page.classes.add('active');
+  const workspace=new Element(),tabs=new Element(),content=new Element();page.map={'.wf-settings-workspace':workspace};workspace.map={'.tabs':tabs,'.wf-settings-content':content};page.append(workspace);workspace.append(tabs,content);
+  const dialog=new Element('dialog');dialog.id='wfSettingsDialog';dialog.open=true;page.append(dialog);
+  document.getElementById=id=>nodes.find(node=>node.id===id)||null;document.createElement=tag=>new Element(tag);
+  window.switchTab=()=>{};window.updateDash=()=>{};window.showToast=()=>{};
+  window.addEventListener('wf-smart-card-change',event=>published.push(event.detail.prefs));
+  window.addEventListener('wf-settings-actions-change',event=>notifications.push(event.type));
+  const state={settings:structuredClone(stored)};
+  class CustomEvent { constructor(type,options={}){this.type=type;this.detail=options.detail;} }
+  vm.runInNewContext(fs.readFileSync(require.resolve('../smart-card-settings.js'),'utf8'),{
+    window,document,S:state,CustomEvent,Intl,localStorage:{getItem:()=>null},MutationObserver:class{observe(){}},
+    wfWriteBatch:async([operation])=>{await barrier;if(failWrite)throw Error('Storage full');stored=operation.merge(stored,operation.value);return[stored];},wfHydrateDBValue:async value=>value
+  });
+  document.dispatchEvent({type:'DOMContentLoaded'});
+  return {nodes,page,dialog,window,state,published,notifications,
+    get stored(){return stored;},set failWrite(value){failWrite=value;},
+    blockWrite(){barrier=new Promise(resolve=>{this.releaseWrite=()=>{barrier=null;resolve();};});}};
+}
+
+test('smart-card actions detect reorder changes and Cancel restores the saved live preview',async()=>{
+  const f=settingsFixture(),api=f.window.WFSmartCardSettings;
+  assert.equal(typeof api.getSettingsActions,'function');assert.equal(api.getSettingsActions(),null);
+  f.window.switchTab('smart-card');let actions=api.getSettingsActions();
+  assert.equal(actions.key,'smart-card');assert.equal(actions.scope.id,'stab-smart-card');assert.equal(actions.dirty,false);
+  const firstRow=f.nodes.find(node=>node.dataset.page==='greetingCard');
+  firstRow.children[2].onclick();assert.equal(api.getSettingsActions().dirty,true);
+  firstRow.children[1].onclick();assert.equal(api.getSettingsActions().dirty,false);
+  firstRow.children[2].onclick();assert.equal(f.published.at(-1).order[0],'tipCardStandalone');
+  await actions.cancel.click();assert.equal(api.getSettingsActions(),null);assert.equal(f.dialog.open,false);
+  assert.equal(f.published.at(-1).order[0],'greetingCard');assert.equal(f.state.settings.smartCard.order[0],'greetingCard');
+  assert(f.notifications.length>0);
+});
+
+test('smart-card pending and failed saves retain their own dirty state and original controls',async()=>{
+  const f=settingsFixture(),api=f.window.WFSmartCardSettings;
+  assert.equal(typeof api.getSettingsActions,'function');f.window.switchTab('smart-card');
+  const firstRow=f.nodes.find(node=>node.dataset.page==='greetingCard');firstRow.children[2].onclick();
+  f.blockWrite();f.failWrite=true;const actions=api.getSettingsActions(),saving=actions.save.click();
+  assert.equal(api.getSettingsActions().busy,true);await actions.cancel.click();assert.equal(f.dialog.open,true);
+  f.releaseWrite();await saving;
+  assert.equal(api.getSettingsActions().busy,false);assert.equal(api.getSettingsActions().dirty,true);
+  assert.equal(f.state.settings.smartCard.order[0],'greetingCard');assert(f.nodes.find(node=>node.className==='wf-smart-settings-status').textContent);
+  f.failWrite=false;await api.getSettingsActions().save.click();
+  assert.equal(api.getSettingsActions(),null);assert.equal(f.state.settings.smartCard.order[0],'tipCardStandalone');assert.equal(f.stored.companyName,'Keep company');
+});
+
 test('the live carousel uses configured visibility, order, keyboard controls, and rotation time without detaching the robot',()=>{
   class Node extends EventTarget {
     constructor(id='') {

@@ -1,0 +1,319 @@
+/* Settings reuses the original smart menu at every viewport width. All action
+   styling ends when the controller returns that menu to its normal location. */
+@media screen {
+  html body #mainContent #page-settings #wfSettingsDialog.wf-settings-actions-ready {
+    inset: var(--wf-settings-viewport-top, 0px) 0 auto !important;
+    inline-size: 100% !important;
+    max-inline-size: none !important;
+    block-size: var(--wf-settings-viewport-height, 100dvh) !important;
+    min-block-size: 0 !important;
+    max-block-size: none !important;
+    margin: 0 !important;
+    overflow: hidden;
+  }
+
+  html body #wfSettingsDialog.wf-settings-actions-ready > footer,
+  html body #wfSettingsDialog.wf-settings-actions-ready [data-wf-docked-action],
+  html body #wfSettingsDialog.wf-settings-actions-ready [data-wf-docked-row],
+  html:has(#wfSettingsDialog.wf-settings-actions-ready) body #wf-settings-save-footer {
+    display: none !important;
+  }
+
+  html body #mainContent #page-settings #wfSettingsDialog.wf-settings-actions-ready > .wf-settings-content {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    min-inline-size: 0;
+    overflow: auto;
+    scroll-padding-block: 16px;
+  }
+  html body #wfSettingsDialog.wf-settings-actions-ready .wf-settings-content :is(input, select, textarea, button, [tabindex]) {
+    scroll-margin-block: 16px;
+  }
+
+  /* The first row retains the original 64px menu geometry. Its status occupies
+     one integrated second row, above the device's bottom safe area. Symmetric
+     side clearance keeps the Save slot and carved surface exactly centered. */
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock {
+    position: relative !important;
+    inset: auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: 64px minmax(20px, auto);
+    align-items: stretch;
+    justify-content: stretch;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    width: 100% !important;
+    inline-size: 100% !important;
+    min-inline-size: 0;
+    max-width: none !important;
+    max-inline-size: none !important;
+    height: auto !important;
+    block-size: auto !important;
+    min-block-size: calc(84px + env(safe-area-inset-bottom, 0px));
+    margin: 30px 0 0 !important;
+    padding: 0 max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) !important;
+    gap: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--text2);
+    box-shadow: none !important;
+    filter: none !important;
+    isolation: isolate;
+    overflow: visible !important;
+    direction: ltr !important;
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
+    z-index: 700;
+  }
+
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock::before,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bottom-nav-curve,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-dot,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .settings-save-label,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .wf-task-action {
+    display: none !important;
+  }
+
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bottom-nav-bg {
+    position: absolute;
+    inset: 0;
+    display: block !important;
+    z-index: -1;
+    pointer-events: none;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: drop-shadow(0 -2px 12px rgb(18 42 55 / 6%)) !important;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bottom-nav-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--card);
+    -webkit-mask: var(--wf-dock-cutout) center top / 10000px 160px no-repeat;
+    mask: var(--wf-dock-cutout) center top / 10000px 160px no-repeat;
+  }
+  html[data-theme="dark"] body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bottom-nav-bg {
+    filter: drop-shadow(0 -2px 12px rgb(0 0 0 / 15%)) !important;
+  }
+
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-btn {
+    position: relative;
+    display: flex !important;
+    grid-row: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center !important;
+    box-sizing: border-box;
+    min-width: 0;
+    min-inline-size: 0;
+    width: 100%;
+    inline-size: 100%;
+    min-block-size: 44px;
+    margin: 0;
+    padding: 2px !important;
+    gap: 3px !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    color: var(--text2) !important;
+    box-shadow: none !important;
+    filter: none !important;
+    text-shadow: none !important;
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    direction: ltr !important;
+    z-index: 5;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnav-0 { grid-column: 1; }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnav-2 { grid-column: 3; }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnav-4 { grid-column: 5; }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock :is(#bnav-1, #bnav-3),
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-btn[hidden],
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock[data-settings-editable="false"] #bnav-4 {
+    display: none !important;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-btn::before,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-icon::before {
+    content: none !important;
+    display: none !important;
+  }
+  /* The raised portion of the central circle shares its original button's
+     hit target instead of becoming a second interactive control. */
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnav-2::after {
+    content: "";
+    position: absolute;
+    inset-block-start: -24px;
+    inset-inline: 0;
+    block-size: 24px;
+  }
+
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: 0 0 28px;
+    width: 32px !important;
+    height: 28px !important;
+    color: var(--text2) !important;
+    font-size: 21px !important;
+    line-height: 1;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-icon svg {
+    width: 22px;
+    height: 22px;
+    color: inherit;
+    stroke: currentColor;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnav-2 .bnav-icon {
+    opacity: 0 !important;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-label:not(.settings-save-label) {
+    display: block !important;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    color: var(--text2) !important;
+    font-family: inherit;
+    font-size: 11px !important;
+    font-weight: 650 !important;
+    line-height: 1.2;
+    letter-spacing: 0;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    text-align: center !important;
+    unicode-bidi: plaintext;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnav-2 .bnav-label:not(.settings-save-label) {
+    width: max-content;
+    inline-size: max-content;
+    max-width: calc(300% - 16px);
+    max-inline-size: calc(300% - 16px);
+    white-space: nowrap !important;
+    overflow-wrap: normal;
+    color: var(--ui-accent, var(--brand-primary)) !important;
+    font-weight: 800 !important;
+  }
+
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnavCircle {
+    position: absolute;
+    top: -23px;
+    left: calc(50% - 24px) !important;
+    right: auto !important;
+    display: grid !important;
+    place-items: center;
+    box-sizing: border-box;
+    width: 48px;
+    height: 48px;
+    max-width: 48px;
+    border: 0 !important;
+    border-radius: 50%;
+    outline: 0 !important;
+    background: var(--brand-primary) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+    filter: none !important;
+    pointer-events: none;
+    transform: none !important;
+    transition: opacity .16s ease !important;
+    z-index: 6;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnavCircle::before,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnavCircle::after,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnavCircleIcon::after {
+    content: none !important;
+    display: none !important;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnavCircleIcon {
+    display: grid;
+    place-items: center;
+    color: #fff !important;
+    font-size: 0;
+    line-height: 1;
+    filter: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnavCircleIcon > *,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock #bnavCircleIcon svg {
+    display: block !important;
+    width: 23px;
+    height: 23px;
+    color: #fff !important;
+    stroke: currentColor !important;
+  }
+
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .wf-settings-dock-status {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: center;
+    box-sizing: border-box;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    margin: 0;
+    padding: 0 8px 4px;
+    color: var(--text2);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.3;
+    text-align: center;
+    overflow-wrap: anywhere;
+    unicode-bidi: plaintext;
+    z-index: 5;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .wf-settings-dock-status:empty {
+    visibility: hidden;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock[data-settings-state="saved"] .wf-settings-dock-status {
+    color: var(--ui-accent, var(--brand-primary));
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-btn:disabled,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-btn[aria-disabled="true"] {
+    opacity: .48;
+    cursor: default;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock:has(#bnav-2:disabled) #bnavCircle,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock:has(#bnav-2[aria-disabled="true"]) #bnavCircle {
+    opacity: .48;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock[data-settings-state="busy"] .bnav-btn {
+    cursor: progress;
+  }
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock .bnav-btn:focus-visible {
+    outline: 2px solid var(--brand-primary) !important;
+    outline-offset: -3px !important;
+  }
+
+  html[data-wf-motion="reduced"] body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock *,
+  html[data-wf-motion="reduced"] body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock *::before,
+  html[data-wf-motion="reduced"] body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock *,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock *::before,
+  html:root body #wfSettingsDialog.wf-settings-actions-ready > #bottomNav.wf-settings-dock *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media print {
+  #bottomNav.wf-settings-dock { display: none !important; }
+}

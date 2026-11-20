@@ -100,6 +100,8 @@
     tag:'<path d="M3 3h8l10 10-8 8L3 11Z"/><circle cx="7" cy="7" r="1"/>',
     menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
     cancel:'<path d="m6 6 12 12M18 6 6 18"/>',
+    check:'<path d="m5 12 4 4L19 6"/>',
+    loading:'<path d="M20 12a8 8 0 1 1-8-8"/>',
     settings:'<circle cx="12" cy="12" r="3"/><path d="M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z"/>'
   };
   const t=key=>(words[key]||[key])[Math.max(0,localeOrder.indexOf(root.lang))]||words[key]?.[1]||key;
@@ -116,7 +118,7 @@
   const search=id=>control('.wf-search-toggle[aria-controls="'+id+'"]','search','search');
   const save=selector=>control(selector,'save','save');
   const choice=(fn,type,label,icon)=>control('[onclick="'+fn+'(\''+type+'\',event)"]',label,icon);
-  let currentPage=null,currentKey='',slots=[],activeIndex=2,queued=false,ariaQueued=false,lastVisual='';
+  let currentPage=null,currentKey='',slots=[],activeIndex=2,queued=false,ariaQueued=false,lastVisual='',centerRestore=null;
 
   function isVisible(element){
     if(!element || element.hidden || !element.getClientRects().length || element.closest('[hidden],[inert]'))return false;
@@ -132,6 +134,15 @@
   }
   function configuration(page){
     const key=page?.id.slice(5)||'dashboard';
+    if(key==='settings'&&window.WFSettingsActions?.getState){
+      const state=window.WFSettingsActions.getState();
+      if(state.open){
+        const action=(name,text,icon)=>({kind:'settings',name,label:name,text,icon});
+        return {active:2,items:[state.editable?action('back',state.backLabel,'back'):null,null,
+          action('primary',state.primaryLabel,state.primaryIcon),null,
+          state.editable?action('cancel',state.cancelLabel,'cancel'):null]};
+      }
+    }
     const list={
       dashboard:{active:2,items:[clients(),products(),home(),invoices(),scan()]},
       companies:{active:0,items:[clients(),route('select-client-type','addClient','plus'),home(),control('[onclick="wfOpenStatement()"]','statement','statement'),search('coSearch')]},
@@ -164,6 +175,7 @@
     return list[key]||{active:2,items:[back(),null,home(),null,{kind:'function',name:'wfToggleDesktopSidebar',label:'menu',icon:'menu'}]};
   }
   function caption(action){
+    if(action.text)return action.text;
     if(action.label==='home'&&root.classList.contains('wf-home-scroll-top'))return t('top');
     return t(action.label)+(action.suffix?' '+action.suffix:'');
   }
@@ -173,6 +185,7 @@
   }
   function available(action){
     if(!action)return false;
+    if(action.kind==='settings')return window.WFSettingsActions?.canRun(action.name)===true;
     if(action.kind==='route')return !!document.getElementById('page-'+action.page);
     if(action.kind==='function')return typeof window[action.name]==='function';
     const target=targetFor(action);
@@ -188,8 +201,17 @@
     // The older Home controller runs on every scroll/resize. While this button
     // is inside Settings, its actual action and accessible name are Save/Close.
     // Leave the original Save handler's own navigation behavior untouched.
-    const settings=document.querySelector('.page.active')?.id==='page-settings';
+    const settings=document.querySelector('.page.active')?.id==='page-settings'&&
+      (!window.WFSettingsActions||window.WFSettingsActions.getState().open);
     const center=buttons[2],homeLabel=center.querySelector('.bnav-label:not(.settings-save-label)'),settingsLabel=center.querySelector('.settings-save-label');
+    if(settings&&window.WFSettingsActions?.getState().open){
+      homeLabel?.removeAttribute('aria-hidden');
+      settingsLabel?.setAttribute('aria-hidden','true');
+      const label=caption(slots[2]);
+      if(center.getAttribute('aria-label')!==label)center.setAttribute('aria-label',label);
+      if(center.title!==label)center.title=label;
+      return;
+    }
     if(homeLabel){if(settings)homeLabel.setAttribute('aria-hidden','true');else homeLabel.removeAttribute('aria-hidden');}
     if(settingsLabel){if(settings)settingsLabel.removeAttribute('aria-hidden');else settingsLabel.setAttribute('aria-hidden','true');}
     if(settings){
@@ -220,7 +242,8 @@
   }
   function run(action){
     if(!available(action))return;
-    if(action.kind==='route'){
+    if(action.kind==='settings')window.WFSettingsActions.run(action.name);
+    else if(action.kind==='route'){
       if(action.page===currentKey || action.page==='dashboard'&&scrollAmount()>90)scrollToTop();
       else window.showPage(action.page);
     }else if(action.kind==='function')window[action.name]();
@@ -248,7 +271,11 @@
     if(index<0)return;
     event.preventDefault();event.stopImmediatePropagation();
     if(blockingModal())return;
-    if(currentKey==='settings'){
+    if(currentKey==='settings'&&(!window.WFSettingsActions||window.WFSettingsActions.getState().open)){
+      if(window.WFSettingsActions?.getState().open){
+        if(!button.disabled)run(slots[index]);
+        return;
+      }
       if(index!==2)return;
       const dialog=document.getElementById('wfSettingsDialog');
       if(!dialog?.open)return;
@@ -275,35 +302,41 @@
     if(page!==currentPage){
       activeObserver.disconnect();currentPage=page;
       activeObserver.observe(page,{subtree:true,childList:true,attributes:true,
-        attributeFilter:['style','class','hidden','disabled','aria-busy','aria-pressed']});
+        attributeFilter:['style','class','hidden','disabled','aria-busy','aria-disabled','aria-pressed']});
     }
     currentKey=page.id.slice(5);
     const config=configuration(page);
     slots=config.items;activeIndex=config.active;
-    nav.dataset.taskMode=currentKey==='settings'?'settings':'context';
+    const settings=currentKey==='settings'&&(!window.WFSettingsActions||window.WFSettingsActions.getState().open);
+    nav.dataset.taskMode=settings?'settings':'context';
     nav.dataset.section=currentKey;
     nav.classList.remove('wf-nav-secondary');
     nav.setAttribute('aria-label',t('navigation'));
     const visual=[currentKey,root.lang,root.dir,activeIndex,root.classList.contains('wf-home-scroll-top'),
-      ...slots.map(action=>action&&[action.kind,action.label,action.icon,action.selector,action.suffix].join(':'))].join('|');
+      ...slots.map(action=>action&&[action.kind,action.label,action.text,action.icon,action.selector,action.suffix].join(':'))].join('|');
     buttons.forEach((button,i)=>{
       const action=slots[i];button.hidden=!action;
       if(!action)return;
       const label=button.querySelector('.bnav-label:not(.settings-save-label)'),icon=button.querySelector('.bnav-icon');
       if(label){label.removeAttribute('data-i18n');if(label.textContent!==caption(action))label.textContent=caption(action);}
+      if(i===2&&icon){
+        if(action.kind==='settings'&&centerRestore===null)centerRestore=icon.innerHTML;
+        else if(action.kind!=='settings'&&centerRestore!==null){
+          icon.innerHTML=centerRestore;centerRestore=null;delete icon.dataset.wfContextIcon;
+        }
+      }
       // Home's icon is owned by the existing page-aware scroll-to-top controller.
-      if(icon&&i!==2){
+      if(icon&&(i!==2||action.kind==='settings')){
         icon.removeAttribute('data-wf-business-icon');
         const markup=graphic(action.icon);
         if(icon.dataset.wfContextIcon!==markup){icon.innerHTML=markup;icon.dataset.wfContextIcon=markup;}
       }
-      const settings=currentKey==='settings';
-      const text=settings&&i===2?(nav.classList.contains('settings-close-action')?t('close'):t('save')):caption(action);
+      const text=settings&&i===2&&action.kind!=='settings'?(nav.classList.contains('settings-close-action')?t('close'):t('save')):caption(action);
       if(button.title!==text)button.title=text;
       if(button.getAttribute('aria-label')!==text)button.setAttribute('aria-label',text);
       const target=action.kind==='control'?targetFor(action):null;
-      const busy=!!target&&(target.disabled||target.getAttribute('aria-busy')==='true');
-      button.disabled=settings?false:!available(action);
+      const busy=action.kind==='settings'?window.WFSettingsActions.getState().busy:!!target&&(target.disabled||target.getAttribute('aria-busy')==='true');
+      button.disabled=settings&&action.kind!=='settings'?false:!available(action);
       if(busy)button.setAttribute('aria-busy','true');else button.removeAttribute('aria-busy');
       button.classList.toggle('bnav-active',i===activeIndex);
     });
@@ -330,6 +363,7 @@
   const cart=document.getElementById('qblCartFab');
   if(cart)new MutationObserver(schedule).observe(cart,{attributes:true,attributeFilter:['class','style','disabled']});
   window.addEventListener('wf-cart-state',schedule);
+  window.addEventListener('wf-settings-actions-change',schedule);
   const compact=matchMedia('(max-width:1024px)');compact.addEventListener('change',schedule);
   sync();
 })();

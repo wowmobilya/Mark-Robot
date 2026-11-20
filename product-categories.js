@@ -274,11 +274,11 @@
   hook('qblBuildResult',patchBarcodeResult);
   hook('wfRenderDashboardIntelligence',(_total,host=document.getElementById('dashIntelligence'))=>patchChart(host));
 
-  let panel,form,fieldset,list,status,formTitle,nameField,descriptionField,languageField,urlField,fileField,preview,draft,saveButton;
+  let panel,form,fieldset,list,status,formTitle,nameField,descriptionField,languageField,urlField,fileField,preview,draft,draftBaseline,saveButton,cancelButton;
   let editingLanguage=currentLanguage(),busy=false,fileLoading=false,uploadVersion=0,urlDirty=false,statusKey='',statusError=false;
   function renderStatus(){if(!status)return;status.textContent=statusKey?t(statusKey):'';status.classList.toggle('is-error',statusError);status.setAttribute('role',statusError?'alert':'status');}
   function announce(key,error=false){statusKey=key;statusError=!!key&&error;renderStatus();}
-  function updateBusy(){if(!fieldset)return;fieldset.disabled=busy;saveButton.disabled=busy||fileLoading;panel.setAttribute('aria-busy',String(busy||fileLoading));list.querySelectorAll('button').forEach(el=>el.disabled=busy);const add=panel.querySelector('.wf-category-new');if(add)add.disabled=busy;}
+  function updateBusy(){if(!fieldset)return;fieldset.disabled=busy;saveButton.disabled=busy||fileLoading;panel.setAttribute('aria-busy',String(busy||fileLoading));list.querySelectorAll('button').forEach(el=>el.disabled=busy);const add=panel.querySelector('.wf-category-new');if(add)add.disabled=busy;window.dispatchEvent(new CustomEvent('wf-settings-actions-change'));}
   function renderPreview(){if(preview)preview.replaceChildren(photo(draft,'wf-category-editor-photo'));}
   function setDraft(category){
     uploadVersion++;fileLoading=false;urlDirty=false;
@@ -287,10 +287,23 @@
     nameField.value=draft.labels[editingLanguage]||category?.name||'';
     descriptionField.value=draft.descriptions[editingLanguage]||'';
     urlField.value=/^https:/.test(draft.image)?draft.image:'';fileField.value='';
+    draftBaseline={labels:{...draft.labels,[editingLanguage]:nameField.value},descriptions:{...draft.descriptions,[editingLanguage]:descriptionField.value},image:draft.image};
     announce('');
     formTitle.textContent=t(draft.id?'editTitle':'add');renderPreview();renderList();updateBusy();
   }
   function rememberFields(){draft.labels[editingLanguage]=nameField.value;draft.descriptions[editingLanguage]=descriptionField.value;}
+  function draftSignature(value){
+    return JSON.stringify(locales.map(lang=>[cleanText(value.labels[lang],80),cleanText(value.descriptions[lang],240)]));
+  }
+  function getSettingsActions(){
+    if(!panel||!draft||!document.getElementById('page-settings')?.classList.contains('active')||panel.hidden||panel.style.display==='none')return null;
+    const host=document.getElementById('wfSettingsDialog');
+    if(host&&!host.open)return null;
+    const values={labels:{...draft.labels,[editingLanguage]:nameField.value},descriptions:{...draft.descriptions,[editingLanguage]:descriptionField.value},
+      image:urlDirty?(cleanImage(urlField.value)??urlField.value.trim()):draft.image};
+    return {key:'product-categories:'+(draft.id||'new'),scope:panel,save:saveButton,cancel:cancelButton,
+      dirty:(values.image||'')!==(draftBaseline.image||'')||draftSignature(values)!==draftSignature(draftBaseline),busy:busy||fileLoading};
+  }
   function renderList(){
     if(!list)return;
     list.replaceChildren(...manager.list().map(category=>{
@@ -334,7 +347,7 @@
     const imageHint=text('small','imageHint');imageHint.id='wfCategoryImageHint';fileField.setAttribute('aria-describedby',imageHint.id);
     const imageControls=create('div','wf-category-image-controls');imageControls.append(uploadLabel,fileField,imageHint,button('removeImage',()=>{uploadVersion++;fileLoading=false;draft.image='';urlField.value='';urlDirty=false;fileField.value='';renderPreview();updateBusy();},'wf-category-remove-image'));imageBlock.append(preview,imageControls);
     urlField=create('input');urlField.type='url';urlField.inputMode='url';urlField.maxLength=2048;urlField.placeholder='https://';urlField.dir='ltr';
-    const actions=create('div','wf-category-form-actions');saveButton=text('button','save','wf-category-save');saveButton.type='submit';actions.append(saveButton,button('cancel',()=>setDraft(null)));
+    const actions=create('div','wf-category-form-actions');saveButton=text('button','save','wf-category-save');saveButton.type='submit';cancelButton=button('cancel',()=>setDraft(null));actions.append(saveButton,cancelButton);
     fieldset.append(names,field('description',descriptionField),text('h4','photo'),imageBlock,field('imageURLLabel',urlField),actions);form.append(formTitle,fieldset);
     status=create('p','wf-category-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     const credits=create('details','wf-category-credits');credits.append(text('summary','imageSources'));
@@ -375,6 +388,6 @@
   buildSettings();
   hook('applyTr',refresh);
   hook('loadSettingsToForm',()=>{translateSettings();renderList();});
-  window.WFProductCategories={list:()=>manager.list(),label:(id,lang=currentLanguage())=>label(manager.list().find(category=>category.id===id),lang),refresh};
+  window.WFProductCategories={list:()=>manager.list(),label:(id,lang=currentLanguage())=>label(manager.list().find(category=>category.id===id),lang),refresh,getSettingsActions};
   refresh();
 })();

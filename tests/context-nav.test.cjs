@@ -36,15 +36,114 @@ function setup(){
  const form=ids['pr-form-view']=new El('pr-form-view');form.visible=false;ids['page-add-product'].append(form);
  const cart=ids.qblCartFab=new El('qblCartFab');body.append(cart);let modals=[];
  const doc={documentElement:root,body,scrollingElement:root,getElementById:id=>ids[id],querySelector:sel=>sel==='.page.active'?pages.map(p=>ids['page-'+p]).find(p=>p.classes.has('active'))||null:body.querySelector(sel),querySelectorAll:sel=>sel==='.page'?pages.map(p=>ids['page-'+p]):sel.startsWith('dialog[open]')?modals:body.querySelectorAll(sel)};
- const win={scrollY:0,addEventListener(){},showPage:p=>calls.routes.push(p),goBack:()=>calls.back++,wfToggleDesktopSidebar:()=>calls.menu++,scrollTo:()=>{win.scrollY=0;root.scrollTop=0;},bnavMoveToIndex:i=>{calls.moves.push(i);buttons.forEach((b,n)=>{b.classList.toggle('bnav-active',n===i);if(n===i)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});}};
+ const events=new Map();
+ const win={scrollY:0,addEventListener(type,listener){const listeners=events.get(type)||[];listeners.push(listener);events.set(type,listeners);},dispatchEvent(event){for(const listener of events.get(event.type)||[])listener(event);},showPage:p=>calls.routes.push(p),goBack:()=>calls.back++,wfToggleDesktopSidebar:()=>calls.menu++,scrollTo:()=>{win.scrollY=0;root.scrollTop=0;},bnavMoveToIndex:i=>{calls.moves.push(i);buttons.forEach((b,n)=>{b.classList.toggle('bnav-active',n===i);if(n===i)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});}};
  const ctx={document:doc,window:win,QBL:{phase:1},requestAnimationFrame:fn=>queue.push(fn),MutationObserver:class{constructor(callback){this.callback=callback;}observe(target,options){observers.push({target,options,callback:this.callback});}disconnect(){}},matchMedia:()=>({matches:false,addEventListener(){}}),getComputedStyle:el=>({display:el.visible?'block':'none',visibility:'visible',opacity:'1',pointerEvents:'auto'})};vm.runInNewContext(controller,ctx);
  const flush=()=>{let n=0;while(queue.length&&n++<100)queue.shift()();assert(n<100,'observer work must settle');};flush();
  const sync=()=>{ctx.navTest.sync();flush();};
  const activate=p=>{for(const name of pages)ids['page-'+name].classList.toggle('active',name===p);sync();};
  const click=i=>{let stopped=false;const event={target:buttons[i],preventDefault(){},stopImmediatePropagation(){stopped=true;}};for(const fn of nav.events.click||[]){fn(event);if(stopped)break;}if(!stopped)buttons[i].click();flush();};
  const notifyNav=records=>{for(const observer of observers.filter(item=>item.target===nav))observer.callback(records);flush();};
- return {ctx,ids,root,body,nav,buttons,calls,original,cart,form,target,activate,click,sync,flush,notifyNav,setModals:m=>modals=m};
+ return {ctx,ids,root,body,nav,buttons,calls,original,cart,form,target,activate,click,sync,flush,notifyNav,emit:type=>{win.dispatchEvent({type});flush();},setModals:m=>modals=m};
 }
+
+function attachSettingsCoordinator(a,overrides={}){
+ const dialog=new El('wfSettingsDialog'),footer=new El,oldSave=new El,oldLabel=new El('','bnav-label settings-save-label');
+ dialog.open=true;dialog.close=()=>{dialog.open=false;};footer.tagName='FOOTER';footer.visible=false;footer.append(oldSave);
+ dialog.selectors.set('footer button[onclick="saveSettings()"]',[oldSave]);dialog.append(footer,a.nav);a.ids.wfSettingsDialog=dialog;a.ids['page-settings'].append(dialog);a.setModals([dialog]);a.buttons[2].append(oldLabel);
+ const state={open:true,key:'invoice',editable:true,busy:false,canSave:false,canCancel:true,canBack:true,primaryLabel:'Save',primaryIcon:'save',backLabel:'Back',cancelLabel:'Cancel',...overrides},runs=[];
+ a.ctx.window.WFSettingsActions={getState:()=>state,canRun:name=>state.open&&!state.busy&&(name==='primary'?(state.editable?state.canSave:state.canBack):name==='cancel'?state.canCancel:state.canBack),run:name=>{runs.push(name);return true;}};
+ a.activate('settings');
+ return {dialog,oldSave,oldLabel,state,runs,update(values){Object.assign(state,values);a.emit('wf-settings-actions-change');}};
+}
+
+test('the shared settings menu renders only original slots and delegates Save, Cancel and Back without Home fallthrough',()=>{
+ const a=setup(),s=attachSettingsCoordinator(a,{canSave:true});
+ assert.deepEqual(a.buttons.filter(button=>!button.hidden).map(button=>button.id),['bnav-0','bnav-2','bnav-4']);
+ assert.deepEqual(a.buttons.filter(button=>!button.hidden).map(button=>button.getAttribute('aria-label')),['Back','Save','Cancel']);
+ assert.equal(a.buttons[2].querySelector('.bnav-label:not(.settings-save-label)').getAttribute('aria-hidden'),null);
+ assert.equal(s.oldLabel.getAttribute('aria-hidden'),'true');assert.equal(s.runs.length,0);assert.equal(s.oldSave.clicks,0);
+ a.ctx.window.scrollY=300;a.buttons[2].addEventListener('click',()=>a.ctx.window.showPage('dashboard'));
+ a.click(2);a.click(4);a.click(0);
+ assert.deepEqual(s.runs,['primary','cancel','back']);assert.equal(s.oldSave.clicks,0);
+ assert.equal(a.calls.routes.length,0);assert.equal(a.calls.back,0);assert.equal(a.ctx.window.scrollY,300);
+ for(const button of a.buttons)assert.equal(button.getAttribute('aria-current'),null);
+});
+
+test('settings availability is rechecked on activation and busy events disable every visible shared action',()=>{
+ const a=setup(),s=attachSettingsCoordinator(a);
+ assert.equal(a.buttons[2].disabled,true);a.click(2);assert.equal(s.runs.length,0);
+ s.update({canSave:true});assert.equal(a.buttons[2].disabled,false);
+ s.state.canSave=false;a.click(2);assert.equal(s.runs.length,0,'a stale enabled button cannot bypass the coordinator guard');
+ s.update({canSave:true,busy:true,primaryLabel:'Saving',primaryIcon:'loading'});
+ for(const i of [0,2,4]){assert.equal(a.buttons[i].disabled,true);assert.equal(a.buttons[i].getAttribute('aria-busy'),'true');a.click(i);}
+ assert.equal(a.buttons[2].title,'Saving');assert.match(a.buttons[2].querySelector('.bnav-icon').innerHTML,/data-wf-nav-icon="loading"/);
+ assert.equal(s.runs.length,0);
+ s.update({busy:false,canSave:false,primaryLabel:'Saved',primaryIcon:'check'});
+ assert.equal(a.buttons[0].disabled,false);assert.equal(a.buttons[4].disabled,false);assert.equal(a.buttons[2].disabled,true);
+ for(const i of [0,2,4])assert.equal(a.buttons[i].getAttribute('aria-busy'),null);
+});
+
+test('settings context and locale changes refresh labels and icons, and legacy Home refresh cannot replace their accessible names',()=>{
+ const a=setup(),s=attachSettingsCoordinator(a,{canSave:true});
+ for(const [lang,save,cancel,back]of [['ar','حفظ','إلغاء','رجوع'],['en','Save','Cancel','Back'],['tr','Kaydet','İptal','Geri'],['fr','Enregistrer','Annuler','Retour'],['ru','Сохранить','Отмена','Назад']]){
+  a.root.lang=lang;a.root.dir=lang==='ar'?'rtl':'ltr';s.update({primaryLabel:save,cancelLabel:cancel,backLabel:back});
+  assert.equal(a.buttons[2].querySelector('.bnav-label:not(.settings-save-label)').textContent,save);
+  assert.equal(a.buttons[4].getAttribute('aria-label'),cancel);assert.equal(a.buttons[0].getAttribute('aria-label'),back);
+  const center=a.buttons[2];center.setAttribute('aria-label','Home');center.title='Home';a.notifyNav([{target:center,attributeName:'aria-label'},{target:center,attributeName:'title'}]);
+  assert.equal(center.getAttribute('aria-label'),save);assert.equal(center.title,save);
+ }
+ s.update({key:'currency:feed',primaryLabel:'Refresh',primaryIcon:'refresh'});
+ assert.equal(a.buttons[2].title,'Refresh');assert.match(a.buttons[2].querySelector('.bnav-icon').innerHTML,/data-wf-nav-icon="refresh"/);
+ a.ctx.window.bnavMoveToIndex(4);a.flush();assert.equal(a.buttons[2].classList.contains('bnav-active'),true);
+ assert.equal(a.calls.routes.length,0);assert.equal(s.runs.length,0);
+});
+
+test('automatic settings show Done without editable controls and leaving settings restores the original Home menu',()=>{
+ const a=setup(),s=attachSettingsCoordinator(a,{key:'appearance',editable:false,canSave:false,canCancel:false,primaryLabel:'Done',primaryIcon:'check'});
+ assert.deepEqual(a.buttons.filter(button=>!button.hidden).map(button=>button.id),['bnav-2']);
+ assert.equal(a.buttons[2].disabled,false);a.click(2);assert.deepEqual(s.runs,['primary']);assert.equal(a.calls.routes.length,0);
+ s.update({open:false});s.dialog.open=false;a.body.append(a.nav);a.setModals([]);a.activate('dashboard');
+ assert.equal(a.buttons.filter(button=>!button.hidden).length,5);assert.equal(a.buttons[2].getAttribute('aria-label'),'الرئيسية');
+ assert.equal(s.oldLabel.getAttribute('aria-hidden'),'true');assert.equal(a.buttons[2].getAttribute('aria-current'),'page');
+ a.activate('companies');a.click(2);assert.deepEqual(a.calls.routes,['dashboard']);assert.deepEqual(s.runs,['primary']);
+});
+
+test('leaving settings restores the prior Home icon and the next settings visit renders Save again',()=>{
+ const a=setup(),icon=a.buttons[2].querySelector('.bnav-icon');
+ const home='<svg data-original-home="true"><path d="M3 10 12 3 21 10"/></svg>';icon.innerHTML=home;
+ const s=attachSettingsCoordinator(a,{canSave:true});
+ assert.match(icon.innerHTML,/data-wf-nav-icon="save"/);assert.notEqual(icon.innerHTML,home);
+ s.update({open:false});s.dialog.open=false;a.body.append(a.nav);a.setModals([]);a.activate('dashboard');
+ assert.equal(icon.innerHTML,home);assert.equal(icon.dataset.wfContextIcon,undefined);
+ s.dialog.open=true;s.dialog.append(a.nav);a.setModals([s.dialog]);s.update({open:true,key:'robot'});a.activate('settings');
+ assert.match(icon.innerHTML,/data-wf-nav-icon="save"/);assert.equal(a.buttons[2].getAttribute('aria-label'),'Save');
+ s.update({open:false});s.dialog.open=false;a.body.append(a.nav);a.setModals([]);a.activate('dashboard');assert.equal(icon.innerHTML,home);
+ assert.equal(s.runs.length,0);assert.equal(a.calls.routes.length,0);
+});
+
+test('the settings directory uses normal contextual navigation when its editor is closed and the coordinator remains installed',()=>{
+ const a=setup(),icon=a.buttons[2].querySelector('.bnav-icon');
+ const home='<svg data-original-home="true"><path d="M3 10 12 3 21 10"/></svg>';icon.innerHTML=home;
+ const s=attachSettingsCoordinator(a,{canSave:true});
+ s.dialog.open=false;a.body.append(a.nav);a.setModals([]);s.update({open:false});
+ assert.equal(a.ids['page-settings'].classList.contains('active'),true,'the section directory remains the active page');
+ assert.equal(a.nav.dataset.section,'settings');assert.equal(a.nav.dataset.taskMode,'context');
+ assert.equal(a.buttons.filter(button=>!button.hidden).length,5);
+ assert.equal(a.buttons[2].getAttribute('aria-label'),'الرئيسية');assert.equal(a.buttons[2].title,'الرئيسية');
+ assert.equal(a.buttons[2].querySelector('.bnav-label:not(.settings-save-label)').textContent,'الرئيسية');
+ assert.equal(s.oldLabel.getAttribute('aria-hidden'),'true');assert.equal(icon.innerHTML,home);
+ a.ctx.window.scrollY=220;a.click(2);assert.equal(a.ctx.window.scrollY,0);assert.equal(a.calls.routes.length,0);
+ for(const index of [2,0,1,3,4])a.click(index);
+ assert.deepEqual(a.calls.routes,['dashboard','companies','products','invoices','quick-barcode']);
+ assert.equal(s.runs.length,0);assert.equal(s.oldSave.clicks,0);assert.equal(a.calls.back,0);
+});
+
+test('a separate active modal blocks shared settings actions without forwarding the old footer or navigation',()=>{
+ const a=setup(),s=attachSettingsCoordinator(a,{canSave:true}),other=new El('confirmation');other.open=true;a.body.append(other);a.setModals([s.dialog,other]);
+ a.click(0);a.click(2);a.click(4);assert.equal(s.runs.length,0);assert.equal(s.oldSave.clicks,0);assert.equal(a.calls.routes.length,0);
+ a.setModals([s.dialog]);a.click(2);assert.deepEqual(s.runs,['primary']);
+});
 test('all actual sections have five scoped controls, correct primary actions, and no actions on entry',()=>{
  const a=setup(),expected={dashboard:2,companies:0,products:0,cart:3,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2};
  for(const page of pages){a.activate(page);const config=a.ctx.navTest.configuration(a.ids['page-'+page]);assert.equal(config.items.length,5,page);assert.equal(config.active,expected[page],page);assert.equal(a.nav.dataset.section,page);assert.equal(a.buttons.filter(b=>b.classList.contains('bnav-active')).length,1);for(const item of config.items){assert(item.icon&&item.label,page);if(item.kind==='route')assert(a.ids['page-'+item.page],item.page);}}

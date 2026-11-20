@@ -410,6 +410,7 @@
   let dirty = false, nonRateChanges = false, lastSpeech = {}, lastPublishedPreferences = '', saveState = '', latestMotion = {active: false, state: 'off', x: 0, y: 0}, disposed = false;
   let readingRequested = false, readingStarted = false, readingStatusKey = '', readingVoiceName = '', readingMessage = '', readingMessageLocale = '';
   const getPreferences = () => normalize(state()?.settings?.robot);
+  function notifyActions() { window.dispatchEvent(new CustomEvent('wf-settings-actions-change')); }
   function setReadingStatus(key, voiceName = '', message = '', messageLocale = language()) {
     const locale = language();
     readingStatusKey = key; readingVoiceName = voiceName;
@@ -473,6 +474,7 @@
       rangeOutputs.speechRate.textContent = Math.round(current.rate * 100) + '%';
     }
     updateRateReset();
+    notifyActions();
     if (!readingRequested || current.active && current.kind && current.kind !== 'preview') return;
     if (current.active) {
       readingStarted = true;
@@ -522,27 +524,48 @@
     const saved = getPreferences().speechRate;
     restoreRate.disabled = Number(fields.speechRate.value) === saved;
   }
-  function changed() {
+  function draftChanges() {
     const saved = getPreferences();
-    nonRateChanges = Object.entries(fields).some(([key, field]) => {
-      if (key === 'speechRate') return false;
+    return Object.entries(fields).filter(([key, field]) => {
       const value = field.type === 'checkbox' ? field.checked : typeof saved[key] === 'number' ? Number(field.value) : field.value;
       return value !== saved[key];
-    });
-    dirty = nonRateChanges || Number(fields.speechRate.value) !== saved.speechRate;
+    }).map(([key]) => key);
+  }
+  function changed() {
+    const changes = draftChanges();
+    nonRateChanges = changes.some(key => key !== 'speechRate');
+    dirty = changes.length > 0;
     saveState = dirty ? 'changed' : '';saveStatus.textContent = dirty ? t('changed') : '';
     updateRateReset();
+    notifyActions();
   }
-  function syncFields() {
+  function syncFields(savedRate = false) {
     const preferences = getPreferences();
     fields.autoExpressions.checked = preferences.autoExpressions;
     fields.idleMotion.checked = preferences.idleMotion;
     fields.trackingSensitivity.value = preferences.trackingSensitivity;
     fields.speechEnabled.checked = preferences.speechEnabled;
     const owner = window.WFProgramSpeech?.getState?.();
-    fields.speechRate.value = owner?.active && Number.isFinite(owner.rate) ? owner.rate : preferences.speechRate;
+    fields.speechRate.value = !savedRate && owner?.active && Number.isFinite(owner.rate) ? owner.rate : preferences.speechRate;
     fields.speechVolume.value = preferences.speechVolume;
     for (const key of ['speechRate', 'speechVolume']) rangeOutputs[key].textContent = Math.round(fields[key].value * 100) + '%';
+  }
+  function settingsActive() {
+    const dialog = document.getElementById('wfSettingsDialog');
+    return page.classList.contains('active') && !panel.hidden && panel.style.display !== 'none' && (!dialog || dialog.open);
+  }
+  function cancelPreferences() {
+    if (!settingsActive() || store.busy || preferencesFieldset.disabled) return false;
+    const preferences = getPreferences(), owner = window.WFProgramSpeech, current = owner?.getState?.();
+    if (current?.active || Number.isFinite(current?.rate) && current.rate !== preferences.speechRate) owner?.setRate?.(preferences.speechRate);
+    dirty = false; nonRateChanges = false; saveState = '';
+    syncFields(true); publishPreferences(); translate(); notifyActions();
+    return true;
+  }
+  function getSettingsActions() {
+    if (!settingsActive()) return null;
+    return { key: 'robot', scope: panel, save, cancel: cancelPreferences,
+      dirty: draftChanges().length > 0, busy: store.busy || !!preferencesFieldset.disabled };
   }
   function publishPreferences() {
     const preferences = getPreferences(), signature = JSON.stringify(preferences);
@@ -648,6 +671,7 @@
   form.addEventListener('submit', async event => {
     event.preventDefault(); if (store.busy) return;
     preferencesFieldset.disabled = true; save.disabled = true; save.textContent = t('saving'); saveState = 'saving'; saveStatus.textContent = t(saveState);
+    notifyActions();
     try {
       await store.save({autoExpressions: fields.autoExpressions.checked, idleMotion: fields.idleMotion.checked, trackingSensitivity: fields.trackingSensitivity.value,
         speechEnabled: fields.speechEnabled.checked, continuousSpeech: false,
@@ -655,7 +679,7 @@
         arabicDialect: 'sy', speechBackend: 'reference'});
       dirty = false; nonRateChanges = false; saveState = 'saved'; publishPreferences();
     } catch (_) { saveState = 'saveFailed'; }
-    finally { preferencesFieldset.disabled = false; save.disabled = false; translate(); }
+    finally { preferencesFieldset.disabled = false; save.disabled = false; translate(); notifyActions(); }
   });
   function populatePreview() {
     const display = document.querySelector('#wfGreetingRobot .wf-robot-display');
@@ -673,7 +697,7 @@
   hook('switchTab', key => {
     panel.style.display = key === 'robot' ? 'block' : 'none'; tab.classList.toggle('active', key === 'robot');
     if (key === 'robot') { if (!dirty) syncFields(); translate(); populatePreview(); }
-    checkVisibility();
+    checkVisibility(); notifyActions();
   });
   hook('loadSettingsToForm', () => { if (!dirty) syncFields(); translate(); publishPreferences(); });
   hook('applyTr', translate);
@@ -708,6 +732,6 @@
       window.removeEventListener('wf-reference-voice-loading', renderVoicePacks);
       window.removeEventListener('wf-program-speech-state', readingStateChanged); }
   });
-  window.WFRobotSettings = {getPreferences, displayVoiceName, stopTracking: () => tracker.stop('off'), checkVisibility};
+  window.WFRobotSettings = {getPreferences, displayVoiceName, stopTracking: () => tracker.stop('off'), checkVisibility, getSettingsActions};
   syncFields(); translate(); populatePreview(); publishPreferences();
 })();

@@ -79,7 +79,7 @@ test('one shared reference card retains its own manager and real status across l
   assert.equal(missing.status.state,'unsupported'); assert.equal(missing.status.reason,'reference-unavailable');
 });
 
-function settingsUIFixture({localReady = false, referenceReady = false, engineReady = false, preferences = {}} = {}) {
+function settingsUIFixture({localReady = false, referenceReady = false, engineReady = false, preferences = {}, connect = async () => { throw Error('No database fixture'); }} = {}) {
   const nodes = [], trace = [], listeners = new Map();
   class Element {
     constructor(tag) { this.tagName=tag.toUpperCase();this.children=[];this.events={};this.attributes={};this.dataset={};this.style={setProperty(){}};this.textContent='';this.classes=new Set();this.classList={contains:name=>this.classes.has(name),add:name=>this.classes.add(name),remove:name=>this.classes.delete(name),toggle:(name,enabled)=>enabled?this.classes.add(name):this.classes.delete(name)};nodes.push(this); }
@@ -110,8 +110,8 @@ function settingsUIFixture({localReady = false, referenceReady = false, engineRe
       async remove(){trace.push({kind:'remove-reference'});},cancelDownload(){}},
     WFProgramSpeech:{speak(options){trace.push({kind:'speak',options});speechActive=audioActive=true;window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail:{state:'ready',active:false}}));window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail:{state:'preparing',active:true,voiceName:'Mark · local reference'}}));return true;},preview(options){trace.push({kind:'recording',options});return true;},
       stop(){trace.push({kind:'stop'});speechActive=audioActive=false;window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail:{state:'stopped',active:false}}));}}};
-  vm.runInNewContext(readFileSync(require.resolve('../robot-settings.js'),'utf8'),{window,document,S:state,navigator:{mediaDevices:{}},MutationObserver:class{observe(){}disconnect(){}},CustomEvent,AbortController,Intl,setTimeout,clearTimeout});
-  return {nodes,trace,root,window,speechState:()=>({active:speechActive,audioActive}),
+  vm.runInNewContext(readFileSync(require.resolve('../robot-settings.js'),'utf8'),{window,document,S:state,initDB:connect,navigator:{mediaDevices:{}},MutationObserver:class{observe(){}disconnect(){}},CustomEvent,AbortController,Intl,setTimeout,clearTimeout});
+  return {nodes,trace,root,page,state,window,speechState:()=>({active:speechActive,audioActive}),
     reading:nodes.find(node=>node.dataset.wfReadingPreview==='true'),
     status:nodes.find(node=>node.className==='wf-robot-reading-preview-status'),
     backend:nodes.find(node=>node.name==='speechBackend'),
@@ -179,6 +179,40 @@ test('restoring the saved preview rate preserves all other drafts and the curren
   volume.value=.6;volume.events.input();rate.value=1.1;rate.events.input();
   reset.events.click({isTrusted:true});assert.equal(Number(volume.value),.6);assert(feedback.textContent);
   assert.deepEqual(applied,[1.2,.85,1.1,.85]);assert.deepEqual(f.trace,[]);
+});
+
+test('robot bottom-menu Cancel restores every saved control and the active preview rate without persisting',()=>{
+  const f=settingsUIFixture({preferences:{speechRate:.85,speechVolume:.7,idleMotion:true}}),api=f.window.WFRobotSettings;
+  assert.equal(typeof api.getSettingsActions,'function');assert.equal(api.getSettingsActions(),null);
+  f.window.switchTab('robot');const initial=api.getSettingsActions();
+  assert.equal(initial.key,'robot');assert.equal(initial.scope.id,'stab-robot');assert.equal(initial.dirty,false);assert.equal(initial.busy,false);
+  assert.equal(initial.save,f.nodes.find(n=>n.className==='wf-robot-settings-save-button'));
+  const owner=f.window.WFProgramSpeech,current={active:true,kind:'preview',rate:.85};
+  owner.getState=()=>current;owner.setRate=value=>{current.rate=value;f.emitSpeech(current);return true;};
+  const rate=f.nodes.find(n=>n.name==='speechRate'),volume=f.nodes.find(n=>n.name==='speechVolume');
+  const idle=f.nodes.find(n=>n.name==='idleMotion'),sensitivity=f.nodes.find(n=>n.name==='trackingSensitivity');
+  rate.value=1.2;rate.events.input();volume.value=.2;volume.events.input();idle.checked=false;idle.events.change();sensitivity.value='high';sensitivity.events.change();
+  assert.equal(api.getSettingsActions().dirty,true);assert.equal(current.rate,1.2);
+  assert.equal(api.getSettingsActions().cancel(),true);
+  assert.equal(Number(rate.value),.85);assert.equal(Number(volume.value),.7);assert.equal(idle.checked,true);assert.equal(sensitivity.value,'normal');
+  assert.equal(current.rate,.85);assert.equal(current.active,true);assert.equal(api.getSettingsActions().dirty,false);
+  assert.equal(f.nodes.find(n=>n.className==='wf-robot-settings-feedback').textContent,'');
+  assert.equal(f.state.settings.robot.speechRate,.85);assert.equal(f.state.settings.robot.speechVolume,.7);
+  f.window.switchTab('company');assert.equal(api.getSettingsActions(),null);
+});
+
+test('robot action state prevents rollback during a pending save and preserves the draft after failure',async()=>{
+  let rejectConnection;const connection=new Promise((resolve,reject)=>{rejectConnection=reject;});
+  const f=settingsUIFixture({preferences:{speechVolume:.7},connect:()=>connection}),api=f.window.WFRobotSettings;
+  assert.equal(typeof api.getSettingsActions,'function');f.window.switchTab('robot');
+  const volume=f.nodes.find(n=>n.name==='speechVolume');volume.value=.3;volume.events.input();
+  let actionEvents=0;f.window.addEventListener('wf-settings-actions-change',()=>{actionEvents++;});
+  const form=f.nodes.find(n=>n.className==='wf-robot-settings-form'),saving=form.events.submit({preventDefault(){}});
+  assert.equal(api.getSettingsActions().busy,true);assert.equal(api.getSettingsActions().cancel(),false);
+  assert.equal(Number(volume.value),.3);rejectConnection(Error('storage unavailable'));await saving;
+  assert.equal(api.getSettingsActions().busy,false);assert.equal(api.getSettingsActions().dirty,true);assert.equal(api.getSettingsActions().save.disabled,false);
+  assert.equal(f.state.settings.robot.speechVolume,.7);assert(actionEvents>0);
+  assert.equal(api.getSettingsActions().cancel(),true);assert.equal(Number(volume.value),.7);assert.equal(api.getSettingsActions().dirty,false);
 });
 
 test('the shared reference download uses the current UI language and its own cancellable request', async () => {
