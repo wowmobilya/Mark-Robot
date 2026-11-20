@@ -237,8 +237,28 @@
     return workerRequest(locale,text,options.signal);
   }
   const playbackLeases=new WeakSet();
-  function preparePlayback(){
+  function preparePlayback(options={}){
     // Call synchronously from the user's tap, before IndexedDB or a first download.
+    // A streaming voice keeps this unlocked context for all of its PCM packets.
+    const Context=options.streaming&&(window.AudioContext||window.webkitAudioContext);
+    if(Context){
+      let context;
+      try{
+        context=new Context({latencyHint:'interactive'});
+        const primer=context.createBufferSource();primer.buffer=context.createBuffer(1,1,context.sampleRate);primer.connect(context.destination);
+        const lease={context,unlock:null,disposed:false,dispose(){
+          if(lease.disposed)return;lease.disposed=true;primer.onended=null;
+          try{primer.stop();primer.disconnect();}catch(_){}
+          try{Promise.resolve(context.close()).catch(()=>{});}catch(_){}
+        }};
+        primer.onended=()=>primer.disconnect();
+        try{
+          const resumed=context.resume();primer.start(0);
+          lease.unlock=Promise.resolve(resumed).then(()=>null,problem=>error(problem?.name==='NotAllowedError'?'playback-blocked':'playback-failed'));
+        }catch(problem){lease.unlock=Promise.resolve(error(problem?.name==='NotAllowedError'?'playback-blocked':'playback-failed'));}
+        playbackLeases.add(lease);return lease;
+      }catch(_){try{Promise.resolve(context?.close()).catch(()=>{});}catch(_){}}
+    }
     // The same unlocked element plays the later report on mobile browsers.
     const audio=new Audio(),lease={audio,unlock:null,disposed:false,dispose(){
       if(lease.disposed)return;lease.disposed=true;audio.pause();audio.removeAttribute('src');audio.load();
@@ -250,12 +270,103 @@
     catch(_){URL.revokeObjectURL(silence);lease.unlock=Promise.resolve();}
     return lease;
   }
+  function speakStream(options,source,lease){
+    // AudioBufferSources share a single clock: packet and sentence edges do not
+    // restart a media element. The small lead absorbs normal scheduling jitter.
+    const START_LEAD=.12,MAX_AHEAD=8,SLICE_SECONDS=1,context=lease.context;
+    const controller=new AbortController(),nodes=new Set(),events=[],capacity=new Set();
+    const rate=Number.isFinite(options.rate)?Math.max(.75,Math.min(1.3,options.rate)):1;
+    const volume=Number.isFinite(options.volume)?Math.max(0,Math.min(1,options.volume)):1;
+    let stopped=false,finished=false,sourceReleased=false,started=false,waiting=false,generating=true;
+    let gain=null,timer=null,nextTime=0,sampleRate=0,totalBytes=0,totalSeconds=0,drain=null;
+    const inactive=()=>stopped||finished||controller.signal.aborted;
+    const cleanup=()=>{
+      clearTimeout(timer);timer=null;events.length=0;
+      for(const node of nodes){node.onended=null;try{node.stop();node.disconnect();}catch(_){}}
+      nodes.clear();try{gain?.disconnect();}catch(_){}
+      for(const waiter of capacity)waiter.reject(aborted());capacity.clear();
+      if(drain){drain();drain=null;}
+      lease.dispose();if(activeSpeech===handle)activeSpeech=null;
+      if(!sourceReleased){sourceReleased=true;try{source.dispose?.();}catch(_){}}
+    };
+    const fail=problem=>{if(stopped||finished)return;finished=true;controller.abort();cleanup();if(problem?.name!=='AbortError')options.onError?.(problem);};
+    const handle={cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();}};activeSpeech=handle;
+    const roomFor=duration=>nextTime-context.currentTime+duration<=MAX_AHEAD+.000001;
+    function pump(){
+      if(inactive())return;
+      try{
+        if(context.state==='closed')throw error('playback-failed');
+        const now=context.currentTime;
+        while(events.length&&events[0].start<=now){
+          const event=events.shift();
+          if(!started||waiting){started=true;waiting=false;options.onStart?.();if(inactive())return;}
+          if(event.boundary){options.onBoundary?.({charIndex:event.boundary.charIndex,charLength:event.boundary.charLength,name:'sentence',type:'sentence'});if(inactive())return;}
+        }
+        for(const waiter of capacity)if(roomFor(waiter.duration)){capacity.delete(waiter);waiter.resolve();}
+        if(!nodes.size){
+          if(!generating){if(drain){drain();drain=null;}}
+          else if(started&&!waiting){waiting=true;options.onWaiting?.();}
+        }
+        if(!inactive()&&(nodes.size||events.length||capacity.size)&&timer===null)timer=setTimeout(()=>{timer=null;pump();},20);
+      }catch(problem){fail(problem);}
+    }
+    async function append(packet,chunk){
+      if(inactive())return;
+      const samples=packet?.samples,frequency=packet?.sampleRate;
+      if(!ArrayBuffer.isView(samples)||Object.prototype.toString.call(samples)!=='[object Float32Array]'||!samples.length||
+        samples.byteLength>MAX_RENDERED_AUDIO_BYTES||!Number.isInteger(frequency)||frequency<8000||frequency>96000||
+        (sampleRate&&frequency!==sampleRate))throw error('invalid-audio');
+      for(let index=0;index<samples.length;index++)if(!Number.isFinite(samples[index]))throw error('invalid-audio');
+      totalBytes+=samples.length*2;totalSeconds+=samples.length/frequency;
+      if(totalBytes>MAX_RENDERED_AUDIO_BYTES||totalSeconds>MAX_RENDERED_AUDIO_SECONDS)throw error('speech-too-long');
+      sampleRate=frequency;
+      // Awaiting this callback gives the transport one packet of credit at a
+      // time. Even a large packet is copied into bounded, promptly freed slices.
+      const sliceLength=Math.max(1,Math.floor(frequency*rate*SLICE_SECONDS));
+      for(let offset=0;offset<samples.length;offset+=sliceLength){
+        const length=Math.min(sliceLength,samples.length-offset),duration=length/frequency/rate;
+        if(!roomFor(duration))await new Promise((resolve,reject)=>{capacity.add({duration,resolve,reject});pump();});
+        checkAbort(controller.signal);if(inactive())return;
+        const buffer=context.createBuffer(1,length,frequency);buffer.copyToChannel(samples.subarray(offset,offset+length),0);
+        const node=context.createBufferSource();node.buffer=buffer;node.playbackRate.value=rate;node.connect(gain);
+        const start=nextTime>context.currentTime?nextTime:context.currentTime+START_LEAD;
+        const boundary=chunk.queued?null:chunk;chunk.queued=true;
+        events.push({start,boundary});nodes.add(node);nextTime=start+duration;
+        node.onended=()=>{if(inactive())return;node.onended=null;node.disconnect();nodes.delete(node);pump();};
+        node.start(start);pump();
+      }
+    }
+    (async()=>{
+      try{
+        const text=typeof options.text==='string'?options.text:'',locale=options.locale||'ar';
+        if(!text.trim()||text.length>16000)throw error('text-length');if(!source.getStatus(locale).ready)throw error('pack-not-installed');
+        const chunks=speechChunks(text,options.chunks),unlockProblem=await lease.unlock;checkAbort(controller.signal);
+        if(unlockProblem)throw unlockProblem;if(context.state!=='running')throw error('playback-blocked');
+        gain=context.createGain();gain.gain.value=volume;gain.connect(context.destination);
+        for(let index=0;index<chunks.length;index++){
+          const chunk=chunks[index];let accepting=true;
+          try{await source.stream(chunk.text,{locale,signal:controller.signal,onAudio:packet=>accepting&&!inactive()?append(packet,chunk):Promise.resolve()});}
+          finally{accepting=false;}
+          checkAbort(controller.signal);if(!chunk.queued)throw error('invalid-audio');
+          options.onProgress?.({completed:index+1,total:chunks.length,phase:'preparing'});
+        }
+        generating=false;
+        if(nodes.size)await new Promise(resolve=>{drain=resolve;pump();});
+        checkAbort(controller.signal);if(inactive())return;
+        finished=true;cleanup();options.onEnd?.();
+      }catch(problem){fail(problem);}
+    })();
+    return handle;
+  }
   function speak(options={},source=null){
     const readStatus=source?.getStatus||manager.getStatus;
     const renderSpeech=source?.synthesize||synthesize;
     activeSpeech?.cancel();
-    const lease=playbackLeases.has(options.playback)&&!options.playback.disposed?options.playback:preparePlayback();
+    const streaming=options.streaming===true&&typeof source?.stream==='function';
+    let lease=playbackLeases.has(options.playback)&&!options.playback.disposed?options.playback:preparePlayback({streaming});
+    if(lease.context&&!streaming){playbackLeases.delete(lease);lease.dispose();lease=preparePlayback();}
     playbackLeases.delete(lease);
+    if(streaming&&lease.context)return speakStream(options,source,lease);
     const controller=new AbortController(),audio=lease.audio;let stopped=false,url='',finished=false,sourceReleased=false;
     const text=typeof options.text==='string'?options.text:'',locale=options.locale||'ar';
     const clearAudioEvents=()=>{audio.onplaying=audio.onwaiting=audio.onended=audio.onerror=audio.ontimeupdate=null;};

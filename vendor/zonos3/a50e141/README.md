@@ -39,9 +39,11 @@ browser pack does not include a reference encoder or upload voice samples.
 
 The inventory generator `tools/prepare-reference-voice.py` combines published
 LFS SHA-256 hashes and exact local-file hashes. After a local runtime or adapter
-change, run it with `--refresh-local`. The wrapper, host, core, metadata and
-embeddings are all installer assets; `reference-voice-assets.js?v=1` is also
-required in the application shell cache to support static imports offline.
+change, run it with `--refresh-local`. The pinned wrapper, runtime and
+embeddings are installer assets. Host, core and metadata update with the app
+shell so playback fixes preserve installed weights. Static imports retain
+`reference-voice-assets.js?v=1` and `reference-voice.js?v=1`; the new host is
+`reference-voice-host.js?v=2`. Offline loading prefers the current app shell.
 
 ## Offline boundary and device support
 
@@ -57,8 +59,10 @@ Omitted editing/alternative-decoder features return deliberate local 404
 responses. Missing or corrupted required bytes fail without a network fallback.
 
 WebGPU and a compatible adapter are required. No WASM/CPU browser fallback is
-claimed. Cancelling speech destroys the worker tree; an idle timer also releases
-the resident GPU model after 30 seconds. Downloaded model data stays cached.
+claimed. Cancelling active generation destroys the worker tree; stopping
+already-generated playback preserves a ready engine. Its five-minute idle
+timer begins after playback releases ownership, and hiding the page releases
+unused resources. Downloaded model data stays cached.
 Business text and generated report audio are neither transmitted nor stored.
 
 The native CPU samples in `assets/reference-voice/samples` demonstrate unseen

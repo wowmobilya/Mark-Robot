@@ -64,14 +64,22 @@ test('reference synthesis uses buffered PCM WAV and local embedding input',()=>{
   assert.throws(()=>core.generationBody({text:'x'.repeat(801),locale:'ar',embedding:'x'}),{code:'text-length'});
 });
 
+test('reference streaming selects prefix PCM while preserving language and speaker conditioning',()=>{
+  const body=core.generationBody({text:'الرصيد صفر.',locale:'ar',embedding:'c3BlYWtlcg==',stream:true});
+  assert.equal(body.stream,true);assert.equal(body.format,'pcm');
+  assert.equal(body.stream_decode,'prefix');assert.equal(body.stream_codebooks,1);assert.equal(body.stream_codebooks_scope,'first');
+  assert.equal(body.laci,true);assert.equal(body.language,'ar');assert.equal(body.speaker_embedding_base64,'c3BlYWtlcg==');
+});
+
 async function flushUntil(check) {
   for(let attempt=0;attempt<40&&!check();attempt++)await new Promise(resolve=>setImmediate(resolve));
   assert(check(),'asynchronous operation reached the expected state');
 }
 
-async function browserFixture(t) {
-  const requests=[],workers=[],events=[],audioElements=[],objectURLs=new Set();
-  let nextURL=0,networkCalls=0,failNextPost=false;
+async function browserFixture(t,{stubPlayer=false}={}) {
+  const requests=[],workers=[],events=[],audioElements=[],playbacks=[],objectURLs=new Set(),timers=new Map(),listeners=new Map();
+  let nextURL=0,nextTimer=0,networkCalls=0,failNextPost=false;
+  const schedule=(fn,ms)=>{const id=++nextTimer;timers.set(id,{fn,ms});return id;};
   class FakeURL extends URL {
     static createObjectURL(){const url='blob:reference-test-'+(++nextURL);objectURLs.add(url);return url;}
     static revokeObjectURL(url){objectURLs.delete(url);}
@@ -109,20 +117,31 @@ async function browserFixture(t) {
   const window={isSecureContext:true,caches:{open:async()=>cache},crypto:crypto.webcrypto,Worker,WebAssembly,
     WFReferenceVoiceAssets:manifest,
     fetch:async()=>{networkCalls++;throw new Error('the installed voice coordinator must not fetch from the network');},
-    dispatchEvent:event=>events.push(event),addEventListener(){}};
+    dispatchEvent:event=>events.push(event),addEventListener:(type,fn)=>listeners.set(type,fn)};
   class CustomEvent {constructor(type,options){this.type=type;this.detail=options.detail;}}
   const context=vm.createContext({window,document:{baseURI:appBase},location:{origin:new URL(appBase).origin},
     navigator:{gpu:{requestAdapter:async()=>({limits:{maxBufferSize:268435456,maxStorageBufferBindingSize:268435456}})}},
-    Audio,Worker,URL:FakeURL,Blob,Response,CustomEvent,WebAssembly,AbortController,crypto:crypto.webcrypto,setTimeout,clearTimeout});
+    Audio,Worker,URL:FakeURL,Blob,Response,ArrayBuffer,Float32Array,CustomEvent,WebAssembly,AbortController,crypto:crypto.webcrypto,setTimeout:schedule,clearTimeout:id=>timers.delete(id)});
   for(const name of ['offline-voice.js','reference-voice.js']) {
+    if(name==='reference-voice.js'&&stubPlayer){
+      let current=null;
+      window.WFOfflineVoice={...window.WFOfflineVoice,preparePlayback:options=>({options}),speakGenerated(options,source){
+        current?.cancel();const controller=new AbortController();let done=false;
+        const handle={options,source,controller,cancel(){if(done)return;done=true;controller.abort();source.dispose();},finish(){if(done)return;done=true;source.dispose();options.onEnd?.();}};
+        playbacks.push(handle);current=handle;return handle;
+      }};
+    }
     vm.runInContext(fs.readFileSync(path.resolve(__dirname,'..',name),'utf8'),context,{filename:name});
   }
   const api=window.WFReferenceVoice;
   t.after(()=>api.remove());
   await flushUntil(()=>api.getStatus('ar').ready);
-  return {api,requests,workers,events,audioElements,objectURLs,
+  return {api,requests,workers,events,audioElements,playbacks,objectURLs,timers,
     get networkCalls(){return networkCalls;},
     failNextPost(){failNextPost=true;},
+    send(index,data){const request=requests[index];assert(request);request.worker.onmessage({data:{id:request.id,...data}});},
+    idle(){for(const[id,value]of [...timers])if(value.ms===300000){timers.delete(id);value.fn();}},
+    pagehide(){listeners.get('pagehide')?.();},
     progress(index,loaded=1,total=2){const request=requests[index];assert(request);request.worker.onmessage({data:{id:request.id,type:'progress',loaded,total}});},
     respond(index){
       const request=requests[index];assert(request);
@@ -159,21 +178,77 @@ test('a failed worker post is cleaned up immediately so reference synthesis can 
   assert((await retry) instanceof Blob);
 });
 
-test('reference replacement stays on the worker transport and a stale handle cannot cancel its successor',async t=>{
-  const f=await browserFixture(t);let starts=0;
-  const old=f.api.speak({text:'الرصيد صفر.',locale:'ar',continuous:true,onStart(){starts++;}});
-  await flushUntil(()=>f.requests.length===1);f.respond(0);await flushUntil(()=>starts===1);
-  const current=f.api.speak({text:'Bakiye sıfır.',locale:'tr',continuous:true,onStart(){starts++;}});
-  await flushUntil(()=>f.requests.length===2);
-  old.cancel();
-  const activeWorker=f.requests[1].worker;
-  assert.equal(activeWorker.terminated,false);
-  assert.match(activeWorker.url,/reference-voice-host\.js\?v=1$/,'the request does not fall back to a different local voice');
-  f.respond(1);await flushUntil(()=>starts===2);
-  assert.equal(f.networkCalls,0,'the installed-voice coordinator does not perform an HTTP request');
-  const audio=f.audioElements[1],pauses=audio.pauses;
-  current.cancel();
-  assert.equal(activeWorker.terminated,true,'stopping buffered playback releases the actual reference worker');
-  assert(audio.pauses>pauses);
-  assert.equal(f.objectURLs.size,0);
+test('reference audio is delivered before completion and acknowledges only after playback accepts it',async t=>{
+  const f=await browserFixture(t),chunks=[];
+  let accepted,ended=false;
+  const pending=f.api.stream('الرصيد صفر.',{locale:'ar',onAudio:chunk=>{chunks.push(chunk);return new Promise(resolve=>{accepted=resolve;});}}).then(()=>{ended=true;});
+  assert.equal(f.requests[0].type,'stream');
+  f.send(0,{type:'audio',sequence:0,sampleRate:44100,samples:new Float32Array([0.25,-0.5]).buffer});
+  assert.equal(chunks.length,1);assert.deepEqual([...chunks[0].samples],[0.25,-0.5]);assert.equal(ended,false);
+  assert.equal(f.requests.length,1,'the host has no credit while the audio queue is full');
+  accepted();await flushUntil(()=>f.requests.length===2);
+  assert.equal(f.requests[1].type,'audio-ack');assert.equal(f.requests[1].sequence,0);
+  f.send(0,{type:'end'});await pending;assert.equal(ended,true);
+});
+
+test('warm preparation and synthesis share the same engine without speech-busy',async t=>{
+  const f=await browserFixture(t);
+  const warm=f.api.prepare('ar');warm.catch(()=>{});
+  const speech=f.api.stream('Bakiye sıfır.',{locale:'tr',onAudio(){}});speech.catch(()=>{});
+  assert.equal(f.requests.length,2);assert.equal(f.workers.length,1);
+  assert.equal(f.requests[0].type,'prepare');assert.equal(f.requests[1].type,'stream');
+  f.send(0,{type:'ready'});assert.equal((await warm).engineReady,true);
+  f.send(1,{type:'audio',sequence:0,sampleRate:44100,samples:new Float32Array([0.1]).buffer});
+  await flushUntil(()=>f.requests.some(request=>request.type==='audio-ack'));
+  f.send(1,{type:'end'});await speech;
+});
+
+test('finished playback keeps the worker warm and idle release waits for the playback owner',async t=>{
+  const f=await browserFixture(t,{stubPlayer:true});
+  const old=f.api.speak({text:'الرصيد صفر.',locale:'ar',continuous:true});
+  assert.equal(old.options.streaming,true);assert.equal(old.options.continuous,false);
+  const first=old.source.synthesize('الرصيد صفر.',{locale:'ar',signal:old.controller.signal});f.respond(0);await first;
+  const worker=f.workers[0];f.idle();assert.equal(worker.terminated,false,'active playback keeps its GPU engine');
+  old.finish();assert.equal(worker.terminated,false,'normal completion retains the loaded engine');
+  const next=f.api.speak({text:'Bakiye sıfır.',locale:'tr'});
+  const second=next.source.synthesize('Bakiye sıfır.',{locale:'tr',signal:next.controller.signal});
+  assert.equal(f.requests[1].worker,worker);old.cancel();f.respond(1);await second;
+  next.cancel();assert.equal(worker.terminated,false,'stopping already-generated playback retains its engine');
+  f.idle();assert.equal(worker.terminated,true,'unused GPU memory is eventually released');
+  assert.equal(f.networkCalls,0);
+});
+
+test('aborting active reference generation terminates its worker and stale audio cannot reach a successor',async t=>{
+  const f=await browserFixture(t),controller=new AbortController(),oldChunks=[],newChunks=[];
+  const old=f.api.stream('الرصيد صفر.',{locale:'ar',signal:controller.signal,onAudio:chunk=>oldChunks.push(chunk)});
+  const rejected=assert.rejects(old,{name:'AbortError'});controller.abort();await rejected;
+  assert.equal(f.workers[0].terminated,true);
+  const current=f.api.stream('Bakiye sıfır.',{locale:'tr',onAudio:chunk=>newChunks.push(chunk)});current.catch(()=>{});
+  f.send(0,{type:'audio',sequence:0,sampleRate:44100,samples:new Float32Array([0.1]).buffer});
+  assert.equal(oldChunks.length,0);assert.equal(newChunks.length,0);assert.equal(f.workers[1].terminated,false);
+  f.send(1,{type:'audio',sequence:0,sampleRate:44100,samples:new Float32Array([0.2]).buffer});
+  await flushUntil(()=>newChunks.length===1);await new Promise(resolve=>setImmediate(resolve));
+  f.send(1,{type:'end'});await current;
+});
+
+test('empty and malformed reference streams fail instead of completing successfully',async t=>{
+  const f=await browserFixture(t);
+  const empty=f.api.stream('الرصيد صفر.',{onAudio(){}});const emptyFailure=assert.rejects(empty,{code:'invalid-audio'});
+  f.send(0,{type:'end'});await emptyFailure;
+  const malformed=f.api.stream('الرصيد صفر.',{onAudio(){assert.fail('malformed audio must not be delivered');}});
+  const malformedFailure=assert.rejects(malformed,{code:'invalid-audio'});
+  f.send(1,{type:'audio',sequence:0,sampleRate:22050,samples:new Float32Array([0.1]).buffer});await malformedFailure;
+});
+
+test('page teardown releases a warm engine even when no speech request remains',async t=>{
+  const f=await browserFixture(t);const warm=f.api.prepare();f.send(0,{type:'ready'});await warm;
+  f.pagehide();assert.equal(f.workers[0].terminated,true);
+});
+
+test('a GPU failure while idle clears readiness so the next request creates a fresh engine',async t=>{
+  const f=await browserFixture(t);const warm=f.api.prepare();f.send(0,{type:'ready'});await warm;
+  f.send(0,{type:'fatal',error:'engine-failed'});
+  assert.equal(f.workers[0].terminated,true);assert.equal(f.api.getStatus('ar').engineReady,false);
+  const retry=f.api.prepare();f.send(1,{type:'ready'});await retry;
+  assert.equal(f.workers.length,2);
 });

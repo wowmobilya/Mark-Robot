@@ -1,5 +1,5 @@
 importScripts('./install-identity.js?v=1');
-const CACHE_NAME = 'wow-furniture-v180-reading-controls';
+const CACHE_NAME = 'wow-furniture-v181-mark-streaming';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
   './context-nav.js?v=5',
@@ -18,7 +18,7 @@ const urlsToCache = [
   './section-headings.css?v=7',
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
-  './robot-face.js?v=8',
+  './robot-face.js?v=9',
   './robot-face.css?v=5',
   './dialog-surfaces.css?v=1',
   './product-categories.js?v=2',
@@ -48,10 +48,11 @@ const urlsToCache = [
   './ui-motion.css?v=1',
   './annual-sales.js?v=2',
   './annual-sales.css?v=1',
-  './offline-voice.js?v=5',
+  './offline-voice.js?v=6',
   './offline-voice-worker.js?v=5',
   './reference-voice-assets.js?v=1',
   './reference-voice.js?v=1',
+  './reference-voice-host.js?v=2',
   './arabic-report-speech.js?v=2',
   './turkish-report-speech.js?v=1',
   './program-speech.js?v=1',
@@ -59,7 +60,7 @@ const urlsToCache = [
   './program-speech.css?v=2',
   './nabra-report-worker.js?v=3',
   './nabra-phonemizer.js?v=1',
-  './robot-settings.js?v=6',
+  './robot-settings.js?v=7',
   './robot-settings.css?v=3',
   './robot-report.js?v=4',
   './robot-report.css?v=2',
@@ -128,7 +129,7 @@ self.addEventListener('fetch', event => {
   // Worker imports then stay offline too; a missing module is a failed pack,
   // never a reason to fetch a different engine or silently change the voice.
   const referenceRuntime = sameOrigin &&
-    ((url.pathname.includes('/vendor/zonos3/') && /\.(?:m?js|json|bin|gguf)$/.test(url.pathname)) || url.pathname.endsWith('/reference-voice-host.js'));
+    url.pathname.includes('/vendor/zonos3/') && /\.(?:m?js|json|bin|gguf)$/.test(url.pathname);
   if (referenceRuntime && request.mode !== 'navigate') {
     event.respondWith(request.cache === 'no-store' ? fetch(request) :
       caches.open('infinity-offline-voice-v1').then(cache => cache.match(request)).then(response => response || Response.error()));
@@ -152,7 +153,8 @@ self.addEventListener('fetch', event => {
         }
         return response;
       })
-      .catch(async () => (await caches.match(request)) ||
+      .catch(async () => (sameOrigin ? await (await caches.open(CACHE_NAME)).match(request) : undefined) ||
+        (await caches.match(request)) ||
         (sameOrigin && request.mode === 'navigate' ? await caches.match('./index.html') : undefined) || Response.error())
   );
 });

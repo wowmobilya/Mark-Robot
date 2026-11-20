@@ -15,15 +15,16 @@
     return key==='ar'&&dialect==='eg'?'ar-EG':key;
   }
 
-  function generationBody({text,locale,embedding,embeddingName}){
+  function generationBody({text,locale,embedding,embeddingName,stream=false}){
     const language=LANGUAGES[localeKey(locale)];
     if(!language)throw fail('locale-unsupported');
     if(typeof text!=='string'||!text.trim()||text.length>800)throw fail('text-length');
     if(typeof embedding!=='string'||!embedding)throw fail('voice-reference-missing');
     return {text,language,speaker_mode:'embedding',speaker_embedding_base64:embedding,
-      speaker_embedding_name:embeddingName||'voice.npy',stream:false,format:'wav',
+      speaker_embedding_name:embeddingName||'voice.npy',stream,format:stream?'pcm':'wav',
       laci:true,speaker_cfg_scale:1,controls_cfg_scale:1,seed:1,
-      stream_codebooks:10,max_tokens:2000};
+      stream_codebooks:stream?1:10,max_tokens:2000,
+      ...(stream?{stream_decode:'prefix',stream_codebooks_scope:'first'}:{})};
   }
 
   function createCacheFetch({caches,digest,cacheName,assets,appBase,virtualBase}){
@@ -66,7 +67,8 @@
     quality:'reference',gender:'male',runtime:[],files:assets,bytes:assets.reduce((sum,asset)=>sum+asset.bytes,0),sharedBytes:0,
     sourceURL:manifest.sourceURL,licenseURL:new URL(manifest.licenseURL,appBase).href};
   const supported=!!(window.isSecureContext&&window.caches&&window.crypto?.subtle&&window.Worker&&navigator.gpu);
-  let deviceAvailable=null,deviceCheck=null,worker=null,job=null,nextId=0,activeHandle=null,idleTimer=null,speechOwner=0;
+  const IDLE_MS=300000,REQUEST_TIMEOUT_MS=90000,MAX_STREAM_SAMPLES=44100*150;
+  let deviceAvailable=null,deviceCheck=null,worker=null,workerReady=false,job=null,preparation=null,nextId=0,activeHandle=null,idleTimer=null,speechOwner=0,playbackOwner=null;
   const emit=(type,detail)=>window.dispatchEvent(new CustomEvent(type,{detail}));
   const publish=(type,value)=>{for(const locale of Object.keys(LANGUAGES))emit(type,{...value,locale,name:NAME});};
   const manager=base.createManager({caches:window.caches,fetch:window.fetch.bind(window),
@@ -87,7 +89,7 @@
   }
 
   function getStatus(locale='ar'){
-    const key=localeKey(locale),value={...manager.getStatus('ref'),locale:key,name:NAME};
+    const key=localeKey(locale),value={...manager.getStatus('ref'),locale:key,name:NAME,engineReady:workerReady};
     if(!LANGUAGES[key])return {...value,state:'unsupported',ready:false,available:false,reason:'locale-unsupported'};
     if(!supported||deviceAvailable===false)return {...value,state:'unsupported',ready:false,available:false,reason:'webgpu-unavailable'};
     if(deviceAvailable===null)return {...value,state:'checking',ready:false,available:false,reason:''};
@@ -102,42 +104,103 @@
 
   function terminate(code='cancelled'){
     clearTimeout(idleTimer);idleTimer=null;
-    if(worker){worker.terminate();worker=null;}
-    if(job){const task=job;job=null;clearTimeout(task.timer);task.cleanup();const problem=fail(code);if(code==='cancelled')problem.name='AbortError';task.reject(problem);}
+    if(worker){worker.terminate();worker=null;}workerReady=false;
+    const tasks=[job,preparation];job=preparation=null;
+    for(const task of tasks){if(!task)continue;clearTimeout(task.timer);task.cleanup();const problem=fail(code);if(code==='cancelled')problem.name='AbortError';task.reject(problem);}
   }
 
-  function synthesize(text,options={}){
+  function scheduleIdle(){
+    clearTimeout(idleTimer);idleTimer=null;
+    if(!worker||job||preparation||playbackOwner!==null)return;
+    const instance=worker;
+    idleTimer=setTimeout(()=>{if(worker===instance&&!job&&!preparation&&playbackOwner===null)terminate();},IDLE_MS);
+  }
+
+  function armTimeout(task){
+    clearTimeout(task.timer);
+    task.timer=setTimeout(()=>{if(job===task||preparation===task)terminate('speech-timeout');},REQUEST_TIMEOUT_MS);
+  }
+
+  function complete(task,value){
+    if(job===task)job=null;else if(preparation===task)preparation=null;else return;
+    clearTimeout(task.timer);task.cleanup();workerReady=true;task.resolve(task.type==='prepare'?getStatus(task.locale):value);scheduleIdle();
+  }
+
+  function ensureWorker(){
+    if(worker)return worker;
+    worker=new Worker(new URL('reference-voice-host.js?v=2',appBase),{type:'module'});
+    const instance=worker;
+    worker.onmessage=event=>{
+      if(worker!==instance)return;
+      const data=event.data||{};
+      if(data.type==='fatal'){terminate('engine-failed');return;}
+      const task=data.id===job?.id?job:data.id===preparation?.id?preparation:null;
+      if(!task)return;
+      if(data.error){terminate(data.error);return;}
+      if(data.type==='progress'){
+        armTimeout(task);if(data.phase==='ready')workerReady=true;
+        const progress={locale:task.locale,loaded:data.loaded,total:data.total,...(data.phase?{phase:data.phase}:{})};
+        emit('wf-reference-voice-loading',progress);try{task.onProgress?.(progress);}catch(_){}return;
+      }
+      if(data.type==='ready'&&task.type==='prepare'){complete(task);return;}
+      if(data.type==='audio'&&task.type==='stream'){
+        if(task.delivering||data.sequence!==task.sequence||data.sampleRate!==44100||!(data.samples instanceof ArrayBuffer)||!data.samples.byteLength||data.samples.byteLength%4){terminate('invalid-audio');return;}
+        const samples=new Float32Array(data.samples);
+        if(task.samples+samples.length>MAX_STREAM_SAMPLES||!samples.every(Number.isFinite)){terminate('invalid-audio');return;}
+        task.samples+=samples.length;task.sequence++;task.delivering=true;armTimeout(task);
+        let accepted;
+        try{accepted=task.onAudio({samples,sampleRate:data.sampleRate});}
+        catch(_){terminate('playback-failed');return;}
+        Promise.resolve(accepted).then(()=>{
+          if(worker!==instance||job!==task)return;
+          task.delivering=false;armTimeout(task);
+          try{instance.postMessage({id:task.id,type:'audio-ack',sequence:data.sequence});}
+          catch(_){terminate('engine-failed');return;}
+          if(task.ended)complete(task);
+        },()=>{if(worker===instance&&job===task)terminate('playback-failed');});
+        return;
+      }
+      if(data.type==='end'&&task.type==='stream'){
+        if(!task.samples){terminate('invalid-audio');return;}
+        if(task.delivering)task.ended=true;else complete(task);return;
+      }
+      if(task.type==='synthesize'&&data.blob instanceof Blob&&data.blob.type==='audio/wav'&&data.blob.size>=46){complete(task,data.blob);return;}
+      terminate('invalid-audio');
+    };
+    worker.onerror=()=>{if(worker===instance)terminate('engine-failed');};
+    return worker;
+  }
+
+  function request(type,text,options={}){
     const locale=options.locale||options.lang||'ar';
-    if(typeof text!=='string'||!text.trim()||text.length>800)return Promise.reject(fail('text-length'));
+    if(type!=='prepare'&&(typeof text!=='string'||!text.trim()||text.length>800))return Promise.reject(fail('text-length'));
     if(!getStatus(locale).ready)return Promise.reject(fail(getStatus(locale).reason||'pack-not-installed'));
     if(options.signal?.aborted)return Promise.reject(base.aborted());
-    if(job)return Promise.reject(fail('speech-busy'));
-    clearTimeout(idleTimer);idleTimer=null;
-    if(!worker){
-      worker=new Worker(new URL('reference-voice-host.js?v=1',appBase),{type:'module'});
-      const instance=worker;
-      worker.onmessage=event=>{
-        if(worker!==instance||!job||event.data?.id!==job.id)return;
-        if(event.data.type==='progress'){emit('wf-reference-voice-loading',{locale:job.locale,loaded:event.data.loaded,total:event.data.total});return;}
-        const task=job;job=null;clearTimeout(task.timer);task.cleanup();
-        if(event.data.error){worker.terminate();worker=null;task.reject(fail(event.data.error));}
-        else if(event.data.blob instanceof Blob){
-          task.resolve(event.data.blob);
-          idleTimer=setTimeout(()=>{if(!job&&worker===instance)terminate();},30000);
-        }
-        else task.reject(fail('invalid-audio'));
-      };
-      worker.onerror=()=>{if(worker===instance)terminate('engine-failed');};
+    if(type==='stream'&&typeof options.onAudio!=='function')return Promise.reject(fail('invalid-audio'));
+    if(type!=='prepare'&&job)return Promise.reject(fail('speech-busy'));
+    if(type==='prepare'){
+      if(workerReady)return Promise.resolve(getStatus(locale));
+      if(preparation)return preparation.promise;
     }
-    return new Promise((resolve,reject)=>{
-      const id=++nextId,abort=()=>{if(job?.id===id)terminate();};
-      job={id,locale:localeKey(locale),resolve,reject,cleanup:()=>options.signal?.removeEventListener('abort',abort),
-        timer:setTimeout(()=>{if(job?.id===id)terminate('speech-timeout');},90000)};
+    clearTimeout(idleTimer);idleTimer=null;
+    let instance;try{instance=ensureWorker();}catch(_){return Promise.reject(fail('engine-failed'));}
+    const id=++nextId,task={id,type,locale:localeKey(locale),onAudio:options.onAudio,onProgress:options.onProgress,samples:0,sequence:0,delivering:false,ended:false};
+    task.promise=new Promise((resolve,reject)=>{task.resolve=resolve;task.reject=reject;});
+    const abort=()=>{if(job===task||preparation===task)terminate();};
+    task.cleanup=()=>options.signal?.removeEventListener('abort',abort);
+    if(type==='prepare')preparation=task;else job=task;
+    armTimeout(task);
+    try{
       options.signal?.addEventListener('abort',abort,{once:true});
-      try{worker.postMessage({id,text,locale:localeKey(locale),dialect:options.dialect==='eg'?'eg':'sy'});}
-      catch(_){terminate('engine-failed');}
-    });
+      instance.postMessage({id,type,text,locale:task.locale,dialect:options.dialect==='eg'?'eg':'sy'});
+    }catch(_){terminate('engine-failed');}
+    return task.promise;
   }
+
+  const synthesize=(text,options={})=>request('synthesize',text,options);
+  const stream=(text,options={})=>request('stream',text,options);
+  const prepare=(locale='ar')=>request('prepare',null,{locale});
+  const release=()=>{if(job||playbackOwner!==null)return false;terminate();return true;};
 
   async function download(locale='ar',options={}){
     if(!LANGUAGES[localeKey(locale)])throw fail('locale-unsupported');
@@ -147,14 +210,17 @@
   }
 
   function speak(options={}){
-    const owner=++speechOwner;
-    activeHandle=player.speakGenerated(options,{getStatus,synthesize:(text,context)=>synthesize(text,{...context,dialect:options.dialect}),
-      dispose:()=>{if(owner===speechOwner)terminate();}});
+    const owner=++speechOwner;playbackOwner=owner;clearTimeout(idleTimer);idleTimer=null;
+    const dispose=()=>{if(playbackOwner===owner){playbackOwner=null;activeHandle=null;scheduleIdle();}};
+    try{activeHandle=player.speakGenerated({...options,streaming:true,continuous:false},{getStatus,
+      stream:(text,context)=>stream(text,{...context,dialect:options.dialect}),
+      synthesize:(text,context)=>synthesize(text,{...context,dialect:options.dialect}),dispose});}
+    catch(problem){dispose();throw problem;}
     return activeHandle;
   }
 
-  window.WFReferenceVoice=Object.freeze({getStatus,refresh,download,synthesize,speak,
-    preparePlayback:player.preparePlayback,
+  window.WFReferenceVoice=Object.freeze({getStatus,refresh,download,synthesize,stream,prepare,release,speak,
+    preparePlayback:()=>player.preparePlayback({streaming:true}),
     list:()=>Object.keys(LANGUAGES).map(locale=>({locale,id:voice.id,name:NAME,language:locale,bytes:voice.bytes,sharedBytes:0,quality:'reference',sourceURL:voice.sourceURL,licenseURL:voice.licenseURL})),
     cancelDownload:()=>manager.cancelDownload('ref'),
     remove:async(locale='ar')=>{activeHandle?.cancel();terminate();await manager.remove('ref');return refresh(locale);}});

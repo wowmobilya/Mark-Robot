@@ -50,6 +50,10 @@ def main():
     output = ROOT / 'reference-voice-assets.js'
     if args.refresh_local:
         current = json.loads(output.read_text().split('globalThis.WFReferenceVoiceAssets = ', 1)[1].rstrip().removesuffix(';'))
+        # App adapters travel with the shell. Updating playback must not invalidate
+        # an already installed 922 MB model pack.
+        current['assets'] = [item for item in current['assets']
+                             if item['id'] not in ('reference-voice-js', 'reference-voice-host-js')]
         for item in current['assets']:
             if item['url'].startswith('./'):
                 data = (ROOT / item['url'][2:].split('?', 1)[0]).read_bytes()
@@ -134,8 +138,6 @@ def main():
 
     for filename in ['engine.js', 'worker.js', 'upstream-worker.js', 'codec-worker.js']:
         local(VENDOR / filename, 'runtime-' + filename.replace('.', '-'), 'text/javascript')
-    for filename in ['reference-voice.js', 'reference-voice-host.js']:
-        local(ROOT / filename, filename.replace('.', '-'), 'text/javascript', query='?v=1')
 
     result = {'version': 1, 'id': 'mark-zonos3-reference-v1', 'cacheName': 'infinity-offline-voice-v1',
               'engineBase': './vendor/zonos3/a50e141/', 'runtimeRevision': RUNTIME_REVISION,

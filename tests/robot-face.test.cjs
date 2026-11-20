@@ -109,10 +109,12 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   win.WFArabicReportSpeech = win.WFTurkishReportSpeech = {prepare:value=>[{text:value.narration,charIndex:0,charLength:value.narration.length}]};
   const offlineVoice = {calls:[],cancels:0,getStatus:()=>({ready:offlineReady}),speak(request){this.calls.push(request);return{cancel:()=>{this.cancels++;}};}};
   if (offline) win.WFOfflineVoice = offlineVoice;
-  const referenceVoice = {calls:[],cancels:0,unlocks:0,disposals:0,cancelledDownloads:[],
+  const referenceVoice = {calls:[],cancels:0,unlocks:0,disposals:0,cancelledDownloads:[],prepares:[],releases:0,
     list:()=>[{locale:'ar',locales:['ar','en','tr','fr','ru'],name:'Mark · local reference',bytes:921000000}],
     getStatus:()=>({locale:lang,ready:referenceReady,state:referenceReady?'ready':'not-installed',name:'Mark · local reference',total:921000000}),
     preparePlayback(){this.unlocks++;return{dispose:()=>this.disposals++};},
+    prepare(locale){this.prepares.push(locale);return Promise.resolve();},
+    release(){this.releases++;},
     cancelDownload(locale){this.cancelledDownloads.push(locale);},
     speak(request){this.calls.push(request);return{cancel:()=>{this.cancels++;}};}};
   if (reference) win.WFReferenceVoice = referenceVoice;
@@ -531,7 +533,7 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
     f.reveal();f.report.click();await flush();
     check(f.referenceVoice.calls.length===1&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'An unset backend selects the verified reference pack for reports');
     const request=f.referenceVoice.calls[0];
-    check(request.dialect==='eg'&&request.rate===1.1&&request.volume===.6&&request.continuous===true,'Reference synthesis receives dialect and shared playback controls');
+    check(request.dialect==='eg'&&request.rate===1.1&&request.volume===.6&&request.continuous===false,'Reference synthesis retains dialect and playback controls without waiting for a full report');
     check(f.referenceVoice.unlocks===1&&f.win.WFProgramSpeech.getState().voiceName==='Mark · local reference','Reference playback uses its own audio lease and truthful voice name');
     request.onError(new Error('inference-failed'));
     check(!f.win.WFProgramSpeech.getState().active&&f.win.WFProgramSpeech.getState().state==='failed'&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Reference inference failure never silently switches to Nabra or a device voice');
@@ -576,6 +578,32 @@ for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr'
     f.referenceVoice.speak=()=>{throw new Error('reference-init-failed');};
     f.win.WFProgramSpeech.speak({text:'Reference initialization',event:{isTrusted:true}});
     check(f.win.WFProgramSpeech.getState().state==='failed'&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Synchronous reference initialization failure also cannot select a different voice');
+  }
+  {
+    const preferences={speechBackend:'reference'};
+    const f=fixture({reference:true,preferences});
+    await flush();
+    check(f.referenceVoice.prepares.length===1&&f.referenceVoice.prepares[0]==='ar', 'An installed selected Mark engine warms before the first reading');
+    check(!f.referenceVoice.calls.length&&!f.activity.some(Boolean), 'Warming does not start speech or announce reading');
+    preferences.speechBackend='local';f.send('wf-robot-preferences',{});
+    check(f.referenceVoice.releases>0,'Choosing another voice releases the unused warm Mark engine');
+    preferences.speechBackend='reference';f.send('wf-robot-preferences',{});await flush();
+    check(f.referenceVoice.prepares.length===2,'Selecting the installed Mark voice prepares it again');
+    f.hideDocument();
+    const count=f.referenceVoice.prepares.length;
+    f.send('wf-reference-voice-change',{locale:'ar',ready:true});await flush();
+    check(f.referenceVoice.prepares.length===count,'Hidden pages do not initialize the GPU engine');
+  }
+  for(const preferences of [{speechBackend:'local'},{speechBackend:'reference',speechEnabled:false},{speechBackend:'reference',speechVolume:0}]) {
+    const f=fixture({reference:true,preferences});await flush();
+    check(!f.referenceVoice.prepares.length,'Unused, disabled and muted Mark speech does not warm');
+  }
+  {
+    const f=fixture({reference:true,referenceReady:false,preferences:{speechBackend:'reference'}});await flush();
+    check(!f.referenceVoice.prepares.length,'Opening the program never downloads or prepares a missing voice pack');
+    f.referenceVoice.getStatus=()=>({ready:true,state:'ready',name:'Mark · local reference'});
+    f.send('wf-reference-voice-change',{locale:'ar',ready:true});await flush();
+    check(f.referenceVoice.prepares.length===1,'Completing the existing pack download warms Mark before the next tap');
   }
   console.log(`${assertionCount} robot offline speech/report lifecycle assertions passed.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

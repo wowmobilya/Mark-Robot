@@ -36,6 +36,33 @@ key, invented remote endpoint or hidden remote speech fallback is included.
 
 ## Local reading based on the selected sample
 
+Release 181 starts playback from the first generated PCM packet instead of
+waiting for the complete report. A trusted tap unlocks one Web Audio context;
+audio packets and sentences share a playback clock, with a short scheduling
+lead and at most eight seconds queued ahead. The installed, selected reference
+voice is prepared while the visible application is idle. Completed readings
+keep the engine resident for five minutes; active playback cannot expire its
+idle timer. Stopping active generation, hiding the application or removing the
+pack releases its GPU work. First use can still require model initialization,
+and real generation speed depends on the device's GPU.
+
+Application adapters now update with the small app shell. Model URLs,
+checksums, pack identity and existing downloaded weights are retained, so this
+upgrade does not require a new 922 MB download. Offline module loading prefers
+current shell code over old adapter copies in the voice cache. Pinned vendor
+runtime and weights retain their cache-only boundary.
+
+The top reader has a dedicated position beside theme and settings. During
+preparation and active reading, the app requests a screen wake lock and releases
+it after completion or stop. A visible, secure page and browser/OS support are
+required; platform revocation is handled without disrupting speech.
+
+The full-text preparation preference applies to the lightweight voice only.
+Mark uses progressive playback regardless of that legacy preference. At 100%
+speed its PCM is unchanged. Web Audio playback at a different saved rate also
+changes pitch; the recorded HTML audio path preserves pitch. No time-stretch
+dependency is installed by this update.
+
 Release 179 adds a shared ZONOS3-Mini pack for changing reports and selected text.
 It uses 192-value speaker embeddings extracted locally from the six approved
 Mark recordings. This is a locally generated approximation, not an export of
@@ -55,8 +82,9 @@ download's size and SHA-256. The installer checks available space, verifies
 all bytes, and marks the pack ready only after the complete inventory is saved.
 `reference-voice-host.js` and the guarded vendor worker use only verified cache
 entries for all model metadata, shards, companions and embeddings. They have
-no network fallback. Runtime module imports are also restricted to installed
-cache entries by the service worker. Business report text and synthesized audio
+no network fallback. Pinned vendor runtime imports are also restricted to installed
+cache entries by the service worker; application adapters use the app shell.
+Business report text and synthesized audio
 never leave the device and are not retained in the model cache.
 
 The common audio owner buffers a complete report into one validated PCM WAV,

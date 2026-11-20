@@ -161,6 +161,7 @@
     let preferences = {autoExpressions: true, idleMotion: true, speechEnabled: true, speechRate: 1, speechVolume: 1, arabicDialect: 'sy', speechBackend: 'reference', continuousSpeech: true};
     let speakerName = '';
     let lastMotion = {active: false, x: 0, y: 0};
+    let referenceWarmRequested = false;
 
     function language() {
       const lang = (root.lang || 'ar').toLowerCase().split(/[-_]/)[0];
@@ -241,6 +242,22 @@
         setExpression('calm');
       }
       render();
+      warmReferenceVoice();
+    }
+
+    function warmReferenceVoice() {
+      const manager = window.WFReferenceVoice;
+      const selected = !disposed && !document.hidden && preferences.speechBackend === 'reference' &&
+        preferences.speechEnabled && preferences.speechVolume > 0;
+      if (!selected) {
+        referenceWarmRequested = false;
+        try { manager?.release?.(); } catch (_) {}
+        return;
+      }
+      if (referenceWarmRequested || typeof manager?.prepare !== 'function' || !manager.getStatus(locale).ready) return;
+      referenceWarmRequested = true;
+      // Preparation reads the already installed pack only. It never speaks or downloads.
+      try { Promise.resolve(manager.prepare(locale)).catch(() => {}); } catch (_) {}
     }
 
     function applyMotion(event) {
@@ -349,6 +366,7 @@
       const selectedEvent = preferences.speechBackend === 'reference' ? 'wf-reference-voice-change' : 'wf-offline-voice-change';
       if (event?.type && event.type !== selectedEvent) return;
       refreshVoices();
+      warmReferenceVoice();
       if (sessionKind !== 'report' || (preferences.speechBackend !== 'reference' && event?.detail?.locale !== locale)) return;
       const pack = voicePackState();
       const state = pack.ready || currentVoice() ? 'ready' : pack.state === 'downloading' ? 'downloading' :
@@ -478,7 +496,8 @@
       if (sessionKind === 'report') reportVoice('ready');
       try {
         request.handle = manager.speak({text, locale, chunks, playback,
-          rate: preferences.speechRate, volume: preferences.speechVolume, continuous: preferences.continuousSpeech, dialect: preferences.arabicDialect,
+          rate: preferences.speechRate, volume: preferences.speechVolume,
+          continuous: preferences.speechBackend !== 'reference' && preferences.continuousSpeech, dialect: preferences.arabicDialect,
           onProgress(progress) {
             if (offlineRequest !== request || request.started) return;
             resetPreparationTimer();
@@ -703,6 +722,7 @@
     function checkVisibility() {
       if (active() && !visible()) finish(sessionKind === 'program' || sessionKind === 'preview' ? 'stopped' : 'ready', true);
       applyMotion();
+      warmReferenceVoice();
     }
 
     function syncLanguage() {
@@ -723,6 +743,7 @@
       if (disposed) return;
       if (active()) finish('ready', true);
       disposed = true;
+      warmReferenceVoice();
       visibilityObserver.disconnect();
       pageObserver.disconnect();
       languageObserver.disconnect();

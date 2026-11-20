@@ -17,7 +17,7 @@ globalThis.WFReferenceVoiceAssets = {
     "fr": "./assets/reference-voice/embeddings/fr.npy",
     "ru": "./assets/reference-voice/embeddings/ru.npy"
   },
-  "bytes": 921899301,
+  "bytes": 921886894,
   "assets": [
     {
       "id": "backbone-manifest-json",
@@ -295,20 +295,6 @@ globalThis.WFReferenceVoiceAssets = {
       "url": "./vendor/zonos3/a50e141/codec-worker.js",
       "bytes": 8929,
       "sha256": "20f39823214985fd9707891e75a0e47b8c1bd35dcff1598c282f468178493de6",
-      "type": "text/javascript"
-    },
-    {
-      "id": "reference-voice-js",
-      "url": "./reference-voice.js?v=1",
-      "bytes": 9611,
-      "sha256": "16e0b36fd8fb40324065267f1fd2a56757f330e2616fd657dedee3c20a851b46",
-      "type": "text/javascript"
-    },
-    {
-      "id": "reference-voice-host-js",
-      "url": "./reference-voice-host.js?v=1",
-      "bytes": 2796,
-      "sha256": "45e07f26559d4b744cf43ac59a3d3d0ea1f5d0fab671b2b0ec752ce31e183041",
       "type": "text/javascript"
     }
   ]
