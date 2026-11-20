@@ -22,6 +22,25 @@
 /* Section controls reuse the existing buttons, cutout and moving circle. */
 #bottomNav .wf-task-action {display:none!important}
 @media screen and (max-width:1024px){
+ html body #mainContent .page.active.wf-shared-actions-docked button[data-wf-shared-dock-source] {display:none!important}
+ /* Keep source ancestors rendered while removing their empty fixed-bar shell. */
+ html body #mainContent #page-add-company.active.wf-shared-actions-docked #coFormStickyBar {
+   padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;
+   backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+ }
+ html body #mainContent #page-quick-barcode.active.wf-shared-actions-docked .qbl-modes:has(> #qblScanMode[data-wf-shared-dock-source]):has(> #qblBrowseMode[data-wf-shared-dock-source]) {
+   padding:0!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;
+ }
+ /* The tier overlay is at 1500; independent dialogs retain their 2000+ layer. */
+ html body #bottomNav[data-task-mode="context"][data-section="quick-barcode"][data-context-stage="price-tier"] {z-index:1501!important;}
+ html body #mainContent #page-quick-barcode.active[data-context-stage="price-tier"] #qblPhase2 {
+   --wf-tier-footer-space:calc(96px + env(safe-area-inset-bottom,0px));
+   box-sizing:border-box;padding-block:16px var(--wf-tier-footer-space)!important;
+ }
+ html body #mainContent #page-quick-barcode.active[data-context-stage="price-tier"] #qblTierCard {
+   min-block-size:0;max-block-size:calc(100dvh - 16px - var(--wf-tier-footer-space))!important;
+   overflow:auto;overscroll-behavior:contain;
+ }
  html body #bottomNav[data-task-mode="settings"] .bnav-btn:not(#bnav-2) {display:none!important}
  html body #bottomNav[data-task-mode="settings"] {--nav-x:50%!important;justify-content:center}
  html body #bottomNav[data-task-mode="settings"] #bnavCircle {left:calc(50% - 24px)!important}

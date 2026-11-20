@@ -6,7 +6,7 @@ const acorn=require('acorn');
 const walk=require('acorn-walk');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../ui-navigation.js'),'utf8');
 const functions={};
-walk.simple(acorn.parse(source,{ecmaVersion:'latest'}),{FunctionDeclaration(node){if(['syncBackButtons','syncControls','syncSectionHeadings'].includes(node.id.name))functions[node.id.name]=source.slice(node.start,node.end)}});
+walk.simple(acorn.parse(source,{ecmaVersion:'latest'}),{FunctionDeclaration(node){if(['syncBackButtons','syncControls','syncSectionHeadings','updatePosition'].includes(node.id.name))functions[node.id.name]=source.slice(node.start,node.end)}});
 function fixture(){
  const root={dir:'rtl',lang:'ar',classList:{contains:()=>false}};
  const text={nodeType:3,nodeValue:'← '};const label={nodeType:1,textContent:'رجوع'};
@@ -37,6 +37,15 @@ test('back arrow follows RTL/LTR and updates without duplicate icons',()=>{
   assert.match(icon.innerHTML,direction==='left'?/M19 12H5/:/M5 12h14/);
  }
  assert.equal(f.button.childNodes.length,3);assert.equal(f.button.onclick,f.handler);
+});
+
+test('internal headings do not acquire a duplicate title and arbitrary page number',()=>{
+ const dashboard={id:'page-dashboard',classList:{contains:()=>false}};
+ const internal={id:'page-products',classList:{contains:()=>true},querySelector(){throw Error('the page already has its own heading');}};
+ let removals=0;
+ const context=vm.createContext({main:{querySelectorAll:()=>[dashboard,internal]},dashboard,position:{remove(){removals++;}}});
+ vm.runInContext(functions.updatePosition+';updatePosition()',context);
+ assert.equal(removals,1);
 });
 
 test('drawer pagination fits translated rows at measured heights and preserves every destination',()=>{

@@ -1,0 +1,189 @@
+/* Business screens share the program's materials. Documents and print are untouched. */
+@media screen {
+  html body #mainContent .wf-business-page {
+    --wf-business-gap: clamp(14px, 1.8vw, 22px);
+    --wf-business-soft: color-mix(in srgb, var(--brand-primary) 6%, var(--card));
+  }
+  html body #mainContent .wf-business-page :is(.card,.inv-step,.pay-add-card,.pay-history-card,.pay-progress-wrap,.pay-stat-box) {
+    border: 1px solid var(--border) !important; border-radius: 16px !important;
+    background: var(--card) !important; box-shadow: 0 5px 18px -14px color-mix(in srgb, var(--text) 35%, transparent) !important;
+    min-inline-size: 0; box-sizing: border-box;
+  }
+  html body #mainContent .wf-business-page :is(.fg,.card-hdr,.card-title,.inv-step-title) { min-inline-size: 0; }
+  html body #mainContent .wf-business-page :is(.fl,.card-title) { font-size: 14px !important; line-height: 1.6; }
+  html body #mainContent .wf-business-page .fl { margin-block-end: 7px; }
+  html body #mainContent .wf-business-page :is(input.fc,select.fc,textarea.fc) {
+    min-inline-size: 0; min-block-size: 46px; box-sizing: border-box;
+    border: 1px solid var(--border) !important; border-radius: 11px !important;
+    background: var(--card) !important; color: var(--text); line-height: 1.5;
+  }
+  html body #mainContent .wf-business-page textarea.fc { min-block-size: 108px; resize: vertical; }
+  html body #mainContent .wf-business-page :is(.btn,.co-details-toggle,.inv-step-hdr,.pm-receipt-type) { min-block-size: 44px; touch-action: manipulation; }
+  html body #mainContent .wf-business-page :is(.btn,.client-type-step-card) { white-space: normal; }
+  html body #mainContent .wf-business-page :is(button,[role="button"],[role="radio"],input,select,textarea,[role="region"]):focus-visible {
+    outline: 2px solid var(--brand-primary); outline-offset: 3px;
+  }
+  html body #mainContent .wf-business-page :is(.co-info,.co-fin-row,.inv-card-meta,.inv-card-pay-footer,.inv-card-co) {
+    font-size: 13px !important; line-height: 1.65; overflow-wrap: anywhere;
+  }
+  html body #mainContent .wf-business-page :is(.co-fin-val,.inv-card-total,.pay-stat-val,.pay-item-amt) {
+    font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+  }
+
+  /* One card keeps its context while its own actions expand underneath. */
+  html body #mainContent :is(#coGrid,#invListContainer) .wf-business-card { cursor: default; align-self: start; }
+  html body #mainContent :is(#coGrid,#invListContainer) .wf-business-card :is(.co-card-content,.inv-card-content) {
+    opacity: 1 !important; transform: none !important; max-height: none !important;
+    overflow: visible !important; pointer-events: auto !important; transition: none !important;
+  }
+  html body #mainContent :is(#coGrid,#invListContainer) :is(.co-card-toggle-hint,.inv-card-toggle-hint) { display: none !important; }
+  html body #mainContent :is(#coGrid,#invListContainer) .wf-business-card-toggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    inline-size: calc(100% - 32px); min-block-size: 44px; margin: 0 16px 14px; padding: 9px 12px;
+    border: 1px solid var(--border); border-radius: 11px; color: var(--brand-primary);
+    background: var(--wf-business-soft); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer;
+  }
+  .wf-business-card-toggle > span:last-child { display: grid; place-items: center; flex: none; }
+  .wf-business-card-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+  html body #mainContent :is(#coGrid,#invListContainer) .wf-business-card :is(.co-card-actions,.inv-card-actions) {
+    display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px;
+    max-height: none !important; opacity: 1 !important; overflow: visible !important;
+    margin: 0 !important; padding: 14px !important; border-block-start: 1px solid var(--border) !important;
+    background: var(--wf-business-soft) !important; transition: none !important;
+  }
+  html body #mainContent :is(#coGrid,#invListContainer) .wf-business-card :is(.co-card-actions,.inv-card-actions)[hidden] { display: none !important; }
+  html body #mainContent :is(#coGrid,#invListContainer) :is(.co-card-actions,.inv-card-actions) > .btn {
+    inline-size: 100%; min-inline-size: 0; min-block-size: 44px; margin: 0; padding: 10px !important;
+    font-size: 13px !important; line-height: 1.5; border-radius: 10px !important;
+    animation: none !important; transform: none !important; box-shadow: none !important; overflow-wrap: anywhere;
+  }
+  html body #mainContent :is(#coGrid,#invListContainer) :is(.co-card-actions,.inv-card-actions) > .btn:first-child { grid-column: 1 / -1; }
+  html body #mainContent #coGrid .co-details-toggle { font-size: 13px; }
+  html body #mainContent #coGrid .co-fin-summary { padding: 10px 12px; }
+  html body #mainContent #invListContainer .inv-card-hdr { align-items: center; }
+  html body #mainContent #invListContainer .inv-card-total { font-size: clamp(20px,2vw,24px); }
+  html body #mainContent #invListContainer .inv-card-currency-tag { font-size: 12px; }
+  html body #mainContent #invClientFilterBar { background: var(--wf-business-soft) !important; border-color: var(--border) !important; border-radius: 14px !important; }
+  html body #mainContent #invClientFilterName { font-size: 16px !important; overflow-wrap: anywhere; }
+  html body #mainContent :is(#invClientFilterTitle,#invClientFilterCount) { font-size: 12px !important; letter-spacing: normal !important; }
+
+  /* Client and invoice entry use predictable field groups and reading width. */
+  html body #mainContent #page-add-company > .card { max-inline-size: 1040px; margin-inline: auto; padding: clamp(16px,2vw,24px); }
+  html body #mainContent #page-add-company #coFormFields { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 18px !important; }
+  html body #mainContent #page-add-company #coNameField { grid-column: 1 / -1; }
+  html body #mainContent #page-add-company .card-hdr { background: transparent !important; padding: 0 0 14px !important; margin-block-end: 18px; border-radius: 0 !important; }
+  html body #mainContent #page-add-company #coLogoArea { max-inline-size: 420px; margin-inline: auto; min-block-size: 150px; border-radius: 13px; }
+  html body #mainContent :is(#page-select-client-type,#page-select-invoice-type) .client-type-step-card {
+    min-block-size: 112px; padding: 18px !important; margin-block-end: 12px; gap: 14px;
+    border-radius: 16px !important; box-shadow: none !important;
+  }
+  html body #mainContent :is(#page-select-client-type,#page-select-invoice-type) .ctsc-title { font-size: 16px; line-height: 1.5; }
+  html body #mainContent :is(#page-select-client-type,#page-select-invoice-type) .ctsc-desc { font-size: 13px; line-height: 1.7; }
+  html body #mainContent #page-create-invoice .inv-builder { gap: var(--wf-business-gap); }
+  html body #mainContent #page-create-invoice .inv-step { margin-block-end: var(--wf-business-gap); }
+  html body #mainContent #page-create-invoice .inv-step-hdr { padding: 15px 18px; background: var(--wf-business-soft); gap: 10px; }
+  html body #mainContent #page-create-invoice .inv-step-title { font-size: 15px; line-height: 1.5; }
+  html body #mainContent #page-create-invoice .inv-step-badge { padding: 4px 9px; font-size: 12px; flex: none; }
+  html body #mainContent #page-create-invoice .inv-step-body { padding: clamp(14px,2vw,22px); }
+  html body #mainContent #page-create-invoice .inv-tbl-wrap { border: 1px solid var(--border); border-radius: 12px; overscroll-behavior-inline: contain; }
+  html body #mainContent #page-create-invoice .inv-tbl { font-size: 13px; }
+  html body #mainContent #page-create-invoice .inv-tbl :is(th,td) { padding: 10px; }
+  html body #mainContent #page-create-invoice .qty-btn { inline-size: 44px; block-size: 44px; flex: none; font-size: 18px; }
+  html body #mainContent #page-create-invoice :is(.qty-inp,.il-inp) { min-block-size: 44px; font-size: 15px; border-radius: 8px; }
+  html body #mainContent #page-create-invoice .qty-inp { inline-size: 48px; }
+  html body #mainContent #page-create-invoice .il-inp { inline-size: 82px; }
+  html body #mainContent #page-create-invoice :is(#sumSectionLabel,#sumPaySection,#sumEquivSection,#sumShipSection) { font-size: 13px !important; letter-spacing: normal !important; }
+  html body #mainContent #page-create-invoice :is(#sumDeposit,#sumDiscount) {
+    min-block-size: 44px; inline-size: 110px !important; max-inline-size: 45%;
+    font-size: 16px !important; padding: 9px 12px !important; border-radius: 10px !important;
+  }
+  html body #mainContent #page-create-invoice :is([data-i18n="sum_subtotal"],[data-i18n="sum_deposit"],[data-i18n="sum_discount"],[data-i18n="sum_grand_total"],[data-i18n="sum_total_paid"],[data-i18n="sum_balance_due"]) { font-size: 14px !important; line-height: 1.6; }
+  html body #mainContent #page-create-invoice :is(#sumSubtotal,#sumKdvAmt,#sumTotalPaid,#sumEquivVal1,#sumEquivVal2,#sumCBM,#sumPackets) { font-size: 15px !important; font-variant-numeric: tabular-nums; }
+  html body #mainContent #page-create-invoice :is(#sumEquivLbl1,#sumEquivLbl2,#sumPktsLabel) { font-size: 12px !important; letter-spacing: normal !important; }
+  html body #mainContent #page-create-invoice :is(#sumTotal,#sumRemaining) { font-size: 20px !important; line-height: 1.5; font-variant-numeric: tabular-nums; }
+
+  /* Payment context leads; the page title is not repeated inside its summary. */
+  html body #mainContent #page-payment-management .pay-page-wrap { max-inline-size: 1040px; }
+  html body #mainContent #page-payment-management #payMgmtTitle { display: none !important; }
+  html body #mainContent #page-payment-management .pay-page-header {
+    background: var(--wf-business-soft) !important; color: var(--text) !important;
+    border: 1px solid var(--border); border-radius: 16px; padding: 20px; gap: 16px; flex-wrap: wrap;
+  }
+  html body #mainContent #page-payment-management .pay-page-icon { color: var(--brand-primary); font-size: 28px; }
+  html body #mainContent #page-payment-management #payMgmtCompany { font-size: 17px; font-weight: 750; opacity: 1; line-height: 1.6; overflow-wrap: anywhere; }
+  html body #mainContent #page-payment-management #payMgmtGrand { font-size: 26px; line-height: 1.5; color: var(--brand-primary); font-variant-numeric: tabular-nums; }
+  html body #mainContent #page-payment-management #payMgmtCurrBadge { color: var(--text2); background: var(--card) !important; border: 1px solid var(--border); }
+  html body #mainContent #page-payment-management .pay-stats-3 { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+  html body #mainContent #page-payment-management .pay-stat-box { padding: 18px 12px; text-align: start; }
+  html body #mainContent #page-payment-management .pay-stat-val { font-size: 20px; line-height: 1.5; }
+  html body #mainContent #page-payment-management .pay-stat-lbl { font-size: 13px; line-height: 1.5; }
+  html body #mainContent #page-payment-management :is(.pay-add-card,.pay-history-card,.pay-progress-wrap) { padding: clamp(16px,2vw,22px); }
+  html body #mainContent #page-payment-management .pay-add-card > div:has(> .fg) { gap: 16px !important; margin-block-end: 18px !important; }
+  html body #mainContent #page-payment-management #pmReceiptTypeGrid { grid-template-columns: repeat(3,minmax(0,1fr)) !important; gap: 8px !important; }
+  html body #mainContent #page-payment-management .pm-receipt-type { min-inline-size: 0; padding: 10px 7px !important; font-size: 12px !important; line-height: 1.5; border-radius: 11px !important; }
+  html body #mainContent #page-payment-management .pm-receipt-type[aria-checked="true"] { background: var(--wf-business-soft) !important; border-color: var(--brand-primary) !important; color: var(--brand-primary) !important; }
+  html body #mainContent #page-payment-management :is(#pmConvDesc,#pmSmartNotePreview) { font-size: 13px !important; line-height: 1.7; }
+  html body #mainContent #page-payment-management .pay-item { gap: 10px; padding: 14px; align-items: flex-start; }
+  html body #mainContent #page-payment-management .pay-item-amt { font-size: 17px; }
+  html body #mainContent #page-payment-management :is(.pay-item-meta,.pay-item-note) { font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+  html body #mainContent #page-payment-management .pay-item-del { inline-size: 44px; block-size: 44px; border-radius: 10px; }
+
+  /* Rates, reports and cashboxes retain their native currency and data structure. */
+  html body #mainContent #page-cashboxes .cashboxes { inline-size: min(100%,64rem); box-sizing: border-box; padding: clamp(16px,2vw,24px); }
+  html body #mainContent #page-cashboxes .cashboxes form { gap: 16px; }
+  html body #mainContent #page-cashboxes .cashboxes label { min-inline-size: 0; font-size: 14px; line-height: 1.6; }
+  html body #mainContent #page-cashboxes :is(input,select) { min-block-size: 46px; padding: 10px 12px; }
+  html body #mainContent #page-cashboxes .cashbox-overview { padding: 16px; background: var(--wf-business-soft); }
+  html body #mainContent #page-cashboxes output { font-size: 18px; font-weight: 750; line-height: 1.6; font-variant-numeric: tabular-nums; }
+  html body #mainContent #page-cashboxes ol { margin-block: 12px 0; }
+  html body #mainContent #page-cashboxes li { padding-block: 14px; font-size: 14px; line-height: 1.6; }
+  html body #mainContent #page-cashboxes li small { font-size: 12px; overflow-wrap: anywhere; }
+  html body #mainContent #page-reports :is(.wf-business-metric dt,.wf-business-counts dt,.wf-business-daily>div,.wf-business-currencies table) { font-size: 13px; line-height: 1.65; }
+  html body #mainContent #page-reports :is(.wf-business-basis,.wf-business-definitions,.wf-business-daily small,.wf-business-currencies thead th) { font-size: 12px; }
+  html body #mainContent #page-reports .wf-business-currencies :is(th,td) { padding: 10px 8px; }
+  html body #mainContent #page-exchange .curr-item { min-inline-size: 0; padding: 16px; border-radius: 14px; }
+  html body #mainContent #page-exchange .curr-refresh { min-inline-size: 44px; min-block-size: 44px; }
+
+  /* The account statement remains a financial table with its own scroll area. */
+  #wfsa .wsa-shell { padding: clamp(16px,2.4vw,30px); }
+  #wfsa :is(button,input:not([type="checkbox"]),select) { min-block-size: 44px; border-radius: 10px; }
+  #wfsa .wsa-check { min-block-size: 44px; }
+  #wfsa :is(.wsa-muted,.wsa-small,.wsa-kpi .hint,.wsa-grid span,.wsa-pager,.wsa-foot) { font-size: 12px; line-height: 1.7; }
+  #wfsa :is(.wsa-kpi .label,label,.wsa-grid strong) { font-size: 14px; line-height: 1.6; }
+  #wfsa :is(.wsa-filters,.wsa-content,.wsa-kpi) { border-radius: 14px; }
+  #wfsa .wsa-scroll { overscroll-behavior-inline: contain; }
+  #wfsa table { font-size: 13px; }
+  #wfsa :is(th,td) { padding: 13px; }
+  #wfsa .wsa-actions button { font-size: 13px; line-height: 1.4; }
+  #wfsa .wsa-invoice summary { min-block-size: 54px; }
+
+  @media (max-width:700px) {
+    html body #mainContent .wf-business-page :is(input.fc,select.fc,textarea.fc),
+    html body #mainContent #page-cashboxes :is(input,select), #wfsa :is(input,select) { font-size: 16px !important; }
+    html body #mainContent #page-add-company #coFormFields { grid-template-columns: minmax(0,1fr) !important; gap: 16px !important; }
+    html body #mainContent #page-payment-management .pay-add-card > div:has(> .fg) { grid-template-columns: minmax(0,1fr) !important; }
+    html body #mainContent #page-payment-management .pay-page-header { padding: 16px; }
+    html body #mainContent #page-payment-management .pay-page-header > div:last-child { text-align: start !important; }
+    html body #mainContent #page-payment-management .pay-stats-3 { grid-template-columns: minmax(0,1fr); gap: 8px; }
+    html body #mainContent #page-payment-management .pay-stat-box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 13px 16px; }
+    html body #mainContent #page-payment-management .pay-stat-val { margin: 0; }
+    html body #mainContent #page-create-invoice :is(.qty-inp,.il-inp) { font-size: 16px; }
+    html body #mainContent #page-create-invoice .inv-step-hdr { padding: 13px; }
+    html body #mainContent #page-create-invoice #step1Body > div > .fg { min-inline-size: 0 !important; }
+    html body #mainContent #page-create-invoice #step1Body > div:first-child:has(> .fg) { display: grid !important; }
+    html body #mainContent #page-create-invoice #step1Body > div:has(> .fg) { grid-template-columns: minmax(0,1fr) !important; }
+    html body #mainContent #page-cashboxes :is(.cashboxes form,.cashbox-overview) { grid-template-columns: minmax(0,1fr); }
+    html body #mainContent #page-cashboxes output { text-align: start; }
+    #wfsa .wsa-filters { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    #wfsa .wsa-actions { gap: 8px; }
+    #wfsa .wsa-head > .wsa-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+    #wfsa .wsa-actions button { min-inline-size: 0; white-space: normal; }
+  }
+  @media (max-width:380px) {
+    #wfsa .wsa-filters { grid-template-columns: minmax(0,1fr); }
+    html body #mainContent #page-payment-management #pmReceiptTypeGrid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  }
+  @media (prefers-reduced-motion:no-preference) {
+    html:not([data-wf-motion="reduced"]) .wf-business-card-toggle svg { transition: transform .16s ease; }
+  }
+}

@@ -1,10 +1,15 @@
 importScripts('./install-identity.js?v=1');
-const CACHE_NAME = 'wow-furniture-v189-company-section-header';
+const CACHE_NAME = 'wow-furniture-v190-internal-workspaces';
 const urlsToCache = [
   './workspace-surfaces.css?v=36',
-  './context-nav.js?v=7',
-  './context-nav.css?v=4',
+  './context-nav.js?v=8',
+  './context-nav.css?v=5',
   './settings-actions.js?v=1',
+  './product-workspace.js?v=1',
+  './business-workspace.js?v=1',
+  './internal-workspace.css?v=1',
+  './product-workspace.css?v=1',
+  './business-workspace.css?v=1',
   './settings-actions.css?v=1',
   './',
   './bottomnav-fit.css?v=1',
@@ -46,7 +51,7 @@ const urlsToCache = [
   './ui-i18n.js?v=27',
   './modern-ui.css?v=47',
   './ui-identity.css?v=34',
-  './ui-navigation.js?v=28',
+  './ui-navigation.js?v=29',
   './ui-logo.js?v=3',
   './ui-settings.js?v=2',
   './ui-icons.js?v=49',

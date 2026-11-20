@@ -539,6 +539,9 @@
     const pages=[...main.querySelectorAll('.page[id^="page-"]')];
     const active=pages.find(page=>page.classList.contains('active'));
     if(!active)return;
+    // A DOM page number is not workflow progress. Internal pages already have
+    // their own title, so keep the dashboard badge out of their headers.
+    if(active!==dashboard){position.remove();return;}
     const number=pages.indexOf(active)+1;
     const lang=root.lang||'ar';
     const link=[...document.querySelectorAll('#sidebar .nav-item')].find(button=>button.getAttribute('onclick')?.includes("'"+active.id.slice(5)+"'"));

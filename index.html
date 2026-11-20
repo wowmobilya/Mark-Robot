@@ -2958,8 +2958,6 @@ textarea.fc{resize:vertical;min-height:72px}
 .modal-close{width:30px;height:30px;border-radius:7px;border:none;background:var(--input);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all var(--tr)}
 .modal-close:hover{background:var(--red);color:#fff}
 
-/* Animate the directional glyph independently of the numeric quote. */
-setInterval(()=>{document.querySelectorAll('.wf-market-trend').forEach(tag=>{if(tag.querySelector('.wf-market-arrow'))return;const text=tag.textContent,arrow=text.match(/[▲▼]$/)?.[0];if(!arrow)return;tag.textContent=text.slice(0,-1).trim();const icon=document.createElement('span');icon.className='wf-market-arrow';icon.textContent=arrow;icon.setAttribute('aria-hidden','true');tag.append(icon);});},1000);
 /* ============================================================
    TOAST
 ============================================================ */
@@ -6435,9 +6433,9 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=34">
      <script src="cart-page.js?v=1" defer></script>
-<script src="ui-navigation.js?v=28" defer></script>
+<script src="ui-navigation.js?v=29" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
-<script src="context-nav.js?v=7" defer></script>
+<script src="context-nav.js?v=8" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=3" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
@@ -6460,6 +6458,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="currency-sources.js?v=3" defer></script>
 <script src="rate-refresh.js?v=8" defer></script>
 <script src="settings-actions.js?v=1" defer></script>
+<script src="product-workspace.js?v=1" defer></script>
+<script src="business-workspace.js?v=1" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
 <script src="arabic-report-speech.js?v=3" defer></script>
 <script src="turkish-report-speech.js?v=1" defer></script>
@@ -6471,14 +6471,14 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="speech-controls.js?v=3" defer></script>
 <script src="greeting-carousel.js?v=18" defer></script>
 <script src="developer-profile.js?v=1" defer></script>
-<script src="app-updates.js?v=2" defer data-release="189"></script>
+<script src="app-updates.js?v=2" defer data-release="190"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
 <link rel="stylesheet" href="dashboard-visuals.css?v=36">
 <link rel="stylesheet" href="section-headings.css?v=7">
 <link rel="stylesheet" href="topbar-dock.css?v=6">
-<link rel="stylesheet" href="context-nav.css?v=4">
+<link rel="stylesheet" href="context-nav.css?v=5">
 <link rel="stylesheet" href="workspace-surfaces.css?v=36">
 <link rel="stylesheet" href="robot-face.css?v=8">
 <link rel="stylesheet" href="dialog-surfaces.css?v=2">
@@ -6501,6 +6501,9 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="app-updates.css?v=1">
 <link rel="stylesheet" href="smart-card-settings.css?v=1">
 <link rel="stylesheet" href="settings-actions.css?v=1">
+<link rel="stylesheet" href="internal-workspace.css?v=1">
+<link rel="stylesheet" href="product-workspace.css?v=1">
+<link rel="stylesheet" href="business-workspace.css?v=1">
 </head>
 <body>
 

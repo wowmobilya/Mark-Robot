@@ -119,6 +119,24 @@
   const save=selector=>control(selector,'save','save');
   const choice=(fn,type,label,icon)=>control('[onclick="'+fn+'(\''+type+'\',event)"]',label,icon);
   let currentPage=null,currentKey='',slots=[],activeIndex=2,queued=false,ariaQueued=false,lastVisual='',centerRestore=null;
+  // Only these plain action buttons may move into the shared mobile menu.
+  // Type cards, rate values, price choices and other data-bearing controls stay
+  // in the page even when the bottom menu offers a shortcut to them.
+  const duplicateSources={
+    companies:['[onclick="showPage(\'select-client-type\')"]','[onclick="wfOpenStatement()"]','.wf-search-toggle[aria-controls="coSearch"]'],
+    products:['[onclick="showPage(\'add-product\')"]','.wf-search-toggle[aria-controls="prSearch"]'],
+    invoices:['[onclick="showPage(\'select-invoice-type\')"]','.wf-search-toggle[aria-controls="invSearch"]'],
+    'add-company':['#coSaveBtn','#coResetBtn'],
+    'add-product':['[onclick="savePr()"]','#changePrTypeBtn'],
+    'create-invoice':['[onclick="saveInvoice()"]','[onclick="previewInvoice()"]'],
+    'payment-management':['[onclick="addPaymentToInv()"]'],
+    cashboxes:['.cashboxes form button[type="submit"]'],
+    cart:['#wfCartCreateInvoice'],
+    exchange:['.curr-refresh'],
+    'quick-barcode':['#qblBrowseMode','#qblScanMode','.qbl-search-trigger','#qblCancelTierBtn','[onclick="qblChangeTier()"]','[onclick="qblAddToInvoice()"]']
+  };
+  const dockedSources=new Map();
+  let dockedPage=null,stagePage=null;
 
   function isVisible(element){
     if(!element || element.hidden || !element.getClientRects().length || element.closest('[hidden],[inert]'))return false;
@@ -130,7 +148,64 @@
   }
   function targetFor(action,page=currentPage){
     const host=action?.scope==='document'?document:page;
-    return action?.selector&&host?Array.from(host.querySelectorAll(action.selector)).find(isVisible)||null:null;
+    return action?.selector&&host?Array.from(host.querySelectorAll(action.selector)).find(element=>
+      isVisible(element)||dockedSources.get(element)?.selector===action.selector&&sourceVisible(element,page))||null:null;
+  }
+  function sourceVisible(element,page){
+    const source=dockedSources.get(element);
+    if(!source||source.page!==page||page!==currentPage||!page.classList.contains('active')||
+      !compact.matches||!isVisible(nav)||!page.contains(element)||!element.matches('button')||
+      element.hidden||element.closest('[hidden],[inert]'))return false;
+    // Ignore only our own display:none. An inactive form stage, app-authored
+    // inline hiding, inert parent or hidden page must still block forwarding.
+    const inline=element.style;
+    if(inline?.display==='none'||inline?.visibility==='hidden'||inline?.visibility==='collapse'||inline?.opacity==='0'||inline?.pointerEvents==='none')return false;
+    const style=getComputedStyle(element);
+    return style.visibility!=='hidden'&&style.visibility!=='collapse'&&style.opacity!=='0'&&style.pointerEvents!=='none'&&isVisible(element.parentElement);
+  }
+  function syncContextStage(page){
+    // The tier chooser is the only page-owned overlay whose actions share this
+    // dock. Its actual visibility, not just QBL.phase, owns the temporary layer.
+    const tier=page?.id==='page-quick-barcode'&&page.classList.contains('active')&&
+      compact.matches&&typeof QBL==='object'&&QBL.phase===2&&isVisible(nav)&&
+      isVisible(page.querySelector('#qblPhase2'));
+    const nextPage=tier?page:null;
+    if(stagePage&&stagePage!==nextPage)stagePage.removeAttribute('data-context-stage');
+    stagePage=nextPage;
+    if(tier){
+      if(nav.getAttribute('data-context-stage')!=='price-tier')nav.setAttribute('data-context-stage','price-tier');
+      if(page.getAttribute('data-context-stage')!=='price-tier')page.setAttribute('data-context-stage','price-tier');
+    }else if(nav.hasAttribute('data-context-stage'))nav.removeAttribute('data-context-stage');
+  }
+  function syncDockedSources(page,config){
+    const next=new Map(),key=page.id.slice(5);
+    const enabled=key!=='settings'&&compact.matches&&isVisible(nav);
+    function add(selector,label){
+      for(const element of page.querySelectorAll(selector)){
+        if(!element.matches('button')||(!isVisible(element)&&!sourceVisible(element,page)))continue;
+        next.set(element,{page,selector,label});
+      }
+    }
+    if(enabled){
+      for(const action of config.items){
+        if(action?.kind==='control'&&duplicateSources[key]?.includes(action.selector))add(action.selector,action.label);
+      }
+      if(config.items.some(action=>action?.kind==='function'&&action.name==='goBack'&&available(action))){
+        add(key==='cart'?'.sct-back-btn':'.sct-back-btn[onclick="goBack()"]','back');
+      }
+    }
+    for(const [element]of dockedSources){
+      if(!next.has(element)){element.removeAttribute('data-wf-shared-dock-source');dockedSources.delete(element);}
+    }
+    for(const [element,source]of next){
+      dockedSources.set(element,source);
+      if(element.getAttribute('data-wf-shared-dock-source')!==source.label)element.setAttribute('data-wf-shared-dock-source',source.label);
+    }
+    const nextPage=next.size?page:null;
+    if(dockedPage!==nextPage){
+      dockedPage?.classList.remove('wf-shared-actions-docked');dockedPage=nextPage;
+      dockedPage?.classList.add('wf-shared-actions-docked');
+    }
   }
   function configuration(page){
     const key=page?.id.slice(5)||'dashboard';
@@ -145,10 +220,10 @@
     }
     const list={
       dashboard:{active:2,items:[clients(),products(),home(),invoices(),scan()]},
-      companies:{active:0,items:[clients(),route('select-client-type','addClient','plus'),home(),control('[onclick="wfOpenStatement()"]','statement','statement'),search('coSearch')]},
-      products:{active:0,items:[products(),route('add-product','addProduct','plus'),home(),scan(),search('prSearch')]},
+      companies:{active:0,items:[clients(),control('[onclick="showPage(\'select-client-type\')"]','addClient','plus'),home(),control('[onclick="wfOpenStatement()"]','statement','statement'),search('coSearch')]},
+      products:{active:0,items:[products(),control('[onclick="showPage(\'add-product\')"]','addProduct','plus'),home(),scan(),search('prSearch')]},
       cart:{active:3,items:[back(),products(),home(),route('cart','cart','cart'),control('#wfCartCreateInvoice','newInvoice','invoice')]},
-      invoices:{active:0,items:[invoices(),route('select-invoice-type','newInvoice','plus'),home(),reports(),search('invSearch')]},
+      invoices:{active:0,items:[invoices(),control('[onclick="showPage(\'select-invoice-type\')"]','newInvoice','plus'),home(),reports(),search('invSearch')]},
       'select-client-type':{active:0,items:[clients(),choice('selectTypeAndContinue','external','external','globe'),home(),choice('selectTypeAndContinue','internal_retail','retail','store'),choice('selectTypeAndContinue','internal_wholesale','wholesale','warehouse')]},
       'add-company':{active:4,items:[back(),clients(),home(),control('#coResetBtn','reset','refresh'),save('#coSaveBtn')]},
       'select-invoice-type':{active:0,items:[invoices(),choice('selectInvTypeAndContinue','external','external','globe'),home(),choice('selectInvTypeAndContinue','internal_retail','retail','store'),choice('selectInvTypeAndContinue','internal_wholesale','wholesale','warehouse')]},
@@ -189,7 +264,7 @@
     if(action.kind==='route')return !!document.getElementById('page-'+action.page);
     if(action.kind==='function')return typeof window[action.name]==='function';
     const target=targetFor(action);
-    return !!target&&!target.disabled&&target.getAttribute('aria-disabled')!=='true'&&target.getAttribute('aria-busy')!=='true';
+    return !!target&&!target.disabled&&!target.matches(':disabled')&&target.getAttribute('aria-disabled')!=='true'&&target.getAttribute('aria-busy')!=='true';
   }
   function normalizeCurrent(){
     ariaQueued=false;
@@ -254,7 +329,15 @@
         const first=target.querySelector('button,[role="button"],[onclick]')||target;
         if(!first.hasAttribute('tabindex')&&!first.matches('button,input,select,textarea,a[href]'))first.tabIndex=-1;
         first.focus({preventScroll:true});
-      }else target.click();
+      }else{
+        target.click();
+        // Closing a search must return keyboard focus to its visible control,
+        // rather than the original button hidden behind the shared menu.
+        if(action.label==='search'&&dockedSources.has(target)){
+          const input=document.getElementById(target.getAttribute('aria-controls'));
+          if(input&&!input.classList.contains('open'))buttons[slots.indexOf(action)]?.focus({preventScroll:true});
+        }
+      }
     }
     schedule();
   }
@@ -298,11 +381,11 @@
   function sync(){
     queued=false;
     const page=document.querySelector('.page.active');
-    if(!page)return;
+    if(!page){syncContextStage(null);return;}
     if(page!==currentPage){
       activeObserver.disconnect();currentPage=page;
       activeObserver.observe(page,{subtree:true,childList:true,attributes:true,
-        attributeFilter:['style','class','hidden','disabled','aria-busy','aria-disabled','aria-pressed']});
+        attributeFilter:['style','class','hidden','inert','disabled','aria-busy','aria-disabled','aria-pressed']});
     }
     currentKey=page.id.slice(5);
     const config=configuration(page);
@@ -310,8 +393,10 @@
     const settings=currentKey==='settings'&&(!window.WFSettingsActions||window.WFSettingsActions.getState().open);
     nav.dataset.taskMode=settings?'settings':'context';
     nav.dataset.section=currentKey;
-    nav.classList.remove('wf-nav-secondary');
+    if(nav.classList.contains('wf-nav-secondary'))nav.classList.remove('wf-nav-secondary');
     nav.setAttribute('aria-label',t('navigation'));
+    syncContextStage(page);
+    syncDockedSources(page,config);
     const visual=[currentKey,root.lang,root.dir,activeIndex,root.classList.contains('wf-home-scroll-top'),
       ...slots.map(action=>action&&[action.kind,action.label,action.text,action.icon,action.selector,action.suffix].join(':'))].join('|');
     buttons.forEach((button,i)=>{
@@ -335,7 +420,7 @@
       if(button.title!==text)button.title=text;
       if(button.getAttribute('aria-label')!==text)button.setAttribute('aria-label',text);
       const target=action.kind==='control'?targetFor(action):null;
-      const busy=action.kind==='settings'?window.WFSettingsActions.getState().busy:!!target&&(target.disabled||target.getAttribute('aria-busy')==='true');
+      const busy=action.kind==='settings'?window.WFSettingsActions.getState().busy:!!target&&(target.disabled||target.matches(':disabled')||target.getAttribute('aria-busy')==='true');
       button.disabled=settings&&action.kind!=='settings'?false:!available(action);
       if(busy)button.setAttribute('aria-busy','true');else button.removeAttribute('aria-busy');
       button.classList.toggle('bnav-active',i===activeIndex);
@@ -352,6 +437,16 @@
     document.querySelectorAll('.page').forEach(page=>{
       if(knownPages.has(page))return;knownPages.add(page);
       pageObserver.observe(page,{attributes:true,attributeFilter:['class']});
+      // CSS entry animations can start at opacity:0 without changing an
+      // attribute when they finish. Refresh only the current page's controls
+      // after that visibility change so boot does not leave its menu disabled.
+      const settled=event=>{
+        if(page!==currentPage||nav.contains(event.target))return;
+        if(event.type?.startsWith('transition')&&event.propertyName&&
+          !['opacity','visibility','display','pointer-events'].includes(event.propertyName))return;
+        schedule();
+      };
+      for(const type of ['animationend','animationcancel','transitionend','transitioncancel'])page.addEventListener(type,settled);
     });
     schedule();
   }
@@ -360,6 +455,8 @@
   if(main)new MutationObserver(observePages).observe(main,{childList:true});
   new MutationObserver(schedule).observe(root,{attributes:true,attributeFilter:['lang','dir','class']});
   new MutationObserver(scheduleAria).observe(nav,{subtree:true,attributes:true,attributeFilter:['aria-current','aria-label','title','class']});
+  new MutationObserver(schedule).observe(nav,{attributes:true,attributeFilter:['hidden','style','class']});
+  if(typeof ResizeObserver==='function')new ResizeObserver(schedule).observe(nav);
   const cart=document.getElementById('qblCartFab');
   if(cart)new MutationObserver(schedule).observe(cart,{attributes:true,attributeFilter:['class','style','disabled']});
   window.addEventListener('wf-cart-state',schedule);

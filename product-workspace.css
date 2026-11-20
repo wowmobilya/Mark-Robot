@@ -1,0 +1,221 @@
+/* One product workspace; all selectors are screen-only and product-scoped. */
+@media screen {
+  html body #mainContent #page-products #prGrid {
+    grid-template-columns: repeat(auto-fill,minmax(min(100%,285px),1fr)) !important;
+  }
+  html body #mainContent #page-products .pr-card-new[data-wf-product-card] {
+    display: flex; flex-direction: column; cursor: default; overflow: hidden;
+    border-color: var(--window-edge,var(--border)) !important;
+  }
+  html body #mainContent #page-products .pr-card-new[data-wf-product-card] .pr-card-new-content {
+    flex: 1; max-height: none !important; opacity: 1 !important; transform: none !important;
+    pointer-events: auto !important; overflow: visible; transition: none;
+  }
+  html body #mainContent #page-products .pr-card-new[data-wf-product-card] .pr-card-new-img {
+    height: 200px; max-height: none !important; opacity: 1 !important; transition: none;
+    background: var(--window-muted,var(--input)) !important;
+  }
+  html body #mainContent #page-products .pr-card-new-img img { object-fit: contain; padding: 16px; transform: none !important; }
+  html body #mainContent #page-products .pr-card-type-badge {
+    inset-inline-start: 12px; inset-inline-end: auto; top: 12px; max-inline-size: calc(100% - 24px);
+    box-sizing: border-box; font-size: 13px; line-height: 1.5; letter-spacing: 0;
+    white-space: normal; overflow-wrap: anywhere; padding: 4px 10px;
+  }
+  html body #mainContent #page-products .pr-card-new-body { padding: 16px !important; }
+  html body #mainContent #page-products .wf-product-card-heading {
+    margin: 0 0 12px !important; padding: 0 !important; border: 0 !important; text-align: start !important;
+  }
+  html body #mainContent #page-products .wf-product-card-heading > div:first-child {
+    font-size: 20px !important; line-height: 1.45 !important; letter-spacing: 0 !important; overflow-wrap: anywhere;
+  }
+  html body #mainContent #page-products .wf-product-card-heading > div:not(:first-child) { font-size: 13px !important; line-height: 1.5; }
+  html body #mainContent #page-products .wf-product-price {
+    display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+    gap: 5px 12px; margin-block-end: 14px; padding: 12px;
+    border: 1px solid var(--window-edge,var(--border)); border-radius: 12px;
+    background: var(--window-muted,var(--input));
+  }
+  html body #mainContent #page-products .wf-product-price-label { color: var(--text2); font-size: 13px; line-height: 1.5; }
+  html body #mainContent #page-products .wf-product-price-value { color: var(--brand-primary); font-size: 21px; font-weight: 750; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  html body #mainContent #page-products .wf-product-details-control { margin: 0 !important; }
+  html body #mainContent #page-products .wf-product-details-toggle {
+    display: flex !important; justify-content: center; inline-size: 100%; min-block-size: 44px;
+    padding: 9px 12px !important; font-size: 14px !important; line-height: 1.5; border-radius: 10px !important;
+    background: transparent !important; border: 1px solid var(--border) !important; color: var(--text2) !important;
+  }
+  html body #mainContent #page-products .wf-product-details[hidden] { display: none !important; }
+  html body #mainContent #page-products .wf-product-details:not([hidden]) {
+    display: block; max-height: none !important; overflow: visible !important; opacity: 1 !important;
+    padding-block-start: 14px; transition: none !important;
+  }
+  html body #mainContent #page-products .wf-product-facts { gap: 8px !important; }
+  html body #mainContent #page-products .wf-product-facts > div { min-inline-size: 0; align-items: flex-start !important; padding: 10px !important; }
+  html body #mainContent #page-products .wf-product-facts > div > div { min-inline-size: 0; }
+  html body #mainContent #page-products .wf-product-facts > div > div > div {
+    max-inline-size: none !important; font-size: 14px !important; line-height: 1.5;
+    white-space: normal !important; overflow-wrap: anywhere;
+  }
+  html body #mainContent #page-products .wf-product-tiers > div { min-inline-size: 0; }
+  html body #mainContent #page-products .wf-product-tiers > div > div { min-inline-size: 0; }
+  html body #mainContent #page-products .wf-product-tiers > div > div > div {
+    font-size: 14px !important; line-height: 1.5; overflow-wrap: anywhere; font-variant-numeric: tabular-nums;
+  }
+  html body #mainContent #page-products .pr-card-new[data-wf-product-card] .pr-card-new-actions {
+    display: grid !important; grid-template-columns: minmax(0,1fr) minmax(0,1fr) 44px;
+    gap: 8px; max-height: none !important; opacity: 1 !important; overflow: visible;
+    margin-block-start: auto; padding: 12px !important; border-block-start: 1px solid var(--border);
+    background: var(--window-surface,var(--card)) !important; transition: none;
+  }
+  html body #mainContent #page-products .pr-card-new-actions > .btn {
+    min-inline-size: 0; min-block-size: 44px; padding: 8px !important; font-size: 14px !important;
+    line-height: 1.4; white-space: normal; overflow-wrap: anywhere; box-shadow: none !important; animation: none !important;
+  }
+  html body #mainContent #page-products .pr-card-new-actions > .btn:first-child {
+    color: var(--brand-primary) !important; border-color: var(--brand-primary) !important;
+    background: var(--window-muted,var(--input)) !important;
+  }
+  html body #mainContent #page-products .pr-card-new-actions > .wf-product-delete {
+    inline-size: 44px; color: var(--red,#c34949) !important; border: 1px solid var(--border) !important;
+    background: transparent !important; box-shadow: none !important;
+  }
+  .wf-product-delete-icon { display: inline-grid; place-items: center; inline-size: 20px; block-size: 20px; }
+  .wf-product-delete-icon svg { inline-size: 20px; block-size: 20px; }
+  @media (max-width: 680px) {
+    html body #mainContent #page-products #prStatsBar {
+      display: grid !important;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 8px !important;
+    }
+    html body #mainContent #page-products #prStatsBar > .co-stat-pill {
+      display: grid !important;
+      grid-template-columns: 20px minmax(0,1fr) auto;
+      gap: 6px !important;
+      padding: 8px !important;
+      min-inline-size: 0;
+      inline-size: auto !important;
+      margin: 0;
+      min-block-size: 48px;
+      white-space: normal;
+    }
+    html body #mainContent #page-products #prStatsBar .wf-category-filter-photo {width: 20px; height: 20px;}
+    html body #mainContent #page-products #prStatsBar > .co-stat-pill > span:not([class]) {font-size: 13px; line-height: 1.5;}
+    html body #mainContent #page-products #prStatsBar .csp-num {min-width: 20px; padding: 2px 4px; font-size: 11px; box-sizing: border-box;}
+  }
+
+  /* The category chooser owns its grid; its host is not another nested grid. */
+  html body #mainContent #page-add-product #prTypeStepCards {
+    display: block !important; inline-size: 100%; max-inline-size: 1180px !important; margin: 20px auto 0 !important;
+  }
+  html body #mainContent #page-add-product #prTypeStepCards .wf-category-chooser {
+    display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,220px),1fr)); gap: 16px;
+  }
+  html body #mainContent #page-add-product #prTypeStepCards .wf-category-choice { border-radius: 16px; gap: 10px; }
+  html body #mainContent #page-add-product #prTypeStepCards .wf-category-choice strong { font-size: 16px; }
+  html body #mainContent #page-add-product #prTypeStepCards :is(.wf-category-description,.wf-category-count,.wf-category-select) { font-size: 14px; line-height: 1.5; }
+
+  html body #mainContent #page-add-product #prSelectedTypeBanner {
+    box-sizing: border-box; max-inline-size: 1180px !important; margin: 18px auto !important;
+    border: 1px solid var(--window-edge,var(--border)) !important; border-radius: 14px !important;
+    padding: 14px !important; background: var(--window-surface,var(--card)) !important; min-inline-size: 0;
+  }
+  html body #mainContent #page-add-product #prSelectedTypeBanner > div:nth-child(2) { min-inline-size: 0; flex: 1; }
+  html body #mainContent #page-add-product #prSelectedTypeLabel { font-size: 13px !important; line-height: 1.5; letter-spacing: 0 !important; }
+  html body #mainContent #page-add-product #prSelectedTypeName { font-size: 16px !important; line-height: 1.5; overflow-wrap: anywhere; }
+  html body #mainContent #page-add-product #wfProductFormLayout {
+    box-sizing: border-box; display: grid; gap: 18px; inline-size: 100%; min-inline-size: 0;
+    max-inline-size: 1180px; margin-inline: auto;
+  }
+  html body #mainContent #page-add-product #wfProductFormLayout > .card {
+    box-sizing: border-box; min-inline-size: 0; max-inline-size: none !important; inline-size: 100%;
+    margin: 0 !important; padding: 18px !important; align-self: start;
+  }
+  html body #mainContent #page-add-product #wfProductFormLayout .card-hdr {
+    align-items: center; flex-wrap: wrap; gap: 10px; border-radius: 0 !important;
+    padding: 0 0 14px !important; margin: 0 0 16px !important; background: transparent !important;
+  }
+  html body #mainContent #page-add-product #wfProductFormLayout .card-title { font-size: 16px; line-height: 1.5; }
+  html body #mainContent #page-add-product #wfProductFormLayout .card-hdr > span { font-size: 14px !important; line-height: 1.5; }
+  html body #mainContent #page-add-product #wfProductFormLayout .fg { min-inline-size: 0; margin: 0 !important; }
+  html body #mainContent #page-add-product #wfProductFormLayout .fl { font-size: 14px !important; line-height: 1.6; margin-block-end: 7px; }
+  html body #mainContent #page-add-product #wfProductFormLayout .fc {
+    box-sizing: border-box; inline-size: 100%; min-inline-size: 0; min-block-size: 46px;
+    max-inline-size: 100%; padding: 10px 12px !important; font-size: 16px !important; line-height: 1.4;
+  }
+  html body #mainContent #page-add-product #wfProductFormLayout button { min-block-size: 44px; touch-action: manipulation; }
+  html body #mainContent #page-add-product .wf-product-info-grid { display: grid !important; grid-template-columns: minmax(0,1fr) !important; gap: 16px !important; }
+  html body #mainContent #page-add-product .wf-product-info-grid > .fg { grid-column: auto !important; }
+  html body #mainContent #page-add-product .wf-product-info-grid > .wf-product-field-wide { grid-column: 1 / -1 !important; }
+  html body #mainContent #page-add-product .wf-product-calculated {
+    grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px;
+    border-block-start: 1px solid var(--border); padding-block-start: 16px;
+  }
+  html body #mainContent #page-add-product .wf-product-calculated > :last-child { grid-column: 1 / -1; }
+  html body #mainContent #page-add-product .wf-product-calculated .fl > span:not([id]) { font-size: 12px !important; }
+  html body #mainContent #page-add-product :is(#prWeightAutoLbl,#prPacketsAutoLbl,#prCbmAutoLbl) { font-size: 12px !important; white-space: nowrap; }
+  html body #mainContent #page-add-product :is(#hsDropdown,#descDropdown) { min-width: 0 !important; max-inline-size: 100%; }
+  html body #mainContent #page-add-product #prColorCustomWrap { flex-wrap: wrap; }
+  html body #mainContent #page-add-product #prColorCustomWrap > input { flex-basis: 150px !important; }
+  html body #mainContent #page-add-product #prColorCustomWrap > button { min-inline-size: 44px; flex: none; }
+  html body #mainContent #page-add-product #prImgArea { min-block-size: 220px; display: grid; place-items: center; padding: 16px; }
+  html body #mainContent #page-add-product #prImgPrev { inline-size: 100%; min-inline-size: 0; }
+  html body #mainContent #page-add-product #prImgPrev img { max-width: 100% !important; max-height: 280px !important; object-fit: contain; }
+  html body #mainContent #page-add-product #prImgPrev p { font-size: 14px !important; line-height: 1.6; }
+  html body #mainContent #page-add-product #prImgInput { inline-size: 100%; block-size: 100%; }
+  html body #mainContent #page-add-product .wf-product-price-grid { display: grid !important; grid-template-columns: minmax(0,1fr) !important; gap: 16px !important; }
+  html body #mainContent #page-add-product .wf-product-conversions { min-block-size: 38px; gap: 6px !important; padding: 8px !important; }
+  html body #mainContent #page-add-product .wf-product-conversions > span { font-size: 13px !important; font-variant-numeric: tabular-nums; }
+  html body #mainContent #page-add-product #prActiveTierGrp { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+  html body #mainContent #page-add-product #prActiveTierGrp .price-tier-btn { min-inline-size: 0; min-block-size: 68px; padding: 10px; }
+  html body #mainContent #page-add-product #prActiveTierGrp .tier-val { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+
+  html body #mainContent #page-add-product .wf-product-dimension-row {
+    display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px !important;
+    padding: 12px !important; min-inline-size: 0; background: var(--window-muted,var(--input)) !important;
+  }
+  html body #mainContent #page-add-product .wf-product-dimension-label {
+    grid-column: 1 / 3; inline-size: auto !important; block-size: auto !important; justify-content: flex-start !important;
+    border-radius: 0 !important; color: var(--text) !important; background: transparent !important; font-size: 14px !important; line-height: 1.5;
+  }
+  html body #mainContent #page-add-product .wf-product-dimension-field { grid-row: 2; min-width: 0 !important; }
+  html body #mainContent #page-add-product .wf-product-dimension-field > div { font-size: 14px !important; line-height: 1.5; overflow-wrap: anywhere; }
+  html body #mainContent #page-add-product .wf-product-dimension-remove { grid-column: 3; grid-row: 1; justify-self: end; min-inline-size: 44px; }
+  html body #mainContent #page-add-product .wf-product-dimension-spacer { display: none !important; }
+  html body #mainContent #page-add-product #prDimAddBtn { min-inline-size: 44px; min-block-size: 44px; }
+  html body #mainContent #page-add-product .wf-product-package { padding: 14px !important; margin-block-end: 12px !important; }
+  html body #mainContent #page-add-product .wf-product-package-grid { display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px !important; min-inline-size: 0; }
+  html body #mainContent #page-add-product .wf-product-package-caption { grid-column: 1 / 3; align-items: center !important; padding: 0 !important; }
+  html body #mainContent #page-add-product .wf-product-package-caption > div { width: auto !important; height: auto !important; border-radius: 0 !important; font-size: 14px !important; line-height: 1.5; background: transparent !important; color: var(--text) !important; }
+  html body #mainContent #page-add-product .wf-product-package-field { grid-row: 2; min-inline-size: 0; }
+  html body #mainContent #page-add-product .wf-product-package-weight { grid-row: 3; grid-column: 3; }
+  html body #mainContent #page-add-product .wf-product-package-volume { grid-row: 3; grid-column: 1 / 3; min-inline-size: 0; }
+  html body #mainContent #page-add-product :is(.wf-product-package-field,.wf-product-package-volume) > div:first-child { font-size: 14px !important; line-height: 1.5; text-align: start !important; overflow-wrap: anywhere; }
+  html body #mainContent #page-add-product .wf-product-package-volume > div:last-child { display: grid; place-items: center; min-block-size: 46px; padding: 10px !important; font-size: 16px !important; }
+  html body #mainContent #page-add-product .wf-product-package-remove { grid-column: 3; grid-row: 1; justify-self: end; min-inline-size: 44px; min-block-size: 44px; }
+  html body #mainContent #page-add-product .wf-product-package-decoration { display: none !important; }
+  html body #mainContent #page-add-product .wf-product-shipping-totals { grid-template-columns: minmax(0,1fr) !important; gap: 12px !important; padding: 14px !important; }
+  html body #mainContent #page-add-product .wf-product-shipping-totals > div { min-inline-size: 0; flex-wrap: wrap; justify-content: space-between !important; gap: 8px !important; }
+  html body #mainContent #page-add-product .wf-product-shipping-totals > div:nth-child(2) { display: none; }
+  html body #mainContent #page-add-product .wf-product-shipping-totals > div > span { font-size: 14px !important; line-height: 1.5; }
+  html body #mainContent #page-add-product :is(#prDimAddBtn,.price-tier-btn,.wf-product-dimension-remove,.wf-product-package-remove):focus-visible {
+    outline: 2px solid var(--brand-primary); outline-offset: 3px;
+  }
+  @media (min-width: 600px) {
+    html body #mainContent #page-add-product .wf-product-info-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+    html body #mainContent #page-add-product .wf-product-price-grid { grid-template-columns: repeat(3,minmax(0,1fr)) !important; }
+    html body #mainContent #page-add-product .wf-product-calculated { grid-template-columns: repeat(3,minmax(0,1fr)); }
+    html body #mainContent #page-add-product .wf-product-calculated > :last-child { grid-column: auto; }
+    html body #mainContent #page-add-product .wf-product-shipping-totals { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  }
+  @media (min-width: 1000px) {
+    html body #mainContent #page-add-product #wfProductFormLayout { grid-template-columns: minmax(0,1.45fr) minmax(0,1fr); }
+    html body #mainContent #page-add-product #wfProductFormLayout > :is(.wf-product-prices,.wf-product-shipping) { grid-column: 1 / -1; }
+    html body #mainContent #page-add-product .wf-product-package-grid { grid-template-columns: repeat(5,minmax(0,1fr)); }
+    html body #mainContent #page-add-product .wf-product-package-caption { grid-column: 1 / 5; }
+    html body #mainContent #page-add-product .wf-product-package-remove { grid-column: 5; }
+    html body #mainContent #page-add-product .wf-product-package-volume { grid-row: 2; grid-column: 4; }
+    html body #mainContent #page-add-product .wf-product-package-weight { grid-row: 2; grid-column: 5; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html body #mainContent :is(#page-products,#page-add-product) :is(.pr-card-new,.wf-category-choice,.wf-product-dimension-row,.wf-product-package) { animation: none !important; transition: none !important; }
+  }
+}
