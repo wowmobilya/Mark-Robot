@@ -1,5 +1,5 @@
 importScripts('./install-identity.js?v=1');
-const CACHE_NAME = 'wow-furniture-v184-top-notifications';
+const CACHE_NAME = 'wow-furniture-v185-dark-mark-face';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
   './context-nav.js?v=5',
@@ -21,7 +21,7 @@ const urlsToCache = [
   './topbar-dock.css?v=6',
   './topbar-dock.js?v=6',
   './robot-face.js?v=11',
-  './robot-face.css?v=6',
+  './robot-face.css?v=7',
   './dialog-surfaces.css?v=1',
   './product-categories.js?v=2',
   './product-categories.css?v=1',

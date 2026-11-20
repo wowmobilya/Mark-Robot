@@ -62,6 +62,13 @@ html body #mainContent #page-dashboard :is(#wfGreetingRobot, #wfRobotSettingsPre
   box-shadow: none;
 }
 
+/* Match the expanded reader's dark-mode faceplate around the original artwork. */
+@media screen {
+  html[data-theme="dark"] :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-display {
+    background: var(--text);
+  }
+}
+
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-face {
   display: block;
   inline-size: 100%;
