@@ -1,5 +1,6 @@
 @media screen {
-  html body #mainContent #page-settings #wf-settings-tab-bank.wf-company-nested-bank { display: none !important; }
+  /* Outrank the shared settings-card display rule; banking lives inside Company. */
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) #wf-settings-tab-bank.wf-company-nested-bank { display: none !important; }
   #wfBrandingSettings .wf-branding-background {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     color: var(--text); font-size: 13px; font-weight: 700;

@@ -222,10 +222,6 @@ html[data-theme="dark"]:not(.wf-section-mode) .navbar::after{background:#3f7c94}
 @media(prefers-reduced-motion:reduce){html:not(.wf-section-mode) .navbar::after{transition:none}}
 
 /* One compact section header language across lists, forms, barcode and settings. */
-html body #toastBox{position:fixed!important;inset:auto 20px 20px auto!important;z-index:3000;display:flex;flex-direction:column;gap:8px;max-width:min(360px,calc(100vw - 24px));pointer-events:none}
-html[dir="rtl"] body #toastBox{right:20px!important;left:auto!important}
-html[dir="ltr"] body #toastBox{left:20px!important;right:auto!important}
-@media(max-width:1024px){html body #toastBox{bottom:calc(86px + env(safe-area-inset-bottom,0px))!important;left:12px!important;right:12px!important;max-width:none}}
 html.wf-section-mode body .main>.page>:is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){background:var(--card)!important;border:0!important;border-bottom:1px solid var(--border)!important;border-radius:0!important;box-shadow:0 5px 18px rgba(29,45,67,.045)!important;transform:none!important;backdrop-filter:none!important}
 html.wf-section-mode body .main>.page>:is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){border-radius:0 0 20px 20px!important;box-shadow:0 7px 20px rgba(29,45,67,.065)!important}
 html.wf-mobile-menu-open .navbar{box-shadow:0 5px 18px rgba(29,45,67,.12)!important}
