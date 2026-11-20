@@ -43,7 +43,7 @@
   const face = node('span', '', 'wf-reader-face'), reportText = node('span');
   face.setAttribute('aria-hidden', 'true');
   report.append(face, reportText);
-  report.setAttribute('aria-haspopup', 'dialog');report.setAttribute('aria-controls', 'wfRobotReportSheet');
+  report.setAttribute('aria-controls', 'wfRobotReportSheet');
   stop.innerHTML = icon('stop');
   reportText.className = 'wf-speech-report-label';
   actions.append(report, toggle, stop); dock.append(indicator, content, actions); home.append(dock);

@@ -626,37 +626,58 @@
           }
           const rendered=sequence.finish();await playClip(rendered.blob,rendered.boundaries);
         }else{
-          // A complete phrase plays through the browser's media pipeline while
-          // the next one is generated. Model latency cannot cut a spoken word,
-          // and background playback does not depend on short JS scheduling timers.
+          // Complete phrases use the native media pipeline. A bounded producer
+          // can keep the GPU busy while earlier audio is playing or undergoing
+          // loudness processing; generation itself remains strictly serial.
+          const lookahead=Number.isInteger(options.lookaheadPhrases)?Math.max(1,Math.min(3,options.lookaheadPhrases)):1;
+          const openingBuffer=Number.isFinite(options.minimumBufferSeconds)?Math.max(0,Math.min(4,options.minimumBufferSeconds)):0;
+          const queued=new Map();let requested=0,inference=Promise.resolve(),productionProblem=null;
           let renderedBytes=0,renderedSeconds=0;
           const generate=chunk=>{
-            const pending={ready:false,promise:null};
-            pending.promise=Promise.resolve().then(async()=>{
+            const pending={ready:false,promise:null,result:null};
+            const generated=inference.then(async()=>{
               checkAbort(controller.signal);
-              let blob=await renderSpeech(chunk.text,{locale,signal:controller.signal,
+              if(productionProblem)throw productionProblem;
+              return renderSpeech(chunk.text,{locale,signal:controller.signal,
                 onProgress:value=>{if(!pending.ready&&!stopped&&!finished&&!controller.signal.aborted)options.onProgress?.(value);}});
+            });
+            // Release the next model request as soon as synthesis completes,
+            // not after normalization/validation on the main thread.
+            inference=generated.then(()=>{},problem=>{productionProblem=problem;});
+            pending.promise=generated.then(async blob=>{
               checkAbort(controller.signal);
               if(options.normalizeGenerated===true&&window.WFVoiceLoudness)blob=await window.WFVoiceLoudness.normalize(blob,{locale,signal:controller.signal});
               checkAbort(controller.signal);
-              // Validate canonical generated PCM before replacing the unlocked
-              // audio source. Keep only this phrase and the single lookahead.
               const sequence=createWavSequence();await sequence.append(blob,chunk);
               checkAbort(controller.signal);const rendered=sequence.finish();
               renderedBytes+=rendered.blob.size-44;renderedSeconds+=rendered.duration;
               if(renderedBytes>MAX_RENDERED_AUDIO_BYTES||renderedSeconds>MAX_RENDERED_AUDIO_SECONDS)throw error('speech-too-long');
-              return {blob:rendered.blob};
-            }).catch(problem=>({problem})).then(result=>{pending.ready=true;return result;});
+              return {blob:rendered.blob,duration:rendered.duration};
+            }).catch(problem=>{productionProblem=problem;return {problem};}).then(result=>{pending.ready=true;pending.result=result;return result;});
             return pending;
           };
-          let next=generate(chunks[0]);
-          for(let index=0;index<chunks.length;index++){
-            const chunk=chunks[index];
-            if(!next.ready&&!paused)options.onWaiting?.();
-            const result=await next.promise;checkAbort(controller.signal);if(result.problem)throw result.problem;
-            options.onProgress?.({completed:index+1,total:chunks.length,phase:'preparing'});
-            next=index+1<chunks.length?generate(chunks[index+1]):null;
-            await playClip(result.blob,[{...chunk,start:0}]);
+          const fill=limit=>{while(requested<chunks.length&&requested<limit){queued.set(requested,generate(chunks[requested]));requested++;}};
+          fill(1+lookahead);
+          for(let index=0;index<chunks.length;){
+            const first=index,sequence=createWavSequence();let seconds=0;
+            do{
+              const pending=queued.get(index);
+              if(!pending.ready&&!paused)options.onWaiting?.();
+              const result=await pending.promise;checkAbort(controller.signal);if(result.problem)throw result.problem;
+              await sequence.append(result.blob,chunks[index]);checkAbort(controller.signal);
+              seconds+=result.duration;queued.delete(index);index++;
+              options.onProgress?.({completed:index,total:chunks.length,phase:'preparing'});
+              if(index>=chunks.length)break;
+              // Wait for at most one extra complete opening phrase. The rest
+              // of the report need not finish before the first sound starts.
+              if(first===0&&index-first<2&&seconds<openingBuffer)continue;
+              const next=queued.get(index);
+              // Already-ready clips share one source and retain sample-based
+              // original-text boundaries, avoiding a media restart per clause.
+              if(lookahead===1||!next?.ready||next.result.problem||seconds+next.result.duration>12)break;
+            }while(index<requested);
+            fill(index+lookahead);
+            const clip=sequence.finish();await playClip(clip.blob,clip.boundaries);
           }
         }
         finished=true;cleanup();options.onEnd?.();

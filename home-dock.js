@@ -10,7 +10,7 @@
       y: Number.isFinite(value?.y) ? clamp(value.y, 0, 1) : .48
     };
   }
-  function create({panel, onOpen, onClose}) {
+  function create({panel, onOpen, onClose, inline = false}) {
     const doc = panel?.ownerDocument || root.document, win = doc?.defaultView || root;
     const dashboard = doc?.getElementById('page-dashboard');
     if (!panel || !dashboard) return null;
@@ -19,13 +19,21 @@
     const bottomCircle = doc.getElementById('bnavCircle');
     const menu = doc.createElement('details'), trigger = doc.createElement('summary');
     menu.className = 'dash-visibility'; menu.id = 'wfHomeDock'; trigger.id = 'wfHomeEdit';
-    panel.classList.add('dash-dock-panel');
+    if (!inline) panel.classList.add('dash-dock-panel');
     if (!panel.id) panel.id = 'dashboard-customization-panel';
     trigger.setAttribute('aria-controls', panel.id); trigger.setAttribute('aria-expanded', 'false');
     trigger.innerHTML = '<svg class="wf-dock-shape" viewBox="0 0 14 86" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M.75 .75H5.25A8 8 0 0 1 13.25 8.75V77.25A8 8 0 0 1 5.25 85.25H.75Z" stroke-width="1.5" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h7m5 0h4M4 17h2m5 0h9"/><circle cx="13.5" cy="7" r="2.5"/><circle cx="8.5" cy="17" r="2.5"/></svg>';
-    menu.append(trigger, panel);
-    const backdrop = doc.createElement('div'); backdrop.id = 'wfHomeDockBackdrop'; backdrop.className = 'wf-dashboard-dock-backdrop'; backdrop.hidden = true;
-    doc.body.append(backdrop, menu);
+    menu.append(trigger);
+    let backdrop = null;
+    if (inline) {
+      // The dashboard owns the toolbar's placement; this tab controls its lifecycle.
+      menu.dataset.inline = 'true'; panel.hidden = true;
+    } else {
+      menu.append(panel);
+      backdrop = doc.createElement('div'); backdrop.id = 'wfHomeDockBackdrop'; backdrop.className = 'wf-dashboard-dock-backdrop'; backdrop.hidden = true;
+      doc.body.append(backdrop);
+    }
+    doc.body.append(menu);
     const design = panel.querySelector('.dash-dock-layout') || panel;
     let saved, storage;
     try { storage = win.localStorage; saved = JSON.parse(storage?.getItem(positionKey) || 'null'); } catch (_) {}
@@ -61,6 +69,7 @@
       return area;
     }
     function scrollHints() {
+      if (inline) return;
       const above = opened && design.scrollTop > 1, below = opened && design.scrollHeight - design.clientHeight - design.scrollTop > 1;
       for (const element of [panel, design]) {
         if (element.dataset.scrollTop !== String(above)) element.dataset.scrollTop = String(above);
@@ -70,12 +79,14 @@
     function open() {
       if (!active()) return false;
       if (opened) return true;
-      opened = true; menu.hidden = false; menu.open = true; backdrop.hidden = false; trigger.setAttribute('aria-expanded', 'true');
+      opened = true; menu.hidden = false; menu.open = true; trigger.setAttribute('aria-expanded', 'true');
+      if (inline) panel.hidden = false; else backdrop.hidden = false;
       onOpen?.(); place(); return true;
     }
     function close(returnFocus = false) {
       if (!opened) return false;
-      opened = false; menu.open = false; backdrop.hidden = true; trigger.setAttribute('aria-expanded', 'false');
+      opened = false; menu.open = false; trigger.setAttribute('aria-expanded', 'false');
+      if (inline) panel.hidden = true; else backdrop.hidden = true;
       scrollHints(); onClose?.({returnFocus: !!returnFocus});
       if (returnFocus && active()) trigger.focus({preventScroll: true});
       return true;
@@ -90,7 +101,7 @@
       pixels(menu, '--wf-dock-left', left); pixels(menu, 'left', left); pixels(menu, 'top', top);
       menu.style.right = 'auto'; menu.style.bottom = 'auto';
       if (menu.dataset.side !== side) menu.dataset.side = side;
-      if (!opened) { scrollHints(); return; }
+      if (!opened || inline) { scrollHints(); return; }
       const panelSpace = Math.max(0, side === 'left' ? area.right - left - gripWidth - 16 : left - area.left - 16);
       pixels(panel, 'max-width', panelSpace, 'important'); pixels(panel, 'max-height', Math.max(0, area.bottom - area.top));
       const panelWidth = panel.offsetWidth, panelHeight = panel.offsetHeight;
@@ -129,7 +140,8 @@
       if (!drag || drag.id !== event.pointerId) return;
       const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
       if (!drag.moved && Math.hypot(dx, dy) < 5) return;
-      event.preventDefault(); drag.moved = true; suppressClick = true; menu.dataset.dragging = 'true'; close(false);
+      event.preventDefault(); drag.moved = true; suppressClick = true; menu.dataset.dragging = 'true';
+      if (!inline) close(false);
       const area = bounds(), fraction = (value, maximum) => clamp(value / Math.max(1, maximum), 0, 1);
       position = {x: fraction(drag.left + dx - area.edgeLeft, area.edgeRight - area.edgeLeft - trigger.offsetWidth),
         y: fraction(drag.top + dy - area.top, area.bottom - area.top - trigger.offsetHeight)};
@@ -142,16 +154,20 @@
     trigger.addEventListener('click', event => {
       event.preventDefault();
       const ignore = suppressClick && event.detail !== 0; suppressClick = false;
-      if (!ignore) opened ? close(true) : open();
+      if (ignore) return;
+      if (opened && inline) (panel.querySelector('#wfHomeCustomizerTitle') || panel).focus({preventScroll: true});
+      else opened ? close(true) : open();
     });
     // Keep the same callback contract if assistive technology changes <details>.
     menu.addEventListener('toggle', () => { if (menu.open && !opened) open(); else if (!menu.open && opened) close(false); });
-    backdrop.addEventListener('pointerdown', () => close(false));
-    doc.addEventListener('pointerdown', event => { if (opened && !menu.contains(event.target)) close(false); });
+    if (!inline) {
+      backdrop.addEventListener('pointerdown', () => close(false));
+      doc.addEventListener('pointerdown', event => { if (opened && !menu.contains(event.target)) close(false); });
+    }
     doc.addEventListener('keydown', event => {
       if (event.key === 'Escape' && opened) { event.preventDefault(); event.stopPropagation(); close(true); }
     });
-    design.addEventListener('scroll', scrollHints, {passive: true});
+    if (!inline) design.addEventListener('scroll', scrollHints, {passive: true});
     win.addEventListener('resize', reposition, {passive: true});
     viewport?.addEventListener('resize', reposition, {passive: true}); viewport?.addEventListener('scroll', reposition, {passive: true});
     doc.addEventListener('scroll', event => { if (!menu.contains(event.target)) reposition(); }, {capture: true, passive: true});

@@ -49,11 +49,12 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
     click(isTrusted = true) { this.dispatchEvent(new CustomEvent('click', {bubbles: true, isTrusted})); }
     set innerHTML(value) {
       this.html = value;
-      for (const selector of ['#wfRobotTitle span', '.wf-robot-status', '.wf-robot-speak', '.wf-robot-report', '.wf-robot-mouth']) {
-        const node = new Element(selector.includes('speak') || selector.includes('report') ? 'button' : 'span');
+      for (const selector of ['#wfRobotTitle span', '.wf-robot-status', '.wf-robot-speak', '.wf-robot-report', '.wf-robot-mouth', '.wf-robot-display']) {
+        const node = new Element(selector.includes('speak') || selector.includes('report') ? 'button' : selector.includes('display') ? 'div' : 'span');
         node.parentNode = this;
         this.map[selector] = node;
         if (node.tagName === 'BUTTON') node.map.span = new Element('span');
+        if (selector === '.wf-robot-display') node.setAttribute('aria-hidden','true');
       }
     }
   }
@@ -134,6 +135,8 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
     face, track, doc, win, root, dashboard, synth, activity, observers, timers, audioRequests, reportEvents, offlineVoice, referenceVoice,
     speak: face.querySelector('.wf-robot-speak'),
     report: face.querySelector('.wf-robot-report'),
+    readReport() { win.dispatchEvent(new CustomEvent('wf-robot-report-control',{detail:{action:'replay'}})); },
+    display: face.querySelector('.wf-robot-display'),
     send(type,detail) { win.dispatchEvent(new CustomEvent(type,{detail})); },
     status: face.querySelector('.wf-robot-status'),
     reveal() { face.setAttribute('aria-hidden', 'false'); face.inert = false; },
@@ -158,6 +161,61 @@ const flush=async()=>{for(let turn=0;turn<8;turn++)await Promise.resolve();};
 const noAlternative=f=>check(!f.offlineVoice.calls.length&&!f.synth.calls.length,'No Nabra or platform voice is selected');
 const state=f=>f.win.WFProgramSpeech.getState();
 
+test('opening the written report never prepares playback or starts voice',async()=>{
+  let reads=0;const f=fixture({snapshot:()=>{reads++;return{narration:'The displayed report'};}});
+  f.reveal();f.report.click();await flush();
+  assert.equal(reads,1);
+  assert.equal(f.reportEvents.find(event=>event.type==='wf-robot-report-open')?.snapshot.narration,'The displayed report');
+  assert.equal(f.referenceVoice.calls.length,0);
+  assert.equal(f.referenceVoice.unlocks,0);
+  assert.equal(state(f).active,false);
+  f.send('wf-robot-report-control',{action:'replay'});await flush();
+  assert.equal(f.referenceVoice.calls.length,1,'the explicit reader action starts the existing voice owner');
+  assert.equal(reads,1,'first reading uses the exact visible snapshot without another data wait');
+});
+
+test('the decorative robot face cannot open reports or start voice',async()=>{
+  let reads=0;const f=fixture({snapshot:()=>{reads++;return{narration:'Daily figures'};}});
+  f.reveal();f.display.click();
+  f.display.dispatchEvent({type:'keydown',key:'Enter',isTrusted:true,preventDefault(){},stopPropagation(){}});
+  await flush();
+  assert.equal(reads,0);assert.equal(f.referenceVoice.calls.length,0);
+  assert.equal(f.display.getAttribute('role'),null);
+  assert.equal(f.display.getAttribute('tabindex'),null);
+  assert.equal(f.display.getAttribute('aria-hidden'),'true');
+});
+
+test('silent report preparation is adopted by explicit Read without cancelling the first phrase',async()=>{
+  const f=fixture({snapshot:()=>({narration:'The exact report shown on the card.'})}),order=[];
+  let prepared,adopted=false;
+  f.referenceVoice.preload=options=>{prepared=options;order.push('preload');return{promise:Promise.resolve(),cancel(){if(!adopted)order.push('cancel');}};};
+  const speak=f.referenceVoice.speak.bind(f.referenceVoice);
+  f.referenceVoice.speak=options=>{assert.equal(options.text,prepared.text);assert.equal(options.chunks,prepared.chunks);adopted=true;order.push('speak');return speak(options);};
+  f.reveal();f.report.click();await flush();
+  assert.deepEqual(order,['preload']);assert.equal(f.referenceVoice.unlocks,0);assert.equal(state(f).active,false);
+  f.readReport();await flush();assert.deepEqual(order,['preload','speak']);
+  f.send('wf-robot-report-visibility',{open:false,minimized:true});
+  assert.deepEqual(order,['preload','speak']);assert.equal(f.referenceVoice.cancels,0);
+  assert.equal(f.speak.disabled,false,'the original card retains its Stop button while reading is folded');
+  assert.equal(f.speak.getAttribute('aria-label'),'إيقاف');
+  f.speak.click();assert.equal(f.referenceVoice.cancels,1);
+});
+
+test('folding a silent report cancels unused preparation without starting audio',async()=>{
+  const f=fixture({snapshot:()=>({narration:'Written report'})});let cancelled=0;
+  f.referenceVoice.preload=()=>({promise:Promise.resolve(),cancel(){cancelled++;}});
+  f.reveal();f.report.click();await flush();f.send('wf-robot-report-visibility',{open:false,minimized:true});
+  assert.equal(cancelled,1);assert.equal(f.referenceVoice.calls.length,0);assert.equal(f.referenceVoice.unlocks,0);
+});
+
+test('leaving during written-report loading cannot open it later or leave its button disabled',async()=>{
+  let resolve;const f=fixture({snapshot:()=>new Promise(done=>{resolve=done;})});
+  f.reveal();f.report.click();assert.equal(f.report.disabled,true);
+  f.leaveDashboard();resolve({narration:'Late written report'});await flush();
+  assert.equal(f.reportEvents.some(event=>event.type==='wf-robot-report-open'),false);
+  assert.equal(f.report.disabled,false);assert.equal(f.referenceVoice.calls.length,0);
+});
+
 test('mounting and dashboard controls require a visible robot and a trusted action',async()=>{
   let reads=0;const f=fixture({snapshot:()=>{reads++;return{narration:'Daily figures'};}});
   check(f.track.children.length===5&&f.face.getAttribute('aria-hidden')==='true'&&f.face.inert,'Fifth face mounts hidden');
@@ -178,7 +236,7 @@ test('mounting and dashboard controls require a visible robot and a trusted acti
 
 for(const backend of [undefined,'local','device','reference'])test('legacy '+String(backend)+' preferences always select Syrian Mark',async()=>{
   const preferences={speechBackend:backend,arabicDialect:'eg',continuousSpeech:true,speechRate:1.1,speechVolume:.6};
-  const f=fixture({offline:true,preferences,snapshot:()=>({narration:'Reference report'})});f.reveal();f.report.click();await flush();
+  const f=fixture({offline:true,preferences,snapshot:()=>({narration:'Reference report'})});f.reveal();f.readReport();await flush();
   const request=f.referenceVoice.calls[0];check(!!request,'The reference engine owns the report');
   check(request.dialect==='sy'&&request.continuous===false,'Legacy dialect and full buffering cannot reappear');
   check(request.rate===1.1&&request.volume===.6,'Rate and volume preferences remain effective');
@@ -221,7 +279,7 @@ for(const kind of ['recording','report','program','preview'])test(kind+' playbac
   const f=fixture({recordings:kind==='recording'||kind==='preview',snapshot:()=>({narration:'Persistent report'})});
   if(kind==='program')f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:true}});
   else if(kind==='preview'){f.visitPage('settings');f.win.WFProgramSpeech.preview({event:{isTrusted:true}});}
-  else{f.reveal();(kind==='report'?f.report:f.speak).click();await flush();}
+  else{f.reveal();if(kind==='report')f.readReport();else f.speak.click();await flush();}
   const audio=f.audioRequests[0],request=f.referenceVoice.calls[0];
   if(audio)audio.onplaying();else request.onStart();
   for(const [name,change]of [['carousel',()=>f.hide()],['settings route',()=>f.visitPage('settings')],['background tab',()=>f.hideDocument()],['dashboard route',()=>f.visitPage('dashboard')],['history route',()=>f.send('hashchange')]]){
@@ -288,7 +346,7 @@ test('generation phases and explanatory failures reach shared state without voic
 });
 
 test('missing Mark never falls back to available Nabra or a device voice',async()=>{
-  const f=fixture({reference:false,offline:true,recordings:true,snapshot:()=>({narration:'Current report'})});f.reveal();f.report.click();await flush();
+  const f=fixture({reference:false,offline:true,recordings:true,snapshot:()=>({narration:'Current report'})});f.reveal();f.readReport();await flush();
   noAlternative(f);check(f.reportEvents.some(event=>event.type==='wf-robot-report-open'&&event.snapshot.narration==='Current report'),'Unavailable speech still exposes the actual written report');
   check(f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.state==='unsupported'),'The missing reference adapter is explained');
   check(!f.win.WFProgramSpeech.speak({text:'No replacement',event:{isTrusted:true}}),'Program reading also requires Mark');
@@ -299,9 +357,9 @@ test('missing Mark never falls back to available Nabra or a device voice',async(
 
 test('a pending report can be stopped or replaced without late playback',async()=>{
   for(const replacement of ['stop','program']){
-    let resolve;const f=fixture({snapshot:()=>new Promise(done=>{resolve=done;})});f.reveal();f.report.click();
+    let resolve;const f=fixture({snapshot:()=>new Promise(done=>{resolve=done;})});f.reveal();f.readReport();
     check(state(f).active&&f.face.dataset.speaking==='false','Snapshot work owns a silent, cancellable report');
-    if(replacement==='stop')f.report.click();else f.win.WFProgramSpeech.speak({text:'New program owner',event:{isTrusted:true}});
+    if(replacement==='stop')f.send('wf-robot-report-control',{action:'stop'});else f.win.WFProgramSpeech.speak({text:'New program owner',event:{isTrusted:true}});
     resolve({narration:'Stale report'});await flush();
     check(f.referenceVoice.calls.length===(replacement==='program'?1:0),'A late snapshot cannot start a displaced report');
     if(replacement==='program')check(f.referenceVoice.calls[0].text==='New program owner','The successor retains ownership');
@@ -309,7 +367,7 @@ test('a pending report can be stopped or replaced without late playback',async()
 });
 
 test('an authorized pending report follows its owner across navigation and background tabs',async()=>{
-  let resolve;const f=fixture({snapshot:()=>new Promise(done=>{resolve=done;})});f.reveal();f.report.click();
+  let resolve;const f=fixture({snapshot:()=>new Promise(done=>{resolve=done;})});f.reveal();f.readReport();
   f.hide();f.visitPage('settings');f.hideDocument();resolve({narration:'The authorized report'});await flush();
   check(f.referenceVoice.calls[0]?.text==='The authorized report'&&state(f).active,'An accepted request continues after its source UI disappears');
   f.referenceVoice.calls[0].onStart();check(state(f).active,'Background audio start is not rejected for visibility');
@@ -317,7 +375,7 @@ test('an authorized pending report follows its owner across navigation and backg
 
 test('daily reports keep the exact snapshot, real sentence boundaries and fresh replay semantics',async()=>{
   let requested,reads=0;const narration='Actual daily business figures.';
-  const f=fixture({snapshot:options=>{requested=options;reads++;return Promise.resolve({narration});}});f.reveal();f.report.click();await flush();
+  const f=fixture({snapshot:options=>{requested=options;reads++;return Promise.resolve({narration});}});f.reveal();f.readReport();await flush();
   check(requested.locale==='ar'&&f.referenceVoice.calls[0]?.text===narration&&reads===1,'Current localized data is read exactly once');
   const request=f.referenceVoice.calls[0];request.onStart();request.onBoundary({charIndex:0,charLength:12});request.onBoundary({charIndex:13,charLength:8});
   const boundaries=f.reportEvents.filter(event=>event.type==='wf-robot-report-boundary');
@@ -331,7 +389,7 @@ test('daily reports keep the exact snapshot, real sentence boundaries and fresh 
 
 test('a synchronous pause at report start rejects late highlight boundaries until resume',async()=>{
   const f=fixture({snapshot:()=>({narration:'First sentence. Second sentence.'})});
-  f.reveal();f.report.click();await flush();
+  f.reveal();f.readReport();await flush();
   const request=f.referenceVoice.calls[0],api=f.win.WFProgramSpeech;
   let pausedAtStart=false;
   f.win.addEventListener('wf-program-speech-state',event=>{
@@ -349,11 +407,11 @@ test('a synchronous pause at report start rejects late highlight boundaries unti
 });
 
 test('empty or unrecognized reports cannot invent financial speech',async()=>{
-  const empty=fixture({snapshot:()=>({narration:'',unavailableReason:'partial data'})});empty.reveal();empty.report.click();await flush();
+  const empty=fixture({snapshot:()=>({narration:'',unavailableReason:'partial data'})});empty.reveal();empty.readReport();await flush();
   check(!empty.referenceVoice.calls.length&&!state(empty).active,'An incomplete snapshot cannot speak invented totals');
   check(empty.reportEvents.find(event=>event.type==='wf-robot-report-open')?.snapshot.unavailableReason==='partial data','The written reader retains the source qualification');
   for(const adapter of [{prepare(){throw new Error('unsupported-report');}},{prepare:()=>[]}]){
-    const f=fixture({offline:true,snapshot:()=>({narration:'Invalid source'})});f.win.WFArabicReportSpeech=adapter;f.reveal();f.report.click();await flush();
+    const f=fixture({offline:true,snapshot:()=>({narration:'Invalid source'})});f.win.WFArabicReportSpeech=adapter;f.reveal();f.readReport();await flush();
     check(!f.referenceVoice.calls.length&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.reason==='report-text-unsupported'),'Unrecognized narration is rejected before generation');noAlternative(f);
   }
 });
@@ -362,7 +420,7 @@ for(const [lang,adapterName,spoken]of [['ar','WFArabicReportSpeech','صفر دو
   const narration='0.00 USD; 1,000,000.00 USD',snapshot={narration};
   const chunks=[{text:spoken,charIndex:0,charLength:narration.length}];
   const f=fixture({lang,snapshot:()=>snapshot});f.win[adapterName]={prepare:value=>{check(value===snapshot,'Normalization receives the displayed snapshot object');return chunks;}};
-  f.reveal();f.report.click();await flush();const request=f.referenceVoice.calls[0];
+  f.reveal();f.readReport();await flush();const request=f.referenceVoice.calls[0];
   check(request.text===narration&&request.chunks===chunks,'Mark receives prepared wording and original displayed offsets together');
   request.onStart();request.onBoundary({charIndex:0,charLength:narration.length});
   const boundary=f.reportEvents.filter(event=>event.type==='wf-robot-report-boundary').at(-1);
@@ -376,7 +434,7 @@ test('explicit Mark installation preserves the primed lease and survives navigat
   f.referenceVoice.getStatus=()=>({ready,state:ready?'ready':'not-installed',total:921000000,name:'Mark · local reference'});
   f.referenceVoice.preparePlayback=()=>{order.push('prime');const lease={disposed:false,dispose(){this.disposed=true;}};leases.push(lease);return lease;};
   f.referenceVoice.download=(_locale,options)=>{downloads++;downloadOptions=options;return new Promise(resolve=>{resolveDownload=()=>{ready=true;resolve();};});};
-  f.win.WFArabicReportSpeech={prepare:()=>chunks};f.reveal();f.report.click();await flush();
+  f.win.WFArabicReportSpeech={prepare:()=>chunks};f.reveal();f.readReport();await flush();
   check(order.join(',')==='prime,read'&&leases[0].disposed,'The click primes audio before asynchronous record reads');
   check(!downloads&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.state==='missing'&&event.total===921000000),'Opening a report does not silently download its large pack');
   f.hide();f.visitPage('settings');f.send('wf-robot-report-control',{action:'install'});await flush();
@@ -407,7 +465,7 @@ test('saved expression and camera gaze preferences remain independent of persist
 });
 
 for(const preferences of [{speechEnabled:false},{speechVolume:0}])test((preferences.speechEnabled===false?'disabled':'muted')+' settings prevent all new speech',async()=>{
-  const f=fixture({recordings:true,offline:true,preferences,snapshot:()=>({narration:'Muted report'})});f.reveal();f.speak.click();f.report.click();await flush();
+  const f=fixture({recordings:true,offline:true,preferences,snapshot:()=>({narration:'Muted report'})});f.reveal();f.speak.click();f.readReport();await flush();
   check(!f.audioRequests.length&&!f.referenceVoice.calls.length,'Disabled speech cannot generate an inaudible report or greeting');noAlternative(f);
   check(!f.win.WFProgramSpeech.speak({text:'Read me',event:{isTrusted:true}}),'Shared program speech obeys the same setting');
   check(state(f).state===(preferences.speechEnabled===false?'disabled':'muted'),'Shared state explains why speech is unavailable');
@@ -420,7 +478,7 @@ test('recovered Settings sessions do not leak stale ownership into a later dashb
     const oldAudio=f.audioRequests[0],oldRequest=f.referenceVoice.calls[0];if(origin==='preview')oldAudio.onplaying();else oldRequest.onStart();
     if(ending==='cancelled')f.win.WFProgramSpeech.stop();else if(origin==='preview')oldAudio.onended();else oldRequest.onEnd();
     check(!state(f).active,'The earlier Settings session has ended');
-    const recordings=f.audioRequests.length,calls=f.referenceVoice.calls.length;f.visitPage('dashboard');f.reveal();(next==='report'?f.report:f.speak).click();await flush();
+    const recordings=f.audioRequests.length,calls=f.referenceVoice.calls.length;f.visitPage('dashboard');f.reveal();if(next==='report')f.readReport();else f.speak.click();await flush();
     if(next==='report')check(reads===1&&f.referenceVoice.calls.length===calls+1&&f.audioRequests.length===recordings,'Fresh reports recover their own dynamic session');
     else check(f.audioRequests.length===recordings+1&&f.referenceVoice.calls.length===calls,'Identity recovers its own fixed recording session');
     check(f.face.dataset.voiceKind===(next==='report'?'report':'intro'),'The new session kind does not inherit Settings ownership');
@@ -462,7 +520,7 @@ test('pressing the smart card report button reopens a minimized report without r
   let snapshots=0,opened=0,minimized=false;
   const f=fixture({snapshot:()=>{snapshots++;return{narration:'Daily figures'};}});
   f.win.WFRobotReport={isMinimized:()=>minimized,show(){opened++;minimized=false;return true;}};
-  f.reveal();f.report.click();await flush();
+  f.reveal();f.readReport();await flush();
   const request=f.referenceVoice.calls[0];assert.ok(request);request.onStart();
   minimized=true;f.send('wf-robot-report-visibility',{open:false,minimized:true});
   assert.equal(f.report.getAttribute('aria-label'),'فتح التقرير');
@@ -472,7 +530,7 @@ test('pressing the smart card report button reopens a minimized report without r
 
 test('changing speed preserves the active report, paused position and original voice owner',async()=>{
   const preferences={speechRate:1};const f=fixture({preferences,snapshot:()=>({narration:'One continuous report'})});
-  f.reveal();f.report.click();await flush();const request=f.referenceVoice.calls[0];request.onStart();
+  f.reveal();f.readReport();await flush();const request=f.referenceVoice.calls[0];request.onStart();
   assert.equal(f.win.WFProgramSpeech.setRate(1.2),true);assert.equal(state(f).rate,1.2);
   assert.equal(f.referenceVoice.rates.at(-1),1.2);assert.equal(f.referenceVoice.calls.length,1);assert.equal(f.referenceVoice.cancels,0);
   f.win.WFProgramSpeech.pause();preferences.speechRate=.8;f.send('wf-robot-preferences',{});

@@ -4,13 +4,17 @@
   'use strict';
   const languages = ['ar', 'en', 'tr', 'fr', 'ru'];
   const copy = {
+    hiddenSections: ['الأقسام المخفية', 'Hidden sections', 'Gizli bölümler', 'Sections masquées', 'Скрытые разделы'],
+    selected: ['تم تحديد {name}. اضغط عنوان بطاقة أخرى لنقله إلى مكانها، أو اضغطه مجددًا للإلغاء.', '{name} selected. Tap another heading to move it there, or tap again to cancel.', '{name} seçildi. Taşımak için başka bir başlığa, iptal için tekrar buna dokunun.', '{name} sélectionné. Touchez un autre titre pour le déplacer, ou retouchez pour annuler.', 'Выбран раздел {name}. Нажмите другой заголовок для перемещения или этот ещё раз для отмены.'],
+    pickedUp: ['اسحب {name} إلى مكانه الجديد.', 'Move {name} to its new position.', '{name} bölümünü yeni yerine taşıyın.', 'Déplacez {name} vers sa nouvelle position.', 'Переместите {name} на новое место.'],
+    selectionCancelled: ['أُلغي التحريك.', 'Move cancelled.', 'Taşıma iptal edildi.', 'Déplacement annulé.', 'Перемещение отменено.'],
     home: ['الرئيسية', 'Home', 'Ana sayfa', 'Accueil', 'Главная'],
     edit: ['تعديل', 'Edit', 'Düzenle', 'Modifier', 'Изменить'],
     title: ['تخصيص الرئيسية', 'Customize dashboard', 'Paneli düzenle', 'Personnaliser l’accueil', 'Настроить панель'],
     advanced: ['الترتيب والحجم', 'Order and size', 'Sıra ve boyut', 'Ordre et taille', 'Порядок и размер'],
     movePanel: ['تبديل جانب اللوحة', 'Move panel to the other side', 'Paneli diğer tarafa taşı', 'Déplacer le panneau', 'Переместить панель'],
     draftHint: ['عاين التغييرات ثم احفظ', 'Preview changes, then save', 'Önizleyin, sonra kaydedin', 'Prévisualisez, puis enregistrez', 'Просмотрите и сохраните'],
-    hint: ['اسحب الأقسام من المقبض لترتيبها، أو استخدم أزرار التحريك.', 'Drag sections by their handle, or use the move buttons.', 'Bölümleri tutamacından sürükleyin veya taşıma düğmelerini kullanın.', 'Faites glisser les sections par leur poignée ou utilisez les boutons de déplacement.', 'Перетаскивайте разделы за ручку или используйте кнопки перемещения.'],
+    hint: ['اسحب عنوان البطاقة لفوق أو لتحت لتغيير ترتيبها.', 'Drag a card heading up or down to reorder it.', 'Sıralamak için kart başlığını yukarı veya aşağı sürükleyin.', 'Faites glisser le titre d’une carte vers le haut ou le bas.', 'Перетащите заголовок карточки вверх или вниз.'],
     preview: ['ترتيب الأقسام', 'Section layout', 'Bölüm düzeni', 'Disposition des sections', 'Порядок разделов'],
     previewHint: ['اختر ما يظهر لك وعرض كل قسم، ثم احفظ الترتيب.', 'Choose which sections appear and their width, then save your layout.', 'Görünen bölümleri ve genişliklerini seçip düzeni kaydedin.', 'Choisissez les sections visibles et leur largeur, puis enregistrez.', 'Выберите видимые разделы и их ширину, затем сохраните порядок.'],
     count: ['{shown} من {total} أقسام ظاهرة', '{shown} of {total} sections visible', '{total} bölümden {shown} görünür', '{shown} sections visibles sur {total}', 'Видно разделов: {shown} из {total}'],
@@ -112,7 +116,7 @@
     const peer = candidates.some(rect => rect !== target && Math.min(rect.bottom, target.bottom) - Math.max(rect.top, target.top) > Math.min(height, rect.bottom - rect.top) * .6);
     const middle = point.y > target.top + height * .25 && point.y < target.bottom - height * .25;
     const after = peer && middle ? (rtl ? point.x < (target.left + target.right) / 2 : point.x > (target.left + target.right) / 2) : point.y >= (target.top + target.bottom) / 2;
-    return {key: target.key, after, index: candidates.indexOf(target) + (after ? 1 : 0)};
+    return {key: target.key, after, index: order.filter(key => key !== source).indexOf(target.key) + (after ? 1 : 0)};
   }
   if (typeof module === 'object' && module.exports) {
     module.exports = {text, copy, moveOrder, createSession, dropTarget};
@@ -148,253 +152,312 @@
     element.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (paths[name] || paths.layout) + '</svg>';
     return element;
   };
-  let model, session, panel, dock, body, list, status, live, summary, emptyHint, title, editButton, advancedButton, advancedHint;
-  let mounted = false, guarded = false, writing = false, advanced = false, errorKey = '', drag = null, autoFrame = 0, suppressClickUntil = 0;
   const texts = [], tiles = new Map();
-  function label(tag, key, className) {
-    const element = node(tag, className); texts.push([element, key]); return element;
-  }
+  let model, session, page, layout, toolbar, title, summary, status, live, actions, hiddenArea, hiddenList, dock;
+  let mounted = false, guarded = false, writing = false, errorKey = '', selected = null, drag = null, frame = 0, geometryFrame = 0;
+  let suppressClickUntil = 0, scroller, resizeObserver;
+  const editing = () => !!session?.get();
+  function label(tag, key, className) { const el = node(tag, className); texts.push([el, key]); return el; }
   function button(key, className, action, iconName) {
-    const element = node('button', 'wf-home-editor-button ' + (className || '')); element.type = 'button';
-    if (iconName) element.append(icon(iconName));
-    if (key) element.append(label('span', key));
-    if (action) element.addEventListener('click', action);
-    return element;
+    const el = node('button', 'wf-home-editor-button ' + (className || '')); el.type = 'button';
+    if (iconName) el.append(icon(iconName)); if (key) el.append(label('span', key));
+    if (action) el.addEventListener('click', action); return el;
   }
   function announce(key, values) { live.textContent = t(key, values); }
-  function counter(prefs) {
-    const value = t('count', {shown: number(prefs.order.length - prefs.hidden.length), total: number(prefs.order.length)});
-    summary.textContent = value;
-  }
   function registerGuard() {
     if (!guarded && window.WFAppUpdates?.registerGuard) {
-      window.WFAppUpdates.registerGuard('home-customizer', () => writing || !!session?.dirty());
-      guarded = true;
+      window.WFAppUpdates.registerGuard('home-customizer', () => writing || !!drag?.active || !!session?.dirty()); guarded = true;
     }
   }
+  function visibleRect(element) {
+    if (!element || element.hidden || !element.getClientRects().length) return null;
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight ? rect : null;
+  }
+  function positionActions() {
+    geometryFrame = 0; if (!editing()) return;
+    const viewport = window.visualViewport, left = viewport?.offsetLeft || 0, top = viewport?.offsetTop || 0;
+    const right = left + (viewport?.width || window.innerWidth), bottom = top + (viewport?.height || window.innerHeight);
+    const pageRect = page.getBoundingClientRect();
+    const obstructions = [visibleRect(byId('bottomNav')), visibleRect(byId('bnavCircle'))]
+      .filter(rect => rect && rect.bottom > top && rect.top < bottom && rect.right > left && rect.left < right);
+    const navTop = Math.min(bottom, ...obstructions.map(rect => rect.top));
+    const x = Math.max(left + 12, pageRect.left), edge = Math.min(right - 12, pageRect.right);
+    // Fixed-position bottom uses the layout viewport; keyboard/zoom bounds use
+    // the visual viewport. Keep their coordinates separate before converting.
+    const inset = Math.max(12, window.innerHeight - Math.min(bottom - 12, navTop - 8));
+    actions.style.setProperty('--wf-home-actions-left', x + 'px');
+    actions.style.setProperty('--wf-home-actions-width', Math.max(0, edge - x) + 'px');
+    actions.style.setProperty('--wf-home-actions-bottom', inset + 'px');
+    page.style.setProperty('--wf-home-edit-clearance', (actions.offsetHeight + inset + 20) + 'px');
+  }
+  function scheduleGeometry() { if (editing() && !geometryFrame) geometryFrame = window.requestAnimationFrame(positionActions); }
+  function findScroller() {
+    for (let el = layout.parentElement; el && el !== document.body; el = el.parentElement) {
+      if (/(auto|scroll)/.test(window.getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight + 1) return el;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+  function bounds() {
+    const viewport = window.visualViewport, offset = viewport?.offsetTop || 0;
+    let top = offset + 8, bottom = offset + (viewport?.height || window.innerHeight) - 8;
+    const header = visibleRect(document.querySelector('.navbar')), bar = visibleRect(actions);
+    if (header) top = Math.max(top, header.bottom + 8);
+    if (bar) bottom = Math.min(bottom, bar.top - 8);
+    if (scroller !== document.scrollingElement && scroller !== document.documentElement && scroller !== document.body) {
+      const rect = scroller.getBoundingClientRect(); top = Math.max(top, rect.top); bottom = Math.min(bottom, rect.bottom);
+    }
+    return {top, bottom};
+  }
+  function counter(prefs) { summary.textContent = t('count', {shown: number(prefs.order.length - prefs.hidden.length), total: number(prefs.order.length)}); }
   function draw() {
     const prefs = session?.get(); if (!prefs) return;
-    const focused = document.activeElement, restoreFocus = list.contains(focused);
-    prefs.order.forEach((key, index) => {
-      const item = tiles.get(key), visible = !prefs.hidden.includes(key), wide = prefs.sizes[key] === 'wide';
-      if (list.children[index] !== item.card) list.insertBefore(item.card, list.children[index] || null);
-      item.card.dataset.size = wide ? 'wide' : 'normal'; item.card.dataset.visible = String(visible);
-      item.rank.textContent = number(index + 1);
-      item.visibility.checked = visible;
-      item.visibility.setAttribute('aria-label', t(key));
-      item.visibility.title = t(visible ? 'hide' : 'show', {name: t(key)});
-      item.widths.forEach((control, i) => control.setAttribute('aria-pressed', String(wide === (i === 1))));
-      item.up.setAttribute('aria-disabled', String(index === 0));
-      item.down.setAttribute('aria-disabled', String(index === prefs.order.length - 1));
-    });
-    if (restoreFocus && focused.isConnected && document.activeElement !== focused) focused.focus({preventScroll: true});
-    counter(prefs); emptyHint.hidden = prefs.hidden.length !== prefs.order.length;
-    dock?.reposition();
+    counter(prefs);
+    for (const key of prefs.order) {
+      const item = tiles.get(key); if (!item) continue;
+      const hidden = prefs.hidden.includes(key), wide = prefs.sizes[key] === 'wide';
+      item.shell.classList.toggle('is-selected', selected === key);
+      item.handle.setAttribute('aria-pressed', String(selected === key));
+      item.restore.hidden = !hidden;
+      hiddenList.append(item.restore);
+      item.width.textContent = t(wide ? 'wide' : 'normal');
+      item.width.setAttribute('aria-pressed', String(wide));
+      item.width.setAttribute('aria-label', t('width', {name: t(key)}) + ': ' + t(wide ? 'wide' : 'normal'));
+    }
+    hiddenArea.hidden = !prefs.hidden.length;
+    scheduleGeometry();
   }
+  function clearSelection() { selected = null; for (const item of tiles.values()) { item.shell.classList.remove('is-selected'); item.handle.setAttribute('aria-pressed', 'false'); } }
   function changed(action, announcement, values) {
-    if (!session?.get()) return;
-    endDrag(false);
+    if (!editing()) return;
+    endDrag(false); clearSelection();
     if (action() === false) return;
     errorKey = ''; status.textContent = ''; status.hidden = true;
     draw(); if (announcement) announce(announcement, values);
   }
-  function move(key, delta) {
-    const prefs = session?.get(); if (!prefs) return;
-    const target = prefs.order.indexOf(key) + delta;
-    if (target < 0 || target >= prefs.order.length) return;
+  function move(key, target) {
+    const prefs = session?.get(); if (!prefs || target < 0 || target >= prefs.order.length) return;
     changed(() => session.move(key, target), 'moved', {name: t(key), position: number(target + 1), total: number(prefs.order.length)});
+    tiles.get(key)?.handle.focus({preventScroll: true});
   }
-  function setAdvanced(value) {
-    advanced = !!value;
-    advancedButton.setAttribute('aria-expanded', String(advanced));
-    advancedHint.hidden = !advanced;
-    for (const item of tiles.values()) item.controls.hidden = !advanced;
-    endDrag(false); dock?.reposition();
+  function tapMove(key) {
+    if (!editing() || Date.now() < suppressClickUntil) return;
+    if (!selected) { selected = key; draw(); announce('selected', {name: t(key)}); }
+    else if (selected === key) { clearSelection(); announce('selectionCancelled'); }
+    else { const source = selected; move(source, session.get().order.indexOf(key)); }
   }
   function buildTile(key) {
-    const card = node('article', 'wf-home-section-tile'); card.dataset.section = key; card.setAttribute('role', 'listitem');
-    const choice = node('label', 'wf-home-section-choice'), name = label('span', key);
-    const visibility = node('input', 'wf-home-visibility'); visibility.type = 'checkbox';
-    visibility.id = 'wfHomeVisibility-' + key;
-    const region = model.element?.(key); if (region?.id) visibility.setAttribute('aria-controls', region.id);
-    visibility.addEventListener('change', () => {
-      changed(() => session.toggle(key), 'visibilityChanged', {name: t(key), state: t(session.get().hidden.includes(key) ? 'visible' : 'hidden')});
-    });
-    name.id = 'wfHomeSectionTitle-' + key; card.setAttribute('aria-labelledby', name.id);
-    choice.append(visibility, name);
-    const controls = node('div', 'wf-home-section-controls'); controls.hidden = true;
-    const moves = node('div', 'wf-home-move-controls'), handle = button('', 'wf-home-drag-handle', null, 'grip');
-    handle.dataset.section = key; handle.setAttribute('aria-describedby', 'wfHomeCustomizerHint');
-    handle.addEventListener('pointerdown', event => pointerStart(event, key, handle));
-    handle.addEventListener('lostpointercapture', () => { if (drag?.handle === handle) endDrag(false); });
+    const card = model.element(key); if (!card) return;
+    const shell = node('div', 'wf-home-edit-shell wf-home-section'); shell.dataset.homeSection = key;
+    const tools = node('div', 'wf-home-card-tools');
+    const handle = button('', 'wf-home-card-grip', () => tapMove(key), 'grip'); handle.dataset.section = key;
+    handle.append(label('span', key, 'wf-home-card-name')); handle.setAttribute('aria-describedby', 'wfHomeCustomizerKeyboard');
+    handle.addEventListener('pointerdown', event => pointerStart(event, key));
     handle.addEventListener('keydown', event => {
-      if (!['ArrowUp', 'ArrowDown'].includes(event.key)) return;
-      event.preventDefault(); event.stopPropagation(); if (!event.repeat) move(key, event.key === 'ArrowUp' ? -1 : 1);
+      if (!editing() || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault(); event.stopPropagation(); if (event.repeat) return;
+      const prefs = session.get(), visible = prefs.order.filter(id => !prefs.hidden.includes(id));
+      const index = visible.indexOf(key), next = event.key === 'Home' ? 0 : event.key === 'End' ? visible.length - 1 : index + (event.key === 'ArrowUp' ? -1 : 1);
+      if (next >= 0 && next < visible.length) move(key, prefs.order.indexOf(visible[next]));
     });
-    handle.addEventListener('click', event => { if (event.detail === 0) announce('keyboard'); });
-    const rank = node('span', 'wf-home-section-rank'); rank.setAttribute('aria-hidden', 'true');
-    const up = button('', '', () => move(key, -1), 'up'), down = button('', '', () => move(key, 1), 'down');
-    moves.append(handle, rank, up, down);
-    const widths = node('div', 'wf-home-width-options'); widths.setAttribute('role', 'group');
-    const widthButtons = ['normal', 'wide'].map(size => {
-      const control = button(size, '', () => changed(() => session.resize(key, size), 'widthChanged', {name: t(key), width: t(size)}));
-      widths.append(control); return control;
+    const hide = button('', 'wf-home-card-hide', () => {
+      changed(() => session.toggle(key), 'visibilityChanged', {name: t(key), state: t('hidden')});
+      tiles.get(key).restore.focus({preventScroll: true});
+    }, 'eyeOff');
+    const width = button('', 'wf-home-card-width', () => {
+      const next = session.get().sizes[key] === 'wide' ? 'normal' : 'wide';
+      changed(() => session.resize(key, next), 'widthChanged', {name: t(key), width: t(next)});
     });
-    controls.append(moves, widths);
-    card.append(choice, controls); list.append(card);
-    tiles.set(key, {card, handle, rank, visibility, controls, widthGroup: widths, widths: widthButtons, up, down});
+    const restore = button('', 'wf-home-restore-section', () => {
+      changed(() => session.toggle(key), 'visibilityChanged', {name: t(key), state: t('visible')});
+      handle.focus({preventScroll: true});
+    }, 'eye'); restore.append(label('span', key)); restore.hidden = true;
+    tools.append(handle, width, hide); shell.append(tools); hiddenList.append(restore);
+    tiles.set(key, {card, shell, tools, handle, hide, width, restore});
   }
   function translate() {
     if (!mounted) return;
-    for (const [element, key] of texts) element.textContent = t(key);
-    panel.dir = lang() === 'ar' ? 'rtl' : 'ltr';
-    editButton.title = t('title'); editButton.setAttribute('aria-label', t('title'));
-    byId('wfHomeCustomizerClose').setAttribute('aria-label', t('close'));
-    byId('wfHomeCustomizerMove').setAttribute('aria-label', t('movePanel'));
-    byId('wfHomeCustomizerMove').title = t('movePanel');
-    byId('wfHomeCustomizerReset').setAttribute('aria-label', t('reset'));
-    byId('wfHomeCustomizerReset').title = t('reset');
+    for (const [el, key] of texts) el.textContent = t(key);
+    toolbar.dir = actions.dir = hiddenArea.dir = lang() === 'ar' ? 'rtl' : 'ltr';
+    dock.trigger.title = t('title'); dock.trigger.setAttribute('aria-label', t('title'));
     for (const [key, item] of tiles) {
-      for (const control of ['handle', 'up', 'down']) {
-        const caption = t(control === 'handle' ? 'drag' : control, {name: t(key)});
-        item[control].setAttribute('aria-label', caption); item[control].title = caption;
-      }
-      item.widthGroup.setAttribute('aria-label', t('width', {name: t(key)}));
+      const caption = t('drag', {name: t(key)}); item.handle.setAttribute('aria-label', caption); item.handle.title = caption;
+      item.hide.title = t('hide', {name: t(key)}); item.hide.setAttribute('aria-label', item.hide.title);
+      item.restore.setAttribute('aria-label', t('show', {name: t(key)}));
     }
+    byId('wfHomeCustomizerReset').title = t('reset'); byId('wfHomeCustomizerReset').setAttribute('aria-label', t('reset'));
     status.textContent = errorKey ? t(errorKey) : '';
-    if (session?.get()) draw(); else counter(model.get());
+    if (editing()) draw(); else counter(model.get());
+  }
+  function attachCards() {
+    for (const item of tiles.values()) {
+      item.card.before(item.shell); item.shell.append(item.card); item.card.classList.add('wf-home-edit-card');
+    }
+  }
+  function detachCards() {
+    for (const item of tiles.values()) {
+      if (item.shell.parentNode) { item.shell.before(item.card); item.shell.remove(); }
+      item.card.classList.remove('wf-home-edit-card');
+    }
   }
   function finish() {
-    endDrag(false);
-    if (session?.get()) session.cancel();
+    endDrag(false); clearSelection();
+    if (editing()) session.cancel();
+    detachCards(); model.restore();
+    document.documentElement.classList.remove('wf-home-editing'); page.classList.remove('wf-home-editing');
+    actions.hidden = hiddenArea.hidden = true;
+    page.style.removeProperty('--wf-home-edit-clearance');
+    window.cancelAnimationFrame(geometryFrame); geometryFrame = 0;
     errorKey = ''; status.textContent = ''; status.hidden = true; live.textContent = '';
     counter(model.get());
   }
-  function cancel() {
-    return dock?.close(true) || false;
-  }
+  function cancel() { return dock?.close(true) || false; }
   function save() {
-    if (writing || !session?.get()) return;
+    if (writing || !editing()) return;
     endDrag(false); writing = true;
-    try {
-      session.save(); dock.close(true);
-      window.showToast?.(t('saved'), 'ok');
-    } catch (_) {
-      errorKey = 'error'; status.textContent = t('error'); status.hidden = false;
-      body.scrollTop = 0;
-      dock.reposition();
-    } finally { writing = false; }
-  }
-  function open() {
-    if (!mount()) return false;
-    if (dock.isOpen()) { title.focus({preventScroll: true}); return true; }
-    return dock.open();
+    try { session.save(); dock.close(true); window.showToast?.(t('saved'), 'ok'); }
+    catch (_) { errorKey = 'error'; status.textContent = t('error'); status.hidden = false; status.scrollIntoView({block: 'nearest'}); }
+    finally { writing = false; }
   }
   function begin() {
-    registerGuard();
-    session = createSession(model); session.begin(); errorKey = ''; status.hidden = true; status.textContent = ''; live.textContent = '';
-    setAdvanced(false); translate(); body.scrollTop = 0;
-    title.focus({preventScroll: true});
+    registerGuard(); session = createSession(model); session.begin(); clearSelection();
+    errorKey = ''; status.hidden = true; status.textContent = ''; live.textContent = '';
+    document.documentElement.classList.add('wf-home-editing'); page.classList.add('wf-home-editing');
+    actions.hidden = false; attachCards(); model.preview(session.get());
+    scroller = findScroller(); translate(); positionActions(); title.focus({preventScroll: true});
   }
-  function clearDrop() {
-    for (const item of tiles.values()) item.card.classList.remove('is-drop-before', 'is-drop-after');
+  function open() { if (!mount()) return false; return dock.open(); }
+  function measureTiles() {
+    return [...tiles].filter(([key, item]) => key !== drag?.key && !item.shell.hidden).map(([key, item]) => {
+      const rect = item.shell.getBoundingClientRect(); return {key, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom};
+    });
   }
   function updateDrop() {
     if (!drag?.active) return;
-    const rectangles = [...tiles].map(([key, item]) => ({key, ...(() => {
-      const rect = item.card.getBoundingClientRect(); return {left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom};
-    })()}));
-    drag.target = dropTarget(session.get().order, drag.key, rectangles, {x: drag.x, y: drag.y}, lang() === 'ar');
-    clearDrop();
-    if (drag.target) tiles.get(drag.target.key).card.classList.add(drag.target.after ? 'is-drop-after' : 'is-drop-before');
+    const hole = drag.placeholder.getBoundingClientRect();
+    if (drag.y >= hole.top && drag.y <= hole.bottom && drag.x >= hole.left && drag.x <= hole.right) return;
+    const prefs = session.get(), target = dropTarget(prefs.order, drag.key, measureTiles(), {x: drag.x, y: drag.y}, lang() === 'ar');
+    if (!target || target.index === drag.target?.index) return;
+    const sibling = tiles.get(target.key)?.shell; if (!sibling) return;
+    const before = new Map();
+    for (const [key, item] of tiles) {
+      if (key === drag.key || item.shell.hidden) continue;
+      item.animation?.cancel(); before.set(key, item.shell.getBoundingClientRect());
+    }
+    layout.insertBefore(drag.placeholder, target.after ? sibling.nextSibling : sibling);
+    drag.target = target;
+    if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      for (const [key, rect] of before) {
+        const item = tiles.get(key), next = item.shell.getBoundingClientRect();
+        const dx = rect.left - next.left, dy = rect.top - next.top;
+        if ((dx || dy) && item.shell.animate) item.animation = item.shell.animate([{transform: 'translate(' + dx + 'px,' + dy + 'px)'}, {transform: 'none'}], {duration: 160, easing: 'ease-out'});
+      }
+    }
   }
-  function autoScroll() {
-    if (!drag?.active) return;
-    const rect = body.getBoundingClientRect(), edge = Math.min(64, (rect.bottom - rect.top) / 4);
-    const direction = drag.y < rect.top + edge ? -Math.min(18, (rect.top + edge - drag.y) * .3) : drag.y > rect.bottom - edge ? Math.min(18, (drag.y - rect.bottom + edge) * .3) : 0;
-    if (direction) { const before = body.scrollTop; body.scrollTop += direction; if (body.scrollTop !== before) updateDrop(); }
-    autoFrame = window.requestAnimationFrame(autoScroll);
+  function dragFrame(now) {
+    frame = 0; if (!drag?.active) return;
+    const dt = Math.min(32, Math.max(0, now - (drag.time || now))); drag.time = now;
+    // Keep the real section under the hand; the stable layout captures the pointer.
+    const dx = window.innerWidth > 700 ? drag.x - drag.startX : 0;
+    drag.shell.style.transform = 'translate3d(' + dx + 'px,' + (drag.y - drag.startY) + 'px,0)';
+    const area = bounds(), edge = Math.min(56, Math.max(16, (area.bottom - area.top) / 4));
+    const velocity = drag.y < area.top + edge ? -Math.min(1, (area.top + edge - drag.y) / edge) : drag.y > area.bottom - edge ? Math.min(1, (drag.y - area.bottom + edge) / edge) : 0;
+    if (velocity && dt) {
+      const maximum = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      scroller.scrollTop = Math.max(0, Math.min(maximum, scroller.scrollTop + velocity * 620 * dt / 1000));
+    }
+    updateDrop(); frame = window.requestAnimationFrame(dragFrame);
   }
-  function pointerStart(event, key, handle) {
-    if (!dock.isOpen() || !advanced || !session?.get() || event.isPrimary === false || event.button !== 0 || event.target.closest('button') !== handle) return;
-    endDrag(false);
-    drag = {key, handle, pointerId: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, active: false, target: null};
-    try { handle.setPointerCapture(event.pointerId); } catch (_) {}
+  function pointerStart(event, key) {
+    if (!editing() || writing || event.isPrimary === false || event.button !== 0 || drag) return;
+    const item = tiles.get(key); if (!item || event.target.closest('.wf-home-card-grip') !== item.handle) return;
+    drag = {key, shell: item.shell, handle: item.handle, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY,
+      x: event.clientX, y: event.clientY, active: false, target: null};
   }
   function pointerMove(event) {
     if (!drag || drag.pointerId !== event.pointerId) return;
     drag.x = event.clientX; drag.y = event.clientY;
-    if (!drag.active && Math.hypot(drag.x - drag.startX, drag.y - drag.startY) < 6) return;
+    if (!drag.active && Math.hypot(drag.x - drag.startX, drag.y - drag.startY) < 7) return;
     event.preventDefault();
     if (!drag.active) {
-      drag.active = true;
-      const ghost = node('div', 'wf-home-drag-ghost'); ghost.setAttribute('aria-hidden', 'true');
-      const name = node('strong'); name.textContent = t(drag.key); ghost.append(icon(drag.key), name, icon('grip'));
-      document.body.append(ghost); drag.ghost = ghost; tiles.get(drag.key).card.classList.add('is-dragging');
-      list.classList.add('is-dragging'); autoFrame = window.requestAnimationFrame(autoScroll);
+      // Leave taps on their original heading; capture only a confirmed drag.
+      clearSelection();
+      try { layout.setPointerCapture(event.pointerId); } catch (_) {}
+      const rect = drag.shell.getBoundingClientRect(); drag.active = true;
+      drag.originalStyle = drag.shell.getAttribute('style');
+      drag.scrollBehavior = scroller.style.scrollBehavior; scroller.style.scrollBehavior = 'auto';
+      const placeholder = node('div', 'wf-home-drop-space'); placeholder.setAttribute('aria-hidden', 'true');
+      placeholder.dataset.homeSize = session.get().sizes[drag.key]; placeholder.style.height = rect.height + 'px';
+      layout.insertBefore(placeholder, drag.shell); drag.placeholder = placeholder;
+      drag.target = {index: session.get().order.indexOf(drag.key)};
+      drag.shell.style.left = rect.left + 'px'; drag.shell.style.top = rect.top + 'px'; drag.shell.style.width = rect.width + 'px';
+      drag.shell.classList.add('is-dragging'); layout.classList.add('is-dragging');
+      announce('pickedUp', {name: t(drag.key)});
+      frame = window.requestAnimationFrame(dragFrame);
     }
-    drag.ghost.style.left = Math.max(8, Math.min(window.innerWidth - 188, drag.x - 90)) + 'px';
-    drag.ghost.style.top = Math.max(8, Math.min(window.innerHeight - 72, drag.y - 30)) + 'px';
-    updateDrop();
   }
   function endDrag(commit) {
     if (!drag) return;
-    const current = drag; drag = null;
-    window.cancelAnimationFrame(autoFrame); autoFrame = 0;
-    current.ghost?.remove(); tiles.get(current.key)?.card.classList.remove('is-dragging'); list?.classList.remove('is-dragging'); clearDrop();
-    try { current.handle.releasePointerCapture(current.pointerId); } catch (_) {}
+    const current = drag; drag = null; window.cancelAnimationFrame(frame); frame = 0;
+    try { layout.releasePointerCapture(current.pointerId); } catch (_) {}
     if (!current.active) return;
-    suppressClickUntil = Date.now() + 350;
-    if (commit && current.target && session?.get()) {
-      const total = session.get().order.length;
-      changed(() => session.move(current.key, current.target.index), 'moved', {name: t(current.key), position: number(current.target.index + 1), total: number(total)});
-    }
-    if (dock.isOpen()) current.handle.focus({preventScroll: true});
+    current.placeholder.remove(); current.shell.classList.remove('is-dragging'); layout.classList.remove('is-dragging');
+    if (current.originalStyle == null) current.shell.removeAttribute('style'); else current.shell.setAttribute('style', current.originalStyle);
+    scroller.style.scrollBehavior = current.scrollBehavior || '';
+    for (const item of tiles.values()) item.animation?.cancel();
+    suppressClickUntil = Date.now() + 400;
+    if (commit && current.target && editing()) {
+      const total = session.get().order.length; session.move(current.key, current.target.index);
+      errorKey = ''; status.textContent = ''; status.hidden = true; draw();
+      announce('moved', {name: t(current.key), position: number(current.target.index + 1), total: number(total)});
+    } else if (editing()) { model.preview(session.get()); announce('selectionCancelled'); }
+    if (editing()) current.handle.focus({preventScroll: true});
   }
   function pointerEnd(event) {
     if (drag?.pointerId !== event.pointerId) return;
-    if (drag.active) event.preventDefault();
+    if (drag.active) { event.preventDefault(); drag.x = event.clientX; drag.y = event.clientY; if (event.type === 'pointerup') updateDrop(); }
     endDrag(event.type === 'pointerup');
   }
   function mount() {
     if (mounted) return true;
-    const page = byId('page-dashboard'); model = window.WFHomeLayout;
-    if (!page || !model || !window.WFHomeDock) return false;
-    panel = node('div', 'dash-dock-panel wf-home-customizer'); panel.id = 'wfHomeCustomizer';
-    panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-labelledby', 'wfHomeCustomizerTitle');
-    panel.setAttribute('aria-describedby', 'wfHomeCustomizerDraftHint');
-    const header = node('div', 'dash-dock-toolbar');
-    title = label('strong', 'title'); title.id = 'wfHomeCustomizerTitle'; title.tabIndex = -1;
-    const swap = button('', 'dash-dock-move', () => dock.swapSide()); swap.id = 'wfHomeCustomizerMove'; swap.textContent = '⇆';
-    const close = button('', 'wf-home-editor-close', cancel); close.id = 'wfHomeCustomizerClose'; close.textContent = '×';
-    header.append(title, swap, close);
-    body = node('div', 'dash-dock-layout wf-home-editor-body');
-    summary = node('p', 'wf-home-editor-count'); body.append(summary);
-    advancedHint = label('p', 'hint', 'wf-home-editor-hint'); advancedHint.id = 'wfHomeCustomizerHint'; advancedHint.hidden = true; body.append(advancedHint);
-    emptyHint = label('p', 'allHidden', 'wf-home-editor-empty'); emptyHint.hidden = true; body.append(emptyHint);
-    list = node('div', 'wf-home-editor-grid'); list.id = 'wfHomeCustomizerSections'; list.setAttribute('role', 'list'); body.append(list);
-    model.get().order.forEach(buildTile);
-    const tools = node('div', 'wf-home-editor-tools');
-    advancedButton = button('advanced', 'wf-home-editor-advanced', () => setAdvanced(!advanced)); advancedButton.id = 'wfHomeCustomizerAdvanced';
-    advancedButton.setAttribute('aria-expanded', 'false'); advancedButton.setAttribute('aria-controls', list.id);
-    const reset = button('', 'wf-home-editor-reset', () => changed(() => session.reset(), 'resetDone'), 'reset'); reset.id = 'wfHomeCustomizerReset';
-    tools.append(advancedButton, reset);
-    const footer = node('footer', 'wf-home-editor-footer');
+    page = byId('page-dashboard'); layout = byId('wfHomeLayout'); model = window.WFHomeLayout;
+    if (!page || !layout || !model?.element || !window.WFHomeDock) return false;
+    toolbar = node('section', 'wf-home-inline-toolbar'); toolbar.id = 'wfHomeCustomizer'; toolbar.hidden = true;
+    toolbar.setAttribute('aria-labelledby', 'wfHomeCustomizerTitle');
+    const heading = node('div', 'wf-home-inline-heading'); title = label('h2', 'title'); title.id = 'wfHomeCustomizerTitle'; title.tabIndex = -1;
+    summary = node('p', 'wf-home-editor-count'); heading.append(title, summary);
+    const hint = label('p', 'hint', 'wf-home-editor-hint'); hint.id = 'wfHomeCustomizerHint';
+    const keyboard = label('p', 'keyboard', 'wf-home-editor-live'); keyboard.id = 'wfHomeCustomizerKeyboard';
     status = node('p', 'wf-home-editor-status'); status.id = 'wfHomeCustomizerStatus'; status.setAttribute('role', 'alert'); status.hidden = true;
-    body.insertBefore(status, body.firstChild);
-    const draftHint = label('p', 'draftHint', 'wf-home-editor-hint'); draftHint.id = 'wfHomeCustomizerDraftHint';
-    const actions = node('div', 'wf-home-editor-actions'), cancelButton = button('cancel', '', cancel), saveButton = button('save', 'is-primary', save);
-    cancelButton.id = 'wfHomeCustomizerCancel'; saveButton.id = 'wfHomeCustomizerSave'; actions.append(cancelButton, saveButton); footer.append(tools, draftHint, actions);
     live = node('p', 'wf-home-editor-live'); live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'polite'); live.setAttribute('aria-atomic', 'true');
-    panel.append(header, body, footer, live);
-    dock = window.WFHomeDock.create({panel, onOpen: begin, onClose: finish}); editButton = dock.trigger;
-    editButton.setAttribute('aria-haspopup', 'dialog');
-    panel.addEventListener('click', event => {
+    toolbar.append(heading, hint, keyboard, status, live); page.insertBefore(toolbar, layout);
+    hiddenArea = node('section', 'wf-home-hidden-sections'); hiddenArea.id = 'wfHomeHiddenSections'; hiddenArea.hidden = true;
+    hiddenArea.append(label('h3', 'hiddenSections')); hiddenList = node('div', 'wf-home-hidden-list'); hiddenArea.append(hiddenList); layout.after(hiddenArea);
+    model.get().order.forEach(buildTile);
+    actions = node('div', 'wf-home-inline-actions'); actions.id = 'wfHomeCustomizerActions'; actions.hidden = true;
+    actions.setAttribute('role', 'group'); actions.setAttribute('aria-labelledby', title.id);
+    const reset = button('', 'wf-home-editor-reset', () => changed(() => session.reset(), 'resetDone'), 'reset'); reset.id = 'wfHomeCustomizerReset';
+    const cancelButton = button('cancel', '', cancel); cancelButton.id = 'wfHomeCustomizerCancel';
+    const saveButton = button('save', 'is-primary', save, 'check'); saveButton.id = 'wfHomeCustomizerSave';
+    actions.append(reset, cancelButton, saveButton); document.body.append(actions);
+    dock = window.WFHomeDock.create({panel: toolbar, onOpen: begin, onClose: finish, inline: true});
+    layout.addEventListener('click', event => {
       if (Date.now() < suppressClickUntil && event.detail !== 0) { event.preventDefault(); event.stopImmediatePropagation(); }
     }, true);
+    layout.addEventListener('lostpointercapture', event => { if (event.target === layout && drag?.pointerId === event.pointerId) endDrag(false); });
     window.addEventListener('pointermove', pointerMove, {passive: false});
-    window.addEventListener('pointerup', pointerEnd); window.addEventListener('pointercancel', pointerEnd);
+    window.addEventListener('pointerup', pointerEnd, {passive: false}); window.addEventListener('pointercancel', pointerEnd);
+    document.addEventListener('pointerdown', event => { if (drag && event.pointerId !== drag.pointerId) endDrag(false); }, true);
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && editing() && (drag || selected)) { event.preventDefault(); event.stopImmediatePropagation(); endDrag(false); clearSelection(); announce('selectionCancelled'); }
+    }, true);
     window.addEventListener('blur', () => endDrag(false));
+    document.addEventListener('visibilitychange', () => { if (document.hidden) endDrag(false); });
+    window.addEventListener('resize', () => { endDrag(false); scheduleGeometry(); }, {passive: true});
+    window.visualViewport?.addEventListener('resize', () => { endDrag(false); scheduleGeometry(); }, {passive: true});
+    window.visualViewport?.addEventListener('scroll', scheduleGeometry, {passive: true});
+    document.addEventListener('scroll', scheduleGeometry, {capture: true, passive: true});
+    if (window.ResizeObserver) { resizeObserver = new window.ResizeObserver(scheduleGeometry); for (const el of [actions, document.querySelector('.navbar'), byId('bottomNav'), byId('bnavCircle')]) if (el) resizeObserver.observe(el); }
     mounted = true; translate(); registerGuard();
     new MutationObserver(translate).observe(document.documentElement, {attributes: true, attributeFilter: ['lang']});
     return true;

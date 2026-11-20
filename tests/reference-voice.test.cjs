@@ -71,6 +71,40 @@ test('reference streaming keeps all residual codebooks from the first PCM frame'
   assert.equal(body.laci,true);assert.equal(body.language,'ar');assert.equal(body.speaker_embedding_base64,'c3BlYWtlcg==');
 });
 
+test('short report headings become one bounded natural phrase with its original source range',()=>{
+  const text='Daily report. Report date: November twentieth. Sales: $5.00.';
+  const input=[{text:'Daily report.',charIndex:0,charLength:13},
+    {text:'Report date: November twentieth.',charIndex:14,charLength:32},
+    {text:'Sales five dollars.',charIndex:47,charLength:12}];
+  assert.equal(typeof core.groupPhrases,'function');
+  assert.deepEqual(core.groupPhrases(text,input),[
+    {text:'Daily report. Report date: November twentieth.',charIndex:0,charLength:46},
+    {text:'Sales five dollars.',charIndex:47,charLength:12}
+  ]);
+  assert.equal(input[0].text,'Daily report.','planning never rewrites the validated input');
+  const long={text:'a'.repeat(215),charIndex:14,charLength:32};
+  assert.equal(core.groupPhrases(text,[input[0],long]).length,2,'a short heading must not create an oversized generation');
+  assert.equal(core.groupPhrases(text,[input[0],input[2]]).length,2,'omitted source clauses cannot be folded into an unrelated highlight');
+});
+
+test('grouping preserves repeated source spans when a large spoken amount needs several pieces',()=>{
+  const {build,localize}=require('../business-overview.js'),{prepare}=require('../arabic-report-speech.js');
+  for(const amount of [1234567890123.45,87654321987654.25,90071992547409.9]){
+    const snapshot=build({companies:[],products:[],invoices:[],payments:[],cashEntries:[]},{date:'2026-11-20'});
+    snapshot.daily.salesUSD=amount;
+    const report=localize(snapshot,'ar'),chunks=prepare(report,{dialect:'sy'}),grouped=core.groupPhrases(report.narration,chunks);
+    assert.doesNotThrow(()=>playbackCore.speechChunks(report.narration,grouped),String(amount));
+    assert.equal(grouped.map(chunk=>chunk.text).join(' '),chunks.map(chunk=>chunk.text).join(' '),'every magnitude and fractional word survives');
+  }
+  const text='Amounts: 1234567890. Next.',chunks=[
+    {text:'Amounts.',charIndex:0,charLength:8},
+    {text:'one hundred twenty three',charIndex:9,charLength:11},
+    {text:'million dollars.',charIndex:9,charLength:11},
+    {text:'Next.',charIndex:21,charLength:5}
+  ];
+  assert.deepEqual(core.groupPhrases(text,chunks),chunks,'neither end of a repeated number span can absorb its neighboring clause');
+});
+
 async function flushUntil(check) {
   for(let attempt=0;attempt<40&&!check();attempt++)await new Promise(resolve=>setImmediate(resolve));
   assert(check(),'asynchronous operation reached the expected state');
@@ -357,4 +391,97 @@ test('a completion queued before removal cannot repopulate the cleared phrase ca
   const removed=f.api.remove();await first;await removed;await f.restorePack();
   const next=f.api.synthesize('الرصيد صفر.',{locale:'ar'});next.catch(()=>{});
   assert.equal(f.requests.length,2);f.respond(1);await next;
+});
+
+test('opening a report can silently prepare its first natural phrase without audio or duplicate work',async t=>{
+  const f=await browserFixture(t),text='Daily report. November twentieth. Sales five dollars.';
+  assert.equal(typeof f.api.preload,'function');
+  const first=f.api.preload({text,locale:'ar'}),again=f.api.preload({text,locale:'ar'});
+  assert.equal(f.requests.length,1);assert.equal(f.requests[0].text,'Daily report. November twentieth.');
+  assert.equal(f.audioElements.length,0);assert.equal(f.networkCalls,0);
+  f.respond(0);await Promise.all([first.promise,again.promise]);
+  assert.equal(f.requests.length,1,'preparation is limited to the opening phrase');assert.equal(f.audioElements.length,0);
+});
+
+test('explicit playback adopts the pending silent phrase and its old preparation handle cannot cancel it',async t=>{
+  const f=await browserFixture(t),text='الرصيد خمسة دولارات.';let started=0,problem;
+  const warm=f.api.preload({text,locale:'ar'});
+  const handle=f.api.speak({text,locale:'ar',onStart(){started++;},onError:value=>{problem=value;}});
+  try{
+    await flushUntil(()=>f.audioElements.length===1);warm.cancel();
+    assert.equal(f.requests.length,1);assert.equal(f.workers[0].terminated,false);
+    f.respond(0);await warm.promise;await flushUntil(()=>started||problem);
+    assert.equal(started,1);assert.equal(problem,undefined);assert.equal(f.requests.length,1);
+  }finally{handle.cancel();}
+});
+
+test('cancelling an unused silent phrase aborts generation and cannot repopulate the phrase cache',async t=>{
+  const f=await browserFixture(t),text='الرصيد خمسة دولارات.';
+  const warm=f.api.preload({text,locale:'ar'}),cancelled=assert.rejects(warm.promise,{name:'AbortError'});
+  warm.cancel();await cancelled;assert.equal(f.workers[0].terminated,true);assert.equal(f.audioElements.length,0);
+  f.respond(0);
+  const next=f.api.synthesize(text,{locale:'ar'});assert.equal(f.requests.length,2);f.respond(1);await next;
+});
+
+test('a different explicit reading replaces silent preparation without speech-busy or stale audio',async t=>{
+  const f=await browserFixture(t);let started=0,problem;
+  const warm=f.api.preload({text:'Old report.',locale:'ar'}),cancelled=assert.rejects(warm.promise,{name:'AbortError'});
+  const handle=f.api.speak({text:'Current report.',locale:'tr',onStart(){started++;},onError:value=>{problem=value;}});
+  try{
+    await flushUntil(()=>f.requests.length===2||problem);await cancelled;
+    assert.equal(problem,undefined);assert.equal(f.workers[0].terminated,true);assert.equal(f.requests[1].locale,'tr');
+    f.respond(0);assert.equal(started,0);f.respond(1);await flushUntil(()=>started===1);
+    const skipped=f.api.preload({text:'Another report.',locale:'ar'});await skipped.promise;
+    assert.equal(f.requests.length,2,'silent work must not compete with the active reader');
+  }finally{handle.cancel();}
+});
+
+test('silent preparation publishes its cancellable handle before initialization subscribers can reenter',async t=>{
+  let subscribed=false,duplicate;
+  const options={text:'الرصيد خمسة دولارات.',locale:'ar'};
+  const f=await browserFixture(t,{onEvent(event,window){
+    if(subscribed||event.type!=='wf-reference-voice-change'||event.detail.engineState!=='initializing')return;
+    subscribed=true;duplicate=window.WFReferenceVoice.preload(options);
+    assert.equal(typeof duplicate?.cancel,'function');assert.equal(typeof duplicate.promise?.then,'function');
+    duplicate.cancel();
+  }});
+  const warm=f.api.preload(options);
+  await assert.rejects(warm.promise,{name:'AbortError'});
+  assert.equal(f.requests.length,0,'synchronous cancellation must prevent the worker post');
+  assert.equal(f.workers[0].terminated,true);assert.equal(f.audioElements.length,0);
+});
+
+test('truncated generated WAVs fail before caching and can be regenerated on the next attempt',async t=>{
+  const f=await browserFixture(t),text='الرصيد خمسة دولارات.';
+  const pending=f.api.synthesize(text,{locale:'ar'}),failed=assert.rejects(pending,{code:'invalid-audio'});
+  const complete=playbackCore.pcmToWav(new Float32Array(2400),24000);
+  f.send(0,{blob:new Blob([complete.slice(0,-2)],{type:'audio/wav'})});await failed;
+  const retry=f.api.synthesize(text,{locale:'ar'});assert.equal(f.requests.length,2);f.respond(1);await retry;
+});
+
+test('silent preparation never competes with an explicit synthesis that adopted an earlier warm phrase',async t=>{
+  const f=await browserFixture(t),text='الرصيد خمسة دولارات.';
+  const warm=f.api.preload({text,locale:'ar'}),explicit=f.api.synthesize(text,{locale:'ar'});
+  const skipped=f.api.preload({text:'تقرير آخر.',locale:'ar'});await skipped.promise;
+  assert.equal(f.requests.length,1);assert.equal(f.workers[0].terminated,false);
+  f.respond(0);await Promise.all([warm.promise,explicit]);
+});
+
+test('an adopted warm phrase forwards live progress only to the current reader',async t=>{
+  const f=await browserFixture(t),oldProgress=[],currentProgress=[];let started=0;
+  const text='الرصيد خمسة دولارات.',warm=f.api.preload({text,locale:'ar'});
+  const old=f.api.speak({text,locale:'ar',onProgress:value=>oldProgress.push(value.phase)});
+  f.send(0,{type:'progress',phase:'loading',loaded:1,total:10});
+  assert.deepEqual(oldProgress,['loading'],'the reader receives progress even before its audio unlock settles');
+  await new Promise(resolve=>setImmediate(resolve));
+  f.send(0,{type:'progress',phase:'generating'});
+  assert.deepEqual(oldProgress,['loading','generating'],'adoption must not lose or duplicate generation progress');
+  const cancelled=assert.rejects(warm.promise,{name:'AbortError'});old.cancel();await cancelled;
+  const current=f.api.speak({text:'التقرير الجديد.',locale:'ar',onProgress:value=>currentProgress.push(value.phase),onStart(){started++;}});
+  try{
+    await flushUntil(()=>f.requests.length===2);f.send(0,{type:'progress',phase:'stale'});
+    f.send(1,{type:'progress',phase:'generating'});
+    assert.deepEqual(oldProgress,['loading','generating']);assert.deepEqual(currentProgress,['generating']);
+    f.respond(1);await flushUntil(()=>started===1);
+  }finally{current.cancel();}
 });

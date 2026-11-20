@@ -31,6 +31,27 @@
       ...(stream?{stream_decode:'prefix',stream_codebooks_scope:'first'}:{})};
   }
 
+  function groupPhrases(text,chunks){
+    const result=[];
+    const sameSpan=(first,second)=>first&&second&&first.charIndex===second.charIndex&&first.charLength===second.charLength;
+    for(let index=0;index<chunks.length;index++){
+      const current={...chunks[index]},next=chunks[index+1];
+      const plain=current.text.replace(/[\u064b-\u065f\u0670]/g,'');
+      const end=current.charIndex+current.charLength;
+      // A heading alone sounds like a couple of words followed by a stall.
+      // Give the model its next clause too, without building a long paragraph
+      // or highlighting source clauses that narration intentionally skipped.
+      if(next&&(plain.trim().split(/\s+/).length<=4||plain.length<35)&&
+        !sameSpan(current,chunks[index-1])&&!sameSpan(next,chunks[index+2])&&
+        current.text.length+1+next.text.length<=220&&
+        (next.charIndex===end||next.charIndex>end&&!text.slice(end,next.charIndex).trim())){
+        current.text+=' '+next.text;current.charLength=next.charIndex+next.charLength-current.charIndex;index++;
+      }
+      result.push(current);
+    }
+    return result;
+  }
+
   function createCacheFetch({caches,digest,cacheName,assets,appBase,virtualBase}){
     const urls=new Map(),modelPaths=new Map();
     for(const asset of assets){
@@ -82,7 +103,7 @@
     return source;
   }
 
-  const core={LANGUAGES,NAME,localeKey,embeddingKey,generationBody,createCacheFetch,fastStartRuntime};
+  const core={LANGUAGES,NAME,localeKey,embeddingKey,generationBody,groupPhrases,createCacheFetch,fastStartRuntime};
   if(typeof module==='object'&&module.exports){module.exports=core;return;}
   globalThis.WFReferenceVoiceCore=Object.freeze(core);
   if(typeof document==='undefined')return;
@@ -96,7 +117,7 @@
   const supported=!!(window.isSecureContext&&window.caches&&window.crypto?.subtle&&window.Worker&&navigator.gpu);
   const IDLE_MS=300000,REQUEST_TIMEOUT_MS=90000,MAX_STREAM_SAMPLES=44100*150;
   const PHRASE_CACHE_BYTES=16*1024*1024,PHRASE_CACHE_ENTRIES=32,phraseCache=new Map();
-  let phraseCacheBytes=0,phraseCacheEpoch=0;
+  let phraseCacheBytes=0,phraseCacheEpoch=0,warming=null;
   let deviceAvailable=null,deviceCheck=null,worker=null,workerReady=false,engineState='idle',engineError='',job=null,preparation=null,nextId=0,activeHandle=null,idleTimer=null,speechOwner=0,playbackOwner=null;
   const emit=(type,detail)=>window.dispatchEvent(new CustomEvent(type,{detail}));
   const publish=(type,value)=>{for(const locale of Object.keys(LANGUAGES))emit(type,{...value,locale,name:NAME});};
@@ -169,7 +190,7 @@
 
   function ensureWorker(){
     if(worker)return worker;
-    worker=new Worker(new URL('reference-voice-host.js?v=5',appBase),{type:'module'});
+    worker=new Worker(new URL('reference-voice-host.js?v=6',appBase),{type:'module'});
     const instance=worker;
     worker.onmessage=event=>{
       if(worker!==instance)return;
@@ -235,6 +256,9 @@
     armTimeout(task);
     try{
       options.signal?.addEventListener('abort',abort,{once:true});
+      // A status listener can cancel synchronously while initialization is
+      // announced, before its AbortSignal listener has been attached.
+      if(options.signal?.aborted){abort();return task.promise;}
       instance.postMessage({id,type,text,locale:task.locale,dialect:'sy'});
     }catch(_){terminate('engine-failed');}
     return task.promise;
@@ -242,7 +266,7 @@
 
   function clearPhraseCache(){phraseCache.clear();phraseCacheBytes=0;phraseCacheEpoch++;}
 
-  async function synthesize(text,options={}){
+  async function renderPhrase(text,options={}){
     if(typeof text!=='string'||!text.trim()||text.length>800)throw fail('text-length');
     const locale=localeKey(options.locale||options.lang||'ar'),status=getStatus(locale);
     if(!status.ready)throw fail(status.reason||'pack-not-installed');
@@ -250,6 +274,10 @@
     const key=locale+'\u0000'+text,cached=phraseCache.get(key),epoch=phraseCacheEpoch;
     if(cached){phraseCache.delete(key);phraseCache.set(key,cached);return cached;}
     const blob=await request('synthesize',text,options);
+    if(options.signal?.aborted)throw base.aborted();
+    // A WAV MIME type alone does not prove completion. Reject a clipped data
+    // section before it can poison the exact-phrase replay/preparation cache.
+    const verified=base.createWavSequence();await verified.append(blob,{charIndex:0,charLength:text.length});
     if(options.signal?.aborted)throw base.aborted();
     // Financial text and audio stay in this page's RAM only. Removal invalidates
     // completions already queued as microtasks so they cannot repopulate it.
@@ -264,6 +292,57 @@
     }
     return blob;
   }
+
+  function cancelPreload(force=false){
+    const task=warming;
+    if(!task||task.claimed&&!force)return;
+    warming=null;task.controller.abort();
+  }
+
+  function speechPlan(text,chunks){
+    if(typeof text!=='string'||!text.trim()||text.length>16000)throw fail('text-length');
+    return groupPhrases(text,base.speechChunks(text,chunks));
+  }
+
+  function preload(options={}){
+    const locale=localeKey(options.locale||options.lang||'ar'),chunks=speechPlan(options.text,options.chunks);
+    // Only an explicit report-open action calls this. It renders one bounded
+    // opening phrase in RAM, and never creates/unlocks an audio player.
+    if(playbackOwner!==null||!getStatus(locale).ready||job&&(!warming||warming.claimed))return {promise:Promise.resolve(false),cancel(){}};
+    const text=chunks[0]?.text;if(!text)return {promise:Promise.resolve(false),cancel(){}};
+    const key=locale+'\u0000'+text;
+    if(warming?.key===key&&!warming.controller.signal.aborted)return warming.handle;
+    cancelPreload();
+    const task={key,controller:new AbortController(),claimed:false,promise:null,handle:null,progress:new Set()};
+    task.promise=new Promise((resolve,reject)=>{task.resolve=resolve;task.reject=reject;});
+    // Callers may use this purely as a best-effort warmup. Cancellation and a
+    // failed device must not become an unhandled rejection or start playback.
+    task.promise.catch(()=>{});
+    task.handle={promise:task.promise,cancel(){if(!task.claimed){if(warming===task)warming=null;task.controller.abort();}}};
+    warming=task;
+    renderPhrase(text,{locale,signal:task.controller.signal,onProgress:value=>{
+      if(task.controller.signal.aborted)return;
+      for(const listener of [...task.progress])try{listener(value);}catch(_){}
+    }}).then(blob=>{
+      if(warming===task)warming=null;task.resolve(blob);
+    },problem=>{if(warming===task)warming=null;task.reject(problem);});
+    return task.handle;
+  }
+
+  async function synthesize(text,options={}){
+    if(options.signal?.aborted)throw base.aborted();
+    const key=localeKey(options.locale||options.lang||'ar')+'\u0000'+text,task=warming;
+    if(task?.key===key&&!task.controller.signal.aborted){
+      task.claimed=true;
+      const abort=()=>task.controller.abort();
+      options.signal?.addEventListener('abort',abort,{once:true});
+      if(typeof options.onProgress==='function')task.progress.add(options.onProgress);
+      try{const blob=await task.promise;if(options.signal?.aborted)throw base.aborted();return blob;}
+      finally{options.signal?.removeEventListener('abort',abort);task.progress.delete(options.onProgress);}
+    }
+    cancelPreload();
+    return renderPhrase(text,options);
+  }
   const stream=(text,options={})=>request('stream',text,options);
   const prepare=(locale='ar')=>request('prepare',null,{locale});
   const release=()=>{if(job||playbackOwner!==null)return false;terminate();return true;};
@@ -276,22 +355,32 @@
   }
 
   function speak(options={}){
-    const owner=++speechOwner;playbackOwner=owner;clearTimeout(idleTimer);idleTimer=null;
-    const dispose=()=>{if(playbackOwner===owner){playbackOwner=null;activeHandle=null;scheduleIdle();}};
+    const chunks=speechPlan(options.text,options.chunks),owner=++speechOwner;
+    const key=localeKey(options.locale||options.lang||'ar')+'\u0000'+chunks[0]?.text;
+    const adopted=warming&&!warming.claimed&&warming.key===key?warming:null;
+    let openingProgress=null;
+    if(adopted){
+      adopted.claimed=true;
+      if(typeof options.onProgress==='function'){openingProgress=value=>options.onProgress(value);adopted.progress.add(openingProgress);}
+    }else cancelPreload();
+    const releaseOpeningProgress=()=>{if(openingProgress){adopted.progress.delete(openingProgress);openingProgress=null;}};
+    playbackOwner=owner;clearTimeout(idleTimer);idleTimer=null;
+    const dispose=()=>{releaseOpeningProgress();adopted?.controller.abort();if(playbackOwner===owner){playbackOwner=null;activeHandle=null;scheduleIdle();}};
     // A complete short phrase plays through the native audio element while
     // the next is synthesized. Never schedule sub-word packets on JS timers.
-    try{activeHandle=player.speakGenerated({...options,streaming:false,continuous:false,normalizeGenerated:true},{getStatus,
+    try{activeHandle=player.speakGenerated({...options,chunks,streaming:false,continuous:false,normalizeGenerated:true,
+      lookaheadPhrases:3,minimumBufferSeconds:2.5},{getStatus,
       stream:(text,context)=>stream(text,{...context,dialect:options.dialect}),
-      synthesize:(text,context)=>synthesize(text,{...context,dialect:options.dialect}),dispose});}
+      synthesize:(text,context)=>{releaseOpeningProgress();return synthesize(text,{...context,dialect:options.dialect});},dispose});}
     catch(problem){dispose();throw problem;}
     return activeHandle;
   }
 
-  window.WFReferenceVoice=Object.freeze({getStatus,refresh,download,synthesize,stream,prepare,release,speak,
+  window.WFReferenceVoice=Object.freeze({getStatus,refresh,download,synthesize,stream,prepare,preload,release,speak,
     preparePlayback:()=>player.preparePlayback({streaming:false}),
     list:()=>Object.keys(LANGUAGES).map(locale=>({locale,id:voice.id,name:NAME,language:locale,bytes:voice.bytes,sharedBytes:0,quality:'reference',sourceURL:voice.sourceURL,licenseURL:voice.licenseURL})),
     cancelDownload:()=>manager.cancelDownload('ref'),
-    remove:async(locale='ar')=>{activeHandle?.cancel();terminate();clearPhraseCache();await manager.remove('ref');return refresh(locale);}});
-  window.addEventListener('pagehide',()=>{activeHandle?.cancel();terminate();});
+    remove:async(locale='ar')=>{activeHandle?.cancel();cancelPreload(true);terminate();clearPhraseCache();await manager.remove('ref');return refresh(locale);}});
+  window.addEventListener('pagehide',()=>{activeHandle?.cancel();cancelPreload(true);terminate();});
   refresh();
 })();

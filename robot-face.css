@@ -178,10 +178,8 @@ html body #mainContent #page-dashboard :is(#wfGreetingRobot, #wfRobotSettingsPre
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) :is(.wf-robot-report, .wf-robot-speak) span { white-space: normal; text-overflow: clip; line-height: 1.15; }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-button svg { flex: 0 0 17px; inline-size: 17px; block-size: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-button .wf-robot-stop-icon { display: none; fill: currentColor; stroke: none; }
-:is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-voice-active="true"][data-voice-kind="intro"] .wf-robot-speak-icon,
-:is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-voice-active="true"][data-voice-kind="report"] .wf-robot-report-icon { display: none; }
-:is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-voice-active="true"][data-voice-kind="intro"] .wf-robot-speak .wf-robot-stop-icon,
-:is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-voice-active="true"][data-voice-kind="report"] .wf-robot-report .wf-robot-stop-icon { display: block; }
+:is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-voice-active="true"]:is([data-voice-kind="intro"],[data-voice-kind="report"]) .wf-robot-speak-icon { display: none; }
+:is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-voice-active="true"]:is([data-voice-kind="intro"],[data-voice-kind="report"]) .wf-robot-speak .wf-robot-stop-icon { display: block; }
 
 html body #mainContent #page-dashboard :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-button:focus-visible {
   outline: 2px solid var(--brand-primary);
@@ -245,5 +243,4 @@ html body #mainContent #page-dashboard :is(#wfGreetingRobot, #wfRobotSettingsPre
   }
 }
 
-#wfGreetingRobot .wf-robot-display[role="button"] {cursor:pointer;border-radius:18px;}
-#wfGreetingRobot .wf-robot-display[role="button"]:focus-visible {outline:2px solid var(--brand-primary,var(--gold));outline-offset:3px;}
+#wfGreetingRobot .wf-robot-display {cursor:default;}

@@ -1,7 +1,7 @@
 /* Keeps the complete WebGPU engine in a terminable worker tree. No report text
    or audio is sent over the network; only the explicit installer can fetch. */
 import './reference-voice-assets.js?v=1';
-import './reference-voice.js?v=4';
+import './reference-voice.js?v=5';
 
 const manifest=globalThis.WFReferenceVoiceAssets,core=globalThis.WFReferenceVoiceCore;
 const appBase=new URL('./',import.meta.url).href;
@@ -52,7 +52,7 @@ async function ready(id){
     const WatchedWorker=class extends NativeWorker{
       constructor(url,options){
         const generation=new URL(url,engineBase).href===new URL('worker.js',engineBase).href;
-        super(generation?new URL('reference-voice-engine.js?v=2',appBase):url,options);
+        super(generation?new URL('reference-voice-engine.js?v=3',appBase):url,options);
         const failed=()=>{const problem=failure('worker-startup-failed');if(initialized)engineFatal(problem.code);else rejectWorker(problem);};
         this.addEventListener('error',failed);
         this.addEventListener('messageerror',failed);

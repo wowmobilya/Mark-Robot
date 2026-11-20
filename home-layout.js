@@ -115,10 +115,13 @@
       let index = 0, visible = 0;
       for (const key of prefs.order) {
         const region = regions.get(key); if (!region) continue;
-        if (layout.children[index] !== region) layout.insertBefore(region, layout.children[index] || null);
+        // Editing adds chrome around the exact live card, without cloning its content.
+        const target = region.parentNode?.classList?.contains('wf-home-edit-shell') ? region.parentNode : region;
+        if (layout.children[index] !== target) layout.insertBefore(target, layout.children[index] || null);
         index++;
         const hidden = prefs.hidden.includes(key);
         region.hidden = hidden; region.inert = hidden;
+        target.hidden = hidden; target.inert = hidden; target.dataset.homeSize = prefs.sizes[key];
         region.classList.toggle('dashboard-off', hidden);
         region.dataset.homeSize = prefs.sizes[key];
         if (!hidden) visible++;

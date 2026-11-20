@@ -12,7 +12,7 @@
       unsupported: 'الصوت غير مدعوم في هذا المتصفح', unavailable: 'لا يتوفر صوت عربي دون اتصال على جهازك',
       failed: 'تعذّر تشغيل الصوت، حاول مجددًا', busy: 'الصوت مشغول الآن، حاول بعد قليل',
       speak: 'هوية الروبوت', stop: 'إيقاف',
-      report: 'اسمع التقرير اليومي', reportUnavailable: 'التقرير يحتاج صوتًا عربيًا مثبتًا يعمل دون اتصال',
+      report: 'عرض التقرير اليومي', reportLoading: 'جارٍ إعداد التقرير…', collapseReport: 'طيّ التقرير', reportUnavailable: 'التقرير يحتاج صوتًا عربيًا مثبتًا يعمل دون اتصال',
       reportEmpty: 'بيانات التقرير اليومي غير متاحة الآن',
       audioURL: "assets/robot-identity/ar.mp3?v=3",
       greeting: "أهلين أستاذ حَسَن الحِلو. أنا مساعدك الذكي في واو فِرْنِتْشَر. هون لَساعدك بتنظيم الشغل وقراءة التقارير بوضوح. صمّمني وبرمجني المهندس مُعتَز بالله حاج شعبان. أنا جاهز، خلّينا نبلّش.",
@@ -23,7 +23,7 @@
       unsupported: 'Bu tarayıcı sesi desteklemiyor', unavailable: 'Cihazınızda çevrimdışı Türkçe ses yok',
       failed: 'Ses başlatılamadı, tekrar deneyin', busy: 'Ses meşgul, biraz sonra deneyin',
       speak: 'Robot kimliği', stop: 'Durdur',
-      report: 'Günlük raporu dinle', reportUnavailable: 'Rapor için cihazda çevrimdışı Türkçe ses gerekir',
+      report: 'Günlük raporu göster', reportLoading: 'Rapor hazırlanıyor…', collapseReport: 'Raporu daralt', reportUnavailable: 'Rapor için cihazda çevrimdışı Türkçe ses gerekir',
       reportEmpty: 'Günlük rapor verileri şu anda kullanılamıyor',
       audioURL: "assets/robot-identity/tr.mp3?v=2",
       greeting: "Merhaba Hasan El Helo Bey. Ben WOW Furniture’daki akıllı asistanınızım. İşlerinizi düzenlemek ve raporlarınızı açıkça okumak için buradayım. Beni mühendis Moataz Bellah Haj Shaaban tasarladı ve programladı. Hazırım, başlayalım.",
@@ -34,7 +34,7 @@
       unsupported: 'Voice is unsupported in this browser', unavailable: 'No offline English voice on this device',
       failed: 'Voice could not start. Please retry', busy: 'Voice is busy. Please try shortly',
       speak: 'Robot identity', stop: 'Stop',
-      report: 'Daily report', reportUnavailable: 'The report needs an installed offline English voice',
+      report: 'View daily report', reportLoading: 'Preparing the report…', collapseReport: 'Collapse report', reportUnavailable: 'The report needs an installed offline English voice',
       reportEmpty: 'Daily report data is unavailable right now',
       audioURL: "assets/robot-identity/en.mp3?v=2",
       greeting: "Hello, Mr. Hassan Al-Hilou. I am your smart assistant at WOW Furniture. I'm here to help organize your work and read your reports clearly. I was designed and programmed by engineer Moataz Bellah Haj Shaaban. I'm ready, let's begin.",
@@ -45,7 +45,7 @@
       unsupported: 'Ce navigateur ne prend pas la voix en charge', unavailable: 'Aucune voix française hors ligne disponible',
       failed: 'La voix ne démarre pas. Réessayez', busy: 'La voix est occupée. Réessayez bientôt',
       speak: 'Identité du robot', stop: 'Arrêter',
-      report: 'Rapport du jour', reportUnavailable: 'Le rapport nécessite une voix française hors ligne installée',
+      report: 'Voir le rapport du jour', reportLoading: 'Préparation du rapport…', collapseReport: 'Replier le rapport', reportUnavailable: 'Le rapport nécessite une voix française hors ligne installée',
       reportEmpty: 'Le rapport du jour est indisponible pour le moment',
       audioURL: "assets/robot-identity/fr.mp3?v=2",
       greeting: "Bonjour, Monsieur Hassan Al-Hilou. Je suis votre assistant intelligent de WOW Furniture. Je suis là pour organiser votre travail et lire clairement vos rapports. J’ai été conçu et programmé par l’ingénieur Moataz Bellah Haj Shaaban. Je suis prêt, commençons.",
@@ -56,7 +56,7 @@
       unsupported: 'Этот браузер не поддерживает голос', unavailable: 'Нет русского голоса для работы без сети',
       failed: 'Не удалось включить голос. Повторите', busy: 'Голос занят. Повторите чуть позже',
       speak: 'О роботе', stop: 'Стоп',
-      report: 'Отчёт за день', reportUnavailable: 'Для отчёта нужен установленный русский голос без сети',
+      report: 'Показать отчёт за день', reportLoading: 'Подготовка отчёта…', collapseReport: 'Свернуть отчёт', reportUnavailable: 'Для отчёта нужен установленный русский голос без сети',
       reportEmpty: 'Данные дневного отчёта сейчас недоступны',
       audioURL: "assets/robot-identity/ru.mp3?v=2",
       greeting: "Здравствуйте, господин Хасан Аль-Хилу. Я ваш умный помощник в WOW Furniture. Я помогу организовать работу и ясно прочитать ваши отчёты. Меня создал и запрограммировал инженер Моатаз Беллах Хадж Шаабан. Я готов, давайте начнём.",
@@ -139,7 +139,7 @@
         </svg>
       </div>
       <div class="wf-robot-actions">
-        <button type="button" class="wf-robot-button wf-robot-report" aria-describedby="wfRobotStatus" aria-pressed="false">
+        <button type="button" class="wf-robot-button wf-robot-report" aria-describedby="wfRobotStatus" aria-controls="wfRobotReportSheet" aria-expanded="false">
           <svg class="wf-robot-report-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M 7 3 H 15 L 19 7 V 21 H 5 V 3 Z M 14 3 V 8 H 19 M 9 12 H 15 M 9 16 H 15"/></svg>
           <svg class="wf-robot-stop-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="6" width="12" height="12" rx="3"/></svg>
           <span></span>
@@ -167,6 +167,8 @@
     let recording = null;
     let offlineRequest = null;
     let reportRequest = null;
+    let reportViewRequest = null;
+    let reportViewTimer = null;
     let sessionKind = 'intro';
     let sessionPage = null;
     let startTimer = null;
@@ -181,6 +183,7 @@
     let referenceWarmRequested = false;
     let paused = false, pauseReason = '', phase = '', failureReason = '';
     let retainedReport = null;
+    let reportPreload = null;
 
     function language() {
       const lang = (root.lang || 'ar').toLowerCase().split(/[-_]/)[0];
@@ -298,25 +301,25 @@
       title.textContent = copy.title;
       const statusKey = state === 'ready' && !supported && !recordingURL() && !offlineReady() ? 'unsupported' :
         state === 'ready' && !currentVoice() && !recordingURL() && !offlineReady() ? 'unavailable' : state;
-      status.textContent = speechMessage(statusKey);
+      status.textContent = reportViewRequest ? copy.reportLoading : speechMessage(statusKey);
       status.title = status.textContent;
       const introActive = active() && sessionKind === 'intro';
       const reportActive = active() && sessionKind === 'report';
-      speakButton.querySelector('span').textContent = copy[introActive ? 'stop' : 'speak'];
-      speakButton.setAttribute('aria-label', copy[introActive ? 'stop' : 'speak']);
-      speakButton.title = copy[introActive ? 'stop' : 'speak'];
-      speakButton.setAttribute('aria-pressed', String(introActive));
-      speakButton.disabled = (!active() && !speechAllowed()) || (!recordingURL() && !offlineReady()) || reportActive;
+      const cardSpeechActive = introActive || reportActive;
+      speakButton.querySelector('span').textContent = copy[cardSpeechActive ? 'stop' : 'speak'];
+      speakButton.setAttribute('aria-label', copy[cardSpeechActive ? 'stop' : 'speak']);
+      speakButton.title = copy[cardSpeechActive ? 'stop' : 'speak'];
+      speakButton.setAttribute('aria-pressed', String(cardSpeechActive));
+      speakButton.disabled = !active() && (!speechAllowed() || (!recordingURL() && !offlineReady()));
       if (reportButton) {
-        const reportLabel = window.WFRobotReport?.isMinimized?.() ? speechCopy.openReport[Math.max(0, speechLanguages.indexOf(locale))] : copy[reportActive ? 'stop' : 'report'];
+        const reportOpen = window.WFRobotReport?.isOpen?.() === true;
+        const reportLabel = reportOpen ? copy.collapseReport : window.WFRobotReport?.isMinimized?.() ? speechCopy.openReport[Math.max(0, speechLanguages.indexOf(locale))] : copy.report;
         reportButton.querySelector('span').textContent = reportLabel;
         reportButton.setAttribute('aria-label', reportLabel);
-        reportButton.setAttribute('aria-pressed', String(reportActive));
+        reportButton.setAttribute('aria-expanded', String(reportOpen));
         reportButton.title = reportLabel;
-        reportButton.disabled = introActive || (!active() && !speechAllowed());
+        reportButton.disabled = !!reportViewRequest;
       }
-      const display = face.querySelector('.wf-robot-display');
-      display?.setAttribute('aria-label', speechCopy.openReport[Math.max(0, speechLanguages.indexOf(locale))]);
       face.dataset.voiceActive = String(active());
       face.dataset.voiceKind = sessionKind;
       window.dispatchEvent(new CustomEvent('wf-program-speech-state', {detail: speechState()}));
@@ -421,6 +424,7 @@
       oldOffline?.handle?.cancel();
       oldReport?.controller?.abort();
       oldReport?.playback?.dispose();
+      cancelReportPreload();
       if (cancel && ownedSpeech) {
         try { synth.cancel(); } catch (_) { /* The visible state still returns to idle. */ }
       }
@@ -614,6 +618,9 @@
             if (offlineRequest === request) finish('failed', true, problem);
           },
         });
+        // The manager has synchronously adopted any exact matching silent
+        // preload. Its playback handle now owns cancellation and the queue.
+        reportPreload = null;
         if (offlineRequest !== request) request.handle?.cancel();
         else { request.handle?.setRate?.(preferences.speechRate); render(); }
       } catch (problem) {
@@ -621,14 +628,90 @@
       }
     }
 
+    function cancelReportView() {
+      reportViewRequest = null;
+      clearTimeout(reportViewTimer); reportViewTimer = null;
+    }
+
+    function reportChunks(snapshot) {
+      if (locale !== 'ar' && locale !== 'tr') return undefined;
+      const adapter = locale === 'ar' ? window.WFArabicReportSpeech : window.WFTurkishReportSpeech;
+      const chunks = adapter.prepare(snapshot, locale === 'ar' ? {dialect:'sy'} : undefined);
+      if (!Array.isArray(chunks) || !chunks.length) throw new Error('unsupported-report');
+      return chunks;
+    }
+
+    function cancelReportPreload() {
+      const previous = reportPreload; reportPreload = null;
+      try { previous?.handle?.cancel?.(); } catch (_) { /* A completed or adopted preload has no separate owner. */ }
+    }
+
+    function warmReport(detail) {
+      if (!detail?.unplayed || detail.locale !== locale || !detail.snapshot?.narration?.trim() ||
+          !speechAllowed() || !offlineReady() || active() || reportPreload?.report === detail || typeof voiceManager()?.preload !== 'function') return;
+      cancelReportPreload();
+      try {
+        const handle = voiceManager().preload({text:detail.snapshot.narration.trim(),locale,chunks:detail.chunks,dialect:'sy'});
+        reportPreload = {report:detail,handle};
+        handle?.promise?.catch(() => {});
+      } catch (_) { /* Preparation is optional; an explicit Read still reports real playback errors. */ }
+    }
+
+    function reportVisibility(event) {
+      if (event.detail?.open) warmReport(retainedReport);
+      else cancelReportPreload();
+      render();
+    }
+
+    async function openReport(event) {
+      event.stopPropagation();
+      if (event.isTrusted !== true || !robotVisible()) return;
+      const reader = window.WFRobotReport;
+      if (reader?.isOpen?.()) { reader.minimize?.(); return; }
+      if (reader?.isMinimized?.() && reader.show()) return;
+      if (active() && sessionKind === 'report' && retainedReport?.locale === locale) {
+        reportEvent('wf-robot-report-open', retainedReport); return;
+      }
+      if (reportViewRequest) return;
+      const token = {locale}; reportViewRequest = token; render();
+      const publish = snapshot => {
+        if (reportViewRequest !== token) return;
+        cancelReportView();
+        if (!robotVisible() || locale !== token.locale) { render(); return; }
+        cancelReportPreload();
+        retainedReport = {snapshot: snapshot || {narration:'',unavailableReason:messages[locale].reportEmpty}, locale, unplayed:true};
+        let validSpeech = true;
+        if (retainedReport.snapshot.narration?.trim()) {
+          try { retainedReport.chunks = reportChunks(retainedReport.snapshot); }
+          catch (_) { validSpeech = false; retainedReport.unplayed = false; }
+        }
+        // Viewing never unlocks, downloads or starts audio. An installed voice
+        // may silently prepare its first phrase for the explicit Read button.
+        reportEvent('wf-robot-report-playback', {state:'ready'});
+        reportEvent('wf-robot-report-open', retainedReport);
+        const pack = voicePackState();
+        if (!validSpeech) reportVoice('unsupported', {...pack,reason:'report-text-unsupported'});
+        else {
+          reportVoice(offlineReady() ? 'ready' : pack.state === 'downloading' ? 'downloading' : pack.state === 'unsupported' || !voiceManager()?.download ? 'unsupported' : 'missing', pack);
+          warmReport(retainedReport);
+        }
+        render();
+      };
+      reportViewTimer = setTimeout(() => publish(null), 8000);
+      let snapshot;
+      try { snapshot = await window.wfBusinessOverviewSnapshot?.({locale:token.locale}); } catch (_) { /* The written view remains available when data fails. */ }
+      publish(snapshot);
+    }
+
     async function toggleReport(event) {
       event.stopPropagation();
-      if (event.isTrusted !== true && event.control !== true) return;
-      if (event.isTrusted === true && window.WFRobotReport?.isMinimized?.() && window.WFRobotReport.show()) return;
+      if (event.control !== true) return;
+      cancelReportView();
       if (active()) { if (sessionKind === 'report') finish('stopped', true); return; }
       if (!speechAllowed()) return;
       if (!robotVisible() && event.control !== true) return;
       refreshVoices();
+      const retained = retainedReport?.locale === locale && retainedReport.unplayed ? retainedReport : null;
       const token = {controller: null, playback: null};
       // Prime audio in the click itself, before reading records or downloading a pack.
       try { token.playback = voiceManager()?.preparePlayback?.(); } catch (_) {}
@@ -645,11 +728,12 @@
         if (reportRequest === token) finish('reportEmpty');
       }, 8000);
       let snapshot;
-      try { snapshot = await window.wfBusinessOverviewSnapshot?.({locale}); } catch (_) { /* A failed report never starts speech. */ }
+      try { snapshot = retained ? retained.snapshot : await window.wfBusinessOverviewSnapshot?.({locale}); } catch (_) { /* A failed report never starts speech. */ }
       if (reportRequest !== token) return;
       if (!visible()) { finish('ready', true); return; }
-      retainedReport = {snapshot: snapshot || {narration: '', unavailableReason: messages[locale].reportEmpty}, locale};
-      reportEvent('wf-robot-report-open', retainedReport);
+      retainedReport = retained || {snapshot: snapshot || {narration: '', unavailableReason: messages[locale].reportEmpty}, locale};
+      retainedReport.unplayed = false;
+      if (!retained) reportEvent('wf-robot-report-open', {...retainedReport, reveal:false});
       if (reportRequest !== token) return;
       const narration = typeof snapshot?.narration === 'string' ? snapshot.narration.trim() : '';
       if (!narration) { finish('reportEmpty'); return; }
@@ -677,16 +761,10 @@
       }
       if (synth?.speaking || synth?.pending || synth?.paused) { finish('failed'); return; }
       let chunks;
-      if (locale === 'ar' || locale === 'tr') {
-        try {
-          const adapter = locale === 'ar' ? window.WFArabicReportSpeech : window.WFTurkishReportSpeech;
-          chunks = adapter.prepare(snapshot, locale === 'ar' ? {dialect: 'sy'} : undefined);
-          if (!Array.isArray(chunks) || !chunks.length) throw new Error('unsupported-report');
-        }
-        catch (_) {
-          // Unknown or incomplete report text must never be guessed by a speech template.
-          reportVoice('unsupported', {...voicePackState(), reason: 'report-text-unsupported'}); finish('reportEmpty'); return;
-        }
+      try { chunks = retained ? retained.chunks : reportChunks(snapshot); }
+      catch (_) {
+        // Unknown or incomplete report text must never be guessed by a speech template.
+        reportVoice('unsupported', {...voicePackState(), reason: 'report-text-unsupported'}); finish('reportEmpty'); return;
       }
       clearTimeout(startTimer);
       startTimer = null;
@@ -744,21 +822,14 @@
     const programSpeech = Object.freeze({speak: speakProgram, preview: previewGreeting, pause: pauseSpeech, resume: resumeSpeech, setRate: setSpeechRate,
       stop() { if (active()) finish('stopped', true); }, getState: speechState});
     window.WFProgramSpeech = programSpeech;
-    const display = face.querySelector('.wf-robot-display');
-    if (display) {
-      display.setAttribute('aria-hidden', 'false');
-      display.setAttribute('role', 'button');
-      display.setAttribute('tabindex', '0');
-      display.setAttribute('aria-haspopup', 'dialog');
-      display.setAttribute('aria-controls', 'wfRobotReportSheet');
-    }
-    function displayKey(event) {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      event.preventDefault(); toggleReport(event);
-    }
-    function changedRoute() { applyMotion(); }
+    function changedRoute() { if (!robotVisible()) { cancelReportView(); cancelReportPreload(); render(); } applyMotion(); }
 
     function checkVisibility() {
+      if (!robotVisible()) {
+        const wasLoading = !!reportViewRequest;
+        cancelReportView(); cancelReportPreload();
+        if (wasLoading) render();
+      }
       applyMotion();
       warmReferenceVoice();
     }
@@ -766,6 +837,8 @@
     function syncLanguage() {
       const next = language();
       if (next === locale) return;
+      cancelReportView();
+      cancelReportPreload();
       if (active()) finish('ready', true);
       locale = next;
       state = 'ready';
@@ -773,12 +846,16 @@
     }
 
     function handlePageHide(event) {
+      cancelReportView();
+      cancelReportPreload();
       if (active()) finish('ready', true);
       if (!event.persisted) destroy();
     }
 
     function destroy() {
       if (disposed) return;
+      cancelReportView();
+      cancelReportPreload();
       if (active()) finish('ready', true);
       disposed = true;
       warmReferenceVoice();
@@ -786,16 +863,14 @@
       pageObserver.disconnect();
       languageObserver.disconnect();
       speakButton.removeEventListener('click', toggleSpeech);
-      reportButton?.removeEventListener('click', toggleReport);
-      display?.removeEventListener('click', toggleReport);
-      display?.removeEventListener('keydown', displayKey);
+      reportButton?.removeEventListener('click', openReport);
       document.removeEventListener('visibilitychange', checkVisibility);
       window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('hashchange', changedRoute);
       window.removeEventListener('wf-robot-preferences', applyPreferences);
       window.removeEventListener('wf-robot-motion', applyMotion);
       window.removeEventListener('wf-robot-report-control', reportControl);
-      window.removeEventListener('wf-robot-report-visibility', render);
+      window.removeEventListener('wf-robot-report-visibility', reportVisibility);
       window.removeEventListener('wf-offline-voice-change', refreshOfflineStatus);
       window.removeEventListener('wf-reference-voice-change', refreshOfflineStatus);
       synth?.removeEventListener?.('voiceschanged', refreshVoices);
@@ -812,16 +887,14 @@
     const languageObserver = new MutationObserver(syncLanguage);
     languageObserver.observe(root, {attributes: true, attributeFilter: ['lang']});
     speakButton.addEventListener('click', toggleSpeech);
-    reportButton?.addEventListener('click', toggleReport);
-    display?.addEventListener('click', toggleReport);
-    display?.addEventListener('keydown', displayKey);
+    reportButton?.addEventListener('click', openReport);
     document.addEventListener('visibilitychange', checkVisibility);
     window.addEventListener('pagehide', handlePageHide);
     window.addEventListener('hashchange', changedRoute);
     window.addEventListener('wf-robot-preferences', applyPreferences);
     window.addEventListener('wf-robot-motion', applyMotion);
     window.addEventListener('wf-robot-report-control', reportControl);
-    window.addEventListener('wf-robot-report-visibility', render);
+    window.addEventListener('wf-robot-report-visibility', reportVisibility);
     window.addEventListener('wf-offline-voice-change', refreshOfflineStatus);
     window.addEventListener('wf-reference-voice-change', refreshOfflineStatus);
     synth?.addEventListener?.('voiceschanged', refreshVoices);

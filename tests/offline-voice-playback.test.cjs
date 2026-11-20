@@ -535,6 +535,101 @@ test('native Mark phrases balance loudness before playback while retaining user 
  }finally{handle.cancel();}
 });
 
+test('phrase lookahead starts the next inference while the first phrase is still being normalized',async()=>{
+ const calls=[];let normalized,started=0;
+ const gate=new Promise(resolve=>{normalized=resolve;});
+ const f=await fixture({voiceLoudness:{async normalize(blob){await gate;return blob;}}});
+ const voice={getStatus:()=>({ready:true}),synthesize(text,options){return new Promise(resolve=>calls.push({text,...options,resolve}));}};
+ const handle=f.api.speakGenerated({text:'First complete sentence. Next complete sentence.',locale:'ar',lookaheadPhrases:3,
+  normalizeGenerated:true,onStart(){started++;}},voice);
+ try{
+  await flushUntil(()=>calls.length===1);calls[0].resolve(wav(new Float32Array(48000).fill(.2)));
+  await flushUntil(()=>calls.length===2);
+  assert.equal(started,0,'loudness processing still holds the first phrase');
+  assert.equal(calls[1].text,'Next complete sentence.');
+ }finally{handle.cancel();normalized();}
+});
+
+test('the first native clip buffers a tiny opening with the next complete phrase instead of stopping after two words',async()=>{
+ const f=await fixture(),calls=[],boundaries=[];let started=0,ended=0;
+ const voice={getStatus:()=>({ready:true}),synthesize(text,options){return new Promise(resolve=>calls.push({text,...options,resolve}));}};
+ const handle=f.api.speakGenerated({text:'Report ready. Date and figures follow. Final sentence.',locale:'ar',
+  lookaheadPhrases:2,minimumBufferSeconds:2.5,onStart(){started++;},onEnd(){ended++;},onBoundary:value=>boundaries.push(value.charIndex)},voice);
+ try{
+  await flushUntil(()=>calls.length===1);calls[0].resolve(wav(new Float32Array(24000).fill(.2)));
+  await flushUntil(()=>calls.length===2);
+  assert.equal(started,0,'a one-second intro cannot be exposed before the next phrase');
+  calls[1].resolve(wav(new Float32Array(48000).fill(.3)));
+  await flushUntil(()=>started===1&&calls.length===3);
+  const audio=f.audioElements[0],blob=f.urls.get(audio.src),bytes=await blob.arrayBuffer();
+  assert.equal(bytes.byteLength,44+72000*2,'one native clip contains both complete phrases');
+  assert.deepEqual(boundaries,[0]);audio.advance(1);assert.deepEqual(boundaries,[0,14]);
+  assert.equal(ended,0,'pending later generation is not a completed report');
+  handle.cancel();assert.equal(calls[2].signal.aborted,true);assert.equal(f.urls.size,0);
+ }finally{handle.cancel();}
+});
+
+test('bounded phrase lookahead fills during playback and joins ready clips without losing boundaries or samples',async()=>{
+ const f=await fixture(),calls=[],boundaries=[];let started=0,ended=0;
+ const voice={getStatus:()=>({ready:true}),synthesize(text,options){return new Promise(resolve=>calls.push({text,...options,resolve}));}};
+ const handle=f.api.speakGenerated({text:'First. Second. Third. Fourth. Fifth.',locale:'ar',lookaheadPhrases:2,
+  onStart(){started++;},onEnd(){ended++;},onBoundary:value=>boundaries.push(value.charIndex)},voice);
+ try{
+  await flushUntil(()=>calls.length===1);calls[0].resolve(wav(new Float32Array(48000).fill(.1)));
+  await flushUntil(()=>calls.length===2&&started===1);
+  calls[1].resolve(wav(new Float32Array(48000).fill(.2)));await flushUntil(()=>calls.length===3);
+  calls[2].resolve(wav(new Float32Array(48000).fill(.3)));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(calls.length,3,'only two phrases are generated ahead of the current clip');
+  const audio=f.audioElements[0];audio.onended();await flushUntil(()=>started===2&&calls.length===4);
+  const joined=await f.urls.get(audio.src).arrayBuffer();assert.equal(joined.byteLength,44+96000*2);
+  assert.equal(new DataView(joined).getInt16(44,true),6553);assert.equal(new DataView(joined).getInt16(44+48000*2,true),9830);
+  audio.advance(2);assert.deepEqual(boundaries,[0,7,15]);
+  calls[3].resolve(wav(new Float32Array(24000).fill(.4)));await flushUntil(()=>calls.length===5);
+  calls[4].resolve(wav(new Float32Array(24000).fill(.5)));await new Promise(resolve=>setImmediate(resolve));
+  audio.onended();await flushUntil(()=>started===3);assert.equal(ended,0);
+  audio.advance(1);assert.deepEqual(boundaries,[0,7,15,22,30]);audio.onended();await flushUntil(()=>ended===1);
+  assert.equal(f.urls.size,0);
+ }finally{handle.cancel();}
+});
+
+test('cancelling buffered preparation prevents queued inference and ignores late completed phrases',async()=>{
+ const f=await fixture(),calls=[];let started=0,ended=0,errors=0;
+ const voice={getStatus:()=>({ready:true}),synthesize(text,options){return new Promise(resolve=>calls.push({text,...options,resolve}));}};
+ const handle=f.api.speakGenerated({text:'First. Second. Third. Fourth.',locale:'ar',lookaheadPhrases:3,minimumBufferSeconds:2.5,
+  onStart(){started++;},onEnd(){ended++;},onError(){errors++;}},voice);
+ await flushUntil(()=>calls.length===1);calls[0].resolve(wav(new Float32Array(24000).fill(.2)));
+ await flushUntil(()=>calls.length===2);handle.cancel();assert.equal(calls[1].signal.aborted,true);
+ calls[1].resolve(wav(new Float32Array(48000).fill(.3)));await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(calls.length,2);assert.equal(started,0);assert.equal(ended,0);assert.equal(errors,0);assert.equal(f.urls.size,0);
+});
+
+test('a truncated opening continuation fails without playing a tiny intro or reporting completion',async()=>{
+ const f=await fixture(),calls=[];let started=0,ended=0,problem;
+ const voice={getStatus:()=>({ready:true}),synthesize(text,options){return new Promise(resolve=>calls.push({text,...options,resolve}));}};
+ const handle=f.api.speakGenerated({text:'Report ready. Date and figures. Remaining details.',locale:'ar',lookaheadPhrases:2,minimumBufferSeconds:2.5,
+  onStart(){started++;},onEnd(){ended++;},onError:value=>{problem=value;}},voice);
+ try{
+  await flushUntil(()=>calls.length===1);calls[0].resolve(wav(new Float32Array(24000).fill(.2)));
+  await flushUntil(()=>calls.length===2);const complete=pcmToWav(new Float32Array(48000),24000);
+  calls[1].resolve(new Blob([complete.slice(0,-2)],{type:'audio/wav'}));await flushUntil(()=>problem);
+  assert.equal(problem.code,'invalid-audio');assert.equal(started,0);assert.equal(ended,0);assert.equal(f.urls.size,0);
+  assert(calls.every(call=>call.signal.aborted));
+ }finally{handle.cancel();}
+});
+
+test('the stored Arabic speech sample reaches native playback with every PCM byte and its final release intact',async()=>{
+ const f=await fixture(),original=fs.readFileSync(path.resolve(__dirname,'../assets/reference-voice/samples/ar.wav'));let started=0,ended=0;
+ const voice={getStatus:()=>({ready:true}),synthesize:async()=>new Blob([original],{type:'audio/wav'})};
+ const handle=f.api.speakGenerated({text:'Stored Arabic report sample.',locale:'ar',lookaheadPhrases:3,minimumBufferSeconds:2.5,
+  onStart(){started++;},onEnd(){ended++;}},voice);
+ try{
+  await flushUntil(()=>started===1);const audio=f.audioElements[0],played=Buffer.from(await f.urls.get(audio.src).arrayBuffer());
+  assert.equal(played.length,1123124);assert.equal(new DataView(played.buffer,played.byteOffset,44).getUint32(24,true),44100);
+  assert.deepEqual(played,original,'the queue cannot trim, repeat, or omit samples from a generated phrase');
+  audio.onended();await flushUntil(()=>ended===1);assert.equal(f.urls.size,0);
+ }finally{handle.cancel();}
+});
+
 test('changing tempo while paused changes already-generated PCM from the same position',async()=>{
  const f=await fixture({webAudio:true}),voice=streamedVoice(),boundaries=[],progress=[];let ended=0;
  const handle=f.api.speakGenerated({text:'First. Next.',locale:'ar',streaming:true,onBoundary:e=>boundaries.push(e.charIndex),

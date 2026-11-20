@@ -9,9 +9,9 @@ const readDock = () => {
   return require(source);
 };
 
-function fixture({saved, dir = 'rtl', width = 390, height = 844, active = true} = {}) {
+function fixture({saved, dir = 'rtl', width = 390, height = 844, active = true, inline = false} = {}) {
   let doc, frame = 0, reads = 0;
-  const frames = new Map(), observers = [], records = new Map(), writes = [], events = [];
+  const frames = new Map(), observers = [], records = new Map(), writes = [], events = [], created = [];
   if (saved !== undefined) records.set('wf.dashboard.dockPosition', typeof saved === 'string' ? saved : JSON.stringify(saved));
   class Target {
     constructor() { this.listeners = new Map(); }
@@ -52,7 +52,7 @@ function fixture({saved, dir = 'rtl', width = 390, height = 844, active = true} 
     releasePointerCapture(id) { if (this.captured === id) this.captured = null; }
   }
   doc = new Element('document'); doc.ownerDocument = doc;
-  doc.createElement = tag => new Element(tag); doc.getElementById = id => doc.querySelector('#' + id);
+  doc.createElement = tag => { const element = new Element(tag); created.push(element); return element; }; doc.getElementById = id => doc.querySelector('#' + id);
   doc.documentElement = new Element('html'); doc.documentElement.dir = dir; doc.documentElement.clientWidth = width; doc.append(doc.documentElement);
   doc.body = new Element('body'); doc.documentElement.append(doc.body); doc.activeElement = doc.body;
   const make = (tag, id, classes, rect) => { const element = new Element(tag); element.id = id; element.className = classes; element.rect = rect; doc.body.append(element); return element; };
@@ -60,8 +60,11 @@ function fixture({saved, dir = 'rtl', width = 390, height = 844, active = true} 
   const header = make('header', '', 'navbar', {left: 0, right: width, top: 0, bottom: 72});
   const nav = make('nav', 'bottomNav', '', {left: 0, right: width, top: height - 64, bottom: height});
   const circle = make('button', 'bnavCircle', '', {left: 160, right: 220, top: height - 80, bottom: height - 20});
-  const panel = new Element('div'); panel.id = 'wfHomeCustomizer'; panel.className = 'dash-dock-panel';
+  const panel = new Element('div'); panel.id = 'wfHomeCustomizer'; panel.className = inline ? 'wf-home-customizer' : 'dash-dock-panel';
+  const title = new Element('strong'); title.id = 'wfHomeCustomizerTitle'; title.tabIndex = -1; panel.append(title);
   const body = new Element('div'); body.className = 'dash-dock-layout'; panel.append(body);
+  const layout = new Element('div'); layout.id = 'wfHomeLayout';
+  if (inline) page.append(panel, layout);
   const win = new Target(); win.innerWidth = width; win.innerHeight = height; win.document = doc; doc.defaultView = win;
   win.localStorage = {getItem: key => records.get(key) ?? null, setItem(key, value) { writes.push([key, value]); records.set(key, value); }};
   win.visualViewport = new Target(); Object.assign(win.visualViewport, {width, height, offsetLeft: 0, offsetTop: 0});
@@ -70,10 +73,12 @@ function fixture({saved, dir = 'rtl', width = 390, height = 844, active = true} 
   win.cancelAnimationFrame = id => frames.delete(id);
   const Observer = class { constructor(callback) { this.callback = callback; this.targets = []; observers.push(this); } observe(element) { this.targets.push(element); } };
   win.ResizeObserver = win.MutationObserver = Observer;
-  const dock = readDock().create({panel, onOpen() { events.push(['open']); }, onClose(value) { events.push(['close', value.returnFocus]); }});
+  const options = {panel, onOpen() { events.push(['open']); }, onClose(value) { events.push(['close', value.returnFocus]); }};
+  if (inline) options.inline = true;
+  const dock = readDock().create(options);
   const flush = () => { const batch = [...frames.values()]; frames.clear(); batch.forEach(callback => callback()); };
   flush();
-  return {doc, win, page, panel, body, header, nav, circle, dock, events, records, writes, frames, flush,
+  return {doc, win, page, panel, title, body, layout, header, nav, circle, dock, events, records, writes, frames, created, flush,
     observe(element) { for (const observer of observers) if (observer.targets.includes(element)) observer.callback([]); },
     get reads() { return reads; }, resetReads() { reads = 0; },
     pointer(type, x, y, extra = {}) { return dock.trigger.emit(type, {button: 0, isPrimary: true, pointerId: 7, clientX: x, clientY: y, ...extra}); }};
@@ -83,6 +88,8 @@ test('the old edge launcher opens and closes once with immediate callbacks and f
   const f = fixture(), {dock} = f;
   assert.equal(dock.menu.tagName, 'DETAILS'); assert.equal(dock.trigger.tagName, 'SUMMARY');
   assert.equal(dock.menu.parentNode, f.doc.body); assert.equal(dock.trigger.getAttribute('aria-controls'), 'wfHomeCustomizer');
+  assert.equal(f.panel.parentNode, dock.menu); assert.equal(dock.menu.dataset.inline, undefined);
+  assert.equal(f.doc.getElementById('wfHomeDockBackdrop').parentNode, f.doc.body);
   assert.equal(dock.trigger.getAttribute('aria-expanded'), 'false'); assert.equal(dock.menu.dataset.side, 'left');
   const click = dock.trigger.emit('click', {detail: 1}); assert(click.defaultPrevented); assert(dock.isOpen());
   assert.deepEqual(f.events, [['open']]); dock.open(); assert.equal(f.events.length, 1);
@@ -152,10 +159,86 @@ test('a short viewport keeps the full grip and scrollable panel within the visib
 });
 
 test('boot, section navigation and the mobile menu cannot expose an orphaned editor', () => {
-  for (const hiddenState of ['wf-booting', 'wf-section-mode', 'wf-mobile-menu-open']) {
-    const f = fixture(); f.dock.open();
+  for (const inline of [false, true]) for (const hiddenState of ['wf-booting', 'wf-section-mode', 'wf-mobile-menu-open']) {
+    const f = fixture({inline}); f.dock.open();
     f.doc.documentElement.classList.add(hiddenState); f.observe(f.doc.documentElement); f.flush();
     assert.equal(f.dock.isOpen(), false, hiddenState); assert.equal(f.dock.menu.hidden, true, hiddenState);
     assert.equal(f.dock.open(), false, hiddenState);
+    if (inline) assert.equal(f.panel.hidden, true, hiddenState);
   }
+});
+
+test('inline editing leaves the toolbar in the dashboard and creates only the original edge tab', () => {
+  const f = fixture({inline: true}), {dock} = f;
+  assert.equal(dock.menu.dataset.inline, 'true'); assert.equal(dock.menu.parentNode, f.doc.body);
+  assert.deepEqual(dock.menu.children, [dock.trigger]); assert.deepEqual(f.page.children, [f.panel, f.layout]);
+  assert.equal(f.panel.parentNode, f.page); assert.equal(f.panel.classList.contains('dash-dock-panel'), false);
+  assert.equal(f.doc.getElementById('wfHomeDockBackdrop'), null);
+  assert.deepEqual(f.created.map(element => element.tagName), ['DETAILS', 'SUMMARY']);
+  assert.equal(f.panel.hidden, true); assert.equal(dock.trigger.getAttribute('aria-expanded'), 'false');
+  dock.open(); dock.open(); f.flush();
+  assert.equal(f.panel.hidden, false); assert.equal(dock.menu.open, true); assert.equal(dock.trigger.getAttribute('aria-expanded'), 'true');
+  assert.deepEqual(f.events, [['open']]);
+  f.win.visualViewport.height = 300; f.win.visualViewport.emit('resize'); f.flush();
+  for (const property of ['left', 'top', 'max-width', 'max-height']) assert.equal(f.panel.style.getPropertyValue(property), '', property);
+  assert.equal(f.panel.style.right, undefined); assert.equal(f.panel.style.bottom, undefined);
+  assert.equal(f.panel.dataset.scrollTop, undefined); assert.equal(f.panel.dataset.scrollBottom, undefined);
+  assert.equal(f.panel.parentNode, f.page); assert.deepEqual(f.page.children, [f.panel, f.layout]);
+  dock.close(); assert.equal(f.panel.hidden, true); assert.equal(dock.menu.open, false);
+  assert.equal(dock.trigger.getAttribute('aria-expanded'), 'false'); assert.deepEqual(f.events.at(-1), ['close', false]);
+});
+
+test('inline dashboard touches and repeated trigger clicks keep the draft open and refocus its title', () => {
+  const f = fixture({inline: true}); f.dock.open();
+  for (const target of [f.doc.body, f.layout, f.panel, f.body]) {
+    const press = f.doc.emit('pointerdown', {target});
+    assert.equal(press.defaultPrevented, undefined); assert.equal(f.dock.isOpen(), true);
+  }
+  for (const detail of [1, 0]) {
+    const click = f.dock.trigger.emit('click', {detail});
+    assert.equal(click.defaultPrevented, true); assert.equal(f.dock.isOpen(), true);
+    assert.equal(f.dock.menu.open, true); assert.equal(f.panel.hidden, false); assert.equal(f.doc.activeElement, f.title);
+  }
+  assert.deepEqual(f.events, [['open']]);
+});
+
+test('Escape and dashboard navigation close inline editing through the cancellation callback', () => {
+  const f = fixture({inline: true}); f.dock.open();
+  const escape = f.doc.emit('keydown', {key: 'Escape'});
+  assert.equal(escape.defaultPrevented, true); assert.equal(escape.stopped, true);
+  assert.equal(f.dock.isOpen(), false); assert.equal(f.panel.hidden, true); assert.equal(f.doc.activeElement, f.dock.trigger);
+  assert.deepEqual(f.events.at(-1), ['close', true]);
+  f.dock.open(); f.page.classList.remove('active'); f.resetReads(); f.observe(f.page); f.flush();
+  assert.equal(f.dock.isOpen(), false); assert.equal(f.panel.hidden, true); assert.equal(f.dock.menu.hidden, true);
+  assert.deepEqual(f.events, [['open'], ['close', true], ['open'], ['close', false]]);
+  assert.equal(f.reads, 0); assert.equal(f.dock.open(), false);
+  f.page.classList.add('active'); f.observe(f.page); f.flush();
+  assert.equal(f.dock.menu.hidden, false); assert.equal(f.panel.hidden, true); assert.equal(f.dock.isOpen(), false);
+});
+
+test('inline mode preserves the original tab shape, dimensions and stored viewport-safe position', () => {
+  for (const options of [{saved: {x: 0, y: .25}, dir: 'rtl'}, {saved: {x: 1, y: .9}, dir: 'ltr', height: 220}]) {
+    const legacy = fixture(options), f = fixture({...options, inline: true}); f.dock.open();
+    assert.equal(f.dock.trigger.innerHTML, legacy.dock.trigger.innerHTML);
+    assert.match(f.dock.trigger.innerHTML, /class="wf-dock-shape" viewBox="0 0 14 86"/);
+    assert.equal(f.dock.trigger.offsetWidth, 14); assert.equal(f.dock.trigger.offsetHeight, 86);
+    assert.equal(f.dock.menu.className, legacy.dock.menu.className); assert.equal(f.dock.menu.dataset.side, legacy.dock.menu.dataset.side);
+    for (const property of ['left', 'top', '--wf-dock-left']) assert.equal(f.dock.menu.style.getPropertyValue(property), legacy.dock.menu.style.getPropertyValue(property), property);
+    assert.equal(f.writes.length, 0);
+  }
+});
+
+test('moving or cancelling the edge tab drag leaves the inline editing draft open', () => {
+  const f = fixture({inline: true}), start = f.dock.trigger.getBoundingClientRect(); f.dock.open();
+  f.pointer('pointerdown', 7, start.top + 20); f.pointer('pointermove', 387, start.top + 90); f.flush();
+  assert.equal(f.dock.isOpen(), true); assert.equal(f.panel.hidden, false); assert.deepEqual(f.events, [['open']]);
+  f.pointer('pointerup', 387, start.top + 90); f.flush();
+  f.dock.trigger.emit('click', {detail: 1});
+  assert.equal(f.dock.menu.dataset.side, 'right'); assert.equal(f.dock.isOpen(), true); assert.deepEqual(f.events, [['open']]);
+  assert.equal(f.writes.length, 1); assert.equal(f.writes[0][0], 'wf.dashboard.dockPosition');
+  const placed = f.dock.trigger.getBoundingClientRect();
+  f.pointer('pointerdown', 383, placed.top + 20); f.pointer('pointermove', 7, 500); f.flush();
+  f.pointer('pointercancel', 7, 500); f.flush();
+  assert.equal(f.dock.menu.dataset.side, 'right'); assert.equal(f.dock.trigger.getBoundingClientRect().top, placed.top);
+  assert.equal(f.dock.isOpen(), true); assert.equal(f.writes.length, 1); assert.deepEqual(f.events, [['open']]);
 });

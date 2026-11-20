@@ -63,6 +63,8 @@ test('only trusted clicks pause, resume or stop the current reading',async()=>{
 
 test('showing the existing report never restarts playback and the dock yields to the open reader',()=>{
  const f=fixture({initial:active()});f.click('wfSpeechControlsReport',false);assert.deepEqual(f.calls,[]);
+ assert.equal(f.node('wfSpeechControlsReport').getAttribute('aria-haspopup'),null,'the reader expands an inline region');
+ assert.equal(f.node('wfSpeechControlsReport').getAttribute('aria-controls'),'wfRobotReportSheet');
  f.click('wfSpeechControlsReport');assert.deepEqual(f.calls,['show-report']);
  f.reportOpen(true);assert.equal(f.node('wfSpeechControls').hidden,true);f.reportOpen(false);assert.equal(f.node('wfSpeechControls').hidden,false);
  f.update(active({kind:'program'}));assert.equal(f.node('wfSpeechControlsReport').hidden,true);f.click('wfSpeechControlsReport');assert.deepEqual(f.calls,['show-report']);
