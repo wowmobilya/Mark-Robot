@@ -41,6 +41,12 @@
  const title = document.createElement('h2');
  title.id = 'wfSettingsDialogTitle';
  title.tabIndex = -1;
+ const titleSymbol = document.createElement('span');
+ titleSymbol.className = 'wf-settings-dialog-symbol';
+ titleSymbol.setAttribute('aria-hidden', 'true');
+ const titleLabel = document.createElement('span');
+ titleLabel.className = 'wf-settings-dialog-label';
+ title.append(titleSymbol, titleLabel);
  dialog.setAttribute('aria-labelledby', title.id);
  const close = document.createElement('button');
  close.type = 'button';
@@ -112,7 +118,19 @@
    const copy = opener.cloneNode(true);
    copy.querySelectorAll('.wf-settings-card-description, .wf-ui-icon').forEach(node => node.remove());
    const next = sectionTitle || copy.textContent.trim();
-   if (title.textContent !== next) title.textContent = next;
+   if (titleLabel.textContent !== next) titleLabel.textContent = next;
+   const sourceIcon = opener.querySelector('svg');
+   if (sourceIcon) {
+     const icon = sourceIcon.cloneNode(true);
+     icon.removeAttribute('id');
+     icon.setAttribute('focusable', 'false');
+     titleSymbol.replaceChildren(icon);
+   } else {
+     const path = opener.id === 'wf-settings-tab-app-identity'
+       ? '<path d="M6 16c5 0 7-8 12-8a4 4 0 0 1 0 8c-5 0-7-8-12-8a4 4 0 1 0 0 8Z"/>'
+       : '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>';
+     titleSymbol.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">' + path + '</svg>';
+   }
  }
  window.addEventListener('wf-settings-actions-change', updateDialogTitle);
  function translateDescriptions() {

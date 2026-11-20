@@ -1,0 +1,75 @@
+/* App-owned touch input uses the same primary color and surface tokens. */
+@media screen {
+  html body #wfTouchKeyboard {
+    position: fixed; inset: auto 0 0; margin: 0 auto; padding: 0;
+    inline-size: min(820px,100%); max-inline-size: 100%;
+    max-block-size: min(620px,calc(100dvh - 10px)); box-sizing: border-box;
+    border: 1px solid var(--dialog-line,var(--border,#dfe5ed)); border-block-end: 0;
+    border-radius: 20px 20px 0 0; overflow: hidden;
+    background: var(--window-surface,var(--card,#fff)); color: var(--text,#243247);
+    box-shadow: 0 -8px 48px rgb(13 29 38 / 25%); font-family: inherit;
+  }
+  #wfTouchKeyboard[open] { display: flex; flex-direction: column; }
+  #wfTouchKeyboard::backdrop { background: rgb(13 29 38 / 28%); }
+  #wfTouchKeyboard [hidden] { display: none !important; }
+  #wfTouchKeyboard button { font-family: inherit; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
+  #wfTouchKeyboard .wf-tk-header { display: flex; align-items: center; gap: 10px; padding: 9px 14px 7px; flex: none; }
+  #wfTouchKeyboard .wf-tk-heading { min-inline-size: 0; flex: 1; }
+  #wfTouchKeyboard h2 { margin: 0; font-size: 13px; font-weight: 750; line-height: 1.5; }
+  #wfTouchKeyboard .wf-tk-caption { margin: 1px 0 0; color: var(--text2,#68788b); font-size: 12px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #wfTouchKeyboard .wf-tk-header > .wf-tk-close { flex: 0 0 38px; inline-size: 38px; min-block-size: 36px; font-size: 24px; }
+  #wfTouchKeyboard .wf-tk-edit-host { flex: none; padding: 0 12px; }
+  html body #wfTouchKeyboard .wf-tk-editor {
+    display: block; inline-size: 100%; min-inline-size: 0; min-block-size: 44px; max-block-size: 88px; box-sizing: border-box;
+    margin: 0; padding: 9px 12px; border: 1.5px solid var(--ui-accent,var(--brand-primary,#3f7c94)); border-radius: 11px;
+    background: var(--window-muted,var(--input,#f4f7fa)); color: var(--text,#243247); opacity: 1; -webkit-text-fill-color: currentColor;
+    font-family: inherit; font-size: 18px; font-weight: 500; line-height: 1.4;
+    caret-color: var(--brand-primary,#3f7c94); resize: none; cursor: text; -webkit-user-select: text; user-select: text;
+  }
+  #wfTouchKeyboard .wf-tk-editor::selection { background: var(--ui-accent,var(--brand-primary,#3f7c94)); color: #fff; }
+  #wfTouchKeyboard .wf-tk-toolbar { display: flex; align-items: center; gap: 6px; padding: 6px 12px; flex: none; }
+  #wfTouchKeyboard .wf-tk-toolbar .wf-tk-key { min-block-size: 32px; min-inline-size: 36px; flex: none; padding: 4px 9px; font-size: 12px; border-color: transparent; box-shadow: none; background: transparent; }
+  #wfTouchKeyboard .wf-tk-toolbar [data-action=paste] { margin-inline-start: auto; }
+  #wfTouchKeyboard .wf-tk-body { min-block-size: 0; overflow: auto; overscroll-behavior: contain; padding: 0 9px 8px; scrollbar-width: thin; }
+  #wfTouchKeyboard .wf-tk-languages { display: flex; gap: 5px; margin-block-end: 7px; padding: 3px; border-radius: 10px; background: var(--window-muted,var(--input,#f4f7fa)); direction: ltr; }
+  #wfTouchKeyboard .wf-tk-language { flex: 1; min-inline-size: 0; min-block-size: 32px; padding: 5px 2px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text2,#68788b); font-size: 12px; font-weight: 650; }
+  #wfTouchKeyboard .wf-tk-language[aria-pressed=true] { background: var(--window-surface,var(--card,#fff)); color: var(--brand-primary,#3f7c94); border-color: var(--dialog-line,var(--border,#dfe5ed)); box-shadow: 0 1px 3px rgb(13 29 38 / 8%); }
+  #wfTouchKeyboard .wf-tk-keys { display: grid; gap: 5px; }
+  #wfTouchKeyboard .wf-tk-row { display: flex; justify-content: center; gap: 5px; }
+  #wfTouchKeyboard .wf-tk-key {
+    display: inline-flex; justify-content: center; align-items: center; flex: 1; min-inline-size: 0; min-block-size: 43px; box-sizing: border-box;
+    padding: 6px 3px; border: 1px solid var(--dialog-line,var(--border,#dfe5ed)); border-radius: 8px;
+    background: var(--window-surface,var(--card,#fff)); color: var(--text,#243247); box-shadow: 0 1px 1px rgb(13 29 38 / 12%);
+    font-size: 18px; font-weight: 550; line-height: 1.2;
+  }
+  #wfTouchKeyboard .wf-tk-key[data-action] { background: var(--window-muted,var(--input,#f4f7fa)); font-size: 15px; }
+  #wfTouchKeyboard .wf-tk-key[data-action=backspace] { font-size: 21px; }
+  #wfTouchKeyboard .wf-tk-space { flex: 3.5; font-size: 12px !important; }
+  #wfTouchKeyboard button:active { background: var(--brand-primary,#3f7c94); color: #fff; }
+  #wfTouchKeyboard button[aria-pressed=true].wf-tk-key { background: var(--brand-primary,#3f7c94); color: #fff; }
+  #wfTouchKeyboard button:disabled { opacity: .38; cursor: default; }
+  #wfTouchKeyboard :is(button,.wf-tk-editor):focus-visible { outline: 2px solid var(--ui-accent,var(--brand-primary,#3f7c94)); outline-offset: -2px; }
+  #wfTouchKeyboard .wf-tk-number-keys { inline-size: 100%; max-inline-size: 540px; margin-inline: auto; }
+  #wfTouchKeyboard .wf-tk-number-keys .wf-tk-key { min-block-size: 48px; font-size: 22px; }
+  #wfTouchKeyboard .wf-tk-number-keys [data-action=clear] { flex: 2; font-size: 13px; }
+  #wfTouchKeyboard .wf-tk-error { margin: 0; padding: 4px 14px 8px; color: var(--danger,#b34444); font-size: 12px; line-height: 1.5; flex: none; }
+  #wfTouchKeyboard .wf-tk-footer { display: flex; gap: 7px; flex: none; padding: 8px 12px max(9px,env(safe-area-inset-bottom)); border-block-start: 1px solid var(--dialog-line,var(--border,#dfe5ed)); background: var(--window-muted,var(--input,#f4f7fa)); }
+  #wfTouchKeyboard .wf-tk-footer .wf-tk-key { min-block-size: 42px; font-size: 13px; padding-inline: 9px; }
+  #wfTouchKeyboard .wf-tk-footer .wf-tk-done { flex: 1.5; color: #fff; background: var(--brand-primary,#3f7c94); border-color: var(--brand-primary,#3f7c94); }
+  html.wf-touch-device .cc-number-pad { display: none; }
+  @media (max-width: 380px) {
+    #wfTouchKeyboard .wf-tk-body { padding-inline: 5px; }
+    #wfTouchKeyboard .wf-tk-row { gap: 3px; }
+    #wfTouchKeyboard .wf-tk-key { font-size: 17px; border-radius: 6px; }
+    #wfTouchKeyboard .wf-tk-language { font-size: 11px; }
+    #wfTouchKeyboard .wf-tk-toolbar { gap: 3px; padding-inline: 8px; }
+  }
+  @media (max-height: 520px) {
+    html body #wfTouchKeyboard { max-block-size: calc(100dvh - 5px); }
+    #wfTouchKeyboard .wf-tk-header { padding-block: 5px; }
+    #wfTouchKeyboard .wf-tk-caption { display: none; }
+    #wfTouchKeyboard .wf-tk-toolbar { padding-block: 2px; }
+    #wfTouchKeyboard .wf-tk-key { min-block-size: 36px; }
+  }
+}
+@media print { #wfTouchKeyboard { display: none !important; } }

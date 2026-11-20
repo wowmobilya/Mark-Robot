@@ -1,0 +1,60 @@
+/* Keep the reader in document flow, with a reserved space for the curved dock. */
+@media screen {
+  html.wf-section-mode body #mainContent #page-quick-barcode > .sct-sticky-header {
+    position: static !important; inset: auto !important; z-index: auto !important;
+    margin-block-end: 12px !important; padding-block: 8px !important;
+  }
+  html body #mainContent #page-quick-barcode .qbl-workbench {
+    inline-size: min(100%,840px) !important; margin-block: 0 16px !important; gap: 8px;
+  }
+  html body #mainContent #page-quick-barcode .qbl-view {
+    height: clamp(200px,calc(100dvh - 310px),430px) !important;
+    min-block-size: 0; isolation: isolate;
+  }
+  html body #mainContent #page-quick-barcode #qblDropdown { min-block-size: 0; }
+  html body #mainContent #page-quick-barcode #qblDropdown > div:first-child { padding: 8px !important; }
+  html body #mainContent #page-quick-barcode #qblDdTabs { gap: 6px !important; }
+  html body #mainContent #page-quick-barcode #qblDdTabs button { min-block-size: 52px; padding: 6px !important; }
+  html body #mainContent #page-quick-barcode #qblDdList {
+    min-block-size: 0; scrollbar-gutter: stable; overscroll-behavior: contain;
+    scroll-padding-block: 8px;
+  }
+  html body #mainContent #page-quick-barcode #qblStatus {
+    display: inline-block; max-inline-size: calc(100% - 32px); box-sizing: border-box;
+    white-space: normal; line-height: 1.5 !important;
+  }
+  html body #mainContent #page-quick-barcode[data-barcode-stage="result"] #qblPhase3 {
+    max-height: none !important; overflow: visible !important;
+  }
+  html body #mainContent #page-quick-barcode #qblPhase3 > div { padding-block: 0 24px !important; }
+  html body #mainContent #page-quick-barcode #qblTierCard { border-radius: 22px !important; }
+  html body #mainContent #page-quick-barcode #qblChooseLabel { margin-block-end: 12px !important; }
+  html body #mainContent #page-quick-barcode #qblTierBtns button {
+    min-block-size: 70px !important; padding-block: 12px !important;
+  }
+  html body #mainContent #page-quick-barcode #qblTierBtns button > span { font-size: 30px !important; }
+  @media (max-width:1024px) {
+    html body #mainContent #page-quick-barcode { padding-block-end: calc(112px + env(safe-area-inset-bottom,0px)); }
+    /* The chooser itself ends above the navigation, including its raised circle. */
+    html body #mainContent #page-quick-barcode.active[data-context-stage="price-tier"] #qblPhase2 {
+      inset-block-end: calc(96px + env(safe-area-inset-bottom,0px)) !important;
+      padding: 12px !important;
+    }
+    html body #mainContent #page-quick-barcode.active[data-context-stage="price-tier"] #qblTierCard {
+      max-block-size: calc(100dvh - 120px - env(safe-area-inset-bottom,0px)) !important;
+      padding: 16px !important;
+    }
+  }
+  @media (min-width:600px) and (max-height:500px) {
+    html body #mainContent #page-quick-barcode .sct-sticky-header .wf-centered-heading p { display: none; }
+    html body #mainContent #page-quick-barcode .qbl-panel {
+      display: grid; grid-template-columns: minmax(0,1fr) minmax(180px,.65fr);
+      align-items: center; gap: 12px;
+    }
+    html body #mainContent #page-quick-barcode .qbl-view { height: max(130px,calc(100dvh - 235px)) !important; }
+    html body #mainContent #page-quick-barcode .qbl-view + div { padding: 0 !important; }
+    html body #mainContent #page-quick-barcode #qblDdTabs { grid-template-columns: repeat(4,minmax(0,1fr)) !important; }
+    html body #mainContent #page-quick-barcode #qblDdTabs .wf-category-photo { display: none; }
+    html body #mainContent #page-quick-barcode #qblDdTabs .wf-category-barcode-tab { grid-template-columns: minmax(0,1fr); }
+  }
+}

@@ -1,5 +1,25 @@
 /* Compact section dividers keep settings calm without reducing form touch targets. */
 @media screen {
+ /* The editor uses the same curved header as the dashboard and section pages. */
+ html body #wfSettingsDialog > header {
+   display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;
+   flex:0 0 auto;gap:10px;min-height:72px;box-sizing:border-box;
+   padding:12px clamp(12px,2.5vw,30px);border-radius:var(--wf-header-radius,0 0 23px 23px);
+   background:var(--card);border-block-end:1px solid var(--border);
+   box-shadow:0 5px 20px rgba(33,86,107,.08);z-index:1;
+ }
+ html body #wfSettingsDialog > header h2 {
+   grid-column:2;grid-row:1;display:flex;align-items:center;justify-content:center;
+   gap:9px;min-inline-size:0;margin:0;text-align:center;font-size:clamp(16px,2vw,20px);line-height:1.4;
+ }
+ html body #wfSettingsDialog > header > button {
+   grid-column:3;grid-row:1;inline-size:44px;block-size:44px;padding:0;
+   color:var(--ui-accent);border-radius:14px;box-shadow:0 3px 9px rgba(33,86,107,.12);
+ }
+ html body #wfSettingsDialog > header > button:focus-visible {outline:2px solid var(--brand-primary);outline-offset:3px;}
+ #wfSettingsDialog .wf-settings-dialog-symbol {display:grid;place-items:center;flex:0 0 28px;inline-size:28px;block-size:28px;color:var(--brand-primary);}
+ #wfSettingsDialog .wf-settings-dialog-symbol svg {inline-size:26px;block-size:26px;}
+ #wfSettingsDialog .wf-settings-dialog-label {min-inline-size:0;overflow-wrap:anywhere;}
  html body #page-settings .settings-group-title {
    display:flex;align-items:center;justify-content:center;gap:8px;
    grid-column:1/-1;margin:16px 0 7px;padding:0;min-height:25px;

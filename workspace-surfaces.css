@@ -964,7 +964,7 @@
  #wfDevDialog p {color:var(--text2);line-height:1.65;}
 }
 @media screen and (min-width:1025px) {
- html:not(.wf-section-mode) body nav.navbar {border-radius:0!important;}
+ html:not(.wf-section-mode) body nav.navbar {border-radius:var(--wf-header-radius,0 0 23px 23px)!important;}
  html body #sidebar .nav-item > span:nth-child(2),#sidebar .wf-group-toggle {white-space:nowrap!important;}
 }
 @media screen and (min-width:1025px) {

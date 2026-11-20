@@ -6448,7 +6448,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="reference-voice.js?v=4" defer></script>
 <script src="robot-settings.js?v=11" defer></script>
 <script src="smart-card-settings.js?v=2" defer></script>
-<script src="settings-navigation.js?v=17" defer></script>
+<script src="settings-navigation.js?v=18" defer></script>
 <script src="branding-settings.js?v=4" defer></script>
 <script src="company-identity.js?v=5" defer></script>
 <script src="color-picker.js?v=1" defer></script>
@@ -6458,7 +6458,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="currency-sources.js?v=3" defer></script>
 <script src="rate-refresh.js?v=8" defer></script>
 <script src="settings-actions.js?v=1" defer></script>
-<script src="product-workspace.js?v=1" defer></script>
+<script src="product-workspace.js?v=2" defer></script>
 <script src="business-workspace.js?v=1" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
 <script src="arabic-report-speech.js?v=3" defer></script>
@@ -6469,17 +6469,22 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="screen-awake.js?v=2" defer></script>
 <script src="speech-media.js?v=2" defer></script>
 <script src="speech-controls.js?v=3" defer></script>
-<script src="greeting-carousel.js?v=18" defer></script>
+<script src="greeting-carousel.js?v=19" defer></script>
+<script src="home-layout.js?v=1" defer></script>
+<script src="home-customizer.js?v=1" defer></script>
+<script src="invoice-workspace.js?v=1" defer></script>
+<script src="barcode-workspace.js?v=1" defer></script>
+<script src="touch-keyboard.js?v=1" defer></script>
 <script src="developer-profile.js?v=1" defer></script>
-<script src="app-updates.js?v=2" defer data-release="190"></script>
+<script src="app-updates.js?v=2" defer data-release="191"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
 <link rel="stylesheet" href="dashboard-visuals.css?v=36">
 <link rel="stylesheet" href="section-headings.css?v=7">
-<link rel="stylesheet" href="topbar-dock.css?v=6">
+<link rel="stylesheet" href="topbar-dock.css?v=7">
 <link rel="stylesheet" href="context-nav.css?v=5">
-<link rel="stylesheet" href="workspace-surfaces.css?v=36">
+<link rel="stylesheet" href="workspace-surfaces.css?v=37">
 <link rel="stylesheet" href="robot-face.css?v=8">
 <link rel="stylesheet" href="dialog-surfaces.css?v=2">
 <link rel="stylesheet" href="product-categories.css?v=1">
@@ -6490,7 +6495,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="currency-sources.css?v=3">
 <link rel="stylesheet" href="business-overview.css?v=3">
 <link rel="stylesheet" href="app-identity.css?v=1">
-<link rel="stylesheet" href="settings-unified.css?v=2">
+<link rel="stylesheet" href="settings-unified.css?v=3">
 <link rel="stylesheet" href="ui-motion.css?v=1">
 <link rel="stylesheet" href="annual-sales.css?v=1">
 <link rel="stylesheet" href="robot-settings.css?v=5">
@@ -6502,8 +6507,13 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="smart-card-settings.css?v=1">
 <link rel="stylesheet" href="settings-actions.css?v=1">
 <link rel="stylesheet" href="internal-workspace.css?v=1">
-<link rel="stylesheet" href="product-workspace.css?v=1">
+<link rel="stylesheet" href="product-workspace.css?v=3">
 <link rel="stylesheet" href="business-workspace.css?v=1">
+<link rel="stylesheet" href="home-layout.css?v=1">
+<link rel="stylesheet" href="home-customizer.css?v=1">
+<link rel="stylesheet" href="invoice-workspace.css?v=1">
+<link rel="stylesheet" href="barcode-workspace.css?v=1">
+<link rel="stylesheet" href="touch-keyboard.css?v=1">
 </head>
 <body>
 
@@ -21862,7 +21872,7 @@ function qblStartDetection(video) {
 
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden)qblStopCamera();
-  else if(getCurrentPage()==='quick-barcode' && QBL.phase===1 && !qblDropdownOpen && !qblKeyboard?.open)qblStartCamera();
+  else if(getCurrentPage()==='quick-barcode' && QBL.phase===1 && !qblDropdownOpen && !qblKeyboard?.open && window.WFTouchKeyboard?.activeField?.id!=='qblInput')qblStartCamera();
 });
 
 /* ══════════════════════════════════════════
@@ -21913,7 +21923,7 @@ document.addEventListener('pointerdown', event => {
 function qblAcceptScan(value) {
   const code = value.trim();
   const time = performance.now();
-  if (!code || QBL.phase !== 1 || qblKeyboard?.open ||
+  if (!code || QBL.phase !== 1 || qblKeyboard?.open || window.WFTouchKeyboard?.activeField?.id==='qblInput' ||
       (code === qblLastScan.code && time - qblLastScan.time < 2200)) return false;
   qblLastScan = {code, time};
   if (qblAudio?.state === 'running') {
@@ -21934,6 +21944,11 @@ function qblAcceptScan(value) {
 
 let qblKeyboard;
 function qblOpenKeyboard() {
+  if(window.WFTouchKeyboard){
+    if(window.WFTouchKeyboard.isTouchDevice()) window.WFTouchKeyboard.open('qblInput');
+    else document.getElementById('qblInput')?.focus({preventScroll:true});
+    return;
+  }
   if (qblKeyboard?.open) return;
   qblEnableSound();
   qblStopCamera();

@@ -1,0 +1,107 @@
+/* The home layout owns six independent card regions; data and card interiors stay
+   with their original renderers. All overrides are screen-only. */
+@media screen {
+  html body #mainContent #page-dashboard.wf-home-customized.active { display: block !important; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout {
+    display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+    grid-auto-flow: row; align-items: start; gap: var(--dash-gap,20px);
+    inline-size: 100%; min-inline-size: 0; margin: 0;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout > .wf-home-section {
+    grid-area: auto !important; grid-column: auto !important;
+    align-self: start; min-inline-size: 0; margin: 0 !important;
+    box-sizing: border-box;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout > .wf-home-section[data-home-size="wide"] { grid-column: 1 / -1 !important; }
+  /* This explicit owner rule wins over the legacy forced display:flex/grid rules. */
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout[hidden],
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout > .wf-home-section[hidden],
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayoutEmpty[hidden],
+  html body #mainContent #page-dashboard.wf-home-customized .wf-home-retired[hidden] { display: none !important; }
+
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics {
+    padding: clamp(16px,2vw,22px); border: 1px solid var(--dash-line,var(--border));
+    border-radius: 20px; background: var(--dashboard-card-wash,var(--card));
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetricsTitle {
+    margin: 0 0 14px; color: var(--text); font-size: 16px; font-weight: 750; line-height: 1.5;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics > .stats-grid {
+    display: grid !important; grid-area: auto !important;
+    grid-template-columns: repeat(3,minmax(0,1fr)) !important;
+    gap: 10px !important; margin: 0 !important; padding: 0 !important; border: 0;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-card {
+    display: flex !important; flex-direction: column !important;
+    align-items: center !important; justify-content: center !important;
+    gap: 6px !important; min-inline-size: 0; min-block-size: 96px;
+    padding: 12px 6px !important; text-align: center;
+    border-radius: 13px !important; border: 1px solid var(--dash-line,var(--border)) !important;
+    background: color-mix(in srgb,var(--brand-primary) 5%,var(--card)) !important;
+    color: var(--text); touch-action: manipulation;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-icon {
+    display: grid !important; place-items: center; grid-area: auto !important;
+    flex: 0 0 32px; inline-size: 32px; block-size: 32px; margin: 0 !important;
+    font-size: 21px !important; border-radius: 10px !important;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-icon svg {
+    inline-size: 22px; block-size: 22px; fill: none; stroke: currentColor;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-icon + div {
+    display: grid !important; justify-items: center; gap: 2px; min-inline-size: 0;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics :is(.stat-val,.stat-lbl,.wf-sales-action-label) {
+    grid-area: auto !important; margin: 0 !important; text-align: center;
+    white-space: normal; overflow-wrap: anywhere; line-height: 1.5;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-val { font-size: 22px !important; font-variant-numeric: tabular-nums; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics :is(.stat-lbl,.wf-sales-action-label) { font-size: 13px !important; font-weight: 650; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .wf-sales-action { color: var(--brand-primary); }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .wf-stat-trend { display: none !important; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-card:is(:hover,:focus-visible) {
+    border-color: var(--brand-primary) !important;
+    background: color-mix(in srgb,var(--brand-primary) 10%,var(--card)) !important;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-card:focus-visible {
+    outline: 2px solid var(--brand-primary); outline-offset: 3px;
+  }
+
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout > .wf-dash-sales {
+    gap: 16px !important; padding: clamp(18px,2vw,24px) !important;
+    justify-content: flex-start !important;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales .sales-currencies { gap: 8px; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales .sales-currencies > div { padding: 10px 8px; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales .sales-currencies dt { font-size: 12px; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales .sales-currencies dd { font-size: 17px; line-height: 1.5; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout :is(.wf-dash-recent,#currBar) { margin: 0 !important; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout > .wf-dash-secondary[data-home-size="wide"] #dashIntelligence {
+    grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start;
+  }
+  /* About one quarter taller, while Spacious remains visibly larger than Standard. */
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout > .wf-greeting-flip:not([data-smart-density="comfortable"]) {
+    --wf-smart-card-height: clamp(15.5rem,22.5vw,16rem);
+    --wf-smart-card-padding: clamp(16px,1.6vw,20px);
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout > .wf-greeting-flip[data-smart-density="comfortable"] {
+    --wf-smart-card-height: clamp(18rem,26vw,19rem);
+    --wf-smart-card-padding: 22px;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayoutEmpty {
+    display: grid; justify-items: center; gap: 12px; padding: clamp(32px,7vw,68px) 20px;
+    border: 1px dashed var(--border); border-radius: 20px;
+    background: var(--card); text-align: center;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayoutEmpty h2 { margin: 0; font-size: 22px; line-height: 1.5; color: var(--text); }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayoutEmpty p { margin: 0; max-inline-size: 38rem; font-size: 14px; line-height: 1.75; color: var(--text2); }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayoutEmpty button { min-block-size: 44px; padding: 10px 18px; font-size: 14px; }
+  @media (max-width:700px) {
+    html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout { grid-template-columns: minmax(0,1fr); }
+    html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout > .wf-dash-secondary[data-home-size="wide"] #dashIntelligence { grid-template-columns: minmax(0,1fr); }
+  }
+  @media (max-width:360px) {
+    html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics > .stats-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  }
+}

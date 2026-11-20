@@ -1,0 +1,172 @@
+/* A permanent entry point and an isolated, visual draft editor for Home. */
+@media screen {
+  html body #page-dashboard > .wf-home-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+    padding: 5px 0 15px;
+    margin: 0;
+  }
+  .wf-home-toolbar-copy { min-inline-size: 0; }
+  .wf-home-toolbar h1 { margin: 0; color: var(--text); font: inherit; font-size: clamp(21px, 2.4vw, 27px); font-weight: 800; line-height: 1.35; }
+  .wf-home-toolbar-count { margin: 4px 0 0; color: var(--text2); font-size: 14px; line-height: 1.5; }
+  .wf-home-editor-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-block-size: 44px;
+    min-inline-size: 44px;
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 750;
+    line-height: 1.35;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .wf-home-editor-button > span { display: inline-flex; align-items: center; }
+  .wf-home-editor-icon { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; inline-size: 22px; block-size: 22px; }
+  .wf-home-editor-icon svg { display: block; inline-size: 100%; block-size: 100%; }
+  .wf-home-editor-button:focus-visible { outline: 3px solid var(--ui-accent, var(--brand-primary)); outline-offset: 3px; }
+  .wf-home-editor-button:hover { border-color: var(--brand-primary); background: color-mix(in srgb, var(--brand-primary) 7%, var(--card)); }
+  .wf-home-editor-button[aria-disabled="true"] { opacity: .4; cursor: default; }
+  html body .wf-home-edit-button { min-block-size: 46px; padding-inline: 20px; background: var(--brand-primary); border-color: var(--brand-primary); color: var(--on-primary, #fff); font-size: 16px; box-shadow: 0 4px 12px color-mix(in srgb, var(--brand-primary) 18%, transparent); }
+  .wf-home-edit-button:hover { filter: brightness(1.06); }
+
+  html.wf-home-customizer-open { overflow: hidden; }
+  html body dialog#wfHomeCustomizer {
+    --home-editor-tint: color-mix(in srgb, var(--brand-primary) 7%, var(--card));
+    box-sizing: border-box;
+    inline-size: min(1040px, calc(100vw - 32px));
+    max-inline-size: none;
+    max-block-size: calc(100dvh - 32px);
+    padding: 0;
+    margin: auto;
+    border: 1px solid color-mix(in srgb, var(--brand-primary) 24%, var(--border));
+    border-radius: 24px;
+    overflow: hidden;
+    color: var(--text);
+    background: var(--window-surface, var(--card));
+    box-shadow: 0 24px 90px -20px rgb(12 32 42 / 45%);
+    font-family: inherit;
+    text-align: start;
+  }
+  html body dialog#wfHomeCustomizer[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+  html body dialog#wfHomeCustomizer:not([open]) { display: none; }
+  #wfHomeCustomizer::backdrop { background: rgb(10 26 35 / 55%); backdrop-filter: blur(5px); }
+  #wfHomeCustomizer * { box-sizing: border-box; }
+  .wf-home-editor-header { display: flex; align-items: flex-start; gap: 16px; padding: 24px; border-block-end: 1px solid var(--border); background: var(--home-editor-tint); }
+  .wf-home-editor-header > .wf-home-editor-icon { inline-size: 48px; block-size: 48px; padding: 12px; border-radius: 14px; background: var(--brand-primary); color: var(--on-primary, #fff); }
+  .wf-home-editor-title { flex: 1; min-inline-size: 0; }
+  .wf-home-editor-title h2 { margin: 0; font: inherit; font-size: 24px; font-weight: 800; line-height: 1.4; outline: none; }
+  .wf-home-editor-title p { margin: 5px 0 0; color: var(--text2); font-size: 14px; line-height: 1.6; }
+  .wf-home-editor-close { flex: 0 0 44px; inline-size: 44px; padding: 9px; background: var(--card); }
+  .wf-home-editor-body { min-block-size: 0; min-inline-size: 0; overflow-y: auto; overscroll-behavior: contain; padding: 24px; scroll-padding-block: 24px; scrollbar-width: thin; }
+  .wf-home-editor-intro { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-block-end: 20px; }
+  .wf-home-editor-intro h3 { margin: 0; font: inherit; font-size: 17px; font-weight: 800; }
+  .wf-home-editor-intro p { margin: 5px 0 0; color: var(--text2); font-size: 14px; line-height: 1.6; }
+  .wf-home-editor-count { flex: 0 0 auto; padding: 7px 11px; border: 1px solid var(--border); border-radius: 20px; color: var(--ui-accent, var(--brand-primary)); background: var(--home-editor-tint); font-size: 14px; font-weight: 750; }
+  .wf-home-editor-empty { margin: 0 0 18px; padding: 14px 16px; border: 1px dashed var(--brand-primary); border-radius: 12px; color: var(--text); background: var(--home-editor-tint); font-size: 14px; line-height: 1.7; }
+  #wfHomeCustomizer [hidden] { display: none !important; }
+  .wf-home-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 18px; padding-block: 4px; }
+  .wf-home-section-tile { position: relative; min-inline-size: 0; padding: 16px; border: 1px solid var(--border); border-radius: 18px; background: var(--card); box-shadow: 0 4px 18px -13px rgb(12 32 42 / 22%); }
+  .wf-home-section-tile[data-size="wide"] { grid-column: 1 / -1; }
+  .wf-home-section-heading { display: flex; align-items: center; gap: 9px; }
+  .wf-home-drag-handle { flex: 0 0 44px; padding: 10px; margin-inline-start: -7px; border-color: transparent; background: transparent; color: var(--text2); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .wf-home-section-heading > .wf-home-editor-icon { inline-size: 35px; block-size: 35px; padding: 7px; border-radius: 10px; color: var(--ui-accent, var(--brand-primary)); background: var(--home-editor-tint); }
+  .wf-home-section-name { flex: 1; min-inline-size: 0; }
+  .wf-home-section-name h3 { margin: 0; font: inherit; font-size: 17px; font-weight: 800; line-height: 1.4; overflow-wrap: anywhere; }
+  .wf-home-section-name p { margin: 3px 0 0; color: var(--text2); font-size: 14px; line-height: 1.5; }
+  .wf-home-section-rank { display: grid; place-items: center; align-self: flex-start; flex: 0 0 26px; inline-size: 26px; block-size: 26px; border-radius: 50%; color: var(--text2); background: var(--input, var(--home-editor-tint)); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .wf-home-section-preview { display: flex; align-items: stretch; justify-content: center; gap: 10px; min-block-size: 88px; margin-block: 16px; padding: 14px; border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); border-radius: 12px; background: var(--home-editor-tint); color: var(--brand-primary); overflow: hidden; }
+  .wf-home-preview-part { display: flex; flex: 1; flex-direction: column; justify-content: center; gap: 9px; min-inline-size: 0; }
+  .wf-home-preview-part i, .wf-home-preview-part b { display: block; block-size: 7px; border-radius: 5px; background: currentColor; opacity: .2; }
+  .wf-home-preview-part i { inline-size: 66%; block-size: 13px; opacity: .35; }
+  .wf-home-preview-part b { inline-size: 90%; }
+  .wf-home-section-preview--welcome .wf-home-preview-part:first-child { flex: 0 0 46px; }
+  .wf-home-section-preview--welcome .wf-home-preview-part:first-child i { inline-size: 42px; block-size: 42px; border-radius: 50%; }
+  .wf-home-section-preview--welcome .wf-home-preview-part:first-child b { display: none; }
+  .wf-home-section-preview--sales { align-items: flex-end; }
+  .wf-home-section-preview--sales .wf-home-preview-part { max-inline-size: 130px; }
+  .wf-home-section-preview--sales .wf-home-preview-part:first-child i { block-size: 26px; }
+  .wf-home-section-preview--metrics .wf-home-preview-part, .wf-home-section-preview--rates .wf-home-preview-part { border-radius: 8px; padding: 8px; background: var(--card); }
+  .wf-home-section-preview--rates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .wf-home-section-preview--rates .wf-home-preview-part { flex-direction: row; justify-content: space-between; align-items: center; }
+  .wf-home-section-preview--rates .wf-home-preview-part i { inline-size: 25%; block-size: 7px; }
+  .wf-home-section-preview--rates .wf-home-preview-part b { inline-size: 40%; }
+  .wf-home-section-preview--recent { flex-direction: column; gap: 8px; }
+  .wf-home-section-preview--recent .wf-home-preview-part { flex-direction: row; justify-content: space-between; align-items: center; }
+  .wf-home-section-preview--recent .wf-home-preview-part i { block-size: 7px; inline-size: 43%; }
+  .wf-home-section-preview--recent .wf-home-preview-part b { inline-size: 19%; }
+  .wf-home-section-preview--insights { align-items: flex-end; gap: 14px; padding-inline: 15%; }
+  .wf-home-section-preview--insights .wf-home-preview-part { flex: 1; max-inline-size: 110px; }
+  .wf-home-section-preview--insights .wf-home-preview-part i { inline-size: 100%; block-size: 20px; }
+  .wf-home-section-preview--insights .wf-home-preview-part:nth-child(2) i { block-size: 34px; }
+  .wf-home-section-preview--insights .wf-home-preview-part:nth-child(3) i { block-size: 27px; }
+  .wf-home-section-preview--insights .wf-home-preview-part:nth-child(4) i { block-size: 43px; }
+  .wf-home-section-preview--insights .wf-home-preview-part b { display: none; }
+  .wf-home-section-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .wf-home-visibility { min-inline-size: 100px; color: var(--ui-accent, var(--brand-primary)); background: var(--home-editor-tint); border-color: color-mix(in srgb, var(--brand-primary) 24%, var(--border)); }
+  .wf-home-visibility[aria-checked="false"] { color: var(--text2); background: var(--card); border-style: dashed; }
+  .wf-home-width-options { display: flex; flex: 1; min-inline-size: 0; padding: 3px; border: 1px solid var(--border); border-radius: 12px; background: var(--input, var(--home-editor-tint)); }
+  .wf-home-width-options .wf-home-editor-button { flex: 1; min-block-size: 44px; padding: 7px 9px; border: 0; border-radius: 8px; background: transparent; white-space: nowrap; }
+  .wf-home-width-options .wf-home-editor-button[aria-pressed="true"] { color: var(--ui-accent, var(--brand-primary)); background: var(--card); box-shadow: 0 1px 4px rgb(12 32 42 / 10%); }
+  .wf-home-move-controls { display: flex; gap: 4px; }
+  .wf-home-move-controls .wf-home-editor-button { padding: 8px; inline-size: 44px; }
+  .wf-home-section-tile[data-visible="false"] { border-style: dashed; background: var(--input, var(--card)); }
+  .wf-home-section-tile[data-visible="false"] .wf-home-section-preview { opacity: .45; }
+  .wf-home-section-tile.is-dragging { opacity: .45; border-color: var(--brand-primary); }
+  .wf-home-editor-grid.is-dragging { user-select: none; -webkit-user-select: none; }
+  .wf-home-section-tile:is(.is-drop-before, .is-drop-after) { border-color: var(--brand-primary); }
+  .wf-home-section-tile.is-drop-before::before, .wf-home-section-tile.is-drop-after::after { position: absolute; inset-inline: -1px; block-size: 4px; border-radius: 4px; content: ''; background: var(--brand-primary); box-shadow: 0 0 0 3px var(--card); }
+  .wf-home-section-tile.is-drop-before::before { inset-block-start: -11px; }
+  .wf-home-section-tile.is-drop-after::after { inset-block-end: -11px; }
+  .wf-home-drag-ghost { position: fixed; z-index: 2; display: flex; align-items: center; gap: 12px; inline-size: 248px; min-block-size: 58px; padding: 14px; border: 2px solid var(--brand-primary); border-radius: 15px; background: var(--card); color: var(--text); box-shadow: 0 14px 38px rgb(12 32 42 / 28%); pointer-events: none; transform: rotate(-2deg); }
+  .wf-home-drag-ghost strong { flex: 1; font-size: 16px; line-height: 1.4; }
+  .wf-home-drag-ghost > .wf-home-editor-icon { color: var(--ui-accent, var(--brand-primary)); }
+  .wf-home-editor-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; border-block-start: 1px solid var(--border); background: var(--card); }
+  .wf-home-editor-actions { display: flex; gap: 10px; margin-inline-start: auto; }
+  .wf-home-editor-actions .wf-home-editor-button { min-inline-size: 110px; min-block-size: 48px; font-size: 16px; }
+  .wf-home-editor-button.is-primary { color: var(--on-primary, #fff); background: var(--brand-primary); border-color: var(--brand-primary); }
+  .wf-home-editor-reset { color: var(--text2); background: transparent; border-color: transparent; }
+  .wf-home-editor-status { flex: 0 0 100%; margin: 0; padding: 11px 14px; border: 1px solid color-mix(in srgb, var(--red, #ad3b43) 35%, var(--border)); border-radius: 11px; background: color-mix(in srgb, var(--red, #ad3b43) 7%, var(--card)); color: var(--red, #ad3b43); font-size: 14px; line-height: 1.7; }
+  .wf-home-editor-live { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: -1px; padding: 0; border: 0; }
+  @media (max-width: 820px) {
+    .wf-home-section-controls { gap: 8px; }
+    .wf-home-width-options { order: 3; flex-basis: 100%; }
+    .wf-home-move-controls { margin-inline-start: auto; }
+    .wf-home-section-heading > .wf-home-editor-icon { display: none; }
+  }
+  @media (max-width: 620px) {
+    html body dialog#wfHomeCustomizer { inline-size: calc(100vw - 16px); max-block-size: calc(100dvh - 16px); border-radius: 18px; }
+    .wf-home-editor-header { gap: 10px; padding: 17px 16px; }
+    .wf-home-editor-header > .wf-home-editor-icon { display: none; }
+    .wf-home-editor-title h2 { font-size: 21px; }
+    .wf-home-editor-body { padding: 16px; }
+    .wf-home-editor-intro { align-items: flex-start; flex-direction: column; gap: 10px; margin-block-end: 14px; }
+    .wf-home-editor-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .wf-home-section-tile { padding: 14px; }
+    .wf-home-section-name h3 { font-size: 18px; }
+    .wf-home-section-heading > .wf-home-editor-icon { display: inline-flex; }
+    .wf-home-section-rank { display: none; }
+    .wf-home-section-preview { margin-block: 13px; }
+    .wf-home-editor-footer { padding: 12px 16px max(12px, env(safe-area-inset-bottom)); gap: 8px; }
+    .wf-home-editor-reset { inline-size: 100%; min-block-size: 44px; }
+    .wf-home-editor-actions { flex: 1; margin: 0; }
+    .wf-home-editor-actions .wf-home-editor-button { flex: 1; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-wf-motion="reduced"]) .wf-home-editor-button { transition: background-color 130ms ease, border-color 130ms ease; }
+  }
+}
+@media print {
+  #wfHomeToolbar, #wfHomeCustomizer { display: none !important; }
+}

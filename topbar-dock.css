@@ -1,11 +1,11 @@
 /* One recessed, softly rounded header language across dashboard and inner pages. */
 @media screen {
- html {--nav-h:72px;}
+ html {--nav-h:72px;--wf-header-radius:0 0 23px 23px;}
  html:not(.wf-section-mode) body .navbar,
  html.wf-section-mode body #mainContent .page :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar),
  html.wf-section-mode body #page-settings>.sct-sticky-header,
  html.wf-section-mode body #page-quick-barcode #qblPhase1>.sct-sticky-header {
-  min-height:72px!important;box-sizing:border-box;border-radius:0 0 23px 23px!important;
+  min-height:72px!important;box-sizing:border-box;border-radius:var(--wf-header-radius)!important;
   background:var(--card)!important;box-shadow:0 5px 20px rgba(33,86,107,.08)!important;
  }
  html:not(.wf-section-mode) body .navbar {height:72px!important;}
@@ -58,9 +58,9 @@
 }
 
 
-/* Straight header: keep consistent controls without cutouts or translucent rings. */
+/* Shared curved edge, with quiet controls that remain vertically centered. */
 @media screen {
- html body .navbar,html.wf-section-mode body #mainContent .page :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){border-radius:0!important;}
+ html body .navbar,html.wf-section-mode body #mainContent .page :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar){border-radius:var(--wf-header-radius)!important;}
  html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn),html.wf-section-mode body #mainContent .page .sct-back-btn{box-shadow:0 3px 9px rgba(33,86,107,.12)!important;}
  html body .navbar .wf-header-controls :is(#desktopSidebarToggle,#headerSettingsBtn,#themeBtn)::after,html.wf-section-mode body #mainContent .page .sct-back-btn::after{display:none!important;}
 }

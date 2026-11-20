@@ -136,6 +136,7 @@
     const infoGrid = byId('prName').closest('.fg')?.parentElement;
     addClass(infoGrid, 'wf-product-info-grid');
     for (const id of ['prName', 'prColorSel', 'prDimRowsWrap']) addClass(byId(id)?.closest('.fg'), 'wf-product-field-wide');
+    addClass(byId('prDesc')?.closest('.fg'), 'wf-product-description-field');
     if (infoGrid) {
       const calculated = make('div', 'wf-product-calculated');
       for (const id of ['prWeight', 'prPackets', 'prCbmInfo']) {
