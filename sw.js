@@ -1,11 +1,15 @@
 importScripts('./install-identity.js?v=1');
-const CACHE_NAME = 'wow-furniture-v195-existing-menu-drag';
+const CACHE_NAME = 'wow-furniture-v196-foldable-showroom-cards';
 const urlsToCache = [
   './workspace-surfaces.css?v=37',
   './context-nav.js?v=9',
   './context-nav.css?v=5',
   './settings-actions.js?v=1',
   './product-workspace.js?v=3',
+  './vendor/JsBarcode.code128.min.js?v=3.11.5',
+  './product-label-core.js?v=1',
+  './product-labels.js?v=1',
+  './product-labels.css?v=1',
   './business-workspace.js?v=1',
   './internal-workspace.css?v=1',
   './product-workspace.css?v=3',
