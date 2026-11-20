@@ -1,4 +1,4 @@
-/* One explicit reader control, using the existing header's spare menu space. */
+/* Reading has its own header slot beside theme and settings at every width. */
 @media screen {
   html body #wfProgramSpeechButton {
     position: absolute; inset-inline-start: 68px; inset-inline-end: auto;
@@ -33,16 +33,39 @@
     top: 16px; transform: none; z-index: 121;
   }
 }
-@media screen and (max-width: 1024px) {
-  html.wf-program-speech-enabled:not(.wf-section-mode) .navbar .wf-nav-wordmark {
-    inset-inline-start: 116px; inset-inline-end: 130px;
+@media screen {
+  html.wf-program-speech-enabled:not(.wf-section-mode) body nav.navbar {
+    --wf-header-button: 40px;
+    display: grid !important;
+    grid-template-columns: var(--wf-header-button) minmax(0, 1fr) repeat(3, var(--wf-header-button)) !important;
+    align-items: center !important; gap: 6px !important;
+    padding-inline: 10px !important;
+  }
+  html.wf-program-speech-enabled:not(.wf-section-mode) body nav.navbar .wf-header-controls {
+    display: contents !important;
+  }
+  html.wf-program-speech-enabled:not(.wf-section-mode) body nav.navbar .wf-nav-wordmark {
+    position: static !important; transform: none !important; grid-area: 1 / 2 !important;
+    min-width: 0; width: auto !important; margin: 0 !important;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  html.wf-program-speech-enabled:not(.wf-section-mode) body nav.navbar .wf-header-controls :is(#desktopSidebarToggle,#wfProgramSpeechButton,#themeBtn,#headerSettingsBtn),
+  html.wf-program-speech-enabled:not(.wf-section-mode) body nav.navbar .wf-header-controls :is(#desktopSidebarToggle,#wfProgramSpeechButton,#themeBtn,#headerSettingsBtn):is(:hover,:active) {
+    display: inline-flex !important; position: static !important; transform: none !important;
+    width: var(--wf-header-button) !important; height: var(--wf-header-button) !important;
+    min-width: var(--wf-header-button) !important; min-height: var(--wf-header-button) !important;
+    margin: 0 !important; padding: 0 !important; grid-row: 1 !important;
+    align-items: center !important; justify-content: center !important; justify-self: stretch !important;
+    pointer-events: auto !important;
+  }
+  html.wf-program-speech-enabled:not(.wf-section-mode) body nav.navbar #desktopSidebarToggle { grid-column: 1 !important; }
+  html.wf-program-speech-enabled:not(.wf-section-mode) body nav.navbar #wfProgramSpeechButton { grid-column: 3 !important; }
+  html.wf-program-speech-enabled:not(.wf-section-mode) body nav.navbar #themeBtn { grid-column: 4 !important; }
+  html.wf-program-speech-enabled:not(.wf-section-mode) body nav.navbar #headerSettingsBtn { grid-column: 5 !important; }
 }
 @media screen and (min-width: 1025px) {
-  html:not(.wf-section-mode) body #wfProgramSpeechButton {
-    position: static; transform: none; grid-column: 1; grid-row: 1; justify-self: end;
-    width: 48px; height: 48px; min-width: 48px;
+  html.wf-program-speech-enabled:not(.wf-section-mode) body nav.navbar {
+    --wf-header-button: 48px; gap: 8px !important; padding-inline: 16px !important;
   }
 }
 @media print { #wfProgramSpeechButton, #wfProgramSpeechStatus { display: none !important; } }

@@ -1,5 +1,5 @@
 importScripts('./install-identity.js?v=1');
-const CACHE_NAME = 'wow-furniture-v179-local-reference-voice';
+const CACHE_NAME = 'wow-furniture-v180-reading-controls';
 const urlsToCache = [
   './workspace-surfaces.css?v=35',
   './context-nav.js?v=5',
@@ -55,7 +55,8 @@ const urlsToCache = [
   './arabic-report-speech.js?v=2',
   './turkish-report-speech.js?v=1',
   './program-speech.js?v=1',
-  './program-speech.css?v=1',
+  './screen-awake.js?v=1',
+  './program-speech.css?v=2',
   './nabra-report-worker.js?v=3',
   './nabra-phonemizer.js?v=1',
   './robot-settings.js?v=6',
