@@ -91,7 +91,7 @@
     row.append(menu);
    }
    let actions=Array.from(row.children).find(child=>child.classList.contains('wf-heading-actions'));
-   const extra=Array.from(row.children).filter(child=>child!==title&&child!==actions&&child!==menu&&!child.classList.contains('sct-back-btn'));
+   const extra=Array.from(row.children).filter(child=>child!==title&&child!==actions&&child!==menu&&child.id!=='wfSpeechControls'&&!child.classList.contains('sct-back-btn'));
    if(extra.length){if(!actions){actions=document.createElement('div');actions.className='wf-heading-actions';row.append(actions);}extra.forEach(child=>actions.append(child));}
   });
   document.querySelectorAll('.modal-hdr').forEach(row=>{if(row.querySelector('.modal-title')&&row.querySelector('.modal-close'))row.classList.add('wf-centered-modal-header');});

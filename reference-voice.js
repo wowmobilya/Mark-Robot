@@ -23,8 +23,11 @@
     if(typeof embedding!=='string'||!embedding)throw fail('voice-reference-missing');
     return {text,language,speaker_mode:'embedding',speaker_embedding_base64:embedding,
       speaker_embedding_name:embeddingName||'voice.npy',stream,format:stream?'pcm':'wav',
+      // The pinned LACI path requires both CFG scales to remain 1. Its prefix
+      // decoder never repairs omitted residuals: wait for all ten codebooks
+      // even in the first frame instead of emitting a permanently coarse onset.
       laci:true,speaker_cfg_scale:1,controls_cfg_scale:1,seed:1,
-      stream_codebooks:stream?1:10,max_tokens:2000,
+      stream_codebooks:10,max_tokens:2000,
       ...(stream?{stream_decode:'prefix',stream_codebooks_scope:'first'}:{})};
   }
 
@@ -66,7 +69,11 @@
       ['i??=await Ha(t,n);','i??={skinny:`q8`,large:`q8`};'],
       ['await Xo(v,y,p);',''],
       ['n.addEventListener(`uncapturederror`,e=>console.error(`WebGPU error:`,e.error.message))',
-        'n.addEventListener(`uncapturederror`,t=>{console.error(`WebGPU error:`,t.error.message);e?.(`WebGPU operation failed: `+t.error.message)})']
+        'n.addEventListener(`uncapturederror`,t=>{console.error(`WebGPU error:`,t.error.message);e?.(`WebGPU operation failed: `+t.error.message)})'],
+      // Upstream otherwise logs errors after the first packet and sends a
+      // successful end, silently treating a clipped report as complete.
+      ['catch(e){if(!t)throw e;console.error(`generate:`,e)}n(),i.end();return}',
+        'catch(e){if(!t)throw e;console.error(`generate:`,e);Ro({type:`fatal`,message:`generation-failed`});return}n(),i.end();return}']
     ];
     for(const [before,after] of changes){
       if(source.split(before).length!==2)throw fail('integrity-failed');
@@ -88,6 +95,8 @@
     sourceURL:manifest.sourceURL,licenseURL:new URL(manifest.licenseURL,appBase).href};
   const supported=!!(window.isSecureContext&&window.caches&&window.crypto?.subtle&&window.Worker&&navigator.gpu);
   const IDLE_MS=300000,REQUEST_TIMEOUT_MS=90000,MAX_STREAM_SAMPLES=44100*150;
+  const PHRASE_CACHE_BYTES=16*1024*1024,PHRASE_CACHE_ENTRIES=32,phraseCache=new Map();
+  let phraseCacheBytes=0,phraseCacheEpoch=0;
   let deviceAvailable=null,deviceCheck=null,worker=null,workerReady=false,engineState='idle',engineError='',job=null,preparation=null,nextId=0,activeHandle=null,idleTimer=null,speechOwner=0,playbackOwner=null;
   const emit=(type,detail)=>window.dispatchEvent(new CustomEvent(type,{detail}));
   const publish=(type,value)=>{for(const locale of Object.keys(LANGUAGES))emit(type,{...value,locale,name:NAME});};
@@ -160,7 +169,7 @@
 
   function ensureWorker(){
     if(worker)return worker;
-    worker=new Worker(new URL('reference-voice-host.js?v=4',appBase),{type:'module'});
+    worker=new Worker(new URL('reference-voice-host.js?v=5',appBase),{type:'module'});
     const instance=worker;
     worker.onmessage=event=>{
       if(worker!==instance)return;
@@ -231,7 +240,30 @@
     return task.promise;
   }
 
-  const synthesize=(text,options={})=>request('synthesize',text,options);
+  function clearPhraseCache(){phraseCache.clear();phraseCacheBytes=0;phraseCacheEpoch++;}
+
+  async function synthesize(text,options={}){
+    if(typeof text!=='string'||!text.trim()||text.length>800)throw fail('text-length');
+    const locale=localeKey(options.locale||options.lang||'ar'),status=getStatus(locale);
+    if(!status.ready)throw fail(status.reason||'pack-not-installed');
+    if(options.signal?.aborted)throw base.aborted();
+    const key=locale+'\u0000'+text,cached=phraseCache.get(key),epoch=phraseCacheEpoch;
+    if(cached){phraseCache.delete(key);phraseCache.set(key,cached);return cached;}
+    const blob=await request('synthesize',text,options);
+    if(options.signal?.aborted)throw base.aborted();
+    // Financial text and audio stay in this page's RAM only. Removal invalidates
+    // completions already queued as microtasks so they cannot repopulate it.
+    if(epoch===phraseCacheEpoch&&blob.size<=PHRASE_CACHE_BYTES){
+      const previous=phraseCache.get(key);
+      if(previous){phraseCacheBytes-=previous.size;phraseCache.delete(key);}
+      while(phraseCache.size>=PHRASE_CACHE_ENTRIES||phraseCacheBytes+blob.size>PHRASE_CACHE_BYTES){
+        const oldest=phraseCache.keys().next().value;
+        phraseCacheBytes-=phraseCache.get(oldest).size;phraseCache.delete(oldest);
+      }
+      phraseCache.set(key,blob);phraseCacheBytes+=blob.size;
+    }
+    return blob;
+  }
   const stream=(text,options={})=>request('stream',text,options);
   const prepare=(locale='ar')=>request('prepare',null,{locale});
   const release=()=>{if(job||playbackOwner!==null)return false;terminate();return true;};
@@ -246,7 +278,9 @@
   function speak(options={}){
     const owner=++speechOwner;playbackOwner=owner;clearTimeout(idleTimer);idleTimer=null;
     const dispose=()=>{if(playbackOwner===owner){playbackOwner=null;activeHandle=null;scheduleIdle();}};
-    try{activeHandle=player.speakGenerated({...options,streaming:true,continuous:false},{getStatus,
+    // A complete short phrase plays through the native audio element while
+    // the next is synthesized. Never schedule sub-word packets on JS timers.
+    try{activeHandle=player.speakGenerated({...options,streaming:false,continuous:false,normalizeGenerated:true},{getStatus,
       stream:(text,context)=>stream(text,{...context,dialect:options.dialect}),
       synthesize:(text,context)=>synthesize(text,{...context,dialect:options.dialect}),dispose});}
     catch(problem){dispose();throw problem;}
@@ -254,10 +288,10 @@
   }
 
   window.WFReferenceVoice=Object.freeze({getStatus,refresh,download,synthesize,stream,prepare,release,speak,
-    preparePlayback:()=>player.preparePlayback({streaming:true}),
+    preparePlayback:()=>player.preparePlayback({streaming:false}),
     list:()=>Object.keys(LANGUAGES).map(locale=>({locale,id:voice.id,name:NAME,language:locale,bytes:voice.bytes,sharedBytes:0,quality:'reference',sourceURL:voice.sourceURL,licenseURL:voice.licenseURL})),
     cancelDownload:()=>manager.cancelDownload('ref'),
-    remove:async(locale='ar')=>{activeHandle?.cancel();terminate();await manager.remove('ref');return refresh(locale);}});
+    remove:async(locale='ar')=>{activeHandle?.cancel();terminate();clearPhraseCache();await manager.remove('ref');return refresh(locale);}});
   window.addEventListener('pagehide',()=>{activeHandle?.cancel();terminate();});
   refresh();
 })();

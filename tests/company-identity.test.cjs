@@ -1,8 +1,43 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {fieldChanges, mergeSettings, commitPatch, marksHTML, taxHTML, taxLines, documentLogoStyle, validateFile} = require('../company-identity.js');
+const {fieldChanges, sectionChanges, mergeSettings, commitPatch, marksHTML, taxHTML, taxLines, documentLogoStyle, validateFile} = require('../company-identity.js');
 const sign = 'data:image/png;base64,c2lnbg==', stamp = 'data:image/png;base64,c3RhbXA=';
 const escape = text => text.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+
+test('company child sections save only their own fields even when every other section has an unsaved draft', () => {
+  const before = {companyName:'Company',address:'Old address',phone:'0123',email:'a@example.test',website:'example.test',mersis:'0001',taxNumber:'001',taxOffice:'Old office',bankName:'Bank',beneficiary:'Owner',ibanUSD:'USD',ibanTRY:'TRY',ibanEUR:'EUR',swift:'SWIFT',accountNo:'0042',logo:sign,signature:sign,stamp,branding:{logoShape:'rounded',logoSize:'normal',logoBackground:'#ffffff',extension:1},nextNoExt:6200,manualUsdTry:40};
+  const draft = {...before,companyName:' New company ',address:'New address',taxNumber:' 000007 ',mersis:'0002',bankName:'New bank',logo:stamp,signature:'',stamp:'',nextNoExt:9999,manualUsdTry:999,branding:{logoShape:'circle',logoSize:'large',logoBackground:'#112233',extension:99}};
+  assert.deepEqual(sectionChanges('basic',before,draft),{companyName:'New company',address:'New address'});
+  assert.deepEqual(sectionChanges('registration',before,draft),{mersis:'0002',taxNumber:'000007'});
+  assert.deepEqual(sectionChanges('bank',before,draft),{bankName:'New bank'});
+  assert.deepEqual(sectionChanges('logo',before,draft),{branding:{logoShape:'circle',logoSize:'large',logoBackground:'#112233'},logo:stamp});
+  assert.deepEqual(sectionChanges('marks',before,draft),{signature:'',stamp:''});
+  assert.deepEqual(sectionChanges('company',before,draft),{});
+  assert.deepEqual(sectionChanges('unknown',before,draft),{});
+});
+
+test('an unchanged company section produces no transaction and does not save hidden media or bank drafts', async () => {
+  const opening = {companyName:'Company',phone:'0123'};
+  const current = {...opening,stamp,signature:sign,ibanUSD:'hidden draft',taxNumber:'008'};
+  const patch = sectionChanges('basic',opening,current);
+  assert.deepEqual(patch,{});
+  let writes=0;
+  const state={settings:{companyName:'Company',ibanUSD:'Stored bank',stamp:'Stored stamp'}};
+  const original=state.settings;
+  await commitPatch(state,patch,async()=>{writes++;throw new Error('unexpected write');},async row=>row);
+  assert.equal(writes,0);assert.equal(state.settings,original);
+});
+
+test('saving a child logo change merges with the latest tax, bank and media values without replacing other branding preferences', async () => {
+  const opening={logo:sign,branding:{logoShape:'rounded',logoSize:'normal',logoBackground:'#ffffff'}};
+  const draft={...opening,branding:{...opening.branding,logoShape:'circle'},phone:'unsaved phone',taxNumber:'unsaved tax',stamp:''};
+  let database={id:'main',logo:sign,branding:{logoShape:'rounded',logoSize:'large',logoBackground:'#ffffff',extension:17},phone:'latest phone',taxNumber:'00042',ibanUSD:'latest IBAN',stamp,signature:sign};
+  const state={settings:{...database,phone:'older phone'}};
+  await commitPatch(state,sectionChanges('logo',opening,draft),async([op])=>{database=op.merge(database,op.value);return[database];},async row=>row);
+  assert.equal(database.branding.logoShape,'circle');assert.equal(database.branding.logoSize,'large');assert.equal(database.branding.extension,17);
+  assert.equal(database.phone,'latest phone');assert.equal(database.taxNumber,'00042');assert.equal(database.ibanUSD,'latest IBAN');assert.equal(database.stamp,stamp);assert.equal(database.signature,sign);
+  assert.deepEqual(state.settings,database);
+});
 
 test('editing a tax number submits only the changed company field and preserves leading zeroes', () => {
   const original = {companyName:'Existing company',taxNumber:'',email:'',phone:'123',ibanUSD:'first',kdvRate:'0'};

@@ -8,11 +8,11 @@
   if (!identity || !nameField || !logo || document.getElementById('wfBrandingSettings')) return;
 
   const copy = {
-    ar: { preview: 'معاينة الهوية', background: 'لون خلفية الشعار', shape: 'شكل شعار الشركة', size: 'حجم الشعار', rounded: 'حواف ناعمة', square: 'مربع', circle: 'دائري', compact: 'صغير', normal: 'عادي', large: 'كبير', hint: 'رتّب الشعار واسم الشركة، ثم اضغط حفظ لاعتماد التغييرات.' },
-    en: { preview: 'Identity preview', background: 'Logo background color', shape: 'Company logo shape', size: 'Logo size', rounded: 'Rounded', square: 'Square', circle: 'Circle', compact: 'Compact', normal: 'Normal', large: 'Large', hint: 'Arrange your logo and company name, then choose Save to apply your changes.' },
-    tr: { preview: 'Kimlik önizlemesi', background: 'Logo arka plan rengi', shape: 'Şirket logosunun şekli', size: 'Logo boyutu', rounded: 'Yuvarlatılmış', square: 'Kare', circle: 'Daire', compact: 'Küçük', normal: 'Normal', large: 'Büyük', hint: 'Logoyu ve şirket adını düzenleyin, ardından değişiklikleri uygulamak için Kaydet’i seçin.' },
-    fr: { preview: 'Aperçu de l’identité', background: 'Couleur de fond du logo', shape: 'Forme du logo de l’entreprise', size: 'Taille du logo', rounded: 'Arrondi', square: 'Carré', circle: 'Cercle', compact: 'Compact', normal: 'Normal', large: 'Grand', hint: 'Ajustez le logo et le nom de l’entreprise, puis enregistrez vos modifications.' },
-    ru: { preview: 'Предпросмотр оформления', background: 'Цвет фона логотипа', shape: 'Форма логотипа компании', size: 'Размер логотипа', rounded: 'Скруглённый', square: 'Квадрат', circle: 'Круг', compact: 'Маленький', normal: 'Обычный', large: 'Большой', hint: 'Настройте логотип и название компании, затем нажмите «Сохранить».' }
+    ar: { preview: 'معاينة الهوية', background: 'لون خلفية الشعار', shape: 'شكل شعار الشركة', size: 'حجم الشعار', rounded: 'حواف ناعمة', square: 'مربع', circle: 'دائري', compact: 'صغير', normal: 'عادي', large: 'كبير', hint: 'تظهر تعديلات الشعار هنا مباشرة. اضغط حفظ لاعتماد الشكل والحجم والخلفية.' },
+    en: { preview: 'Identity preview', background: 'Logo background color', shape: 'Company logo shape', size: 'Logo size', rounded: 'Rounded', square: 'Square', circle: 'Circle', compact: 'Compact', normal: 'Normal', large: 'Large', hint: 'Logo changes appear here immediately. Choose Save to apply the shape, size and background.' },
+    tr: { preview: 'Kimlik önizlemesi', background: 'Logo arka plan rengi', shape: 'Şirket logosunun şekli', size: 'Logo boyutu', rounded: 'Yuvarlatılmış', square: 'Kare', circle: 'Daire', compact: 'Küçük', normal: 'Normal', large: 'Büyük', hint: 'Logo değişiklikleri burada hemen görünür. Şekil, boyut ve arka planı uygulamak için Kaydet’i seçin.' },
+    fr: { preview: 'Aperçu de l’identité', background: 'Couleur de fond du logo', shape: 'Forme du logo de l’entreprise', size: 'Taille du logo', rounded: 'Arrondi', square: 'Carré', circle: 'Cercle', compact: 'Compact', normal: 'Normal', large: 'Grand', hint: 'Les modifications du logo apparaissent immédiatement. Enregistrez pour appliquer la forme, la taille et le fond.' },
+    ru: { preview: 'Предпросмотр оформления', background: 'Цвет фона логотипа', shape: 'Форма логотипа компании', size: 'Размер логотипа', rounded: 'Скруглённый', square: 'Квадрат', circle: 'Круг', compact: 'Маленький', normal: 'Обычный', large: 'Большой', hint: 'Изменения логотипа видны сразу. Сохраните, чтобы применить форму, размер и фон.' }
   };
   const shapes = ['rounded', 'square', 'circle'];
   const sizes = ['compact', 'normal', 'large'];
@@ -193,6 +193,15 @@
   };
   window.WFCompanyBranding = {
     changes: () => Object.fromEntries(Object.entries(draft).filter(([key, value]) => baseline[key] !== value)),
+    getDraft: () => ({ ...draft }),
+    snapshot: () => ({ baseline: { ...baseline }, draft: { ...draft }, dirty }),
+    restore: snapshot => {
+      baseline = { ...snapshot.baseline };
+      draft = { ...snapshot.draft };
+      dirty = snapshot.dirty;
+      syncPreview();
+    },
+    refresh: syncPreview,
     reload: reloadPreferences
   };
   translate();

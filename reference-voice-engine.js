@@ -1,7 +1,7 @@
 /* App-shell bootstrap for the exact installed upstream build. No model assets
    are changed, downloaded, or copied into a second persistent cache. */
 import './reference-voice-assets.js?v=1';
-import './reference-voice.js?v=3';
+import './reference-voice.js?v=4';
 
 const manifest=globalThis.WFReferenceVoiceAssets,core=globalThis.WFReferenceVoiceCore;
 const appBase=new URL('./',import.meta.url).href,engineBase=new URL(manifest.engineBase,appBase).href;

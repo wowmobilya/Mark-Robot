@@ -109,3 +109,40 @@ test('manual settings apply even without a saved rate row and restored source me
   assert.equal(result.usdTry,40.25);assert.equal(result.usdEur,.805);assert.equal(result.rateHasSaved,true);assert.deepEqual(result.rateSource,posted.source);
   assert.equal(fx.initialRates({}, {...posted,source:{id:'sultan',mode:'feed',side:'sell',via:'frankfurter'}}).rateSource,null);
 });
+
+test('the complete bank directory preserves source IDs and remains manual for every bank',async()=>{
+  const directory=require('../currency-bank-catalog.js');
+  assert.ok(directory.banks.length>=60,'The source chooser must load the complete official bank directory');
+  for(const bank of directory.banks){
+    assert.equal(fx.catalog[bank.id]?.group,'banks');
+    assert.equal(fx.catalog[bank.id].officialName,bank.officialName);
+    for(const language of ['ar','en','tr','fr','ru'])assert.equal(fx.name(bank.id,language),bank.name[language]);
+    const source={id:bank.id,side:'buy',mode:'manual'};
+    const quote=await fx.getQuote({...source,usd:'40',eur:'50'},rejectNetwork,rejectNetwork);
+    assert.equal(quote.source.id,bank.id);assert.equal(quote.source.mode,'manual');assert.equal(quote.source.via,null);
+    assert.equal(fx.normalizeSource({...source,mode:'feed',via:'frankfurter'}),null);
+    assert.equal(fx.initialRates({}, {...posted,source:quote.source}).rateSource.id,bank.id);
+    assert.deepEqual(fx.modes(bank.id,'buy'),['manual']);
+  }
+  assert.equal(fx.normalizeSource({id:'unlisted-bank',side:'buy',mode:'manual'}),null);
+  assert.deepEqual(fx.modes('tcmb','reference'),['feed']);
+  assert.deepEqual(fx.modes('tcmb','sell'),['feed','manual']);
+});
+
+test('source search handles translated names, Turkish accents, renamed-bank aliases, and category filters',()=>{
+  const directory=require('../currency-bank-catalog.js');
+  assert.ok(fx.searchSources({query:'TURKIYE IS BANKASI',lang:'en'}).includes('isbank'));
+  assert.ok(fx.searchSources({query:'زراعات',lang:'ar'}).includes('ziraat'));
+  for(const bank of directory.banks){
+    for(const alias of bank.aliases||[])assert.ok(fx.searchSources({query:alias}).includes(bank.id),alias);
+  }
+  const bankIds=fx.searchSources({group:'banks'});
+  assert.equal(bankIds.length,directory.banks.length);
+  assert.equal(fx.searchSources({group:'banks',query:'sultan'}).length,0);
+  for(const category of ['deposit','participation','development']){
+    const ids=fx.searchSources({group:'banks',category});
+    assert.equal(ids.length,directory.banks.filter(bank=>bank.category===category).length);
+    assert.ok(ids.every(id=>fx.catalog[id].category===category));
+  }
+  assert.equal(fx.searchSources({query:'bank-that-is-not-listed-xyz'}).length,0);
+});

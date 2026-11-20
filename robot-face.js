@@ -680,7 +680,7 @@
       if (locale === 'ar' || locale === 'tr') {
         try {
           const adapter = locale === 'ar' ? window.WFArabicReportSpeech : window.WFTurkishReportSpeech;
-          chunks = adapter.prepare(snapshot);
+          chunks = adapter.prepare(snapshot, locale === 'ar' ? {dialect: 'sy'} : undefined);
           if (!Array.isArray(chunks) || !chunks.length) throw new Error('unsupported-report');
         }
         catch (_) {

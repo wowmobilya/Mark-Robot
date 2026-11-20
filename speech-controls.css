@@ -1,47 +1,66 @@
-/* Miniature smart card below the app header, shared across sections. */
+/* One compact reader in the actual toolbar row, never a second floating bar. */
 @media screen {
   html body #wfSpeechControls {
-    position:fixed;z-index:29980;top:calc(var(--nav-h,72px) + 8px + env(safe-area-inset-top,0px));
-    inset-inline:0;margin-inline:auto;width:fit-content;max-width:calc(100% - 16px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));
-    box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:6px 8px;
-    border:1px solid var(--wf-reader-hairline,var(--border));border-radius:16px;
-    background:linear-gradient(115deg,var(--wf-reader-paper,var(--card)) 45%,var(--wf-reader-wash,var(--ui-soft)));
-    color:var(--text);box-shadow:var(--shadow);font-family:inherit;text-align:start;
+    position: static !important; inset: auto !important; z-index: auto;
+    grid-column: 2; grid-row: 1; justify-self: center; align-self: center;
+    inline-size: fit-content; max-inline-size: 100%; min-inline-size: 0;
+    margin: 0 !important; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 3px 4px;
+    border: 1px solid var(--wf-reader-hairline,var(--border)); border-radius: 15px;
+    background: linear-gradient(115deg,var(--wf-reader-paper,var(--card)) 45%,var(--wf-reader-wash,var(--ui-soft)));
+    color: var(--text); box-shadow: none; font-family: inherit; text-align: start; pointer-events: auto;
   }
-  html body #wfSpeechControls[hidden],html.wf-robot-report-open body #wfSpeechControls,#wfSpeechControls [hidden] {display:none!important;}
-  #wfSpeechControls .wf-speech-controls-content {flex:1;min-width:0;max-width:160px;display:grid;gap:2px;}
-  #wfSpeechControlsVoice {color:var(--text);font:inherit;font-size:12px;font-weight:700;line-height:1.4;}
-  #wfSpeechControlsStatus {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin:0;color:var(--text2);font-size:11px;line-height:1.5;overflow-wrap:anywhere;}
-  #wfSpeechControls .wf-speech-controls-actions {display:flex;align-items:center;gap:5px;}
+  html body #wfSpeechControls[hidden],#wfSpeechControls [hidden],html body #wfSpeechControls[data-location=none] { display: none !important; }
+  html body #wfSpeechControls[data-staging=true] { opacity: 0 !important; pointer-events: none; animation: none !important; }
+  #wfSpeechControls .wf-speech-controls-content { flex: 1; min-width: 0; max-width: 160px; display: grid; gap: 2px; }
+  #wfSpeechControlsVoice { color: var(--text); font: inherit; font-size: 12px; font-weight: 700; line-height: 1.4; white-space: nowrap; }
+  #wfSpeechControlsStatus { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0; color: var(--text2); font-size: 11px; line-height: 1.5; }
+  #wfSpeechControls .wf-speech-controls-actions { display: flex; align-items: center; gap: 4px; flex: none; }
   html body #wfSpeechControls button {
-    display:inline-flex;align-items:center;justify-content:center;gap:5px;box-sizing:border-box;min-width:44px;min-height:44px;margin:0;padding:6px;
-    border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--ui-accent);
-    box-shadow:none;font:inherit;font-size:12px;font-weight:650;line-height:1.35;cursor:pointer;touch-action:manipulation;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px; box-sizing: border-box;
+    min-width: 44px; height: 44px; min-height: 44px; flex: none; margin: 0; padding: 6px;
+    border: 1px solid var(--border); border-radius: 11px; background: var(--card); color: var(--ui-accent);
+    box-shadow: none; font: inherit; font-size: 12px; font-weight: 650; line-height: 1.35; cursor: pointer; touch-action: manipulation;
   }
-  #wfSpeechControls button>svg {display:block;width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
-  html body #wfSpeechControls #wfSpeechControlsToggle {background:var(--brand-primary);border-color:var(--brand-primary);color:#fff;}
-  html body #wfSpeechControls #wfSpeechControlsReport {color:var(--text);padding-inline:7px;}
-  #wfSpeechControlsReport .wf-reader-face {width:40px;height:30px;}
-  #wfSpeechControlsReport .wf-reader-face:empty {display:none;}
-  #wfSpeechControlsReport .wf-reader-face .wf-robot-face {width:100%;height:100%;}
-  html body #wfSpeechControls button:disabled {opacity:.5;cursor:default;}
-  html body #wfSpeechControls button:focus-visible {outline:2px solid var(--ui-accent);outline-offset:2px;}
-  #wfSpeechControls .wf-speech-controls-indicator {display:flex;align-items:center;justify-content:center;gap:3px;flex:none;height:24px;color:var(--ui-accent);}
-  #wfSpeechControls .wf-speech-controls-indicator span {width:3px;height:12px;border-radius:3px;background:currentColor;}
-  #wfSpeechControls .wf-speech-controls-indicator span:nth-child(2) {height:22px;}
-  #wfSpeechControls .wf-speech-controls-indicator span:nth-child(3) {height:17px;}
-  html body #wfSpeechControls[data-idle="true"] {padding:3px;gap:0;}
-  @media(max-width:420px) {
-    html body #wfSpeechControls {gap:5px;padding-inline:5px;}
-    #wfSpeechControls .wf-speech-controls-content {max-width:100px;}
-    #wfSpeechControlsReport .wf-reader-face {width:32px;height:25px;}
+  #wfSpeechControls button>svg { display: block; width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  html body #wfSpeechControls #wfSpeechControlsToggle { background: var(--brand-primary); border-color: var(--brand-primary); color: #fff; }
+  html body #wfSpeechControls #wfSpeechControlsReport { color: var(--text); padding-inline: 6px; }
+  #wfSpeechControlsReport .wf-reader-face { width: 36px; height: 29px; }
+  #wfSpeechControlsReport .wf-reader-face:empty { display: none; }
+  #wfSpeechControlsReport .wf-reader-face .wf-robot-face { width: 100%; height: 100%; }
+  html body #wfSpeechControls button:disabled { opacity: .5; cursor: default; }
+  html body #wfSpeechControls button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+  #wfSpeechControls .wf-speech-controls-indicator { display: flex; align-items: center; justify-content: center; gap: 3px; flex: none; height: 24px; color: var(--ui-accent); }
+  #wfSpeechControls .wf-speech-controls-indicator span { width: 3px; height: 12px; border-radius: 3px; background: currentColor; }
+  #wfSpeechControls .wf-speech-controls-indicator span:nth-child(2) { height: 22px; }
+  #wfSpeechControls .wf-speech-controls-indicator span:nth-child(3) { height: 17px; }
+  html body #wfSpeechControls[data-idle=true] { gap: 0; }
+
+  /* Keep the existing navigation and Settings controls on either side. */
+  html.wf-program-speech-enabled.wf-speech-toolbar-active:not(.wf-section-mode) body nav.navbar.wf-speech-toolbar-host {
+    grid-template-columns: var(--wf-header-button,44px) minmax(0,1fr) var(--wf-header-button,44px) !important;
   }
-  @media(hover:hover) {
-    html body #wfSpeechControls button:hover:not(:disabled) {border-color:var(--ui-accent);}
+  html.wf-program-speech-enabled.wf-speech-toolbar-active:not(.wf-section-mode) body nav.navbar.wf-speech-toolbar-host .wf-nav-wordmark,
+  html.wf-program-speech-enabled.wf-speech-toolbar-active:not(.wf-section-mode) body nav.navbar.wf-speech-toolbar-host .wf-header-controls :is(#themeBtn,#wfProgramSpeechButton),
+  html.wf-program-speech-enabled.wf-speech-toolbar-active:not(.wf-section-mode) body nav.navbar.wf-speech-toolbar-host .wf-header-controls :is(#themeBtn,#wfProgramSpeechButton):is(:hover,:active) { display: none !important; }
+  html.wf-program-speech-enabled.wf-speech-toolbar-active:not(.wf-section-mode) body nav.navbar.wf-speech-toolbar-host #headerSettingsBtn { grid-column: 3 !important; }
+  html.wf-speech-toolbar-active body #wfProgramSpeechButton,html.wf-speech-toolbar-active body #wfProgramSpeechStatus { display: none !important; }
+  html.wf-speech-toolbar-active body #mainContent .page .wf-heading-row.wf-speech-toolbar-host > .wf-centered-heading {
+    position: absolute !important; inline-size: 1px !important; block-size: 1px !important; width: 1px !important;
+    min-width: 0 !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip-path: inset(50%); white-space: nowrap !important;
   }
-  @media(prefers-reduced-motion:no-preference) {
-    html:not([data-wf-motion="reduced"]) #wfSpeechControls {animation:wf-speech-card-in .2s ease-out;}
+  html.wf-speech-toolbar-active body #mainContent .page .wf-heading-row.wf-speech-toolbar-host > #wfSpeechControls { grid-column: 2 !important; grid-row: 1 !important; }
+  @media (max-width: 600px) {
+    html body #wfSpeechControls { gap: 4px; padding: 2px; }
+    #wfSpeechControls .wf-speech-controls-content,#wfSpeechControls .wf-speech-report-label {
+      position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+    }
+    #wfSpeechControlsReport .wf-reader-face { width: 32px; height: 26px; }
+    #wfSpeechControls .wf-speech-controls-indicator { margin-inline: 4px; }
+  }
+  @media (hover: hover) { html body #wfSpeechControls button:hover:not(:disabled) { border-color: var(--ui-accent); } }
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-wf-motion=reduced]) #wfSpeechControls:not([data-staging=true]) { animation: wf-speech-toolbar-in .18s ease-out; }
   }
 }
-@keyframes wf-speech-card-in {from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
-@media print {#wfSpeechControls {display:none!important;}}
+@keyframes wf-speech-toolbar-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+@media print { #wfSpeechControls { display: none !important; } }

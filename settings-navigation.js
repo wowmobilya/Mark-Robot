@@ -100,7 +100,7 @@
    data:['البيانات والنظام','Data and system','Veriler ve sistem','Données et système','Данные и система']
  };
  const headings=new Map();
- const saveSections = new Set(['company', 'bank', 'invoice']);
+ const saveSections = new Set(['bank', 'invoice']);
  let opener;
  function updateDialogTitle() {
    if (!opener) return;

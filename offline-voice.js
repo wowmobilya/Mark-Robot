@@ -363,7 +363,7 @@
     }};
     playbackLeases.add(lease);claimAudioSession(lease);
     const silence=URL.createObjectURL(new Blob([pcmToWav(new Float32Array(441),22050)],{type:'audio/wav'}));
-    audio.src=silence;
+    audio.preload='auto';audio.src=silence;
     try{lease.unlock=Promise.resolve(audio.play()).then(()=>audio.pause()).catch(()=>{}).finally(()=>URL.revokeObjectURL(silence));}
     catch(_){URL.revokeObjectURL(silence);lease.unlock=Promise.resolve();}
     return lease;
@@ -570,7 +570,7 @@
     if(lease.context&&!streaming){playbackLeases.delete(lease);lease.dispose();lease=preparePlayback();}
     playbackLeases.delete(lease);
     if(streaming&&lease.context)return speakStream(options,source,lease);
-    const controller=new AbortController(),audio=lease.audio;let rate=speechRate(options.rate),stopped=false,url='',finished=false,sourceReleased=false,paused=false,resumeClip=null;
+    const controller=new AbortController(),audio=lease.audio;let rate=speechRate(options.rate),stopped=false,url='',finished=false,sourceReleased=false,paused=false,resumeClip=null,playAttempt=0;
     const text=typeof options.text==='string'?options.text:'',locale=options.locale||'ar';
     const clearAudioEvents=()=>{audio.onplaying=audio.onwaiting=audio.onended=audio.onerror=audio.ontimeupdate=null;};
     const cleanup=()=>{resumeClip=null;clearAudioEvents();lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;
@@ -579,7 +579,7 @@
     const handle={
       cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();},
       setRate(value){if(!stopped&&!finished){rate=speechRate(value);if(url)audio.playbackRate=rate;}},
-      pause(){if(stopped||finished||paused)return;paused=true;audio.pause();options.onPause?.({reason:'user'});},
+      pause(){if(stopped||finished||paused)return;paused=true;playAttempt++;audio.pause();options.onPause?.({reason:'user'});},
       resume(){if(stopped||finished||!paused)return Promise.resolve();paused=false;options.onResume?.();return resumeClip?.()||Promise.resolve();}
     };activeSpeech=handle;
     async function playClip(blob,boundaries){
@@ -599,9 +599,14 @@
         audio.onwaiting=()=>{if(!paused)options.onWaiting?.();};audio.onended=()=>{publishBoundaries(Infinity);finish();};audio.onerror=()=>finish(error('playback-failed'));
         controller.signal.addEventListener('abort',abort,{once:true});
         resumeClip=()=>{
-          if(stopped||finished||paused)return Promise.resolve();let playing;
+          if(stopped||finished||paused)return Promise.resolve();const attempt=++playAttempt;let playing;
           try{playing=Promise.resolve(audio.play());}catch(problem){playing=Promise.reject(problem);}
-          playing.catch(problem=>finish(error(problem?.name==='NotAllowedError'?'playback-blocked':'playback-failed')));return playing;
+          return playing.catch(problem=>{
+            // pause() can reject the pending play promise. That old attempt
+            // must not discard the paused clip or kill a later resume.
+            if(stopped||finished||settled||paused||attempt!==playAttempt)return;
+            finish(error(problem?.name==='NotAllowedError'?'playback-blocked':'playback-failed'));
+          });
         };
         if(!paused)resumeClip();
       });
@@ -621,14 +626,35 @@
           }
           const rendered=sequence.finish();await playClip(rendered.blob,rendered.boundaries);
         }else{
-          // The compatibility path prepares one sentence ahead while it plays.
-          // Settling errors here avoids an unhandled rejection during playback.
-          const generate=chunk=>{const pending={ready:false,promise:null};pending.promise=renderSpeech(chunk.text,{locale,signal:controller.signal}).then(blob=>({blob}),problem=>({problem})).then(result=>{pending.ready=true;return result;});return pending;};
+          // A complete phrase plays through the browser's media pipeline while
+          // the next one is generated. Model latency cannot cut a spoken word,
+          // and background playback does not depend on short JS scheduling timers.
+          let renderedBytes=0,renderedSeconds=0;
+          const generate=chunk=>{
+            const pending={ready:false,promise:null};
+            pending.promise=Promise.resolve().then(async()=>{
+              checkAbort(controller.signal);
+              let blob=await renderSpeech(chunk.text,{locale,signal:controller.signal,
+                onProgress:value=>{if(!pending.ready&&!stopped&&!finished&&!controller.signal.aborted)options.onProgress?.(value);}});
+              checkAbort(controller.signal);
+              if(options.normalizeGenerated===true&&window.WFVoiceLoudness)blob=await window.WFVoiceLoudness.normalize(blob,{locale,signal:controller.signal});
+              checkAbort(controller.signal);
+              // Validate canonical generated PCM before replacing the unlocked
+              // audio source. Keep only this phrase and the single lookahead.
+              const sequence=createWavSequence();await sequence.append(blob,chunk);
+              checkAbort(controller.signal);const rendered=sequence.finish();
+              renderedBytes+=rendered.blob.size-44;renderedSeconds+=rendered.duration;
+              if(renderedBytes>MAX_RENDERED_AUDIO_BYTES||renderedSeconds>MAX_RENDERED_AUDIO_SECONDS)throw error('speech-too-long');
+              return {blob:rendered.blob};
+            }).catch(problem=>({problem})).then(result=>{pending.ready=true;return result;});
+            return pending;
+          };
           let next=generate(chunks[0]);
           for(let index=0;index<chunks.length;index++){
             const chunk=chunks[index];
             if(!next.ready&&!paused)options.onWaiting?.();
             const result=await next.promise;checkAbort(controller.signal);if(result.problem)throw result.problem;
+            options.onProgress?.({completed:index+1,total:chunks.length,phase:'preparing'});
             next=index+1<chunks.length?generate(chunks[index+1]):null;
             await playClip(result.blob,[{...chunk,start:0}]);
           }

@@ -97,6 +97,7 @@
     ru:['Свернуть','Выход','Выйти и остановить чтение']
   };
   const rateLabels={ar:'سرعة القراءة',en:'Reading speed',tr:'Okuma hızı',fr:'Vitesse de lecture',ru:'Скорость чтения'};
+  const rateActions={ar:['قراءة أبطأ','قراءة أسرع'],en:['Read slower','Read faster'],tr:['Daha yavaş oku','Daha hızlı oku'],fr:['Lire plus lentement','Lire plus vite'],ru:['Читать медленнее','Читать быстрее']};
   const paths={report:'<path d="M6 3h9l4 4v14H5V3h1Zm8 0v5h5M8 12h8M8 16h6"/>',today:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18m-13 5 3 2 5-4"/>',balances:'<path d="M3 7h17v13H3zM3 7V5l14-2v4m0 5h4v4h-4z"/>',activity:'<rect x="4" y="3" width="16" height="18" rx="3"/><path d="m8 9 2 2 5-5M8 15h8m-8 3h5"/>',cash:'<path d="M3 7h18v14H3zM3 7l3-4h12l3 4M8 12h8m-4-3v9"/>',close:'<path d="m6 6 12 12M18 6 6 18"/>',play:'<path d="m8 5 11 7-11 7z"/>',stop:'<rect x="5" y="5" width="14" height="14" rx="2"/>',follow:'<path d="M12 3v14m-5-5 5 5 5-5M4 20h16"/>',download:'<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',retry:'<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/>'};
   paths.pause='<path d="M8 5v14M16 5v14"/>';paths.minimize='<path d="M5 12h14"/>';
   const node=(tag,className,text)=>{const n=document.createElement(tag);if(className)n.className=className;if(text!=null)n.textContent=text;return n;};
@@ -123,21 +124,29 @@
     if(source)face.append(source.cloneNode(true));
   }
   const status=node('p','wf-report-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
-  const speedWrap=node('label','wf-report-speed'),speedLabel=node('span'),speed=node('select','wf-report-rate');
-  speed.dir='ltr';speedWrap.append(speedLabel,speed);
-  for(let percent=75;percent<=125;percent+=5){
-    const option=node('option');option.value=String(percent/100);speed.append(option);
+  const speedWrap=node('div','wf-report-speed'),speedLabel=node('span'),speedControls=node('div','wf-report-rate-controls');
+  const speedDown=node('button','wf-report-rate-down','−'),speed=node('output','wf-report-rate'),speedUp=node('button','wf-report-rate-up','+');
+  speedLabel.id='wfReportRateLabel';speedWrap.setAttribute('role','group');speedWrap.setAttribute('aria-labelledby',speedLabel.id);
+  speedDown.type=speedUp.type='button';speedControls.dir='ltr';speedControls.append(speedDown,speed,speedUp);speedWrap.append(speedLabel,speedControls);
+  speed.setAttribute('aria-labelledby',speedLabel.id);speed.setAttribute('aria-live','polite');speed.setAttribute('aria-atomic','true');
+  function readingRate(state){
+    const value=Number(state?.rate ?? window.WFRobotSettings?.getPreferences?.().speechRate ?? 1);
+    return Number.isFinite(value)?Math.max(.75,Math.min(1.25,Math.round(value*20)/20)):1;
   }
   function syncRate(state=window.WFProgramSpeech?.getState?.()){
-    const value=Number(state?.rate ?? window.WFRobotSettings?.getPreferences?.().speechRate ?? 1);
-    speed.value=String(Math.max(.75,Math.min(1.25,Math.round(value*20)/20)));
-    speed.disabled=typeof window.WFProgramSpeech?.setRate!=='function' || !!state?.active && state.kind!=='report';
+    const rate=readingRate(state),disabled=typeof window.WFProgramSpeech?.setRate!=='function' || !!state?.active && state.kind!=='report';
+    const text=new Intl.NumberFormat(locale,{maximumFractionDigits:2}).format(rate)+'×';speed.dataset.rate=String(rate);
+    if(speed.textContent!==text)speed.textContent=text;
+    speedWrap.setAttribute('aria-disabled',String(disabled));speedDown.disabled=disabled||rate<=.75;speedUp.disabled=disabled||rate>=1.25;
   }
-  speed.addEventListener('change',()=>{
+  function changeRate(delta){
     const owner=window.WFProgramSpeech,state=owner?.getState?.();
-    if(!state?.active || state.kind==='report') owner?.setRate?.(Number(speed.value));
+    const rate=readingRate(state),next=Math.max(.75,Math.min(1.25,Math.round((rate+delta)*20)/20));
+    if(next!==rate&&(!state?.active || state.kind==='report'))owner?.setRate?.(next);
     syncRate();
-  });
+  }
+  speedDown.addEventListener('click',()=>{if(!speedDown.disabled)changeRate(-.05);});
+  speedUp.addEventListener('click',()=>{if(!speedUp.disabled)changeRate(.05);});
   title.id='wfRobotReportTitle';titleWrap.append(identity,title,date,status);head.append(face,titleWrap,speedWrap);
   const progress=node('div','wf-report-progress');progress.setAttribute('aria-hidden','true');progress.append(node('span'));
   const body=node('div','wf-report-body');body.tabIndex=0;
@@ -163,7 +172,7 @@
       if(voiceTitle.textContent!==setup.title)voiceTitle.textContent=setup.title;
       voiceHint.textContent=setup.hint;voicePercent.hidden=voiceMeter.hidden=!setup.showProgress;
       voicePercent.textContent=setup.progressText;voiceMeter.setAttribute('aria-label',setup.title);voiceMeter.setAttribute('aria-valuenow',String(setup.progress));voiceMeter.firstElementChild.style.width=setup.progress+'%';
-      paragraphs[active]?.classList.remove('is-reading');paragraphs[active]?.removeAttribute('aria-current');active=-1;progress.firstElementChild.style.width='0%';
+      for(const paragraph of paragraphs){paragraph.classList.remove('is-reading');paragraph.removeAttribute('aria-current');}active=-1;progress.firstElementChild.style.width='0%';
     }
     const actionText=setup.visible?setup.actionLabel:action==='pause'?L.pause:action==='resume'?L.resume:L.replay,actionIcon=setup.visible?setup.actionIcon:action==='pause'?'pause':'play';
     if(playText.textContent!==actionText)playText.textContent=actionText;
@@ -194,9 +203,9 @@
     dock='top';expanded=true;snapshot=detail.snapshot;locale=copy[detail.locale]?detail.locale:'en';segments=segmentsFor(snapshot);paragraphs=[];active=-1;following=true;
     const L=labels();sheet.lang=locale;sheet.dir=locale==='ar'?'rtl':'ltr';title.textContent=L.title;minimizeText.textContent=windowLabels[locale][0];minimize.title=L.close;minimize.setAttribute('aria-label',L.close);
     closeText.textContent=windowLabels[locale][1];close.title=windowLabels[locale][2];close.setAttribute('aria-label',close.title);body.setAttribute('aria-label',L.written);
-    speedLabel.textContent=rateLabels[locale];speed.setAttribute('aria-label',speedLabel.textContent);
-    const rateFormat=new Intl.NumberFormat(locale,{maximumFractionDigits:2});
-    for(const option of speed.children)option.textContent=rateFormat.format(Number(option.value))+'×';
+    speedLabel.textContent=rateLabels[locale];
+    speedDown.title=rateActions[locale][0];speedDown.setAttribute('aria-label',speedDown.title);
+    speedUp.title=rateActions[locale][1];speedUp.setAttribute('aria-label',speedUp.title);
     identity.textContent=document.querySelector('#wfGreetingRobot #wfRobotTitle span')?.textContent?.trim() || L.identity;
     try{date.textContent=L.date+' · '+new Intl.DateTimeFormat(locale,{dateStyle:'long',timeZone:'UTC'}).format(new Date(snapshot.date+'T12:00:00Z'));}catch(_){date.textContent=snapshot.date||'';}
     body.replaceChildren(voiceSetup);
@@ -233,12 +242,13 @@
   function show(){
     if(!snapshot)return false;
     clearTimeout(closing);closing=0;sheet.classList.remove('is-closing');
+    const wasMinimized=minimized;
     minimized=false;mountFace();const wasHidden=sheet.hidden;
     if(wasHidden){
       returnFocus=document.activeElement;
       const cardRect=visibleRect('#wfGreetingRobot[aria-hidden="false"]');
-      const launcherRect=visibleRect('#wfSpeechControlsReport');
-      launchRect=document.activeElement?.id==='wfSpeechControlsReport' ? launcherRect||cardRect : cardRect||launcherRect;
+      const launcherRect=visibleRect('#wfSpeechControls')||visibleRect('#wfSpeechControlsReport');
+      launchRect=wasMinimized||document.activeElement?.id==='wfSpeechControlsReport' ? launcherRect||cardRect : cardRect||launcherRect;
     }
     shade.hidden=sheet.hidden=false;document.documentElement.classList.add('wf-robot-report-open');
     for(const sibling of document.body.children){if(sibling!==sheet&&sibling!==shade&&!sibling.inert){sibling.inert=true;inertBackground.add(sibling);}}
@@ -250,18 +260,34 @@
   function dismiss(stopPlayback=false){
     if(sheet.hidden||sheet.classList.contains('is-closing'))return;
     minimized=!stopPlayback;
-    setMorphOrigin(visibleRect('#wfGreetingRobot[aria-hidden="false"]')||launchRect);
     if(stopPlayback){
       const owner=window.WFProgramSpeech,playback=owner?.getState?.();
       if(!playback || playback.kind==='report')owner?.stop?.();
     }
+    // Reserve the real toolbar slot before measuring it. It remains visually
+    // hidden until this same card has folded into its destination.
+    window.dispatchEvent(new CustomEvent('wf-robot-report-visibility',{detail:{open:false,minimized,locale,transition:stopPlayback?'closing':'minimizing'}}));
+    const toolbarRect=minimized ? visibleRect('#wfSpeechControls') : null;
+    setMorphOrigin(toolbarRect||visibleRect('#wfGreetingRobot[aria-hidden="false"]')||launchRect);
+    sheet.dataset.morphTarget=toolbarRect?'toolbar':'card';
     dragging=null;sheet.classList.remove('is-dragging');sheet.classList.add('is-closing');
-    window.dispatchEvent(new CustomEvent('wf-robot-report-visibility',{detail:{open:false,minimized,locale}}));
     clearTimeout(closing);closing=setTimeout(()=>{
       closing=0;sheet.hidden=shade.hidden=true;sheet.classList.remove('is-closing');document.documentElement.classList.remove('wf-robot-report-open');
       for(const sibling of inertBackground)sibling.inert=false;inertBackground.clear();
-      if(returnFocus?.isConnected&&!returnFocus.closest('[inert],[hidden]'))returnFocus.focus({preventScroll:true});
+      window.dispatchEvent(new CustomEvent('wf-robot-report-visibility',{detail:{open:false,minimized,locale}}));
+      const launcher=minimized?document.querySelector('#wfSpeechControlsReport'):null;
+      const focusTarget=launcher?.isConnected&&!launcher.closest('[inert],[hidden]')?launcher:returnFocus;
+      if(focusTarget?.isConnected&&!focusTarget.closest('[inert],[hidden]'))focusTarget.focus({preventScroll:true});
     },reduced()?0:230);
+  }
+  function closeReader(){
+    if(!sheet.hidden){dismiss(true);return true;}
+    if(!minimized)return false;
+    minimized=false;
+    const owner=window.WFProgramSpeech,playback=owner?.getState?.();
+    if(playback?.active&&playback.kind==='report')owner.stop?.();
+    window.dispatchEvent(new CustomEvent('wf-robot-report-visibility',{detail:{open:false,minimized:false,locale}}));
+    return true;
   }
   function followActive(){
     const paragraph=paragraphs[active];if(!paragraph||!following||sheet.hidden)return;
@@ -271,7 +297,12 @@
   function boundary(detail){
     if(!snapshot||voiceSetupFor(voiceStates.get(locale),locale).visible)return;
     const index=Number(detail?.charIndex),found=segmentAt(segments,index);if(found<0)return;
-    if(found!==active){paragraphs[active]?.classList.remove('is-reading');paragraphs[active]?.removeAttribute('aria-current');active=found;paragraphs[active].classList.add('is-reading');paragraphs[active].setAttribute('aria-current','true');followActive();}
+    const length=Number(detail?.charLength),end=Math.min(snapshot.narration.length,index+(Number.isFinite(length)&&length>0?length:1));
+    for(let i=0;i<paragraphs.length;i++){
+      paragraphs[i].classList.toggle('is-reading',segments[i].start<end&&segments[i].end>index);
+      if(i===found)paragraphs[i].setAttribute('aria-current','true');else paragraphs[i].removeAttribute('aria-current');
+    }
+    if(found!==active){active=found;followActive();}
     progress.firstElementChild.style.width=Math.min(100,Math.max(0,index/Math.max(1,snapshot.narration.length)*100))+'%';
   }
   function manual(event){if(event.isTrusted){if(following)body.scrollTo({top:body.scrollTop,behavior:'instant'});following=false;followText.textContent=labels().manual;follow.setAttribute('aria-pressed','false');}}
@@ -347,5 +378,5 @@
   const main=document.querySelector('#mainContent');let routePage=document.querySelector('.page.active');
   if(main)new MutationObserver(()=>{const next=document.querySelector('.page.active');if(next!==routePage){routePage=next;dismiss(false);}}).observe(main,{attributes:true,subtree:true,attributeFilter:['class']});
   new MutationObserver(()=>{if(!sheet.hidden&&document.documentElement.lang!==locale)dismiss(false);}).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
-  window.WFRobotReport=Object.freeze({show,hasReport:()=>!!snapshot,isMinimized:()=>minimized});
+  window.WFRobotReport=Object.freeze({show,close:closeReader,hasReport:()=>!!snapshot,isMinimized:()=>minimized});
 })();

@@ -155,6 +155,18 @@ test('minimizing and reopening preserves the exact report and follows boundaries
  assert.deepEqual(f.calls,[]);
 });
 
+test('a compact spoken summary highlights every original paragraph it covers without changing their text',()=>{
+ const f=reportUIFixture(),snapshot=exampleReport();
+ f.emit('wf-robot-report-open',{snapshot,locale:'en'});f.emit('wf-robot-report-playback',{state:'speaking'});
+ const paragraphs=f.nodes.filter(node=>node.classList.contains('wf-report-sentence'));
+ f.emit('wf-robot-report-boundary',{charIndex:0,charLength:snapshot.narration.length});
+ assert(paragraphs.every(node=>node.classList.contains('is-reading')));
+ assert.equal(paragraphs[0].getAttribute('aria-current'),'true');assert.equal(paragraphs[1].getAttribute('aria-current'),null);
+ assert.deepEqual(paragraphs.map(node=>node.textContent),['Sales: 12.50.','Balance: 9.25.']);
+ f.emit('wf-robot-report-boundary',{charIndex:14,charLength:14});
+ assert(!paragraphs[0].classList.contains('is-reading'));assert(paragraphs[1].classList.contains('is-reading'));
+});
+
 test('the expanded smart card uses the original SVG and animates from the visible card bounds',()=>{
  const f=reportUIFixture(),originalQuery=f.document.querySelector;
  const svg=f.document.createElement('svg'),clone=f.document.createElement('svg');
@@ -171,16 +183,60 @@ test('the expanded smart card uses the original SVG and animates from the visibl
  assert.equal(sheet.style['--wf-report-origin-x'],'-5px');
  assert.equal(sheet.style['--wf-report-origin-y'],'-131px');
 });
-test('the report rate selector tracks the real owner and updates without restarting or saving',()=>{
+test('the same report folds into the actual toolbar bounds and reopens from its current toolbar slot',()=>{
+ const f=reportUIFixture(),originalQuery=f.document.querySelector,events=[];
+ const cardRect={left:40,top:220,width:300,height:200,right:340,bottom:420};
+ const toolbar=f.document.createElement('aside'),launcher=f.document.createElement('button');toolbar.id='wfSpeechControls';launcher.id='wfSpeechControlsReport';
+ toolbar.hidden=true;toolbar.rect={left:115,top:12,width:160,height:48,right:275,bottom:60};toolbar.append(launcher);f.document.body.append(toolbar);
+ toolbar.getBoundingClientRect=()=>toolbar.hidden?{width:0,height:0}:toolbar.rect;
+ f.document.querySelector=selector=>selector==='#wfSpeechControls'?toolbar:selector==='#wfSpeechControlsReport'?launcher:
+  selector==='#wfGreetingRobot[aria-hidden="false"]'?{getBoundingClientRect:()=>cardRect}:originalQuery(selector);
+ f.window.addEventListener('wf-robot-report-visibility',event=>{events.push(event.detail);toolbar.hidden=event.detail.open||!event.detail.minimized;});
+ f.emit('wf-robot-report-open',{snapshot:exampleReport(),locale:'en'});
+ const sheet=f.get('wf-robot-report-sheet');assert.equal(Number(sheet.style['--wf-report-origin-w']),300/374);
+ f.click('wf-report-minimize');
+ assert.equal(events.at(-1).transition,'minimizing');assert.equal(sheet.dataset.morphTarget,'toolbar');
+ assert.equal(Number(sheet.style['--wf-report-origin-w']),160/374);assert.equal(Number(sheet.style['--wf-report-origin-h']),48/742);
+ assert.equal(sheet.style['--wf-report-origin-y'],'-415px');assert.deepEqual(f.calls,[]);
+ f.flush();assert.equal(events.at(-1).transition,undefined);assert.equal(f.document.activeElement,launcher);
+ toolbar.rect={left:85,top:14,width:220,height:46,right:305,bottom:60};
+ f.window.WFRobotReport.show();assert.equal(Number(sheet.style['--wf-report-origin-w']),220/374);assert.equal(Number(sheet.style['--wf-report-origin-h']),46/742);
+ assert.equal(f.nodes.filter(node=>node.classList.contains('wf-report-sentence')).length,2);assert.deepEqual(f.calls,[]);
+});
+test('closing the minimized reader clears its launcher without recreating or replaying the report',()=>{
+ const f=reportUIFixture();f.emit('wf-robot-report-open',{snapshot:exampleReport(),locale:'en'});
+ f.click('wf-report-minimize');f.flush();assert(f.window.WFRobotReport.isMinimized());
+ assert.equal(f.window.WFRobotReport.close(),true);assert.equal(f.window.WFRobotReport.isMinimized(),false);
+ assert.equal(f.window.WFRobotReport.hasReport(),true);assert.equal(f.get('wf-robot-report-sheet').hidden,true);
+ assert.equal(f.window.WFRobotReport.close(),false);assert.deepEqual(f.calls,[]);
+});
+test('the report speed stepper tracks the actual owner in 0.05 steps without restarting or saving',()=>{
  const f=reportUIFixture(),owner=f.window.WFProgramSpeech;let state={kind:'report',active:true,rate:.85};
  owner.getState=()=>state;owner.setRate=rate=>{state={...state,rate};f.calls.push(rate);return true;};
  f.emit('wf-robot-report-open',{snapshot:exampleReport(),locale:'ar'});
- const speed=f.get('wf-report-rate');assert.equal(speed.value,'0.85');assert.equal(speed.children.length,11);
- assert.equal(speed.getAttribute('aria-label'),'سرعة القراءة');
- speed.value='1.15';speed.events.change();assert.deepEqual(f.calls,[1.15]);assert.equal(speed.value,'1.15');
- state={...state,rate:.75};f.emit('wf-program-speech-state',state);assert.equal(speed.value,'0.75');
- state={kind:'program',active:true,rate:1};f.emit('wf-program-speech-state',state);assert(speed.disabled);
- speed.events.change();assert.deepEqual(f.calls,[1.15]);
+ const speed=f.get('wf-report-rate'),down=f.get('wf-report-rate-down'),up=f.get('wf-report-rate-up');assert.equal(speed.tagName,'OUTPUT');assert.equal(speed.dataset.rate,'0.85');
+ assert.equal(down.getAttribute('aria-label'),'قراءة أبطأ');assert.equal(up.getAttribute('aria-label'),'قراءة أسرع');
+ assert.equal(speed.getAttribute('aria-live'),'polite');assert.equal(f.get('wf-report-speed').children[0].textContent,'سرعة القراءة');
+ f.click('wf-report-rate-up');assert.deepEqual(f.calls,[.9]);assert.equal(speed.dataset.rate,'0.9');
+ f.click('wf-report-rate-down');assert.deepEqual(f.calls,[.9,.85]);assert.equal(speed.dataset.rate,'0.85');
+ state={...state,rate:.75};f.emit('wf-program-speech-state',state);assert.equal(speed.dataset.rate,'0.75');assert(down.disabled);assert(!up.disabled);
+ f.click('wf-report-rate-down');assert.deepEqual(f.calls,[.9,.85]);
+ state={...state,rate:1.25};f.emit('wf-program-speech-state',state);assert(up.disabled);assert(!down.disabled);
+ f.click('wf-report-rate-up');assert.deepEqual(f.calls,[.9,.85]);
+ state={kind:'program',active:true,rate:1};f.emit('wf-program-speech-state',state);assert(down.disabled);assert(up.disabled);
+ f.click('wf-report-rate-up');assert.deepEqual(f.calls,[.9,.85]);
+});
+test('the speed control shows only accepted rates and localizes its actions in every supported language',()=>{
+ const labels={ar:['سرعة القراءة','قراءة أبطأ','قراءة أسرع'],en:['Reading speed','Read slower','Read faster'],tr:['Okuma hızı','Daha yavaş oku','Daha hızlı oku'],fr:['Vitesse de lecture','Lire plus lentement','Lire plus vite'],ru:['Скорость чтения','Читать медленнее','Читать быстрее']};
+ for(const [locale,words]of Object.entries(labels)){
+  const f=reportUIFixture(),owner=f.window.WFProgramSpeech;owner.getState=()=>({kind:'report',active:true,rate:1.1});owner.setRate=rate=>{f.calls.push(rate);return false;};
+  f.emit('wf-robot-report-open',{snapshot:exampleReport(),locale});
+  assert.equal(f.get('wf-report-speed').children[0].textContent,words[0]);
+  assert.equal(f.get('wf-report-rate-down').getAttribute('aria-label'),words[1]);assert.equal(f.get('wf-report-rate-up').getAttribute('aria-label'),words[2]);
+  f.click('wf-report-rate-down');assert.deepEqual(f.calls,[1.05]);assert.equal(f.get('wf-report-rate').dataset.rate,'1.1');
+  assert.equal(f.get('wf-report-rate').textContent,new Intl.NumberFormat(locale,{maximumFractionDigits:2}).format(1.1)+'×');
+  assert.equal(f.nodes.some(node=>node.tagName==='SELECT'),false);
+ }
 });
 
 test('Exit stops playback once, closes the card and removes its minimized state',()=>{

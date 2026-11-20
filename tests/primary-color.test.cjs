@@ -1,4 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const acorn=require('acorn');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 test('primary theme has accessible foreground pairs',()=>{
  const lum=h=>{const s=h.match(/../g).map(v=>parseInt(v,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return s[0]*.2126+s[1]*.7152+s[2]*.0722};
@@ -10,7 +11,19 @@ test('drawer retains scrolling and usable compact controls',()=>{
  assert(css.includes('overflow-y:auto!important'));assert(css.includes('scrollbar-width:none'));assert(css.includes('min-height:clamp(44px,6.5dvh,50px)'));assert(css.includes('scroll-margin-block:12px'));
 });
 test('HTML and offline shell reference the same current assets',()=>{
- for(const asset of ['ui-identity.css?v=31','ui-navigation.js?v=20']){assert(read('index.html').includes(asset));assert(read('sw.js').includes(asset));}
+ const htmlAssets=[...read('index.html').matchAll(/<(?:link|script)\b[^>]*\b(?:href|src)=["']([^"']+)["']/g)].map(match=>match[1].replace(/^\.\//,''));
+ const cacheDeclaration=acorn.parse(read('sw.js'),{ecmaVersion:'latest'}).body
+  .filter(node=>node.type==='VariableDeclaration').flatMap(node=>node.declarations).find(node=>node.id.name==='urlsToCache');
+ assert.equal(cacheDeclaration?.init?.type,'ArrayExpression','the offline shell must expose its precached asset list');
+ const cachedAssets=cacheDeclaration.init.elements.map(node=>{
+  assert.equal(node.type,'Literal');assert.equal(typeof node.value,'string');return node.value.replace(/^\.\//,'');
+ });
+ for(const file of ['ui-identity.css','ui-navigation.js']){
+  const html=htmlAssets.filter(asset=>asset.split('?')[0]===file),cached=cachedAssets.filter(asset=>asset.split('?')[0]===file);
+  assert.equal(html.length,1,file+' must load exactly once in HTML');
+  assert.match(html[0],/\?v=\d+$/,'the current asset must have an explicit cache version');
+  assert.deepEqual(cached,html,file+' must have exactly the same current version in HTML and the offline cache');
+ }
 });
 test('dashboard scroll progress uses the primary color and reduced motion',()=>{
  const css=read('ui-identity.css');

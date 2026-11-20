@@ -69,6 +69,48 @@ test('real uncaptured WebGPU failures reach the upstream fatal channel',async()=
   assert.equal(fatals.length,1);assert.match(fatals[0],/GPU allocation failed/);
 });
 
+test('a pinned streaming generation failure after audio is fatal, never a successful truncated report',async()=>{
+  const prepared=await core.fastStartRuntime(upstream,digest),events=[];
+  const context={Uint8Array,Float32Array,
+    B:(body,key)=>body[key],tt:(body,key)=>body[key],a:44100,$e:()=>null,
+    Hr:async()=>({stream:true,sp:{seed:1},decoder:{id:'keep2_plain'}}),
+    async Gr(engine,plan,chunk){chunk(new Float32Array([0.25]));throw Error('decoder failed after first packet');},
+    Ro:message=>events.push(message),console:{error(){}},L(){assert.fail('headers already started');}};
+  const generate=vm.runInNewContext('('+fragment(prepared,'async function Kr(','const qr=')+')',context);
+  await generate({}, {}, {stream:true,format:'pcm'}, {}, {
+    start:status=>events.push({type:'start',status}),chunk:()=>events.push({type:'audio'}),end:()=>events.push({type:'end'})
+  },()=>false);
+  assert.equal(events[0].type,'start');assert.equal(events[1].type,'audio');
+  assert.equal(events.some(event=>event.type==='end'),false,'failure must not masquerade as complete speech');
+  assert.equal(events.at(-1).type,'fatal');assert.equal(events.at(-1).message,'generation-failed');
+});
+
+test('the actual causal prefix scheduler starts with complete frames and never re-decodes prior audio',async()=>{
+  const chunks=[],body=core.generationBody({text:'الرصيد صفر.',locale:'ar',embedding:'c3BlYWtlcg==',stream:true});
+  const decoder={gain:1,partialFrames:true,reset(){},
+    async chunk(codes,start,length){chunks.push({start,length,rows:codes.rows,partial:codes.partial});return new Float32Array(length);},
+    async flush(){return new Float32Array(0);}};
+  let sampled=0;
+  const backbone={async prefill(){},startSampling(){},async sampleFirst(){return sampled++;},async stepSample(){return{frame:sampled++};}};
+  const context={Float32Array,Int32Array,
+    Ur:()=>({probe:null,follower:null,laci:null}),m:1,a:44100,an:pcm=>pcm,
+    $t:()=>({prefill:0,step:0,eosFrame:-1,done:false}),Zt:()=>({stopId:4096}),ve:()=>[],
+    tn(state,frame){state.step++;if(state.step===24){state.done=true;state.eosFrame=15;}return Array.from({length:10},(_,i)=>frame*10+i);},
+    Qt:(codes,rows,start,length,unused,partial)=>({rows,partial:Boolean(partial)}),Wr:codes=>codes,jr(){}};
+  const generate=vm.runInNewContext('('+fragment(upstream,'async function Gr(','async function Kr(')+')',context);
+  await generate({backbone,hp:{audioVocab:4097,audioPad:4097}}, {
+    decoder:{codec:async()=>decoder},decodeContext:null,prompt:{prefillFrames:0,ids:[],cond:{}},headroomDb:-1,
+    maxFrames:2000,twin:null,twinSteered:true,sp:{},steering:{at:()=>null},prefix:true,fadeOutMs:0,
+    streamCodebooks:body.stream_codebooks,streamFirstOnly:body.stream_codebooks_scope==='first'
+  },()=>{},()=>false);
+  assert.ok(chunks.length>1,'the request must still stream before EOS');
+  assert.equal(chunks[0].partial,false,'the first spoken frame keeps all ten codebooks');
+  assert.ok(chunks[0].rows>=10,'all delayed codebooks arrived before decoding the first frame');
+  let emitted=0;
+  for(const chunk of chunks){assert.equal(chunk.start,emitted);assert.equal(chunk.partial,false);emitted+=chunk.length;}
+  assert.equal(emitted,15);
+});
+
 test('the asynchronous bootstrap preserves early init messages and the transferred codec port',async()=>{
   let allowCache;const cacheGate=new Promise(resolve=>{allowCache=resolve;});
   let allowInitialization;const initGate=new Promise(resolve=>{allowInitialization=resolve;});

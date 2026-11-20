@@ -19,7 +19,7 @@ class El {
  click(){this.clicks++;this.onclick?.();for(const fn of this.events.click||[])fn({target:this});}
  focus(){this.focused=true;}scrollIntoView(){this.scrolled=true;}scrollTo(){this.scrollTop=0;}
 }
-const pages=['dashboard','companies','products','invoices','select-client-type','add-company','add-product','select-invoice-type','create-invoice','payment-management','reports','exchange','cashboxes','quick-barcode','settings'];
+const pages=['dashboard','companies','products','cart','invoices','select-client-type','add-company','add-product','select-invoice-type','create-invoice','payment-management','reports','exchange','cashboxes','quick-barcode','settings'];
 function setup(){
  const root=new El,body=new El,main=new El('mainContent'),nav=new El('bottomNav'),ids={mainContent:main,bottomNav:nav},queue=[],observers=[],calls={routes:[],back:0,menu:0,moves:[]};root.lang='ar';root.dir='rtl';root.append(body);body.append(main,nav);
  for(const p of pages){const el=new El('page-'+p,'page');ids[el.id]=el;main.append(el);}ids['page-dashboard'].classes.add('active');
@@ -28,7 +28,7 @@ function setup(){
  const original={};for(const [name,page,sel,id] of [
   ['clientSave','add-company','#coSaveBtn','coSaveBtn'],['clientReset','add-company','#coResetBtn','coResetBtn'],['productSave','add-product','[onclick="savePr()"]'],['changeType','add-product','#changePrTypeBtn','changePrTypeBtn'],['types','add-product','#prTypeStepCards','prTypeStepCards'],
   ['invoiceSave','create-invoice','[onclick="saveInvoice()"]'],['preview','create-invoice','[onclick="previewInvoice()"]'],['payment','payment-management','[onclick="addPaymentToInv()"]'],['movement','cashboxes','.cashboxes form button[type="submit"]'],['statement','companies','[onclick="wfOpenStatement()"]'],['refresh','exchange','.curr-refresh'],['calculator','exchange','.curr-item[onclick="openCurrCalc(\'usd-try\')"]'],
-  ['scan','quick-barcode','#qblScanMode','qblScanMode'],['browse','quick-barcode','#qblBrowseMode','qblBrowseMode'],['search','quick-barcode','.qbl-search-trigger'],['cancel','quick-barcode','#qblCancelTierBtn','qblCancelTierBtn'],['changeTier','quick-barcode','[onclick="qblChangeTier()"]'],['addCart','quick-barcode','[onclick="qblAddToInvoice()"]']
+  ['scan','quick-barcode','#qblScanMode','qblScanMode'],['browse','quick-barcode','#qblBrowseMode','qblBrowseMode'],['search','quick-barcode','.qbl-search-trigger'],['cancel','quick-barcode','#qblCancelTierBtn','qblCancelTierBtn'],['changeTier','quick-barcode','[onclick="qblChangeTier()"]'],['addCart','quick-barcode','[onclick="qblAddToInvoice()"]'],['cartInvoice','cart','#wfCartCreateInvoice','wfCartCreateInvoice']
  ])original[name]=target(page,sel,id);
  for(const [page,id] of [['companies','coSearch'],['products','prSearch'],['invoices','invSearch']])target(page,'.wf-search-toggle[aria-controls="'+id+'"]');
  for(const [page,fn] of [['select-client-type','selectTypeAndContinue'],['select-invoice-type','selectInvTypeAndContinue']])for(const type of ['external','internal_retail','internal_wholesale'])original[page+type]=target(page,`[onclick="${fn}('${type}',event)"]`);
@@ -36,7 +36,7 @@ function setup(){
  const form=ids['pr-form-view']=new El('pr-form-view');form.visible=false;ids['page-add-product'].append(form);
  const cart=ids.qblCartFab=new El('qblCartFab');body.append(cart);let modals=[];
  const doc={documentElement:root,body,scrollingElement:root,getElementById:id=>ids[id],querySelector:sel=>sel==='.page.active'?pages.map(p=>ids['page-'+p]).find(p=>p.classes.has('active'))||null:body.querySelector(sel),querySelectorAll:sel=>sel==='.page'?pages.map(p=>ids['page-'+p]):sel.startsWith('dialog[open]')?modals:body.querySelectorAll(sel)};
- const win={scrollY:0,showPage:p=>calls.routes.push(p),goBack:()=>calls.back++,wfToggleDesktopSidebar:()=>calls.menu++,scrollTo:()=>{win.scrollY=0;root.scrollTop=0;},bnavMoveToIndex:i=>{calls.moves.push(i);buttons.forEach((b,n)=>{b.classList.toggle('bnav-active',n===i);if(n===i)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});}};
+ const win={scrollY:0,addEventListener(){},showPage:p=>calls.routes.push(p),goBack:()=>calls.back++,wfToggleDesktopSidebar:()=>calls.menu++,scrollTo:()=>{win.scrollY=0;root.scrollTop=0;},bnavMoveToIndex:i=>{calls.moves.push(i);buttons.forEach((b,n)=>{b.classList.toggle('bnav-active',n===i);if(n===i)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});}};
  const ctx={document:doc,window:win,QBL:{phase:1},requestAnimationFrame:fn=>queue.push(fn),MutationObserver:class{constructor(callback){this.callback=callback;}observe(target,options){observers.push({target,options,callback:this.callback});}disconnect(){}},matchMedia:()=>({matches:false,addEventListener(){}}),getComputedStyle:el=>({display:el.visible?'block':'none',visibility:'visible',opacity:'1',pointerEvents:'auto'})};vm.runInNewContext(controller,ctx);
  const flush=()=>{let n=0;while(queue.length&&n++<100)queue.shift()();assert(n<100,'observer work must settle');};flush();
  const sync=()=>{ctx.navTest.sync();flush();};
@@ -45,8 +45,8 @@ function setup(){
  const notifyNav=records=>{for(const observer of observers.filter(item=>item.target===nav))observer.callback(records);flush();};
  return {ctx,ids,root,body,nav,buttons,calls,original,cart,form,target,activate,click,sync,flush,notifyNav,setModals:m=>modals=m};
 }
-test('all 15 actual sections have five scoped controls, correct primary actions, and no actions on entry',()=>{
- const a=setup(),expected={dashboard:2,companies:0,products:0,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2};
+test('all actual sections have five scoped controls, correct primary actions, and no actions on entry',()=>{
+ const a=setup(),expected={dashboard:2,companies:0,products:0,cart:3,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2};
  for(const page of pages){a.activate(page);const config=a.ctx.navTest.configuration(a.ids['page-'+page]);assert.equal(config.items.length,5,page);assert.equal(config.active,expected[page],page);assert.equal(a.nav.dataset.section,page);assert.equal(a.buttons.filter(b=>b.classList.contains('bnav-active')).length,1);for(const item of config.items){assert(item.icon&&item.label,page);if(item.kind==='route')assert(a.ids['page-'+item.page],item.page);}}
  assert.equal(a.calls.routes.length,0);assert.equal(a.calls.back,0);assert.equal(Object.values(a.original).reduce((n,b)=>n+b.clicks,0),0);
 });
@@ -61,7 +61,13 @@ test('type choices and product form forward to existing controls without selecti
 test('barcode controls follow scan, browse, tier and result stages without starting the camera on render',()=>{
  const a=setup();a.activate('quick-barcode');assert.equal(a.original.scan.clicks,0);a.click(4);assert.equal(a.original.scan.clicks,1);a.click(0);assert.equal(a.original.browse.clicks,1);a.original.browse.setAttribute('aria-pressed','true');a.sync();assert(a.buttons[0].classList.contains('bnav-active'));
  a.ctx.QBL.phase=2;a.sync();for(const [index,tier] of [[1,'A'],[3,'B'],[4,'C']]){a.click(index);assert.equal(a.original[tier].clicks,1);assert(a.buttons[index].title.endsWith(tier));}a.click(0);assert.equal(a.original.cancel.clicks,1);
- a.ctx.QBL.phase=3;a.sync();a.click(4);a.click(1);a.click(3);a.click(0);assert.equal(a.original.addCart.clicks,1);assert.equal(a.original.changeTier.clicks,1);assert.equal(a.cart.clicks,1);assert.equal(a.calls.back,1);
+ a.ctx.QBL.phase=3;a.sync();a.click(4);a.click(1);a.click(3);a.click(0);assert.equal(a.original.addCart.clicks,1);assert.equal(a.original.changeTier.clicks,1);assert.equal(a.cart.clicks,0);assert.equal(a.calls.routes.at(-1),'cart');assert.equal(a.calls.back,1);
+});
+test('Cart navigation works with a hidden legacy FAB and invoice transfer requires the enabled page action',()=>{
+ const a=setup();a.cart.hidden=true;a.activate('quick-barcode');assert(!a.buttons[3].disabled);a.click(3);assert.equal(a.calls.routes.at(-1),'cart');
+ a.activate('cart');assert.equal(a.original.cartInvoice.clicks,0);a.click(4);assert.equal(a.original.cartInvoice.clicks,1);
+ a.original.cartInvoice.disabled=true;a.sync();assert(a.buttons[4].disabled);a.click(4);assert.equal(a.original.cartInvoice.clicks,1);
+ a.click(1);assert.equal(a.calls.routes.at(-1),'products');a.click(0);assert.equal(a.calls.back,1);
 });
 test('Home scrolls before routing, active location survives legacy refresh, and five locales translate labels',()=>{
  const a=setup();a.activate('companies');a.ctx.window.scrollY=250;a.click(2);assert.equal(a.ctx.window.scrollY,0);assert.equal(a.calls.routes.length,0);a.click(2);assert.equal(a.calls.routes[0],'dashboard');a.ctx.window.bnavMoveToIndex(4);a.flush();assert(a.buttons[0].classList.contains('bnav-active'));assert.equal(a.buttons[0].getAttribute('aria-current'),'page');

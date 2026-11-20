@@ -136,6 +136,7 @@
       dashboard:{active:2,items:[clients(),products(),home(),invoices(),scan()]},
       companies:{active:0,items:[clients(),route('select-client-type','addClient','plus'),home(),control('[onclick="wfOpenStatement()"]','statement','statement'),search('coSearch')]},
       products:{active:0,items:[products(),route('add-product','addProduct','plus'),home(),scan(),search('prSearch')]},
+      cart:{active:3,items:[back(),products(),home(),route('cart','cart','cart'),control('#wfCartCreateInvoice','newInvoice','invoice')]},
       invoices:{active:0,items:[invoices(),route('select-invoice-type','newInvoice','plus'),home(),reports(),search('invSearch')]},
       'select-client-type':{active:0,items:[clients(),choice('selectTypeAndContinue','external','external','globe'),home(),choice('selectTypeAndContinue','internal_retail','retail','store'),choice('selectTypeAndContinue','internal_wholesale','wholesale','warehouse')]},
       'add-company':{active:4,items:[back(),clients(),home(),control('#coResetBtn','reset','refresh'),save('#coSaveBtn')]},
@@ -154,7 +155,7 @@
     }
     if(key==='quick-barcode'){
       const phase=typeof QBL==='object'?QBL.phase:1;
-      const cart=control('#qblCartFab','cart','cart','document');
+      const cart=route('cart','cart','cart');
       if(phase===2)return {active:0,items:[control('#qblCancelTierBtn','cancel','back'),control('#qblTierBtns [data-tier="A"]','tier','tag'),home(),control('#qblTierBtns [data-tier="B"]','tier','tag'),control('#qblTierBtns [data-tier="C"]','tier','tag')].map((item,i)=>i===1||i>2?{...item,suffix:({1:'A',3:'B',4:'C'})[i]}:item)};
       if(phase===3)return {active:4,items:[back(),control('[onclick="qblChangeTier()"]','tier','tag'),home(),cart,control('[onclick="qblAddToInvoice()"]','addCart','cart')]};
       const browsing=document.getElementById('qblBrowseMode')?.getAttribute('aria-pressed')==='true';
@@ -328,6 +329,7 @@
   new MutationObserver(scheduleAria).observe(nav,{subtree:true,attributes:true,attributeFilter:['aria-current','aria-label','title','class']});
   const cart=document.getElementById('qblCartFab');
   if(cart)new MutationObserver(schedule).observe(cart,{attributes:true,attributeFilter:['class','style','disabled']});
+  window.addEventListener('wf-cart-state',schedule);
   const compact=matchMedia('(max-width:1024px)');compact.addEventListener('change',schedule);
   sync();
 })();

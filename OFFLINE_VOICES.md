@@ -34,7 +34,36 @@ changing reports and selected text use the installed local pack or a local
 device voice, visibly identified in the reading status and settings. No API
 key, invented remote endpoint or hidden remote speech fallback is included.
 
-## Local reading based on the selected sample
+## Release 186 playback and voice identity
+
+The current robot settings retain only Mark with Syrian Arabic wording. Dynamic
+reading uses the installed local reference engine; the saved identity is still
+an original Artlist/Eleven v3 recording. These are different generators. The
+local voice is an approximation and cannot guarantee the same timbre or accent.
+See `docs/research/mark-original-voice-access-2026-11-20.md` for the verified
+provider-access boundary and the remaining original-voice integration dependency.
+
+Release 186 plays a complete short phrase in one native HTML audio element,
+unlocked by the user's tap, while generating the next phrase. A slow model can
+therefore cause a pause between phrases, but does not starve a partly spoken
+word of later PCM packets. Playback rate uses the browser's pitch-preserving
+media pipeline. Pause and resume retain the same media position; a delayed
+rejection from an intentionally interrupted play cannot kill a later resume.
+Completed identical phrases are cached only in RAM, bounded to 32 phrases and
+16 MiB, and cleared on pack removal. Report text is not sent to another service.
+
+The public PCM streaming API remains available. Its first frame now uses all
+ten codebooks, and partial generation errors propagate instead of reporting
+normal completion. The exact upstream runtime adaptation remains hash guarded;
+weights, embeddings and installer asset hashes have not changed.
+
+The minimized reader is part of the actual toolbar, and the report expands from
+the smart card or that toolbar slot without starting a new reading. Arabic report
+speech uses checked Syrian phrases and the original displayed-text offsets.
+Browser and device restrictions still govern first-generation latency and
+background playback. No target-device instant-generation claim is made.
+
+## Historical local-reading implementation (releases 179–185)
 
 Release 181 starts playback from the first generated PCM packet instead of
 waiting for the complete report. A trusted tap unlocks one Web Audio context;

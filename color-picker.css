@@ -1,0 +1,82 @@
+/* Color selection follows the application's surface and primary-color tokens. */
+@media screen {
+  html body input.wf-color-native { display: none !important; }
+  html body .wf-color-trigger {
+    display: inline-flex; align-items: center; justify-content: space-between; gap: 10px;
+    min-block-size: 46px; min-inline-size: 148px; max-inline-size: 100%; padding: 7px 11px;
+    border: 1px solid var(--dialog-line,var(--border,#dfe5ed)); border-radius: var(--ui-control,12px);
+    background: var(--window-surface,var(--card,#fff)); color: var(--text,#243247); font: inherit;
+    cursor: pointer; box-sizing: border-box;
+  }
+  html body .wf-color-trigger[hidden], #wfColorPickerDialog [hidden] { display: none !important; }
+  .wf-color-trigger-chip { inline-size: 28px; block-size: 28px; flex: none; border-radius: 8px; border: 1px solid rgb(127 127 127 / 25%); }
+  .wf-color-trigger-value { direction: ltr; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .wf-color-icon { display: inline-grid; place-items: center; flex: none; inline-size: 19px; block-size: 19px; }
+  .wf-color-icon svg { inline-size: 100%; block-size: 100%; }
+  html body .wf-color-trigger:disabled { opacity: .55; cursor: default; }
+  html body #wfColorPickerDialog {
+    inline-size: min(430px,calc(100vw - 24px)); max-inline-size: calc(100vw - 24px);
+    max-block-size: calc(100dvh - 24px); margin: auto; padding: 0; box-sizing: border-box; overflow: hidden;
+    border: 1px solid var(--dialog-line,var(--border,#dfe5ed)); border-radius: var(--window-radius,18px);
+    background: var(--window-surface,var(--card,#fff)); color: var(--text,#243247);
+    box-shadow: var(--window-shadow,var(--dialog-shadow,0 24px 70px rgb(13 29 38 / 28%)));
+    font-family: inherit;
+  }
+  #wfColorPickerDialog[open] { display: flex; flex-direction: column; }
+  #wfColorPickerDialog::backdrop { background: rgb(13 29 38 / 40%); }
+  #wfColorPickerDialog .wf-color-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; flex: none; border-block-end: 1px solid var(--dialog-line,var(--border)); background: var(--window-muted,var(--input)); }
+  #wfColorPickerDialog .wf-color-heading { flex: 1; min-inline-size: 0; }
+  #wfColorPickerDialog h2 { margin: 0; font-size: 18px; line-height: 1.4; font-weight: 750; }
+  #wfColorPickerDialog .wf-color-context { margin: 4px 0 0; color: var(--text2); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+  #wfColorPickerDialog .wf-color-close { display: grid; place-items: center; flex: none; inline-size: 44px; block-size: 44px; padding: 0; border: 1px solid var(--border); border-radius: 12px; color: var(--text2); background: var(--window-surface,var(--card)); cursor: pointer; }
+  #wfColorPickerDialog .wf-color-body { display: grid; gap: 15px; min-block-size: 0; min-inline-size: 0; padding: 18px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  #wfColorPickerDialog .wf-color-previews { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  #wfColorPickerDialog .wf-color-preview { display: grid; align-content: center; gap: 5px; min-inline-size: 0; min-block-size: 65px; padding: 10px 13px; box-sizing: border-box; border: 1px solid rgb(127 127 127 / 25%); border-radius: 12px; text-align: start; font-family: inherit; }
+  #wfColorPickerDialog .wf-color-preview small { font-size: 11px; font-weight: 600; }
+  #wfColorPickerDialog .wf-color-preview bdi { font-size: 14px; font-weight: 750; font-variant-numeric: tabular-nums; direction: ltr; }
+  #wfColorPickerDialog .wf-color-current { cursor: pointer; }
+  #wfColorPickerDialog .wf-color-plane { position: relative; block-size: 175px; overflow: hidden; border-radius: 13px; border: 1px solid rgb(127 127 127 / 25%); background: linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent),var(--wf-color-hue,#3f7c94); cursor: crosshair; touch-action: none; user-select: none; }
+  #wfColorPickerDialog .wf-color-cursor { position: absolute; inline-size: 18px; block-size: 18px; box-sizing: border-box; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1.5px rgb(0 0 0 / 55%),0 1px 4px rgb(0 0 0 / 20%); transform: translate(-50%,-50%); pointer-events: none; }
+  #wfColorPickerDialog .wf-color-range-group { min-inline-size: 0; display: grid; gap: 3px; }
+  #wfColorPickerDialog .wf-color-range-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 650; }
+  #wfColorPickerDialog .wf-color-range-heading output { color: var(--text2); font-size: 11px; direction: ltr; font-variant-numeric: tabular-nums; }
+  #wfColorPickerDialog input.wf-color-range { inline-size: 100%; min-inline-size: 0; block-size: 28px; margin: 0; padding: 0; border: 0; border-radius: 20px; accent-color: var(--brand-primary,#3f7c94); cursor: pointer; }
+  #wfColorPickerDialog input.wf-color-hue { appearance: none; background: linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00) center / 100% 12px no-repeat; }
+  #wfColorPickerDialog .wf-color-hue::-webkit-slider-thumb { appearance: none; inline-size: 24px; block-size: 24px; border: 3px solid var(--window-surface,var(--card,#fff)); border-radius: 50%; background: transparent; box-shadow: 0 0 0 1px rgb(20 35 45 / 45%),0 2px 5px rgb(0 0 0 / 20%); }
+  #wfColorPickerDialog .wf-color-hue::-moz-range-thumb { inline-size: 18px; block-size: 18px; border: 3px solid var(--window-surface,var(--card,#fff)); border-radius: 50%; background: transparent; box-shadow: 0 0 0 1px rgb(20 35 45 / 45%); }
+  #wfColorPickerDialog .wf-color-hue::-moz-range-track { background: transparent; }
+  #wfColorPickerDialog .wf-color-precise { border-block-end: 1px solid var(--border); padding-block-end: 10px; }
+  #wfColorPickerDialog .wf-color-precise summary { min-block-size: 26px; color: var(--text2); cursor: pointer; font-size: 12px; font-weight: 650; }
+  #wfColorPickerDialog .wf-color-precise-body { display: grid; gap: 12px; padding-block: 10px 2px; }
+  #wfColorPickerDialog .wf-color-palette-group { min-inline-size: 0; }
+  #wfColorPickerDialog h3 { margin: 0 0 10px; font-size: 12px; font-weight: 650; }
+  #wfColorPickerDialog .wf-color-palette { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 7px; }
+  #wfColorPickerDialog .wf-color-swatch { display: grid; place-items: center; min-inline-size: 0; block-size: 37px; padding: 0; border: 1px solid rgb(127 127 127 / 28%); border-radius: 10px; background: var(--wf-swatch); cursor: pointer; }
+  #wfColorPickerDialog .wf-color-swatch .wf-color-icon { visibility: hidden; }
+  #wfColorPickerDialog .wf-color-swatch[aria-pressed=true] { box-shadow: 0 0 0 2px var(--window-surface,var(--card)),0 0 0 3px var(--ui-accent,var(--brand-primary)); }
+  #wfColorPickerDialog .wf-color-swatch[aria-pressed=true] .wf-color-icon { visibility: visible; }
+  #wfColorPickerDialog .wf-color-hex-group { display: grid; gap: 7px; min-inline-size: 0; }
+  #wfColorPickerDialog .wf-color-hex-group label { font-size: 12px; font-weight: 650; }
+  #wfColorPickerDialog input.wf-color-hex { inline-size: 100%; min-inline-size: 0; min-block-size: 44px; box-sizing: border-box; border: 1px solid var(--border,#dfe5ed); border-radius: 11px; padding: 9px 12px; background: var(--window-muted,var(--input)); color: var(--text); font: 650 15px/1.4 ui-monospace,monospace; letter-spacing: .08em; text-transform: uppercase; }
+  #wfColorPickerDialog .wf-color-error { margin: 0; color: var(--danger,#b34444); font-size: 12px; line-height: 1.5; }
+  #wfColorPickerDialog .wf-color-hint { margin: 0; color: var(--text2); font-size: 11px; line-height: 1.6; }
+  #wfColorPickerDialog .wf-color-footer { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex: none; padding: 12px 16px max(12px,env(safe-area-inset-bottom)); border-block-start: 1px solid var(--dialog-line,var(--border)); background: var(--window-muted,var(--input)); }
+  #wfColorPickerDialog .wf-color-action { min-block-size: 44px; padding: 9px 17px; border: 1px solid var(--border); border-radius: 11px; color: var(--text2); background: var(--window-surface,var(--card)); font-family: inherit; font-size: 13px; font-weight: 700; line-height: 1.5; cursor: pointer; }
+  #wfColorPickerDialog .wf-color-apply { min-inline-size: 145px; border-color: var(--brand-primary,#3f7c94); background: var(--brand-primary,#3f7c94); color: #fff; }
+  #wfColorPickerDialog .wf-color-action:disabled { opacity: .5; cursor: default; }
+  html body .wf-color-trigger:focus-visible, #wfColorPickerDialog :is(button,input,summary,.wf-color-plane):focus-visible { outline: 2px solid var(--ui-accent,var(--brand-primary,#3f7c94)); outline-offset: 3px; }
+  #wfColorPickerDialog .wf-color-visually-hidden { position: absolute; inline-size: 1px; block-size: 1px; padding: 0; margin: -1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
+  @media (max-width: 360px) {
+    #wfColorPickerDialog .wf-color-body { padding: 14px; gap: 13px; }
+    #wfColorPickerDialog .wf-color-plane { block-size: 155px; }
+    #wfColorPickerDialog .wf-color-palette { gap: 6px; }
+    #wfColorPickerDialog .wf-color-footer { padding-inline: 14px; }
+    #wfColorPickerDialog .wf-color-apply { flex: 1; min-inline-size: 0; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-wf-motion=reduced]) #wfColorPickerDialog[open] { animation: wfColorPickerEnter .16s ease-out; }
+    html:not([data-wf-motion=reduced]) .wf-color-trigger { transition: border-color .16s ease,box-shadow .16s ease; }
+  }
+  @keyframes wfColorPickerEnter { from { opacity: 0; transform: translateY(7px) scale(.98); } to { opacity: 1; transform: none; } }
+}
+@media print { #wfColorPickerDialog,.wf-color-trigger { display: none !important; } }

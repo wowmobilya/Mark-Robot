@@ -3,6 +3,16 @@
   'use strict';
   const languages = ['ar', 'en', 'tr', 'fr', 'ru'];
   const copy = {
+    hubHint: ['اختر القسم الذي تريد تعديله. لكل قسم معاينته وحفظه المستقل.', 'Choose a section to edit. Preview and save each section independently.', 'Düzenlemek istediğiniz bölümü seçin. Her bölümü ayrı önizleyip kaydedin.', 'Choisissez une rubrique. Prévisualisez et enregistrez chaque rubrique séparément.', 'Выберите раздел. Просматривайте и сохраняйте изменения в каждом разделе отдельно.'],
+    basic: ['البيانات الأساسية', 'Basic information', 'Temel bilgiler', 'Informations générales', 'Основные сведения'],
+    basicHint: ['اسم الشركة والعنوان ووسائل التواصل', 'Company name, address and contact details', 'Şirket adı, adres ve iletişim bilgileri', 'Nom, adresse et coordonnées de l’entreprise', 'Название, адрес и контакты компании'],
+    logo: ['الشعار والهوية', 'Logo and identity', 'Logo ve kimlik', 'Logo et identité', 'Логотип и оформление'],
+    logoHint: ['الشعار وشكله وحجمه وخلفيته مع معاينة مباشرة', 'Logo, shape, size and background with a live preview', 'Canlı önizleme ile logo, şekil, boyut ve arka plan', 'Logo, forme, taille et fond avec aperçu immédiat', 'Логотип, форма, размер и фон с предпросмотром'],
+    registrationHint: ['الرقم الضريبي والدائرة الضريبية ورقم MERSİS', 'Tax number, tax office and MERSİS number', 'Vergi numarası, vergi dairesi ve MERSİS numarası', 'Numéro fiscal, centre des impôts et numéro MERSİS', 'Налоговый номер, инспекция и номер MERSİS'],
+    marksHint: ['رفع الختم والتوقيع ومعاينة ظهورهما في الفاتورة', 'Upload the stamp and signature and preview them on invoices', 'Kaşe ve imza yükleyin, faturadaki görünümü önizleyin', 'Importer le cachet et la signature et voir leur rendu sur la facture', 'Загрузите печать и подпись и проверьте их вид в счёте'],
+    back: ['رجوع', 'Back', 'Geri', 'Retour', 'Назад'],
+    save: ['حفظ التغييرات', 'Save changes', 'Değişiklikleri kaydet', 'Enregistrer les modifications', 'Сохранить изменения'],
+    saving: ['جارٍ الحفظ…', 'Saving…', 'Kaydediliyor…', 'Enregistrement…', 'Сохранение…'],
     registration: ['بيانات التسجيل الضريبي', 'Tax registration', 'Vergi kaydı', 'Immatriculation fiscale', 'Налоговая регистрация'],
     taxNumber: ['الرقم الضريبي (Vergi No)', 'Tax number (Vergi No)', 'Vergi No', 'Numéro fiscal (Vergi No)', 'Налоговый номер (Vergi No)'],
     taxOffice: ['الدائرة الضريبية', 'Tax office', 'Vergi dairesi', 'Centre des impôts', 'Налоговая инспекция'],
@@ -25,6 +35,8 @@
   const word = (key, lang) => copy[key][Math.max(0, languages.indexOf(lang))];
   const fields = {
     company: ['companyName', 'address', 'phone', 'email', 'website', 'mersis', 'taxNumber', 'taxOffice'],
+    basic: ['companyName', 'address', 'phone', 'email', 'website'],
+    registration: ['mersis', 'taxNumber', 'taxOffice'],
     bank: ['bankName', 'beneficiary', 'ibanUSD', 'ibanTRY', 'ibanEUR', 'swift', 'accountNo'],
     invoice: ['authPerson', 'defaultNotes', 'prefixExt', 'nextNoExt', 'prefixRet', 'nextNoRet', 'prefixWhl', 'nextNoWhl', 'kdvRate'],
     currency: ['manualUsdTry', 'manualUsdEur']
@@ -43,6 +55,25 @@
         }
         patch[key] = number;
       } else patch[key] = value;
+    }
+    return patch;
+  }
+  // A company section owns only these fields; hidden drafts cannot leak into a save.
+  function sectionChanges(section, baseline, values) {
+    if (['basic', 'registration', 'bank'].includes(section)) return fieldChanges(section, baseline, values);
+    const patch = {};
+    if (section === 'logo') {
+      const branding = {};
+      for (const key of ['logoShape', 'logoSize', 'logoBackground']) {
+        if (values.branding && key in values.branding && values.branding[key] !== baseline.branding?.[key]) branding[key] = values.branding[key];
+      }
+      if (Object.keys(branding).length) patch.branding = branding;
+      if ('logo' in values && values.logo !== undefined && values.logo !== baseline.logo) patch.logo = values.logo;
+    }
+    if (section === 'marks') {
+      for (const key of ['signature', 'stamp']) {
+        if (key in values && values[key] !== undefined && values[key] !== baseline[key]) patch[key] = values[key];
+      }
     }
     return patch;
   }
@@ -108,12 +139,13 @@
     const concurrent = Object.fromEntries(Object.entries(state.settings).filter(([key,value]) => before[key] !== value));
     state.settings = mergeSettings(mergeSettings(before, latest), concurrent);
   }
-  const api = { commitPatch, fieldChanges, mergeSettings, taxLines, taxHTML, marksHTML, documentLogoStyle, validateFile };
+  const api = { commitPatch, fieldChanges, sectionChanges, mergeSettings, taxLines, taxHTML, marksHTML, documentLogoStyle, validateFile };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (typeof document === 'undefined') return;
   const byId = id => document.getElementById(id);
   const company = byId('stab-company'), bank = byId('stab-bank'), branding = byId('wfBrandingSettings');
   if (!company || !bank || !branding) return;
+  const settingsPage = byId('page-settings'), parentDialog = byId('wfSettingsDialog');
   const lang = () => document.documentElement.lang || 'ar';
   const node = (tag, cls) => { const el = document.createElement(tag); if (cls) el.className = cls; return el; };
   const labels = [];
@@ -124,105 +156,130 @@
     return el;
   }
   function button(key, callback, cls) {
-    const el = label('button', key, cls || 'btn btn-s');
+    const el = node('button', cls || 'btn btn-s');
+    el.append(label('span', key));
     el.type = 'button'; el.addEventListener('click', callback);
     return el;
   }
-  const taxCard = node('section', 'card wf-company-section'), taxGrid = node('div', 'fgrid');
-  taxCard.append(label('h3','registration'),taxGrid);
-  for (const key of ['taxNumber','taxOffice']) {
-    const group = node('div','fg'), title = label('label',key,'fl'), input = node('input','fc');
+  function icon(paths, cls) {
+    const el = node('span', cls || 'wf-company-icon');
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
+    return el;
+  }
+  const basic = node('section', 'wf-company-section'), basicGrid = node('div', 'fgrid');
+  basic.id = 'wfCompanyBasic'; basic.append(basicGrid);
+  for (const key of fields.basic) {
+    const group = byId(idOf(key))?.closest('.fg');
+    if (group) { group.classList.toggle('wf-company-field-wide', key === 'companyName' || key === 'address'); basicGrid.append(group); }
+  }
+  const taxCard = node('section', 'wf-company-section'), taxGrid = node('div', 'fgrid');
+  taxCard.id = 'wfCompanyRegistration'; taxCard.append(taxGrid);
+  for (const key of ['taxNumber', 'taxOffice']) {
+    const group = node('div', 'fg'), title = label('label', key, 'fl'), input = node('input', 'fc');
     title.htmlFor = input.id = idOf(key);
     input.type = 'text'; input.dir = key === 'taxNumber' ? 'ltr' : 'auto'; input.maxLength = key === 'taxNumber' ? 48 : 120;
     if (key === 'taxNumber') input.inputMode = 'numeric';
-    group.append(title,input); taxGrid.append(group);
+    group.append(title, input); taxGrid.append(group);
   }
-  company.append(taxCard);
-
-  const bankCard = node('section','card wf-company-section wf-company-bank'), bankSummary = node('div'), openBank = button('edit',openBankEditor);
-  openBank.id = 'wfCompanyOpenBank'; openBank.setAttribute('aria-haspopup','dialog'); openBank.setAttribute('aria-labelledby','wfCompanyBankTitle wfCompanyOpenBank');
-  const bankLabel = label('h3','bank'); bankLabel.id = 'wfCompanyBankTitle';
-  bankSummary.append(bankLabel,label('p','bankHint')); bankCard.append(bankSummary,openBank); company.append(bankCard);
-  const bankDialog = node('dialog','wf-company-bank-dialog'); bankDialog.id = 'wfCompanyBankDialog';
-  bankDialog.setAttribute('aria-labelledby','wfCompanyBankDialogTitle');
-  const bankTitle = label('h2','bank'); bankTitle.id = 'wfCompanyBankDialogTitle';
-  const bankBody = node('div','wf-company-bank-body'), bankFooter = node('footer'), cancelBank = button('cancel',()=>bankDialog.close());
-  const bankSave = button('saveBank', saveBankEditor, 'btn btn-p');
-  bankFooter.append(cancelBank,bankSave); bankDialog.append(bankTitle,bankBody,bankFooter);
-  byId('page-settings').append(bankDialog);
-  const bankPlace = document.createComment('bank editor location'); bank.before(bankPlace);
-  bank.setAttribute('aria-labelledby',bankTitle.id);
+  const mersis = byId('stMersis')?.closest('.fg');
+  if (mersis) taxGrid.append(mersis);
   byId('wf-settings-tab-bank')?.classList.add('wf-company-nested-bank');
-  let bankOpening = {}, bankBusy = false;
-  function openBankEditor() {
-    if (bankDialog.open) return;
-    bankOpening = valuesFor('bank');
-    bankBody.append(bank); bank.style.display = 'block';
-    bankDialog.showModal(); byId('stBankName').focus();
-  }
-  async function saveBankEditor() {
-    if (bankBusy) return;
-    bankBusy = true; bankSave.disabled = cancelBank.disabled = true;
-    bank.inert = true;
-    try {
-      const saved = await wfRunSave('saveCompanyBank', async () => {
-        await persist(fieldChanges('bank', baseline, valuesFor('bank')));
-        bankOpening = valuesFor('bank'); Object.assign(baseline,bankOpening);
-        return true;
-      });
-      if (saved) { bankDialog.close(); showToast(t('settings_saved'),'ok'); }
-    } finally { bankBusy = false; bank.inert = false; bankSave.disabled = cancelBank.disabled = false; }
-  }
-  bankDialog.addEventListener('cancel', e => { if (bankBusy) e.preventDefault(); });
-  bankDialog.addEventListener('close', () => {
-    for (const [key,value] of Object.entries(bankOpening)) byId(idOf(key)).value = value;
-    bankPlace.after(bank); bank.style.display = 'none';
-    window.WFAppUpdates?.markClean(bank);
-    if (byId('wfSettingsDialog')?.open) openBank.focus();
-  });
-
-  const marks = node('section','card wf-company-section wf-company-marks'), tools = node('div','wf-company-art-tools'), proof = node('div','wf-company-art-proof');
-  const drawings = node('div','wf-company-art-paper');
-  proof.append(label('small','preview'),drawings);
-  marks.append(label('h3','marks'),label('p','artworkHint'),tools,proof); company.append(marks);
-  const status = node('p','wf-company-art-status'); status.setAttribute('role','status'); marks.append(status);
-  const logoStatus = node('p','wf-company-art-status'); logoStatus.setAttribute('role','status'); branding.append(logoStatus);
+  bank.querySelector('.wf-settings-panel-title')?.remove();
+  bank.removeAttribute('role'); bank.removeAttribute('aria-labelledby');
+  const marks = node('section', 'wf-company-section wf-company-marks'), tools = node('div', 'wf-company-art-tools'), proof = node('div', 'wf-company-art-proof');
+  marks.id = 'wfCompanyMarks';
+  const drawings = node('div', 'wf-company-art-paper');
+  proof.append(label('small', 'preview'), drawings);
+  marks.append(label('p', 'artworkHint'), tools, proof);
+  const status = node('p', 'wf-company-art-status'); status.setAttribute('role', 'status'); marks.append(status);
+  const logoStatus = node('p', 'wf-company-art-status'); logoStatus.setAttribute('role', 'status'); branding.append(logoStatus);
   const pending = new Map(), artChanges = {}, rev = {}, removeButtons = {}, preview = {};
-  let baseline = {}, uploading = false, writing = false;
-  for (const key of ['signature','stamp']) {
-    const group = node('div','wf-company-art-input'), caption = label('strong',key), picker = node('label','btn btn-s wf-company-art-picker'), input = node('input');
+  let baseline = {}, uploading = false, writing = false, activeSession = null;
+  for (const key of ['signature', 'stamp']) {
+    const group = node('div', 'wf-company-art-input'), caption = label('strong', key), picker = node('label', 'btn btn-s wf-company-art-picker'), input = node('input');
     input.type = 'file'; input.accept = 'image/png,image/jpeg,image/webp'; input.id = 'wfCompanyFile-'+key;
-    caption.id = input.id+'-title'; const choose = label('span','choose'); choose.id = input.id+'-choose';
-    input.setAttribute('aria-labelledby',caption.id+' '+choose.id); picker.append(choose,input);
-    const clear = button('remove',()=>{ rev[key] = (rev[key]||0)+1; deletePending(key); artChanges[key]=''; refreshArtwork(); });
-    clear.id = input.id+'-clear'; clear.setAttribute('aria-labelledby',clear.id+' '+caption.id);
-    removeButtons[key] = clear; group.append(caption,picker,clear); tools.append(group);
-    const slot = node('div','wf-company-art-slot'), img = node('img'), placeholder = label('span',key);
-    img.alt = ''; slot.append(img,placeholder); drawings.append(slot); preview[key] = { img,placeholder };
-    input.addEventListener('change',()=>upload(key,input));
+    caption.id = input.id+'-title'; const choose = label('span', 'choose'); choose.id = input.id+'-choose';
+    input.setAttribute('aria-labelledby', caption.id+' '+choose.id); picker.append(choose, input);
+    const clear = button('remove', () => { if (busy()) return; rev[key] = (rev[key] || 0)+1; deletePending(key); artChanges[key] = ''; refreshArtwork(); });
+    clear.id = input.id+'-clear'; clear.setAttribute('aria-labelledby', clear.id+' '+caption.id);
+    removeButtons[key] = clear; group.append(caption, picker, clear); tools.append(group);
+    const slot = node('div', 'wf-company-art-slot'), img = node('img'), placeholder = label('span', key);
+    img.alt = ''; slot.append(img, placeholder); drawings.append(slot); preview[key] = { img, placeholder };
+    input.addEventListener('change', () => upload(key, input));
   }
   const logoInput = branding.querySelector('input[type="file"]'), logoPreview = byId('settingsLogoPrev');
   logoInput.removeAttribute('onchange'); logoInput.accept = 'image/png,image/jpeg,image/webp';
-  logoInput.addEventListener('change',()=>upload('logo',logoInput));
+  logoInput.addEventListener('change', () => upload('logo', logoInput));
   const resetLogo = branding.querySelector('button[onclick="resetSettingsLogo()"]');
   resetLogo?.addEventListener('click', event => {
     event.stopImmediatePropagation();
-    rev.logo = (rev.logo||0)+1; deletePending('logo');
+    if (busy()) return;
+    rev.logo = (rev.logo || 0)+1; deletePending('logo');
     setLogo(DEFAULT_WOW_LOGO); logoStatus.textContent = '';
-  },true);
+  }, true);
+
+  const hub = node('section', 'wf-company-hub'), tileGrid = node('div', 'wf-company-tiles'), storage = node('div');
+  hub.id = 'wfCompanyHub'; storage.id = 'wfCompanySectionStore'; storage.hidden = true;
+  hub.append(label('p', 'hubHint', 'wf-company-hub-hint'), tileGrid);
+  const sections = {
+    basic: { title: 'basic', hint: 'basicHint', panel: basic, paths: '<path d="M4 21V5l8-3v19M4 9h8M4 13h8M16 8h5v13M16 12h5M16 16h5M2 21h21"/>' },
+    logo: { title: 'logo', hint: 'logoHint', panel: branding, paths: '<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.5"/><path d="m3 16 5-5 4 4 3-3 6 6"/>' },
+    registration: { title: 'registration', hint: 'registrationHint', panel: taxCard, paths: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 8h3M7 12h10M7 16h7M15 8h2"/>' },
+    marks: { title: 'marks', hint: 'marksHint', panel: marks, paths: '<path d="M5 21h14M4 17h16v4H4zM8 17v-3l2-3V6a2 2 0 0 1 4 0v5l2 3v3M8 14h8"/>' },
+    bank: { title: 'bank', hint: 'bankHint', panel: bank, paths: '<path d="m3 8 9-5 9 5v2H3zM5 10v8M10 10v8M14 10v8M19 10v8M3 18h18v3H3z"/>' }
+  };
+  for (const [key, section] of Object.entries(sections)) {
+    const tile = node('button', 'wf-company-tile');
+    tile.type = 'button'; tile.id = key === 'bank' ? 'wfCompanyOpenBank' : 'wfCompanyOpen-'+key;
+    tile.dataset.companySection = key;
+    tile.setAttribute('aria-haspopup', 'dialog'); tile.setAttribute('aria-controls', 'wfCompanySectionDialog');
+    const text = node('span', 'wf-company-tile-copy'), title = label('strong', section.title), hint = label('small', section.hint);
+    title.id = tile.id+'-title'; hint.id = tile.id+'-hint';
+    tile.setAttribute('aria-labelledby', title.id); tile.setAttribute('aria-describedby', hint.id);
+    text.append(title, hint);
+    tile.append(icon(section.paths), text, icon('<path d="m9 5 7 7-7 7"/>', 'wf-company-chevron'));
+    tile.addEventListener('click', () => openSection(key));
+    tileGrid.append(tile); section.tile = tile; storage.append(section.panel);
+    section.panel.classList.add('wf-company-editor-panel');
+  }
+  company.replaceChildren(hub, storage);
+  company.classList.add('wf-company-hub-panel');
+  company.setAttribute('aria-labelledby', 'wfSettingsDialogTitle');
+  const editor = node('dialog', 'wf-company-editor'); editor.id = 'wfCompanySectionDialog';
+  editor.setAttribute('aria-labelledby', 'wfCompanySectionTitle'); editor.setAttribute('aria-describedby', 'wfCompanySectionHint');
+  const editorHeader = node('header'), editorTitles = node('div', 'wf-company-editor-titles');
+  const editorTitle = node('h2'), editorHint = node('p');
+  editorTitle.id = 'wfCompanySectionTitle'; editorHint.id = 'wfCompanySectionHint';
+  const back = button('back', requestClose, 'btn btn-s wf-company-back');
+  back.prepend(icon('<path d="m15 5-7 7 7 7"/>', 'wf-company-back-icon'));
+  editorTitles.append(editorTitle, editorHint); editorHeader.append(back, editorTitles);
+  const editorBody = node('div', 'wf-company-editor-body'), footer = node('footer');
+  const cancel = button('cancel', requestClose), saveButton = button('save', saveSection, 'btn btn-p');
+  saveButton.id = 'wfCompanySectionSave';
+  footer.append(cancel, saveButton); editor.append(editorHeader, editorBody, footer); settingsPage.append(editor);
+
   function setLogo(src) {
     wfPendingSettingsLogo = src;
     const img = node('img'); img.alt = ''; img.src = src; logoPreview.replaceChildren(img);
   }
-  function deletePending(key) { pending.delete(key); uploading = pending.size > 0; }
-  async function upload(key,input) {
+  function busy() { return writing || uploading; }
+  function syncBusy() {
+    back.disabled = cancel.disabled = saveButton.disabled = busy();
+    editorBody.inert = busy();
+    editor.setAttribute('aria-busy', String(busy()));
+    if (!busy() && editor.open && !parentDialog?.open) editor.close();
+    saveButton.querySelector('span').textContent = word(writing ? 'saving' : 'save', lang());
+  }
+  function deletePending(key) { pending.delete(key); uploading = pending.size > 0; syncBusy(); }
+  async function upload(key, input) {
     const file = input.files?.[0]; input.value = '';
-    if (!file || writing) return;
-    const token = rev[key] = (rev[key]||0)+1;
+    if (!file || busy()) return;
+    const token = rev[key] = (rev[key] || 0)+1;
     const feedback = key === 'logo' ? logoStatus : status;
-    feedback.textContent = word('loading',lang());
+    feedback.textContent = word('loading', lang());
     const task = readArtwork(file);
-    pending.set(key, task); uploading = true;
+    pending.set(key, task); uploading = true; syncBusy();
     try {
       const src = await task;
       if (token !== rev[key]) return;
@@ -230,16 +287,16 @@
       else { artChanges[key] = src; refreshArtwork(); }
       feedback.textContent = '';
     } catch (_) {
-      if (token === rev[key]) feedback.textContent = word('invalid',lang());
+      if (token === rev[key]) feedback.textContent = word('invalid', lang());
     } finally {
       if (token === rev[key]) deletePending(key);
     }
   }
   function refreshArtwork() {
     let images = 0;
-    for (const key of ['signature','stamp']) {
+    for (const key of ['signature', 'stamp']) {
       const src = safeArtwork(artChanges[key] ?? S.settings[key]);
-      const {img,placeholder} = preview[key];
+      const {img, placeholder} = preview[key];
       if (src) { img.src = src; images++; } else img.removeAttribute('src');
       img.hidden = !src; placeholder.hidden = !!src; removeButtons[key].hidden = !src;
     }
@@ -247,82 +304,142 @@
   }
   function valuesFor(scope) {
     const values = {};
-    for (const key of fields[scope]) {
+    for (const key of fields[scope] || []) {
       const field = byId(idOf(key));
       if (field) values[key] = field.value;
     }
     return values;
   }
+  function sectionValues(key, opening) {
+    if (key === 'logo') return { branding: window.WFCompanyBranding.getDraft(), logo: wfPendingSettingsLogo ?? (opening ? opening.logo : S.settings.logo) };
+    if (key === 'marks') return Object.fromEntries(['signature', 'stamp'].map(name => [name, artChanges[name] ?? (opening ? opening[name] : S.settings[name])]));
+    return valuesFor(key);
+  }
+  function openSection(key) {
+    if (editor.open || busy() || !parentDialog?.open) return;
+    const section = sections[key]; if (!section) return;
+    const session = { key, values: sectionValues(key), saved: false };
+    if (key === 'logo') {
+      session.branding = window.WFCompanyBranding.snapshot();
+      session.pendingLogo = wfPendingSettingsLogo;
+      session.logoNodes = [...logoPreview.childNodes].map(child => child.cloneNode(true));
+      logoStatus.textContent = '';
+    }
+    if (key === 'marks') { session.artChanges = { ...artChanges }; status.textContent = ''; }
+    activeSession = session; editor.dataset.companySection = key;
+    editorTitle.textContent = word(section.title, lang()); editorHint.textContent = word(section.hint, lang());
+    editorBody.append(section.panel); section.panel.style.removeProperty('display');
+    editorBody.scrollTop = 0; syncBusy(); editor.showModal(); back.focus();
+  }
+  function requestClose() { if (!busy()) editor.close(); }
+  editor.addEventListener('cancel', event => { if (busy()) event.preventDefault(); });
+  function restoreSection(session) {
+    for (const [key, value] of Object.entries(valuesFor(session.key))) {
+      if (key in session.values) byId(idOf(key)).value = session.values[key];
+    }
+    if (session.key === 'logo') {
+      wfPendingSettingsLogo = session.pendingLogo;
+      logoPreview.replaceChildren(...session.logoNodes);
+      window.WFCompanyBranding.restore(session.branding); logoStatus.textContent = '';
+    }
+    if (session.key === 'marks') {
+      delete artChanges.signature; delete artChanges.stamp;
+      Object.assign(artChanges, session.artChanges); status.textContent = ''; refreshArtwork();
+    }
+    window.WFCompanyBranding.refresh();
+  }
+  editor.addEventListener('close', () => {
+    const session = activeSession; if (!session) return;
+    if (!session.saved) restoreSection(session);
+    const section = sections[session.key]; storage.append(section.panel); section.panel.style.display = 'none';
+    window.WFAppUpdates?.markClean(section.panel);
+    activeSession = null; delete editor.dataset.companySection;
+    if (parentDialog?.open) section.tile.focus();
+  });
+  parentDialog?.addEventListener('cancel', event => { if (editor.open && busy()) event.preventDefault(); });
+  parentDialog?.addEventListener('close', () => { if (editor.open && !busy()) editor.close(); });
+
+  const persist = patch => commitPatch(S, patch, wfWriteBatch, wfHydrateDBValue);
+  async function saveSection() {
+    if (!activeSession || busy()) return false;
+    const session = activeSession, key = session.key;
+    const patch = sectionChanges(key, session.values, sectionValues(key, session.values));
+    writing = true; syncBusy();
+    let saved = false;
+    try {
+      saved = await wfRunSave('saveCompanySection', async () => { await persist(patch); return true; });
+      if (saved) {
+        Object.assign(baseline, valuesFor(key));
+        if (key === 'logo') { wfPendingSettingsLogo = undefined; window.WFCompanyBranding.reload(); }
+        if (key === 'marks') { delete artChanges.signature; delete artChanges.stamp; refreshArtwork(); }
+        window.WFCompanyBranding.refresh();
+        session.saved = true;
+      }
+    } finally { writing = false; syncBusy(); }
+    if (saved) { editor.close(); showToast(t('settings_saved'), 'ok'); }
+    return saved;
+  }
   function load() {
-    for (const key of ['stamp','signature','logo']) rev[key] = (rev[key]||0)+1;
+    for (const key of ['stamp', 'signature', 'logo']) rev[key] = (rev[key] || 0)+1;
     pending.clear(); uploading = false; logoStatus.textContent = status.textContent = '';
     delete artChanges.signature; delete artChanges.stamp;
-    for (const key of ['taxNumber','taxOffice']) byId(idOf(key)).value = S.settings[key] ?? '';
-    baseline = Object.assign({},...Object.keys(fields).map(valuesFor));
-    refreshArtwork();
+    for (const key of ['taxNumber', 'taxOffice']) byId(idOf(key)).value = S.settings[key] ?? '';
+    baseline = Object.assign({}, ...['company', 'bank', 'invoice', 'currency'].map(valuesFor));
+    refreshArtwork(); syncBusy();
   }
   let formLoaded = false;
-  const settingsPage = byId('page-settings');
   const originalLoad = window.loadSettingsToForm;
   window.loadSettingsToForm = function(...args) {
-    const result = originalLoad.apply(this,args); load(); formLoaded = true; return result;
+    // Keep the open editor's snapshot and preview stable during unrelated refreshes.
+    if (editor.open) return;
+    const result = originalLoad.apply(this, args); load(); formLoaded = true; return result;
   };
   new MutationObserver(() => {
-    if (!settingsPage.classList.contains('active')) { formLoaded = false; return; }
-    if (!formLoaded) window.loadSettingsToForm();
-  }).observe(settingsPage,{attributes:true,attributeFilter:['class']});
-  const persist = patch => commitPatch(S, patch, wfWriteBatch, wfHydrateDBValue);
-  async function save() {
-    if (writing || bankBusy) return false;
-    if (uploading) { showToast(word('loading',lang()),'ok'); return false; }
-    const dialog = byId('wfSettingsDialog');
-    const section = document.querySelector('#page-settings .tab-btn.active')?.id?.replace('wf-settings-tab-','');
-    const scopes = dialog?.open && fields[section] ? [section] : Object.keys(fields);
-    const patch = {};
-    for (const scope of scopes) {
-      try { Object.assign(patch, fieldChanges(scope,baseline,valuesFor(scope))); }
-      catch (error) {
-        const field = byId(idOf(error.message)); if (!field) throw error;
-        field.focus();
-        field.setCustomValidity(word('numberInvalid',lang())); field.reportValidity(); field.setCustomValidity('');
-        return false;
-      }
+    if (!settingsPage.classList.contains('active')) {
+      formLoaded = false;
+      if (editor.open && !busy()) editor.close();
+      return;
     }
-    if (scopes.includes('company')) {
-      const prefs = window.WFCompanyBranding.changes();
-      if (Object.keys(prefs).length) patch.branding = prefs;
-      if (wfPendingSettingsLogo !== undefined) patch.logo = wfPendingSettingsLogo;
-      Object.assign(patch,artChanges);
+    if (!formLoaded && !editor.open) window.loadSettingsToForm();
+  }).observe(settingsPage, { attributes: true, attributeFilter: ['class'] });
+  async function save() {
+    if (editor.open) return saveSection();
+    if (busy() || !parentDialog?.open) return false;
+    const section = document.querySelector('#page-settings .tab-btn.active')?.id?.replace('wf-settings-tab-', '');
+    // The company hub has no global save. Child sections commit their own fields.
+    if (!['bank', 'invoice', 'currency'].includes(section)) return false;
+    let patch;
+    try { patch = fieldChanges(section, baseline, valuesFor(section)); }
+    catch (error) {
+      const field = byId(idOf(error.message)); if (!field) throw error;
+      field.focus(); field.setCustomValidity(word('numberInvalid', lang())); field.reportValidity(); field.setCustomValidity(''); return false;
     }
     writing = true;
-    const content = dialog?.querySelector('.wf-settings-content');
-    if (content) content.inert = true;
+    const content = parentDialog.querySelector('.wf-settings-content'); if (content) content.inert = true;
     try {
-      await persist(patch);
-      for (const scope of scopes) Object.assign(baseline,valuesFor(scope));
-      if (scopes.includes('company')) {
-        wfPendingSettingsLogo = undefined;
-        delete artChanges.signature; delete artChanges.stamp;
-        window.WFCompanyBranding.reload(); refreshArtwork();
-      }
+      await persist(patch); Object.assign(baseline, valuesFor(section));
       if (patch.manualUsdTry > 0) S.usdTry = patch.manualUsdTry;
       if (patch.manualUsdEur > 0) S.usdEur = patch.manualUsdEur;
-      updateRateUI(); updateKdvDisplay();
-      if (dialog?.open) dialog.close(); else goBack();
-      showToast(t('settings_saved'),'ok');
-      return true;
+      updateRateUI(); updateKdvDisplay(); parentDialog.close(); showToast(t('settings_saved'), 'ok'); return true;
     } finally { writing = false; if (content) content.inert = false; }
   }
-
-  new MutationObserver(() => { for (const [el,key] of labels) el.textContent = word(key,lang()); }).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+  function translate() {
+    for (const [el, key] of labels) el.textContent = word(key, lang());
+    if (activeSession) {
+      editorTitle.textContent = word(sections[activeSession.key].title, lang());
+      editorHint.textContent = word(sections[activeSession.key].hint, lang());
+    }
+    syncBusy();
+  }
+  new MutationObserver(translate).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   window.WFCompanyIdentity = { ...api, save };
   load();
   document.addEventListener('DOMContentLoaded', () => {
     window.WFAppUpdates?.registerGuard('company-settings', () => {
-      if (writing || uploading || bankBusy) return true;
-      if (!byId('page-settings').classList.contains('active')) return false;
+      if (busy()) return true;
+      if (!settingsPage.classList.contains('active')) return false;
       if (Object.keys(artChanges).length || Object.keys(window.WFCompanyBranding.changes()).length || (wfPendingSettingsLogo !== undefined && wfPendingSettingsLogo !== (S.settings.logo || DEFAULT_WOW_LOGO))) return true;
-      return Object.keys(fields).some(scope => Object.entries(valuesFor(scope)).some(([key,value]) => baseline[key] !== value));
+      return ['company', 'bank', 'invoice', 'currency'].some(scope => Object.entries(valuesFor(scope)).some(([key, value]) => baseline[key] !== value));
     });
-  }, {once:true});
+  }, { once: true });
 })();

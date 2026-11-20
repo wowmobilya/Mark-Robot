@@ -6434,39 +6434,43 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=34">
-     <script src="ui-navigation.js?v=25" defer></script>
+     <script src="cart-page.js?v=1" defer></script>
+<script src="ui-navigation.js?v=26" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
-<script src="context-nav.js?v=5" defer></script>
+<script src="context-nav.js?v=6" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=3" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
 <script src="product-categories.js?v=2" defer></script>
 <script src="install-identity.js?v=1" defer></script>
 <script src="app-identity.js?v=1" defer></script>
-<script src="offline-voice.js?v=8" defer></script>
+<script src="voice-loudness.js?v=1" defer></script>
+<script src="offline-voice.js?v=9" defer></script>
 <script src="reference-voice-assets.js?v=1" defer></script>
-<script src="reference-voice.js?v=3" defer></script>
+<script src="reference-voice.js?v=4" defer></script>
 <script src="robot-settings.js?v=9" defer></script>
 <script src="smart-card-settings.js?v=1" defer></script>
-<script src="settings-navigation.js?v=13" defer></script>
-<script src="branding-settings.js?v=3" defer></script>
-<script src="company-identity.js?v=1" defer></script>
+<script src="settings-navigation.js?v=14" defer></script>
+<script src="branding-settings.js?v=4" defer></script>
+<script src="company-identity.js?v=2" defer></script>
+<script src="color-picker.js?v=1" defer></script>
 <script src="business-overview.js?v=3" defer></script>
 <script src="annual-sales.js?v=2" defer></script>
-<script src="currency-sources.js?v=1" defer></script>
+<script src="currency-bank-catalog.js?v=1" defer></script>
+<script src="currency-sources.js?v=2" defer></script>
 <script src="rate-refresh.js?v=7" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
-<script src="arabic-report-speech.js?v=2" defer></script>
+<script src="arabic-report-speech.js?v=3" defer></script>
 <script src="turkish-report-speech.js?v=1" defer></script>
-<script src="robot-report.js?v=6" defer></script>
-<script src="robot-face.js?v=11" defer></script>
+<script src="robot-report.js?v=7" defer></script>
+<script src="robot-face.js?v=12" defer></script>
 <script src="program-speech.js?v=3" defer></script>
 <script src="screen-awake.js?v=2" defer></script>
 <script src="speech-media.js?v=2" defer></script>
-<script src="speech-controls.js?v=2" defer></script>
+<script src="speech-controls.js?v=3" defer></script>
 <script src="greeting-carousel.js?v=18" defer></script>
 <script src="developer-profile.js?v=1" defer></script>
-<script src="app-updates.js?v=2" defer data-release="185"></script>
+<script src="app-updates.js?v=2" defer data-release="186"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
@@ -6475,21 +6479,23 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=4">
 <link rel="stylesheet" href="workspace-surfaces.css?v=35">
-<link rel="stylesheet" href="robot-face.css?v=7">
+<link rel="stylesheet" href="robot-face.css?v=8">
 <link rel="stylesheet" href="dialog-surfaces.css?v=1">
 <link rel="stylesheet" href="product-categories.css?v=1">
 <link rel="stylesheet" href="branding-settings.css?v=1">
-<link rel="stylesheet" href="company-identity.css?v=2">
-<link rel="stylesheet" href="currency-sources.css?v=1">
+<link rel="stylesheet" href="company-identity.css?v=3">
+<link rel="stylesheet" href="color-picker.css?v=1">
+<link rel="stylesheet" href="cart-page.css?v=1">
+<link rel="stylesheet" href="currency-sources.css?v=2">
 <link rel="stylesheet" href="business-overview.css?v=3">
 <link rel="stylesheet" href="app-identity.css?v=1">
 <link rel="stylesheet" href="settings-unified.css?v=2">
 <link rel="stylesheet" href="ui-motion.css?v=1">
 <link rel="stylesheet" href="annual-sales.css?v=1">
 <link rel="stylesheet" href="robot-settings.css?v=5">
-<link rel="stylesheet" href="program-speech.css?v=3">
-<link rel="stylesheet" href="speech-controls.css?v=2">
-<link rel="stylesheet" href="robot-report.css?v=4">
+<link rel="stylesheet" href="program-speech.css?v=4">
+<link rel="stylesheet" href="speech-controls.css?v=3">
+<link rel="stylesheet" href="robot-report.css?v=5">
 <link rel="stylesheet" href="developer-profile.css?v=1">
 <link rel="stylesheet" href="app-updates.css?v=1">
 <link rel="stylesheet" href="smart-card-settings.css?v=1">
@@ -16701,14 +16707,8 @@ async function saveInvoice(){
   showToast(S.editInvId?t('updated_inv'):t('saved_inv'),'ok');
   S.editInvId=null;S.invItems=[];S.currentInvPayments=[];
 
-  // إخفاء شريط السلة عند حفظ الفاتورة
-  QBL_CART.items = [];
-  qblCartSave();
+  // Saving an unrelated invoice must preserve the separate product cart.
   qblUpdateCartUI();
-  const stickyBar = document.getElementById('qblStickyCart');
-  if (stickyBar) stickyBar.classList.remove('visible');
-  const mainEl2 = document.getElementById('mainContent');
-  if (mainEl2) mainEl2.classList.remove('cart-bar-visible');
 
   updateDash();showPage('invoices');
 }
@@ -20656,7 +20656,7 @@ startGreetingRotation();
   }
   // handle hash routing
   const hash=window.location.hash.replace('#','');
-const validPages=['dashboard','companies','products','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management','reports','exchange','settings','quick-barcode'];
+const validPages=['dashboard','companies','products','cart','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management','reports','exchange','settings','quick-barcode'];
   if(hash&&validPages.includes(hash)){
     if(hash==='settings')loadSettingsToForm();
     showPage(hash,false);history.replaceState({page:hash},'','#'+hash);
@@ -22943,10 +22943,12 @@ function qblSendToInvoice() {
   showPage('create-invoice');
 
   setTimeout(() => {
+    // A transfer abandoned by navigation must not consume the saved cart.
+    if (!document.getElementById('page-create-invoice')?.classList.contains('active')) return;
     QBL_CART.items.forEach(cartItem => {
       S.invTier = cartItem.tier;
 
-      const existing = S.invItems.find(i => i.productId === cartItem.product.id);
+      const existing = S.invItems.find(i => i.productId === cartItem.product.id && i.tier === cartItem.tier);
 
       if (existing) {
         existing.qty += cartItem.qty;

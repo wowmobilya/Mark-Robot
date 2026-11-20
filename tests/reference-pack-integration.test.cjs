@@ -1,7 +1,36 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto');
+const acorn=require('acorn'),walk=require('acorn-walk');
 const root=path.resolve(__dirname,'..');
 const sha=data=>crypto.createHash('sha256').update(data).digest('hex');
+let referenceShellAssets;
+function referenceShell(){
+  if(referenceShellAssets)return referenceShellAssets;
+  const origin='https://example.test/',html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  const scripts=[...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/g)].map(match=>new URL(match[1],origin));
+  const entries=new Map();
+  for(const file of ['reference-voice-assets.js','reference-voice.js']){
+    const found=scripts.filter(url=>url.pathname==='/'+file);assert.equal(found.length,1,file+' must be loaded exactly once by the application');
+    assert.match(found[0].search,/^\?v=\d+$/,file+' must have an explicit current version');entries.set(file,found[0].href);
+  }
+  const required=new Set(entries.values()),queue=[...required];
+  while(queue.length){
+    const current=queue.shift(),code=fs.readFileSync(path.join(root,new URL(current).pathname.slice(1)),'utf8');
+    const add=value=>{
+      if(typeof value!=='string'||!/^\.?\/?reference-voice(?:-assets|-host|-engine)?\.js\?v=\d+$/.test(value))return;
+      const url=new URL(value,current),file=url.pathname.slice(1);
+      if(entries.has(file))assert.equal(url.href,entries.get(file),'cold worker imports must use the same current '+file+' as HTML');
+      if(!required.has(url.href)){required.add(url.href);queue.push(url.href);}
+    };
+    walk.simple(acorn.parse(code,{ecmaVersion:'latest',sourceType:'module'}),{
+      ImportDeclaration(node){add(node.source.value);},
+      ImportExpression(node){if(node.source.type==='Literal')add(node.source.value);},
+      NewExpression(node){if(node.callee.type==='Identifier'&&node.callee.name==='URL'&&node.arguments[0]?.type==='Literal')add(node.arguments[0].value);}
+    });
+  }
+  for(const file of ['reference-voice-host.js','reference-voice-engine.js'])assert([...required].some(url=>new URL(url).pathname==='/'+file),'cold worker dependency graph must reach '+file);
+  referenceShellAssets={required,host:[...required].find(url=>new URL(url).pathname==='/reference-voice-host.js')};return referenceShellAssets;
+}
 
 test('every installed local reference asset matches its published bytes and hash',()=>{
   const context={};vm.runInNewContext(fs.readFileSync(path.join(root,'reference-voice-assets.js'),'utf8'),context);
@@ -48,20 +77,19 @@ test('reference worker imports use the installed cache and cannot trigger a mode
 test('the application shell installs reference metadata needed by cold offline worker imports',async()=>{
   const f=serviceWorker();let installed;
   f.handlers.install({waitUntil(promise){installed=promise;}});await installed;
-  assert(f.cached.includes('https://example.test/reference-voice-assets.js?v=1'));
+  for(const url of referenceShell().required)assert.equal(f.cached.filter(cached=>cached===url).length,1,'offline shell must install the exact cold-worker dependency '+url);
+  // Retained compatibility URLs for previously installed workers, independent
+  // of the current HTML/worker versions verified above.
   assert(f.cached.includes('https://example.test/reference-voice.js?v=1'));
   assert(f.cached.includes('https://example.test/reference-voice.js?v=2'));
-  assert(f.cached.includes('https://example.test/reference-voice.js?v=3'));
-  assert(f.cached.includes('https://example.test/reference-voice-engine.js?v=1'));
-  assert(f.cached.includes('https://example.test/reference-voice-host.js?v=4'));
   assert(!f.cached.some(url=>/shard-\d+\.bin/.test(url)),'opening the program must not download large voice shards');
 });
 
 test('an offline app update uses the new speech host without reinstalling the model pack',async()=>{
-  const f=serviceWorker({offline:true});
+  const f=serviceWorker({offline:true}),currentHost=referenceShell().host;
   f.entries.set('https://example.test/reference-voice-host.js?v=1',new Response('old buffered host'));
-  f.shellEntries.set('https://example.test/reference-voice-host.js?v=4',new Response('current streaming host'));
-  const response=await f.get('https://example.test/reference-voice-host.js?v=4');
+  f.shellEntries.set(currentHost,new Response('current streaming host'));
+  const response=await f.get(currentHost);
   assert.equal(await response.text(),'current streaming host');
   assert(!f.network.some(url=>url.includes('/model/')));
 });

@@ -41,20 +41,27 @@ test('back arrow follows RTL/LTR and updates without duplicate icons',()=>{
 
 test('drawer pagination fits translated rows at measured heights and preserves every destination',()=>{
  const filter=source.slice(source.indexOf('  function filter()'),source.indexOf('  for (const [button, step]'));
- const group={}, heights=[44,69,48,54],items=heights.map(height=>({
-   parentElement:group,querySelector:()=>null,textContent:'entry',
+ const groups=[{className:'wf-nav-group'},{className:'wf-nav-group'},{className:'wf-nav-group'}];
+ const heights=[44,69,48,54],items=heights.map((height,index)=>({
+   parentElement:{parentElement:groups[Math.floor(index/2)]},querySelector:()=>null,textContent:'entry',
+   closest(selector){for(let element=this;element;element=element.parentElement)if(selector==='.wf-nav-group'&&element.className==='wf-nav-group')return element;return null;},
    getBoundingClientRect:()=>({height})
  }));
  const pager={hidden:true},nav={
    get clientHeight(){return pager.hidden?170:122},scrollHeight:236,
    classList:{add(){},remove(){}}
  };
- const context=vm.createContext({nav,pager,items,groups:[group],search:{value:''},normalize:s=>s,
+ const context=vm.createContext({nav,pager,items,groups,search:{value:''},normalize:s=>s,
    activePage:0,matchingItems:[],empty:{},previous:{setAttribute(){}},next:{setAttribute(){}},
    pageNumber:{},document:{documentElement:{lang:'en'}},getComputedStyle:()=>({paddingTop:'0',paddingBottom:'0',rowGap:'3'})});
  vm.runInContext(filter+';filter()',context);
  assert.deepEqual(items.map(i=>i.hidden),[false,false,true,true]);
+ assert.deepEqual(groups.map(group=>group.hidden),[false,true,true]);
  assert.equal(context.pageNumber.textContent,'1 / 2');
+ assert.equal(pager.hidden,false);assert.equal(context.previous.disabled,true);assert.equal(context.next.disabled,false);
  vm.runInContext('activePage++;filter()',context);
  assert.deepEqual(items.map(i=>i.hidden),[true,true,false,false]);
+ assert.deepEqual(groups.map(group=>group.hidden),[true,false,true]);
+ assert.equal(context.pageNumber.textContent,'2 / 2');
+ assert.equal(context.previous.disabled,false);assert.equal(context.next.disabled,true);
 });

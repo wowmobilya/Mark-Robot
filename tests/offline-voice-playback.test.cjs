@@ -89,7 +89,7 @@ function streamedVoice(){
   });}
  };
 }
-async function fixture({webAudio=false,audioOptions={},audioSession}={}){
+async function fixture({webAudio=false,audioOptions={},audioSession,voiceLoudness}={}){
  const clips=[],urls=new Map(),revoked=[],workers=[],audioElements=[],requests=[],events=[];let id=0;
  class FakeURL extends URL{
   static createObjectURL(blob){const url='blob:test-'+(++id);urls.set(url,blob);clips.push({url,blob});return url;}
@@ -99,7 +99,7 @@ async function fixture({webAudio=false,audioOptions={},audioSession}={}){
   constructor(){this.currentTime=0;this.sources=[];this.played=[];this.pauses=0;audioElements.push(this);}
   set src(value){this._src=value;this.sources.push(value);this.currentTime=0;}
   get src(){return this._src;}
-  play(){this.played.push(this.src);queueMicrotask(()=>this.onplaying?.());return Promise.resolve();}
+  play(){this.played.push(this.src);if(audioOptions.play)return audioOptions.play(this);queueMicrotask(()=>this.onplaying?.());return Promise.resolve();}
   pause(){this.pauses++;}
   removeAttribute(name){if(name==='src')this._src='';}
   load(){}
@@ -118,7 +118,7 @@ async function fixture({webAudio=false,audioOptions={},audioSession}={}){
   return voice?new Response(JSON.stringify({version:1,model:voice.files[0].sha256})):undefined;
  }};
  const web=webAudio?audioRuntime(audioOptions):null;
- const window={isSecureContext:true,caches:{open:async()=>cache},crypto:webcrypto,Worker,WebAssembly,...(web?{AudioContext:web.AudioContext}:{}),
+ const window={isSecureContext:true,caches:{open:async()=>cache},crypto:webcrypto,Worker,WebAssembly,WFVoiceLoudness:voiceLoudness,...(web?{AudioContext:web.AudioContext}:{}),
   fetch:async()=>{throw new Error('speech must remain offline');},dispatchEvent:event=>events.push(event),addEventListener(){}};
  const documentListeners=new Map(),document={baseURI:'https://example.test/',hidden:false,
   addEventListener(type,listener){if(!documentListeners.has(type))documentListeners.set(type,new Set());documentListeners.get(type).add(listener);},
@@ -426,6 +426,25 @@ test('pausing buffered preparation keeps the later clip silent until explicit re
  }finally{handle.cancel();}
 });
 
+for(const late of [false,true])test('an intentional native pause survives '+(late?'a stale play rejection after resume':'its pending play rejection'),async()=>{
+ const attempts=[];let errors=0,started=0,ended=0,generated=0;
+ const f=await fixture({audioOptions:{play(audio){
+  if(audio.played.length===1)return Promise.resolve();
+  return new Promise((resolve,reject)=>attempts.push({resolve,reject}));
+ }}});
+ const voice={getStatus:()=>({ready:true}),synthesize:async()=>{generated++;return wav(new Float32Array(4800));}};
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',onStart(){started++;},onEnd(){ended++;},onError(){errors++;}},voice);
+ try{
+  await flushUntil(()=>attempts.length===1);const audio=f.audioElements[0],url=audio.src;handle.pause();
+  let resumed;if(late){resumed=handle.resume();await flushUntil(()=>attempts.length===2);}
+  attempts[0].reject(Object.assign(new Error('play interrupted by pause'),{name:'AbortError'}));
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(errors,0);assert.equal(audio.src,url);assert.equal(generated,1);
+  if(!late){resumed=handle.resume();await flushUntil(()=>attempts.length===2);}
+  attempts[1].resolve();audio.onplaying();await resumed;
+  assert.equal(started,1);assert.equal(errors,0);audio.onended();await flushUntil(()=>ended===1);
+ }finally{handle.cancel();}
+});
+
 test('cancelling during preparation discards late worker output without speaking a partial report',async()=>{
  const f=await fixture();let callbacks=0;
  const handle=f.api.speak({text:'First. Next.',locale:'ar',continuous:true,onStart(){callbacks++;},onEnd(){callbacks++;},onError(){callbacks++;}});
@@ -468,6 +487,51 @@ test('default streamed speech still starts before its next generated chunk is re
  const handle=f.api.speak({text:'First. Next.',locale:'ar',onStart(){started++;}});
  try{await flushUntil(()=>f.requests.length===1);f.respond(0);await flushUntil(()=>started===1&&f.requests.length===2);
   assert.equal(f.audioElements[0].played.length,2);assert.equal(f.audioElements[0].sources.length,2);
+ }finally{handle.cancel();}
+});
+
+test('native phrase playback preserves generation progress and never plays a partial phrase during a slow generation',async()=>{
+ const f=await fixture(),calls=[],phases=[],boundaries=[],states=[];let ended=0;
+ const voice={getStatus:()=>({ready:true}),synthesize(text,options){return new Promise((resolve,reject)=>calls.push({text,...options,resolve,reject}));}};
+ const playback=f.api.preparePlayback();
+ const handle=f.api.speakGenerated({text:'First. Next.',locale:'ar',streaming:false,continuous:false,playback,
+  onProgress:value=>phases.push(value.phase),onStart:()=>states.push('speaking'),onWaiting:()=>states.push('waiting'),
+  onBoundary:value=>boundaries.push(value.charIndex),onEnd:()=>ended++},voice);
+ try{
+  await flushUntil(()=>calls.length===1);const audio=f.audioElements[0];
+  assert.equal(typeof calls[0].onProgress,'function');calls[0].onProgress({phase:'generating'});
+  assert.deepEqual(phases,['generating']);assert.equal(audio.played.length,1,'only the gesture primer plays before a whole phrase is ready');
+  calls[0].resolve(wav(new Float32Array(48000).fill(.2)));await flushUntil(()=>calls.length===2&&states.includes('speaking'));
+  assert.equal(f.audioElements.length,1,'the original gesture-unlocked media element owns the report');
+  const first=audio.src,events=states.length;audio.advance(1.4);
+  assert.equal(audio.src,first);assert.equal(states.length,events,'slow next generation cannot interrupt the current complete phrase');
+  calls[0].onProgress({phase:'late-stale-progress'});assert(!phases.includes('late-stale-progress'));
+  audio.onended();await flushUntil(()=>states.at(-1)==='waiting');assert.equal(ended,0);
+  calls[1].resolve(wav(new Float32Array(24000).fill(.4)));await flushUntil(()=>audio.src!==first&&states.at(-1)==='speaking');
+  assert.deepEqual(boundaries,[0,7]);audio.onended();await flushUntil(()=>ended===1);
+ }finally{handle.cancel();}
+});
+
+test('native phrase playback rejects malformed generated WAV before exposing it to the media element',async()=>{
+ const f=await fixture();let problem,started=0;
+ const voice={getStatus:()=>({ready:true}),synthesize:async()=>new Blob(['broken generated audio'],{type:'audio/wav'})};
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',streaming:false,onStart(){started++;},onError:value=>{problem=value;}},voice);
+ try{
+  await flushUntil(()=>problem||started);assert.equal(problem?.code,'invalid-audio');
+  assert.equal(started,0);assert.equal(f.audioElements[0].played.length,1);assert.equal(f.urls.size,0);
+ }finally{handle.cancel();}
+});
+
+test('native Mark phrases balance loudness before playback while retaining user volume and original text spans',async()=>{
+ const calls=[],boundaries=[];let started=0;
+ const f=await fixture({voiceLoudness:{async normalize(blob,options){calls.push({blob,options});return wav(new Float32Array(2400).fill(.5));}}});
+ const original=wav(new Float32Array(2400).fill(.05)),voice={getStatus:()=>({ready:true}),synthesize:async()=>original};
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',normalizeGenerated:true,volume:.35,onStart(){started++;},onBoundary:value=>boundaries.push(value)},voice);
+ try{
+  await flushUntil(()=>started===1);assert.equal(calls.length,1);assert.equal(calls[0].blob,original);assert.equal(calls[0].options.locale,'ar');
+  assert.equal(calls[0].options.signal.aborted,false);assert.equal(f.audioElements[0].volume,.35);
+  const bytes=await f.clips.at(-1).blob.arrayBuffer();assert.equal(new DataView(bytes).getInt16(44,true),16384);
+  assert.deepEqual(boundaries.map(value=>[value.charIndex,value.charLength]),[[0,7]]);
  }finally{handle.cancel();}
 });
 

@@ -4,6 +4,8 @@
   'use strict';
   const root = typeof window === 'object' ? window : null, document = root?.document;
   if (!document?.body || document.getElementById('wfSpeechControls')) return;
+  const navbar = document.querySelector('.navbar'), home = navbar?.querySelector('.wf-header-controls') || navbar;
+  if (!home) return;
   const copy = {
     ar: {label:'التحكم بالقراءة',voice:'مارك روبوت',pause:'إيقاف مؤقت للقراءة',resume:'متابعة القراءة',stop:'إيقاف القراءة',report:'إظهار التقرير',preparing:'جارٍ تجهيز الصوت',speaking:'القراءة مستمرة',paused:'القراءة متوقفة مؤقتًا'},
     en: {label:'Reading controls',voice:'Mark Robot',pause:'Pause reading',resume:'Resume reading',stop:'Stop reading',report:'Show report',preparing:'Preparing audio',speaking:'Reading in progress',paused:'Reading paused'},
@@ -16,7 +18,9 @@
     resume:'<path d="m9 5 10 7-10 7Z" fill="currentColor" stroke-width="1.5"/>',
     stop:'<rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor" stroke="none"/>',
     report:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+    close:'<path d="m6 6 12 12M18 6 6 18"/>',
   };
+  const closeCopy = {ar:'إغلاق القارئ',en:'Close reader',tr:'Okuyucuyu kapat',fr:'Fermer le lecteur',ru:'Закрыть проигрыватель'};
   const node = (tag, id, className) => {
     const element = document.createElement(tag);
     if (id) element.id = id;
@@ -25,7 +29,7 @@
   };
   const icon = name => '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + paths[name] + '</svg>';
   const dock = node('aside', 'wfSpeechControls', 'wf-speech-controls');
-  dock.hidden = true; dock.setAttribute('role', 'region');
+  dock.hidden = true; dock.setAttribute('role', 'toolbar');
   const indicator = node('span', '', 'wf-speech-controls-indicator');
   indicator.setAttribute('aria-hidden', 'true');
   for (let index = 0; index < 4; index++) indicator.append(node('span'));
@@ -41,9 +45,38 @@
   report.append(face, reportText);
   report.setAttribute('aria-haspopup', 'dialog');report.setAttribute('aria-controls', 'wfRobotReportSheet');
   stop.innerHTML = icon('stop');
-  actions.append(report, toggle, stop); dock.append(indicator, content, actions); document.body.append(dock);
+  reportText.className = 'wf-speech-report-label';
+  actions.append(report, toggle, stop); dock.append(indicator, content, actions); home.append(dock);
   let minimized = root.WFRobotReport?.isMinimized?.() === true, reportLocale = '';
   let reportOpen = document.documentElement.classList.contains('wf-robot-report-open');
+  let staging = false, mountedHeader = null, placementQueued = false;
+  function setClass(element, name, enabled) {
+    if (element?.classList.contains(name) !== enabled) element?.classList.toggle(name, enabled);
+  }
+  function targetHeader() {
+    if (document.documentElement.classList.contains('wf-section-mode')) {
+      const page = document.querySelector('.page.active');
+      const row = [...(page?.querySelectorAll('.wf-heading-row') || [])].find(element => element.getClientRects().length);
+      return row ? {slot:row,header:row,kind:'section'} : null;
+    }
+    return {slot:home,header:navbar,kind:'dashboard'};
+  }
+  function place() {
+    placementQueued = false;
+    const target = targetHeader();
+    if (target && dock.parentNode !== target.slot) target.slot.append(dock);
+    if (mountedHeader && mountedHeader !== target?.header) setClass(mountedHeader, 'wf-speech-toolbar-host', false);
+    mountedHeader = target?.header || null;
+    setClass(mountedHeader, 'wf-speech-toolbar-host', !dock.hidden);
+    setClass(document.documentElement, 'wf-speech-toolbar-active', !dock.hidden && !!target);
+    dock.dataset.location = target?.kind || 'none';
+    dock.dataset.staging = String(staging);
+  }
+  function schedulePlace() {
+    if (placementQueued) return;
+    placementQueued = true;
+    if (root.requestAnimationFrame) root.requestAnimationFrame(place); else place();
+  }
   function state() {
     try { return root.WFProgramSpeech?.getState?.() || {}; } catch (_) { return {}; }
   }
@@ -54,10 +87,10 @@
     const key = String((!value.active && minimized ? reportLocale : value.locale) || document.documentElement.lang || 'en').toLowerCase().split(/[-_]/)[0];
     const L = copy[key] || copy.en, action = value.paused ? 'resume' : 'pause';
     const showReport = !value.active ? minimized : value.kind === 'report';
-    dock.hidden = (!value.active && !minimized) || reportOpen;
+    dock.hidden = (!value.active && !minimized) || (reportOpen && !staging);
     dock.dataset.idle = String(!value.active);
     content.hidden = !value.active; indicator.hidden = showReport || !value.active;
-    toggle.hidden = stop.hidden = !value.active;
+    toggle.hidden = !value.active; stop.hidden = !value.active && !minimized;
     if(showReport && !face.firstElementChild){
       const robot = document.querySelector?.('#wfGreetingRobot .wf-robot-face');
       if(robot)face.append(robot.cloneNode(true));
@@ -70,18 +103,22 @@
     status.title = status.textContent;
     toggle.innerHTML = icon(action); label(toggle, L[action]);
     toggle.disabled = !value.active || value.canPause !== true || !available(action);
-    stop.disabled = !value.active || !available('stop'); label(stop, L.stop);
+    stop.disabled = value.active ? !available('stop') : !minimized || typeof root.WFRobotReport?.close !== 'function';
+    stop.innerHTML = icon(value.active ? 'stop' : 'close'); label(stop, value.active ? L.stop : closeCopy[key] || closeCopy.en);
     report.hidden = !showReport; report.disabled = !showReport || typeof root.WFRobotReport?.show !== 'function'; label(report, L.report);
+    place();
   }
   function act(event, name) {
     if (event?.isTrusted !== true) return;
-    const current = state(); if (!current.active && !(name === 'report' && minimized)) return;
+    const current = state(); if (!current.active && !((name === 'report' || name === 'stop') && minimized)) return;
     event.preventDefault?.(); event.stopPropagation?.();
     try {
       let result;
       if (name === 'report') {
         if ((current.active && current.kind !== 'report') || typeof root.WFRobotReport?.show !== 'function') return;
         result = root.WFRobotReport.show();
+      } else if (name === 'stop' && !current.active && minimized) {
+        result = root.WFRobotReport?.close?.();
       } else {
         const action = name === 'toggle' ? current.paused ? 'resume' : 'pause' : 'stop';
         if ((name === 'toggle' && current.canPause !== true) || !available(action)) return;
@@ -98,8 +135,19 @@
   root.addEventListener('wf-robot-report-visibility', event => {
     reportOpen = event.detail?.open === true;
     minimized = !reportOpen && event.detail?.minimized === true;
+    staging = !!event.detail?.transition;
     if(event.detail?.locale) reportLocale=event.detail.locale;
     render();
   });
+  root.addEventListener('resize', schedulePlace);
+  root.addEventListener('hashchange', schedulePlace);
+  root.addEventListener('popstate', schedulePlace);
+  if (typeof MutationObserver === 'function') {
+    new MutationObserver(() => render()).observe(document.documentElement, {attributes:true,attributeFilter:['class','lang','dir']});
+    const main = document.getElementById('mainContent');
+    if (main) new MutationObserver(records => {
+      if (records.some(record => !dock.contains(record.target) && !(record.target === mountedHeader && record.attributeName === 'class'))) schedulePlace();
+    }).observe(main, {subtree:true,childList:true,attributes:true,attributeFilter:['class','style','hidden']});
+  }
   render();
 })();

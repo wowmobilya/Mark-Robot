@@ -62,10 +62,18 @@ html body #mainContent #page-dashboard :is(#wfGreetingRobot, #wfRobotSettingsPre
   box-shadow: none;
 }
 
-/* Match the expanded reader's dark-mode faceplate around the original artwork. */
+/* The same face stays transparent on every dark surface; only its ink changes. */
 @media screen {
   html[data-theme="dark"] :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-display {
-    background: var(--text);
+    background: transparent;
+  }
+  html[data-theme="dark"] .wf-robot-face {
+    --wf-robot-ink: var(--text, #f2f4f8);
+    --wf-robot-glint: var(--wf-reader-paper, var(--card, #171923));
+    --wf-robot-soft-glint: color-mix(in srgb, var(--wf-robot-glint) 80%, var(--wf-robot-ink));
+  }
+  html[data-theme="dark"] .wf-robot-face .wf-robot-eye-open {
+    fill: var(--wf-robot-ink);
   }
 }
 
@@ -80,25 +88,25 @@ html body #mainContent #page-dashboard :is(#wfGreetingRobot, #wfRobotSettingsPre
 }
 
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-eye-open { stroke: none; }
-:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-glint { fill: #fff; }
-:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-glint-small { fill: #d7d7dd; }
+:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-glint { fill: var(--wf-robot-glint, #fff); }
+:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-glint-small { fill: var(--wf-robot-soft-glint, #d7d7dd); }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-brow,
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-eye-closed,
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-mouth {
   fill: none;
   stroke-linecap: round;
 }
-:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-brow { stroke: #171923; stroke-width: 7; }
-:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-eye-closed { stroke: #171923; stroke-width: 11; opacity: 0; }
-:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-mouth { stroke: #171923; stroke-width: 9; }
+:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-brow { stroke: var(--wf-robot-ink, #171923); stroke-width: 7; }
+:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-eye-closed { stroke: var(--wf-robot-ink, #171923); stroke-width: 11; opacity: 0; }
+:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-mouth { stroke: var(--wf-robot-ink, #171923); stroke-width: 9; }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-blink { transform-box: fill-box; transform-origin: center; }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-mouth-open {
   display: none;
   transform-box: view-box;
   transform-origin: 300px 258.72px;
 }
-:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-mouth-cavity { fill: #171923; }
-:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-mouth-light { fill: #d7d7dd; }
+:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-mouth-cavity { fill: var(--wf-robot-ink, #171923); }
+:is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-mouth-light { fill: var(--wf-robot-soft-glint, #d7d7dd); }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview) .wf-robot-thinking { display: none; fill: #c5c7cc; }
 
 :is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-expression="happy"] .wf-robot-eye-open { ry: 43.5px; }
@@ -110,7 +118,7 @@ html body #mainContent #page-dashboard :is(#wfGreetingRobot, #wfRobotSettingsPre
 :is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-expression="surprised"] .wf-robot-eye-open { rx: 37px; ry: 62px; }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-expression="surprised"] .wf-robot-glint { cy: -22.32px; }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-expression="surprised"] .wf-robot-glint-small { cy: 23.56px; }
-:is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-expression="surprised"] .wf-robot-brow { transform: translateY(-13px); stroke: #171923; }
+:is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-expression="surprised"] .wf-robot-brow { transform: translateY(-13px); stroke: var(--wf-robot-ink, #171923); }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-expression="surprised"] .wf-robot-mouth { display: none; }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-expression="surprised"] .wf-robot-mouth-open { display: block; }
 :is(#wfGreetingRobot, #wfRobotSettingsPreview)[data-expression="surprised"] .wf-robot-mouth-cavity { rx: 22px; ry: 26px; }

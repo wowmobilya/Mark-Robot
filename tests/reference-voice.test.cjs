@@ -64,10 +64,10 @@ test('reference synthesis uses buffered PCM WAV and local embedding input',()=>{
   assert.throws(()=>core.generationBody({text:'x'.repeat(801),locale:'ar',embedding:'x'}),{code:'text-length'});
 });
 
-test('reference streaming selects prefix PCM while preserving language and speaker conditioning',()=>{
+test('reference streaming keeps all residual codebooks from the first PCM frame',()=>{
   const body=core.generationBody({text:'الرصيد صفر.',locale:'ar',embedding:'c3BlYWtlcg==',stream:true});
   assert.equal(body.stream,true);assert.equal(body.format,'pcm');
-  assert.equal(body.stream_decode,'prefix');assert.equal(body.stream_codebooks,1);assert.equal(body.stream_codebooks_scope,'first');
+  assert.equal(body.stream_decode,'prefix');assert.equal(body.stream_codebooks,10);assert.equal(body.stream_codebooks_scope,'first');
   assert.equal(body.laci,true);assert.equal(body.language,'ar');assert.equal(body.speaker_embedding_base64,'c3BlYWtlcg==');
 });
 
@@ -138,6 +138,7 @@ async function browserFixture(t,{stubPlayer=false,onEvent}={}) {
   await flushUntil(()=>api.getStatus('ar').ready);
   return {api,requests,workers,events,audioElements,playbacks,objectURLs,timers,
     get networkCalls(){return networkCalls;},
+    restorePack(){removed.clear();return api.refresh();},
     failNextPost(){failNextPost=true;},
     send(index,data){const request=requests[index];assert(request);request.worker.onmessage({data:{id:request.id,...data}});},
     idle(){for(const[id,value]of [...timers])if(value.ms===300000){timers.delete(id);value.fn();}},
@@ -206,7 +207,8 @@ test('warm preparation and synthesis share the same engine without speech-busy',
 test('finished playback keeps the worker warm and idle release waits for the playback owner',async t=>{
   const f=await browserFixture(t,{stubPlayer:true});
   const old=f.api.speak({text:'الرصيد صفر.',locale:'ar',continuous:true});
-  assert.equal(old.options.streaming,true);assert.equal(old.options.continuous,false);
+  assert.equal(old.options.streaming,false);assert.equal(old.options.continuous,false);
+  assert.equal(f.api.preparePlayback().options.streaming,false,'the gesture lease must match native phrase playback');
   const first=old.source.synthesize('الرصيد صفر.',{locale:'ar',signal:old.controller.signal});f.respond(0);await first;
   const worker=f.workers[0];f.idle();assert.equal(worker.terminated,false,'active playback keeps its GPU engine');
   old.finish();assert.equal(worker.terminated,false,'normal completion retains the loaded engine');
@@ -280,4 +282,79 @@ test('a runtime status subscriber cannot duplicate or orphan the active preparat
   const warm=f.api.prepare();warm.catch(()=>{});for(const pending of subscribers)pending.catch(()=>{});
   assert.equal(f.requests.length,1,'preparation is registered before its initial state is published');
   f.send(0,{type:'ready'});await Promise.all([warm,...subscribers]);
+});
+
+test('completed reference phrases replay from RAM with locale and exact text isolation',async t=>{
+  const f=await browserFixture(t);
+  const first=f.api.synthesize('الرصيد صفر.',{locale:'ar'});f.respond(0);const blob=await first;
+  const replay=f.api.synthesize('الرصيد صفر.',{locale:'ar-SY'});replay.catch(()=>{});
+  assert.equal(f.requests.length,1,'replaying a completed phrase must not run the GPU again');
+  assert.equal(await replay,blob);
+  const translated=f.api.synthesize('الرصيد صفر.',{locale:'tr'});f.respond(1);await translated;
+  const changed=f.api.synthesize('الرصيد واحد.',{locale:'ar'});f.respond(2);await changed;
+  assert.equal(f.requests.length,3,'different text or a different embedding never reuses a prior quote');
+  assert.equal(f.networkCalls,0);
+});
+
+test('a cached phrase still respects an already aborted owner',async t=>{
+  const f=await browserFixture(t);
+  const first=f.api.synthesize('الرصيد صفر.',{locale:'ar'});f.respond(0);await first;
+  const controller=new AbortController();controller.abort();
+  await assert.rejects(f.api.synthesize('الرصيد صفر.',{locale:'ar',signal:controller.signal}),{name:'AbortError'});
+  assert.equal(f.requests.length,1);
+});
+
+test('completed phrase RAM cache evicts old audio above sixteen MiB',async t=>{
+  const f=await browserFixture(t);
+  // Three individually valid six-MiB WAVs exceed the sixteen-MiB audio budget.
+  const wav=playbackCore.pcmToWav(new Float32Array(3*1024*1024),44100);
+  const blobs=[];
+  for(let index=0;index<3;index++){
+    const pending=f.api.synthesize('عبارة '+index,{locale:'ar'});
+    const blob=new Blob([wav],{type:'audio/wav'});blobs.push(blob);
+    f.send(index,{blob});await pending;
+  }
+  const replay=f.api.synthesize('عبارة 1',{locale:'ar'});replay.catch(()=>{});
+  assert.equal(f.requests.length,3);
+  assert.equal(await replay,blobs[1]);
+  const evicted=f.api.synthesize('عبارة 0',{locale:'ar'});f.respond(3);await evicted;
+  assert.equal(f.requests.length,4,'the least recently used audio was released');
+});
+
+test('completed phrase RAM cache keeps at most thirty-two entries and removal clears it',async t=>{
+  const f=await browserFixture(t);
+  for(let index=0;index<33;index++){
+    const pending=f.api.synthesize('عبارة '+index,{locale:'ar'});f.respond(index);await pending;
+  }
+  const replay=f.api.synthesize('عبارة 32',{locale:'ar'});replay.catch(()=>{});
+  assert.equal(f.requests.length,33);await replay;
+  const evicted=f.api.synthesize('عبارة 0',{locale:'ar'});f.respond(33);await evicted;
+  assert.equal(f.requests.length,34);
+  await f.api.remove();await f.restorePack();
+  const afterRemoval=f.api.synthesize('عبارة 32',{locale:'ar'});afterRemoval.catch(()=>{});
+  assert.equal(f.requests.length,35,'removal clears financial text and audio from the RAM cache');
+  f.respond(34);await afterRemoval;
+});
+
+test('back-to-back completions of the same phrase count its audio once in the RAM budget',async t=>{
+  const f=await browserFixture(t),wav=playbackCore.pcmToWav(new Float32Array(5*1024*1024/2),44100);
+  const blob=()=>new Blob([wav],{type:'audio/wav'});
+  const first=f.api.synthesize('عبارة أولى',{locale:'ar'});f.send(0,{blob:blob()});
+  // The completed worker job is free before synthesize's cache microtask runs.
+  const repeat=f.api.synthesize('عبارة أولى',{locale:'ar'});f.send(1,{blob:blob()});
+  await Promise.all([first,repeat]);
+  for(let index=2;index<4;index++){
+    const pending=f.api.synthesize('عبارة '+index,{locale:'ar'});f.send(index,{blob:blob()});await pending;
+  }
+  const replay=f.api.synthesize('عبارة أولى',{locale:'ar'});replay.catch(()=>{});
+  assert.equal(f.requests.length,4,'three five-MiB phrases fit without counting a replacement twice');
+  await replay;
+});
+
+test('a completion queued before removal cannot repopulate the cleared phrase cache',async t=>{
+  const f=await browserFixture(t);
+  const first=f.api.synthesize('الرصيد صفر.',{locale:'ar'});f.respond(0);
+  const removed=f.api.remove();await first;await removed;await f.restorePack();
+  const next=f.api.synthesize('الرصيد صفر.',{locale:'ar'});next.catch(()=>{});
+  assert.equal(f.requests.length,2);f.respond(1);await next;
 });
