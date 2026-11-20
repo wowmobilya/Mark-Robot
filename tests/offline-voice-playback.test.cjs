@@ -294,14 +294,17 @@ test('PCM packets stay contiguous at the selected rate and finish only after the
   await voice.calls[0].emit(new Float32Array(4410).fill(.25));await voice.calls[0].emit(new Float32Array(4410).fill(.5));voice.calls[0].finish();
   await flushUntil(()=>voice.calls.length===2);await voice.calls[1].emit(new Float32Array(4410).fill(.75));voice.calls[1].finish();
   await flushUntil(()=>progress.length===2);
-  const context=f.contexts[0],nodes=context.reportSources;assert.equal(nodes.length,3);
-  assert.deepEqual(nodes.map(node=>node.buffer.getChannelData(0)[0]),[.25,.5,.75]);
-  assert(nodes.every(node=>node.playbackRate.value===1.25));assert.equal(context.gains[0].gain.value,0,'muted volume is retained');
-  assert.equal(nodes[1].startedAt,nodes[0].endsAt);assert.equal(nodes[2].startedAt,nodes[1].endsAt);
+  const context=f.contexts[0],nodes=context.reportSources;
+  const second=nodes.find(node=>node.buffer.getChannelData(0)[0]===.75);
+  assert(second);assert.equal(nodes[0].buffer.getChannelData(0)[0],.25);
+  assert(nodes.every(node=>node.playbackRate.value===1));assert.equal(context.gains[0].gain.value,0,'muted volume is retained');
+  for(let i=1;i<nodes.length;i++)assert.equal(nodes[i].startedAt,nodes[i-1].endsAt);
+  assert(Math.abs(second.startedAt-nodes[0].startedAt-.2/1.25)<1e-8);
+  assert(Math.abs(nodes.at(-1).endsAt-second.startedAt-.1/1.25)<1e-8);
   assert.equal(ended,0,'finishing synthesis does not finish playback');
   f.clock.advance(nodes[0].startedAt+.01);assert.equal(started,1);assert.deepEqual(boundaries.map(item=>[item.charIndex,item.charLength]),[[0,4]]);
-  f.clock.advance(nodes[2].startedAt-context.currentTime+.01);assert.deepEqual(boundaries.map(item=>[item.charIndex,item.charLength]),[[0,4],[5,5]]);
-  assert.equal(ended,0);f.clock.advance(nodes[2].endsAt-context.currentTime+.01);await flushUntil(()=>ended===1);
+  f.clock.advance(second.startedAt-context.currentTime+.01);assert.deepEqual(boundaries.map(item=>[item.charIndex,item.charLength]),[[0,4],[5,5]]);
+  assert.equal(ended,0);f.clock.advance(nodes.at(-1).endsAt-context.currentTime+.01);await flushUntil(()=>ended===1);
   assert.equal(waiting,0,'already buffered neighboring packets never show preparation');assert.equal(voice.releases,1);
  }finally{handle.cancel();}
 });
@@ -310,7 +313,7 @@ test('cancelling PCM playback stops queued sound immediately and ignores late au
  const f=await fixture({webAudio:true}),voice=streamedVoice();let started=0,ended=0,errors=0,boundaries=0;
  const handle=f.api.speakGenerated({text:'First. Next.',locale:'ar',streaming:true,onStart(){started++;},onEnd(){ended++;},onError(){errors++;},onBoundary(){boundaries++;}},voice);
  await flushUntil(()=>voice.calls.length===1);await voice.calls[0].emit(new Float32Array(22050).fill(.5));
- const context=f.contexts[0],nodes=context.reportSources.slice();f.clock.advance(.15);assert.equal(started,1);
+ const context=f.contexts[0];f.clock.advance(.15);const nodes=context.reportSources.slice();assert.equal(started,1);
  handle.cancel();assert(nodes.every(node=>node.stopped));assert.equal(context.state,'closed');assert.equal(voice.releases,1);
  await voice.calls[0].emit(new Float32Array(4410).fill(.25));voice.calls[0].finish();f.clock.advance(10);await new Promise(resolve=>setImmediate(resolve));
  assert.equal(context.sources.length,nodes.length+1,'late PCM creates no sources beyond the unlock primer');
@@ -465,5 +468,53 @@ test('default streamed speech still starts before its next generated chunk is re
  const handle=f.api.speak({text:'First. Next.',locale:'ar',onStart(){started++;}});
  try{await flushUntil(()=>f.requests.length===1);f.respond(0);await flushUntil(()=>started===1&&f.requests.length===2);
   assert.equal(f.audioElements[0].played.length,2);assert.equal(f.audioElements[0].sources.length,2);
+ }finally{handle.cancel();}
+});
+
+test('changing tempo while paused changes already-generated PCM from the same position',async()=>{
+ const f=await fixture({webAudio:true}),voice=streamedVoice(),boundaries=[],progress=[];let ended=0;
+ const handle=f.api.speakGenerated({text:'First. Next.',locale:'ar',streaming:true,onBoundary:e=>boundaries.push(e.charIndex),
+  onProgress:e=>progress.push(e),onEnd(){ended++;}},voice);
+ try{
+  await flushUntil(()=>voice.calls.length===1);
+  await voice.calls[0].emit(new Float32Array(44100*2).fill(.25));voice.calls[0].finish();
+  await flushUntil(()=>voice.calls.length===2);
+  await voice.calls[1].emit(new Float32Array(44100).fill(.75));voice.calls[1].finish();
+  await flushUntil(()=>progress.length===2);f.clock.advance(.2);handle.pause();
+  const context=f.contexts[0],committed=context.reportSources,firstStart=committed[0].startedAt;
+  const oldDuration=committed.at(-1).endsAt-firstStart;
+  assert(committed.at(-1).endsAt-context.currentTime<=.47,'little audio is committed at the old speed');
+  handle.setRate(.75);f.clock.advance(2);assert.equal(context.currentTime,.2);
+  assert.deepEqual(boundaries,[0]);await handle.resume();f.clock.advance(5);await flushUntil(()=>ended===1);
+  const nodes=context.reportSources,second=nodes.find(node=>node.buffer.getChannelData(0)[0]===.75);
+  assert(Math.abs(second.startedAt-firstStart-oldDuration-(2-oldDuration)/.75)<=1/44100);
+  assert(Math.abs(nodes.at(-1).endsAt-second.startedAt-1/.75)<=1/44100);
+  for(let i=1;i<nodes.length;i++)assert.equal(nodes[i].startedAt,nodes[i-1].endsAt);
+  assert.deepEqual(boundaries,[0,7]);assert.equal(voice.calls.length,2);assert.equal(voice.releases,1);
+ }finally{handle.cancel();}
+});
+
+test('HTML audio speed changes preserve the current media time through pause and resume',async()=>{
+ const f=await fixture(),voice={getStatus:()=>({ready:true}),synthesize:async()=>wav(new Float32Array(2400))};let started=0;
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',rate:.85,onStart(){started++;}},voice);
+ try{
+  await flushUntil(()=>started===1);const audio=f.audioElements[0];audio.advance(.04);handle.pause();handle.setRate(1.2);
+  assert.equal(audio.playbackRate,1.2);assert.equal(audio.preservesPitch,true);assert.equal(audio.currentTime,.04);
+  await handle.resume();assert.equal(audio.currentTime,.04);assert.equal(audio.sources.length,2);
+ }finally{handle.cancel();}
+});
+
+test('a synchronous pause at HTML audio start retains its original boundary until resume',async()=>{
+ const f=await fixture(),voice={getStatus:()=>({ready:true}),synthesize:async()=>wav(new Float32Array(2400))},boundaries=[];
+ let started=0,handle;
+ handle=f.api.speakGenerated({text:'Report.',locale:'ar',onStart(){if(++started===1)handle.pause();},
+  onBoundary:value=>boundaries.push(value.charIndex)},voice);
+ try{
+  await flushUntil(()=>started===1);
+  assert.deepEqual(boundaries,[],'a start callback that pauses must not consume the pending sentence boundary');
+  f.audioElements[0].advance(.01);
+  assert.deepEqual(boundaries,[],'a queued timeupdate while paused must preserve the pending boundary');
+  await handle.resume();await flushUntil(()=>started===2);
+  assert.deepEqual(boundaries,[0],'resumed audio publishes the original boundary exactly once');
  }finally{handle.cancel();}
 });

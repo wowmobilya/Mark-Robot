@@ -611,6 +611,7 @@ function printTokens(m,L,detail){
  h(t('summary',L));p(`${t('client',L)}: ${m.client.name||m.companyId}`);
  p([m.client.buyerName,m.client.phone,m.client.email,[m.client.country,m.client.province,m.client.city].filter(Boolean).join(' · ')].filter(Boolean).join(' | '));
  p([m.seller.address,m.seller.phone,m.seller.email,m.seller.website].filter(Boolean).join(' | '));
+ for(const [label,value] of root.WFCompanyIdentity?.taxLines(m.seller,L)||[])p(label+' · '+value);
  if(m.incomplete||m.estimated)p(t('review',L)+' — '+t('reviewText',L),true);
  table(['description','amountUSD'],[['opening',m.totals.opening],['invoiced',m.totals.invoiced],['received',m.totals.received],['refunds',m.totals.refunded],['creditNotes',m.totals.creditNotes],[(m.incomplete||m.estimated)?'knownBalance':'closing',m.totals.closing]].map(([k,v])=>rr([t(k,L),nn(v)])),[72,28]);
  p(signedLabel(m.totals.closing,L)+' · '+t('positiveNote',L));p(t('base',L)+' · '+t('basisNote',L));

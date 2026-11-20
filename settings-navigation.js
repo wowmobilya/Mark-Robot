@@ -81,10 +81,11 @@
    company: ['بيانات الشركة والشعار', 'Company details and logo', 'Şirket bilgileri ve logo', 'Coordonnées et logo', 'Данные компании и логотип'],
    bank: ['الحسابات البنكية وIBAN', 'Bank accounts and IBAN', 'Banka hesapları ve IBAN', 'Comptes bancaires et IBAN', 'Банковские счета и IBAN'],
    invoice: ['الترقيم والضريبة', 'Numbering and tax', 'Numaralandırma ve vergi', 'Numérotation et taxe', 'Нумерация и налог'],
-   currency: ['أسعار الصرف اليدوية', 'Manual exchange rates', 'Manuel döviz kurları', 'Taux de change manuels', 'Ручные курсы валют'],
+   currency: ['مصدر الأسعار وأسعار الشراء والبيع', 'Rate source and buy/sell quotes', 'Kur kaynağı ve alış/satış kurları', 'Source des taux et cours d’achat/vente', 'Источник и курсы покупки и продажи'],
    'product-categories': ['تنظيم أقسام المنتجات وصورها', 'Manage product categories and images', 'Ürün kategorileri ve görsellerini yönetin', 'Gérer les catégories et leurs images', 'Управление категориями товаров и изображениями'],
    appearance: ['المظهر والكثافة والحركة', 'Theme, density and motion', 'Tema, yoğunluk ve hareket', 'Thème, densité et animations', 'Тема, плотность и анимация'],
    'app-identity': ['اسم البرنامج وشعاره وأيقونة التثبيت', 'App name, logo and installation icon', 'Uygulama adı, logosu ve yükleme simgesi', 'Nom, logo et icône d’installation', 'Название, логотип и значок установки'],
+   'smart-card': ['صفحات البطاقة وترتيبها والتنقل بينها', 'Card pages, order and rotation', 'Kart sayfaları, sıralama ve geçişler', 'Pages, ordre et défilement de la carte', 'Страницы карточки, порядок и переключение'],
    robot: ['الصوت والتعبيرات وتتبع الحركة', 'Voice, expressions and movement tracking', 'Ses, ifadeler ve hareket takibi', 'Voix, expressions et suivi des mouvements', 'Голос, эмоции и отслеживание движения'],
    language: ['لغة واجهة البرنامج', 'Interface language', 'Arayüz dili', 'Langue de l’interface', 'Язык интерфейса'],
    data: ['النسخ الاحتياطي والاستعادة', 'Backup and restore', 'Yedekleme ve geri yükleme', 'Sauvegarde et restauration', 'Резервное копирование'],
@@ -99,7 +100,7 @@
    data:['البيانات والنظام','Data and system','Veriler ve sistem','Données et système','Данные и система']
  };
  const headings=new Map();
- const saveSections = new Set(['company', 'bank', 'invoice', 'currency']);
+ const saveSections = new Set(['company', 'bank', 'invoice']);
  let opener;
  function updateDialogTitle() {
    if (!opener) return;

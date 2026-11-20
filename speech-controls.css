@@ -1,52 +1,47 @@
-/* Kept below navigation and outside individual sections so reading travels with
-   the user. The full report owns its controls while its sheet is open. */
+/* Miniature smart card below the app header, shared across sections. */
 @media screen {
   html body #wfSpeechControls {
-    position:fixed;z-index:29980;top:calc(74px + env(safe-area-inset-top,0px));
-    left:calc(50% + (env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))/2);
-    width:min(480px,calc(100% - 16px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)));
-    box-sizing:border-box;transform:translateX(-50%);display:flex;align-items:center;gap:10px;
-    min-height:66px;margin:0;padding:9px 10px;border:1px solid #35566a;border-radius:19px;
-    background:linear-gradient(120deg,#123044,#0b1a2a 62%);color:#edf8ff;color-scheme:dark;
-    box-shadow:0 10px 28px rgb(2 10 22 / 28%),inset 0 1px rgb(180 231 255 / 7%);
-    font-family:inherit;text-align:start;isolation:isolate;
+    position:fixed;z-index:29980;top:calc(var(--nav-h,72px) + 8px + env(safe-area-inset-top,0px));
+    inset-inline:0;margin-inline:auto;width:fit-content;max-width:calc(100% - 16px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));
+    box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:6px 8px;
+    border:1px solid var(--wf-reader-hairline,var(--border));border-radius:16px;
+    background:linear-gradient(115deg,var(--wf-reader-paper,var(--card)) 45%,var(--wf-reader-wash,var(--ui-soft)));
+    color:var(--text);box-shadow:var(--shadow);font-family:inherit;text-align:start;
   }
-  html body #wfSpeechControls[hidden],
-  html.wf-robot-report-open body #wfSpeechControls {display:none!important;}
-  #wfSpeechControls .wf-speech-controls-content {flex:1;min-width:0;display:grid;gap:2px;}
-  #wfSpeechControlsVoice {display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#88ebf5;font-family:inherit;font-size:12px;font-weight:650;line-height:1.5;}
-  #wfSpeechControlsStatus {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin:0;padding:0;color:#bed1e0;font-size:11px;line-height:1.5;overflow-wrap:anywhere;}
-  #wfSpeechControls .wf-speech-controls-actions {display:flex;align-items:center;gap:5px;flex:0 0 auto;}
+  html body #wfSpeechControls[hidden],html.wf-robot-report-open body #wfSpeechControls,#wfSpeechControls [hidden] {display:none!important;}
+  #wfSpeechControls .wf-speech-controls-content {flex:1;min-width:0;max-width:160px;display:grid;gap:2px;}
+  #wfSpeechControlsVoice {color:var(--text);font:inherit;font-size:12px;font-weight:700;line-height:1.4;}
+  #wfSpeechControlsStatus {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin:0;color:var(--text2);font-size:11px;line-height:1.5;overflow-wrap:anywhere;}
+  #wfSpeechControls .wf-speech-controls-actions {display:flex;align-items:center;gap:5px;}
   html body #wfSpeechControls button {
-    display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;box-sizing:border-box;
-    width:44px;height:44px;min-width:44px;min-height:44px;margin:0;padding:0;
-    border:1px solid #345267;border-radius:13px;background:#152e41;color:#d8edf7;
-    box-shadow:none;font:inherit;cursor:pointer;touch-action:manipulation;transition:background-color .15s ease,border-color .15s ease;
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;box-sizing:border-box;min-width:44px;min-height:44px;margin:0;padding:6px;
+    border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--ui-accent);
+    box-shadow:none;font:inherit;font-size:12px;font-weight:650;line-height:1.35;cursor:pointer;touch-action:manipulation;
   }
-  html body #wfSpeechControls button[hidden] {display:none!important;}
-  #wfSpeechControls button svg {display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
-  html body #wfSpeechControls #wfSpeechControlsToggle {background:#78dfec;border-color:#9df3fa;color:#092333;}
-  html body #wfSpeechControls #wfSpeechControlsStop {background:#202e3d;color:#f1dce3;}
-  html body #wfSpeechControls button:hover:not(:disabled) {background:#23495e;border-color:#87b4c9;}
-  html body #wfSpeechControls #wfSpeechControlsToggle:hover:not(:disabled) {background:#a0f1f7;border-color:#d0fbff;}
-  html body #wfSpeechControls #wfSpeechControlsStop:hover:not(:disabled) {background:#44313d;border-color:#ae7b91;}
-  html body #wfSpeechControls button:disabled {opacity:.42;cursor:default;}
-  html body #wfSpeechControls button:focus-visible {outline:2px solid #a4f6ff;outline-offset:3px;}
-  #wfSpeechControls .wf-speech-controls-indicator {display:flex;align-items:center;justify-content:center;gap:3px;flex:0 0 20px;height:28px;color:#74dfec;}
-  #wfSpeechControls .wf-speech-controls-indicator span {display:block;width:3px;height:16px;border-radius:3px;background:currentColor;transform:scaleY(.5);}
-  #wfSpeechControls .wf-speech-controls-indicator span:nth-child(2) {height:23px;animation-delay:-.3s;}
-  #wfSpeechControls .wf-speech-controls-indicator span:nth-child(3) {height:19px;animation-delay:-.15s;}
-  #wfSpeechControls .wf-speech-controls-indicator span:nth-child(4) {height:12px;animation-delay:-.45s;}
-  #wfSpeechControls[data-state="speaking"] .wf-speech-controls-indicator span {animation-name:wf-speech-dock-speaking;animation-duration:.9s;animation-iteration-count:infinite;animation-timing-function:ease-in-out;}
-  #wfSpeechControls[data-state="paused"] .wf-speech-controls-indicator {color:#8aa6b7;}
-  @keyframes wf-speech-dock-speaking {0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
-  @media (max-width:380px) {
-    html body #wfSpeechControls {gap:7px;padding-inline:8px;border-radius:17px;}
-    #wfSpeechControls .wf-speech-controls-indicator {display:none;}
-    #wfSpeechControls .wf-speech-controls-actions {gap:4px;}
+  #wfSpeechControls button>svg {display:block;width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+  html body #wfSpeechControls #wfSpeechControlsToggle {background:var(--brand-primary);border-color:var(--brand-primary);color:#fff;}
+  html body #wfSpeechControls #wfSpeechControlsReport {color:var(--text);padding-inline:7px;}
+  #wfSpeechControlsReport .wf-reader-face {width:40px;height:30px;}
+  #wfSpeechControlsReport .wf-reader-face:empty {display:none;}
+  #wfSpeechControlsReport .wf-reader-face .wf-robot-face {width:100%;height:100%;}
+  html body #wfSpeechControls button:disabled {opacity:.5;cursor:default;}
+  html body #wfSpeechControls button:focus-visible {outline:2px solid var(--ui-accent);outline-offset:2px;}
+  #wfSpeechControls .wf-speech-controls-indicator {display:flex;align-items:center;justify-content:center;gap:3px;flex:none;height:24px;color:var(--ui-accent);}
+  #wfSpeechControls .wf-speech-controls-indicator span {width:3px;height:12px;border-radius:3px;background:currentColor;}
+  #wfSpeechControls .wf-speech-controls-indicator span:nth-child(2) {height:22px;}
+  #wfSpeechControls .wf-speech-controls-indicator span:nth-child(3) {height:17px;}
+  html body #wfSpeechControls[data-idle="true"] {padding:3px;gap:0;}
+  @media(max-width:420px) {
+    html body #wfSpeechControls {gap:5px;padding-inline:5px;}
+    #wfSpeechControls .wf-speech-controls-content {max-width:100px;}
+    #wfSpeechControlsReport .wf-reader-face {width:32px;height:25px;}
   }
-  @media (prefers-reduced-motion:reduce) {
-    #wfSpeechControls *,#wfSpeechControls *::before,#wfSpeechControls *::after {animation:none!important;transition:none!important;}
+  @media(hover:hover) {
+    html body #wfSpeechControls button:hover:not(:disabled) {border-color:var(--ui-accent);}
+  }
+  @media(prefers-reduced-motion:no-preference) {
+    html:not([data-wf-motion="reduced"]) #wfSpeechControls {animation:wf-speech-card-in .2s ease-out;}
   }
 }
+@keyframes wf-speech-card-in {from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
 @media print {#wfSpeechControls {display:none!important;}}

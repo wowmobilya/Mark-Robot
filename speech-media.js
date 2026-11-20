@@ -6,11 +6,11 @@
   try { media = root?.navigator?.mediaSession; } catch (_) { return; }
   if (!media || typeof media.setActionHandler !== 'function') return;
   const labels = {
-    ar: {report: 'تقرير اليوم · مارك', program: 'قراءة النص · مارك', intro: 'مساعد واو · مارك'},
-    en: {report: 'Daily report · Mark', program: 'Text reading · Mark', intro: 'WOW assistant · Mark'},
-    tr: {report: 'Günlük rapor · Mark', program: 'Metin okuma · Mark', intro: 'WOW asistanı · Mark'},
-    fr: {report: 'Rapport du jour · Mark', program: 'Lecture du texte · Mark', intro: 'Assistant WOW · Mark'},
-    ru: {report: 'Отчёт за день · Mark', program: 'Чтение текста · Mark', intro: 'Помощник WOW · Mark'},
+    ar: {report: 'تقرير اليوم · مارك روبوت', program: 'قراءة النص · مارك روبوت', intro: 'مساعد واو · مارك روبوت'},
+    en: {report: 'Daily report · Mark Robot', program: 'Text reading · Mark Robot', intro: 'WOW assistant · Mark Robot'},
+    tr: {report: 'Günlük rapor · Mark Robot', program: 'Metin okuma · Mark Robot', intro: 'WOW asistanı · Mark Robot'},
+    fr: {report: 'Rapport du jour · Robot Mark', program: 'Lecture du texte · Robot Mark', intro: 'Assistant WOW · Robot Mark'},
+    ru: {report: 'Отчёт за день · Робот Марк', program: 'Чтение текста · Робот Марк', intro: 'Помощник WOW · Робот Марк'},
   };
   let owned = false, identity = '', heard = false;
   function state() { try { return root.WFProgramSpeech?.getState?.() || {}; } catch (_) { return {}; } }

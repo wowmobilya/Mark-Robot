@@ -25,7 +25,7 @@ function fixture({initial={active:false},apiPresent=true,methods,report=true}={}
  const context={window};const source=fs.readFileSync(file,'utf8');vm.runInNewContext(source,context);
  return {window,document,body,classes,calls,api,node:id=>find(body,id),
   update(value){current=value;emit('wf-program-speech-state',value);},ready(){emit('wf-robot-ready');},
-  reportOpen(open){open?classes.add('wf-robot-report-open'):classes.delete('wf-robot-report-open');emit('wf-robot-report-visibility',{open});},
+  reportOpen(open,minimized=false){open?classes.add('wf-robot-report-open'):classes.delete('wf-robot-report-open');emit('wf-robot-report-visibility',{open,minimized,locale:'ar'});},
   click(id,trusted=true){find(body,id)?.events.get('click')?.({isTrusted:trusted,preventDefault(){},stopPropagation(){}});},
   reload(){vm.runInNewContext(source,context);}};
 }
@@ -59,7 +59,7 @@ test('showing the existing report never restarts playback and the dock yields to
 test('status is the real playback message rendered as text and controls follow the reading language',()=>{
  const f=fixture({initial:active({locale:'en',state:'preparing',phase:'loading',message:'Loading the installed voice…'})});
  assert.equal(f.node('wfSpeechControlsStatus').textContent,'Loading the installed voice…');
- assert.equal(f.node('wfSpeechControlsVoice').textContent,'Mark · Syrian');assert.equal(f.node('wfSpeechControls').getAttribute('dir'),'ltr');
+ assert.equal(f.node('wfSpeechControlsVoice').textContent,'Mark Robot');assert.equal(f.node('wfSpeechControls').getAttribute('dir'),'ltr');
  assert.equal(f.node('wfSpeechControlsToggle').getAttribute('aria-label'),'Pause reading');
  const message='<img src=x onerror="speech()">';f.update(active({message}));
  assert.equal(f.node('wfSpeechControlsStatus').textContent,message);assert.equal(f.node('wfSpeechControlsStatus').innerHTML,'');
@@ -79,4 +79,13 @@ test('the dock attaches to a late speech owner and duplicate script loading does
  const f=fixture({initial:active(),apiPresent:false});assert.equal(f.node('wfSpeechControls').hidden,true);
  f.window.WFProgramSpeech=f.api;f.ready();assert.equal(f.node('wfSpeechControls').hidden,false);f.reload();
  assert.equal(f.body.children.filter(node=>node.id==='wfSpeechControls').length,1);f.click('wfSpeechControlsToggle');assert.deepEqual(f.calls,['pause']);
+});
+
+test('a minimized silent report can be reopened from the top launcher without restarting speech',()=>{
+ const f=fixture();
+ f.reportOpen(true);f.reportOpen(false,true);f.update({active:false,state:'finished'});
+ assert.equal(f.node('wfSpeechControls').hidden,false);assert.equal(f.node('wfSpeechControlsReport').disabled,false);
+ assert.equal(f.node('wfSpeechControlsToggle').hidden,true);assert.equal(f.node('wfSpeechControlsStop').hidden,true);
+ f.click('wfSpeechControlsReport');assert.deepEqual(f.calls,['show-report']);
+ f.reportOpen(true);f.reportOpen(false,false);assert.equal(f.node('wfSpeechControls').hidden,true);
 });

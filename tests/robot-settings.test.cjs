@@ -134,12 +134,51 @@ test('settings renders only Mark and Syrian Arabic with a generated preview and 
   f.reading.events.click({isTrusted:false});assert.equal(f.trace.length,0);
   const event={isTrusted:true};f.reading.events.click(event);
   assert.equal(f.trace.length,1);assert.equal(f.trace[0].kind,'speak');assert.equal(f.trace[0].options.event,event);
-  assert.equal(f.trace[0].options.locale,'ar');assert(f.trace[0].options.text.includes('هاي تجربة'));
-  assert(f.status.textContent.includes('Mark · local reference'));
+  assert.equal(f.trace[0].options.locale,'ar');assert.match(f.trace[0].options.text,/مرحبا أستاذي.*قهوتي/);assert.equal(f.trace[0].options.kind,'preview');
+  assert(f.status.textContent.includes('مارك روبوت · صوت محلي'));
   f.emitSpeech({state:'ready',active:false});assert.equal(f.status.textContent,'انتهت عينة القراءة.');
   f.root.lang='tr';f.window.applyTr();assert.equal(f.status.textContent,'Okuma örneği tamamlandı.');
   const rate=f.nodes.find(node=>node.name==='speechRate');rate.value=1.1;rate.events.input();f.reading.events.click({isTrusted:true});
-  assert.equal(f.trace.length,1);assert(f.status.textContent.includes('kaydedin'));
+  assert.equal(f.trace.length,2);assert.equal(f.trace[1].options.rate,1.1);
+  f.emitSpeech({state:'ready',active:false});
+  const volume=f.nodes.find(node=>node.name==='speechVolume');volume.value=.5;volume.events.input();
+  f.reading.events.click({isTrusted:true});assert.equal(f.trace.length,2);assert(f.status.textContent.includes('kaydedin'));
+});
+
+test('generated preview controls pause and resume the same owner, change its speed and stop it',()=>{
+  const f=settingsUIFixture({referenceReady:true}), api=f.window.WFProgramSpeech, calls=[];
+  let current={active:false,rate:1};api.getState=()=>current;
+  api.pause=()=>calls.push('pause');api.resume=()=>calls.push('resume');api.stop=()=>calls.push('stop');
+  api.setRate=rate=>{calls.push(rate);current.rate=rate;return true;};
+  const click=button=>button.events.click({isTrusted:true});
+  const emit=value=>{current=value;f.emitSpeech(current);};
+  const stop=f.nodes.find(node=>node.dataset.action==='stop');
+  click(f.reading);
+  emit({active:true,kind:'preview',state:'preparing',canPause:false,rate:1});
+  assert(f.reading.disabled);assert.equal(stop.disabled,false);
+  emit({active:true,kind:'preview',state:'speaking',canPause:true,rate:1});
+  assert.equal(f.reading.dataset.action,'pause');click(f.reading);
+  emit({...current,paused:true,state:'paused'});assert.equal(f.reading.dataset.action,'resume');click(f.reading);
+  const rate=f.nodes.find(node=>node.name==='speechRate');rate.value=1.15;rate.events.input();click(stop);
+  assert.deepEqual(calls,['pause','resume',1.15,'stop']);assert.equal(f.trace.length,1);
+  emit({active:false,state:'stopped',rate:1.15});assert.equal(f.reading.dataset.action,'play');assert(stop.disabled);
+  emit({active:true,kind:'report',state:'speaking',rate:1,canPause:true});click(f.reading);click(stop);
+  assert.deepEqual(calls,['pause','resume',1.15,'stop']);assert.equal(f.trace.length,1);
+});
+
+test('restoring the saved preview rate preserves all other drafts and the current audio session',()=>{
+  const f=settingsUIFixture({referenceReady:true,preferences:{speechRate:.85,speechVolume:.7}});
+  const rate=f.nodes.find(n=>n.name==='speechRate'),volume=f.nodes.find(n=>n.name==='speechVolume');
+  const reset=f.nodes.find(n=>n.className==='wf-robot-restore-rate'),feedback=f.nodes.find(n=>n.className==='wf-robot-settings-feedback');
+  const owner=f.window.WFProgramSpeech,actual={kind:'preview',active:true,rate:.85},applied=[];
+  owner.getState=()=>actual;owner.setRate=value=>{actual.rate=value;applied.push(value);return true;};
+  assert(reset.disabled);assert(f.nodes.some(n=>n.textContent.includes('معاينة مؤقتة')));
+  rate.value=1.2;rate.events.input();assert.equal(reset.disabled,false);
+  reset.events.click({isTrusted:true});assert.equal(Number(rate.value),.85);assert.equal(actual.rate,.85);
+  assert.equal(feedback.textContent,'');assert(reset.disabled);
+  volume.value=.6;volume.events.input();rate.value=1.1;rate.events.input();
+  reset.events.click({isTrusted:true});assert.equal(Number(volume.value),.6);assert(feedback.textContent);
+  assert.deepEqual(applied,[1.2,.85,1.1,.85]);assert.deepEqual(f.trace,[]);
 });
 
 test('the shared reference download uses the current UI language and its own cancellable request', async () => {
@@ -176,6 +215,17 @@ test('installed Mark prepares in place with visible progress and never deletes a
   f.updateReference({engineReady:false});assert.equal(f.engineStatus.dataset.state,'cold');assert.equal(action.hidden,false);
 });
 
+test('background preparation and user preparation share one disabled settings action',async()=>{
+  const f=settingsUIFixture({referenceReady:true});
+  const action=f.reference.children.find(node=>node.className==='wf-robot-voice-action');
+  for(const engineState of ['loading','initializing']){
+    f.updateReference({engineState});
+    assert.equal(action.disabled,true);assert.equal(action.textContent,'جارٍ تجهيز مارك…');
+    await action.events.click({isTrusted:true});assert.equal(f.trace.length,0);
+  }
+  f.updateReference({engineState:'error',engineError:'gpu-operation-failed'});
+  assert.equal(action.disabled,false);assert.match(f.engineStatus.textContent,/معالج الرسومات/);
+});
 test('a preparation failure preserves the installed package and exposes a retry', async () => {
   const f=settingsUIFixture({referenceReady:true}),action=f.reference.children.find(node=>node.className==='wf-robot-voice-action');
   const pending=action.events.click({isTrusted:true});assert.deepEqual(f.trace.map(item=>item.kind),['prepare']);
@@ -195,7 +245,9 @@ test('all UI languages retain one Mark card and distinguish it from the saved re
   for(const locale of ['ar','en','tr','fr','ru']){
     f.root.lang=locale;f.window.applyTr();
     assert.equal(f.nodes.filter(node=>node.className==='wf-robot-voice-row').length,1);
-    const recording=f.nodes.find(node=>node.events.click&&node!==f.reading&&node.textContent.includes('Mark')&&node.parentNode?.className==='wf-robot-speech-actions');
+    const name=locale==='ar'?'مارك':locale==='ru'?'Марк':'Mark';
+    assert(f.reference.children[0].textContent.includes(name));
+    const recording=f.nodes.find(node=>node.events.click&&node!==f.reading&&node.textContent.includes(name)&&node.parentNode?.className==='wf-robot-speech-actions');
     assert(recording,'the saved recording has a separate labeled action');assert.notEqual(recording.textContent,f.reading.textContent);
     assert(f.engineStatus.textContent&&!f.engineStatus.textContent.startsWith('voiceEngine'));
     assert.equal(f.nodes.some(node=>/Nabra|Piper|WebGPU|Egyptian|Égyptien|مصري/.test(node.textContent)),false);

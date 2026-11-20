@@ -4,7 +4,7 @@
 <!-- WOW V22: read-only statement model and scoped UI; no database migration. -->
 <link rel="stylesheet" href="./account-statement.css?v=25">
 <script src="./account-statement-core.js?v=25"></script>
-<script src="./account-statement.js?v=25"></script>
+<script src="./account-statement.js?v=26"></script>
 <script id="wf-bg-pair-bootstrap-v3">
 (function(){
   try{
@@ -2963,15 +2963,15 @@ setInterval(()=>{document.querySelectorAll('.wf-market-trend').forEach(tag=>{if(
 /* ============================================================
    TOAST
 ============================================================ */
-.toast-box{position:fixed;bottom:20px;left:20px;z-index:3000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-[dir="rtl"] .toast-box{left:auto;right:20px}
-.toast{background:var(--card);border-radius:var(--rs);border:1px solid var(--border);padding:11px 16px;box-shadow:var(--shadow2);display:flex;align-items:center;gap:9px;font-size:12px;font-weight:500;min-width:200px;pointer-events:all;animation:toastIn .3s ease,toastOut .3s ease 2.7s forwards}
-.toast.ok{--toast-accent:var(--green)}
-.toast.er{--toast-accent:var(--red)}
-.toast.in{--toast-accent:var(--blue)}
-.toast:is(.ok,.er,.in){border:1px solid color-mix(in srgb,var(--toast-accent) 40%,var(--border));background:color-mix(in srgb,var(--toast-accent) 9%,var(--card))}
-@keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateX(110%)}}
+html body #toastBox{position:fixed;top:max(12px,calc(var(--nav-h,72px) + 8px + env(safe-area-inset-top,0px)));bottom:auto!important;left:auto;right:16px;z-index:40000;display:flex;flex-direction:column;gap:8px;width:min(380px,calc(100vw - 24px));max-width:calc(100vw - 24px);pointer-events:none;box-sizing:border-box}
+[dir="rtl"] body #toastBox{left:16px;right:auto}
+html body #toastBox .toast{background:var(--card);color:var(--text);border-radius:16px;border:1px solid var(--border);border-inline-start:3px solid var(--toast-accent,var(--brand-primary));padding:10px 14px;box-shadow:var(--shadow2);display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600;line-height:1.7;min-width:0;max-width:100%;overflow-wrap:anywhere;pointer-events:auto;animation:toastIn .25s ease,toastOut .25s ease var(--toast-delay,3.75s) forwards}
+.toast>span{flex:1;min-width:0}.toast-close{width:44px;height:44px;flex:none;border:0;border-radius:10px;background:transparent;color:var(--text2);cursor:pointer;font:inherit;font-size:20px}.toast-close:hover{background:var(--ui-soft)}
+.toast.ok{--toast-accent:var(--green)}.toast.er,.toast.err{--toast-accent:var(--red)}.toast.in{--toast-accent:var(--brand-primary)}
+@keyframes toastIn{from{transform:translateY(-14px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-10px)}}
+@media(max-width:600px){html body #toastBox,[dir="rtl"] body #toastBox{left:12px;right:12px;width:auto}}
+@media(prefers-reduced-motion:reduce){html body #toastBox .toast{animation:none}}
 
 /* ============================================================
    BARCODE SCANNER
@@ -6434,7 +6434,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=33">
-     <script src="ui-navigation.js?v=24" defer></script>
+     <script src="ui-navigation.js?v=25" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
 <script src="context-nav.js?v=5" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
@@ -6443,27 +6443,30 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="product-categories.js?v=2" defer></script>
 <script src="install-identity.js?v=1" defer></script>
 <script src="app-identity.js?v=1" defer></script>
-<script src="offline-voice.js?v=7" defer></script>
+<script src="offline-voice.js?v=8" defer></script>
 <script src="reference-voice-assets.js?v=1" defer></script>
-<script src="reference-voice.js?v=2" defer></script>
-<script src="robot-settings.js?v=8" defer></script>
-<script src="settings-navigation.js?v=11" defer></script>
-<script src="branding-settings.js?v=2" defer></script>
+<script src="reference-voice.js?v=3" defer></script>
+<script src="robot-settings.js?v=9" defer></script>
+<script src="smart-card-settings.js?v=1" defer></script>
+<script src="settings-navigation.js?v=13" defer></script>
+<script src="branding-settings.js?v=3" defer></script>
+<script src="company-identity.js?v=1" defer></script>
 <script src="business-overview.js?v=3" defer></script>
 <script src="annual-sales.js?v=2" defer></script>
-<script src="rate-refresh.js?v=6" defer></script>
+<script src="currency-sources.js?v=1" defer></script>
+<script src="rate-refresh.js?v=7" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
 <script src="arabic-report-speech.js?v=2" defer></script>
 <script src="turkish-report-speech.js?v=1" defer></script>
-<script src="robot-report.js?v=5" defer></script>
-<script src="robot-face.js?v=10" defer></script>
-<script src="program-speech.js?v=2" defer></script>
+<script src="robot-report.js?v=6" defer></script>
+<script src="robot-face.js?v=11" defer></script>
+<script src="program-speech.js?v=3" defer></script>
 <script src="screen-awake.js?v=2" defer></script>
-<script src="speech-media.js?v=1" defer></script>
-<script src="speech-controls.js?v=1" defer></script>
-<script src="greeting-carousel.js?v=17" defer></script>
+<script src="speech-media.js?v=2" defer></script>
+<script src="speech-controls.js?v=2" defer></script>
+<script src="greeting-carousel.js?v=18" defer></script>
 <script src="developer-profile.js?v=1" defer></script>
-<script src="app-updates.js?v=2" defer data-release="182"></script>
+<script src="app-updates.js?v=2" defer data-release="183"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
@@ -6472,21 +6475,24 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="topbar-dock.css?v=6">
 <link rel="stylesheet" href="context-nav.css?v=4">
 <link rel="stylesheet" href="workspace-surfaces.css?v=35">
-<link rel="stylesheet" href="robot-face.css?v=5">
+<link rel="stylesheet" href="robot-face.css?v=6">
 <link rel="stylesheet" href="dialog-surfaces.css?v=1">
 <link rel="stylesheet" href="product-categories.css?v=1">
 <link rel="stylesheet" href="branding-settings.css?v=1">
+<link rel="stylesheet" href="company-identity.css?v=1">
+<link rel="stylesheet" href="currency-sources.css?v=1">
 <link rel="stylesheet" href="business-overview.css?v=3">
 <link rel="stylesheet" href="app-identity.css?v=1">
 <link rel="stylesheet" href="settings-unified.css?v=2">
 <link rel="stylesheet" href="ui-motion.css?v=1">
 <link rel="stylesheet" href="annual-sales.css?v=1">
-<link rel="stylesheet" href="robot-settings.css?v=4">
+<link rel="stylesheet" href="robot-settings.css?v=5">
 <link rel="stylesheet" href="program-speech.css?v=3">
-<link rel="stylesheet" href="speech-controls.css?v=1">
-<link rel="stylesheet" href="robot-report.css?v=3">
+<link rel="stylesheet" href="speech-controls.css?v=2">
+<link rel="stylesheet" href="robot-report.css?v=4">
 <link rel="stylesheet" href="developer-profile.css?v=1">
 <link rel="stylesheet" href="app-updates.css?v=1">
+<link rel="stylesheet" href="smart-card-settings.css?v=1">
 </head>
 <body>
 
@@ -9880,6 +9886,12 @@ async function wfWriteBatch(operations){
       };
       prepared.forEach((op,i)=>{
         const os=tx.objectStore(op.store);
+        if(op.type==='merge'){
+          const read=os.get(op.id);
+          read.onerror=()=>{failed=read.error;};
+          read.onsuccess=()=>{try{const next=op.merge(read.result,op.value);const put=os.put(next);put.onsuccess=()=>{results[i]=next;};put.onerror=()=>{failed=put.error;};}catch(err){failed=err;tx.abort();}};
+          return;
+        }
         const r=op.type==='delete'?os.delete(op.id):os.put(op.value);
         r.onsuccess=()=>{results[i]=r.result;};
         r.onerror=()=>{failed=r.error;};
@@ -10180,7 +10192,7 @@ function wfBuildBackup(){
       payments:Array.isArray(S.payments)?S.payments:[],
       settings:S.settings||{},
       nextInvNo:S.nextInvNo||5001,
-      rates:{usdTry:S.usdTry,usdEur:S.usdEur,rateTime:S.rateTime,rateUpdatedAt:S.rateUpdatedAt||null}
+      rates:{usdTry:S.usdTry,usdEur:S.usdEur,rateTime:S.rateTime,rateUpdatedAt:S.rateUpdatedAt||null,source:window.WFCurrencySources?.normalizeSource(S.rateSource)||null}
     },
     preferences:{lang:S.lang,theme:S.theme,qblCart:(()=>{try{return localStorage.getItem('wf_qbl_cart')||null;}catch(_){return null;}})()}
   };
@@ -10268,7 +10280,7 @@ function wfReplaceStoresFromBackup(b){
       const st=tx.objectStore('settings');
       st.put(mainSettings);
       st.put({id:'nextInvNo',value:Number(b.data.nextInvNo)||5001});
-      if(b.data.rates)st.put({id:'usdTry',value:Number(b.data.rates.usdTry)||46.98,eur:Number(b.data.rates.usdEur)||0.92,time:b.data.rates.rateTime||null,updatedAt:b.data.rates.rateUpdatedAt||null});
+      if(b.data.rates)st.put({id:'usdTry',value:Number(b.data.rates.usdTry)||46.98,eur:Number(b.data.rates.usdEur)||0.92,time:b.data.rates.rateTime||null,updatedAt:b.data.rates.rateUpdatedAt||null,source:window.WFCurrencySources?.normalizeSource(b.data.rates.source)||null});
       const ms=tx.objectStore(WF_MEDIA_STORE);
       for(const row of mediaRows.values())ms.put(row);
     }catch(err){fail(err);}
@@ -10551,6 +10563,9 @@ async function wfBackupRestoreConfirm(){
   }
     ['companies','products','invoices','payments'].forEach(k=>{S[k]=backup.data[k];});
     S.settings={...S.settings,...(backup.data.settings||{})};S.nextInvNo=Number(backup.data.nextInvNo)||5001;
+    const restoredRates=backup.data.rates;
+    if(window.WFCurrencySources)Object.assign(S,window.WFCurrencySources.initialRates(S.settings,restoredRates?{value:restoredRates.usdTry,eur:restoredRates.usdEur,time:restoredRates.rateTime,updatedAt:restoredRates.rateUpdatedAt,source:restoredRates.source}:null));
+    else{S.rateSource=null;S.rateHasSaved=!!restoredRates;}
     if(downloaded){
       wfDriveLSSet(WF_DRIVE_FILE_ID_KEY,downloaded.fileId);wfDriveLSSet(WF_DRIVE_LAST_KEY,downloaded.meta?.modifiedTime||backup.exportedAt||'');wfDriveLSSet(WF_DRIVE_LAST_SIZE_KEY,downloaded.size);
       wfDriveLSSet(WF_DRIVE_LAST_HASH_KEY,backup.cloud?.contentHash||null);wfRecoverySet(null);
@@ -10806,7 +10821,7 @@ const S={
   editCoId:null,editPrId:null,editInvId:null,
   invItems:[],
   nextInvNo:5001,
-  usdTry:46.98,usdEur:0.92,
+  usdTry:46.98,usdEur:0.92,rateSource:null,rateHasSaved:false,
   rateTime:null,
   scannerMode:'product',scannerStream:null,scannerInterval:null,
   invCurrency:'USD',
@@ -13243,10 +13258,23 @@ function wfUpdateMarketIndicators(previous={}){
    TOAST
 ============================================================ */
 function showToast(msg,type='ok'){
-  const box=document.getElementById('toastBox');
-  const el=document.createElement('div');el.className=`toast ${type}`;
-  const text=document.createElement('span');text.dataset.wfToastCopy=msg;text.textContent=wfUiText(msg);el.appendChild(text);box.appendChild(el);
-  setTimeout(()=>el.remove(),3200);
+  const box=document.getElementById('toastBox');if(!box)return;
+  const dialogs=[...document.querySelectorAll('dialog[open]')];
+  const report=document.getElementById('wfRobotReportSheet');
+  const target=dialogs.at(-1)||(report&&!report.hidden?report:document.body);
+  if(box.parentElement!==target)target.appendChild(box);
+  box.inert=false;box.setAttribute('role','status');box.setAttribute('aria-live','polite');
+  const nav=document.querySelector('.navbar'),dock=document.getElementById('wfSpeechControls');
+  const navBottom=nav?.getBoundingClientRect().bottom||72;
+  const dockBottom=dock&&!dock.hidden?dock.getBoundingClientRect().bottom:0;
+  const targetTop=target===document.body?Math.max(navBottom,dockBottom)+10:target.getBoundingClientRect().top+12;
+  box.style.top=Math.max(12,targetTop)+'px';
+  while(box.children.length>=2)box.firstElementChild.remove();
+  const el=document.createElement('div');el.className=`toast ${['ok','er','err','in'].includes(type)?type:'in'}`;
+  const text=document.createElement('span');text.dataset.wfToastCopy=msg;text.textContent=wfUiText(msg);el.appendChild(text);
+  const close=document.createElement('button');close.type='button';close.className='toast-close';close.textContent='×';close.setAttribute('aria-label',wfUiText('Close'));close.onclick=()=>el.remove();el.appendChild(close);
+  const duration=type==='er'||type==='err'?6000:4000;el.style.setProperty('--toast-delay',(duration-250)+'ms');
+  box.appendChild(el);setTimeout(()=>el.remove(),duration);
 }
 
 /* ============================================================
@@ -18275,7 +18303,7 @@ function openSettingsPage() {
 let wfPendingSettingsLogo;
 function loadSettingsToForm(){
   wfPendingSettingsLogo=undefined;
-  const sv=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val||'';};
+  const sv=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val??'';};
   
   sv('stCompanyName',S.settings.companyName);
   sv('stAddress',S.settings.address);
@@ -18301,7 +18329,7 @@ function loadSettingsToForm(){
   sv('stPrefixWhl', S.settings.prefixWhl || 'c'); 
   sv('stNextNoWhl', S.settings.nextNoWhl || 1000);
 
-  sv('stKdvRate',S.settings.kdvRate||20);
+  sv('stKdvRate',S.settings.kdvRate??20);
   sv('stManualUsdTry',S.settings.manualUsdTry||'');
   sv('stManualUsdEur',S.settings.manualUsdEur||'');
   
@@ -18314,6 +18342,7 @@ function loadSettingsToForm(){
 }
 
 async function saveSettings(){
+  if(typeof WFCompanyIdentity!=='undefined')return WFCompanyIdentity.save();
   const gv=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   
   const settings={...S.settings};
@@ -19765,6 +19794,7 @@ const sellerSig = `
                 font-size:7px;color:#aaa;font-weight:800;
                 letter-spacing:1px;text-transform:uppercase;
               ">${L.stamp}</div>
+              ${globalThis.WFCompanyIdentity?.marksHTML(st,lang)||''}
             </div>
 
           </div>
@@ -19916,7 +19946,7 @@ const sellerSig = `
           </span>
           <div style="flex:1;height:1px;background:#e2e8f0;"></div>
           <span style="font-size:7.5px;font-weight:800;color:#1a1a2e;">
-            ${st.beneficiary||''}
+            ${wfEsc(st.beneficiary||'')}
           </span>
         </div>
 
@@ -19928,7 +19958,7 @@ const sellerSig = `
               ${L.bank}
             </div>
             <div style="font-size:8px;font-weight:800;color:#1a1a2e;line-height:1.3;">
-              ${st.bankName||'ZİRAAT BANK'}
+              ${wfEsc(st.bankName||'')}
             </div>
           </div>
           <div style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 7px;background:#fff;display:flex;flex-direction:column;justify-content:center;">
@@ -19938,7 +19968,7 @@ const sellerSig = `
             </div>
             <div style="font-size:8px;font-weight:800;color:#1a1a2e;
               direction:ltr;letter-spacing:.5px;">
-              ${st.swift||''}
+              ${wfEsc(st.swift||'')}
             </div>
           </div>
           <div style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 7px;background:#fff;display:flex;flex-direction:column;justify-content:center;">
@@ -19948,7 +19978,7 @@ const sellerSig = `
             </div>
             <div style="font-size:8px;font-weight:800;color:#1a1a2e;
               direction:ltr;">
-              ${st.accountNo||''}
+              ${wfEsc(st.accountNo||'')}
             </div>
           </div>
         </div>
@@ -19957,15 +19987,15 @@ const sellerSig = `
         <div style="display:flex; flex-direction:column; gap:4px; margin-top:2px;">
           <div style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:6px; padding:5px 8px; background:#f8f9fa;">
             <span style="font-size:7px;font-weight:900;color:#999;letter-spacing:1px;">IBAN <strong style="color:#1a1a2e;">USD</strong></span>
-            <span style="font-size:8px;font-weight:700;color:#333;direction:ltr;letter-spacing:.5px;">${st.ibanUSD||''}</span>
+            <span style="font-size:8px;font-weight:700;color:#333;direction:ltr;letter-spacing:.5px;">${wfEsc(st.ibanUSD||'')}</span>
           </div>
           <div style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:6px; padding:5px 8px; background:#f8f9fa;">
             <span style="font-size:7px;font-weight:900;color:#999;letter-spacing:1px;">IBAN <strong style="color:#1a1a2e;">TRY</strong></span>
-            <span style="font-size:8px;font-weight:700;color:#333;direction:ltr;letter-spacing:.5px;">${st.ibanTRY||''}</span>
+            <span style="font-size:8px;font-weight:700;color:#333;direction:ltr;letter-spacing:.5px;">${wfEsc(st.ibanTRY||'')}</span>
           </div>
           <div style="display:flex; align-items:center; justify-content:space-between; border:1px solid #e2e8f0; border-radius:6px; padding:5px 8px; background:#f8f9fa;">
             <span style="font-size:7px;font-weight:900;color:#999;letter-spacing:1px;">IBAN <strong style="color:#1a1a2e;">EUR</strong></span>
-            <span style="font-size:8px;font-weight:700;color:#333;direction:ltr;letter-spacing:.5px;">${st.ibanEUR||''}</span>
+            <span style="font-size:8px;font-weight:700;color:#333;direction:ltr;letter-spacing:.5px;">${wfEsc(st.ibanEUR||'')}</span>
           </div>
         </div>
       </div>
@@ -20036,7 +20066,7 @@ const sellerSig = `
         direction:${dir};
       ">
         <!-- Original WOW brand, proportionally fitted on white -->
-        <div style="width:270px;height:90px;margin:0 0 10px;display:flex;align-items:center;justify-content:flex-start;">
+        <div style="width:270px;height:90px;margin:0 0 10px;display:flex;align-items:center;justify-content:flex-start;${globalThis.WFCompanyIdentity?.documentLogoStyle(st)||''}">
           ${renderSafeImg(st.logo, 'WOW Furniture Logo', `width:100%;height:100%;object-fit:contain;object-position:${isRtl?'right':'left'} center;display:block;`, DEFAULT_WOW_LOGO)}
         </div>
 
@@ -20048,13 +20078,14 @@ const sellerSig = `
           white-space: normal;
         ">
           <strong style="font-size:11px;color:#1a1a2e;display:block;margin-bottom:3px;font-weight:800;">
-            ${st.companyName||'WOW Furniture'}
+            ${wfEsc(st.companyName||'WOW Furniture')}
           </strong>
-          ${st.address||''}<br>
+          ${wfEsc(st.address||'')}<br>
           📞 <bdi dir="ltr" style="display:inline-block">${wfEsc(st.phone||'')}</bdi><br>
           📧 <bdi dir="ltr" style="display:inline-block">${wfEsc(st.email||'')}</bdi><br>
           🌐 <bdi dir="ltr" style="display:inline-block">${wfEsc(String(st.website||'').toUpperCase())}</bdi>
           ${st.mersis?`<br>${L.mersis||'Mersis'}: <bdi dir="ltr">${wfEsc(st.mersis)}</bdi>`:''}
+          ${globalThis.WFCompanyIdentity?.taxHTML(st,lang)||''}
         </div>
       </div>
 
@@ -20590,7 +20621,8 @@ async function init(){
   const nextNoRow=await dbGet('settings','nextInvNo');
   if(nextNoRow)S.nextInvNo=nextNoRow.value||5001;
   const rateRow=await dbGet('settings','usdTry');
-  if(rateRow){S.usdTry=S.settings.manualUsdTry||rateRow.value||46.98;S.usdEur=S.settings.manualUsdEur||rateRow.eur||0.92;S.rateTime=rateRow.time||null;S.rateUpdatedAt=rateRow.updatedAt||null;}
+  if(window.WFCurrencySources)Object.assign(S,window.WFCurrencySources.initialRates(S.settings,rateRow));
+  else{if(rateRow){S.usdTry=rateRow.value||46.98;S.usdEur=rateRow.eur||0.92;S.rateTime=rateRow.time||null;S.rateUpdatedAt=rateRow.updatedAt||null;}S.usdTry=S.settings.manualUsdTry||S.usdTry;S.usdEur=S.settings.manualUsdEur||S.usdEur;S.rateHasSaved=!!rateRow;}
   // load data
   [S.companies,S.products,S.invoices,S.payments]=await Promise.all([dbGetAll('companies'),dbGetAll('products'),dbGetAll('invoices'),dbGetAll('payments')]);
   // apply lang
@@ -20628,8 +20660,8 @@ const validPages=['dashboard','companies','products','invoices','add-company','a
     showPage(hash,false);history.replaceState({page:hash},'','#'+hash);
   }
   else{showPage('dashboard',false);history.replaceState({page:'dashboard'},'','#dashboard');}
-  // fetch rate in background
-  fetchRate();
+  // Preserve saved source and manual quotes until an explicit refresh.
+  fetchRate({background:true,hasSaved:!!rateRow});
 
   // ── استرجاع سلة الباركود بعد تحميل كل البيانات
   setTimeout(() => {
@@ -27889,6 +27921,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 })();
 </script>
 
-<script src="currency-calculator.js?v=7"></script>
+<script src="currency-calculator.js?v=8"></script>
 </body>
 </html>

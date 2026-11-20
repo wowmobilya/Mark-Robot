@@ -161,7 +161,8 @@
     if (announce) {
       const key = current.state === 'error' ? 'failed' : current.state;
       const text = ['preparing', 'failed', 'paused'].includes(key) && current.message ? current.message : message()[key] || (active ? message().speaking : message().unavailable);
-      show(text + (active && current.voiceName ? ' — ' + current.voiceName : ''), active);
+      const voice = root.WFRobotSettings?.displayVoiceName?.(current.voiceName, language()) ?? current.voiceName;
+      show(text + (active && voice ? ' — ' + voice : ''), active);
     }
   }
   function visible(element) {

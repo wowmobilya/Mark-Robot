@@ -16,18 +16,19 @@
     if(!Number.isFinite(index)||index<0)return -1;
     return segments.findIndex((s,i)=>index>=s.start&&(index<s.end||i===segments.length-1&&index===s.end));
   }
-  function sheetGeometry({width,height,offsetLeft=0,offsetTop=0,mainLeft=offsetLeft,mainRight=offsetLeft+width,dock='bottom',expanded=true}) {
+  function sheetGeometry({width,height,offsetLeft=0,offsetTop=0,mainLeft=offsetLeft,mainRight=offsetLeft+width,headerBottom=offsetTop+72,dock='top',expanded=true}) {
     const viewportRight=offsetLeft+width,viewportBottom=offsetTop+height;
     const inset=width<768?8:16;
     let start=Math.max(offsetLeft+inset,mainLeft+inset),end=Math.min(viewportRight-inset,mainRight-inset);
     if(end-start<Math.min(260,width-inset*2)){start=offsetLeft+inset;end=viewportRight-inset;}
     const available=Math.max(0,end-start),sheetWidth=Math.min(1100,available);
-    const availableHeight=Math.max(0,height-inset*2),minimumHeight=Math.min(360,availableHeight);
+    const topLimit=Math.max(offsetTop, Math.min(headerBottom,viewportBottom))+inset;
+    const availableHeight=Math.max(0,viewportBottom-inset-topLimit),minimumHeight=Math.min(360,availableHeight);
     const sheetHeight=Math.min(availableHeight,Math.max(minimumHeight,Math.floor(height*(expanded ? .88 : .54))));
-    const top=dock==='top'?offsetTop+inset:viewportBottom-inset-sheetHeight;
-    return {top:Math.round(top),left:Math.round(start+(available-sheetWidth)/2),width:Math.round(sheetWidth),height:sheetHeight,compact:height<500||!expanded};
+    const top=dock==='top'?topLimit:viewportBottom-inset-sheetHeight;
+    return {top:Math.round(top),topLimit,bottomLimit:viewportBottom-inset-sheetHeight,left:Math.round(start+(available-sheetWidth)/2),width:Math.round(sheetWidth),height:sheetHeight,compact:height<500||!expanded};
   }
-  function snapSheet({deltaY,height,dock='bottom',expanded=true}) {
+  function snapSheet({deltaY,height,dock='top',expanded=true}) {
     const threshold=Math.max(36,Math.min(72,height*.08));
     if(deltaY>threshold)return {dock:'bottom',expanded:false};
     if(deltaY< -threshold)return {dock:'top',expanded:true};
@@ -70,8 +71,8 @@
     const reason=String(voice.reason||'').toLowerCase();
     const textUnsupported={ar:'تعذّرت مطابقة نص هذا التقرير للقراءة الصوتية. التقرير المكتوب متاح؛ راجع بياناته ثم افتحه مجددًا.',en:'This report could not be matched for accurate speech. The written report is available; review its data and reopen it.',tr:'Bu rapor doğru seslendirme için eşleştirilemedi. Yazılı rapor kullanılabilir; verileri kontrol edip yeniden açın.',fr:'Ce rapport ne peut pas être lu avec précision. Le texte reste disponible ; vérifiez ses données puis rouvrez-le.',ru:'Не удалось подготовить точное чтение этого отчёта. Текст доступен; проверьте данные и откройте отчёт снова.'};
     const integrity={ar:'لم يطابق أحد ملفات الصوت النسخة المطلوبة. أعد التنزيل.',en:'A voice file did not match the required version. Download again.',tr:'Bir ses dosyası gereken sürümle eşleşmedi. Yeniden indirin.',fr:'Un fichier vocal ne correspond pas à la version attendue. Relancez le téléchargement.',ru:'Файл голоса не соответствует требуемой версии. Загрузите снова.'};
-    const referenceUnavailable={ar:'الصوت المحلي المبني على عيّنة Mark يحتاج جهازًا ومتصفحًا يدعمان WebGPU. راجع التوافق في إعدادات الروبوت.',en:'The local voice based on the Mark sample needs a WebGPU-compatible device and browser. Check compatibility in Robot settings.',tr:'Mark örneğine dayalı yerel ses, WebGPU uyumlu cihaz ve tarayıcı gerektirir. Robot ayarlarından uyumluluğu kontrol edin.',fr:'La voix locale fondée sur l’extrait Mark nécessite un appareil et un navigateur compatibles WebGPU. Vérifiez les réglages du robot.',ru:'Локальный голос на основе образца Mark требует устройства и браузера с WebGPU. Проверьте совместимость в настройках робота.'};
-    const referenceNote={ar:'محاكاة محلية تعتمد على عيّنة Mark؛ قد تختلف عن التسجيل الأصلي.',en:'A local approximation based on the Mark sample; it may differ from the original recording.',tr:'Mark örneğine dayalı yerel bir benzetimdir; özgün kayıttan farklı olabilir.',fr:'Une approximation locale fondée sur l’extrait Mark, pouvant différer de l’enregistrement original.',ru:'Локальная имитация на основе образца Mark; голос может отличаться от исходной записи.'};
+    const referenceUnavailable={ar:'الصوت المحلي المبني على عيّنة مارك يحتاج جهازًا ومتصفحًا يدعمان WebGPU. راجع التوافق في إعدادات الروبوت.',en:'The local voice based on the Mark sample needs a WebGPU-compatible device and browser. Check compatibility in Robot settings.',tr:'Mark örneğine dayalı yerel ses, WebGPU uyumlu cihaz ve tarayıcı gerektirir. Robot ayarlarından uyumluluğu kontrol edin.',fr:'La voix locale fondée sur l’extrait Mark nécessite un appareil et un navigateur compatibles WebGPU. Vérifiez les réglages du robot.',ru:'Локальный голос по образцу голоса «Марк» требует устройства и браузера с WebGPU. Проверьте совместимость в настройках робота.'};
+    const referenceNote={ar:'محاكاة محلية تعتمد على عيّنة مارك؛ قد تختلف عن التسجيل الأصلي.',en:'A local approximation based on the Mark sample; it may differ from the original recording.',tr:'Mark örneğine dayalı yerel bir benzetimdir; özgün kayıttan farklı olabilir.',fr:'Une approximation locale fondée sur l’extrait Mark, pouvant différer de l’enregistrement original.',ru:'Локальная имитация по образцу голоса «Марк»; голос может отличаться от исходной записи.'};
     const failure=/quota|space|storage-full/.test(reason)?L.storage:/storage|cache|indexeddb|permission/.test(reason)?L.blocked:/integrity|checksum|verification/.test(reason)?integrity[language]:/network|offline|fetch/.test(reason)?L.network:L.generic;
     const transfer=voice.total>0?replace(L.transfer,{loaded:format(voice.loaded),total:format(voice.total)}):L.local;
     return {visible:true,label:L.title,title:reason==='report-text-unsupported'?L.title:downloading?L.downloading:error?L.failed:unsupported?L.unsupported:L.missing,
@@ -88,31 +89,65 @@
     fr:{title:'Rapport du jour',date:'Date du rapport',written:'Rapport écrit',close:'Fermer le rapport',stop:'Arrêter la lecture',replay:'Relire',follow:'Suivre la lecture',manual:'Défilement manuel · Suivre la lecture',ready:'Rapport prêt',preparing:'Préparation de la lecture…',speaking:'Le robot lit le rapport',finished:'Lecture terminée',stopped:'Lecture arrêtée',unavailable:'Le rapport est affiché. Activez une voix dans les réglages du robot pour l’écouter.',failed:'Le son n’a pas démarré. Lisez le rapport ou réessayez.',empty:'Les données du rapport sont incomplètes.',today:'Activité du jour',balances:'Créances et soldes',activity:'Factures et clients',cash:'Caisses et notes'},
     ru:{title:'Отчёт за сегодня',date:'Дата отчёта',written:'Текст отчёта',close:'Закрыть отчёт',stop:'Остановить чтение',replay:'Прочитать снова',follow:'Следовать за чтением',manual:'Ручная прокрутка · Следовать за чтением',ready:'Отчёт готов',preparing:'Подготовка чтения…',speaking:'Робот читает отчёт',finished:'Чтение завершено',stopped:'Чтение остановлено',unavailable:'Отчёт показан. Включите голос языка в настройках робота, чтобы прослушать его.',failed:'Не удалось включить звук. Прочитайте отчёт или повторите попытку.',empty:'Данные отчёта пока неполны.',today:'Операции за день',balances:'Долги и остатки',activity:'Счета и клиенты',cash:'Кассы и примечания'}
   };
-  const readerCopy={"ar": {"identity": "Mark · عربي سوري", "close": "تصغير ومتابعة القراءة", "pause": "إيقاف مؤقت", "resume": "متابعة القراءة", "paused": "القراءة متوقفة مؤقتًا", "speaking": "Mark يقرأ التقرير", "compact": "حجم أصغر", "expand": "تكبير النافذة", "moveTop": "إلى الأعلى", "moveBottom": "إلى الأسفل", "drag": "اسحب للأعلى أو للأسفل", "unavailable": "التقرير ظاهر. جهّز Mark في إعدادات الروبوت لسماعه."}, "en": {"identity": "Mark · Syrian Arabic", "close": "Minimize and keep reading", "pause": "Pause", "resume": "Resume", "paused": "Reading paused", "speaking": "Mark is reading the report", "compact": "Smaller view", "expand": "Expand reader", "moveTop": "Move to top", "moveBottom": "Move to bottom", "drag": "Drag up or down", "unavailable": "The report is visible. Set up Mark in Robot settings to hear it."}, "tr": {"identity": "Mark · Suriye Arapçası", "close": "Küçült ve okumaya devam et", "pause": "Duraklat", "resume": "Devam et", "paused": "Okuma duraklatıldı", "speaking": "Mark raporu okuyor", "compact": "Daha küçük", "expand": "Pencereyi büyüt", "moveTop": "Yukarı taşı", "moveBottom": "Aşağı taşı", "drag": "Yukarı veya aşağı sürükleyin", "unavailable": "Rapor görünür. Dinlemek için Robot ayarlarından Mark sesini hazırlayın."}, "fr": {"identity": "Mark · Arabe syrien", "close": "Réduire et poursuivre la lecture", "pause": "Pause", "resume": "Reprendre", "paused": "Lecture en pause", "speaking": "Mark lit le rapport", "compact": "Vue réduite", "expand": "Agrandir le lecteur", "moveTop": "Vers le haut", "moveBottom": "Vers le bas", "drag": "Glisser vers le haut ou le bas", "unavailable": "Le rapport est affiché. Configurez Mark dans les réglages du robot pour l’écouter."}, "ru": {"identity": "Mark · Сирийский арабский", "close": "Свернуть и продолжить чтение", "pause": "Пауза", "resume": "Продолжить", "paused": "Чтение приостановлено", "speaking": "Mark читает отчёт", "compact": "Уменьшить", "expand": "Увеличить окно", "moveTop": "Переместить вверх", "moveBottom": "Переместить вниз", "drag": "Перетащите вверх или вниз", "unavailable": "Отчёт показан. Настройте Mark в параметрах робота для прослушивания."}};
+  const readerCopy={"ar": {"identity": "مارك روبوت", "close": "تصغير ومتابعة القراءة", "pause": "إيقاف مؤقت", "resume": "متابعة القراءة", "paused": "القراءة متوقفة مؤقتًا", "speaking": "مارك يقرأ التقرير", "compact": "حجم أصغر", "expand": "تكبير النافذة", "moveTop": "إلى الأعلى", "moveBottom": "إلى الأسفل", "drag": "اسحب للأعلى أو للأسفل", "unavailable": "التقرير ظاهر. جهّز مارك في إعدادات الروبوت لسماعه."}, "en": {"identity": "Mark Robot", "close": "Minimize and keep reading", "pause": "Pause", "resume": "Resume", "paused": "Reading paused", "speaking": "Mark is reading the report", "compact": "Smaller view", "expand": "Expand reader", "moveTop": "Move to top", "moveBottom": "Move to bottom", "drag": "Drag up or down", "unavailable": "The report is visible. Set up Mark in Robot settings to hear it."}, "tr": {"identity": "Mark Robot", "close": "Küçült ve okumaya devam et", "pause": "Duraklat", "resume": "Devam et", "paused": "Okuma duraklatıldı", "speaking": "Mark raporu okuyor", "compact": "Daha küçük", "expand": "Pencereyi büyüt", "moveTop": "Yukarı taşı", "moveBottom": "Aşağı taşı", "drag": "Yukarı veya aşağı sürükleyin", "unavailable": "Rapor görünür. Dinlemek için Robot ayarlarından Mark sesini hazırlayın."}, "fr": {"identity": "Robot Mark", "close": "Réduire et poursuivre la lecture", "pause": "Pause", "resume": "Reprendre", "paused": "Lecture en pause", "speaking": "Mark lit le rapport", "compact": "Vue réduite", "expand": "Agrandir le lecteur", "moveTop": "Vers le haut", "moveBottom": "Vers le bas", "drag": "Glisser vers le haut ou le bas", "unavailable": "Le rapport est affiché. Configurez Mark dans les réglages du robot pour l’écouter."}, "ru": {"identity": "Робот Марк", "close": "Свернуть и продолжить чтение", "pause": "Пауза", "resume": "Продолжить", "paused": "Чтение приостановлено", "speaking": "Марк читает отчёт", "compact": "Уменьшить", "expand": "Увеличить окно", "moveTop": "Переместить вверх", "moveBottom": "Переместить вниз", "drag": "Перетащите вверх или вниз", "unavailable": "Отчёт показан. Настройте голос «Марк» в параметрах робота для прослушивания."}};
   for(const locale of Object.keys(readerCopy))Object.assign(copy[locale],readerCopy[locale]);
+  const windowLabels={
+    ar:['تصغير','خروج','الخروج وإيقاف القراءة'],en:['Minimize','Exit','Exit and stop reading'],
+    tr:['Küçült','Çıkış','Çık ve okumayı durdur'],fr:['Réduire','Quitter','Quitter et arrêter la lecture'],
+    ru:['Свернуть','Выход','Выйти и остановить чтение']
+  };
+  const rateLabels={ar:'سرعة القراءة',en:'Reading speed',tr:'Okuma hızı',fr:'Vitesse de lecture',ru:'Скорость чтения'};
   const paths={report:'<path d="M6 3h9l4 4v14H5V3h1Zm8 0v5h5M8 12h8M8 16h6"/>',today:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18m-13 5 3 2 5-4"/>',balances:'<path d="M3 7h17v13H3zM3 7V5l14-2v4m0 5h4v4h-4z"/>',activity:'<rect x="4" y="3" width="16" height="18" rx="3"/><path d="m8 9 2 2 5-5M8 15h8m-8 3h5"/>',cash:'<path d="M3 7h18v14H3zM3 7l3-4h12l3 4M8 12h8m-4-3v9"/>',close:'<path d="m6 6 12 12M18 6 6 18"/>',play:'<path d="m8 5 11 7-11 7z"/>',stop:'<rect x="5" y="5" width="14" height="14" rx="2"/>',follow:'<path d="M12 3v14m-5-5 5 5 5-5M4 20h16"/>',download:'<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',retry:'<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/>'};
   paths.pause='<path d="M8 5v14M16 5v14"/>';paths.minimize='<path d="M5 12h14"/>';
   const node=(tag,className,text)=>{const n=document.createElement(tag);if(className)n.className=className;if(text!=null)n.textContent=text;return n;};
   function icon(name){const n=node('span','wf-report-symbol');n.setAttribute('aria-hidden','true');n.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+(paths[name]||paths.report)+'</svg>';return n;}
   const shade=node('div','wf-robot-report-shade');shade.hidden=true;
   const sheet=node('section','wf-robot-report-sheet');sheet.id='wfRobotReportSheet';sheet.hidden=true;sheet.setAttribute('role','dialog');sheet.setAttribute('aria-modal','true');sheet.setAttribute('aria-labelledby','wfRobotReportTitle');sheet.tabIndex=-1;
-  const toolbar=node('div','wf-report-toolbar'),drag=node('div','wf-report-drag'),dragText=node('small'),sizeButton=node('button','wf-report-size'),dockButton=node('button','wf-report-dock');
-  drag.setAttribute('aria-hidden','true');drag.append(node('span','wf-report-grip'),dragText);sizeButton.type=dockButton.type='button';toolbar.append(drag,sizeButton,dockButton);
-  const head=node('header','wf-report-header'),titleWrap=node('div','wf-report-title-wrap'),identity=node('span','wf-report-identity'),title=node('h2','',copy.ar.title),date=node('small');title.id='wfRobotReportTitle';titleWrap.append(identity,title,date);
-  const eyes=node('div','wf-report-eyes');eyes.setAttribute('aria-hidden','true');
-  eyes.innerHTML='<svg viewBox="0 0 136 68" fill="none"><rect x="2" y="2" width="132" height="64" rx="24" class="wf-report-eye-shell"/><path d="M22 22Q35 16 48 22M88 22Q101 16 114 22" class="wf-report-brows"/><g class="wf-report-eye-pair"><rect x="20" y="25" width="35" height="27" rx="12" class="wf-report-eye-white"/><rect x="81" y="25" width="35" height="27" rx="12" class="wf-report-eye-white"/><rect x="31" y="28" width="13" height="20" rx="6" class="wf-report-eye-pupil"/><rect x="92" y="28" width="13" height="20" rx="6" class="wf-report-eye-pupil"/><circle cx="35" cy="32" r="3" fill="#fff"/><circle cx="96" cy="32" r="3" fill="#fff"/></g></svg>';
-  const close=node('button','wf-report-close');close.type='button';close.append(icon('minimize'));
-  head.append(eyes,titleWrap,close);
+  const toolbar=node('div','wf-report-toolbar'),drag=node('div','wf-report-drag'),dragText=node('small');
+  const sizeButton=node('button','wf-report-size'),dockButton=node('button','wf-report-dock');
+  const minimize=node('button','wf-report-minimize'),minimizeText=node('span');
+  const close=node('button','wf-report-close'),closeText=node('span');
+  paths.size='<path d="M4 10V4h6m10 10v6h-6M4 4l6 6m10 10-6-6"/>';
+  paths.dock='<path d="M5 4h14M12 8v12m-5-5 5 5 5-5"/>';
+  for(const button of [sizeButton,dockButton,minimize,close])button.type='button';
+  drag.setAttribute('aria-hidden','true');drag.append(node('span','wf-report-grip'),dragText);
+  sizeButton.append(icon('size'));dockButton.append(icon('dock'));
+  minimize.append(icon('minimize'),minimizeText);close.append(icon('close'),closeText);
+  toolbar.append(drag,sizeButton,dockButton,minimize,close);
+  const head=node('header','wf-report-header'),titleWrap=node('div','wf-report-title-wrap');
+  const identity=node('span','wf-report-identity'),title=node('h2','',copy.ar.title),date=node('small');
+  const face=node('div','wf-reader-face');face.setAttribute('aria-hidden','true');
+  function mountFace() {
+    if(face.firstElementChild)return;
+    const source=document.querySelector('#wfGreetingRobot .wf-robot-face');
+    if(source)face.append(source.cloneNode(true));
+  }
   const status=node('p','wf-report-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+  const speedWrap=node('label','wf-report-speed'),speedLabel=node('span'),speed=node('select','wf-report-rate');
+  speed.dir='ltr';speedWrap.append(speedLabel,speed);
+  for(let percent=75;percent<=125;percent+=5){
+    const option=node('option');option.value=String(percent/100);speed.append(option);
+  }
+  function syncRate(state=window.WFProgramSpeech?.getState?.()){
+    const value=Number(state?.rate ?? window.WFRobotSettings?.getPreferences?.().speechRate ?? 1);
+    speed.value=String(Math.max(.75,Math.min(1.25,Math.round(value*20)/20)));
+    speed.disabled=typeof window.WFProgramSpeech?.setRate!=='function' || !!state?.active && state.kind!=='report';
+  }
+  speed.addEventListener('change',()=>{
+    const owner=window.WFProgramSpeech,state=owner?.getState?.();
+    if(!state?.active || state.kind==='report') owner?.setRate?.(Number(speed.value));
+    syncRate();
+  });
+  title.id='wfRobotReportTitle';titleWrap.append(identity,title,date,status);head.append(face,titleWrap,speedWrap);
   const progress=node('div','wf-report-progress');progress.setAttribute('aria-hidden','true');progress.append(node('span'));
   const body=node('div','wf-report-body');body.tabIndex=0;
   const voiceSetup=node('section','wf-report-voice'),voiceContent=node('div','wf-report-voice-content'),voiceTitleRow=node('div','wf-report-voice-title'),voiceTitle=node('strong'),voicePercent=node('bdi','wf-report-voice-percent'),voiceHint=node('p'),voiceMeter=node('div','wf-report-voice-meter');
   voiceSetup.hidden=true;voiceTitleRow.append(voiceTitle,voicePercent);voiceContent.append(voiceTitleRow,voiceHint,voiceMeter);voiceSetup.append(icon('download'),voiceContent);voiceMeter.append(node('span'));voiceMeter.setAttribute('role','progressbar');voiceMeter.setAttribute('aria-valuemin','0');voiceMeter.setAttribute('aria-valuemax','100');voiceTitle.setAttribute('role','status');voiceTitle.setAttribute('aria-live','polite');
   const footer=node('footer','wf-report-footer'),play=node('button','wf-report-play'),playText=node('span'),stop=node('button','wf-report-stop'),stopText=node('span'),follow=node('button','wf-report-follow'),followText=node('span');play.type=stop.type=follow.type='button';play.append(icon('play'),playText);stop.append(icon('stop'),stopText);follow.append(icon('follow'),followText);footer.append(play,stop,follow);
-  sheet.append(toolbar,head,status,progress,body,voiceSetup,footer);document.body.append(shade,sheet);
+  body.append(voiceSetup);sheet.append(toolbar,head,progress,body,footer);document.body.append(shade,sheet);
   let locale='ar',segments=[],paragraphs=[],active=-1,following=true,speechState='ready',returnFocus=null,closing=0,frame=0,snapshot=null,pendingPlayback={state:'ready'};
   const voiceStates=new Map();
-  let preparation=null,dock='bottom',expanded=true,dragging=null,geometry=null;
+  let preparation=null,dock='top',expanded=true,dragging=null,geometry=null,minimized=false;
   const inertBackground=new Set();
   const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.dataset.wfMotion==='reduced';
   const control=action=>window.dispatchEvent(new CustomEvent('wf-robot-report-control',{detail:{action}}));
@@ -141,22 +176,30 @@
     frame=0;if(sheet.hidden)return;
     const viewport=window.visualViewport, width=viewport?.width||innerWidth,height=viewport?.height||innerHeight;
     const main=document.querySelector('#mainContent')?.getBoundingClientRect();
-    geometry=sheetGeometry({width,height,offsetLeft:viewport?.offsetLeft||0,offsetTop:viewport?.offsetTop||0,mainLeft:main?.left,mainRight:main?.right,dock,expanded});
+    const headerSelector=document.documentElement.classList.contains('wf-section-mode')
+      ?'.page.active :is(.co-page-sticky,.sct-sticky-header,.page-sticky-bar)':'.navbar';
+    const header=document.querySelector(headerSelector)?.getBoundingClientRect();
+    const headerBottom=header?.height && header.bottom<=height/2 ? header.bottom : undefined;
+    geometry=sheetGeometry({width,height,headerBottom,offsetLeft:viewport?.offsetLeft||0,offsetTop:viewport?.offsetTop||0,mainLeft:main?.left,mainRight:main?.right,dock,expanded});
     sheet.style.setProperty('--wf-report-top',geometry.top+'px');sheet.style.setProperty('--wf-report-height',geometry.height+'px');
     sheet.style.left=geometry.left+'px';sheet.style.width=geometry.width+'px';sheet.dataset.compact=String(geometry.compact);
-    sheet.dataset.dock=dock;sheet.dataset.expanded=String(expanded);
-    sizeButton.textContent=expanded?labels().compact:labels().expand;sizeButton.setAttribute('aria-expanded',String(expanded));
-    dockButton.textContent=dock==='top'?labels().moveBottom:labels().moveTop;dragText.textContent=labels().drag;
+    sheet.dataset.short=String(geometry.height<225);sheet.dataset.dock=dock;sheet.dataset.expanded=String(expanded);
+    sizeButton.title=expanded?labels().compact:labels().expand;sizeButton.setAttribute('aria-label',sizeButton.title);sizeButton.setAttribute('aria-expanded',String(expanded));
+    dockButton.title=dock==='top'?labels().moveBottom:labels().moveTop;dockButton.setAttribute('aria-label',dockButton.title);dragText.textContent=labels().drag;
   }
   function schedulePlace(){if(!frame)frame=requestAnimationFrame(place);}
   function open(detail){
     if(!detail?.snapshot)return;
     clearTimeout(closing);sheet.classList.remove('is-closing');
-    snapshot=detail.snapshot;locale=copy[detail.locale]?detail.locale:'en';segments=segmentsFor(snapshot);paragraphs=[];active=-1;following=true;
-    const L=labels();sheet.lang=locale;sheet.dir=locale==='ar'?'rtl':'ltr';title.textContent=L.title;close.setAttribute('aria-label',L.close);close.title=L.close;body.setAttribute('aria-label',L.written);
-    identity.textContent=L.identity;
+    dock='top';expanded=true;snapshot=detail.snapshot;locale=copy[detail.locale]?detail.locale:'en';segments=segmentsFor(snapshot);paragraphs=[];active=-1;following=true;
+    const L=labels();sheet.lang=locale;sheet.dir=locale==='ar'?'rtl':'ltr';title.textContent=L.title;minimizeText.textContent=windowLabels[locale][0];minimize.title=L.close;minimize.setAttribute('aria-label',L.close);
+    closeText.textContent=windowLabels[locale][1];close.title=windowLabels[locale][2];close.setAttribute('aria-label',close.title);body.setAttribute('aria-label',L.written);
+    speedLabel.textContent=rateLabels[locale];speed.setAttribute('aria-label',speedLabel.textContent);
+    const rateFormat=new Intl.NumberFormat(locale,{maximumFractionDigits:2});
+    for(const option of speed.children)option.textContent=rateFormat.format(Number(option.value))+'×';
+    identity.textContent=document.querySelector('#wfGreetingRobot #wfRobotTitle span')?.textContent?.trim() || L.identity;
     try{date.textContent=L.date+' · '+new Intl.DateTimeFormat(locale,{dateStyle:'long',timeZone:'UTC'}).format(new Date(snapshot.date+'T12:00:00Z'));}catch(_){date.textContent=snapshot.date||'';}
-    body.replaceChildren();
+    body.replaceChildren(voiceSetup);
     if(!segments.length){const warning=node('p','wf-report-empty',snapshot.unavailableReason||L.empty);body.append(warning);}
     else {
       const groups=segments.length<11?[['written',0,Infinity]]:[['today',0,4],['balances',4,6],['activity',6,9],['cash',9,Infinity]];
@@ -173,27 +216,52 @@
     progress.firstElementChild.style.width='0%';
     body.scrollTop=0;show();
   }
+  let launchRect=null;
+  function visibleRect(selector){
+    const rect=document.querySelector(selector)?.getBoundingClientRect();
+    return rect?.width && rect.height && rect.bottom>0 && rect.top<innerHeight && rect.right>0 && rect.left<innerWidth ? rect : null;
+  }
+  function setMorphOrigin(rect){
+    if(!geometry)return;
+    const dx=rect ? rect.left+rect.width/2-geometry.left-geometry.width/2 : 0;
+    const dy=rect ? rect.top+rect.height/2-geometry.top-geometry.height/2 : -8;
+    sheet.style.setProperty('--wf-report-origin-x',dx+'px');
+    sheet.style.setProperty('--wf-report-origin-y',dy+'px');
+    sheet.style.setProperty('--wf-report-origin-w',rect ? String(rect.width/geometry.width) : '.98');
+    sheet.style.setProperty('--wf-report-origin-h',rect ? String(rect.height/geometry.height) : '.98');
+  }
   function show(){
     if(!snapshot)return false;
     clearTimeout(closing);closing=0;sheet.classList.remove('is-closing');
-    const wasHidden=sheet.hidden;
-    if(wasHidden)returnFocus=document.activeElement;
+    minimized=false;mountFace();const wasHidden=sheet.hidden;
+    if(wasHidden){
+      returnFocus=document.activeElement;
+      const cardRect=visibleRect('#wfGreetingRobot[aria-hidden="false"]');
+      const launcherRect=visibleRect('#wfSpeechControlsReport');
+      launchRect=document.activeElement?.id==='wfSpeechControlsReport' ? launcherRect||cardRect : cardRect||launcherRect;
+    }
     shade.hidden=sheet.hidden=false;document.documentElement.classList.add('wf-robot-report-open');
     for(const sibling of document.body.children){if(sibling!==sheet&&sibling!==shade&&!sibling.inert){sibling.inert=true;inertBackground.add(sibling);}}
-    place();setState(pendingPlayback.state||'ready',pendingPlayback.reason);followActive();
-    if(wasHidden)close.focus({preventScroll:true});
+    place();syncRate();setMorphOrigin(launchRect);setState(pendingPlayback.state||'ready',pendingPlayback.reason);followActive();
+    if(wasHidden)minimize.focus({preventScroll:true});
     window.dispatchEvent(new CustomEvent('wf-robot-report-visibility',{detail:{open:true}}));
     return true;
   }
   function dismiss(stopPlayback=false){
-    if(sheet.hidden)return;if(stopPlayback)window.WFProgramSpeech?.stop?.();
+    if(sheet.hidden||sheet.classList.contains('is-closing'))return;
+    minimized=!stopPlayback;
+    setMorphOrigin(visibleRect('#wfGreetingRobot[aria-hidden="false"]')||launchRect);
+    if(stopPlayback){
+      const owner=window.WFProgramSpeech,playback=owner?.getState?.();
+      if(!playback || playback.kind==='report')owner?.stop?.();
+    }
     dragging=null;sheet.classList.remove('is-dragging');sheet.classList.add('is-closing');
-    window.dispatchEvent(new CustomEvent('wf-robot-report-visibility',{detail:{open:false}}));
+    window.dispatchEvent(new CustomEvent('wf-robot-report-visibility',{detail:{open:false,minimized,locale}}));
     clearTimeout(closing);closing=setTimeout(()=>{
       closing=0;sheet.hidden=shade.hidden=true;sheet.classList.remove('is-closing');document.documentElement.classList.remove('wf-robot-report-open');
       for(const sibling of inertBackground)sibling.inert=false;inertBackground.clear();
       if(returnFocus?.isConnected&&!returnFocus.closest('[inert],[hidden]'))returnFocus.focus({preventScroll:true});
-    },reduced()?0:160);
+    },reduced()?0:230);
   }
   function followActive(){
     const paragraph=paragraphs[active];if(!paragraph||!following||sheet.hidden)return;
@@ -212,7 +280,7 @@
   follow.addEventListener('click',()=>{following=true;followText.textContent=labels().follow;follow.setAttribute('aria-pressed','true');followActive();});
   play.addEventListener('click',()=>{const action=reportControlAction(voiceStates.get(locale)?.state,speechState);if(action==='pause'||action==='resume')window.WFProgramSpeech?.[action]?.();else if(action)control(action);});
   stop.addEventListener('click',()=>window.WFProgramSpeech?.stop?.());
-  close.addEventListener('click',()=>dismiss(false));shade.addEventListener('click',()=>dismiss(false));
+  minimize.addEventListener('click',()=>dismiss(false));close.addEventListener('click',()=>dismiss(true));shade.addEventListener('click',()=>dismiss(false));
   sizeButton.addEventListener('click',()=>{expanded=!expanded;place();followActive();});
   dockButton.addEventListener('click',()=>{dock=dock==='top'?'bottom':'top';place();followActive();});
   drag.addEventListener('pointerdown',event=>{
@@ -221,7 +289,7 @@
   });
   drag.addEventListener('pointermove',event=>{
     if(!dragging||event.pointerId!==dragging.id)return;
-    const viewport=window.visualViewport,top=(viewport?.offsetTop||0)+8,bottom=(viewport?.offsetTop||0)+(viewport?.height||innerHeight)-geometry.height-8;
+    const top=geometry.topLimit,bottom=geometry.bottomLimit;
     sheet.style.setProperty('--wf-report-top',Math.max(top,Math.min(bottom,dragging.top+event.clientY-dragging.startY))+'px');event.preventDefault();
   });
   function endDrag(event,cancel=false){
@@ -259,12 +327,25 @@
     const language=reportLocale(event.detail?.locale,locale),voice=reportVoiceState(event.detail,voiceStates.get(language));if(!voice)return;
     voiceStates.set(language,voice);if(language===locale&&!sheet.hidden)setState(pendingPlayback.state,pendingPlayback.reason);
   });
+  window.addEventListener('wf-program-speech-state',event=>{if(!sheet.hidden)syncRate(event.detail);});
   window.addEventListener('wf-robot-report-boundary',event=>boundary(event.detail));
   window.addEventListener('resize',schedulePlace,{passive:true});window.visualViewport?.addEventListener('resize',schedulePlace,{passive:true});
   window.visualViewport?.addEventListener('scroll',schedulePlace,{passive:true});
   window.addEventListener('pagehide',()=>dismiss(false));window.addEventListener('hashchange',()=>dismiss(false));
+  // Workspace materials live on #mainContent. The dialog and mini card live in body.
+  function syncCardMaterials(){
+    const workspace=document.querySelector('#mainContent');
+    if(!workspace)return;
+    const styles=getComputedStyle(workspace);
+    for(const token of ['paper','wash','canvas','hairline','ink']){
+      const value=styles.getPropertyValue?.('--'+token).trim();
+      if(value)document.body.style.setProperty('--wf-reader-'+token,value);
+    }
+  }
+  syncCardMaterials();
+  new MutationObserver(syncCardMaterials).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','style']});
   const main=document.querySelector('#mainContent');let routePage=document.querySelector('.page.active');
   if(main)new MutationObserver(()=>{const next=document.querySelector('.page.active');if(next!==routePage){routePage=next;dismiss(false);}}).observe(main,{attributes:true,subtree:true,attributeFilter:['class']});
   new MutationObserver(()=>{if(!sheet.hidden&&document.documentElement.lang!==locale)dismiss(false);}).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
-  window.WFRobotReport=Object.freeze({show,hasReport:()=>!!snapshot});
+  window.WFRobotReport=Object.freeze({show,hasReport:()=>!!snapshot,isMinimized:()=>minimized});
 })();

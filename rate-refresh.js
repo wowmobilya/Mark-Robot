@@ -19,6 +19,7 @@
    const response=await fetcher(url,{signal:AbortSignal.timeout(5000)});
    if(response.ok===false)continue;
    const data=await response.json(),usdTry=data.rates?.TRY??data.conversion_rates?.TRY,usdEur=data.rates?.EUR??data.conversion_rates?.EUR;
+   if((data.base_code||data.base||'USD')!=='USD'||(data.result && data.result!=='success'))continue;
    if(typeof usdTry==='number'&&Number.isFinite(usdTry)&&usdTry>0&&typeof usdEur==='number'&&Number.isFinite(usdEur)&&usdEur>0){
     const seconds=Number(data.time_last_update_unix||data.time_last_updated),stamp=seconds>0?new Date(seconds*1000):null;
     return {usdTry:Number(usdTry.toFixed(4)),usdEur:Number(usdEur.toFixed(4)),updatedAt:stamp&&!Number.isNaN(stamp.getTime())?stamp.toISOString():null};
@@ -66,11 +67,15 @@
   fr:{refresh:'Actualiser les taux',loading:'Actualisation des taux…',ok:'Taux actualisés',failed:'Échec ; taux précédents conservés',manual:'Actualisé ; taux manuels conservés',unsaved:'Actualisé ; enregistrement impossible',last:'Dernière actualisation'},
   ru:{refresh:'Обновить курсы',loading:'Обновление курсов…',ok:'Курсы обновлены',failed:'Не удалось обновить; прежние курсы сохранены',manual:'Обновлено; ручные курсы сохранены',unsaved:'Обновлено; не удалось сохранить',last:'Обновлено'}
  };
+ const fx=root.WFCurrencySources;
+ // A partially updated offline shell must not run the old generic feed for a named source.
+ if(!fx){root.fetchRate=async()=>{root.showToast?.((copy[S.lang]||copy.en).failed,'in');return false;};return;}
  const text=()=>copy[S.lang]||copy.en;
  const top=document.querySelector('#currBar .curr-bar-top'),button=top?.querySelector('.curr-refresh');
  if(!top||!button)return;
  const label=document.createElement('span');label.className='wf-refresh-label';button.append(label);
  const status=document.createElement('div');status.className='wf-rate-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.setAttribute('aria-atomic','true');top.after(status);
+ const origin=document.createElement('div');origin.className='wf-fx-origin';status.after(origin);
  const historyKey='wf_market_quotes_v1';
  let history=[];
  try {
@@ -110,7 +115,9 @@
    const {pair,card,trend}=quote;
    const manual=(pair.includes('try')&&S.settings.manualUsdTry)||(pair.includes('eur')&&S.settings.manualUsdEur);
    const latest=history.at(-1);
-   const prices=manual?[]:history.filter(p=>p.source===latest?.source).map(pairs[pair]);
+   const source=fx.normalizeSource(S.rateSource);
+   const comparison=source?source.id+'/'+source.side+'/'+source.via:latest?.source;
+   const prices=manual||source?.mode==='manual'?[]:history.filter(p=>p.source===comparison).map(pairs[pair]);
    const hasTrend=prices.length>1;
    const delta=hasTrend?(prices.at(-1)-prices.at(-2))/prices.at(-2):0;
    const change=delta!==0 && Math.abs(delta)<0.0001 ? (delta>0?'+':'−')+'<0.01%' : arrows.format(delta);
@@ -135,51 +142,64 @@
   }
  }
  let pending=null,state='';
+ const panel=fx.mount(choice=>root.fetchRate({choice}));
+ function stateText(){return ['unsaved','invalid','failed','stale','ok'].includes(state)?fx.word(state,S.lang):(text()[state]||'');}
  function render(){
   const words=text();label.textContent=pending?words.loading:words.refresh;
   button.setAttribute('aria-label',label.textContent);button.title=label.textContent;
   button.classList.toggle('wf-refreshing',Boolean(pending));button.setAttribute('aria-busy',String(Boolean(pending)));
   document.querySelectorAll('button[onclick="fetchRate()" ]').forEach(el=>{el.disabled=Boolean(pending);});
-  status.textContent=state?words[state]:'';status.dataset.state=state;
+  status.textContent=stateText();status.dataset.state=state;
+  panel?.setState(state,Boolean(pending));
+  origin.textContent=S.settings.manualUsdTry||S.settings.manualUsdEur?fx.word('manual',S.lang):
+   S.rateSource?fx.describe(S.rateSource,S.lang):fx.word(S.rateTime||S.rateHasSaved?'legacy':'defaults',S.lang);
   const time=document.getElementById('rateTime');if(time){time.textContent=S.rateTime?words.last+' · '+formatTime(S.rateTime,S.lang):words.last+' · —';time.dir='auto';}
  }
  const originalUpdate=root.updateRateUI;
  if(typeof originalUpdate==='function')root.updateRateUI=function(){const result=originalUpdate.apply(this,arguments);
-  if(!history.length&&S.rateUpdatedAt&&!S.settings.manualUsdTry&&!S.settings.manualUsdEur){
-   remember({at:S.rateUpdatedAt,try:S.usdTry,eur:S.usdEur});
-  }
   render();renderTrends();return result;};
- root.fetchRate=function(){
+ async function marketFeed(){
+  try {
+   const daily=await dailyQuotes(root.fetch.bind(root)),latest=daily.at(-1);
+   return {usdTry:latest.try,usdEur:latest.eur,updatedAt:latest.at.slice(0,10),via:'frankfurter',daily};
+  } catch {
+   return {...await requestRates(root.fetch.bind(root)),via:'exchangerate'};
+  }
+ }
+ root.fetchRate=function(options={}){
   if(pending)return pending;
+  const manual=Boolean(S.settings.manualUsdTry||S.settings.manualUsdEur);
+  const current=fx.normalizeSource(S.rateSource);
+  if(options.background && (options.hasSaved||S.rateHasSaved||S.rateTime||current||manual))return Promise.resolve(false);
+  if(!options.choice && (manual||current?.mode==='manual')){
+   panel?.open();return Promise.resolve(false);
+  }
+  const choice=options.choice||current||{id:'market',side:'reference',mode:'feed'};
+  const previous={usdTry:S.usdTry,usdEur:S.usdEur};
+  const expected={time:S.rateTime,updatedAt:S.rateUpdatedAt,source:S.rateSource,manualUsdTry:S.settings.manualUsdTry,manualUsdEur:S.settings.manualUsdEur};
   state='loading';
   pending=(async()=>{
-   const previous={usdTry:S.usdTry,usdEur:S.usdEur};
-   let rates, daily;
-   try {
-    daily=await dailyQuotes(root.fetch.bind(root));
-    const quote=daily.at(-1);
-    rates={usdTry:quote.try,usdEur:quote.eur,updatedAt:quote.at};
-   } catch {
-    try{rates=await requestRates(root.fetch.bind(root));}catch(_){state='failed';return false;}
-   }
-   S.usdTry=S.settings.manualUsdTry||rates.usdTry;S.usdEur=S.settings.manualUsdEur||rates.usdEur;
-   S.rateTime=new Date().toISOString();S.rateUpdatedAt=rates.updatedAt;
-   const last=history.at(-1);
-   if(daily){
+   let quote;
+   try {quote=await fx.getQuote(choice,root.fetch.bind(root),marketFeed);}
+   catch(error){state=error.message==='invalid'?'invalid':'failed';return false;}
+   const row={id:'usdTry',value:quote.usdTry,eur:quote.usdEur,time:new Date().toISOString(),updatedAt:quote.updatedAt,source:quote.source};
+   try {await fx.commitQuote(row,expected,options.background);}
+   catch(error) {state=error.message==='stale'?'stale':'unsaved';return false;}
+   Object.assign(S,{usdTry:row.value,usdEur:row.eur,rateTime:row.time,rateUpdatedAt:row.updatedAt,rateSource:row.source,rateHasSaved:true});
+   S.settings.manualUsdTry=null;S.settings.manualUsdEur=null;
+   for(const id of ['stManualUsdTry','stManualUsdEur']){const input=document.getElementById(id);if(input)input.value='';}
+   const source=quote.source.id+'/'+quote.source.side+'/'+quote.source.via;
+   if(quote.daily){
     history=[];
-    for(const point of daily)history=appendQuote(history,point);
-    remember(daily.at(-1));
-   }else if(last?.source||rates.updatedAt||last?.try!==rates.usdTry||last?.eur!==rates.usdEur){
-    if(last?.source)history=[];
-    remember({at:rates.updatedAt||S.rateTime,try:rates.usdTry,eur:rates.usdEur});
+    for(const point of quote.daily)history=appendQuote(history,{...point,source});
    }
-   root.updateRateUI();
-   root.wfAnimateRateChanges?.(previous);
-   state=(S.settings.manualUsdTry||S.settings.manualUsdEur)?'manual':'ok';
-   try{await dbPut('settings',{id:'usdTry',value:S.usdTry,eur:S.usdEur,time:S.rateTime,updatedAt:S.rateUpdatedAt});}catch(_){state='unsaved';}
+   if(quote.source.mode==='feed')remember({at:quote.daily?.at(-1)?.at||row.updatedAt||row.time,try:row.value,eur:row.eur,source});
+   state='ok';
+   root.updateRateUI();root.wfAnimateRateChanges?.(previous);
+   try {if(typeof wfDriveOnDatabaseCommit==='function')wfDriveOnDatabaseCommit(['settings']);} catch {}
    return true;
   })().finally(()=>{pending=null;render();
-   if(document.getElementById('page-settings')?.classList.contains('active'))root.showToast?.(text()[state],['failed','unsaved'].includes(state)?'in':'ok');
+   if(!options.background&&document.getElementById('page-settings')?.classList.contains('active'))root.showToast?.(stateText(),state==='ok'?'ok':'in');
   });
   render();return pending;
  };

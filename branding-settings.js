@@ -8,25 +8,26 @@
   if (!identity || !nameField || !logo || document.getElementById('wfBrandingSettings')) return;
 
   const copy = {
-    ar: { preview: 'معاينة الهوية', shape: 'شكل الشعار في البرنامج', size: 'حجم الشعار', rounded: 'حواف ناعمة', square: 'مربع', circle: 'دائري', compact: 'صغير', normal: 'عادي', large: 'كبير', hint: 'رتّب الشعار واسم الشركة، ثم اضغط حفظ لاعتماد التغييرات.' },
-    en: { preview: 'Identity preview', shape: 'Logo shape in the app', size: 'Logo size', rounded: 'Rounded', square: 'Square', circle: 'Circle', compact: 'Compact', normal: 'Normal', large: 'Large', hint: 'Arrange your logo and company name, then choose Save to apply your changes.' },
-    tr: { preview: 'Kimlik önizlemesi', shape: 'Uygulamadaki logo şekli', size: 'Logo boyutu', rounded: 'Yuvarlatılmış', square: 'Kare', circle: 'Daire', compact: 'Küçük', normal: 'Normal', large: 'Büyük', hint: 'Logoyu ve şirket adını düzenleyin, ardından değişiklikleri uygulamak için Kaydet’i seçin.' },
-    fr: { preview: 'Aperçu de l’identité', shape: 'Forme du logo dans l’application', size: 'Taille du logo', rounded: 'Arrondi', square: 'Carré', circle: 'Cercle', compact: 'Compact', normal: 'Normal', large: 'Grand', hint: 'Ajustez le logo et le nom de l’entreprise, puis enregistrez vos modifications.' },
-    ru: { preview: 'Предпросмотр оформления', shape: 'Форма логотипа в приложении', size: 'Размер логотипа', rounded: 'Скруглённый', square: 'Квадрат', circle: 'Круг', compact: 'Маленький', normal: 'Обычный', large: 'Большой', hint: 'Настройте логотип и название компании, затем нажмите «Сохранить».' }
+    ar: { preview: 'معاينة الهوية', background: 'لون خلفية الشعار', shape: 'شكل شعار الشركة', size: 'حجم الشعار', rounded: 'حواف ناعمة', square: 'مربع', circle: 'دائري', compact: 'صغير', normal: 'عادي', large: 'كبير', hint: 'رتّب الشعار واسم الشركة، ثم اضغط حفظ لاعتماد التغييرات.' },
+    en: { preview: 'Identity preview', background: 'Logo background color', shape: 'Company logo shape', size: 'Logo size', rounded: 'Rounded', square: 'Square', circle: 'Circle', compact: 'Compact', normal: 'Normal', large: 'Large', hint: 'Arrange your logo and company name, then choose Save to apply your changes.' },
+    tr: { preview: 'Kimlik önizlemesi', background: 'Logo arka plan rengi', shape: 'Şirket logosunun şekli', size: 'Logo boyutu', rounded: 'Yuvarlatılmış', square: 'Kare', circle: 'Daire', compact: 'Küçük', normal: 'Normal', large: 'Büyük', hint: 'Logoyu ve şirket adını düzenleyin, ardından değişiklikleri uygulamak için Kaydet’i seçin.' },
+    fr: { preview: 'Aperçu de l’identité', background: 'Couleur de fond du logo', shape: 'Forme du logo de l’entreprise', size: 'Taille du logo', rounded: 'Arrondi', square: 'Carré', circle: 'Cercle', compact: 'Compact', normal: 'Normal', large: 'Grand', hint: 'Ajustez le logo et le nom de l’entreprise, puis enregistrez vos modifications.' },
+    ru: { preview: 'Предпросмотр оформления', background: 'Цвет фона логотипа', shape: 'Форма логотипа компании', size: 'Размер логотипа', rounded: 'Скруглённый', square: 'Квадрат', circle: 'Круг', compact: 'Маленький', normal: 'Обычный', large: 'Большой', hint: 'Настройте логотип и название компании, затем нажмите «Сохранить».' }
   };
   const shapes = ['rounded', 'square', 'circle'];
   const sizes = ['compact', 'normal', 'large'];
   const textNodes = [];
   let dirty = false;
-  let saving = false;
   function storedPreferences() {
     const value = S.settings.branding;
     return {
+      logoBackground: /^#[0-9a-f]{6}$/i.test(value?.logoBackground) ? value.logoBackground.toLowerCase() : '#ffffff',
       logoShape: shapes.includes(value?.logoShape) ? value.logoShape : 'rounded',
       logoSize: sizes.includes(value?.logoSize) ? value.logoSize : 'normal'
     };
   }
-  let draft = storedPreferences();
+  let baseline = storedPreferences();
+  let draft = { ...baseline };
   const section = document.createElement('section');
   section.id = 'wfBrandingSettings';
   section.className = 'wf-branding-settings';
@@ -89,6 +90,20 @@
     }
     options.append(group);
   }
+  const backgroundGroup = document.createElement('div');
+  backgroundGroup.className = 'wf-branding-background';
+  const colorLabel = translated('label', 'background');
+  const color = document.createElement('input');
+  color.type = 'color';
+  color.id = 'wfCompanyLogoBackground';
+  colorLabel.htmlFor = color.id;
+  color.addEventListener('input', () => {
+    draft = { ...draft, logoBackground: color.value };
+    dirty = true;
+    syncPreview();
+  });
+  backgroundGroup.append(colorLabel, color);
+  options.append(backgroundGroup);
   const hint = translated('p', 'hint', 'wf-branding-hint');
   hint.id = 'wfBrandingHint';
   section.append(hint);
@@ -99,6 +114,8 @@
   function syncPreview() {
     section.dataset.logoShape = draft.logoShape;
     section.dataset.logoSize = draft.logoSize;
+    color.value = draft.logoBackground;
+    logo.style.setProperty('background', draft.logoBackground, 'important');
     const name = nameField.value.trim() || companyName();
     if (previewName.textContent !== name) previewName.textContent = name;
     previewName.title = name;
@@ -147,7 +164,8 @@
     if (upload && uploadLabel) upload.setAttribute('aria-label', uploadLabel);
   }
   function reloadPreferences() {
-    draft = storedPreferences();
+    baseline = storedPreferences();
+    draft = { ...baseline };
     dirty = false;
     applyStored();
     syncPreview();
@@ -167,48 +185,15 @@
   const originalTranslate = window.applyTr;
   if (typeof originalTranslate === 'function') window.applyTr = function (...args) {
     const result = originalTranslate.apply(this, args);
-    if (!dirty) draft = storedPreferences();
+    if (!dirty) { baseline = storedPreferences(); draft = { ...baseline }; }
     applyStored();
     translate();
     syncPreview();
     return result;
   };
-  const originalSave = window.saveSettings;
-  if (typeof originalSave === 'function') window.saveSettings = async function (...args) {
-    if (saving) return false;
-    saving = true;
-    controls.forEach(([input]) => { input.disabled = true; });
-    const originalSettings = S.settings;
-    const previous = originalSettings.branding;
-    const hadPreferences = Object.hasOwn(originalSettings, 'branding');
-    const staged = { ...previous, ...draft };
-    // The guarded original save synchronously snapshots S.settings before its
-    // first await. Stage only for that snapshot, so backups/readers cannot see an
-    // uncommitted preference while IndexedDB is pending.
-    try {
-      let pending;
-      originalSettings.branding = staged;
-      try { pending = originalSave.apply(this, args); }
-      finally {
-        if (S.settings === originalSettings && originalSettings.branding === staged) {
-          if (hadPreferences) originalSettings.branding = previous;
-          else delete originalSettings.branding;
-        }
-      }
-      const result = await pending;
-      // The original function replaces S.settings only after the transaction
-      // commits. Keep that committed state even if a later UI refresh fails.
-      const committed = S.settings !== originalSettings && S.settings.branding === staged;
-      if (result !== false || committed) dirty = false;
-      applyStored();
-      return result;
-    } catch (error) {
-      applyStored();
-      throw error;
-    } finally {
-      saving = false;
-      controls.forEach(([input]) => { input.disabled = false; });
-    }
+  window.WFCompanyBranding = {
+    changes: () => Object.fromEntries(Object.entries(draft).filter(([key, value]) => baseline[key] !== value)),
+    reload: reloadPreferences
   };
   translate();
   applyStored();

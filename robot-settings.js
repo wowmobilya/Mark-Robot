@@ -53,6 +53,19 @@
     };
     return stages[status.stage] || {download: 'voicePhaseDownload', verify: 'voicePhaseVerify', store: 'voicePhaseStore'}[status.phase] || '';
   }
+  function displayVoiceName(name, locale) {
+    const labels = {
+      ar: ['مارك روبوت · صوت محلي', 'مارك روبوت · التسجيل المحفوظ'],
+      en: ['Mark Robot · local voice', 'Mark Robot · saved recording'],
+      tr: ['Mark Robot · yerel ses', 'Mark Robot · kayıtlı ses'],
+      fr: ['Robot Mark · voix locale', 'Robot Mark · enregistrement'],
+      ru: ['Робот Марк · локальный голос', 'Робот Марк · запись'],
+    };
+    const pair = labels[String(locale || '').toLowerCase().split(/[-_]/)[0]] || labels.en;
+    if (name === 'Mark · local reference') return pair[0];
+    if (name === 'Mark · Natural Conversations') return pair[1];
+    return name;
+  }
   function voicePackEntries(_localApi, referenceApi, locale = 'ar') {
     const supported = ['ar', 'en', 'tr', 'fr', 'ru'];
     locale = supported.includes(locale) ? locale : 'ar';
@@ -204,7 +217,7 @@
     };
   }
 
-  const core = {defaults, normalize, mergeSettings, packActionDisabled, voiceStatusKey, voicePhaseKey, voicePackEntries, createPreferenceStore, movement, createMotionTracker};
+  const core = {defaults, normalize, mergeSettings, packActionDisabled, voiceStatusKey, voicePhaseKey, voicePackEntries, displayVoiceName, createPreferenceStore, movement, createMotionTracker};
   if (typeof module === 'object' && module.exports) module.exports = core;
   if (typeof document === 'undefined' || window.WFRobotSettings) return;
   const root = document.documentElement;
@@ -219,36 +232,41 @@
   };
   const copy = {
     previewFailed: ["تعذّر بدء العينة. أوقف أي قراءة جارية ثم حاول مجددًا.", "The sample could not start. Stop any current reading and try again.", "Örnek başlatılamadı. Devam eden okumayı durdurup yeniden deneyin.", "Impossible de lancer l’extrait. Arrêtez la lecture en cours et réessayez.", "Не удалось запустить пример. Остановите текущее чтение и повторите."],
-    referenceInstalledHint: ["حزمة Mark محفوظة على هذا الجهاز، بحجم يقارب {size} MB.", "The Mark pack is stored on this device, about {size} MB.", "Mark paketi bu cihazda kayıtlı, yaklaşık {size} MB.", "Le pack Mark est conservé sur cet appareil, environ {size} Mo.", "Пакет Mark сохранён на этом устройстве, около {size} МБ."],
+    referenceInstalledHint: ["حزمة مارك محفوظة على هذا الجهاز، بحجم يقارب {size} م.ب.", "The Mark pack is stored on this device, about {size} MB.", "Mark paketi bu cihazda kayıtlı, yaklaşık {size} MB.", "Le pack Mark est conservé sur cet appareil, environ {size} Mo.", "Голос «Марк» сохранён на устройстве и занимает около {size} МБ."],
     movementTitle: ["تعبيرات الروبوت وحركته", "Robot expressions and movement", "Robot ifadeleri ve hareketi", "Expressions et mouvements du robot", "Выражения и движения робота"],
-    markPack: ["Mark على هذا الجهاز", "Mark on this device", "Bu cihazdaki Mark", "Mark sur cet appareil", "Mark на этом устройстве"],
+    markPack: ["مارك على هذا الجهاز", "Mark on this device", "Bu cihazdaki Mark", "Mark sur cet appareil", "Голос «Марк» на этом устройстве"],
     voiceInstalled: ["مثبّت على هذا الجهاز", "Installed on this device", "Bu cihazda yüklü", "Installé sur cet appareil", "Установлен на этом устройстве"],
-    voiceEngineCold: ["التشغيل لم يُجهّز بعد. جهّز Mark الآن أو ابدأ القراءة.", "Not prepared yet. Prepare Mark now or start reading.", "Henüz hazırlanmadı. Mark sesini şimdi hazırlayın veya okumayı başlatın.", "Pas encore préparé. Préparez Mark maintenant ou lancez la lecture.", "Ещё не подготовлен. Подготовьте Mark сейчас или начните чтение."],
-    voiceEnginePreparing: ["جارٍ تجهيز Mark…", "Preparing Mark…", "Mark hazırlanıyor…", "Préparation de Mark…", "Подготовка Mark…"],
-    voiceEngineReady: ["Mark جاهز لبدء القراءة.", "Mark is ready to start reading.", "Mark okumaya hazır.", "Mark est prêt pour la lecture.", "Mark готов к чтению."],
-    voiceEngineFailed: ["تعذّر تجهيز Mark. الحزمة ما زالت محفوظة؛ حاول التجهيز مجددًا.", "Mark could not prepare. The pack is still saved; try preparing again.", "Mark hazırlanamadı. Paket hâlâ kayıtlı; hazırlamayı yeniden deneyin.", "Impossible de préparer Mark. Le pack est conservé ; réessayez la préparation.", "Не удалось подготовить Mark. Пакет сохранён; повторите подготовку."],
-    voicePrepare: ["تجهيز Mark الآن", "Prepare Mark now", "Mark sesini hazırla", "Préparer Mark", "Подготовить Mark"],
-    speechTitle: ["صوت Mark", "Mark voice", "Mark sesi", "Voix Mark", "Голос Mark"],
+    voiceEngineCold: ["التشغيل لم يُجهّز بعد. جهّز مارك الآن أو ابدأ القراءة.", "Not prepared yet. Prepare Mark now or start reading.", "Henüz hazırlanmadı. Mark sesini şimdi hazırlayın veya okumayı başlatın.", "Pas encore préparé. Préparez Mark maintenant ou lancez la lecture.", "Голос ещё не готов. Подготовьте голос «Марк» или начните чтение."],
+    voiceEnginePreparing: ["جارٍ تجهيز مارك…", "Preparing Mark…", "Mark hazırlanıyor…", "Préparation de Mark…", "Идёт подготовка голоса «Марк»…"],
+    voiceEngineReady: ["مارك جاهز لبدء القراءة.", "Mark is ready to start reading.", "Mark okumaya hazır.", "Mark est prêt pour la lecture.", "Марк готов к чтению."],
+    voiceEngineGPU: ['تعذّر على معالج الرسومات تشغيل مارك. أغلق التطبيقات التي تستخدم الرسومات، ثم أعد التجهيز.', 'The graphics processor could not run Mark. Close apps using the graphics processor, then try preparing again.', 'Grafik işlemcisi Mark’ı çalıştıramadı. Grafik işlemcisini kullanan uygulamaları kapatıp hazırlamayı yeniden deneyin.', 'Le processeur graphique n’a pas pu lancer Mark. Fermez les applications qui l’utilisent, puis relancez la préparation.', 'Графический процессор не смог запустить голос «Марк». Закройте приложения, использующие графический процессор, и повторите подготовку.'],
+    voiceEngineFailed: ["تعذّر تجهيز مارك. الحزمة ما زالت محفوظة؛ حاول التجهيز مجددًا.", "Mark could not prepare. The pack is still saved; try preparing again.", "Mark hazırlanamadı. Paket hâlâ kayıtlı; hazırlamayı yeniden deneyin.", "Impossible de préparer Mark. Le pack est conservé ; réessayez la préparation.", "Не удалось подготовить голос «Марк». Пакет сохранён. Попробуйте ещё раз."],
+    voicePrepare: ["تجهيز مارك الآن", "Prepare Mark now", "Mark sesini hazırla", "Préparer Mark", "Подготовить голос «Марк»"],
+    speechTitle: ["صوت مارك", "Mark voice", "Mark sesi", "Voix Mark", "Голос «Марк»"],
     speechEnabled: ['تشغيل الصوت في البرنامج', 'Enable program speech', 'Program sesini aç', 'Activer la lecture vocale', 'Включить речь в программе'],
     speechRate: ['سرعة القراءة', 'Reading speed', 'Okuma hızı', 'Vitesse de lecture', 'Скорость чтения'],
     speechVolume: ['مستوى الصوت', 'Volume', 'Ses düzeyi', 'Volume', 'Громкость'],
     reference: ["العربية باللهجة السورية", "Arabic in the Syrian dialect", "Suriye lehçesinde Arapça", "Arabe en dialecte syrien", "Арабский на сирийском диалекте"],
-    markScope: ["عينة القراءة يولّدها جهازك من مرجع Mark وقد تختلف عن التسجيل المحفوظ.", "Reading samples are generated on your device from the Mark reference and may sound different from the saved recording.", "Okuma örnekleri cihazınızda Mark referansından üretilir ve kayıtlı sesten farklı duyulabilir.", "Les extraits de lecture sont générés sur votre appareil à partir de la référence Mark et peuvent différer de l’enregistrement.", "Примеры чтения создаются на устройстве по образцу Mark и могут отличаться от сохранённой записи."],
-    speechPreview: ['سماع تسجيل Mark المحفوظ', 'Play the saved Mark recording', 'Kayıtlı Mark sesini dinle', 'Écouter l’enregistrement Mark', 'Прослушать сохранённую запись Mark'],
-    speechReadingPreview: ["تجربة قراءة Mark", "Try Mark reading", "Mark okumasını dene", "Tester la lecture Mark", "Проверить чтение Mark"],
+    markScope: ["عينة القراءة يولّدها جهازك من مرجع مارك وقد تختلف عن التسجيل المحفوظ.", "Reading samples are generated on your device from the Mark reference and may sound different from the saved recording.", "Okuma örnekleri cihazınızda Mark referansından üretilir ve kayıtlı sesten farklı duyulabilir.", "Les extraits de lecture sont générés sur votre appareil à partir de la référence Mark et peuvent différer de l’enregistrement.", "Примеры чтения создаются на устройстве по образцу голоса «Марк» и могут отличаться от сохранённой записи."],
+    speechPreview: ['سماع تسجيل مارك المحفوظ', 'Play the saved Mark recording', 'Kayıtlı Mark sesini dinle', 'Écouter l’enregistrement Mark', 'Прослушать сохранённую запись голоса «Марк»'],
+    previewRateHint: ['معاينة مؤقتة للصوت. اضغط «حفظ» لاعتماد السرعة.', 'This is a voice preview. Select Save to keep this speed.', 'Bu bir ses önizlemesidir. Bu hızı kullanmak için Kaydet’i seçin.', 'Vous écoutez un aperçu. Sélectionnez Enregistrer pour conserver cette vitesse.', 'Это пробное прослушивание. Нажмите «Сохранить», чтобы оставить эту скорость.'],
+    restoreRate: ['استعادة السرعة المحفوظة', 'Restore saved speed', 'Kayıtlı hıza dön', 'Rétablir la vitesse enregistrée', 'Вернуть сохранённую скорость'],
+    previewPause: ['إيقاف مؤقت', 'Pause sample', 'Örneği duraklat', 'Mettre en pause', 'Приостановить'],
+    previewResume: ['متابعة التجربة', 'Resume sample', 'Örneğe devam et', 'Reprendre l’extrait', 'Продолжить пример'],
+    speechReadingPreview: ["تجربة قراءة مارك", "Try Mark reading", "Mark okumasını dene", "Tester la lecture Mark", "Проверить чтение голосом «Марк»"],
     previewSaveFirst: ["احفظ تعديلات الصوت أولًا لتجربة القراءة بها.", "Save your sound settings first to try them.", "Denemeden önce ses ayarlarını kaydedin.", "Enregistrez les réglages audio avant de les tester.", "Сохраните настройки звука перед проверкой."],
-    previewPreparing: ["جارٍ تجهيز عينة Mark…", "Preparing the Mark sample…", "Mark örneği hazırlanıyor…", "Préparation de l’extrait Mark…", "Подготовка примера Mark…"],
+    previewPreparing: ["جارٍ تجهيز عينة مارك…", "Preparing the Mark sample…", "Mark örneği hazırlanıyor…", "Préparation de l’extrait Mark…", "Подготовка примера чтения голосом «Марк»…"],
     previewPaused: ['عينة القراءة متوقفة مؤقتًا.', 'Reading sample paused.', 'Okuma örneği duraklatıldı.', 'Extrait en pause.', 'Пример чтения приостановлен.'],
     previewSpeaking: ['تعمل عينة القراءة الآن', 'The reading sample is playing', 'Okuma örneği çalıyor', 'Lecture de l’extrait', 'Пример чтения воспроизводится'],
     previewFinished: ['انتهت عينة القراءة.', 'Reading sample finished.', 'Okuma örneği tamamlandı.', 'Extrait terminé.', 'Пример чтения завершён.'],
     previewStopped: ['أُوقفت عينة القراءة.', 'Reading sample stopped.', 'Okuma örneği durduruldu.', 'Extrait arrêté.', 'Пример чтения остановлен.'],
-    previewInstall: ["نزّل حزمة Mark من البطاقة أعلاه، ثم جرّب القراءة.", "Download the Mark pack above, then try reading.", "Önce yukarıdaki Mark paketini indirin, ardından okumayı deneyin.", "Téléchargez le pack Mark ci-dessus, puis testez la lecture.", "Загрузите пакет Mark выше, затем проверьте чтение."],
+    previewInstall: ["نزّل حزمة مارك من البطاقة أعلاه، ثم جرّب القراءة.", "Download the Mark pack above, then try reading.", "Önce yukarıdaki Mark paketini indirin, ardından okumayı deneyin.", "Téléchargez le pack Mark ci-dessus, puis testez la lecture.", "Загрузите пакет голоса «Марк», затем проверьте чтение."],
     previewDisabled: ['فعّل الصوت وارفع مستوى الصوت قبل التجربة.', 'Enable speech and increase the volume before trying.', 'Denemeden önce sesi açın ve ses düzeyini artırın.', 'Activez la voix et augmentez le volume avant le test.', 'Включите речь и увеличьте громкость перед проверкой.'],
     referenceHint: ["تنزيل واحد يقارب {size} MB. بعد التثبيت تُولّد القراءة على جهازك دون إنترنت.", "One download of about {size} MB. Once installed, speech is generated offline on this device.", "Yaklaşık {size} MB tek indirme. Kurulumdan sonra konuşma bu cihazda çevrimdışı üretilir.", "Un téléchargement d’environ {size} Mo. Après installation, la parole est générée hors ligne sur cet appareil.", "Однократная загрузка около {size} МБ. После установки речь создаётся на устройстве без интернета."],
     speechStop: ['إيقاف القراءة', 'Stop reading', 'Okumayı durdur', 'Arrêter la lecture', 'Остановить чтение'],
     speechHint: ["تبدأ القراءة مع جهوزية الصوت، وقد يحتاج التشغيل الأول وقتًا للتجهيز. تستمر القراءة في الخلفية عندما يسمح المتصفح.", "Reading starts as audio becomes available; the first start may take time. Reading continues in the background when the browser allows it.", "Ses hazır oldukça okuma başlar; ilk başlatma zaman alabilir. Tarayıcı izin verdiğinde okuma arka planda sürer.", "La lecture commence dès que le son est disponible ; le premier démarrage peut prendre du temps. Elle continue en arrière-plan si le navigateur le permet.", "Чтение начинается по мере готовности звука; первый запуск может занять время. Чтение продолжается в фоне, если браузер это позволяет."],
     title: ['الروبوت', 'Robot', 'Robot', 'Robot', 'Робот'],
-    hint: ["إعدادات Mark والقراءة وحركة الروبوت.", "Mark, reading and robot movement settings.", "Mark, okuma ve robot hareketi ayarları.", "Réglages de Mark, de la lecture et des mouvements du robot.", "Настройки Mark, чтения и движений робота."],
+    hint: ["إعدادات مارك والقراءة وحركة الروبوت.", "Mark, reading and robot movement settings.", "Mark, okuma ve robot hareketi ayarları.", "Réglages de Mark, de la lecture et des mouvements du robot.", "Настройки голоса «Марк», чтения и движений робота."],
     expressions: ['تعبيرات تلقائية أثناء الكلام', 'Automatic expressions while speaking', 'Konuşurken otomatik ifadeler', 'Expressions automatiques pendant la parole', 'Автоматические выражения во время речи'],
     idle: ['رمش وحركة هادئة للعينين', 'Gentle blinking and idle eye movement', 'Hafif göz kırpma ve göz hareketi', 'Clignements et mouvements discrets des yeux', 'Мягкое моргание и движения глаз'],
     sensitivity: ['حساسية تتبّع الحركة', 'Movement sensitivity', 'Hareket hassasiyeti', 'Sensibilité au mouvement', 'Чувствительность к движению'],
@@ -275,18 +293,18 @@
     saved: ['تم حفظ إعدادات الروبوت.', 'Robot settings saved.', 'Robot ayarları kaydedildi.', 'Réglages du robot enregistrés.', 'Настройки робота сохранены.'],
     changed: ['لديك تغييرات غير محفوظة.', 'You have unsaved changes.', 'Kaydedilmemiş değişiklikler var.', 'Des modifications ne sont pas enregistrées.', 'Есть несохранённые изменения.'],
     saveFailed: ['تعذّر الحفظ. بقيت الإعدادات السابقة كما هي؛ حاول مجددًا.', 'Could not save. Previous settings are unchanged; please retry.', 'Kaydedilemedi. Önceki ayarlar korundu; yeniden deneyin.', 'Enregistrement impossible. Les anciens réglages sont conservés ; réessayez.', 'Не удалось сохранить. Прежние настройки сохранены; повторите.'],
-    voiceInstall: ["تنزيل Mark", "Download Mark", "Mark paketini indir", "Télécharger Mark", "Скачать Mark"],
+    voiceInstall: ["تنزيل مارك", "Download Mark", "Mark paketini indir", "Télécharger Mark", "Скачать голос «Марк»"],
     voiceCancel: ['إلغاء التنزيل', 'Cancel download', 'İndirmeyi iptal et', 'Annuler', 'Отменить'],
     voiceChecking: ['جارٍ فحص الحزمة على الجهاز…', 'Checking this device…', 'Cihazdaki paket kontrol ediliyor…', 'Vérification sur cet appareil…', 'Проверка пакета на устройстве…'],
     voiceReady: ['جاهز للعمل دون اتصال', 'Ready offline', 'Çevrimdışı kullanıma hazır', 'Prête hors ligne', 'Готов к работе без сети'],
     voiceMissing: ['غير مثبت', 'Not installed', 'Yüklü değil', 'Non installée', 'Не установлен'],
-    voiceWebGPU: ["هذا الجهاز أو المتصفح لا يدعم تشغيل Mark المحلي. جرّب متصفحًا محدثًا على جهاز متوافق.", "This browser or device cannot run Mark locally. Try an updated browser on a compatible device.", "Bu tarayıcı veya cihaz Mark sesini yerel olarak çalıştıramıyor. Uyumlu bir cihazda güncel tarayıcı deneyin.", "Ce navigateur ou cet appareil ne peut pas exécuter Mark localement. Essayez un navigateur à jour sur un appareil compatible.", "Браузер или устройство не поддерживает локальный Mark. Попробуйте обновлённый браузер на совместимом устройстве."],
-    voiceReferenceUnavailable: ["تشغيل Mark غير متاح الآن. أعد تحميل البرنامج ثم حاول مجددًا.", "Mark is unavailable right now. Reload the app and try again.", "Mark şu anda kullanılamıyor. Uygulamayı yeniden yükleyip tekrar deneyin.", "Mark est indisponible pour le moment. Rechargez l’application et réessayez.", "Mark сейчас недоступен. Перезагрузите приложение и повторите попытку."],
+    voiceWebGPU: ["هذا الجهاز أو المتصفح لا يدعم تشغيل مارك المحلي. جرّب متصفحًا محدثًا على جهاز متوافق.", "This browser or device cannot run Mark locally. Try an updated browser on a compatible device.", "Bu tarayıcı veya cihaz Mark sesini yerel olarak çalıştıramıyor. Uyumlu bir cihazda güncel tarayıcı deneyin.", "Ce navigateur ou cet appareil ne peut pas exécuter Mark localement. Essayez un navigateur à jour sur un appareil compatible.", "На этом устройстве не удаётся запустить голос «Марк» локально. Попробуйте обновлённый браузер на совместимом устройстве."],
+    voiceReferenceUnavailable: ["تشغيل مارك غير متاح الآن. أعد تحميل البرنامج ثم حاول مجددًا.", "Mark is unavailable right now. Reload the app and try again.", "Mark şu anda kullanılamıyor. Uygulamayı yeniden yükleyip tekrar deneyin.", "Mark est indisponible pour le moment. Rechargez l’application et réessayez.", "Голос «Марк» сейчас недоступен. Перезагрузите приложение и попробуйте ещё раз."],
     voiceDownloading: ['جارٍ التنزيل…', 'Downloading…', 'İndiriliyor…', 'Téléchargement…', 'Загрузка…'],
     voiceError: ['تعذّر إكمال الحزمة. حاول مجددًا.', 'Could not complete the pack. Please retry.', 'Paket tamamlanamadı. Yeniden deneyin.', 'Impossible de terminer le téléchargement du pack. Réessayez.', 'Не удалось завершить загрузку пакета. Повторите попытку.'],
     voiceIntegrity: ['لم يطابق أحد ملفات الحزمة النسخة المطلوبة. أعد التنزيل.', 'A pack file did not match the required version. Download again.', 'Bir paket dosyası gereken sürümle eşleşmedi. Yeniden indirin.', 'Un fichier ne correspond pas à la version attendue. Relancez le téléchargement.', 'Файл пакета не соответствует требуемой версии. Загрузите снова.'],
     voiceDownloadFailed: ['تعذّر تنزيل أحد ملفات الحزمة. حاول مجددًا.', 'A pack file could not be downloaded. Please retry.', 'Paket dosyası indirilemedi. Yeniden deneyin.', 'Impossible de télécharger un fichier du pack. Réessayez.', 'Не удалось скачать файл пакета. Повторите попытку.'],
-    voiceStorageFull: ["المساحة المتاحة لا تكفي لحفظ حزمة Mark. وفّر مساحة على الجهاز ثم حاول مجددًا.", "There is not enough storage for Mark. Free space on this device and try again.", "Mark için yeterli depolama alanı yok. Cihazda yer açıp yeniden deneyin.", "Espace insuffisant pour Mark. Libérez de l’espace sur cet appareil et réessayez.", "Недостаточно места для Mark. Освободите место на устройстве и повторите."],
+    voiceStorageFull: ["المساحة المتاحة لا تكفي لحفظ حزمة مارك. وفّر مساحة على الجهاز ثم حاول مجددًا.", "There is not enough storage for Mark. Free space on this device and try again.", "Mark için yeterli depolama alanı yok. Cihazda yer açıp yeniden deneyin.", "Espace insuffisant pour Mark. Libérez de l’espace sur cet appareil et réessayez.", "Недостаточно места для голоса «Марк». Освободите место на устройстве и попробуйте ещё раз."],
     voiceStorageUnavailable: ['تعذّر الوصول إلى التخزين المحلي للصوت في هذا المتصفح.', 'Local voice storage is unavailable in this browser.', 'Bu tarayıcıda yerel ses depolamasına erişilemiyor.', 'Le stockage local des voix est indisponible dans ce navigateur.', 'Локальное хранилище голосов недоступно в этом браузере.'],
     voiceLocaleUnavailable: ['لا توجد حزمة متاحة لهذه اللغة.', 'No pack is available for this language.', 'Bu dil için paket yok.', 'Aucun pack disponible pour cette langue.', 'Для этого языка нет доступного пакета.'],
     voiceDownloadBusy: ['انتظر اكتمال التنزيل الجاري أو ألغِه أولًا.', 'Wait for the current download or cancel it first.', 'Mevcut indirmeyi bekleyin veya önce iptal edin.', 'Attendez la fin du téléchargement ou annulez-le d’abord.', 'Дождитесь текущей загрузки или сначала отмените её.'],
@@ -295,7 +313,7 @@
     voicePhaseVerify: ['المرحلة: التحقق من الملف', 'Stage: file verification', 'Aşama: dosya doğrulaması', 'Étape : vérification du fichier', 'Этап: проверка файла'],
     voicePhaseStore: ['المرحلة: الحفظ على الجهاز', 'Stage: saving on this device', 'Aşama: cihaza kaydetme', 'Étape : stockage sur l’appareil', 'Этап: сохранение на устройстве'],
     voicePhaseStorage: ['المرحلة: فحص التخزين على الجهاز', 'Stage: checking device storage', 'Aşama: cihaz depolamasını kontrol etme', 'Étape : vérification du stockage sur l’appareil', 'Этап: проверка хранилища устройства'],
-    voiceUnsupported: ["هذا المتصفح لا يدعم تشغيل Mark المحلي. افتح البرنامج في متصفح متوافق.", "This browser cannot run Mark locally. Open the app in a compatible browser.", "Bu tarayıcı Mark sesini yerel olarak çalıştıramıyor. Uygulamayı uyumlu bir tarayıcıda açın.", "Ce navigateur ne peut pas exécuter Mark localement. Ouvrez l’application dans un navigateur compatible.", "Этот браузер не поддерживает локальный Mark. Откройте приложение в совместимом браузере."],
+    voiceUnsupported: ["هذا المتصفح لا يدعم تشغيل مارك المحلي. افتح البرنامج في متصفح متوافق.", "This browser cannot run Mark locally. Open the app in a compatible browser.", "Bu tarayıcı Mark sesini yerel olarak çalıştıramıyor. Uygulamayı uyumlu bir tarayıcıda açın.", "Ce navigateur ne peut pas exécuter Mark localement. Ouvrez l’application dans un navigateur compatible.", "Браузер не поддерживает локальный голос «Марк». Откройте приложение в совместимом браузере."],
     voiceSource: ['المصدر', 'Source', 'Kaynak', 'Source', 'Источник'],
     voiceLicense: ['الترخيص', 'License', 'Lisans', 'Licence', 'Лицензия'],
   };
@@ -329,21 +347,43 @@
     input.addEventListener('change', changed); row.append(input, text('span', key)); speechControls.append(row); fields[key] = input;
   }
   const rangeOutputs = {};
+  const ratePreview = create('div', 'wf-robot-rate-preview'), rateHint = text('p', 'previewRateHint');
+  const restoreRate = text('button', 'restoreRate', 'wf-robot-restore-rate');
+  restoreRate.type = 'button';rateHint.id = 'wfRobotRatePreviewHint';ratePreview.append(rateHint, restoreRate);
+  restoreRate.addEventListener('click', event => {
+    if (!event.isTrusted) return;
+    const saved = getPreferences().speechRate, owner = window.WFProgramSpeech;
+    const current = owner?.getState?.();
+    fields.speechRate.value = saved;rangeOutputs.speechRate.textContent = Math.round(saved * 100) + '%';
+    if (current?.active || Number.isFinite(current?.rate) && current.rate !== saved) owner?.setRate?.(saved);
+    changed();
+  });
   for (const [key, min, max, step] of [['speechRate', .75, 1.25, .05], ['speechVolume', 0, 1, .05]]) {
     const row = create('label', 'wf-robot-speech-range'), input = create('input'), output = create('output');
     input.type = 'range'; input.name = key; input.min = min; input.max = max; input.step = step;
-    input.addEventListener('input', () => { output.textContent = Math.round(Number(input.value) * 100) + '%'; changed(); });
+    input.addEventListener('input', () => {
+      const value = Number(input.value);
+      output.textContent = Math.round(value * 100) + '%';
+      changed();
+      if (key === 'speechRate' && window.WFProgramSpeech?.getState?.().active) window.WFProgramSpeech.setRate?.(value);
+    });
     row.append(text('span', key), output, input); speechControls.append(row); fields[key] = input; rangeOutputs[key] = output;
+    if (key === 'speechRate') { input.setAttribute('aria-describedby',rateHint.id);speechControls.append(ratePreview); }
   }
   speechControls.append(text('p', 'speechHint', 'wf-robot-camera-hint'));
   const speechActions = create('div', 'wf-robot-speech-actions'), previewSpeech = text('button', 'speechPreview'), previewReading = text('button', 'speechReadingPreview'), stopSpeech = text('button', 'speechStop');
   previewSpeech.type = previewReading.type = stopSpeech.type = 'button';
   previewReading.dataset.wfReadingPreview = 'true';
+  previewReading.dataset.action = 'play'; stopSpeech.dataset.action = 'stop';
+  previewSpeech.className = 'wf-robot-saved-preview';
   previewSpeech.addEventListener('click', event => window.WFProgramSpeech?.preview?.({event}));
   previewReading.addEventListener('click', previewReadingClick);
-  stopSpeech.addEventListener('click', event => { if (event.isTrusted) window.WFProgramSpeech?.stop?.(); });
+  stopSpeech.addEventListener('click', event => {
+    const current = window.WFProgramSpeech?.getState?.() || lastSpeech;
+    if (event.isTrusted && current.active && (current.kind === 'preview' || readingRequested && !current.kind)) window.WFProgramSpeech?.stop?.();
+  });
   const readingStatus = create('p', 'wf-robot-reading-preview-status'); readingStatus.setAttribute('role', 'status');
-  speechActions.append(previewReading, previewSpeech, stopSpeech); speechControls.append(speechActions, readingStatus, text('p', 'markScope', 'wf-robot-recording-hint')); preferencesFieldset.append(speechControls);
+  speechActions.append(previewReading, stopSpeech, previewSpeech); speechControls.append(speechActions, readingStatus, text('p', 'markScope', 'wf-robot-recording-hint')); preferencesFieldset.append(speechControls);
   const movementSection = create('details', 'wf-robot-movement-settings');
   movementSection.append(text('summary', 'movementTitle')); preferencesFieldset.append(movementSection);
   for (const [key, label] of [['autoExpressions', 'expressions'], ['idleMotion', 'idle']]) {
@@ -367,16 +407,33 @@
   cameraButton.setAttribute('aria-describedby', cameraStatus.id);
   cameraSection.append(video, cameraButton, cameraStatus); panel.append(cameraSection);
   const voiceRows = new Map(), downloads = new Map(), preparations = new Set(), preparationErrors = new Set();
-  let dirty = false, saveState = '', latestMotion = {active: false, state: 'off', x: 0, y: 0}, disposed = false;
+  let dirty = false, nonRateChanges = false, lastSpeech = {}, lastPublishedPreferences = '', saveState = '', latestMotion = {active: false, state: 'off', x: 0, y: 0}, disposed = false;
   let readingRequested = false, readingStarted = false, readingStatusKey = '', readingVoiceName = '', readingMessage = '';
   const getPreferences = () => normalize(state()?.settings?.robot);
   function setReadingStatus(key, voiceName = '', message = '') {
     readingStatusKey = key; readingVoiceName = voiceName; readingMessage = typeof message === 'string' ? message.trim().slice(0,500) : '';
-    readingStatus.textContent = (readingMessage || t(key)) + (voiceName ? ' · ' + voiceName : '');
+    readingStatus.textContent = (readingMessage || t(key)) + (voiceName ? ' · ' + displayVoiceName(voiceName, language()) : '');
+  }
+  function updatePreviewControls(current = lastSpeech) {
+    const generated = readingRequested && current.active && (!current.kind || current.kind === 'preview');
+    const action = generated ? current.paused || current.state === 'paused' ? 'resume' : 'pause' : 'play';
+    previewReading.dataset.action = action;
+    previewReading.textContent = t(action === 'play' ? 'speechReadingPreview' : action === 'resume' ? 'previewResume' : 'previewPause');
+    previewReading.disabled = !!current.active && (!generated || current.canPause !== true);
+    stopSpeech.disabled = !(current.active && (generated || current.kind === 'preview'));
+    previewSpeech.disabled = !!current.active;
   }
   function previewReadingClick(event) {
     if (event.isTrusted !== true || disposed) return;
-    if (dirty) { setReadingStatus('previewSaveFirst'); return; }
+    const owner = window.WFProgramSpeech, current = owner?.getState?.() || lastSpeech;
+    if (current.active) {
+      if (readingRequested && (!current.kind || current.kind === 'preview') && current.canPause === true) {
+        if (current.paused || current.state === 'paused') owner?.resume?.();
+        else owner?.pause?.();
+      }
+      return;
+    }
+    if (nonRateChanges) { setReadingStatus('previewSaveFirst'); return; }
     const preferences = getPreferences();
     if (!preferences.speechEnabled || preferences.speechVolume === 0) { setReadingStatus('previewDisabled'); return; }
     const entry = voicePackEntries(null, window.WFReferenceVoice, language())[0];
@@ -385,16 +442,16 @@
       renderVoicePacks(); return;
     }
     const samples = {
-      ar: 'أهلين، أنا مارك. هاي تجربة للقراءة باللهجة السورية. المبلغ التجريبي مليون دولار أمريكي وخمسة سنتات. هيك خلصت التجربة.',
-      en: 'This is a reading voice sample. The example amount is one million US dollars and five cents. The sample is complete.',
-      tr: 'Bu bir okuma sesi örneğidir. Örnek tutar bir milyon Amerikan doları ve beş senttir. Ses örneği tamamlandı.',
-      fr: 'Ceci est un exemple de voix de lecture. Le montant d’exemple est un million de dollars américains et cinq cents. L’extrait est terminé.',
-      ru: 'Это пример голоса чтения. Пример суммы: один миллион долларов США и пять центов. Пример завершён.'
+      ar: 'مرحبا أستاذي، أنا مارك! هاد صوتي. جرّب سرّعني أو بطّئني لحتى إقرا عَ راحتك. بس مو بسرعة الصاروخ، لسّا ما خلّصت قهوتي!',
+      en: 'Hello, boss! Mark here. Speed me up or slow me down until I sound right. Just go easy on the rocket speed. I’m still drinking my coffee!',
+      tr: 'Merhaba ustam! Ben Mark. Beni hızlandırıp yavaşlatabilirsin. Ama roket hızına hemen çıkmayalım, kahvem daha bitmedi!',
+      fr: 'Bonjour chef ! C’est Mark. Accélère ou ralentis ma voix à ton goût. Allons-y doucement quand même, je n’ai pas fini mon café !',
+      ru: 'Привет, шеф! Это Марк. Попробуйте менять скорость, пока слушать не станет удобно. Только не разгоняйтесь до скорости ракеты, я ещё кофе не допил!'
     };
     const sample = samples[language()];
     readingRequested = true; readingStarted = false;
     let accepted = false;
-    try { accepted = window.WFProgramSpeech?.speak?.({text: sample, event, locale: language()}) === true; } catch (_) {}
+    try { accepted = window.WFProgramSpeech?.speak?.({text: sample, event, locale: language(), kind: 'preview', rate: Number(fields.speechRate.value)}) === true; } catch (_) {}
     if (accepted) {
       if (!readingStarted) setReadingStatus('previewPreparing');
     } else {
@@ -403,8 +460,15 @@
     }
   }
   function readingStateChanged(event) {
-    if (!readingRequested) return;
     const current = event.detail || {};
+    lastSpeech = current;
+    updatePreviewControls(current);
+    if (current.active && Number.isFinite(current.rate) && !(dirty && current.kind !== 'preview')) {
+      fields.speechRate.value = current.rate;
+      rangeOutputs.speechRate.textContent = Math.round(current.rate * 100) + '%';
+    }
+    updateRateReset();
+    if (!readingRequested || current.active && current.kind && current.kind !== 'preview') return;
     if (current.active) {
       readingStarted = true;
       const key = current.state === 'paused' || current.paused ? 'previewPaused' : current.state === 'speaking' ? 'previewSpeaking' : 'previewPreparing';
@@ -449,23 +513,43 @@
     if (tracker.active || tracker.state === 'requesting') tracker.stop('off');
     else tracker.start({userInitiated: event.isTrusted === true});
   });
-  function changed() { dirty = true; saveState = 'changed'; saveStatus.textContent = t(saveState); }
+  function updateRateReset() {
+    const saved = getPreferences().speechRate;
+    restoreRate.disabled = Number(fields.speechRate.value) === saved;
+  }
+  function changed() {
+    const saved = getPreferences();
+    nonRateChanges = Object.entries(fields).some(([key, field]) => {
+      if (key === 'speechRate') return false;
+      const value = field.type === 'checkbox' ? field.checked : typeof saved[key] === 'number' ? Number(field.value) : field.value;
+      return value !== saved[key];
+    });
+    dirty = nonRateChanges || Number(fields.speechRate.value) !== saved.speechRate;
+    saveState = dirty ? 'changed' : '';saveStatus.textContent = dirty ? t('changed') : '';
+    updateRateReset();
+  }
   function syncFields() {
     const preferences = getPreferences();
     fields.autoExpressions.checked = preferences.autoExpressions;
     fields.idleMotion.checked = preferences.idleMotion;
     fields.trackingSensitivity.value = preferences.trackingSensitivity;
     fields.speechEnabled.checked = preferences.speechEnabled;
-    for (const key of ['speechRate', 'speechVolume']) fields[key].value = preferences[key];
-    for (const key of ['speechRate', 'speechVolume']) rangeOutputs[key].textContent = Math.round(preferences[key] * 100) + '%';
+    const owner = window.WFProgramSpeech?.getState?.();
+    fields.speechRate.value = owner?.active && Number.isFinite(owner.rate) ? owner.rate : preferences.speechRate;
+    fields.speechVolume.value = preferences.speechVolume;
+    for (const key of ['speechRate', 'speechVolume']) rangeOutputs[key].textContent = Math.round(fields[key].value * 100) + '%';
   }
   function publishPreferences() {
-    window.dispatchEvent(new CustomEvent('wf-robot-preferences', {detail: {preferences: getPreferences()}}));
+    const preferences = getPreferences(), signature = JSON.stringify(preferences);
+    if (signature !== lastPublishedPreferences) {
+      lastPublishedPreferences = signature;
+      window.dispatchEvent(new CustomEvent('wf-robot-preferences', {detail: {preferences}}));
+    }
     updatePreview();
   }
   function translate() {
     for (const [node, key] of textNodes) node.textContent = t(key);
-    selectedVoice.textContent = t('reference');
+    selectedVoice.textContent = t('reference');updatePreviewControls();updateRateReset();
     if (readingStatusKey) setReadingStatus(readingStatusKey, readingVoiceName, readingMessage);
     if (store.busy) save.textContent = t('saving');
     saveStatus.textContent = saveState ? t(saveState) : '';
@@ -492,7 +576,7 @@
           if (typeof api?.getStatus !== 'function' || preparations.has(key)) return;
           const current = api.getStatus(locale);
           if (current.state === 'downloading') { downloads.get(key)?.abort(); return; }
-          if (current.state === 'unsupported' || current.state === 'checking' || current.engineReady) return;
+          if (current.state === 'unsupported' || current.state === 'checking' || current.engineReady || ['loading', 'initializing'].includes(current.engineState)) return;
           action.disabled = true;
           try {
             if (current.ready) {
@@ -526,7 +610,8 @@
       row.engine.hidden = !installed;
       row.engine.dataset.state = engineState;
       row.engine.dataset.reason = String(current.engineError || (preparationErrors.has(key) ? 'engine-failed' : ''));
-      row.engine.textContent = t(engineState === 'unsupported' ? statusKey : {cold:'voiceEngineCold', preparing:'voiceEnginePreparing', ready:'voiceEngineReady', error:'voiceEngineFailed'}[engineState]);
+      const failureLabel = ['gpu-device-lost', 'gpu-operation-failed'].includes(current.engineError) ? 'voiceEngineGPU' : 'voiceEngineFailed';
+      row.engine.textContent = t(engineState === 'unsupported' ? statusKey : {cold:'voiceEngineCold', preparing:'voiceEnginePreparing', ready:'voiceEngineReady', error:failureLabel}[engineState]);
       const file = current.fileId || current.assetId || current.asset?.id || current.file?.id || (typeof current.file === 'string' ? current.file : '');
       for (const element of [row.status, row.progress]) {
         element.dataset.state = String(current.state || '');
@@ -538,10 +623,10 @@
         element.dataset.errorName = String(current.errorName || '');
         element.dataset.file = String(file || '');
       }
-      row.action.textContent = t(current.state === 'downloading' ? 'voiceCancel' : preparations.has(key) ? 'voiceEnginePreparing' : current.ready ? 'voicePrepare' : 'voiceInstall');
+      row.action.textContent = t(current.state === 'downloading' ? 'voiceCancel' : engineState === 'preparing' ? 'voiceEnginePreparing' : current.ready ? 'voicePrepare' : 'voiceInstall');
       row.action.setAttribute('aria-label', `${row.action.textContent}: ${row.heading.textContent}`);
       row.action.hidden = installed && (current.engineReady || current.state === 'unsupported') && !preparations.has(key);
-      row.action.disabled = preparations.has(key) || packActionDisabled(current, anyDownloading, downloads.has(key));
+      row.action.disabled = engineState === 'preparing' || packActionDisabled(current, anyDownloading, downloads.has(key));
       row.progress.hidden = current.state !== 'downloading';
       row.progress.setAttribute('aria-label', `${t('voiceDownloading')} ${row.heading.textContent}`);
       if (current.total > 0) row.progress.value = Math.min(1, Math.max(0, current.loaded / current.total));
@@ -563,13 +648,16 @@
         speechEnabled: fields.speechEnabled.checked, continuousSpeech: false,
         speechRate: Number(fields.speechRate.value), speechVolume: Number(fields.speechVolume.value),
         arabicDialect: 'sy', speechBackend: 'reference'});
-      dirty = false; saveState = 'saved'; publishPreferences();
+      dirty = false; nonRateChanges = false; saveState = 'saved'; publishPreferences();
     } catch (_) { saveState = 'saveFailed'; }
     finally { preferencesFieldset.disabled = false; save.disabled = false; translate(); }
   });
   function populatePreview() {
     const display = document.querySelector('#wfGreetingRobot .wf-robot-display');
-    if (display && !preview.firstChild) preview.append(display.cloneNode(true));
+    if (!display || preview.firstChild) return;
+    const portrait = display.cloneNode(true);
+    for (const attribute of ['role', 'tabindex', 'aria-controls', 'aria-haspopup', 'aria-label']) portrait.removeAttribute(attribute);
+    portrait.setAttribute('aria-hidden','true');preview.append(portrait);
   }
   function checkVisibility() { tracker.checkVisibility(); updatePreview(); }
   function hook(name, callback) {
@@ -615,6 +703,6 @@
       window.removeEventListener('wf-reference-voice-loading', renderVoicePacks);
       window.removeEventListener('wf-program-speech-state', readingStateChanged); }
   });
-  window.WFRobotSettings = {getPreferences, stopTracking: () => tracker.stop('off'), checkVisibility};
+  window.WFRobotSettings = {getPreferences, displayVoiceName, stopTracking: () => tracker.stop('off'), checkVisibility};
   syncFields(); translate(); populatePreview(); publishPreferences();
 })();

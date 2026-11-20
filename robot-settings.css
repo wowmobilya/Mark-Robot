@@ -64,3 +64,32 @@ html body #stab-robot .wf-robot-voice-action { max-inline-size: 100%; min-block-
   #stab-robot .wf-robot-voice-row[data-backend="reference"] { grid-template-columns: minmax(0, 1fr); }
   #stab-robot .wf-robot-voice-row[data-backend="reference"] .wf-robot-voice-action { justify-self: start; }
 }
+
+#stab-robot .wf-robot-speech-actions button[data-action] {
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:44px;
+}
+#stab-robot .wf-robot-speech-actions button[data-action]::before {
+  content:"";display:inline-block;flex:none;box-sizing:border-box;width:14px;height:14px;
+}
+#stab-robot .wf-robot-speech-actions button:is([data-action="play"],[data-action="resume"])::before {
+  background:currentColor;clip-path:polygon(10% 0%,100% 50%,10% 100%);
+}
+#stab-robot .wf-robot-speech-actions button[data-action="pause"]::before {
+  border-inline:4px solid currentColor;
+}
+#stab-robot .wf-robot-speech-actions button[data-action="stop"]::before {
+  width:12px;height:12px;border-radius:2px;background:currentColor;
+}
+#stab-robot .wf-robot-speech-actions [data-wf-reading-preview] {
+  background:var(--brand-primary);border-color:var(--brand-primary);color:#fff;
+}
+#stab-robot .wf-robot-speech-actions .wf-robot-saved-preview {min-height:44px;}
+@media(max-width:480px) {
+  #stab-robot .wf-robot-speech-actions button[data-action] {flex:1 1 auto;}
+  #stab-robot .wf-robot-speech-actions .wf-robot-saved-preview {flex:1 1 100%;}
+}
+#stab-robot .wf-robot-rate-preview {display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-block:-4px 12px;}
+#stab-robot .wf-robot-rate-preview p {flex:1 1 160px;margin:0;color:var(--text2);font-size:12px;line-height:1.6;}
+#stab-robot .wf-robot-restore-rate {min-height:44px;max-width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--ui-accent);font:inherit;font-size:12px;cursor:pointer;}
+#stab-robot .wf-robot-restore-rate:disabled {opacity:.55;cursor:default;}
+#stab-robot .wf-robot-restore-rate:focus-visible {outline:2px solid var(--brand-primary);outline-offset:2px;}

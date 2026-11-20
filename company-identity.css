@@ -1,0 +1,74 @@
+@media screen {
+  html body #mainContent #page-settings #wf-settings-tab-bank.wf-company-nested-bank { display: none !important; }
+  #wfBrandingSettings .wf-branding-background {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    color: var(--text); font-size: 13px; font-weight: 700;
+  }
+  #wfBrandingSettings .wf-branding-background input {
+    inline-size: 58px; block-size: 42px; border: 1px solid var(--border); border-radius: 9px;
+    padding: 4px; background: var(--card); cursor: pointer;
+  }
+  #wfBrandingSettings #settingsLogoPrev { overflow: hidden; }
+  html body #mainContent #page-settings #wfBrandingSettings #settingsLogoPrev img { padding: 0 !important; }
+  #page-settings .wf-company-section { display: grid; gap: 14px; min-inline-size: 0; margin-block: 14px; }
+  #page-settings .wf-company-section h3, #page-settings .wf-company-section p { margin: 0; }
+  #page-settings .wf-company-section h3 { font-size: 16px; line-height: 1.5; color: var(--text); }
+  #page-settings .wf-company-section p, #page-settings .wf-company-art-proof small {
+    font-size: 12px; line-height: 1.6; color: var(--text2);
+  }
+  #page-settings .wf-company-section.wf-company-bank { grid-template-columns: minmax(0,1fr) auto; align-items: center; }
+  .wf-company-bank h3 { margin-block-end: 4px; }
+  .wf-company-bank .btn, .wf-company-art-input .btn { min-height: 40px; }
+  #page-settings .wf-company-art-tools { display: grid; gap: 8px; }
+  .wf-company-art-input {
+    display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; align-items: center;
+    border-block-end: 1px solid var(--border); padding-block-end: 8px; font-size: 13px;
+  }
+  .wf-company-art-picker { position: relative; cursor: pointer; overflow: hidden; }
+  .wf-company-art-picker input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .wf-company-art-picker:focus-within { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+  .wf-company-art-input [hidden], .wf-company-art-slot [hidden] { display: none !important; }
+  .wf-company-art-proof {
+    border: 1px solid var(--border); border-radius: 12px; background: var(--window-muted,var(--input));
+    display: grid; justify-items: center; gap: 8px; padding: 12px;
+  }
+  .wf-company-art-paper {
+    inline-size: min(100%,190px); height: 116px; display: grid; grid-template-rows: 1fr 1fr;
+    padding: 6px 12px; box-sizing: border-box; overflow: hidden; background: #fff; border: 1px dashed #b5b5b5; border-radius: 8px;
+  }
+  .wf-company-art-slot { min-block-size: 0; display: grid; place-items: center; color: #62706b; font-size: 11px; }
+  .wf-company-art-slot img { width: 100%; height: 100%; min-height: 0; object-fit: contain; display: block; }
+  #page-settings .wf-company-art-status { margin: 0; font-size: 12px; color: var(--text2); }
+  .wf-company-art-status:empty { display: none; }
+  #wfCompanyBankDialog {
+    width: min(620px, calc(100vw - 24px)); max-height: min(88dvh,760px); margin: auto; box-sizing: border-box;
+    padding: 0; border: 1px solid var(--border); border-radius: 18px; background: var(--card); color: var(--text);
+    box-shadow: 0 20px 68px rgb(0 0 0 / 24%); overflow: auto;
+  }
+  #wfCompanyBankDialog[open] { display: flex; flex-direction: column; }
+  #wfCompanyBankDialog::backdrop { background: rgb(14 26 28 / 44%); }
+  #wfCompanyBankDialog h2 { margin: 0; padding: 18px 20px; font-size: 18px; border-bottom: 1px solid var(--border); }
+  #wfCompanyBankDialog .wf-company-bank-body { overflow: auto; padding: 16px 20px; min-height: 0; }
+  #wfCompanyBankDialog #stab-bank > .wf-settings-panel-title { display: none; }
+  #wfCompanyBankDialog #stab-bank .card { margin: 0; padding: 0; box-shadow: none; background: transparent; border: 0; }
+  #wfCompanyBankDialog .fgrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+  #wfCompanyBankDialog .fg { min-width: 0; }
+  #wfCompanyBankDialog footer { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--border); }
+  #wfCompanyBankDialog footer .btn { min-height: 42px; white-space: normal; }
+  @media (min-width: 680px) {
+    #page-settings .wf-company-marks { grid-template-columns: minmax(0,1.6fr) minmax(150px,1fr); align-items: center; }
+    #page-settings .wf-company-marks > h3, #page-settings .wf-company-marks > p { grid-column: 1 / -1; }
+  }
+  @media (max-width: 480px) {
+    #wfCompanyBankDialog .fgrid { grid-template-columns: minmax(0,1fr); }
+    #wfCompanyBankDialog .wf-company-bank-body { padding: 12px 16px; }
+  }
+}
+@media screen {
+  .wf-company-art-paper[data-single="true"] { grid-template-rows: minmax(0,1fr); }
+  .wf-company-art-paper[data-single="true"] .wf-company-art-slot:has(img[hidden]) { display: none; }
+  html body #mainContent #page-settings #wfSettingsDialog #stab-company > .wf-company-section {
+    border-block-start: 1px solid var(--dialog-line,var(--border)) !important;
+    padding-block-start: 15px !important; border-radius: 0;
+  }
+}

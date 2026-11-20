@@ -79,7 +79,7 @@
     if (rateManual || !Number.isFinite(date.getTime())) { stamp.textContent = missing; stamp.removeAttribute('datetime'); return; }
     const locale = {ar:'ar-SY-u-nu-latn',tr:'tr-TR',en:'en-US',fr:'fr-FR',ru:'ru-RU'}[lang] || 'en-US';
     stamp.dateTime = date.toISOString();
-    stamp.textContent = new Intl.DateTimeFormat(locale,{year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',hour12:true}).format(date);
+    stamp.textContent = S.rateSource?.dateOnly ? new Intl.DateTimeFormat(locale,{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'UTC'}).format(date) : new Intl.DateTimeFormat(locale,{year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',hour12:true}).format(date);
   }
   const pad = document.createElement('div');
   pad.className = 'cc-number-pad';

@@ -582,7 +582,7 @@
       if(matchMedia('(max-width:1024px)').matches){
         const key=String(type||'ok')+'|'+String(message);
         const now=Date.now(),prev=shown.get(key)||0;
-        if(now-prev<5*60*1000)return;
+        if(now-prev<2000)return;
         shown.set(key,now);
         if(shown.size>60)for(const [k,t] of shown)if(now-t>5*60*1000)shown.delete(k);
         // Remove stale duplicates that may still be on-screen.

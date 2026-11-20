@@ -51,15 +51,17 @@ test('the application shell installs reference metadata needed by cold offline w
   assert(f.cached.includes('https://example.test/reference-voice-assets.js?v=1'));
   assert(f.cached.includes('https://example.test/reference-voice.js?v=1'));
   assert(f.cached.includes('https://example.test/reference-voice.js?v=2'));
-  assert(f.cached.includes('https://example.test/reference-voice-host.js?v=3'));
+  assert(f.cached.includes('https://example.test/reference-voice.js?v=3'));
+  assert(f.cached.includes('https://example.test/reference-voice-engine.js?v=1'));
+  assert(f.cached.includes('https://example.test/reference-voice-host.js?v=4'));
   assert(!f.cached.some(url=>/shard-\d+\.bin/.test(url)),'opening the program must not download large voice shards');
 });
 
 test('an offline app update uses the new speech host without reinstalling the model pack',async()=>{
   const f=serviceWorker({offline:true});
   f.entries.set('https://example.test/reference-voice-host.js?v=1',new Response('old buffered host'));
-  f.shellEntries.set('https://example.test/reference-voice-host.js?v=3',new Response('current streaming host'));
-  const response=await f.get('https://example.test/reference-voice-host.js?v=3');
+  f.shellEntries.set('https://example.test/reference-voice-host.js?v=4',new Response('current streaming host'));
+  const response=await f.get('https://example.test/reference-voice-host.js?v=4');
   assert.equal(await response.text(),'current streaming host');
   assert(!f.network.some(url=>url.includes('/model/')));
 });

@@ -108,7 +108,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   win.WFArabicReportSpeech = win.WFTurkishReportSpeech = {prepare:value=>[{text:value.narration,charIndex:0,charLength:value.narration.length}]};
   const offlineVoice = {calls:[],cancels:0,getStatus:()=>({ready:offlineReady}),speak(request){this.calls.push(request);return{cancel:()=>{this.cancels++;}};}};
   if (offline) win.WFOfflineVoice = offlineVoice;
-  const referenceVoice = {calls:[],handles:[],cancels:0,pauses:0,resumes:0,unlocks:0,disposals:0,cancelledDownloads:[],prepares:[],releases:0,
+  const referenceVoice = {calls:[],handles:[],cancels:0,pauses:0,resumes:0,unlocks:0,disposals:0,rates:[],cancelledDownloads:[],prepares:[],releases:0,
     list:()=>[{locale:'ar',locales:['ar','en','tr','fr','ru'],name:'Mark · local reference',bytes:921000000}],
     getStatus:()=>({locale:lang,ready:referenceReady,installed:referenceReady,state:referenceReady?'ready':'not-installed',engineState:'idle',engineError:'',name:'Mark · local reference',total:921000000}),
     preparePlayback(){this.unlocks++;return{dispose:()=>this.disposals++};},
@@ -117,7 +117,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
     cancelDownload(locale){this.cancelledDownloads.push(locale);},
     speak(request){this.calls.push(request);let cancelled=false,paused=false,finished=false;
       const onEnd=request.onEnd;request.onEnd=(...args)=>{finished=true;onEnd?.(...args);};
-      const handle={cancel:()=>{if(!cancelled&&!finished){cancelled=true;this.cancels++;}},pause:()=>{if(cancelled||finished||paused)return false;paused=true;this.pauses++;request.onPause?.({reason:'user'});return true;},
+      const handle={setRate:value=>{this.rates.push(value);return true;},cancel:()=>{if(!cancelled&&!finished){cancelled=true;this.cancels++;}},pause:()=>{if(cancelled||finished||paused)return false;paused=true;this.pauses++;request.onPause?.({reason:'user'});return true;},
         resume:()=>{if(cancelled||finished||!paused)return false;paused=false;this.resumes++;request.onResume?.();return true;}};this.handles.push(handle);return handle;}};
   if (reference) win.WFReferenceVoice = referenceVoice;
   const reportEvents = [];
@@ -236,7 +236,6 @@ for(const [name,stop]of [
   ['disabled speech',(f,p)=>{p.speechEnabled=false;f.send('wf-robot-preferences',{});}],
   ['muted speech',(f,p)=>{p.speechVolume=0;f.send('wf-robot-preferences',{});}],
   ['changed volume',(f,p)=>{p.speechVolume=.4;f.send('wf-robot-preferences',{});}],
-  ['changed rate',(f,p)=>{p.speechRate=1.2;f.send('wf-robot-preferences',{});}],
 ])test(name+' safely cancels the current owner and ignores its late callbacks',()=>{
   const preferences={speechVolume:1,speechRate:1};const f=fixture({preferences});
   f.win.WFProgramSpeech.speak({text:'Owned text',event:{isTrusted:true}});const request=f.referenceVoice.calls[0];request.onStart();
@@ -458,4 +457,31 @@ test('real page teardown removes listeners and stale callbacks cannot revive aud
   f.pagehide(false);check(!f.win.WFProgramSpeech&&f.observers.every(observer=>observer.targets.length===0),'Final teardown removes the controller and observers');
   check(f.synth.listeners.voiceschanged.size===0,'Final teardown removes platform availability listeners too');
   request.onStart();request.onEnd();check(f.face.dataset.speaking==='false','Post-disposal callbacks cannot restart the mouth');
+});
+test('pressing the smart card report button reopens a minimized report without restarting or stopping its voice',async()=>{
+  let snapshots=0,opened=0,minimized=false;
+  const f=fixture({snapshot:()=>{snapshots++;return{narration:'Daily figures'};}});
+  f.win.WFRobotReport={isMinimized:()=>minimized,show(){opened++;minimized=false;return true;}};
+  f.reveal();f.report.click();await flush();
+  const request=f.referenceVoice.calls[0];assert.ok(request);request.onStart();
+  minimized=true;f.send('wf-robot-report-visibility',{open:false,minimized:true});
+  assert.equal(f.report.getAttribute('aria-label'),'فتح التقرير');
+  f.report.click();await flush();
+  assert.equal(opened,1);assert.equal(snapshots,1);assert.equal(f.referenceVoice.calls.length,1);assert.equal(f.referenceVoice.cancels,0);assert.equal(state(f).state,'speaking');
+});
+
+test('changing speed preserves the active report, paused position and original voice owner',async()=>{
+  const preferences={speechRate:1};const f=fixture({preferences,snapshot:()=>({narration:'One continuous report'})});
+  f.reveal();f.report.click();await flush();const request=f.referenceVoice.calls[0];request.onStart();
+  assert.equal(f.win.WFProgramSpeech.setRate(1.2),true);assert.equal(state(f).rate,1.2);
+  assert.equal(f.referenceVoice.rates.at(-1),1.2);assert.equal(f.referenceVoice.calls.length,1);assert.equal(f.referenceVoice.cancels,0);
+  f.win.WFProgramSpeech.pause();preferences.speechRate=.8;f.send('wf-robot-preferences',{});
+  assert.equal(state(f).paused,true);assert.equal(state(f).rate,.8);assert.equal(f.referenceVoice.rates.at(-1),.8);assert.equal(f.referenceVoice.cancels,0);
+  assert.equal(f.win.WFProgramSpeech.setRate(NaN),false);assert.equal(state(f).rate,.8);
+});
+test('generated preview uses the draft rate while recorded playback changes speed without losing its position',()=>{
+  const generated=fixture();generated.win.WFProgramSpeech.speak({text:'Preview',event:{isTrusted:true},kind:'preview',rate:.85});
+  assert.equal(state(generated).kind,'preview');assert.equal(generated.referenceVoice.calls[0].rate,.85);
+  const f=fixture({recordings:true});f.win.WFProgramSpeech.preview({event:{isTrusted:true},rate:1.1});const recording=f.audioRequests[0];recording.onplaying();recording.currentTime=3.2;
+  assert.equal(f.win.WFProgramSpeech.setRate(.9),true);assert.equal(recording.playbackRate,.9);assert.equal(recording.preservesPitch,true);assert.equal(recording.currentTime,3.2);assert.equal(recording.pauseCount,0);
 });

@@ -56,7 +56,26 @@
     };
   }
 
-  const core={LANGUAGES,NAME,localeKey,embeddingKey,generationBody,createCacheFetch};
+  async function fastStartRuntime(source,digest=bytes=>crypto.subtle.digest('SHA-256',bytes)){
+    // Adapt only this exact, already installed upstream build. Weight files and
+    // all inference arithmetic stay unchanged. q8 is upstream's baseline path;
+    // benchmarking/repacking and speculative reference/CFG warmups are optional.
+    const pinned='fd9c2a0530b7d6898e68caa808933f523d8d318dc3f00b29b24962337773bacf';
+    if(typeof source!=='string'||hex(await digest(new TextEncoder().encode(source)))!==pinned)throw fail('integrity-failed');
+    const changes=[
+      ['i??=await Ha(t,n);','i??={skinny:`q8`,large:`q8`};'],
+      ['await Xo(v,y,p);',''],
+      ['n.addEventListener(`uncapturederror`,e=>console.error(`WebGPU error:`,e.error.message))',
+        'n.addEventListener(`uncapturederror`,t=>{console.error(`WebGPU error:`,t.error.message);e?.(`WebGPU operation failed: `+t.error.message)})']
+    ];
+    for(const [before,after] of changes){
+      if(source.split(before).length!==2)throw fail('integrity-failed');
+      source=source.replace(before,after);
+    }
+    return source;
+  }
+
+  const core={LANGUAGES,NAME,localeKey,embeddingKey,generationBody,createCacheFetch,fastStartRuntime};
   if(typeof module==='object'&&module.exports){module.exports=core;return;}
   globalThis.WFReferenceVoiceCore=Object.freeze(core);
   if(typeof document==='undefined')return;
@@ -141,7 +160,7 @@
 
   function ensureWorker(){
     if(worker)return worker;
-    worker=new Worker(new URL('reference-voice-host.js?v=3',appBase),{type:'module'});
+    worker=new Worker(new URL('reference-voice-host.js?v=4',appBase),{type:'module'});
     const instance=worker;
     worker.onmessage=event=>{
       if(worker!==instance)return;

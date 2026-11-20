@@ -4,14 +4,15 @@
   const dashboard = card.closest('.page');
   const track = card.querySelector('.wf-greeting-faces');
   if (!dashboard || !track) return;
-  const faces = [...track.children];
+  const allFaces = [...track.children];
+  let faces = allFaces.slice();
   if (!faces.length) return;
   const labelIds = {
     greetingCard:'greetingSub', tipCardStandalone:'tipLabel tipText',
     wfGreetingWeather:'wfWeatherTitle', wfGreetingLogo:'wfGreetingLogoTitle', wfGreetingRobot:'wfRobotTitle'
   };
   const robot = faces.find(panel => panel.id === 'wfGreetingRobot');
-  const initialFace = Math.max(0, faces.indexOf(robot));
+  let initialFace = Math.max(0, faces.indexOf(robot));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const weatherTitle = document.getElementById('wfWeatherTitle');
   const weatherStatus = document.getElementById('wfWeatherStatus');
@@ -28,11 +29,11 @@
     ru: ['Инегёль, Бурса', 'Дождь на 7 дней', 'Загрузка погоды…', 'Погода недоступна', 'WOW Furniture', 'мм'],
   };
   const carouselWords = {
-    ar: {card:'البطاقة الذكية',pages:'صفحات البطاقة الذكية',slide:'صفحة',open:'عرض',names:['الترحيب','نصيحة اليوم','الطقس','هوية البرنامج','إنفنتي روبوت'],hint:'اختر صفحة من المؤشر الجانبي. استخدم الأسهم للتنقل، أو اضغط المساحة الخالية لعرض الصفحة التالية.'},
-    tr: {card:'Akıllı kart',pages:'Akıllı kart sayfaları',slide:'Sayfa',open:'Göster',names:['Karşılama','Günün önerisi','Hava durumu','Uygulama kimliği','Infinity Robot'],hint:'Yandaki göstergeden bir sayfa seçin. Ok tuşlarıyla ilerleyin veya sonraki sayfa için boş alana dokunun.'},
-    en: {card:'Smart card',pages:'Smart card pages',slide:'Slide',open:'Show',names:['Welcome','Today’s tip','Weather','App identity','Infinity Robot'],hint:'Choose a page with the side indicator. Use the arrow keys, or press the empty card area to show the next page.'},
-    fr: {card:'Carte intelligente',pages:'Pages de la carte',slide:'Page',open:'Afficher',names:['Accueil','Conseil du jour','Météo','Identité de l’application','Robot Infinity'],hint:'Choisissez une page avec l’indicateur latéral. Utilisez les flèches ou appuyez sur une zone vide pour passer à la page suivante.'},
-    ru: {card:'Умная карточка',pages:'Страницы карточки',slide:'Слайд',open:'Показать',names:['Приветствие','Совет дня','Погода','Оформление приложения','Робот Инфинити'],hint:'Выберите страницу боковым индикатором. Используйте стрелки или нажмите на свободную область для перехода дальше.'}
+    ar: {card:'البطاقة الذكية',pages:'صفحات البطاقة الذكية',slide:'صفحة',open:'عرض',names:['الترحيب','نصيحة اليوم','الطقس','هوية البرنامج','مارك روبوت'],hint:'اختر صفحة من المؤشر الجانبي. استخدم الأسهم للتنقل، أو اضغط المساحة الخالية لعرض الصفحة التالية.'},
+    tr: {card:'Akıllı kart',pages:'Akıllı kart sayfaları',slide:'Sayfa',open:'Göster',names:['Karşılama','Günün önerisi','Hava durumu','Uygulama kimliği','Mark Robot'],hint:'Yandaki göstergeden bir sayfa seçin. Ok tuşlarıyla ilerleyin veya sonraki sayfa için boş alana dokunun.'},
+    en: {card:'Smart card',pages:'Smart card pages',slide:'Slide',open:'Show',names:['Welcome','Today’s tip','Weather','App identity','Mark Robot'],hint:'Choose a page with the side indicator. Use the arrow keys, or press the empty card area to show the next page.'},
+    fr: {card:'Carte intelligente',pages:'Pages de la carte',slide:'Page',open:'Afficher',names:['Accueil','Conseil du jour','Météo','Identité de l’application','Robot Mark'],hint:'Choisissez une page avec l’indicateur latéral. Utilisez les flèches ou appuyez sur une zone vide pour passer à la page suivante.'},
+    ru: {card:'Умная карточка',pages:'Страницы карточки',slide:'Слайд',open:'Показать',names:['Приветствие','Совет дня','Погода','Оформление приложения','Робот Марк'],hint:'Выберите страницу боковым индикатором. Используйте стрелки или нажмите на свободную область для перехода дальше.'}
   };
   const playbackWords = {
     ar:['تشغيل التنقل التلقائي','إيقاف التنقل التلقائي'],
@@ -54,18 +55,19 @@
   card.setAttribute('aria-describedby', hint.id);
   card.setAttribute('aria-keyshortcuts', 'ArrowDown ArrowUp ArrowRight ArrowLeft Home End Enter Space');
   card.tabIndex = 0;
-  const pageButtons = faces.map((panel, index) => {
+  let pageButtons = faces.map((panel, index) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'wf-smart-page';
     button.dataset.faceIndex = String(index);
     button.setAttribute('aria-controls', panel.id);
-    button.addEventListener('click', event => { event.stopPropagation(); chooseFace(index); });
+    button.addEventListener('click', event => { event.stopPropagation(); chooseFace(faces.indexOf(panel)); });
     pager.append(button);
     panel.setAttribute('role', 'group');
     if (labelIds[panel.id]) panel.setAttribute('aria-labelledby', labelIds[panel.id]);
     return button;
   });
+  const allButtons = new Map(allFaces.map((panel, i) => [panel, pageButtons[i]]));
   const playback = document.createElement('button');
   playback.type = 'button';
   playback.className = 'wf-smart-playback';
@@ -77,10 +79,11 @@
   card.append(pager, hint);
   const endpoint = 'https://api.open-meteo.com/v1/forecast?latitude=40.08&longitude=29.51&timezone=Europe%2FIstanbul&forecast_days=7&current=temperature_2m,weather_code,is_day&daily=rain_sum,showers_sum,weather_code';
   let timer, animation, forecast, fetched = 0, loading = false, failed = false;
+  let intervalSeconds = 10;
   const autoplayKey = 'wf.smartCard.autoplay';
   let savedAutoplay = null;
   try { savedAutoplay = localStorage.getItem(autoplayKey); } catch (_) {}
-  let autoplay = savedAutoplay !== 'false';
+  let autoplay = savedAutoplay === 'true';
   let motionOptIn = savedAutoplay === 'true';
   let face = initialFace, robotSpeaking = false, reportOpen = false, interacting = false;
   let pendingFace = null, destination = null, transition = 0;
@@ -90,9 +93,12 @@
   }
 
   function setAutoplay(enabled) {
+    if (enabled !== autoplay) {
+      if (window.WFSmartCardSettings) window.WFSmartCardSettings.setAutoplay(enabled);
+      else try { localStorage.setItem(autoplayKey, String(enabled)); } catch (_) {}
+    }
     autoplay = enabled;
     if (enabled) motionOptIn = true;
-    try { localStorage.setItem(autoplayKey, String(enabled)); } catch (_) {}
     clearTimeout(timer);
     if (!enabled) { cancelFlip(); showFace(face); }
     syncPager();
@@ -119,6 +125,27 @@
       button.tabIndex = index === face ? 0 : -1;
       panel.setAttribute('aria-roledescription', text.slide);
     });
+  }
+
+  function applyPreferences(prefs, resetFace) {
+    const previous = faces[face];
+    cancelFlip();
+    const ordered = prefs.order.filter(id => prefs.visible.includes(id))
+      .map(id => allFaces.find(panel => panel.id === id)).filter(Boolean);
+    if (!ordered.length) return;
+    faces = ordered;
+    pageButtons = faces.map(panel => allButtons.get(panel));
+    pageButtons.forEach((button, index) => { button.dataset.faceIndex = String(index); });
+    pager.replaceChildren(...pageButtons, playback);
+    pager.hidden = faces.length === 1;
+    pager.style.setProperty('--wf-smart-pages', String(faces.length));
+    initialFace = Math.max(0, faces.findIndex(panel => panel.id === prefs.initial));
+    autoplay = prefs.autoplay;
+    motionOptIn = autoplay;
+    intervalSeconds = prefs.interval;
+    card.dataset.smartDensity = prefs.density;
+    showFace(resetFace || !faces.includes(previous) ? initialFace : faces.indexOf(previous));
+    schedule();
   }
 
   function weatherIcon(code, daylight = true) {
@@ -195,9 +222,10 @@
 
   function showFace(index) {
     face = index;
-    faces.forEach((panel, i) => {
-      panel.inert = i !== face;
-      panel.setAttribute('aria-hidden', String(i !== face));
+    allFaces.forEach(panel => {
+      const inactive = panel !== faces[face];
+      panel.inert = inactive;
+      panel.setAttribute('aria-hidden', String(inactive));
     });
     card.dataset.smartFace = faces[face].id;
     syncPager();
@@ -244,6 +272,7 @@
   }
 
   function chooseFace(index, focusPager = false) {
+    if (faces.length < 2) return;
     const next = (index + faces.length) % faces.length;
     setAutoplay(false);
     if (focusPager) pageButtons[next].focus({preventScroll:true});
@@ -260,11 +289,10 @@
 
   function schedule() {
     clearTimeout(timer);
-    if (!autoplayEnabled() || interacting || document.hidden || !dashboard.classList.contains('active') || animation || robotSpeaking || reportOpen || robot?.dataset.speaking === 'true' || robot?.dataset.tracking === 'true' ||
+    if (faces.length < 2 || !autoplayEnabled() || interacting || document.hidden || !dashboard.classList.contains('active') || animation || robotSpeaking || reportOpen || robot?.dataset.speaking === 'true' || robot?.dataset.tracking === 'true' ||
         (card.matches(':focus-within') && document.activeElement !== playback) ||
         (card.matches(':hover') && !playback.matches(':hover'))) return;
-    const duration = {greetingCard:8000,tipCardStandalone:14000,wfGreetingWeather:14000,wfGreetingLogo:8000,wfGreetingRobot:14000};
-    timer = setTimeout(() => flip(), duration[faces[face].id] || 14000);
+    timer = setTimeout(() => flip(), intervalSeconds * 1000);
   }
 
   playback.addEventListener('click', event => {
@@ -341,8 +369,9 @@
   if (appName) new MutationObserver(syncLogo).observe(appName, {childList:true, subtree:true, characterData:true});
   syncLogo();
   render();
-  showFace(initialFace);
-  schedule();
+  window.addEventListener('wf-smart-card-change', event => applyPreferences(event.detail.prefs, event.detail.resetFace));
+  if (window.WFSmartCardSettings) applyPreferences(window.WFSmartCardSettings.current(), true);
+  else { showFace(initialFace); schedule(); }
 })();
 
 // Visibility choices affect the dashboard only. The exchange view reuses its rate card.

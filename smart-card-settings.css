@@ -1,0 +1,24 @@
+#wf-settings-tab-smart-card .wf-smart-settings-icon { display: inline-grid; place-items: center; inline-size: 28px; block-size: 28px; }
+#stab-smart-card .wf-smart-settings-form { margin: 0; border: 0; padding: 0; min-inline-size: 0; display: grid; gap: .8rem; }
+#stab-smart-card h3, #stab-smart-card p { margin: 0; }
+#stab-smart-card .wf-smart-settings-hint, #stab-smart-card .wf-smart-settings-preview small { color: var(--text2,var(--text)); }
+#stab-smart-card .wf-smart-settings-list { border: 1px solid var(--border); border-radius: 12px; padding-inline: .7rem; background: var(--card); }
+#stab-smart-card .wf-smart-settings-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: .35rem; align-items: center; padding-block: .25rem; }
+#stab-smart-card .wf-smart-settings-row + .wf-smart-settings-row { border-block-start: 1px solid var(--border); }
+#stab-smart-card .wf-smart-settings-row label { display: flex; gap: .6rem; align-items: center; overflow-wrap: anywhere; cursor: pointer; min-block-size: 44px; }
+#stab-smart-card input[type=checkbox] { inline-size: 20px; block-size: 20px; flex: none; margin: 0; accent-color: var(--brand-primary); }
+#stab-smart-card button, #stab-smart-card select { min-block-size: 44px; min-inline-size: 44px; }
+#stab-smart-card .wf-smart-settings-row button { font-size: 1.15rem; padding-inline: .5rem; }
+#stab-smart-card :disabled { cursor: default; }
+#stab-smart-card .wf-smart-settings-controls { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,13rem),1fr)); gap: .75rem; }
+#stab-smart-card .wf-smart-settings-field { display: grid; gap: .25rem; align-content: center; min-inline-size: 0; }
+#stab-smart-card .wf-smart-settings-field:has(input) { display: flex; align-items: center; justify-content: space-between; gap: .6rem; min-block-size: 44px; cursor: pointer; }
+#stab-smart-card .wf-smart-settings-preview { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; justify-content: space-between; padding: .7rem; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+#stab-smart-card .wf-smart-settings-preview[data-density=comfortable] { padding-block: 1.25rem; }
+#stab-smart-card .wf-smart-settings-preview small, #stab-smart-card .wf-smart-settings-preview strong { display: block; }
+#stab-smart-card .wf-smart-settings-actions { display: flex; justify-content: flex-end; gap: .5rem; }
+#stab-smart-card .wf-smart-settings-status:empty { display: none; }
+@media screen {
+  html body #mainContent #page-dashboard .wf-greeting-flip[data-smart-density=comfortable] { --wf-smart-card-height: clamp(15rem,22vw,16rem); --wf-smart-card-padding: 20px; }
+  html body #mainContent #page-dashboard .wf-smart-pager[hidden] { display: none !important; }
+}

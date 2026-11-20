@@ -58,6 +58,89 @@
     return buffer;
   }
   const MAX_RENDERED_AUDIO_BYTES=32*1024*1024,MAX_RENDERED_AUDIO_SECONDS=20*60;
+  const MIN_SPEECH_RATE=.75,MAX_SPEECH_RATE=1.25;
+  const speechRate=value=>Number.isFinite(value)?Math.max(MIN_SPEECH_RATE,Math.min(MAX_SPEECH_RATE,value)):1;
+
+  // Streaming WSOLA. The analysis clock follows the selected tempo while each
+  // output grain is copied at the recording's sample rate. Search up to 8 ms
+  // either side for a matching waveform, then crossfade a 20 ms overlap.
+  // The nominal clock and overlap live for a sentence, across decoder packets.
+  function createTempoStream(frequency){
+    const hop=Math.round(.020*frequency),radius=Math.round(.008*frequency);
+    const stride=Math.max(1,Math.round(frequency/8000));
+    const fade=Float32Array.from({length:hop},(_,i)=>(1-Math.cos(Math.PI*i/(hop-1)))/2);
+    let input=new Float32Array(4*hop),base=0,end=0,position=0,tail=null,sealed=false;
+    function append(samples){
+      // Keep the search history and unplayed input. Compact only when space
+      // runs out, so small decoder packets never cause quadratic copying.
+      if(end-base+samples.length>input.length){
+        const keep=Math.max(base,Math.floor(position)-radius-hop);
+        const count=end-keep,needed=count+samples.length;
+        if(needed>input.length){
+          const next=new Float32Array(Math.max(input.length*2,needed));
+          next.set(input.subarray(keep-base,end-base));input=next;
+        }else input.copyWithin(0,keep-base,end-base);
+        base=keep;
+      }
+      input.set(samples,end-base);end+=samples.length;
+    }
+    function match(nominal){
+      const low=Math.max(0,nominal-radius),high=Math.min(end-base-hop,nominal+radius);
+      let best=Math.min(high,Math.max(low,nominal)),bestScore=-Infinity;
+      // A decimated coarse search bounds the cost on mobile. Refine the winning
+      // offset at single-sample spacing for accurate phase at voiced joins.
+      function score(offset){
+        let dot=0,power=0;
+        for(let i=0;i<hop;i+=stride){const x=input[offset+i];dot+=tail[i]*x;power+=x*x;}
+        const value=dot/Math.sqrt(power+1e-15);
+        if(value>bestScore){bestScore=value;best=offset;}
+      }
+      score(best);
+      for(let offset=low;offset<=high;offset+=stride)score(offset);
+      const coarse=best;
+      for(let offset=Math.max(low,coarse-stride+1);offset<=Math.min(high,coarse+stride-1);offset++)score(offset);
+      return best;
+    }
+    function read(rate,limit){
+      const remaining=end-position;
+      if(remaining<=0)return null;
+      let nominal=Math.round(position)-base;
+      // Unity is sample-exact. Blend the remaining overlap once when a live
+      // speed change returns to normal, then bypass all grain processing.
+      if(rate===1&&!tail){
+        const count=Math.min(limit,end-base-nominal);
+        if(!count){if(sealed)position=end;return null;}
+        const result=input.subarray(nominal,nominal+count);position+=count;
+        if(sealed&&Math.round(position)>=end)position=end;
+        return result;
+      }
+      if(!sealed&&nominal+radius+2*hop>end-base)return null;
+      const output=new Float32Array(limit);let written=0;
+      while(written+hop<=limit&&position<end){
+        nominal=Math.round(position)-base;
+        if(!sealed&&nominal+radius+2*hop>end-base)break;
+        const left=Math.max(0,Math.round((end-position)/rate)),count=Math.min(hop,left);
+        if(!count){if(sealed)position=end;break;}
+        const last=sealed&&count===left;
+        // Anchor the final grain to the actual end, including the release of the
+        // last consonant. Keep short, sub-window clips within their own samples.
+        const start=last?Math.max(0,end-base-count):tail&&rate!==1?match(nominal):nominal;
+        for(let i=0;i<count;i++){
+          const value=input[Math.min(start+i,end-base-1)];
+          const weight=last&&count<hop?(count===1?1:(1-Math.cos(Math.PI*i/(count-1)))/2):fade[i];
+          output[written+i]=tail?tail[i]+weight*(value-tail[i]):value;
+        }
+        written+=count;position=last?end:position+count*rate;
+        if(last||rate===1){tail=null;break;}
+        if(!tail)tail=new Float32Array(hop);
+        const tailStart=start+hop,available=Math.max(0,Math.min(hop,end-base-tailStart));
+        tail.set(input.subarray(tailStart,tailStart+available));
+        if(available<hop)tail.fill(input[end-base-1],available);
+      }
+      return written?output.subarray(0,written):null;
+    }
+    return {append,read,finish(){sealed=true;},get pending(){return Math.max(0,end-position);},get done(){return sealed&&position>=end;}};
+  }
   function createWavSequence(){
     // Both local workers return canonical mono PCM16 WAV. Keep their PCM bytes
     // verbatim: one source avoids waiting for synthesis between spoken clauses.
@@ -202,7 +285,7 @@
     }
     return {list:()=>voices.map(({files,runtime:voiceRuntime,...voice})=>({...voice})),getStatus,refresh,download,remove,cancelDownload:locale=>{if(active?.locale===localeKey(locale))active.controller.abort();}};
   }
-  const core={CACHE,VERSION,runtime,catalog,retiredArabic,localeKey,error,aborted,checkAbort,hex,splitText,speechChunks,pcmToWav,createWavSequence,MAX_RENDERED_AUDIO_BYTES,validAsset,createManager};
+  const core={createTempoStream,CACHE,VERSION,runtime,catalog,retiredArabic,localeKey,error,aborted,checkAbort,hex,splitText,speechChunks,pcmToWav,createWavSequence,MAX_RENDERED_AUDIO_BYTES,validAsset,createManager};
   if(typeof module!=='undefined'&&module.exports){module.exports=core;return;}
   if(typeof document==='undefined'){self.WFOfflineVoiceCore=core;return;}
   window.WFOfflineVoiceCore=Object.freeze(core);
@@ -288,15 +371,15 @@
   function speakStream(options,source,lease){
     // AudioBufferSources share a single clock: packet and sentence edges do not
     // restart a media element. The small lead absorbs normal scheduling jitter.
-    const START_LEAD=.12,MAX_AHEAD=8,SLICE_SECONDS=1,AUDIO_WAIT_MS=3000,context=lease.context;
-    const controller=new AbortController(),nodes=new Set(),events=[],capacity=new Set();
-    const rate=Number.isFinite(options.rate)?Math.max(.75,Math.min(1.3,options.rate)):1;
+    const START_LEAD=.12,MAX_AHEAD=8,SCHEDULE_AHEAD=.35,BLOCK_SECONDS=.12,AUDIO_WAIT_MS=3000,context=lease.context;
+    const controller=new AbortController(),nodes=new Set(),events=[],capacity=new Set(),queue=[];
+    let rate=speechRate(options.rate);
     const volume=Number.isFinite(options.volume)?Math.max(0,Math.min(1,options.volume)):1;
     let stopped=false,finished=false,sourceReleased=false,started=false,waiting=false,generating=true,paused=false,pauseReason='';
     let gain=null,timer=null,nextTime=0,audibleUntil=0,sampleRate=0,totalBytes=0,totalSeconds=0,drain=null,running=null;
     const inactive=()=>stopped||finished||controller.signal.aborted;
     const cleanup=()=>{
-      clearTimeout(timer);timer=null;events.length=0;
+      clearTimeout(timer);timer=null;events.length=0;queue.length=0;
       context.onstatechange=null;running?.finish(aborted());
       document.removeEventListener?.('visibilitychange',visibilityChanged);
       for(const node of nodes){node.onended=null;try{node.stop();node.disconnect();}catch(_){}}
@@ -314,6 +397,7 @@
     function suspendContext(){try{Promise.resolve(context.suspend()).catch(()=>fail(error('playback-failed')));}catch(_){fail(error('playback-failed'));}}
     const handle={
       cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();},
+      setRate(value){if(!inactive())rate=speechRate(value);},
       pause(){
         if(inactive()||paused)return;paused=true;clearTimeout(timer);timer=null;
         if(running){clearTimeout(running.timer);running.timer=null;}
@@ -369,11 +453,33 @@
       }catch(problem){task.finish(problem?.name==='AbortError'?problem:error(task.code));}
       return task.promise;
     }
-    const roomFor=duration=>nextTime-context.currentTime+duration<=MAX_AHEAD+.000001;
+    // Reserve enough room even if the user switches to the slowest tempo.
+    // Most of the lookahead is raw PCM so a speed change reaches the speakers
+    // within the short scheduling horizon, including for pre-generated reports.
+    function roomFor(duration){
+      const pending=queue.reduce((sum,entry)=>sum+entry.tempo.pending,0);
+      return Math.max(0,nextTime-context.currentTime)+(pending/(sampleRate||1)+duration)/MIN_SPEECH_RATE<=MAX_AHEAD+.000001;
+    }
+    function schedule(){
+      while(queue.length&&nextTime-context.currentTime<SCHEDULE_AHEAD){
+        const entry=queue[0],{tempo,chunk}=entry;
+        if(tempo.done){queue.shift();continue;}
+        const samples=tempo.read(rate,Math.round(sampleRate*BLOCK_SECONDS));
+        if(!samples){if(tempo.done){queue.shift();continue;}break;}
+        const buffer=context.createBuffer(1,samples.length,sampleRate);buffer.copyToChannel(samples,0);
+        const node=context.createBufferSource();node.buffer=buffer;node.connect(gain);
+        const start=nextTime>context.currentTime?nextTime:context.currentTime+START_LEAD;
+        const boundary=chunk.queued?null:chunk;chunk.queued=true;nextTime=start+buffer.duration;
+        events.push({start,end:nextTime,boundary});nodes.add(node);
+        node.onended=()=>{if(inactive())return;node.onended=null;node.disconnect();nodes.delete(node);pump();};
+        node.start(start);
+      }
+    }
     function pump(){
       if(inactive()||paused)return;
       try{
         if(context.state!=='running'){ensureRunning().then(pump,fail);return;}
+        schedule();
         const now=context.currentTime;
         if(pauseReason){pauseReason='';options.onResume?.();if(inactive()||paused)return;}
         if(started&&waiting&&audibleUntil>now){waiting=false;options.onStart?.();if(inactive()||paused)return;}
@@ -385,7 +491,7 @@
         }
         for(const waiter of capacity)if(roomFor(waiter.duration)){capacity.delete(waiter);waiter.resolve();}
         if(!nodes.size){
-          if(!generating){if(drain){drain();drain=null;}}
+          if(!generating&&!queue.length){if(drain){drain();drain=null;}}
           else if(started&&!waiting){waiting=true;options.onWaiting?.();}
         }
         if(!inactive()&&(nodes.size||events.length||capacity.size)&&timer===null)timer=setTimeout(()=>{timer=null;pump();},20);
@@ -404,18 +510,16 @@
       await ensureRunning();
       // Awaiting this callback gives the transport one packet of credit at a
       // time. Even a large packet is copied into bounded, promptly freed slices.
-      const sliceLength=Math.max(1,Math.floor(frequency*rate*SLICE_SECONDS));
+      if(!chunk.tempo){
+        chunk.tempo=createTempoStream(frequency);
+        queue.push({chunk,tempo:chunk.tempo});
+      }
+      const sliceLength=Math.ceil(frequency*.5);
       for(let offset=0;offset<samples.length;offset+=sliceLength){
-        const length=Math.min(sliceLength,samples.length-offset),duration=length/frequency/rate;
+        const slice=samples.subarray(offset,offset+sliceLength),duration=slice.length/frequency;
         if(!roomFor(duration))await new Promise((resolve,reject)=>{capacity.add({duration,resolve,reject});pump();});
         checkAbort(controller.signal);if(inactive())return;
-        const buffer=context.createBuffer(1,length,frequency);buffer.copyToChannel(samples.subarray(offset,offset+length),0);
-        const node=context.createBufferSource();node.buffer=buffer;node.playbackRate.value=rate;node.connect(gain);
-        const start=nextTime>context.currentTime?nextTime:context.currentTime+START_LEAD;
-        const boundary=chunk.queued?null:chunk;chunk.queued=true;
-        events.push({start,end:start+duration,boundary});nodes.add(node);nextTime=start+duration;
-        node.onended=()=>{if(inactive())return;node.onended=null;node.disconnect();nodes.delete(node);pump();};
-        node.start(start);pump();
+        chunk.tempo.append(slice);pump();
       }
     }
     function visibilityChanged(){
@@ -445,11 +549,12 @@
             onAudio:packet=>accepting&&!inactive()?append(packet,chunk):Promise.resolve(),
             onProgress:value=>{if(accepting&&!inactive())options.onProgress?.(value);}});}
           finally{accepting=false;}
-          checkAbort(controller.signal);if(!chunk.queued)throw error('invalid-audio');
+          checkAbort(controller.signal);if(!chunk.tempo)throw error('invalid-audio');
+          chunk.tempo.finish();delete chunk.tempo;pump();
           options.onProgress?.({completed:index+1,total:chunks.length,phase:'preparing'});
         }
         generating=false;
-        if(nodes.size)await new Promise(resolve=>{drain=resolve;pump();});
+        if(nodes.size||queue.length)await new Promise(resolve=>{drain=resolve;pump();});
         checkAbort(controller.signal);if(inactive())return;
         finished=true;cleanup();options.onEnd?.();
       }catch(problem){fail(problem);}
@@ -465,7 +570,7 @@
     if(lease.context&&!streaming){playbackLeases.delete(lease);lease.dispose();lease=preparePlayback();}
     playbackLeases.delete(lease);
     if(streaming&&lease.context)return speakStream(options,source,lease);
-    const controller=new AbortController(),audio=lease.audio;let stopped=false,url='',finished=false,sourceReleased=false,paused=false,resumeClip=null;
+    const controller=new AbortController(),audio=lease.audio;let rate=speechRate(options.rate),stopped=false,url='',finished=false,sourceReleased=false,paused=false,resumeClip=null;
     const text=typeof options.text==='string'?options.text:'',locale=options.locale||'ar';
     const clearAudioEvents=()=>{audio.onplaying=audio.onwaiting=audio.onended=audio.onerror=audio.ontimeupdate=null;};
     const cleanup=()=>{resumeClip=null;clearAudioEvents();lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;
@@ -473,21 +578,22 @@
     };
     const handle={
       cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();},
+      setRate(value){if(!stopped&&!finished){rate=speechRate(value);if(url)audio.playbackRate=rate;}},
       pause(){if(stopped||finished||paused)return;paused=true;audio.pause();options.onPause?.({reason:'user'});},
       resume(){if(stopped||finished||!paused)return Promise.resolve();paused=false;options.onResume?.();return resumeClip?.()||Promise.resolve();}
     };activeSpeech=handle;
     async function playClip(blob,boundaries){
       checkAbort(controller.signal);
       url=URL.createObjectURL(blob);audio.src=url;audio.volume=Number.isFinite(options.volume)?Math.max(0,Math.min(1,options.volume)):1;
-      audio.preservesPitch=true;audio.playbackRate=Number.isFinite(options.rate)?Math.max(.75,Math.min(1.3,options.rate)):1;
+      audio.preservesPitch=true;audio.playbackRate=rate;
       await new Promise((resolve,reject)=>{
         let boundaryIndex=0,settled=false;
-        const publishBoundaries=time=>{while(!stopped&&boundaryIndex<boundaries.length&&boundaries[boundaryIndex].start<=time){
+        const publishBoundaries=time=>{while(!stopped&&!finished&&!paused&&boundaryIndex<boundaries.length&&boundaries[boundaryIndex].start<=time){
           const boundary=boundaries[boundaryIndex++];options.onBoundary?.({charIndex:boundary.charIndex,charLength:boundary.charLength,name:'sentence',type:'sentence'});
         }};
         const finish=problem=>{if(settled)return;settled=true;resumeClip=null;controller.signal.removeEventListener('abort',abort);clearAudioEvents();problem?reject(problem):resolve();};
         const abort=()=>{audio.pause();finish(aborted());};
-        audio.onplaying=()=>{if(stopped||paused)return;options.onStart?.();publishBoundaries(Number.isFinite(audio.currentTime)?audio.currentTime:0);};
+        audio.onplaying=()=>{if(stopped||finished||paused)return;options.onStart?.();if(stopped||finished||paused)return;publishBoundaries(Number.isFinite(audio.currentTime)?audio.currentTime:0);};
         // currentTime is already in media seconds, independently of playbackRate.
         audio.ontimeupdate=()=>publishBoundaries(audio.currentTime);
         audio.onwaiting=()=>{if(!paused)options.onWaiting?.();};audio.onended=()=>{publishBoundaries(Infinity);finish();};audio.onerror=()=>finish(error('playback-failed'));

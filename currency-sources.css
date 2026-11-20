@@ -1,0 +1,17 @@
+#stab-currency [hidden] { display:none !important; }
+#stab-currency .wf-fx-source { display:grid; gap:14px; margin-block-end:14px; }
+.wf-fx-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.wf-fx-fields label { display:grid; gap:6px; min-width:0; font-size:12px; font-weight:700; color:var(--text2); }
+.wf-fx-wide { grid-column:1/-1; }
+.wf-fx-fields .fc { width:100%; min-width:0; min-height:42px; }
+.wf-fx-fields select:disabled { opacity:.83; }
+.wf-fx-source :is(.wf-fx-help,.wf-fx-status) { margin:0; font-size:13px; line-height:1.55; }
+.wf-fx-help,.wf-fx-summary { color:var(--text2); }
+.wf-fx-board { width:fit-content; font-size:13px; font-weight:750; color:var(--brand-primary,var(--gold2)); text-decoration:underline; text-underline-offset:3px; }
+.wf-fx-source .wf-fx-apply { width:100%; justify-content:center; min-height:44px; }
+.wf-fx-source .wf-fx-status:empty { display:none; }
+.wf-fx-summary { display:grid; gap:4px; margin-block-start:12px; padding-block-start:10px; border-block-start:1px solid var(--border); font-size:12px; line-height:1.55; }
+.wf-fx-summary span:first-child { font-weight:750; color:var(--text); }
+.wf-fx-origin { display:block; text-align:center; padding:0 10px 4px; color:var(--text2); font-size:11px; line-height:1.4; }
+.wf-fx-origin:empty { display:none; }
+@media (max-width:420px) { .wf-fx-fields { grid-template-columns:1fr; } }

@@ -7,7 +7,7 @@
 
   const messages = {
     ar: {
-      title: 'مساعد WOW FURNITURE', ready: 'صوت وتعبيرات بلمسة منك', speaking: 'أتحدث إليك…',
+      title: 'مارك روبوت', ready: 'صوت وتعبيرات بلمسة منك', speaking: 'أتحدث إليك…',
       preparing: 'جارٍ تشغيل الصوت…', stopped: 'تم إيقاف الصوت',
       unsupported: 'الصوت غير مدعوم في هذا المتصفح', unavailable: 'لا يتوفر صوت عربي دون اتصال على جهازك',
       failed: 'تعذّر تشغيل الصوت، حاول مجددًا', busy: 'الصوت مشغول الآن، حاول بعد قليل',
@@ -18,7 +18,7 @@
       greeting: "أهلين أستاذ حَسَن الحِلو. أنا مساعدك الذكي في واو فِرْنِتْشَر. هون لَساعدك بتنظيم الشغل وقراءة التقارير بوضوح. صمّمني وبرمجني المهندس مُعتَز بالله حاج شعبان. أنا جاهز، خلّينا نبلّش.",
     },
     tr: {
-      title: 'WOW FURNITURE', ready: 'Bir dokunuşla ses ve ifade', speaking: 'Konuşuyorum…',
+      title: 'Mark Robot', ready: 'Bir dokunuşla ses ve ifade', speaking: 'Konuşuyorum…',
       preparing: 'Ses başlatılıyor…', stopped: 'Ses durduruldu',
       unsupported: 'Bu tarayıcı sesi desteklemiyor', unavailable: 'Cihazınızda çevrimdışı Türkçe ses yok',
       failed: 'Ses başlatılamadı, tekrar deneyin', busy: 'Ses meşgul, biraz sonra deneyin',
@@ -29,7 +29,7 @@
       greeting: "Merhaba Hasan El Helo Bey. Ben WOW Furniture’daki akıllı asistanınızım. İşlerinizi düzenlemek ve raporlarınızı açıkça okumak için buradayım. Beni mühendis Moataz Bellah Haj Shaaban tasarladı ve programladı. Hazırım, başlayalım.",
     },
     en: {
-      title: 'WOW FURNITURE', ready: 'A voice and a smile, on tap', speaking: 'Speaking…',
+      title: 'Mark Robot', ready: 'A voice and a smile, on tap', speaking: 'Speaking…',
       preparing: 'Starting voice…', stopped: 'Voice stopped',
       unsupported: 'Voice is unsupported in this browser', unavailable: 'No offline English voice on this device',
       failed: 'Voice could not start. Please retry', busy: 'Voice is busy. Please try shortly',
@@ -40,7 +40,7 @@
       greeting: "Hello, Mr. Hassan Al-Hilou. I am your smart assistant at WOW Furniture. I'm here to help organize your work and read your reports clearly. I was designed and programmed by engineer Moataz Bellah Haj Shaaban. I'm ready, let's begin.",
     },
     fr: {
-      title: 'WOW FURNITURE', ready: 'Une voix et un sourire au toucher', speaking: 'Je parle…',
+      title: 'Robot Mark', ready: 'Une voix et un sourire au toucher', speaking: 'Je parle…',
       preparing: 'Démarrage de la voix…', stopped: 'Voix arrêtée',
       unsupported: 'Ce navigateur ne prend pas la voix en charge', unavailable: 'Aucune voix française hors ligne disponible',
       failed: 'La voix ne démarre pas. Réessayez', busy: 'La voix est occupée. Réessayez bientôt',
@@ -51,7 +51,7 @@
       greeting: "Bonjour, Monsieur Hassan Al-Hilou. Je suis votre assistant intelligent de WOW Furniture. Je suis là pour organiser votre travail et lire clairement vos rapports. J’ai été conçu et programmé par l’ingénieur Moataz Bellah Haj Shaaban. Je suis prêt, commençons.",
     },
     ru: {
-      title: 'WOW FURNITURE', ready: 'Голос и улыбка по касанию', speaking: 'Говорю…',
+      title: 'Робот Марк', ready: 'Голос и улыбка по касанию', speaking: 'Говорю…',
       preparing: 'Запускаю голос…', stopped: 'Голос остановлен',
       unsupported: 'Этот браузер не поддерживает голос', unavailable: 'Нет русского голоса для работы без сети',
       failed: 'Не удалось включить голос. Повторите', busy: 'Голос занят. Повторите чуть позже',
@@ -65,20 +65,21 @@
   const identityRecordings = new Set(Object.values(messages).map(copy => copy.audioURL));
   const speechLanguages = ['ar', 'en', 'tr', 'fr', 'ru'];
   const speechCopy = {
+    openReport: ['فتح التقرير', 'Open report', 'Raporu aç', 'Ouvrir le rapport', 'Открыть отчёт'],
     paused: ['القراءة متوقفة مؤقتًا', 'Reading paused', 'Okuma duraklatıldı', 'Lecture en pause', 'Чтение приостановлено'],
     background: ['أوقف المتصفح الصوت مؤقتًا؛ اضغط استئناف للمتابعة', 'The browser paused audio. Resume to continue', 'Tarayıcı sesi duraklattı. Sürdürerek devam edin', 'Le navigateur a suspendu le son. Reprenez la lecture', 'Браузер приостановил звук. Нажмите «Продолжить»'],
-    loading: ['جارٍ تحميل حزمة مارك المحفوظة إلى الذاكرة…', 'Loading the saved Mark pack into memory…', 'Kayıtlı Mark paketi belleğe yükleniyor…', 'Chargement du pack Mark enregistré en mémoire…', 'Загрузка сохранённого пакета Mark в память…'],
-    initializing: ['جارٍ تهيئة محرك مارك على جهازك…', 'Starting the Mark engine on this device…', 'Mark motoru bu cihazda başlatılıyor…', 'Démarrage du moteur Mark sur cet appareil…', 'Запуск движка Mark на устройстве…'],
-    generating: ['مارك يجهّز أول مقطع للقراءة…', 'Mark is preparing the next spoken passage…', 'Mark sıradaki sesli bölümü hazırlıyor…', 'Mark prépare le prochain passage audio…', 'Mark готовит следующий фрагмент речи…'],
+    loading: ['جارٍ تحميل حزمة مارك المحفوظة إلى الذاكرة…', 'Loading the saved Mark pack into memory…', 'Kayıtlı Mark paketi belleğe yükleniyor…', 'Chargement du pack Mark enregistré en mémoire…', 'Загрузка сохранённого пакета голоса «Марк» в память…'],
+    initializing: ['جارٍ تهيئة محرك مارك على جهازك…', 'Starting the Mark engine on this device…', 'Mark motoru bu cihazda başlatılıyor…', 'Démarrage du moteur Mark sur cet appareil…', 'Запуск движка голоса «Марк» на устройстве…'],
+    generating: ['مارك يجهّز أول مقطع للقراءة…', 'Mark is preparing the next spoken passage…', 'Mark sıradaki sesli bölümü hazırlıyor…', 'Mark prépare le prochain passage audio…', 'Марк готовит следующий фрагмент речи…'],
     streaming: ['وصل الصوت؛ جارٍ بدء القراءة…', 'Audio received. Starting playback…', 'Ses alındı. Oynatma başlatılıyor…', 'Audio reçu. Démarrage de la lecture…', 'Звук получен. Начинается воспроизведение…'],
     unlocking: ['جارٍ تفعيل مخرج الصوت…', 'Activating audio output…', 'Ses çıkışı etkinleştiriliyor…', 'Activation de la sortie audio…', 'Включение аудиовыхода…'],
     blocked: ['المتصفح لم يفعّل الصوت. اضغط زر القراءة مجددًا لتشغيله.', 'The browser did not activate audio. Press Read again.', 'Tarayıcı sesi etkinleştirmedi. Oku düğmesine yeniden basın.', 'Le navigateur n’a pas activé le son. Appuyez de nouveau sur Lire.', 'Браузер не включил звук. Нажмите чтение ещё раз.'],
     interrupted: ['تعذّر استئناف مخرج الصوت. اضغط القراءة مجددًا.', 'Audio output could not resume. Press Read again.', 'Ses çıkışı sürdürülemedi. Oku düğmesine yeniden basın.', 'La sortie audio n’a pas repris. Appuyez de nouveau sur Lire.', 'Не удалось возобновить звук. Нажмите чтение ещё раз.'],
-    workerFailed: ['تعذّر بدء مكوّن صوت مارك. الحزمة محفوظة؛ أعد تهيئة الصوت من إعدادات الروبوت.', 'A Mark audio component could not start. The pack is saved; prepare Mark again in Robot settings.', 'Mark ses bileşeni başlatılamadı. Paket kayıtlı; Robot ayarlarından Mark’ı yeniden hazırlayın.', 'Un composant Mark n’a pas démarré. Le pack est enregistré ; relancez Mark dans les réglages du robot.', 'Компонент Mark не запустился. Пакет сохранён; повторите подготовку в настройках робота.'],
-    timeout: ['لم يستجب محرك مارك في الوقت المحدد. الحزمة محفوظة؛ أعد تهيئته من الإعدادات.', 'Mark did not respond in time. The pack is saved; prepare it again in Settings.', 'Mark zamanında yanıt vermedi. Paket kayıtlı; Ayarlardan yeniden hazırlayın.', 'Mark n’a pas répondu à temps. Le pack est enregistré ; relancez sa préparation.', 'Mark не ответил вовремя. Пакет сохранён; повторите подготовку в настройках.'],
-    deviceLost: ['توقّف محرك الرسوم الذي يشغّل مارك. أعد تهيئة الصوت من إعدادات الروبوت.', 'The graphics engine running Mark stopped. Prepare the voice again in Robot settings.', 'Mark’ın grafik motoru durdu. Robot ayarlarından sesi yeniden hazırlayın.', 'Le moteur graphique de Mark s’est arrêté. Relancez la préparation dans les réglages.', 'Графический движок Mark остановился. Повторите подготовку в настройках робота.'],
-    packMissing: ['حزمة مارك غير مكتملة على هذا الجهاز. راجع حالتها في إعدادات الروبوت.', 'The Mark pack is incomplete on this device. Check Robot settings.', 'Mark paketi bu cihazda eksik. Robot ayarlarını kontrol edin.', 'Le pack Mark est incomplet sur cet appareil. Consultez les réglages du robot.', 'Пакет Mark на устройстве неполон. Проверьте настройки робота.'],
-    engineFailed: ['تعذّر توليد الصوت بمارك. الحزمة محفوظة؛ جرّب تهيئة مارك من إعدادات الروبوت.', 'Mark could not generate audio. The pack is saved; try preparing Mark in Robot settings.', 'Mark ses üretemedi. Paket kayıtlı; Robot ayarlarından Mark’ı hazırlamayı deneyin.', 'Mark n’a pas pu générer le son. Le pack est enregistré ; préparez Mark dans les réglages.', 'Mark не смог создать звук. Пакет сохранён; попробуйте подготовить Mark в настройках.'],
+    workerFailed: ['تعذّر بدء مكوّن صوت مارك. الحزمة محفوظة؛ أعد تهيئة الصوت من إعدادات الروبوت.', 'A Mark audio component could not start. The pack is saved; prepare Mark again in Robot settings.', 'Mark ses bileşeni başlatılamadı. Paket kayıtlı; Robot ayarlarından Mark’ı yeniden hazırlayın.', 'Un composant Mark n’a pas démarré. Le pack est enregistré ; relancez Mark dans les réglages du robot.', 'Компонент голоса «Марк» не запустился. Пакет сохранён; повторите подготовку в настройках робота.'],
+    timeout: ['لم يستجب محرك مارك في الوقت المحدد. الحزمة محفوظة؛ أعد تهيئته من الإعدادات.', 'Mark did not respond in time. The pack is saved; prepare it again in Settings.', 'Mark zamanında yanıt vermedi. Paket kayıtlı; Ayarlardan yeniden hazırlayın.', 'Mark n’a pas répondu à temps. Le pack est enregistré ; relancez sa préparation.', 'Марк не ответил вовремя. Пакет сохранён; повторите подготовку в настройках.'],
+    deviceLost: ['توقّف محرك الرسوم الذي يشغّل مارك. أعد تهيئة الصوت من إعدادات الروبوت.', 'The graphics engine running Mark stopped. Prepare the voice again in Robot settings.', 'Mark’ın grafik motoru durdu. Robot ayarlarından sesi yeniden hazırlayın.', 'Le moteur graphique de Mark s’est arrêté. Relancez la préparation dans les réglages.', 'Графический движок голоса «Марк» остановился. Повторите подготовку в настройках робота.'],
+    packMissing: ['حزمة مارك غير مكتملة على هذا الجهاز. راجع حالتها في إعدادات الروبوت.', 'The Mark pack is incomplete on this device. Check Robot settings.', 'Mark paketi bu cihazda eksik. Robot ayarlarını kontrol edin.', 'Le pack Mark est incomplet sur cet appareil. Consultez les réglages du robot.', 'Пакет голоса «Марк» на устройстве неполон. Проверьте настройки робота.'],
+    engineFailed: ['تعذّر توليد الصوت بمارك. الحزمة محفوظة؛ جرّب تهيئة مارك من إعدادات الروبوت.', 'Mark could not generate audio. The pack is saved; try preparing Mark in Robot settings.', 'Mark ses üretemedi. Paket kayıtlı; Robot ayarlarından Mark’ı hazırlamayı deneyin.', 'Mark n’a pas pu générer le son. Le pack est enregistré ; préparez Mark dans les réglages.', 'Марк не смог создать звук. Пакет сохранён; попробуйте подготовить голос «Марк» в настройках.'],
   };
   // Original WOW ROBOT face proportions, with the dark-on-white identity from the user’s reference photo.
   const mouthShapes = {
@@ -242,7 +243,12 @@
       preferences = {autoExpressions: stored.autoExpressions !== false, idleMotion: stored.idleMotion !== false,
         speechEnabled: stored.speechEnabled !== false, speechRate: bounded(stored.speechRate, .75, 1.25, 1), speechVolume: bounded(stored.speechVolume, 0, 1, 1),
         arabicDialect: 'sy', speechBackend: 'reference', continuousSpeech: false};
-      if (active() && ['speechEnabled', 'speechRate', 'speechVolume', 'arabicDialect', 'speechBackend', 'continuousSpeech'].some(key => previous[key] !== preferences[key])) finish('stopped', true);
+      if (active() && ['speechEnabled', 'speechVolume', 'arabicDialect', 'speechBackend', 'continuousSpeech'].some(key => previous[key] !== preferences[key])) finish('stopped', true);
+      if (active() && previous.speechRate !== preferences.speechRate) {
+        const nextRate = preferences.speechRate;
+        preferences = {...preferences, speechRate: previous.speechRate};
+        setSpeechRate(nextRate);
+      }
       face.dataset.idleMotion = String(preferences.idleMotion);
       if (!preferences.autoExpressions) {
         clearTimeout(expressionTimer);
@@ -302,12 +308,15 @@
       speakButton.setAttribute('aria-pressed', String(introActive));
       speakButton.disabled = (!active() && !speechAllowed()) || (!recordingURL() && !offlineReady()) || reportActive;
       if (reportButton) {
-        reportButton.querySelector('span').textContent = copy[reportActive ? 'stop' : 'report'];
-        reportButton.setAttribute('aria-label', copy[reportActive ? 'stop' : 'report']);
+        const reportLabel = window.WFRobotReport?.isMinimized?.() ? speechCopy.openReport[Math.max(0, speechLanguages.indexOf(locale))] : copy[reportActive ? 'stop' : 'report'];
+        reportButton.querySelector('span').textContent = reportLabel;
+        reportButton.setAttribute('aria-label', reportLabel);
         reportButton.setAttribute('aria-pressed', String(reportActive));
-        reportButton.title = copy[reportActive ? 'stop' : 'report'];
+        reportButton.title = reportLabel;
         reportButton.disabled = introActive || (!active() && !speechAllowed());
       }
+      const display = face.querySelector('.wf-robot-display');
+      display?.setAttribute('aria-label', speechCopy.openReport[Math.max(0, speechLanguages.indexOf(locale))]);
       face.dataset.voiceActive = String(active());
       face.dataset.voiceKind = sessionKind;
       window.dispatchEvent(new CustomEvent('wf-program-speech-state', {detail: speechState()}));
@@ -318,10 +327,23 @@
       let key;
       if (statusKey === 'paused') key = pauseReason === 'background' ? 'background' : 'paused';
       else if (statusKey === 'preparing') key = ({'audio-unlock': 'unlocking', 'audio-resume': 'unlocking', loading: 'loading', initializing: 'initializing', ready: 'generating', generating: 'generating', streaming: 'streaming'})[phase] || 'generating';
-      else if (statusKey === 'failed') key = failureReason === 'playback-blocked' ? 'blocked' : failureReason === 'playback-interrupted' ? 'interrupted' : /worker-startup|engine-load/.test(failureReason) ? 'workerFailed' : /timeout/.test(failureReason) ? 'timeout' : /gpu-device-lost|webgpu/.test(failureReason) ? 'deviceLost' : /pack-not-installed|integrity-failed/.test(failureReason) ? 'packMissing' : 'engineFailed';
+      else if (statusKey === 'failed') key = failureReason === 'playback-blocked' ? 'blocked' : failureReason === 'playback-interrupted' ? 'interrupted' : /worker-startup|engine-load/.test(failureReason) ? 'workerFailed' : /timeout/.test(failureReason) ? 'timeout' : /gpu-device-lost|gpu-operation-failed|webgpu/.test(failureReason) ? 'deviceLost' : /pack-not-installed|integrity-failed/.test(failureReason) ? 'packMissing' : 'engineFailed';
       return key ? speechCopy[key][Math.max(0, speechLanguages.indexOf(locale))] : messages[locale][statusKey] || messages[locale].ready;
     }
-    function speechState() { return {state: !preferences.speechEnabled ? 'disabled' : preferences.speechVolume === 0 ? 'muted' : state, active: active(), paused, canPause: !!recording || typeof offlineRequest?.handle?.pause === 'function', kind: sessionKind, phase, reason: paused ? pauseReason : failureReason, message: speechMessage(state), locale, voiceName: speakerName}; }
+    function speechState() { return {state: !preferences.speechEnabled ? 'disabled' : preferences.speechVolume === 0 ? 'muted' : state, active: active(), paused, canPause: !!recording || typeof offlineRequest?.handle?.pause === 'function', rate: preferences.speechRate, kind: sessionKind, phase, reason: paused ? pauseReason : failureReason, message: speechMessage(state), locale, voiceName: speakerName}; }
+
+    function setSpeechRate(value) {
+      if (typeof value !== 'number' || !Number.isFinite(value) || disposed) return false;
+      const next = Math.max(.75, Math.min(1.25, value));
+      try {
+        if (recording) { recording.preservesPitch = true; recording.playbackRate = next; }
+        else if (offlineRequest?.handle) {
+          if (typeof offlineRequest.handle.setRate !== 'function' || offlineRequest.handle.setRate(next) === false) return false;
+        }
+      } catch (_) { return false; }
+      preferences = {...preferences, speechRate: next};
+      render(); return true;
+    }
 
     function markPaused(reason = 'user') {
       if (!active()) return;
@@ -593,7 +615,7 @@
           },
         });
         if (offlineRequest !== request) request.handle?.cancel();
-        else render();
+        else { request.handle?.setRate?.(preferences.speechRate); render(); }
       } catch (problem) {
         if (offlineRequest === request) finish('failed', true, problem);
       }
@@ -602,6 +624,7 @@
     async function toggleReport(event) {
       event.stopPropagation();
       if (event.isTrusted !== true && event.control !== true) return;
+      if (event.isTrusted === true && window.WFRobotReport?.isMinimized?.() && window.WFRobotReport.show()) return;
       if (active()) { if (sessionKind === 'report') finish('stopped', true); return; }
       if (!speechAllowed()) return;
       if (!robotVisible() && event.control !== true) return;
@@ -685,12 +708,13 @@
 
     // All user-requested text shares this owner, so recordings, reports and text
     // selection cannot overlap. No microphone or network synthesis is involved.
-    function speakProgram({text, event, locale: requestedLocale} = {}) {
+    function speakProgram({text, event, locale: requestedLocale, kind, rate} = {}) {
       if (event?.isTrusted !== true || disposed || document.hidden || !speechAllowed()) return false;
       if (typeof text !== 'string' || !text.trim() || text.length > 16000) return false;
       if (requestedLocale && String(requestedLocale).toLowerCase().split(/[-_]/)[0] !== locale) return false;
       if (active()) finish('stopped', true);
-      sessionKind = 'program';
+      sessionKind = kind === 'preview' ? 'preview' : 'program';
+      if (typeof rate === 'number') setSpeechRate(rate);
       sessionPage = document.querySelector('.page.active');
       refreshVoices();
       if (synth?.speaking || synth?.pending || synth?.paused) { state = 'busy'; render(); return false; }
@@ -703,10 +727,11 @@
       speakerName = ''; state = 'unavailable'; render(); return false;
     }
 
-    function previewGreeting({event} = {}) {
+    function previewGreeting({event, rate} = {}) {
       if (event?.isTrusted !== true || disposed || document.hidden || !speechAllowed()) return false;
       if (active()) finish('stopped', true);
       sessionKind = 'preview';
+      if (typeof rate === 'number') setSpeechRate(rate);
       sessionPage = document.querySelector('.page.active');
       refreshVoices();
       if (synth?.speaking || synth?.pending || synth?.paused) { state = 'busy'; render(); return false; }
@@ -716,9 +741,21 @@
       state = 'unavailable'; render(); return false;
     }
 
-    const programSpeech = Object.freeze({speak: speakProgram, preview: previewGreeting, pause: pauseSpeech, resume: resumeSpeech,
+    const programSpeech = Object.freeze({speak: speakProgram, preview: previewGreeting, pause: pauseSpeech, resume: resumeSpeech, setRate: setSpeechRate,
       stop() { if (active()) finish('stopped', true); }, getState: speechState});
     window.WFProgramSpeech = programSpeech;
+    const display = face.querySelector('.wf-robot-display');
+    if (display) {
+      display.setAttribute('aria-hidden', 'false');
+      display.setAttribute('role', 'button');
+      display.setAttribute('tabindex', '0');
+      display.setAttribute('aria-haspopup', 'dialog');
+      display.setAttribute('aria-controls', 'wfRobotReportSheet');
+    }
+    function displayKey(event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault(); toggleReport(event);
+    }
     function changedRoute() { applyMotion(); }
 
     function checkVisibility() {
@@ -750,12 +787,15 @@
       languageObserver.disconnect();
       speakButton.removeEventListener('click', toggleSpeech);
       reportButton?.removeEventListener('click', toggleReport);
+      display?.removeEventListener('click', toggleReport);
+      display?.removeEventListener('keydown', displayKey);
       document.removeEventListener('visibilitychange', checkVisibility);
       window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('hashchange', changedRoute);
       window.removeEventListener('wf-robot-preferences', applyPreferences);
       window.removeEventListener('wf-robot-motion', applyMotion);
       window.removeEventListener('wf-robot-report-control', reportControl);
+      window.removeEventListener('wf-robot-report-visibility', render);
       window.removeEventListener('wf-offline-voice-change', refreshOfflineStatus);
       window.removeEventListener('wf-reference-voice-change', refreshOfflineStatus);
       synth?.removeEventListener?.('voiceschanged', refreshVoices);
@@ -773,12 +813,15 @@
     languageObserver.observe(root, {attributes: true, attributeFilter: ['lang']});
     speakButton.addEventListener('click', toggleSpeech);
     reportButton?.addEventListener('click', toggleReport);
+    display?.addEventListener('click', toggleReport);
+    display?.addEventListener('keydown', displayKey);
     document.addEventListener('visibilitychange', checkVisibility);
     window.addEventListener('pagehide', handlePageHide);
     window.addEventListener('hashchange', changedRoute);
     window.addEventListener('wf-robot-preferences', applyPreferences);
     window.addEventListener('wf-robot-motion', applyMotion);
     window.addEventListener('wf-robot-report-control', reportControl);
+    window.addEventListener('wf-robot-report-visibility', render);
     window.addEventListener('wf-offline-voice-change', refreshOfflineStatus);
     window.addEventListener('wf-reference-voice-change', refreshOfflineStatus);
     synth?.addEventListener?.('voiceschanged', refreshVoices);

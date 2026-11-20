@@ -22,9 +22,10 @@ function fixture(t){
   const asset={url:'./vendor/zonos3/a50e141/model/voices/voices.json',modelPath:'voices/voices.json',bytes:bytes.length,
     sha256:crypto.createHash('sha256').update(bytes).digest('hex'),type:'application/json'};
   class Worker{
-    constructor(url){this.url=String(url);this.listeners=new Map();workers.push(this);}
+    constructor(url){this.url=String(url);this.listeners=new Map();this.posts=[];workers.push(this);}
     addEventListener(type,handler){const list=this.listeners.get(type)||[];list.push(handler);this.listeners.set(type,list);}
-    postMessage(){}
+    postMessage(message,transfer){this.posts.push({message,transfer});}
+    message(data){const event={data};for(const fn of this.listeners.get('message')||[])fn(event);this.onmessage?.(event);}
     error(){const event={message:'module could not be loaded',filename:this.url,preventDefault(){}};for(const fn of this.listeners.get('error')||[])fn(event);this.onerror?.(event);}
   }
   class Channel extends MessageChannel{constructor(){super();channels.push(this);}}
@@ -52,10 +53,35 @@ function fixture(t){
 test('an actual engine child failure before initialization installs its reject callback settles immediately',async t=>{
   const f=fixture(t),preparing=f.send({id:1,type:'prepare',locale:'ar'});
   await until(()=>f.cacheReads>0);
-  f.workers.find(worker=>worker.url.endsWith('/worker.js')).error();
+  f.workers.find(worker=>worker.url.includes('/reference-voice-engine.js?')).error();
   f.unlock();
   await until(()=>f.messages.some(message=>message.error));
   await preparing;
   assert.equal(f.messages.find(message=>message.error).error,'worker-startup-failed');
   assert.equal(f.messages.some(message=>message.type==='ready'),false);
+});
+
+test('an adapter fatal before the actual engine installs its reject callback cannot disappear',async t=>{
+  const f=fixture(t),preparing=f.send({id:1,type:'prepare',locale:'ar'});
+  await until(()=>f.cacheReads>0);
+  f.workers.find(worker=>worker.url.includes('/reference-voice-engine.js?')).message({type:'fatal',message:'integrity-failed'});
+  f.unlock();await preparing;
+  assert.equal(f.messages.find(message=>message.error).error,'integrity-failed');
+  assert.equal(f.messages.some(message=>message.type==='ready'),false);
+});
+
+test('the actual engine retains its initialization and transferred codec-port protocol with the adapter',async t=>{
+  const f=fixture(t),preparing=f.send({id:1,type:'prepare',locale:'ar'});
+  await until(()=>f.cacheReads>0);f.unlock();
+  const generation=f.workers.find(worker=>worker.url.includes('/reference-voice-engine.js?'));
+  const codec=f.workers.find(worker=>worker.url.endsWith('/codec-worker.js'));
+  await until(()=>generation.posts.some(post=>post.message.type==='init'));
+  const init=generation.posts.find(post=>post.message.type==='init');
+  assert.equal(init.message.base,'https://example.test/vendor/zonos3/a50e141/model/');
+  assert.equal(init.message.cache,false);
+  assert.equal(init.transfer.at(-1),init.message.codecPort);
+  assert.equal(codec.posts[0].message.type,'port');assert.equal(codec.posts[0].transfer.length,1);
+  assert.equal(f.messages.some(message=>message.type==='ready'),false);
+  generation.message({type:'ready'});await preparing;
+  assert.equal(f.messages.at(-1).type,'ready');
 });

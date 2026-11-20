@@ -1,7 +1,7 @@
 /* Keeps the complete WebGPU engine in a terminable worker tree. No report text
    or audio is sent over the network; only the explicit installer can fetch. */
 import './reference-voice-assets.js?v=1';
-import './reference-voice.js?v=2';
+import './reference-voice.js?v=3';
 
 const manifest=globalThis.WFReferenceVoiceAssets,core=globalThis.WFReferenceVoiceCore;
 const appBase=new URL('./',import.meta.url).href;
@@ -15,10 +15,11 @@ const waitingReady=new Set(),SAMPLE_RATE=44100,MAX_SAMPLES=SAMPLE_RATE*150;
 
 function safeError(problem,fallback='engine-failed'){
   const allowed=['pack-not-installed','integrity-failed','voice-asset-not-allowed','voice-reference-missing','text-length','locale-unsupported','invalid-audio','speech-busy',
-    'worker-startup-failed','engine-load-failed','engine-init-failed','generation-failed','webgpu-unavailable','gpu-device-lost'];
+    'worker-startup-failed','engine-load-failed','engine-init-failed','generation-failed','webgpu-unavailable','gpu-device-lost','gpu-operation-failed'];
   const code=problem?.code||problem?.message;
   if(allowed.includes(code))return code;
   if(/GPU device lost/i.test(problem?.message||''))return 'gpu-device-lost';
+  if(/WebGPU operation failed:/i.test(problem?.message||''))return 'gpu-operation-failed';
   if(/WebGPU is not available|No WebGPU adapter/i.test(problem?.message||''))return 'webgpu-unavailable';
   return fallback;
 }
@@ -49,11 +50,17 @@ async function ready(id){
     let rejectWorker;
     const workerFailed=new Promise((_,reject)=>{rejectWorker=reject;});
     const WatchedWorker=class extends NativeWorker{
-      constructor(...args){
-        super(...args);
+      constructor(url,options){
+        const generation=new URL(url,engineBase).href===new URL('worker.js',engineBase).href;
+        super(generation?new URL('reference-voice-engine.js?v=1',appBase):url,options);
         const failed=()=>{const problem=failure('worker-startup-failed');if(initialized)engineFatal(problem.code);else rejectWorker(problem);};
         this.addEventListener('error',failed);
         this.addEventListener('messageerror',failed);
+        this.addEventListener('message',event=>{
+          if(event.data?.type!=='fatal')return;
+          const code=safeError(new Error(String(event.data.message||'')),'engine-init-failed');
+          if(initialized)engineFatal(code);else rejectWorker(failure(code));
+        });
       }
     };
     globalThis.Worker=WatchedWorker;

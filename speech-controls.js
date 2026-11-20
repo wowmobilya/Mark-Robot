@@ -5,11 +5,11 @@
   const root = typeof window === 'object' ? window : null, document = root?.document;
   if (!document?.body || document.getElementById('wfSpeechControls')) return;
   const copy = {
-    ar: {label:'التحكم بالقراءة',voice:'مارك · سوري',pause:'إيقاف مؤقت للقراءة',resume:'متابعة القراءة',stop:'إيقاف القراءة',report:'إظهار التقرير',preparing:'جارٍ تجهيز الصوت',speaking:'القراءة مستمرة',paused:'القراءة متوقفة مؤقتًا'},
-    en: {label:'Reading controls',voice:'Mark · Syrian',pause:'Pause reading',resume:'Resume reading',stop:'Stop reading',report:'Show report',preparing:'Preparing audio',speaking:'Reading in progress',paused:'Reading paused'},
-    tr: {label:'Okuma kontrolleri',voice:'Mark · Suriye Arapçası',pause:'Okumayı duraklat',resume:'Okumaya devam et',stop:'Okumayı durdur',report:'Raporu göster',preparing:'Ses hazırlanıyor',speaking:'Okuma sürüyor',paused:'Okuma duraklatıldı'},
-    fr: {label:'Commandes de lecture',voice:'Mark · syrien',pause:'Mettre en pause',resume:'Reprendre la lecture',stop:'Arrêter la lecture',report:'Afficher le rapport',preparing:'Préparation audio',speaking:'Lecture en cours',paused:'Lecture en pause'},
-    ru: {label:'Управление чтением',voice:'Марк · сирийский',pause:'Приостановить чтение',resume:'Продолжить чтение',stop:'Остановить чтение',report:'Показать отчёт',preparing:'Подготовка звука',speaking:'Чтение продолжается',paused:'Чтение приостановлено'},
+    ar: {label:'التحكم بالقراءة',voice:'مارك روبوت',pause:'إيقاف مؤقت للقراءة',resume:'متابعة القراءة',stop:'إيقاف القراءة',report:'إظهار التقرير',preparing:'جارٍ تجهيز الصوت',speaking:'القراءة مستمرة',paused:'القراءة متوقفة مؤقتًا'},
+    en: {label:'Reading controls',voice:'Mark Robot',pause:'Pause reading',resume:'Resume reading',stop:'Stop reading',report:'Show report',preparing:'Preparing audio',speaking:'Reading in progress',paused:'Reading paused'},
+    tr: {label:'Okuma kontrolleri',voice:'Mark Robot',pause:'Okumayı duraklat',resume:'Okumaya devam et',stop:'Okumayı durdur',report:'Raporu göster',preparing:'Ses hazırlanıyor',speaking:'Okuma sürüyor',paused:'Okuma duraklatıldı'},
+    fr: {label:'Commandes de lecture',voice:'Robot Mark',pause:'Mettre en pause',resume:'Reprendre la lecture',stop:'Arrêter la lecture',report:'Afficher le rapport',preparing:'Préparation audio',speaking:'Lecture en cours',paused:'Lecture en pause'},
+    ru: {label:'Управление чтением',voice:'Робот Марк',pause:'Приостановить чтение',resume:'Продолжить чтение',stop:'Остановить чтение',report:'Показать отчёт',preparing:'Подготовка звука',speaking:'Чтение продолжается',paused:'Чтение приостановлено'},
   };
   const paths = {
     pause:'<path d="M8 6v12M16 6v12" stroke-width="3"/>',
@@ -36,8 +36,13 @@
   const actions = node('div', '', 'wf-speech-controls-actions');
   const report = node('button', 'wfSpeechControlsReport'), toggle = node('button', 'wfSpeechControlsToggle'), stop = node('button', 'wfSpeechControlsStop');
   for (const button of [report, toggle, stop]) button.type = 'button';
-  report.innerHTML = icon('report'); stop.innerHTML = icon('stop');
+  const face = node('span', '', 'wf-reader-face'), reportText = node('span');
+  face.setAttribute('aria-hidden', 'true');
+  report.append(face, reportText);
+  report.setAttribute('aria-haspopup', 'dialog');report.setAttribute('aria-controls', 'wfRobotReportSheet');
+  stop.innerHTML = icon('stop');
   actions.append(report, toggle, stop); dock.append(indicator, content, actions); document.body.append(dock);
+  let minimized = root.WFRobotReport?.isMinimized?.() === true, reportLocale = '';
   let reportOpen = document.documentElement.classList.contains('wf-robot-report-open');
   function state() {
     try { return root.WFProgramSpeech?.getState?.() || {}; } catch (_) { return {}; }
@@ -46,9 +51,18 @@
   function label(button, value) { button.setAttribute('aria-label', value); button.title = value; }
   function render(value = state()) {
     value = value || {};
-    const key = String(value.locale || document.documentElement.lang || 'en').toLowerCase().split(/[-_]/)[0];
+    const key = String((!value.active && minimized ? reportLocale : value.locale) || document.documentElement.lang || 'en').toLowerCase().split(/[-_]/)[0];
     const L = copy[key] || copy.en, action = value.paused ? 'resume' : 'pause';
-    dock.hidden = !value.active || reportOpen;
+    const showReport = !value.active ? minimized : value.kind === 'report';
+    dock.hidden = (!value.active && !minimized) || reportOpen;
+    dock.dataset.idle = String(!value.active);
+    content.hidden = !value.active; indicator.hidden = showReport || !value.active;
+    toggle.hidden = stop.hidden = !value.active;
+    if(showReport && !face.firstElementChild){
+      const robot = document.querySelector?.('#wfGreetingRobot .wf-robot-face');
+      if(robot)face.append(robot.cloneNode(true));
+    }
+    reportText.textContent = L.report;
     dock.setAttribute('dir', key === 'ar' ? 'rtl' : 'ltr'); dock.setAttribute('aria-label', L.label);
     dock.dataset.state = value.paused ? 'paused' : value.state === 'speaking' ? 'speaking' : 'preparing';
     voice.textContent = L.voice;
@@ -57,16 +71,16 @@
     toggle.innerHTML = icon(action); label(toggle, L[action]);
     toggle.disabled = !value.active || value.canPause !== true || !available(action);
     stop.disabled = !value.active || !available('stop'); label(stop, L.stop);
-    report.hidden = value.kind !== 'report'; report.disabled = !value.active || typeof root.WFRobotReport?.show !== 'function'; label(report, L.report);
+    report.hidden = !showReport; report.disabled = !showReport || typeof root.WFRobotReport?.show !== 'function'; label(report, L.report);
   }
   function act(event, name) {
     if (event?.isTrusted !== true) return;
-    const current = state(); if (!current.active) return;
+    const current = state(); if (!current.active && !(name === 'report' && minimized)) return;
     event.preventDefault?.(); event.stopPropagation?.();
     try {
       let result;
       if (name === 'report') {
-        if (current.kind !== 'report' || typeof root.WFRobotReport?.show !== 'function') return;
+        if ((current.active && current.kind !== 'report') || typeof root.WFRobotReport?.show !== 'function') return;
         result = root.WFRobotReport.show();
       } else {
         const action = name === 'toggle' ? current.paused ? 'resume' : 'pause' : 'stop';
@@ -81,6 +95,11 @@
   report.addEventListener('click', event => act(event, 'report'));
   root.addEventListener('wf-program-speech-state', event => render(event.detail));
   root.addEventListener('wf-robot-ready', () => render());
-  root.addEventListener('wf-robot-report-visibility', event => { reportOpen = event.detail?.open === true; render(); });
+  root.addEventListener('wf-robot-report-visibility', event => {
+    reportOpen = event.detail?.open === true;
+    minimized = !reportOpen && event.detail?.minimized === true;
+    if(event.detail?.locale) reportLocale=event.detail.locale;
+    render();
+  });
   render();
 })();

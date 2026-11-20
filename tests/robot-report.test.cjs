@@ -31,14 +31,14 @@ test('overlapping, reversed, truncated and skipped narration segments cannot mis
 test('the unified phone reader uses most of the visible screen independent of the dashboard robot',()=>{
  const geometry=sheetGeometry({width:390,height:844,anchorBottom:400,mainLeft:0,mainRight:390});
  assert(geometry.height>=730);assert.equal(geometry.compact,false);
- assert.equal(geometry.top+geometry.height,836);
+ assert.equal(geometry.top,80);assert(geometry.top+geometry.height<=836);
  assert(geometry.left>=8&&geometry.left+geometry.width<=382);
 });
 test('short landscape placement keeps a usable report and footer within the visible viewport',()=>{
  for(const [width,height] of [[844,390],[740,360],[360,250]]){
   const geometry=sheetGeometry({width,height,anchorBottom:330,mainLeft:0,mainRight:width});
   assert.equal(geometry.compact,true);
-  assert(geometry.height>=Math.min(280,Math.floor(height*.85)));
+  assert(geometry.height>=height-72-(width<768?16:32));
   assert(geometry.top>=8);
   assert(geometry.top+geometry.height<=height-8);
   assert(geometry.left>=8&&geometry.left+geometry.width<=width-8);
@@ -62,7 +62,7 @@ test('expanded and compact docking stays within the visible viewport after a res
  }
 });
 test('compact landscape never shrinks below the space needed by reading and playback controls',()=>{
- for(const [width,height,expected] of [[844,390,358],[740,360,344],[390,844,360]]){
+ for(const [width,height,expected] of [[844,390,286],[740,360,272],[390,844,360]]){
   for(const dock of ['top','bottom']){
    const geometry=sheetGeometry({width,height,dock,expanded:false});
    assert(geometry.height>=expected);
@@ -146,13 +146,50 @@ test('minimizing and reopening preserves the exact report and follows boundaries
  f.emit('wf-robot-report-open',{snapshot,locale:'en'});f.emit('wf-robot-report-playback',{state:'speaking'});
  const paragraphs=f.nodes.filter(node=>node.classList.contains('wf-report-sentence'));assert.equal(paragraphs.length,2);
  f.emit('wf-robot-report-boundary',{charIndex:0,charLength:13});assert.equal(paragraphs[0].getAttribute('aria-current'),'true');
- f.click('wf-report-close');f.flush();assert.equal(f.get('wf-robot-report-sheet').hidden,true);assert.deepEqual(f.calls,[]);
+ f.click('wf-report-minimize');f.flush();assert.equal(f.get('wf-robot-report-sheet').hidden,true);assert.equal(f.window.WFRobotReport.isMinimized(),true);assert.deepEqual(f.calls,[]);
  f.emit('wf-robot-report-boundary',{charIndex:14,charLength:14});
  assert.equal(f.window.WFRobotReport.hasReport(),true);assert.equal(f.window.WFRobotReport.show(),true);
  assert.equal(f.get('wf-robot-report-sheet').hidden,false);assert.equal(paragraphs[1].getAttribute('aria-current'),'true');
  assert.deepEqual(paragraphs.map(p=>p.textContent),['Sales: 12.50.','Balance: 9.25.']);
  assert.equal(f.nodes.filter(node=>node.classList.contains('wf-report-sentence')).length,2,'reopening must reuse the snapshot without rebuilding or reading again');
  assert.deepEqual(f.calls,[]);
+});
+
+test('the expanded smart card uses the original SVG and animates from the visible card bounds',()=>{
+ const f=reportUIFixture(),originalQuery=f.document.querySelector;
+ const svg=f.document.createElement('svg'),clone=f.document.createElement('svg');
+ svg.cloneNode=deep=>{assert.equal(deep,true);return clone;};
+ const rect={left:40,top:220,width:300,height:200,right:340,bottom:420};
+ f.document.querySelector=selector=>selector==='#wfGreetingRobot .wf-robot-face'?svg:
+  selector==='#wfGreetingRobot[aria-hidden="false"]'?{getBoundingClientRect:()=>rect}:originalQuery(selector);
+ f.emit('wf-robot-report-open',{snapshot:exampleReport(),locale:'en'});
+ const sheet=f.get('wf-robot-report-sheet');
+ assert.equal(f.get('wf-reader-face').firstElementChild,clone);
+ assert.equal(sheet.dataset.dock,'top');assert.equal(sheet.style['--wf-report-top'],'80px');
+ assert.equal(Number(sheet.style['--wf-report-origin-w']),300/374);
+ assert.equal(Number(sheet.style['--wf-report-origin-h']),200/742);
+ assert.equal(sheet.style['--wf-report-origin-x'],'-5px');
+ assert.equal(sheet.style['--wf-report-origin-y'],'-131px');
+});
+test('the report rate selector tracks the real owner and updates without restarting or saving',()=>{
+ const f=reportUIFixture(),owner=f.window.WFProgramSpeech;let state={kind:'report',active:true,rate:.85};
+ owner.getState=()=>state;owner.setRate=rate=>{state={...state,rate};f.calls.push(rate);return true;};
+ f.emit('wf-robot-report-open',{snapshot:exampleReport(),locale:'ar'});
+ const speed=f.get('wf-report-rate');assert.equal(speed.value,'0.85');assert.equal(speed.children.length,11);
+ assert.equal(speed.getAttribute('aria-label'),'سرعة القراءة');
+ speed.value='1.15';speed.events.change();assert.deepEqual(f.calls,[1.15]);assert.equal(speed.value,'1.15');
+ state={...state,rate:.75};f.emit('wf-program-speech-state',state);assert.equal(speed.value,'0.75');
+ state={kind:'program',active:true,rate:1};f.emit('wf-program-speech-state',state);assert(speed.disabled);
+ speed.events.change();assert.deepEqual(f.calls,[1.15]);
+});
+
+test('Exit stops playback once, closes the card and removes its minimized state',()=>{
+ const f=reportUIFixture();f.emit('wf-robot-report-open',{snapshot:exampleReport(),locale:'ar'});
+ assert.equal(f.get('wf-report-close').children[1].textContent,'خروج');
+ assert.equal(f.get('wf-report-minimize').children[1].textContent,'تصغير');
+ f.emit('wf-robot-report-playback',{state:'speaking'});f.click('wf-report-close');f.click('wf-report-close');f.flush();
+ assert.equal(f.window.WFRobotReport.isMinimized(),false);assert.equal(f.get('wf-robot-report-sheet').hidden,true);
+ assert.deepEqual(f.calls,['stop']);
 });
 
 test('the reader has separate pause, resume and stop actions with actual playback state',()=>{
