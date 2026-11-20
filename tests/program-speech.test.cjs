@@ -128,83 +128,16 @@ test('loading without a header exposes the pure API without starting speech or c
   assert.equal(calls, 0);
 });
 
-function browserFixture() {
-  const nodes = new Map(), events = new Map(), calls = [], observers = [];
-  class Element {
-    constructor() { this.dataset = {}; this.attributes = {}; this.events = {}; this.children = []; this.classes = new Set(); this.hidden = false; this.isConnected = true; this.visible = true; this.classList = {add: (...names) => names.forEach(name => this.classes.add(name)), remove: (...names) => names.forEach(name => this.classes.delete(name)), contains: name => this.classes.has(name), toggle: (name, enabled) => enabled ? this.classes.add(name) : this.classes.delete(name)}; }
-    setAttribute(name, value) { this.attributes[name] = value; }
-    addEventListener(name, listener) { this.events[name] = listener; }
-    removeEventListener(name) { delete this.events[name]; }
-    getClientRects() { for(let node=this;node;node=node.parentNode)if(!node.visible||node.hidden||node.kind==='page'&&node.active===false)return [];return [{}]; }
-    append(...children) { for(const child of children)this.insertBefore(child,null); }
-    insertBefore(child,before) { if(child.parentNode)child.parentNode.children=child.parentNode.children.filter(node=>node!==child);const index=before?this.children.indexOf(before):this.children.length;this.children.splice(index,0,child);if(child.id)nodes.set(child.id,child);child.parentNode=this;child.parentElement=this;child.isConnected=true; }
-    remove() { if(this.parentNode)this.parentNode.children=this.parentNode.children.filter(node=>node!==this);this.parentNode=null;this.parentElement=null;this.isConnected = false; }
-    contains(node) { return node===this||this.children.some(child=>child.contains(node)); }
-    querySelectorAll(selector) { return this.children.flatMap(child=>[...(selector==='.wf-heading-row'&&child.classList.contains('wf-heading-row')?[child]:[]),...child.querySelectorAll(selector)]); }
-    matches(selector) { return this.kind === 'page' ? selector.includes('.page.active') && this.active !== false : selector.includes('dialog[open]') && this.open !== false; }
-    closest(selector) { if(selector.includes('.modal-ov')){for(let node=this;node;node=node.parentNode)if(node.kind==='dialog'||node.hidden||node.inert)return node;return null;}return selector.startsWith('[hidden]') ? null : this.scope?.matches(selector) ? this.scope : null; }
-  }
-  const body = new Element(), html = new Element(), settings = new Element(), home=new Element(), main=new Element(), pages={}, headings={};html.lang='ar';settings.id='headerSettingsBtn';main.id='mainContent';body.append(home,main);home.append(settings);
-  for(const name of ['dashboard','cart','settings']){const page=new Element();page.id='page-'+name;page.kind='page';page.active=name==='dashboard';page.classList.add('page');if(page.active)page.classList.add('active');main.append(page);pages[name]=page;const heading=new Element();heading.classList.add('wf-heading-row');page.append(heading);headings[name]=heading;}
-  const document = {body, documentElement: html, getElementById: id => nodes.get(id) || null, querySelector: selector => selector==='.page.active'?Object.values(pages).find(page=>page.active)||null:null,createElement: () => new Element(), createTreeWalker: () => ({nextNode() { return null; }})};
-  let current = {state: 'ready', active: false}, selected = null;
-  const window = {document, WFArabicReportSpeech: require('../arabic-report-speech.js'),
-    getComputedStyle: element => ({display: element.visible ? 'block' : 'none', visibility: 'visible'}), getSelection: () => selected,
-    clearTimeout() {}, setTimeout() { return 1; }, addEventListener: (name, fn) => events.set(name, fn), removeEventListener: name => events.delete(name),
-    WFProgramSpeech: {getState: () => current, speak(options) { calls.push(options); return true; }, stop() {}}};
-  vm.runInNewContext(readFileSync(file, 'utf8'), {window, Intl, Object, Number, String, Error, BigInt, MutationObserver: class {constructor(callback){this.callback=callback;this.targets=[];observers.push(this);}observe(target,options){this.targets.push({target,options});}disconnect(){this.targets=[];}}});
-  const notify=(target,attributeName='class')=>{for(const observer of observers)if(observer.targets.some(entry=>(entry.target===target||entry.options.subtree&&entry.target.contains(target))&&entry.options.attributeFilter?.includes(attributeName)))observer.callback([{target,attributeName}]);};
-  return {calls,home,main,pages,headings,html,document,Element,notify,button: nodes.get('wfProgramSpeechButton'), status: nodes.get('wfProgramSpeechStatus'),
-    activate(name){for(const [id,page]of Object.entries(pages)){page.active=id===name;page.classList.toggle('active',page.active);}html.classList.toggle('wf-section-mode',name!=='dashboard');notify(html);notify(pages[name]);},
-    update(value) { current = value; events.get('wf-program-speech-state')({detail: value}); },
-    select(kind, text = 'USD 1.00', visible = true) {
-      const scope = new Element(), element = new Element(); scope.kind = kind; scope.visible = visible; element.scope = scope; element.visible = visible;
-      const node = {nodeType: 3, parentElement: element};
-      const range = {startContainer: node, endContainer: node, commonAncestorContainer: node, toString: () => text, cloneRange() { return this; }};
-      selected = {isCollapsed: false, rangeCount: 1, getRangeAt: () => range};
-      return scope;
-    }};
-}
 
-test('voice refreshes are silent until actual activity has occurred', () => {
-  const browser = browserFixture();
-  assert.equal(browser.status.hidden, true);
-  browser.update({state: 'ready', active: false});
-  browser.update({state: 'unavailable', active: false});
-  assert.equal(browser.status.hidden, true);
-  browser.update({state: 'speaking', active: true, voiceName: 'Local voice'});
-  assert.equal(browser.status.hidden, false);
-  browser.update({state: 'ready', active: false});
-  assert.equal(browser.status.textContent, 'انتهت القراءة.');
-  browser.status.hidden = true;
-  browser.update({state: 'ready', active: false});
-  assert.equal(browser.status.hidden, true);
-});
-
-test('the selection reader stays inside the active toolbar, yields to the report dock, and returns to its dashboard slot',()=>{
-  const browser=browserFixture(),button=browser.button;
-  assert.equal(button.parentNode,browser.home);assert.equal(button.dataset.location,'dashboard');
-  browser.activate('cart');assert.equal(button.parentNode,browser.headings.cart);assert.equal(button.dataset.location,'section');assert(browser.headings.cart.classList.contains('wf-program-speech-slot'));
-  const dialog=new browser.Element(),dialogRow=new browser.Element(),secondRow=new browser.Element();dialog.kind='dialog';dialogRow.classList.add('wf-heading-row');secondRow.classList.add('wf-heading-row');dialog.append(dialogRow);browser.pages.cart.append(dialog,secondRow);browser.headings.cart.visible=false;browser.notify(browser.headings.cart,'style');
-  assert.equal(button.parentNode,secondRow,'hidden views and dialog headings cannot own the global selection reader');assert(!browser.headings.cart.classList.contains('wf-program-speech-slot'));
-  browser.html.classList.add('wf-speech-toolbar-active');browser.notify(browser.html);assert(button.hidden);assert(!secondRow.classList.contains('wf-program-speech-slot'));
-  browser.html.classList.remove('wf-speech-toolbar-active');browser.notify(browser.html);assert(!button.hidden);assert(secondRow.classList.contains('wf-program-speech-slot'));
-  browser.activate('settings');assert.equal(button.parentNode,browser.headings.settings);assert(!secondRow.classList.contains('wf-program-speech-slot'));
-  browser.headings.settings.visible=false;browser.notify(browser.headings.settings,'style');assert(button.hidden);assert.equal(button.parentNode,browser.home);assert.equal(button.dataset.location,'none');
-  browser.activate('dashboard');assert.equal(button.parentNode,browser.home);assert(!button.hidden);assert.equal(button.dataset.location,'dashboard');
-  assert.equal(browser.home.children.filter(child=>child===button).length,1);assert.deepEqual(browser.calls,[]);assert.equal(browser.status.hidden,true);
-});
-
-test('visible dialog selections use the originating trusted click, while hidden dialogs and untrusted clicks cannot speak', () => {
-  const browser = browserFixture();
-  browser.select('dialog');
-  browser.button.events.click({isTrusted: false});
-  assert.equal(browser.calls.length, 0);
-  const event = {isTrusted: true}; browser.button.events.click(event);
-  assert.equal(browser.calls.length, 1);
-  assert.equal(browser.calls[0].event, event);
-  assert.equal(plain(browser.calls[0].text), 'دولار أمريكي واحد');
-  browser.select('dialog', 'USD 100.00', false);
-  browser.button.events.click({isTrusted: true});
-  assert.equal(browser.calls.length, 1);
+test('loading with a real header retains normalization without mounting the removed reader or watching the app', () => {
+  const calls = [], settings = {parentNode: {insertBefore() { calls.push('mount'); }}};
+  const backend = {speak() { calls.push('speech'); }, getState() { calls.push('state'); }};
+  const window = {document: {getElementById(id) { return id === 'headerSettingsBtn' ? settings : null; },
+    createElement() { calls.push('create'); throw new Error('The removed reader must not create UI'); }},
+    WFProgramSpeech: backend, addEventListener() { calls.push('listener'); }};
+  vm.runInNewContext(readFileSync(file, 'utf8'), {window, Intl, Object, Number, String, Error, BigInt,
+    MutationObserver: class {constructor() { calls.push('observer'); }}});
+  assert.deepEqual(calls, []);
+  assert.equal(window.WFProgramSpeech, backend);
+  assert.equal(window.WFProgramSpeechReader.normalizeText('0.00', 'en'), 'zero');
 });

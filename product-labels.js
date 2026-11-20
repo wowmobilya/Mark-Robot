@@ -75,7 +75,7 @@
   const byId = id => doc.getElementById(id), state = () => typeof S === 'object' ? S : {};
   const language = () => core.normalizeLocale(root.lang || state().lang);
   const script = doc.currentScript || doc.querySelector('script[src*="product-labels.js"]');
-  const stylesheet = new URL('product-labels.css?v=2', script?.src || doc.baseURI).href;
+  const stylesheet = new URL('product-labels.css?v=3', script?.src || doc.baseURI).href;
   const words = {
     ar:{
       title:'بطاقات المعرض', card:'بطاقة المعرض', back:'العودة إلى المنتجات', print:'طباعة البطاقات',
@@ -174,6 +174,8 @@
     printCount:['طباعة {count}','Yazdır · {count}','Print · {count}','Imprimer · {count}','Печать · {count}'],
     printSheets:['طباعة {count} ورقة A4','{count} A4 sayfası yazdır','Print {count} A4 sheets','Imprimer {count} feuilles A4','Печать {count} листов A4'],
     selectedCards:['قائمة الطباعة','Baskı listesi','Print list','Liste d’impression','Список печати'],
+    previousCards:['البطاقات السابقة','Önceki kartlar','Previous cards','Fiches précédentes','Предыдущие карточки'],
+    nextCards:['البطاقات التالية','Sonraki kartlar','Next cards','Fiches suivantes','Следующие карточки'],
     guide:['القص والطي','Kesme ve katlama','Cutting and folding','Découpe et pliage','Вырезание и сгиб'],
     chooseProducts:['اختيار منتجات','Ürün seç','Choose products','Choisir des produits','Выбрать товары'],
     sourceDetails:['تعرض البطاقة بيانات المنتج المحفوظة.','Kart, kayıtlı ürün bilgilerini gösterir.','The card uses the saved product details.','La fiche reprend les données enregistrées du produit.','Карточка использует сохранённые данные товара.'],
@@ -219,17 +221,41 @@
   let catalogPanel, previewPanel, queue, emptyPreview, includeButton, editButton, resultsCount, selectAllButton, clearButton, moreButton, printRecovery;
   let pane = 'preview', viewMode = 'face', selectionFilter = 'all', visibleCount = 40, hasSelectionSession = false, localeInitialized = false, pendingSaves = 0, previewState = null;
   let needsPreviewCheck=false,lastPreviewWidth=0,printFailure=null;
+  let catalogSource=null,catalogLength=0,catalogRevision=0,productIndex=new Map(),searchIndex=new Map(),reviewIndex=new Map();
+  let filteredCache=null,selectionRevision=0,queueSignature='',queueWindowSignature='';
   const paneButtons = {}, filterButtons = {}, viewButtons = {};
   const page = byId('page-products');
   if (!page) return;
 
   function products() { return Array.isArray(state().products) ? state().products : []; }
   function selectedIds() { return [...selected]; }
+  function indexCatalog(force = false) {
+    const source=products();
+    if(!force&&catalogSource===source&&catalogLength===source.length)return;
+    catalogSource=source;catalogLength=source.length;catalogRevision++;
+    productIndex=new Map();searchIndex=new Map();reviewIndex=new Map();
+    for(const product of source){
+      if(product?.id===null||product?.id===undefined)continue;
+      const id=String(product.id);productIndex.set(id,product);
+      searchIndex.set(id,[product.name,product.barcode,product.code,product.type].map(core.normalizeSearch).join(' '));
+    }
+    available=[...productIndex.keys()];filteredCache=null;queueSignature='';
+  }
   function options() {
-    const ids = new Set(available);
-    return products().filter(product => ids.has(String(product.id)) && core.matchesProduct(product,search?.value || '') &&
-      (selectionFilter !== 'selected' || selected.has(String(product.id))) &&
-      (selectionFilter !== 'review' || core.reviewProduct(product).length > 0));
+    indexCatalog();
+    const query=core.normalizeSearch(search?.value||''),key=query+'|'+selectionFilter+'|'+selectionRevision;
+    if(filteredCache?.key===key)return filteredCache.products;
+    const tokens=query.split(/\s+/).filter(Boolean),matches=[];
+    for(const [id,product]of productIndex){
+      if(selectionFilter==='selected'&&!selected.has(id))continue;
+      if(tokens.length&&!tokens.every(token=>searchIndex.get(id).includes(token)))continue;
+      if(selectionFilter==='review'){
+        if(!reviewIndex.has(id))reviewIndex.set(id,core.reviewProduct(product));
+        if(!reviewIndex.get(id).length)continue;
+      }
+      matches.push(product);
+    }
+    filteredCache={key,products:matches};return matches;
   }
   function registerGuard() {
     if (!updateGuard && window.WFAppUpdates) {
@@ -245,7 +271,7 @@
     errorBox.textContent = t(key) + (['layoutError','barcodeError'].includes(key) && name ? ' ' + name : '');
     errorBox.hidden = false;
   }
-  function updateControls() {
+  function updateControls(source) {
     if (!workspace) return;
     const busy = preparing || !!activePrint;
     const blocking = selected.has(currentId) && previewState?.id === currentId && previewState.state === 'error';
@@ -255,7 +281,10 @@
     printButton.setAttribute('aria-label',t('printSheets',{count:selected.size}));
     languageToggle.disabled = busy;
     for (const choice of languageChoices.children) choice.disabled = busy;
-    if (selectAllButton) selectAllButton.disabled = busy || !options().length || options().every(product=>selected.has(String(product.id)));
+    if (selectAllButton) {
+      const choices=source||options();
+      selectAllButton.disabled=busy||!choices.length||choices.every(product=>selected.has(String(product.id)));
+    }
     if (clearButton) clearButton.disabled = busy || !selected.size;
     if (editButton) editButton.disabled = busy || !currentId;
     if (includeButton) {includeButton.hidden = !currentId || selected.has(currentId);includeButton.disabled = busy;}
@@ -267,19 +296,20 @@
     if (!paneButtons[name]) return;
     pane = name; workspace.dataset.pane = name;
     for (const [key,control] of Object.entries(paneButtons)) {control.setAttribute('aria-selected',String(key===name));control.tabIndex=key===name?0:-1;}
-    requestAnimationFrame(()=>{scalePreview();if(name==='preview'&&opened&&needsPreviewCheck)renderPreview();});
+    requestAnimationFrame(()=>{if(pane!==name)return;scalePreview();if(name==='preview'&&opened&&needsPreviewCheck)renderPreview();});
     if (scroll) workspace.scrollIntoView({block:'start',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth'});
   }
   function activateProduct(id, changePane = true) {
-    if (!available.includes(String(id))) return;
-    printFailure=null;currentId = String(id); renderPreview();
+    indexCatalog();if (!productIndex.has(String(id))) return;
+    printFailure=null;currentId = String(id); renderPreview(previewState?.state==='error');
     if (changePane) showPane('preview',true);
   }
   function setProductSelected(id, included) {
-    if(preparing||activePrint||!available.includes(String(id)))return false;
+    indexCatalog();if(preparing||activePrint||!productIndex.has(String(id)))return false;
     id=String(id);
+    if(selected.has(id)!==included){selectionRevision++;filteredCache=null;}
     if(included){selected.add(id);if(!currentId)currentId=id;}else selected.delete(id);
-    if(selectionFilter==='selected')renderSelection();renderPreview();updateControls();return true;
+    if(selectionFilter==='selected')renderSelection();renderPreview();return true;
   }
   function revealPrintFailure(error) {
     printFailure=error;
@@ -293,15 +323,36 @@
   }
   function renderQueue() {
     if (!queue) return;
-    const fragment=doc.createDocumentFragment(),ids=selectedIds();
-    ids.forEach((id,index)=>{
-      const product=products().find(entry=>String(entry.id)===id);if(!product)return;
+    indexCatalog();
+    const signature=catalogRevision+'|'+selectionRevision+'|'+currentId+'|'+language();
+    if(signature===queueSignature)return;queueSignature=signature;
+    const fragment=doc.createDocumentFragment(),ids=selectedIds(),size=25;
+    const start=Math.floor(Math.max(0,ids.indexOf(currentId))/size)*size,end=Math.min(ids.length,start+size);
+    const windowSignature=catalogRevision+'|'+selectionRevision+'|'+start+'|'+language();
+    if(windowSignature===queueWindowSignature){
+      for(const control of queue.children)if(control.dataset.productId)control.setAttribute('aria-current',String(control.dataset.productId===currentId));
+      return;
+    }
+    queueWindowSignature=windowSignature;
+    const restoreFocus=queue.contains?.(doc.activeElement);
+    const jump=(direction,from,to,target)=>{
+      const control=make('button','wf-label-queue-step');control.type='button';control.dataset.queueStep=direction;
+      const label=t(direction==='next'?'nextCards':'previousCards')+' · '+(from+1)+'–'+to;
+      control.setAttribute('aria-label',label);control.title=label;
+      control.append(icon(direction==='next'?'next':'back'),make('span','',(from+1)+'–'+to));
+      control.addEventListener('click',()=>activateProduct(ids[target],false));fragment.append(control);
+    };
+    if(start>0)jump('previous',Math.max(0,start-size),start,Math.max(0,start-size));
+    ids.slice(start,end).forEach((id,offset)=>{
+      const product=productIndex.get(id);if(!product)return;const index=start+offset;
       const choice=make('button','wf-label-queue-item');choice.type='button';choice.dataset.productId=id;
       choice.setAttribute('aria-current',String(id===currentId));choice.title=t('previewProduct',{name:product.name||'—'});
       choice.append(make('span','wf-label-queue-number',String(index+1)),make('bdi','',String(product.name??'—')));
       choice.addEventListener('click',()=>activateProduct(id,false));fragment.append(choice);
     });
-    queue.replaceChildren(fragment);queue.hidden=ids.length<2;queue.setAttribute('aria-label',t('selectedCards'));
+    if(end<ids.length)jump('next',end,Math.min(ids.length,end+size),end);
+    queue.replaceChildren(fragment);queue.scrollLeft=0;queue.hidden=ids.length<2;queue.setAttribute('aria-label',t('selectedCards'));
+    if(restoreFocus){for(const control of queue.children)if(control.dataset.productId===currentId){control.focus({preventScroll:true});break;}}
   }
   function refreshText() {
     for (const element of page.querySelectorAll('[data-wf-label-copy]')) element.textContent=t(element.dataset.wfLabelCopy);
@@ -359,10 +410,11 @@
     selectAllButton=button('all','btn btn-s','check',()=>{
       if(preparing||activePrint)return;
       for(const product of options())selected.add(String(product.id));
+      selectionRevision++;filteredCache=null;
       currentId=currentId||selectedIds()[0]||null;renderSelection();renderPreview();
     });
     clearButton=button('clear','btn btn-s',null,()=>{
-      if(preparing||activePrint)return;selected.clear();currentId=null;renderSelection();renderPreview();
+      if(preparing||activePrint)return;selected.clear();selectionRevision++;filteredCache=null;currentId=null;renderSelection();renderPreview();
     });
     selectionActions.append(selectAllButton,clearButton);
     search=make('input','fc');search.type='search';search.autocomplete='off';search.id='wfProductLabelSearch';
@@ -376,7 +428,7 @@
     list=make('div','wf-label-product-list');
     moreButton=button('showMore','btn btn-s',null,()=>{visibleCount+=40;renderSelection();});
     selection.append(search,filters,selectionActions,resultsCount,list,moreButton);selection.open=true;
-    catalogPanel.append(languageGroup,selection);
+    catalogPanel.append(selection);
     const nav=make('div','wf-label-preview-nav');
     previous=button('previous','wf-label-prev','back',()=>move(-1));next=button('next','wf-label-next','next',()=>move(1));
     currentName=make('strong','wf-label-current');currentName.dir='auto';counter=make('span','wf-label-page-count');
@@ -408,16 +460,16 @@
       close(false); if(typeof window.editPr==='function')window.editPr(product.id);
     });
     includeButton=button('includeCard','btn btn-s','plus',()=>{
-      if(!currentId||preparing||activePrint)return;selected.add(currentId);renderSelection();renderPreview();
+      if(!currentId||preparing||activePrint)return;setProductSelected(currentId,true);renderSelection();
     });
     const foot=make('div','wf-label-source');foot.append(source,includeButton,editButton);
     const construction=translated(make('p','wf-label-source-note',t('printConstruction')),'printConstruction');
     const guide=make('details','wf-label-guide');guide.append(translated(make('summary','',t('guide')),'guide'),translated(make('p','',t('sheet')),'sheet'),translated(make('p','',t('ready')),'ready'));
     previewPanel.append(nav,queue,viewControls,construction,status,errorBox,printRecovery,preview,foot,guide);
-    body.append(catalogPanel,previewPanel);workspace.append(toolbar,tabs,body);page.append(workspace);showPane(pane);
+    body.append(catalogPanel,previewPanel);workspace.append(toolbar,languageGroup,tabs,body);page.append(workspace);showPane(pane);
     if(typeof ResizeObserver==='function')new ResizeObserver(entries=>{
-      const width=entries[0]?.contentRect.width||0,becameVisible=width>0&&lastPreviewWidth===0;lastPreviewWidth=width;
-      scalePreview();if(becameVisible&&opened&&needsPreviewCheck)renderPreview();
+      const width=entries[0]?.contentRect.width||0,becameVisible=width>0&&lastPreviewWidth===0,changed=width!==lastPreviewWidth;lastPreviewWidth=width;
+      if(changed)scalePreview();if(becameVisible&&opened&&needsPreviewCheck)renderPreview();
     }).observe(preview);
     else window.addEventListener('resize',scalePreview,{passive:true});
     refreshText();
@@ -458,7 +510,7 @@
     list.replaceChildren(fragment);moreButton.hidden=shown.length>=source.length;
     resultsCount.textContent=t('results',{shown:shown.length,count:source.length});
     for(const [name,control]of Object.entries(filterButtons))control.setAttribute('aria-pressed',String(name===selectionFilter));
-    updateControls();renderQueue();
+    updateControls(source);renderQueue();
   }
   function modelFor(product, settings = state().settings || {}) {
     let logo=settings.logo||'';
@@ -541,8 +593,12 @@
     const style=getComputedStyle(preview),padding=parseFloat(style.paddingLeft)+parseFloat(style.paddingRight)+2;
     const scale=Math.min(face?1.2:1,Math.max(.1,(preview.clientWidth-padding)/width));
     const x=face?(core.geometry.paperWidth-core.geometry.pairWidth)*mm/2:0,y=face?(core.geometry.paperHeight-core.geometry.pairHeight)*mm/2:0;
-    stage.dataset.view=viewMode;stage.style.width=width*scale+'px';stage.style.height=height*scale+'px';
-    paper.style.transform='translate('+(-x*scale)+'px,'+(-y*scale)+'px) scale('+scale+')';
+    const scaledWidth=width*scale+'px',scaledHeight=height*scale+'px';
+    const transform='translate('+(-x*scale)+'px,'+(-y*scale)+'px) scale('+scale+')';
+    if(stage.dataset.view!==viewMode)stage.dataset.view=viewMode;
+    if(stage.style.width!==scaledWidth)stage.style.width=scaledWidth;
+    if(stage.style.height!==scaledHeight)stage.style.height=scaledHeight;
+    if(paper.style.transform!==transform)paper.style.transform=transform;
   }
   function fitPaper(paper) {
     const view=paper.ownerDocument.defaultView;
@@ -572,53 +628,81 @@
       if(explicit)throw new Error(explicit);
       const bounds=face.getBoundingClientRect();
       if(face.clientWidth<=0||face.clientHeight<=0||bounds.width<=0||bounds.height<=0)throw new Error('LAYOUT_HIDDEN');
+      const scaleX=bounds.width/face.clientWidth,scaleY=bounds.height/face.clientHeight;
+      if(face.scrollWidth>face.clientWidth+1||face.scrollHeight>face.clientHeight+1)throw new Error('OVERFLOW|'+face.dataset.product);
       for(const element of face.querySelectorAll('header,.wf-label-photo,table,.wf-label-facts,.wf-label-barcode,footer,.wf-label-product-name,.wf-label-facts bdi,.wf-label-barcode-value')){
         const rect=element.getBoundingClientRect();
-        if(rect.left<bounds.left-1 || rect.right>bounds.right+1 || rect.top<bounds.top-1 || rect.bottom>bounds.bottom+1 ||
+        if((bounds.left-rect.left)/scaleX>1 || (rect.right-bounds.right)/scaleX>1 ||
+          (bounds.top-rect.top)/scaleY>1 || (rect.bottom-bounds.bottom)/scaleY>1 ||
           element.scrollWidth>element.clientWidth+2 || element.scrollHeight>element.clientHeight+2)throw new Error('OVERFLOW|'+face.dataset.product);
       }
     }
   }
   async function preparePapers(papers, owner, isCurrent = () => true) {
+    if(!isCurrent())return false;
     if(owner.fonts)await withTimeout(owner.fonts.ready,12000,'FONT_TIMEOUT');
+    if(!isCurrent())return false;
     const images=papers.flatMap(paper=>[...paper.querySelectorAll('img')].map(image=>({image,productId:paper.dataset.productId})));
-    for(let index=0;index<images.length;index+=6)await Promise.all(images.slice(index,index+6).map(async({image,productId})=>{
-      try{await waitForImage(image);}catch(error){error.productId=productId;throw error;}
-    }));
+    for(let index=0;index<images.length;index+=6){
+      if(!isCurrent())return false;
+      await Promise.all(images.slice(index,index+6).map(async({image,productId})=>{
+        try{await waitForImage(image);}catch(error){error.productId=productId;throw error;}
+      }));
+    }
+    if(!isCurrent())return false;
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     if(!isCurrent())return false;
-    for(const paper of papers){
+    for(let index=0;index<papers.length;index++){
+      if(index&&index%4===0){await new Promise(resolve=>requestAnimationFrame(resolve));if(!isCurrent())return false;}
+      const paper=papers[index];
       try{fitPaper(paper);checkPaper(paper);}catch(error){error.productId=paper.dataset.productId;throw error;}
     }
     return true;
   }
-  async function renderPreview() {
+  async function renderPreview(retry = false) {
     if(!workspace || !opened)return;
-    const ids=selectedIds();if(!available.includes(currentId))currentId=ids[0]||null;
+    indexCatalog();
+    const ids=selectedIds();if(!productIndex.has(currentId))currentId=ids[0]||null;
     const index=ids.indexOf(currentId);
     previous.disabled=index<=0;next.disabled=index<0 || index>=ids.length-1;
     counter.textContent=currentId?(index>=0?t('page',{page:index+1,count:ids.length}):t('previewOnly')):'';
-    errorBox.hidden=true;status.hidden=false;const revision=++previewRevision;
     stage.hidden=!currentId;emptyPreview.hidden=!!currentId;
-    previewState=currentId?{id:currentId,state:'checking'}:null;needsPreviewCheck=!!currentId;
     renderQueue();updateControls();
-    if(!currentId){stage.replaceChildren();stage.style.height='auto';currentName.textContent='';status.hidden=true;return;}
+    if(!currentId){previewRevision++;previewState=null;needsPreviewCheck=false;stage.replaceChildren();stage.style.height='auto';currentName.textContent='';status.hidden=true;errorBox.hidden=true;return;}
+    const productId=currentId,sourceRevision=catalogRevision,locale=printLocale;
+    const key=sourceRevision+'|'+productId+'|'+locale;
+    const existing=!retry&&previewState?.key===key?stage.querySelector('.wf-label-paper'):null;
+    if(existing&&previewState.state!=='hidden'){syncPreviewStatus();return;}
+    errorBox.hidden=true;status.hidden=false;const revision=++previewRevision;
+    const isCurrent=()=>revision===previewRevision&&opened&&currentId===productId&&catalogRevision===sourceRevision&&printLocale===locale;
+    previewState={id:productId,key,state:'checking'};needsPreviewCheck=true;
+    status.dataset.state='checking';status.textContent=t('checking');
     try{
-      const [product]=captureSelection(products(),[currentId]),model=modelFor(product),paper=buildPaper(model);
-      currentName.textContent=model.name;stage.replaceChildren(paper);status.dataset.state='checking';status.textContent=t('checking');
-      scalePreview();await preparePapers([paper],doc,()=>revision===previewRevision&&opened);
-      if(revision!==previewRevision || !opened)return;
-      const review=core.reviewProduct(product);previewState={id:currentId,state:'ready'};needsPreviewCheck=false;
+      const [product]=captureSelection([productIndex.get(productId)],[productId]),model=modelFor(product),paper=existing||buildPaper(model);
+      currentName.textContent=model.name;if(!existing)stage.replaceChildren(paper);
+      scalePreview();await preparePapers([paper],doc,isCurrent);
+      if(!isCurrent())return;
+      previewState={id:productId,key,state:'ready',review:core.reviewProduct(product),qr:!!paper.querySelector('[data-code="qr"]')};needsPreviewCheck=false;
+      syncPreviewStatus();scalePreview();updateControls();
+    }catch(error){
+      if(!isCurrent())return;
+      if(error.message==='LAYOUT_HIDDEN'){previewState.state='hidden';needsPreviewCheck=true;retainPrintFailure();return;}
+      needsPreviewCheck=false;
+      previewState={id:productId,key,state:'error',error};syncPreviewStatus();updateControls();
+    }
+  }
+  function syncPreviewStatus() {
+    if(!previewState)return;
+    status.hidden=false;errorBox.hidden=previewState.state!=='error';
+    if(previewState.state==='error'){
+      status.dataset.state='error';status.textContent=t('cardBlocked');showError(previewState.error);
+    }else if(previewState.state==='ready'){
+      const review=previewState.review||[];
       status.dataset.state=review.length?'review':'ready';status.textContent=t(review.length?'cardReview':'cardReady');
       if(review.length)status.textContent+=' · '+review.map(key=>t(key)).join(' · ');
-      if(paper.querySelector('[data-code="qr"]'))status.textContent+=' '+t('qr');
-      scalePreview();updateControls();retainPrintFailure();
-    }catch(error){
-      if(revision!==previewRevision || !opened)return;
-      if(error.message==='LAYOUT_HIDDEN'){needsPreviewCheck=true;retainPrintFailure();return;}
-      needsPreviewCheck=false;
-      previewState={id:currentId,state:'error'};status.dataset.state='error';status.textContent=t('cardBlocked');showError(error);updateControls();
-    }
+      if(previewState.qr)status.textContent+=' '+t('qr');
+    }else{status.dataset.state='checking';status.textContent=t('checking');}
+    retainPrintFailure();
   }
   function move(step) {
     const ids=selectedIds(),index=ids.indexOf(currentId),target=ids[index+step];if(target){currentId=target;renderPreview();}
@@ -627,12 +711,13 @@
     if(typeof window.getCurrentPage==='function' && window.getCurrentPage()!=='products')window.showPage('products');
     mount();opener=source||doc.activeElement;
     printFailure=null;
+    indexCatalog(true);
     const filter=state().prTabFilter||'all',query=(byId('prSearch')?.value||'').trim().toLowerCase();
     const sourceProducts=productId!==undefined?products().filter(product=>String(product.id)===String(productId)):
       products().filter(product=>(filter==='all'||product.type===filter)&&core.matchesProduct(product,query));
-    available=products().filter(product=>product.id!==null&&product.id!==undefined).map(product=>String(product.id));
     if(productId!==undefined || !hasSelectionSession){selected=new Set(sourceProducts.map(product=>String(product.id)));currentId=selectedIds()[0]||null;search.value='';selectionFilter='all';visibleCount=40;}
-    else {selected=new Set(selectedIds().filter(id=>available.includes(id)));if(!available.includes(currentId))currentId=selectedIds()[0]||null;}
+    else {selected=new Set(selectedIds().filter(id=>productIndex.has(id)));if(!productIndex.has(currentId))currentId=selectedIds()[0]||null;}
+    selectionRevision++;filteredCache=null;
     hasSelectionSession=true;
     if(!localeInitialized){printLocale=core.resolveLocale(state().settings?.productLabels?.locale,language());savedNoteKey='preference';localeInitialized=true;}
     selection.open=true;opened=true;workspace.hidden=false;page.classList.add('wf-label-mode');
@@ -640,7 +725,7 @@
     renderSelection();refreshText();registerGuard();workspace.focus({preventScroll:true});workspace.scrollIntoView({block:'start',behavior:'auto'});
   }
   function close(restoreFocus) {
-    if(!opened)return;opened=false;previewRevision++;workspace.hidden=true;page.classList.remove('wf-label-mode');stage.replaceChildren();
+    if(!opened)return;opened=false;previewRevision++;previewState=null;workspace.hidden=true;page.classList.remove('wf-label-mode');stage.replaceChildren();
     if(restoreFocus && opener?.isConnected)opener.focus({preventScroll:true});
   }
   async function printSelected() {
@@ -674,8 +759,14 @@
       printDoc.body.className='wf-label-print-document';
       const link=printDoc.createElement('link');link.rel='stylesheet';
       const loaded=new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=()=>reject(new Error('STYLE_LOAD'));});
+      // Construction yields between batches, so observe an early stylesheet
+      // rejection immediately and report it through the preparation error path.
+      loaded.catch(()=>{});
       link.href=stylesheet;printDoc.head.append(link);
-      for(const model of models)printDoc.body.append(buildPaper(model,printDoc));
+      for(let index=0;index<models.length;index++){
+        if(index&&index%8===0)await new Promise(resolve=>requestAnimationFrame(resolve));
+        printDoc.body.append(buildPaper(models[index],printDoc));
+      }
       await withTimeout(loaded,12000,'STYLE_TIMEOUT');
       await preparePapers([...printDoc.querySelectorAll('.wf-label-paper')],printDoc);
       printWindow.addEventListener('afterprint',cleanup,{once:true});window.addEventListener('afterprint',cleanup,{once:true});

@@ -12,12 +12,36 @@ function fixture(options = {}) {
   return { state, manager, written, get stored() { return stored; }, set stored(value) { stored = value; } };
 }
 
-test('defaults are INFINITY and independent from the existing company identity without seeding storage', () => {
+test('defaults are WOW FURNITURE and independent from the existing company identity without seeding storage', () => {
   const a = fixture(), before = structuredClone(a.state);
+  assert.equal(DEFAULT_NAME, 'WOW FURNITURE');
+  assert.equal(DEFAULT_LOGO, './assets/wow-furniture-logo.svg');
   assert.equal(a.manager.current().name, DEFAULT_NAME);
   assert.deepEqual(sources(a.manager.current()), { logo: DEFAULT_LOGO, icon: DEFAULT_ICON });
   assert.equal(a.written.length, 0);
   assert.deepEqual(a.state, before);
+});
+
+test('retired English and Arabic stock identities resolve to full WOW defaults without rewriting records', () => {
+  for (const name of ['INFINITY', ' infinity ', 'إنفنتي', 'انفنتي']) {
+    for (const artwork of [{}, {logo, installIcon: icon, installIconMode: 'custom'}]) {
+      const a = fixture();
+      a.state.settings.appIdentity = {version: 1, name, ...artwork};
+      const before = structuredClone(a.state);
+      assert.deepEqual(a.manager.current(), {version: 1, name: DEFAULT_NAME, logo: '', installIcon: '', installIconMode: 'default'});
+      assert.deepEqual(sources(a.manager.current()), {logo: DEFAULT_LOGO, icon: DEFAULT_ICON});
+      assert.deepEqual(a.state, before);
+      assert.equal(a.written.length, 0);
+    }
+  }
+});
+
+test('unrelated custom names and uploaded artwork remain available after the default brand changes', () => {
+  for (const name of ['Personal Brand', 'متجري', 'Société française', 'INFINITY — إنفنتي']) {
+    const custom = preference({name});
+    assert.deepEqual(normalize({appIdentity: custom}), custom);
+    assert.deepEqual(sources(normalize({appIdentity: custom})), {logo, icon});
+  }
 });
 
 test('save merges the latest settings row while preserving company identity, invoices and other modules', async () => {

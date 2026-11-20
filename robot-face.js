@@ -1,4 +1,4 @@
-/* Infinity Robot's optional local speech and read-only daily report. No microphone access. */
+/* Mark Robot's optional local speech and read-only daily report. No microphone access. */
 (() => {
   'use strict';
 

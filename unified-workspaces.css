@@ -1,0 +1,354 @@
+/* WOW workspace chrome. Keep the homepage, document paper, camera frame,
+   developer profile and existing open/close handlers under their own owners. */
+@media screen {
+  :root {
+    --wf-workspace-chrome: linear-gradient(105deg, var(--card) 55%, var(--wf-section-tint, var(--window-muted, var(--card))));
+    --wf-workspace-chrome-shadow: 0 5px 18px rgb(20 46 60 / 5%);
+    --wf-workspace-control: 44px;
+    --wf-workspace-end: 24px;
+  }
+
+  html.wf-section-mode {
+    scroll-padding-block: calc(132px + env(safe-area-inset-top, 0px)) calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+  html.wf-section-mode body { padding-block-end: 0 !important; }
+  html.wf-section-mode.wf-context-nav-open { --wf-workspace-end: calc(112px + env(safe-area-inset-bottom, 0px)); }
+  html.wf-section-mode body #mainContent {
+    --wf-page-gutter: max(var(--workspace-inset, 16px), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    padding-inline: var(--wf-page-gutter) !important;
+    padding-block-end: var(--wf-workspace-end) !important;
+    min-inline-size: 0;
+    touch-action: auto !important;
+  }
+  html body #mainContent .page:not(#page-dashboard) {
+    min-inline-size: 0;
+    --section-accent: var(--brand-primary);
+  }
+  /* Main owns the dock clearance once; legacy body/page padding duplicated it. */
+  html.wf-section-mode body #mainContent > .page:not(#page-dashboard) { padding-block-end: 0 !important; }
+  html.wf-section-mode body #mainContent:has(> #page-add-company.active) { --wf-workspace-end: calc(96px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Product, invoice and barcode rules previously disabled their sticky bars.
+     One flow-preserving bar now supplies the same safe-area chrome everywhere. */
+  html.wf-section-mode body #mainContent .page:not(#page-dashboard) :is(.co-page-sticky, .sct-sticky-header, .page-sticky-bar, .wf-label-toolbar) {
+    position: sticky !important;
+    inset-block-start: 0 !important;
+    inset-block-end: auto !important;
+    inset-inline: auto !important;
+    z-index: 600 !important;
+    box-sizing: border-box;
+    inline-size: auto !important;
+    min-inline-size: 0;
+    min-block-size: calc(72px + env(safe-area-inset-top, 0px));
+    block-size: auto;
+    margin: 0 calc(-1 * var(--wf-page-gutter)) var(--workspace-gap, 18px) !important;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) var(--wf-page-gutter) 12px !important;
+    border: 0 !important;
+    border-block-end: 1px solid var(--border) !important;
+    border-radius: var(--wf-header-radius, 0 0 23px 23px) !important;
+    background: var(--wf-workspace-chrome) !important;
+    color: var(--text);
+    box-shadow: var(--wf-workspace-chrome-shadow) !important;
+    overflow: visible !important;
+    transform: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transition: none !important;
+  }
+  html.wf-section-mode body #mainContent #wfProductLabels .wf-label-toolbar { margin-block-end: 0 !important; }
+  html.wf-section-mode body #mainContent .page:not(#page-dashboard) .wf-heading-row {
+    grid-template-columns: var(--wf-workspace-control) minmax(0, 1fr) var(--wf-workspace-control) !important;
+    gap: 10px !important;
+    min-inline-size: 0;
+    min-block-size: var(--wf-workspace-control);
+  }
+  html.wf-section-mode body #mainContent .page:not(#page-dashboard) :is(.co-toolbar-row, .page-toolbar-row).wf-heading-row { margin-block: 0 !important; }
+  html.wf-section-mode body #mainContent .page:not(#page-dashboard) :is(h1.wf-centered-heading, h2.wf-centered-heading, .wf-centered-heading h1, .wf-centered-heading h2) {
+    margin: 0 !important;
+    font-size: clamp(18px, 2vw, 24px) !important;
+    font-weight: 750 !important;
+    line-height: 1.4 !important;
+    letter-spacing: normal !important;
+    color: var(--text) !important;
+    overflow-wrap: anywhere;
+  }
+  html.wf-section-mode body #mainContent .page:not(#page-dashboard) .wf-centered-heading p {
+    margin-block: 3px 0 !important;
+    font-size: 13px !important;
+    line-height: 1.5;
+    color: var(--text2);
+    overflow-wrap: anywhere;
+  }
+  html.wf-section-mode body #mainContent .page:not(#page-dashboard) .wf-heading-row > :is(.sct-back-btn, .wf-section-menu, #wfNotificationsButton) {
+    inline-size: var(--wf-workspace-control) !important;
+    min-inline-size: var(--wf-workspace-control) !important;
+    block-size: var(--wf-workspace-control) !important;
+    min-block-size: var(--wf-workspace-control) !important;
+    flex-basis: var(--wf-workspace-control) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 13px !important;
+    background: var(--card) !important;
+    color: var(--brand-primary) !important;
+    box-shadow: none !important;
+    touch-action: manipulation;
+  }
+
+  /* Reserve the notification slot beside the title, including docked Back. */
+  html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot {
+    grid-template-columns: var(--wf-workspace-control) var(--wf-workspace-control) minmax(0, 1fr) var(--wf-workspace-control) var(--wf-workspace-control) !important;
+  }
+  /* Playback started from reports/settings keeps its transport next to the bell. */
+  html.wf-section-mode.wf-speech-toolbar-active body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot.wf-speech-toolbar-host {
+    grid-template-columns: var(--wf-workspace-control) minmax(0, 1fr) var(--wf-workspace-control) var(--wf-workspace-control) !important;
+    column-gap: 6px !important;
+  }
+  html.wf-section-mode.wf-speech-toolbar-active body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot > #wfSpeechControls { grid-column: 2 !important; }
+  html.wf-section-mode.wf-speech-toolbar-active body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot > #wfNotificationsButton { grid-column: 3 !important; }
+  html.wf-section-mode.wf-speech-toolbar-active body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot > .wf-section-menu { grid-column: 4 !important; }
+  html.wf-section-mode.wf-speech-toolbar-active body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) {
+    grid-template-columns: minmax(0, 1fr) var(--wf-workspace-control) var(--wf-workspace-control) !important;
+  }
+  html.wf-section-mode.wf-speech-toolbar-active body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > #wfSpeechControls { grid-column: 1 !important; }
+  html.wf-section-mode.wf-speech-toolbar-active body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > #wfNotificationsButton { grid-column: 2 !important; }
+  html.wf-section-mode.wf-speech-toolbar-active body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > .wf-section-menu { grid-column: 3 !important; }
+  html.wf-section-mode.wf-speech-toolbar-active body #mainContent #wfSpeechControls {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    touch-action: pan-x pan-y pinch-zoom;
+    justify-content: flex-start;
+  }
+  html body #mainContent .page:not(#page-dashboard) .wf-heading-actions {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px !important;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  html body #mainContent .page:not(#page-dashboard) .wf-heading-actions:empty { display: none; }
+  html body #mainContent .page:not(#page-dashboard) .wf-heading-actions > div:has(> .btn) {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    flex-wrap: wrap !important;
+    flex-shrink: 1 !important;
+    gap: 8px !important;
+  }
+  html body #mainContent .page:not(#page-dashboard) :is(.btn, .wf-search-toggle) {
+    box-sizing: border-box;
+    min-inline-size: 0;
+    min-block-size: 44px;
+    max-inline-size: 100%;
+    border-radius: 12px !important;
+    font-family: inherit;
+    font-size: 14px !important;
+    line-height: 1.45;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    touch-action: manipulation;
+  }
+  html body #mainContent .page:not(#page-dashboard) :is(input.fc, select.fc, textarea.fc) {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    box-sizing: border-box;
+    scroll-margin-block: 12px 24px;
+  }
+  html body #mainContent .page:not(#page-dashboard) :is(.inv-tbl-wrap, .co-stats-bar, .wf-label-queue) {
+    touch-action: pan-x pan-y pinch-zoom !important;
+    overscroll-behavior-block: auto;
+  }
+
+  /* Fullscreen work dialogs already own separate scrolling bodies. Share only
+     the header treatment; do not add another scroll container around them. */
+  html body :is(#wfSettingsDialog > header, #pdfModal > .modal > .pdf-bar,
+    #printOptionsModal .modal-hdr, #scannerModal > .modal > .wf-centered-modal-header,
+    #wfUnifiedShareOverlay .wf-share-head, #wfExcelShareReady .wf-fullscreen-header,
+    #wfProductUpdateReview .wf-fullscreen-header) {
+    box-sizing: border-box;
+    flex-shrink: 0;
+    min-inline-size: 0;
+    min-block-size: calc(72px + env(safe-area-inset-top, 0px));
+    padding-block: calc(12px + env(safe-area-inset-top, 0px)) 12px !important;
+    border-block-end: 1px solid var(--border) !important;
+    border-radius: var(--wf-header-radius, 0 0 23px 23px) !important;
+    background: var(--wf-workspace-chrome) !important;
+    color: var(--text) !important;
+    box-shadow: var(--wf-workspace-chrome-shadow) !important;
+    z-index: 3;
+  }
+  html body :is(#wfSettingsDialog > header, #printOptionsModal .modal-hdr, #scannerModal .wf-centered-modal-header) {
+    grid-template-columns: var(--wf-workspace-control) minmax(0, 1fr) var(--wf-workspace-control);
+  }
+  html body :is(#wfSettingsDialog > .wf-settings-content,
+    #pdfModal > .modal > div:has(> #invoicePaperWrap),
+    #wfUnifiedShareOverlay .wf-share-choices, #currCalcModal .curr-calc-body) {
+    min-block-size: 0;
+    min-inline-size: 0;
+    scrollbar-gutter: stable;
+    scroll-padding-block: 16px 24px;
+  }
+  html body :is(#wfSettingsDialog, #printOptionsModal, #scannerModal,
+    #wfUnifiedShareOverlay, #wfExcelShareReady, #wfProductUpdateReview, #currCalcModal) :is(.btn, .modal-close, .wf-share-close) {
+    min-block-size: 44px;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    touch-action: manipulation;
+  }
+  html body :is(#wfSettingsDialog > header > button, #printOptionsModal .modal-close,
+    #scannerModal .modal-close, #wfUnifiedShareOverlay .wf-share-close,
+    #wfExcelShareReady .modal-close, #wfProductUpdateReview .modal-close) {
+    inline-size: var(--wf-workspace-control) !important;
+    min-inline-size: var(--wf-workspace-control) !important;
+    block-size: var(--wf-workspace-control) !important;
+    min-block-size: var(--wf-workspace-control) !important;
+    flex-basis: var(--wf-workspace-control) !important;
+    border-radius: 13px;
+  }
+
+  /* Compact confirmations remain compact and fit between physical safe areas. */
+  html:root body :is(#deleteModal, #deliverModal, #wfRestoreModal, #currCalcModal) {
+    --wf-confirm-top: max(16px, env(safe-area-inset-top, 0px));
+    --wf-confirm-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    padding: var(--wf-confirm-top) max(16px, env(safe-area-inset-right, 0px)) var(--wf-confirm-bottom) max(16px, env(safe-area-inset-left, 0px)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  html:root body :is(#deleteModal > .delete-modal, #deliverModal > .deliver-modal,
+    #wfRestoreModal > .wf-restore-modal, #currCalcModal > .curr-calc-modal) {
+    max-block-size: calc(100dvh - var(--wf-confirm-top) - var(--wf-confirm-bottom)) !important;
+    min-block-size: 0;
+    max-inline-size: 100%;
+    color: var(--text);
+  }
+  html body #currCalcModal .curr-calc-header { background: var(--wf-workspace-chrome) !important; }
+
+  @media (max-width: 1024px) {
+    html.wf-section-mode { --wf-workspace-end: calc(96px + env(safe-area-inset-bottom, 0px)); }
+    html.wf-section-mode body #mainContent:has(> #page-add-company.active:not(.wf-shared-actions-docked)) { --wf-workspace-end: calc(160px + env(safe-area-inset-bottom, 0px)); }
+  }
+
+  @media (max-width: 680px) {
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot {
+      grid-template-columns: var(--wf-workspace-control) minmax(0, 1fr) var(--wf-workspace-control) var(--wf-workspace-control) !important;
+      column-gap: 6px !important;
+    }
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot > .wf-centered-heading { grid-column: 2 !important; }
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot > #wfNotificationsButton { grid-column: 3 !important; }
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot > .wf-section-menu { grid-column: 4 !important; }
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) {
+      grid-template-columns: minmax(0, 1fr) var(--wf-workspace-control) var(--wf-workspace-control) !important;
+    }
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > .wf-centered-heading { grid-column: 1 !important; }
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > #wfNotificationsButton { grid-column: 2 !important; }
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > .wf-section-menu { grid-column: 3 !important; }
+    html body #mainContent .page:not(#page-dashboard) .wf-heading-actions > div:has(> .btn) { flex: 1 1 100%; }
+    html body #mainContent .page:not(#page-dashboard) .wf-heading-actions :is(.btn, .wf-smart-search) { flex-shrink: 1 !important; }
+    html body #mainContent .page:not(#page-dashboard) :is(input.fc, select.fc, textarea.fc),
+    html body :is(#deleteModal, #deliverModal, #wfRestoreModal, #printOptionsModal, #scannerModal) :is(input.fc, select.fc, textarea.fc, .dm-input) { font-size: 16px !important; }
+  }
+  @media (any-pointer: coarse) {
+    :root { --wf-workspace-control: 48px; }
+    html body #mainContent .page:not(#page-dashboard) :is(.btn, .wf-search-toggle),
+    html body :is(#wfSettingsDialog, #pdfModal, #printOptionsModal, #scannerModal,
+      #deleteModal, #deliverModal, #wfRestoreModal, #wfUnifiedShareOverlay,
+      #wfExcelShareReady, #wfProductUpdateReview, #currCalcModal) button:not(#bottomNav *) {
+      min-block-size: 48px !important;
+    }
+    html body #wfProductLabels button { min-block-size: 48px; }
+    html body #wfProductLabels :is(.wf-label-back, .wf-label-prev, .wf-label-next, .wf-label-choice-preview) {
+      inline-size: 48px; min-inline-size: 48px; block-size: 48px;
+    }
+    html body #wfProductLabels .wf-label-toolbar { grid-template-columns: 48px minmax(0, 1fr) auto; }
+    html body #wfProductLabels .wf-label-preview-nav { grid-template-columns: 48px minmax(0, 1fr) 48px; }
+    html body #wfProductLabels .wf-label-choice { grid-template-columns: minmax(0, 1fr) 48px; }
+    @container wf-product-labels (max-width: 460px) {
+      html body #wfProductLabels .wf-label-toolbar { grid-template-columns: 48px minmax(0, 1fr) minmax(80px, 108px); }
+    }
+  }
+  /* A keyboard or very short landscape viewport must retain access to the body. */
+  html.wf-touch-keyboard-open.wf-section-mode body #mainContent .page:not(#page-dashboard) :is(.co-page-sticky, .sct-sticky-header, .page-sticky-bar, .wf-label-toolbar) { position: static !important; }
+  @media (max-height: 420px) {
+    html.wf-section-mode body #mainContent #wfProductLabels .wf-label-toolbar { position: static !important; }
+    html.wf-section-mode body #mainContent .page:not(#page-dashboard) .wf-centered-heading p { display: none; }
+  }
+
+  /* In a short mobile viewport, pin only the existing primary controls. The
+     catalog filters and editing actions retain their normal document flow. */
+  @media (max-width: 1024px) and (max-height: 420px) {
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) {
+      --wf-short-bar-height: calc(72px + env(safe-area-inset-top, 0px));
+      --wf-short-title-start: calc(var(--wf-page-gutter) + var(--wf-workspace-control) + 6px);
+      --wf-short-title-end: calc(var(--wf-page-gutter) + var(--wf-workspace-control) + 6px);
+    }
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) > :is(.co-page-sticky, .wf-invoice-header) {
+      position: static !important;
+      min-block-size: 0 !important;
+      padding-block: 0 12px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) > :is(.co-page-sticky, .wf-invoice-header)::before {
+      content: '';
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 600;
+      block-size: var(--wf-short-bar-height);
+      box-sizing: border-box;
+      border-block-end: 1px solid var(--border);
+      border-radius: var(--wf-header-radius, 0 0 23px 23px);
+      background: var(--wf-workspace-chrome);
+      box-shadow: var(--wf-workspace-chrome-shadow);
+      pointer-events: none;
+    }
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) :is(.co-toolbar-row, .wf-invoice-header).wf-heading-row {
+      min-block-size: 0;
+      padding-block-start: var(--wf-short-bar-height) !important;
+    }
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) .wf-heading-row > :is(.sct-back-btn, .wf-section-menu, #wfNotificationsButton, #wfSpeechControls) {
+      position: fixed !important;
+      inset-block-start: calc(12px + env(safe-area-inset-top, 0px)) !important;
+      inset-block-end: auto !important;
+      z-index: 601 !important;
+      margin: 0 !important;
+      transform: none !important;
+    }
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) .wf-heading-row > .sct-back-btn { inset-inline: var(--wf-page-gutter) auto !important; }
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) .wf-heading-row > .wf-section-menu { inset-inline: auto var(--wf-page-gutter) !important; }
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) .wf-heading-row > #wfNotificationsButton { inset-inline: auto calc(var(--wf-page-gutter) + var(--wf-workspace-control) + 6px) !important; }
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) .wf-heading-row.wf-notifications-slot {
+      --wf-short-title-end: calc(var(--wf-page-gutter) + 2 * var(--wf-workspace-control) + 12px);
+    }
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) .wf-heading-row:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) { --wf-short-title-start: var(--wf-page-gutter); }
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) .wf-heading-row > .wf-centered-heading {
+      position: fixed !important;
+      inset-block-start: calc(12px + env(safe-area-inset-top, 0px)) !important;
+      inset-block-end: auto !important;
+      inset-inline: var(--wf-short-title-start) var(--wf-short-title-end) !important;
+      z-index: 601;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      inline-size: auto !important;
+      block-size: var(--wf-workspace-control) !important;
+      min-inline-size: 0 !important;
+      margin: 0 !important;
+      font-size: 17px !important;
+      line-height: 1.25 !important;
+      transform: none !important;
+    }
+    html.wf-section-mode body #mainContent #page-create-invoice .wf-heading-row > .wf-centered-heading h1 { font-size: 17px !important; line-height: 1.25 !important; }
+    html.wf-section-mode body #mainContent :is(.page:has(> .co-page-sticky), #page-create-invoice):not(.wf-label-mode) .wf-heading-row > #wfSpeechControls {
+      inset-inline: var(--wf-short-title-start) var(--wf-short-title-end) !important;
+      inline-size: auto !important;
+      justify-content: flex-start;
+    }
+  }
+}

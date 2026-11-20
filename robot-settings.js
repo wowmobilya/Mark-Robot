@@ -1,4 +1,4 @@
-/* Infinity Robot preferences and optional local camera movement tracking.
+/* Mark Robot preferences and optional local camera movement tracking.
    Camera pixels stay in a small canvas in this page. No recording or upload. */
 (() => {
   'use strict';

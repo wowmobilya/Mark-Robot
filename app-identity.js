@@ -1,9 +1,9 @@
 /* Application identity is independent from the company identity on documents. */
 (() => {
   'use strict';
-  const DEFAULT_NAME = 'INFINITY';
-  const DEFAULT_LOGO = './assets/infinity-logo.svg';
-  const DEFAULT_ICON = './app-icon-512.png';
+  const DEFAULT_NAME = 'WOW FURNITURE';
+  const DEFAULT_LOGO = './assets/wow-furniture-logo.svg';
+  const DEFAULT_ICON = './app-icon-512.png?v=198';
   const MAX_IMAGE_LENGTH = 2100000;
   const locales = ['ar', 'en', 'tr', 'fr', 'ru'];
   const modes = ['default', 'app', 'custom'];
@@ -14,10 +14,14 @@
   }
   function normalize(settings) {
     const raw = settings?.appIdentity || {};
-    const name = cleanName(raw.name);
-    const logo = cleanImage(raw.logo) || '';
-    const installIcon = cleanImage(raw.installIcon) || '';
-    let installIconMode = modes.includes(raw.installIconMode) ? raw.installIconMode : 'default';
+    const savedName = cleanName(raw.name);
+    const legacyDefault = /^(?:infinity|إنفنتي|انفنتي)$/i.test(savedName);
+    // Resolve the retired stock identity on read, including its uploaded
+    // artwork. Unrelated custom identities and stored company data stay intact.
+    const name = legacyDefault ? DEFAULT_NAME : savedName;
+    const logo = legacyDefault ? '' : cleanImage(raw.logo) || '';
+    const installIcon = legacyDefault ? '' : cleanImage(raw.installIcon) || '';
+    let installIconMode = !legacyDefault && modes.includes(raw.installIconMode) ? raw.installIconMode : 'default';
     if (installIconMode === 'custom' && !installIcon) installIconMode = 'default';
     return { version: 1, name: name && name.length <= 60 ? name : DEFAULT_NAME, logo, installIcon, installIconMode };
   }
@@ -71,10 +75,10 @@
     appLogo: ['شعار التطبيق', 'App logo', 'Uygulama logosu', 'Logo de l’application', 'Логотип приложения'],
     appPreview: ['معاينة داخل البرنامج', 'In-app preview', 'Uygulama önizlemesi', 'Aperçu dans l’application', 'Предпросмотр приложения'],
     uploadLogo: ['اختيار شعار', 'Choose a logo', 'Logo seçin', 'Choisir un logo', 'Выберите логотип'],
-    resetLogo: ['استعادة شعار INFINITY', 'Restore INFINITY logo', 'INFINITY logosunu geri yükle', 'Rétablir le logo INFINITY', 'Вернуть логотип INFINITY'],
+    resetLogo: ['استعادة شعار WOW FURNITURE', 'Restore WOW FURNITURE logo', 'WOW FURNITURE logosunu geri yükle', 'Rétablir le logo WOW FURNITURE', 'Вернуть логотип WOW FURNITURE'],
     imageHint: ['PNG أو JPG أو WebP، حتى 5 ميغابايت. تظهر الصورة كاملة دون قص.', 'PNG, JPG or WebP, up to 5 MB. The whole image is preserved without cropping.', 'PNG, JPG veya WebP, en fazla 5 MB. Görsel kırpılmadan bütünüyle korunur.', 'PNG, JPG ou WebP, 5 Mo maximum. L’image entière est conservée sans recadrage.', 'PNG, JPG или WebP, до 5 МБ. Изображение сохраняется целиком без обрезки.'],
     installIcon: ['أيقونة التثبيت', 'Installation icon', 'Yükleme simgesi', 'Icône d’installation', 'Значок установки'],
-    defaultIcon: ['أيقونة INFINITY', 'INFINITY icon', 'INFINITY simgesi', 'Icône INFINITY', 'Значок INFINITY'],
+    defaultIcon: ['أيقونة WOW FURNITURE', 'WOW FURNITURE icon', 'WOW FURNITURE simgesi', 'Icône WOW FURNITURE', 'Значок WOW FURNITURE'],
     appIcon: ['استخدام شعار التطبيق', 'Use the app logo', 'Uygulama logosunu kullan', 'Utiliser le logo de l’application', 'Использовать логотип приложения'],
     customIcon: ['أيقونة خاصة', 'Custom icon', 'Özel simge', 'Icône personnalisée', 'Свой значок'],
     uploadIcon: ['اختيار صورة للأيقونة', 'Choose an icon image', 'Simge görseli seçin', 'Choisir une image pour l’icône', 'Выберите изображение значка'],
@@ -110,7 +114,7 @@
   if (!tabs || !content) return;
   const tab = node('button', 'tab-btn'); tab.type = 'button'; tab.id = 'wf-settings-tab-app-identity';
   tab.setAttribute('onclick', "switchTab('app-identity')"); tab.setAttribute('aria-controls', 'stab-app-identity');
-  const mark = node('span', 'wf-app-identity-mark', '∞'); mark.setAttribute('aria-hidden', 'true');
+  const mark = node('img', 'wf-app-identity-mark'); mark.src = DEFAULT_LOGO; mark.alt = ''; mark.width = 62; mark.height = 24; mark.setAttribute('aria-hidden', 'true');
   tab.append(mark, translated('span', 'title')); tabs.append(tab);
   const panel = node('section', 'wf-app-identity-settings'); panel.id = 'stab-app-identity'; panel.style.display = 'none';
   panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); content.append(panel);
@@ -243,6 +247,10 @@
     const identity = manager.current(), media = sources(identity);
     document.documentElement.classList.add('wf-app-identity-active');
     const navLogo = document.getElementById('navLogo');
+    const wordmark = document.querySelector('.navbar .wf-nav-wordmark');
+    // Keep the real logo with the visible home identity; the former logo
+    // wrapper is hidden by the shared mobile/desktop navigation layout.
+    if (navLogo && wordmark && navLogo.parentElement !== wordmark) wordmark.append(navLogo);
     if (navLogo) { let image = navLogo.querySelector('img'); if (!image) { image = node('img'); navLogo.replaceChildren(image); } paintImage(image, media.logo); }
     for (const id of ['wfSidebarLogo', 'about-app-logo']) { const image = document.getElementById(id); if (image) paintImage(image, media.logo); }
     setName(document.querySelector('.navbar .wf-nav-wordmark > bdi'), identity.name, 'strong');

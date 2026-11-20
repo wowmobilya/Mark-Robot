@@ -1,69 +1,275 @@
-/* One native dialog, with its original close/focus behavior and genuine photo. */
+/* The native developer workspace uses measured pages, never a scroll surface. */
 @media screen {
   html:root body #wfDevDialog.wf-developer-profile {
-    inline-size: min(640px, calc(100vw - 28px)); max-inline-size: calc(100vw - 28px);
-    max-block-size: min(820px, calc(100dvh - 28px)); padding: 0 !important;
-    border-radius: 20px !important; overflow: hidden; text-align: start;
+    --dev-surface: var(--window-surface, var(--card, #fff));
+    --dev-muted: var(--window-muted, var(--input, #edf3f4));
+    --dev-line: var(--window-edge, var(--border, #d7e0e5));
+    --dev-accent: var(--brand-primary, #245b6c);
+    --dev-gutter: max(clamp(12px, 2.2vw, 24px), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    position: fixed;
+    inset: 0;
+    inline-size: 100% !important;
+    max-inline-size: none !important;
+    block-size: 100vh !important;
+    block-size: 100dvh !important;
+    min-block-size: 0;
+    max-block-size: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    color: var(--text, #213547);
+    text-align: start;
   }
   html:root body #wfDevDialog.wf-developer-profile[open] { display: flex; flex-direction: column; }
+  #wfDevDialog.wf-developer-profile,
+  #wfDevDialog.wf-developer-profile * { box-sizing: border-box; animation: none !important; transition: none !important; }
   html body #wfDevDialog.wf-developer-profile > header {
-    display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto;
-    gap: 12px; padding: 13px 18px; margin: 0; border-block-end: 1px solid var(--dialog-line, var(--border));
-    background: var(--window-surface, var(--card));
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 8px 16px;
+    min-inline-size: 0;
+    margin: 0;
+    padding-block: calc(12px + env(safe-area-inset-top, 0px)) 12px !important;
+    padding-inline: max(var(--dev-gutter), calc((100% - 1000px) / 2)) !important;
+    border: 0;
+    border-block-end: 1px solid var(--dev-line);
+    background: var(--dev-surface);
   }
-  #wfDevDialog.wf-developer-profile > header > strong { color: var(--text); font-size: 14px; line-height: 1.6; }
-  html body #wfDevDialog.wf-developer-profile > header > button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 11px; padding: 0; display: grid; place-items: center; cursor: pointer; }
-  #wfDevDialog.wf-developer-profile .wf-dev-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px; scrollbar-width: thin; }
-  #wfDevDialog.wf-developer-profile .wf-dev-profile { grid-template-columns: 96px minmax(0, 1fr); align-items: start; gap: 17px; }
-  #wfDevDialog.wf-developer-profile .wf-dev-photo { display: block; padding: 4px; border: 1px solid var(--dialog-line, var(--border)); background: var(--input); border-radius: 18px; }
-  html body #wfDevDialog.wf-developer-profile .wf-dev-photo img { display: block; width: 86px; height: 98px; max-width: 100%; aspect-ratio: auto; object-fit: cover; border-radius: 13px; }
-  #wfDevDialog.wf-developer-profile .wf-dev-bio { display: block; padding: 0; min-width: 0; }
-  #wfDevDialog.wf-developer-profile .wf-dev-role { display: block; font-size: 10px; line-height: 1.6; color: var(--ui-accent, var(--brand-primary)); font-weight: 750; margin-block-end: 4px; }
-  #wfDevDialog.wf-developer-profile #wfDevName { font-size: 20px; line-height: 1.5; font-weight: 800; color: var(--text); margin: 0 0 6px; overflow-wrap: anywhere; }
-  html body #wfDevDialog.wf-developer-profile :is(.wf-dev-description, .wf-dev-approach) { color: var(--text2); font-size: 12px; line-height: 1.85; margin: 0; }
-  html body #wfDevDialog.wf-developer-profile .wf-dev-approach { margin-block: 12px 18px; }
-  #wfDevDialog.wf-developer-profile .wf-dev-focus h3 { color: var(--text); font-size: 13px; line-height: 1.6; margin: 0 0 10px; }
-  #wfDevDialog.wf-developer-profile .wf-dev-areas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; list-style: none; padding: 0; margin: 0; }
-  #wfDevDialog.wf-developer-profile .wf-dev-areas > li { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 13px; background: var(--card); }
-  #wfDevDialog.wf-developer-profile .wf-dev-areas strong { display: block; font-size: 12px; line-height: 1.6; color: var(--text); margin-block-start: 8px; }
-  html body #wfDevDialog.wf-developer-profile .wf-dev-areas p { font-size: 11px; line-height: 1.8; margin: 5px 0 0; color: var(--text2); }
-  #wfDevDialog.wf-developer-profile .wf-dev-icon { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; color: var(--ui-accent, var(--brand-primary)); background: var(--input); }
-  #wfDevDialog.wf-developer-profile .wf-dev-icon svg { display: block; width: 20px; height: 20px; }
-  #wfDevDialog.wf-developer-profile .wf-dev-tone-business { color: #26777d; background: color-mix(in srgb, #26777d 10%, var(--card)); }
-  #wfDevDialog.wf-developer-profile .wf-dev-tone-robotics { color: #a06b22; background: color-mix(in srgb, #bb8737 11%, var(--card)); }
-  #wfDevDialog.wf-developer-profile .wf-dev-tone-ai { color: #627db3; background: color-mix(in srgb, #627db3 11%, var(--card)); }
-  #wfDevDialog.wf-developer-profile .wf-dev-app { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center; padding: 13px; margin-block: 16px; border: 1px solid var(--dialog-line, var(--border)); border-radius: 14px; background: var(--window-muted, var(--input)); }
-  html body #wfDevDialog.wf-developer-profile .wf-dev-app > img { display: block; width: 52px; height: 52px; padding: 3px; border-radius: 11px; object-fit: contain; background: #fff; }
-  #wfDevDialog.wf-developer-profile .wf-dev-app > div { min-width: 0; }
-  #wfDevDialog.wf-developer-profile .wf-dev-app small { display: block; font-size: 10px; color: var(--text2); margin-block-end: 2px; }
-  #wfDevDialog.wf-developer-profile .wf-dev-app strong { display: block; font-size: 15px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
-  html body #wfDevDialog.wf-developer-profile .wf-dev-app p { font-size: 11px; line-height: 1.75; margin: 4px 0 0; }
-  #wfDevDialog.wf-developer-profile .wf-dev-code { overflow: hidden; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--brand-primary) 25%, #17333e); border-radius: 14px; color: #c4d6de; background: #142c37; }
-  #wfDevDialog.wf-developer-profile .wf-dev-code-header { display: flex; align-items: center; justify-content: space-between; color: #9bb7c3; font-size: 10px; line-height: 1.5; margin-block-end: 8px; }
-  #wfDevDialog.wf-developer-profile .wf-dev-code-header .wf-dev-icon { color: #92c8c7; width: 24px; height: 24px; background: transparent; }
-  #wfDevDialog.wf-developer-profile .wf-dev-code pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; text-align: left; }
-  #wfDevDialog.wf-developer-profile .wf-dev-code-line { display: block; animation: none; }
-  #wfDevDialog.wf-developer-profile .wf-dev-code-line:first-child { color: #8fc9c7; }
-  #wfDevDialog.wf-developer-profile .wf-dev-code-identity { color: #e4c58d; }
-  #wfDevDialog.wf-developer-profile .wf-dev-code-cursor { color: #e4c58d; animation: none; }
-  html body #wfDevDialog.wf-developer-profile .wf-dev-footer { font-size: 10px; line-height: 1.8; margin: 11px 0 0; color: var(--text2); text-align: center; }
-  #wfDevDialog.wf-developer-profile .wf-dev-body a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ui-accent, var(--brand-primary)); }
+  #wfDevDialog.wf-developer-profile > header > strong {
+    grid-column: 1;
+    grid-row: 1;
+    min-inline-size: 0;
+    color: var(--text2, #5d6f7d);
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+  #wfDevDialog.wf-developer-profile .wf-dev-tools {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-inline-size: 0;
+  }
+  #wfDevDialog.wf-developer-profile .wf-dev-mark {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    inline-size: 104px;
+    padding: 6px;
+    border: 1px solid var(--dev-line);
+    border-radius: 16px;
+    background: var(--dev-muted);
+    color: var(--text, #171923);
+  }
+  #wfDevDialog.wf-developer-profile .wf-dev-mark > svg { display: block; inline-size: 90px; block-size: auto; aspect-ratio: 600 / 336; fill: currentColor; }
+  #wfDevDialog.wf-developer-profile .wf-dev-mark-brow,
+  #wfDevDialog.wf-developer-profile .wf-dev-mark-mouth { fill: none; stroke: currentColor; stroke-linecap: round; }
+  #wfDevDialog.wf-developer-profile .wf-dev-mark-brow { stroke-width: 7; }
+  #wfDevDialog.wf-developer-profile .wf-dev-mark-mouth { stroke-width: 9; }
+  #wfDevDialog.wf-developer-profile .wf-dev-mark-glint { fill: var(--dev-muted); }
+  #wfDevDialog.wf-developer-profile .wf-dev-mark-soft-glint { fill: color-mix(in srgb, var(--dev-muted) 80%, currentColor); }
+  #wfDevDialog.wf-developer-profile .wf-dev-mark-label { font-size: 14px; font-weight: 700; line-height: 1.3; }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-tools > button {
+    display: grid;
+    place-items: center;
+    inline-size: 48px;
+    block-size: 48px;
+    min-inline-size: 48px;
+    min-block-size: 48px;
+    padding: 0;
+    border: 1px solid var(--dev-line);
+    border-radius: 14px;
+    background: var(--dev-muted);
+    color: var(--dev-accent);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  #wfDevDialog.wf-developer-profile .wf-dev-profile {
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    min-inline-size: 0;
+  }
+  #wfDevDialog.wf-developer-profile .wf-dev-photo {
+    display: block;
+    min-inline-size: 0;
+    padding: 3px;
+    border: 1px solid var(--dev-line);
+    border-radius: 15px;
+    background: var(--dev-surface);
+  }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-photo img {
+    display: block;
+    inline-size: 64px;
+    block-size: 76px;
+    max-inline-size: 100%;
+    aspect-ratio: auto;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 11px;
+  }
+  #wfDevDialog.wf-developer-profile .wf-dev-bio { display: block; min-inline-size: 0; padding: 0; }
+  #wfDevDialog.wf-developer-profile #wfDevName {
+    margin: 0;
+    color: var(--text, #213547);
+    font-size: clamp(20px, 2.6vw, 28px);
+    font-weight: 800;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-inline-size: 0;
+    min-block-size: 0;
+    padding: var(--dev-gutter);
+    overflow: hidden !important;
+    background: var(--dev-muted);
+  }
+  #wfDevDialog.wf-developer-profile .wf-dev-panel {
+    position: relative;
+    flex: 1 1 0;
+    align-self: center;
+    inline-size: 100%;
+    max-inline-size: 1000px;
+    min-inline-size: 0;
+    min-block-size: 0;
+    overflow: hidden;
+    border: 1px solid var(--dev-line);
+    border-radius: 22px;
+    background: var(--dev-surface);
+  }
+  #wfDevDialog.wf-developer-profile :is(.wf-dev-slide-host, .wf-dev-measure) {
+    position: absolute;
+    inset: clamp(14px, 2.2vw, 24px);
+    min-inline-size: 0;
+    min-block-size: 0;
+    overflow: hidden;
+  }
+  #wfDevDialog.wf-developer-profile .wf-dev-slide-host { display: grid; align-items: center; }
+  #wfDevDialog.wf-developer-profile .wf-dev-measure { visibility: hidden; pointer-events: none; }
+  #wfDevDialog.wf-developer-profile .wf-dev-page { display: grid; align-content: start; gap: 18px; inline-size: min(100%, 72ch); min-inline-size: 0; margin-inline: auto; }
+  #wfDevDialog.wf-developer-profile .wf-dev-block { display: grid; gap: 10px; min-inline-size: 0; }
+  #wfDevDialog.wf-developer-profile .wf-dev-block h3 {
+    margin: 0;
+    color: var(--text, #213547);
+    font-size: 18px;
+    font-weight: 750;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-page-text {
+    margin: 0;
+    color: var(--text2, #5d6f7d);
+    font-size: 16px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  #wfDevDialog.wf-developer-profile .wf-dev-block-heading { display: flex; align-items: center; gap: 10px; min-inline-size: 0; }
+  #wfDevDialog.wf-developer-profile .wf-dev-icon {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    inline-size: 32px;
+    block-size: 32px;
+    border-radius: 10px;
+    color: var(--dev-accent);
+    background: var(--dev-muted);
+  }
+  #wfDevDialog.wf-developer-profile .wf-dev-icon svg { display: block; inline-size: 22px; block-size: 22px; }
+  #wfDevDialog.wf-developer-profile :is(.wf-dev-tools > button, .wf-dev-page-actions > button) .wf-dev-icon { inline-size: 24px; block-size: 24px; color: inherit; background: transparent; }
+  #wfDevDialog.wf-developer-profile .wf-dev-app-identity { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-inline-size: 0; }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-app-identity > img { display: block; flex: 0 0 auto; inline-size: clamp(84px, 26vw, 152px); max-inline-size: 100%; block-size: auto; aspect-ratio: 423 / 165; padding: 0; border: 1px solid var(--dev-line); border-radius: 10px; object-fit: contain; background: #fff; }
+  #wfDevDialog.wf-developer-profile .wf-dev-app-identity > bdi { flex: 1 1 12ch; min-inline-size: 0; color: var(--text, #213547); font-size: 16px; font-weight: 750; line-height: 1.5; overflow-wrap: anywhere; }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-code pre {
+    min-inline-size: 0;
+    padding: 14px;
+    border-radius: 12px;
+    color: #c4d6de;
+    background: #142c37;
+    direction: ltr;
+    font: 14px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+    text-align: left;
+  }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-navigation {
+    flex: 0 0 auto;
+    min-inline-size: 0;
+    padding: 10px var(--dev-gutter) calc(12px + env(safe-area-inset-bottom, 0px));
+    border-block-start: 1px solid var(--dev-line);
+    background: var(--dev-surface);
+  }
+  #wfDevDialog.wf-developer-profile :is(.wf-dev-progress, .wf-dev-page-actions) { max-inline-size: 1000px; margin-inline: auto; }
+  #wfDevDialog.wf-developer-profile .wf-dev-progress { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-block-end: 8px; }
+  #wfDevDialog.wf-developer-profile .wf-dev-progress strong { min-inline-size: 0; font-size: 14px; font-weight: 650; line-height: 1.4; color: var(--text2, #5d6f7d); overflow-wrap: anywhere; }
+  #wfDevDialog.wf-developer-profile .wf-dev-progress output { flex: none; color: var(--text, #213547); font-size: 14px; font-weight: 700; line-height: 1.4; direction: ltr; font-variant-numeric: tabular-nums; }
+  #wfDevDialog.wf-developer-profile .wf-dev-page-actions { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; gap: 12px; }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-page-actions > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 0;
+    min-block-size: 48px;
+    block-size: 48px;
+    padding: 8px 12px;
+    border: 1px solid var(--dev-line);
+    border-radius: 13px;
+    background: var(--dev-muted);
+    color: var(--dev-accent);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-page-actions > .wf-dev-return { justify-self: center; inline-size: min(100%, 220px); border-color: var(--dev-accent); background: var(--dev-accent); color: #fff; }
+  #wfDevDialog.wf-developer-profile .wf-dev-page-actions > button:disabled { opacity: .4; cursor: default; }
+  html[dir="rtl"] #wfDevDialog.wf-developer-profile :is(.wf-dev-page-previous, .wf-dev-page-next) svg { transform: rotate(180deg); }
+  #wfDevDialog.wf-developer-profile :is(button, a):focus-visible { outline: 2px solid var(--dev-accent); outline-offset: 3px; }
+  #wfDevDialog.wf-developer-profile .wf-dev-panel:focus-visible { outline: 2px solid var(--dev-accent); outline-offset: -3px; }
+  #wfDevDialog.wf-developer-profile .wf-dev-panel a { display: inline-flex; align-items: center; min-block-size: 48px; color: var(--dev-accent); font-size: 14px; overflow-wrap: anywhere; }
   @media (max-width: 560px) {
-    #wfDevDialog.wf-developer-profile .wf-dev-areas { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-    #wfDevDialog.wf-developer-profile .wf-dev-areas > li { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px; }
-    #wfDevDialog.wf-developer-profile .wf-dev-areas strong { margin-block-start: 0; }
-    #wfDevDialog.wf-developer-profile .wf-dev-areas p { margin-block-start: 2px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-tools { flex-direction: column-reverse; gap: 4px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-mark { inline-size: 60px; padding: 3px; border-radius: 12px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-mark > svg { inline-size: 52px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-profile { grid-template-columns: 56px minmax(0, 1fr); gap: 12px; }
+    html body #wfDevDialog.wf-developer-profile .wf-dev-photo img { inline-size: 48px; block-size: 58px; }
+    #wfDevDialog.wf-developer-profile #wfDevName { font-size: 20px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-block h3 { font-size: 16px; }
+    html body #wfDevDialog.wf-developer-profile .wf-dev-page-text { font-size: 15px; line-height: 1.6; }
+    html body #wfDevDialog.wf-developer-profile .wf-dev-code pre { font-size: 14px; line-height: 1.6; padding: 10px; }
   }
-  @media (max-width: 400px) {
-    #wfDevDialog.wf-developer-profile .wf-dev-body { padding: 14px; }
-    #wfDevDialog.wf-developer-profile .wf-dev-profile { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; }
-    html body #wfDevDialog.wf-developer-profile .wf-dev-photo img { width: 66px; height: 80px; }
-    #wfDevDialog.wf-developer-profile #wfDevName { font-size: 18px; }
+  @media (max-height: 500px) {
+    html body #wfDevDialog.wf-developer-profile > header { gap: 8px 12px; padding-block: calc(6px + env(safe-area-inset-top, 0px)) 6px !important; }
+    #wfDevDialog.wf-developer-profile > header > strong { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    #wfDevDialog.wf-developer-profile .wf-dev-profile { grid-column: 1; grid-row: 1; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-tools { grid-row: 1; }
+    #wfDevDialog.wf-developer-profile .wf-dev-mark { inline-size: 60px; padding: 3px; border-radius: 12px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-mark > svg { inline-size: 44px; }
+    html body #wfDevDialog.wf-developer-profile .wf-dev-photo img { inline-size: 36px; block-size: 44px; }
+    #wfDevDialog.wf-developer-profile #wfDevName { font-size: 18px; line-height: 1.35; }
+    html body #wfDevDialog.wf-developer-profile .wf-dev-body { padding-block: 8px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-panel { border-radius: 16px; }
+    #wfDevDialog.wf-developer-profile :is(.wf-dev-slide-host, .wf-dev-measure) { inset: 10px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-page { gap: 12px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-block { gap: 8px; }
+    #wfDevDialog.wf-developer-profile .wf-dev-block h3 { font-size: 16px; line-height: 1.4; }
+    html body #wfDevDialog.wf-developer-profile .wf-dev-page-text { font-size: 14px; line-height: 1.45; }
+    html body #wfDevDialog.wf-developer-profile .wf-dev-code pre { padding: 8px; font-size: 14px; line-height: 1.45; }
+    html body #wfDevDialog.wf-developer-profile .wf-dev-navigation { padding-block: 6px calc(6px + env(safe-area-inset-bottom, 0px)); }
+    #wfDevDialog.wf-developer-profile .wf-dev-progress { margin-block-end: 4px; }
   }
-  @media (prefers-reduced-motion: no-preference) {
-    html:not([data-wf-motion="reduced"]) #wfDevDialog.wf-developer-profile[open][data-motion="on"] .wf-dev-code-line { animation: wfDeveloperLine .55s ease both; animation-delay: calc(var(--line-index) * .09s); }
-    html:not([data-wf-motion="reduced"]) #wfDevDialog.wf-developer-profile[open][data-motion="on"] .wf-dev-code-cursor { animation: wfDeveloperCursor 1.5s steps(2, jump-none) infinite; }
-  }
-  @keyframes wfDeveloperLine { from { opacity: .25; transform: translateX(4px); } to { opacity: 1; transform: translateX(0); } }
-  @keyframes wfDeveloperCursor { 50% { opacity: .2; } }
 }

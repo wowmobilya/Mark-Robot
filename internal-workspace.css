@@ -222,19 +222,19 @@
 
   @media (max-width: 680px) {
     /* Reserve only the controls that are present on a compact screen. */
-    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-program-speech-slot {
-      grid-template-columns: 44px minmax(0,1fr) 44px 44px !important;
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-notifications-slot {
+      grid-template-columns: var(--wf-workspace-control,44px) minmax(0,1fr) var(--wf-workspace-control,44px) var(--wf-workspace-control,44px) !important;
       column-gap: 6px !important;
     }
-    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-program-speech-slot > .wf-centered-heading {grid-column: 2 !important;}
-    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-program-speech-slot > #wfProgramSpeechButton {grid-column: 3 !important;}
-    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-program-speech-slot > .wf-section-menu {grid-column: 4 !important;}
-    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-program-speech-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) {
-      grid-template-columns: minmax(0,1fr) 44px 44px !important;
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-notifications-slot > .wf-centered-heading {grid-column: 2 !important;}
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-notifications-slot > #wfNotificationsButton {grid-column: 3 !important;}
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-notifications-slot > .wf-section-menu {grid-column: 4 !important;}
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) {
+      grid-template-columns: minmax(0,1fr) var(--wf-workspace-control,44px) var(--wf-workspace-control,44px) !important;
     }
-    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-program-speech-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > .wf-centered-heading {grid-column: 1 !important;}
-    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-program-speech-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > #wfProgramSpeechButton {grid-column: 2 !important;}
-    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-program-speech-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > .wf-section-menu {grid-column: 3 !important;}
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > .wf-centered-heading {grid-column: 1 !important;}
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > #wfNotificationsButton {grid-column: 2 !important;}
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page:not(#page-dashboard):not(#page-settings) .wf-heading-row.wf-notifications-slot:has(> .sct-back-btn[data-wf-shared-dock-source="back"]) > .wf-section-menu {grid-column: 3 !important;}
     html body #page-create-invoice .chip-row .chip {
       white-space: nowrap;
       flex-wrap: nowrap;

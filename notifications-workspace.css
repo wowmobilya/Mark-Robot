@@ -1,0 +1,89 @@
+/* The shared bell and its intentionally empty destination use WOW surfaces. */
+@media screen {
+  html body #wfNotificationsButton {
+    display: inline-flex; align-items: center; justify-content: center;
+    position: static; inset: auto; transform: none; margin: 0; padding: 0;
+    inline-size: var(--wf-workspace-control,44px); block-size: var(--wf-workspace-control,44px);
+    min-inline-size: 44px; min-block-size: 44px; flex: 0 0 auto;
+    box-sizing: border-box; border: 1px solid var(--border); border-radius: 13px;
+    background: var(--card); color: var(--ui-accent,#21566b);
+    box-shadow: 0 3px 9px rgba(33,86,107,.09); cursor: pointer; touch-action: manipulation;
+  }
+  html body #wfNotificationsButton[hidden],html body #wfNotificationsButton[data-location="none"] { display: none !important; }
+  #wfNotificationsButton svg { inline-size: 22px; block-size: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  html body #wfNotificationsButton[aria-current="page"] { background: var(--ui-soft); border-color: var(--ui-accent); }
+  html body #wfNotificationsButton:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
+  @media (hover:hover) {
+    html body #wfNotificationsButton:hover { background: var(--ui-soft); border-color: var(--ui-accent); }
+  }
+
+  html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page .wf-heading-row.wf-notifications-slot {
+    grid-template-columns: var(--wf-workspace-control,48px) var(--wf-workspace-control,44px) minmax(0,1fr) var(--wf-workspace-control,44px) var(--wf-workspace-control,48px) !important;
+  }
+  html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page .wf-heading-row.wf-notifications-slot > .wf-centered-heading { grid-column: 3 !important; }
+  html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page .wf-heading-row.wf-notifications-slot > .wf-section-menu { grid-column: 5 !important; }
+  html.wf-section-mode body #mainContent .page .wf-heading-row > #wfNotificationsButton {
+    position: static !important; inset: auto !important; transform: none !important;
+    grid-column: 4; grid-row: 1; justify-self: center; align-self: center;
+  }
+
+  html.wf-notifications-enabled:not(.wf-section-mode) body nav.navbar {
+    --wf-header-button: 44px;
+    display: grid !important;
+    grid-template-columns: var(--wf-header-button) minmax(0,1fr) repeat(3,var(--wf-header-button)) !important;
+    align-items: center !important; gap: 6px !important; padding-inline: 10px !important;
+  }
+  html.wf-notifications-enabled:not(.wf-section-mode) body nav.navbar .wf-header-controls { display: contents !important; }
+  html.wf-notifications-enabled:not(.wf-section-mode) body nav.navbar .wf-nav-wordmark {
+    position: static !important; transform: none !important; grid-area: 1 / 2 !important;
+    min-width: 0; width: auto !important; margin: 0 !important;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  html.wf-notifications-enabled:not(.wf-section-mode) body nav.navbar .wf-header-controls :is(#desktopSidebarToggle,#wfNotificationsButton,#themeBtn,#headerSettingsBtn),
+  html.wf-notifications-enabled:not(.wf-section-mode) body nav.navbar .wf-header-controls :is(#desktopSidebarToggle,#wfNotificationsButton,#themeBtn,#headerSettingsBtn):is(:hover,:active) {
+    display: inline-flex !important; position: static !important; transform: none !important;
+    width: var(--wf-header-button) !important; height: var(--wf-header-button) !important;
+    min-width: var(--wf-header-button) !important; min-height: var(--wf-header-button) !important;
+    margin: 0 !important; padding: 0 !important; grid-row: 1 !important;
+    align-items: center !important; justify-content: center !important; justify-self: stretch !important; pointer-events: auto !important;
+  }
+  html.wf-notifications-enabled:not(.wf-section-mode) body nav.navbar #desktopSidebarToggle { grid-column: 1 !important; }
+  html.wf-notifications-enabled:not(.wf-section-mode) body nav.navbar #wfNotificationsButton { grid-column: 3 !important; }
+  html.wf-notifications-enabled:not(.wf-section-mode) body nav.navbar #themeBtn { grid-column: 4 !important; }
+  html.wf-notifications-enabled:not(.wf-section-mode) body nav.navbar #headerSettingsBtn { grid-column: 5 !important; }
+  html.wf-notifications-enabled.wf-speech-toolbar-active:not(.wf-section-mode) body nav.navbar .wf-nav-wordmark { display: none !important; }
+  html.wf-notifications-enabled.wf-speech-toolbar-active:not(.wf-section-mode) body nav.navbar #wfSpeechControls {
+    grid-column: 2 !important; grid-row: 1 !important; max-inline-size: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain;
+  }
+
+  html body #page-notifications { min-inline-size: 0; }
+  #page-notifications .wf-notifications-body {
+    inline-size: min(100%,760px); min-inline-size: 0; margin-inline: auto;
+    padding-block: clamp(20px,5vh,48px); box-sizing: border-box;
+  }
+  #page-notifications .wf-notifications-empty {
+    display: grid; justify-items: center; gap: 16px; box-sizing: border-box;
+    padding: clamp(28px,6vw,64px) clamp(20px,5vw,48px); text-align: center;
+    border: 1px solid var(--border); border-radius: var(--wf-workspace-radius,20px);
+    background: var(--card); color: var(--text); box-shadow: 0 8px 30px rgba(20,46,60,.04);
+  }
+  #page-notifications .wf-notifications-illustration {
+    display: grid; place-items: center; inline-size: 88px; block-size: 88px;
+    margin-block-end: 4px; border: 1px solid var(--border); border-radius: 28px;
+    background: var(--ui-soft); color: var(--ui-accent,#21566b);
+  }
+  #page-notifications .wf-notifications-illustration svg { inline-size: 42px; block-size: 42px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+  #page-notifications .wf-notifications-empty h2 { margin: 0; max-inline-size: 100%; font-size: clamp(20px,3vw,25px); line-height: 1.55; font-weight: 750; overflow-wrap: anywhere; }
+  #page-notifications .wf-notifications-empty p { margin: 0; max-inline-size: 42ch; color: var(--text2); font-size: 15px; line-height: 1.8; overflow-wrap: anywhere; }
+  #wfNotificationsTitle:focus { outline: none; }
+}
+@media screen and (min-width:1025px) {
+  html.wf-notifications-enabled:not(.wf-section-mode) body nav.navbar { --wf-header-button: 48px; gap: 8px !important; padding-inline: 16px !important; }
+}
+@media screen and (max-height:560px) {
+  #page-notifications .wf-notifications-body { padding-block: 16px; }
+  #page-notifications .wf-notifications-empty { padding-block: 24px; gap: 10px; }
+  #page-notifications .wf-notifications-illustration { inline-size: 60px; block-size: 60px; border-radius: 20px; }
+  #page-notifications .wf-notifications-illustration svg { inline-size: 32px; block-size: 32px; }
+}
+@media print { #wfNotificationsButton, #page-notifications { display: none !important; } }

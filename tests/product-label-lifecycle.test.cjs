@@ -69,7 +69,7 @@ function element() {
 }
 
 function fixture({printMode = 'async', writeGates = [], styleGate = null, checkFailureId = null} = {}) {
-  const calls = {prints:0, errors:[], writes:[], frames:[], checked:0, fit:0, panes:[]};
+  const calls = {prints:0, errors:[], writes:[], frames:[], checked:0, fit:0, panes:[], builds:0, renderTurns:0};
   const appState = {settings:{productLabels:{locale:'en'}}, products:[{id:'p1', name:'W400', barcode:'00400', dims:[{l:100,w:50,h:40}]}]};
   const fields = ['workspace', 'preview', 'stage', 'languageToggle', 'languageChoices', 'preferenceNote',
     'selection', 'list', 'search', 'summary', 'currentName', 'counter', 'previous', 'next', 'printButton', 'status', 'errorBox'];
@@ -77,7 +77,7 @@ function fixture({printMode = 'async', writeGates = [], styleGate = null, checkF
   const printCaption=element();ui.printButton.append(printCaption);
   ui.printButton.querySelector=selector=>selector==='span'?printCaption:null;
   const timers = new Map(), guards = new Map(); let timerId = 0, mode = printMode, context;
-  const animationFrame = callback => { queueMicrotask(() => callback(0)); return 1; };
+  const animationFrame = callback => { calls.renderTurns++;queueMicrotask(() => callback(0)); return 1; };
   const window = new Events();
   Object.assign(window, {requestAnimationFrame:animationFrame, WFAppUpdates:{registerGuard:(name, check) => guards.set(name, check)}});
   const doc = Object.assign(new Events(), {body:element(), documentElement:{lang:'en',dir:'ltr'}, activeElement:null,
@@ -115,7 +115,7 @@ function fixture({printMode = 'async', writeGates = [], styleGate = null, checkF
     t:key => key, mount() {}, renderSelection() {}, renderPreview() {}, enhanceActions() {}, scalePreview() {}, showPane(name) {calls.panes.push(name);}, renderQueue() {},
     refreshText() { ui.preferenceNote.textContent = vm.runInContext('savedNoteKey', context); },
     modelFor:product => ({...product, locale:vm.runInContext('printLocale', context)}),
-    buildPaper:(model, owner = doc) => Object.assign(element(), {model, ownerDocument:owner,dataset:{productId:model.id}}),
+    buildPaper:(model, owner = doc) => {calls.builds++;return Object.assign(element(), {model, ownerDocument:owner,dataset:{productId:model.id}});},
     fitPaper() { calls.fit++; }, checkPaper(paper) { calls.checked++;if(paper.model.id===checkFailureId)throw new Error('OVERFLOW|'+paper.model.name); },
     showError:error => { calls.errors.push(error); ui.errorBox.hidden = false; ui.errorBox.textContent = error.message; },
     requestAnimationFrame:animationFrame,
@@ -293,4 +293,16 @@ test('a batch layout failure opens the preview of the affected product and keeps
   assert.equal(app.calls.prints,0);assert.equal(app.read('currentId'),'p2');
   assert(app.calls.panes.includes('preview'),'a hidden mobile preview must be made visible for the error');
   assert.equal(app.ui.errorBox.hidden,false);assert.match(app.ui.errorBox.textContent,/OVERFLOW/);
+});
+
+test('large print jobs yield during construction and preserve every selected sheet',async()=>{
+  const app=fixture();app.state.products=Array.from({length:25},(_,i)=>({id:'p'+i,name:'Product '+i,barcode:'B'+i}));
+  app.context.open();
+  try{
+    const pending=app.context.printSelected(),initialBuilds=app.calls.builds;await pending;
+    assert(initialBuilds<25,'printing must yield before constructing the whole large job');
+    assert.equal(app.calls.builds,25);assert.equal(app.calls.checked,25);assert.equal(app.calls.prints,1);
+    assert.equal(app.calls.frames[0].contentDocument.body.children.length,25);
+    assert(app.calls.renderTurns>2,'large construction and fitting give the browser opportunities to render');
+  }finally{app.dispose();}
 });

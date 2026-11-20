@@ -1,5 +1,5 @@
 /* Installation metadata is derived from committed device settings only.
-   Public INFINITY assets remain the fallback for first visits and remote installers.
+   Public WOW FURNITURE assets remain the fallback for first visits and remote installers.
    No database, financial record, installed app, or browser storage is removed here. */
 (() => {
   'use strict';
@@ -7,17 +7,22 @@
   const MANIFEST='/manifest.json';
   const MAX_IMAGE=2100000;
   const ICON_PATHS=new Set(['/app-icon-192.png','/app-icon-512.png','/app-icon-maskable-512.png','/apple-touch-icon.png']);
-  const DEFAULTS={name:'INFINITY',id:'/',start_url:'/',scope:'/',display:'standalone',display_override:['standalone','minimal-ui'],background_color:'#f3f7fa',theme_color:'#153847',icons:[
-    {src:'/app-icon-192.png?v=172',sizes:'192x192',type:'image/png',purpose:'any'},
-    {src:'/app-icon-512.png?v=172',sizes:'512x512',type:'image/png',purpose:'any'},
-    {src:'/app-icon-maskable-512.png?v=172',sizes:'512x512',type:'image/png',purpose:'maskable'}
+  const DEFAULTS={name:'WOW FURNITURE',id:'/',start_url:'/',scope:'/',display:'standalone',display_override:['standalone','minimal-ui'],background_color:'#f3f7fa',theme_color:'#153847',icons:[
+    {src:'/app-icon-192.png?v=198',sizes:'192x192',type:'image/png',purpose:'any'},
+    {src:'/app-icon-512.png?v=198',sizes:'512x512',type:'image/png',purpose:'any'},
+    {src:'/app-icon-maskable-512.png?v=198',sizes:'512x512',type:'image/png',purpose:'maskable'}
   ]};
   function cleanImage(value){
     return typeof value==='string'&&value.length<=MAX_IMAGE&&/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/.test(value)?value:'';
   }
+  function legacyName(value){
+    return typeof value==='string'&&/^(?:infinity|إنفنتي|انفنتي)$/i.test(value.replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g,'').trim());
+  }
   function normalize(settings){
     const value=settings?.appIdentity?.version===1?settings.appIdentity:{};
-    const name=typeof value.name==='string'?Array.from(value.name.replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g,'').trim()).slice(0,60).join(''):'';
+    const savedName=typeof value.name==='string'?Array.from(value.name.replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g,'').trim()).slice(0,60).join(''):'';
+    if(legacyName(savedName))return {name:DEFAULTS.name,mode:'default',source:'',custom:false};
+    const name=savedName;
     const mode=['app','custom'].includes(value.installIconMode)?value.installIconMode:'default';
     const source=mode==='app'?cleanImage(value.logo):mode==='custom'?cleanImage(value.installIcon):'';
     return {name:name||DEFAULTS.name,mode,source,custom:(name||DEFAULTS.name)!==DEFAULTS.name||!!source};
@@ -76,7 +81,12 @@
         try{
           const cache=await caches.open(CACHE);
           const response=await cache.match(manifest?new URL(MANIFEST,origin).href:request.url);
-          if(response)return response;
+          if(response){
+            // A returning browser can request its manifest before settings load.
+            // Retire only the old stock identity; other device branding survives.
+            if(manifest&&legacyName((await response.clone().json()).name))await cache.delete(new URL(MANIFEST,origin).href);
+            else return response;
+          }
         }catch(_){}
         // Remote packaging and cleared/unsupported local caches still get a real file.
         const fallback=new URL(url);fallback.searchParams.delete('wf-identity');fallback.searchParams.delete('wf-install-check');
@@ -101,11 +111,11 @@
   const origin=window.location.origin;
   const store=window.caches?createStore({caches:window.caches,origin}):null;
   const initialManifest=document.querySelector('link[rel~="manifest"]')?.getAttribute('href')||'/manifest.json';
-  const initialApple=document.querySelector('link[rel~="apple-touch-icon"]')?.getAttribute('href')||'/apple-touch-icon.png?v=172';
+  const initialApple=document.querySelector('link[rel~="apple-touch-icon"]')?.getAttribute('href')||'/apple-touch-icon.png?v=198';
   const device=platform(navigator);
   let generation=0,lastKey='',pending=Promise.resolve(),lastSettings={},prepared=false;
   let deferredPrompt=null,installationObserved=false,installing=false,preparing=false;
-  let downloadSource='/app-icon-512.png?v=172',downloadBlob=null;
+  let downloadSource='/app-icon-512.png?v=198',downloadBlob=null;
   let current={mode:'default',reason:'public-default',personalization:'public',custom:false,name:DEFAULTS.name,platform:device};
   function installed(){return installationObserved||navigator.standalone===true||!!window.matchMedia?.('(display-mode: standalone)').matches;}
   function status(){return {...current,installed:installed(),preparing,canInstall:!installed()&&!preparing&&!installing&&(typeof navigator.install==='function'||!!deferredPrompt),canDownloadIcon:true};}
@@ -159,7 +169,7 @@
       try{
         if(!identity.custom){
           if(store)await store.clear(isCurrent);if(!isCurrent())return status();
-          downloadSource='/app-icon-512.png?v=172';downloadBlob=null;apple(initialApple);
+          downloadSource='/app-icon-512.png?v=198';downloadBlob=null;apple(initialApple);
           if(prepared)refreshManifest();prepared=true;current={...current,mode:'default',reason:'public-default',personalization:'public'};
         }else{
           if(!store||!window.isSecureContext)throw new Error('local-storage-unavailable');
@@ -168,7 +178,7 @@
           const manifestIcons=icons.filter(icon=>icon.path!=='/apple-touch-icon.png').map(icon=>({src:icon.url,sizes:`${icon.size}x${icon.size}`,type:'image/png',purpose:icon.path.includes('maskable')?'maskable':'any'}));
           const manifest=buildManifest(base,identity,manifestIcons);
           const committed=await store.publish(manifest,icons,isCurrent);if(!committed||!isCurrent())return status();
-          downloadSource=identity.source||'/app-icon-512.png?v=172';downloadBlob=icons.find(icon=>icon.path==='/app-icon-512.png')?.blob||null;
+          downloadSource=identity.source||'/app-icon-512.png?v=198';downloadBlob=icons.find(icon=>icon.path==='/app-icon-512.png')?.blob||null;
           const check=new URL(initialManifest,origin);check.searchParams.set('wf-install-check',String(version));
           let available=false;
           if(navigator.serviceWorker?.controller){try{const response=await fetch(check.href,{cache:'no-cache',credentials:'same-origin'});available=response.headers.get('X-WF-Install-Identity')==='local';}catch(_){}}
@@ -184,7 +194,7 @@
         if(isCurrent()){
           try{await store?.clear(isCurrent);}catch(_){}
           if(!isCurrent())return status();
-          apple(initialApple);downloadSource=identity.source||'/app-icon-512.png?v=172';downloadBlob=null;
+          apple(initialApple);downloadSource=identity.source||'/app-icon-512.png?v=198';downloadBlob=null;
           current={...current,mode:'static-fallback',reason:error?.message||'unavailable',personalization:'best-effort'};
           if(prepared)refreshManifest();
         }
@@ -208,7 +218,7 @@
     try{
       const link=document.createElement('a');objectURL=downloadBlob?URL.createObjectURL(downloadBlob):'';link.href=objectURL||downloadSource;
       const extension=downloadBlob?'png':downloadSource.startsWith('data:image/jpeg;')?'jpg':downloadSource.startsWith('data:image/webp;')?'webp':'png';
-      link.download=(current.name.replace(/[^\p{L}\p{N}_-]/gu,'_').slice(0,60)||'INFINITY')+'-icon.'+extension;
+      link.download=(current.name.replace(/[^\p{L}\p{N}_-]/gu,'_').slice(0,60)||'WOW_FURNITURE')+'-icon.'+extension;
       link.hidden=true;document.body.append(link);link.click();link.remove();return Promise.resolve({downloaded:true});
     }catch(_){return Promise.resolve({downloaded:false});}
     finally{if(objectURL)setTimeout(()=>URL.revokeObjectURL(objectURL),30000);}

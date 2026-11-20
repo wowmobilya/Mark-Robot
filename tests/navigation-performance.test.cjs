@@ -41,6 +41,16 @@ test('normalizing an existing heading does not emit repeated class mutations',()
  vm.runInContext('syncSectionHeadings();syncSectionHeadings()',context);assert.deepEqual(writes,[]);
 });
 
+test('section heading normalization keeps notifications in its own toolbar slot',()=>{
+ const writes=[],row={children:[],classList:classList(writes,['wf-heading-row'])},title={classList:classList(writes,['wf-centered-heading']),parentElement:row};
+ const back={classList:classList(writes,['sct-back-btn'])},menu={classList:classList(writes,['wf-section-menu'])},bell={id:'wfNotificationsButton',classList:classList(writes)};
+ row.children=[back,title,menu,bell];row.querySelector=()=>menu;
+ const document={querySelectorAll:selector=>selector.startsWith('.page ')?[title]:[],querySelector:()=>null,
+  createElement(){assert.fail('the notification bell must not be wrapped in heading actions');}};
+ const context=vm.createContext({document});vm.runInContext(functions.syncSectionHeadings,context);vm.runInContext('syncSectionHeadings();syncSectionHeadings()',context);
+ assert.deepEqual(row.children,[back,title,menu,bell]);assert.deepEqual(writes,[]);
+});
+
 test('sidebar controls retain route and accessible state without rewriting settled attributes',()=>{
  const writes=[];let active='products';
  function element(id){
