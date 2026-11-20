@@ -27,6 +27,23 @@
     return normalizeLocale(saved, normalizeLocale(appLocale));
   }
 
+  function normalizeSearch(value) {
+    const input = typeof value === 'string' || typeof value === 'bigint' ||
+      (typeof value === 'number' && Number.isFinite(value)) ? String(value) : '';
+    return input.normalize('NFKD').replace(/\p{M}/gu, '')
+      .replace(/[أإآٱ]/g, 'ا')
+      .replace(/[٠-٩]/g, digit => String(digit.charCodeAt(0) - 0x660))
+      .replace(/[۰-۹]/g, digit => String(digit.charCodeAt(0) - 0x6f0))
+      .replace(/ı/g, 'i').toLowerCase().trim();
+  }
+
+  function matchesProduct(product, query) {
+    const source = product && typeof product === 'object' && !Array.isArray(product) ? product : {};
+    const tokens = normalizeSearch(query).split(/\s+/).filter(Boolean);
+    const content = [source.name, source.barcode, source.code, source.type].map(normalizeSearch).join(' ');
+    return tokens.every(token => content.includes(token));
+  }
+
   function dimension(value) {
     const number = Number(value);
     return Number.isFinite(number) && number >= 0 ? number : 0;
@@ -39,6 +56,15 @@
     const rows = Array.isArray(source.dims) && source.dims.length ? source.dims :
       [{l:source.dimL, w:source.dimW, h:source.dimH}];
     return Array.from(rows, row => ({l:dimension(row?.l), w:dimension(row?.w), h:dimension(row?.h)}));
+  }
+
+  function reviewProduct(product) {
+    const source = product && typeof product === 'object' && !Array.isArray(product) ? product : {};
+    const issues = [];
+    if (!normalizeSearch(source.name)) issues.push('missingName');
+    if (typeof source.image !== 'string' || !source.image.trim()) issues.push('missingImage');
+    if (!getDimensions(source).some(row => row.l > 0 || row.w > 0 || row.h > 0)) issues.push('missingDimensions');
+    return issues;
   }
 
   const descriptionLabels = {
@@ -67,7 +93,7 @@
     const config = options && typeof options === 'object' ? options : {};
     const locale = normalizeLocale(config.locale);
     const rows = getDimensions(source), issues = [];
-    const barcode = string(source.barcode || source.name);
+    const barcode = string(source.barcode == null || source.barcode === '' ? source.name : source.barcode);
     const present = barcode.trim().length > 0;
     const printable = /^[\x20-\x7e]+$/.test(barcode);
     if (!rows.some(row => row.l > 0 || row.w > 0 || row.h > 0)) issues.push('missingDimensions');
@@ -131,5 +157,6 @@
       Object.prototype.hasOwnProperty.call(values, name) ? string(values[name]) : token);
   }
 
-  return Object.freeze({locales, normalizeLocale, resolveLocale, geometry, getDimensions, createLabelModel, text});
+  return Object.freeze({locales, normalizeLocale, resolveLocale, normalizeSearch, matchesProduct,
+    reviewProduct, geometry, getDimensions, createLabelModel, text});
 });

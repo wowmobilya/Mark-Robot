@@ -48,7 +48,7 @@
     });
   }
   function waitForImage(image, timeout = 12000) {
-    return new Promise((resolve, reject) => {
+    const loadedImage = new Promise((resolve, reject) => {
       let timer;
       const finish = error => {
         clearTimeout(timer); image.removeEventListener('load', loaded); image.removeEventListener('error', failed);
@@ -60,6 +60,12 @@
       image.addEventListener('load', loaded, {once:true}); image.addEventListener('error', failed, {once:true});
       timer = setTimeout(() => finish(new Error('IMAGE_TIMEOUT')), timeout);
     });
+    return withTimeout(loadedImage.then(async loaded => {
+      if (typeof loaded.decode === 'function') {
+        try { await loaded.decode(); } catch (_) { throw new Error('IMAGE_LOAD'); }
+      }
+      return loaded;
+    }), timeout, 'IMAGE_TIMEOUT');
   }
   const helpers = {safeImageSource, barcodePlan, captureSelection, persistLocale, withTimeout, waitForImage};
   if (typeof module === 'object' && module.exports) { module.exports = helpers; return; }
@@ -69,7 +75,7 @@
   const byId = id => doc.getElementById(id), state = () => typeof S === 'object' ? S : {};
   const language = () => core.normalizeLocale(root.lang || state().lang);
   const script = doc.currentScript || doc.querySelector('script[src*="product-labels.js"]');
-  const stylesheet = new URL('product-labels.css?v=1', script?.src || doc.baseURI).href;
+  const stylesheet = new URL('product-labels.css?v=2', script?.src || doc.baseURI).href;
   const words = {
     ar:{
       title:'بطاقات المعرض', card:'بطاقة المعرض', back:'العودة إلى المنتجات', print:'طباعة البطاقات',
@@ -143,8 +149,40 @@
       sheet:'A4 альбомный · Сплошная линия — рез · Пунктир — сгиб', unavailable:'Печать недоступна в этом браузере.'
     }
   };
+  const workspaceCopy = {
+    catalogTab:['المنتجات','Ürünler','Products','Produits','Товары'],
+    previewTab:['المعاينة','Önizleme','Preview','Aperçu','Предпросмотр'],
+    allProducts:['الكل','Tümü','All','Tous','Все'],
+    onlySelected:['المحدّد','Seçilenler','Selected','Sélectionnés','Выбранные'],
+    needsReview:['للمراجعة','Kontrol','Review','À vérifier','Проверить'],
+    noResults:['لا توجد نتائج مطابقة. جرّب اسمًا أو رمزًا آخر.','Eşleşen ürün yok. Başka bir ad veya kod deneyin.','No matches. Try another name or code.','Aucun résultat. Essayez un autre nom ou code.','Совпадений нет. Попробуйте другое название или код.'],
+    results:['{shown} من {count} نتيجة','{count} sonuçtan {shown}','{shown} of {count} results','{shown} sur {count} résultats','Показано {shown} из {count}'],
+    showMore:['عرض المزيد','Daha fazla','Show more','Voir plus','Показать ещё'],
+    previewProduct:['معاينة {name}','{name} önizlemesi','Preview {name}','Aperçu de {name}','Просмотр: {name}'],
+    missingName:['الاسم ناقص','Ad eksik','Missing name','Nom manquant','Нет названия'],
+    missingImage:['بدون صورة','Görsel yok','No image','Sans image','Нет изображения'],
+    missingDimensions:['المقاسات ناقصة','Ölçü yok','No sizes','Sans dimensions','Нет размеров'],
+    previewOnly:['معاينة فقط · غير محدّد للطباعة','Yalnız önizleme · Baskıya seçilmedi','Preview only · Not selected for printing','Aperçu seul · Non sélectionné','Только просмотр · Не выбрано для печати'],
+    includeCard:['إضافة للطباعة','Baskıya ekle','Add to print','Ajouter à l’impression','Добавить к печати'],
+    faceView:['وجه البطاقة','Kart yüzü','Card face','Face de la fiche','Сторона карточки'],
+    sheetView:['ورقة A4','A4 sayfası','A4 sheet','Feuille A4','Лист A4'],
+    printConstruction:['الطباعة دائمًا: وجهان متصلان على كل ورقة A4.','Her A4 sayfasına iki birleşik yüz yazdırılır.','Every A4 sheet prints two connected faces.','Chaque feuille A4 imprime deux faces jointes.','На каждом листе A4 печатаются две соединённые стороны.'],
+    checking:['جارٍ فحص البطاقة…','Kart kontrol ediliyor…','Checking the card…','Vérification de la fiche…','Проверка карточки…'],
+    cardReady:['البطاقة جاهزة للطباعة','Kart baskıya hazır','Card ready to print','Fiche prête à imprimer','Карточка готова к печати'],
+    cardReview:['راجع البيانات الناقصة قبل الطباعة','Yazdırmadan önce eksik bilgileri kontrol edin','Review missing details before printing','Vérifiez les données manquantes avant d’imprimer','Проверьте недостающие данные перед печатью'],
+    cardBlocked:['تحتاج البطاقة تصحيحًا قبل الطباعة','Kart yazdırılmadan önce düzeltilmeli','Correct this card before printing','Corrigez cette fiche avant l’impression','Исправьте карточку перед печатью'],
+    printCount:['طباعة {count}','Yazdır · {count}','Print · {count}','Imprimer · {count}','Печать · {count}'],
+    printSheets:['طباعة {count} ورقة A4','{count} A4 sayfası yazdır','Print {count} A4 sheets','Imprimer {count} feuilles A4','Печать {count} листов A4'],
+    selectedCards:['قائمة الطباعة','Baskı listesi','Print list','Liste d’impression','Список печати'],
+    guide:['القص والطي','Kesme ve katlama','Cutting and folding','Découpe et pliage','Вырезание и сгиб'],
+    chooseProducts:['اختيار منتجات','Ürün seç','Choose products','Choisir des produits','Выбрать товары'],
+    sourceDetails:['تعرض البطاقة بيانات المنتج المحفوظة.','Kart, kayıtlı ürün bilgilerini gösterir.','The card uses the saved product details.','La fiche reprend les données enregistrées du produit.','Карточка использует сохранённые данные товара.'],
+    printReturned:['أُغلقت نافذة الطباعة. يمكنك تجهيز طبعة جديدة.','Yazdırma penceresi kapandı. Yeni bir baskı hazırlayabilirsiniz.','Print dialog closed. You can prepare another print.','La fenêtre d’impression est fermée. Vous pouvez préparer une autre impression.','Окно печати закрыто. Можно подготовить новую печать.'],
+    printRecovery:['أغلقتُ نافذة الطباعة','Yazdırma penceresini kapattım','I closed the print dialog','J’ai fermé la fenêtre d’impression','Я закрыл окно печати'],
+    printRecoveryHint:['اضغط فقط بعد إغلاق نافذة الطباعة إذا بقي القسم مشغولًا.','Bölüm meşgul kalırsa yalnızca yazdırma penceresini kapattıktan sonra basın.','Use only after closing the print dialog if this section remains busy.','Utilisez uniquement après avoir fermé la fenêtre d’impression si cette section reste occupée.','Нажмите только после закрытия окна печати, если раздел остаётся занят.']
+  };
   const languageNames = {ar:'العربية', tr:'Türkçe', en:'English', fr:'Français', ru:'Русский'};
-  const t = (key, params = {}) => String(words[language()][key] || words.en[key] || key).replace(/\{(\w+)\}/g, (_, name) => params[name] ?? '');
+  const t = (key, params = {}) => String(words[language()][key] || workspaceCopy[key]?.[core.locales.indexOf(language())] || words.en[key] || key).replace(/\{(\w+)\}/g, (_, name) => params[name] ?? '');
   const make = (tag, className, value, owner = doc) => {
     const element = owner.createElement(tag);
     if (className) element.className = className;
@@ -157,7 +195,10 @@
     card:'M3 4h18v16H3zM12 4v16M6 8h3M6 12h3M15 8h3M15 12h3',
     back:'m14 5-7 7 7 7', next:'m10 5 7 7-7 7',
     globe:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18Z',
-    edit:'m15 4 5 5M4 20l4-1L21 6l-5-5L3 14l-1 7z', chevron:'m6 9 6 6 6-6'
+    edit:'m15 4 5 5M4 20l4-1L21 6l-5-5L3 14l-1 7z', chevron:'m6 9 6 6 6-6',
+    eye:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
+    plus:'M12 5v14M5 12h14', image:'M3 3h18v18H3zM3 16l5-5 4 4 4-6 5 7M7 7h1',
+    check:'m5 12 4 4L19 6', search:'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z'
   };
   function icon(name, owner = doc) {
     const svg = owner.createElementNS(svgNS, 'svg'), path = owner.createElementNS(svgNS, 'path');
@@ -175,19 +216,24 @@
   let workspace, preview, stage, languageToggle, languageChoices, preferenceNote, selection, list, search, summary, currentName, counter, previous, next, printButton, status, errorBox;
   let selected = new Set(), available = [], currentId = null, printLocale = 'ar', opened = false, preparing = false, activePrint = null, saveQueue = Promise.resolve(), saveRevision = 0, previewRevision = 0, opener = null;
   let savedNoteKey = 'preference', updateGuard = false;
+  let catalogPanel, previewPanel, queue, emptyPreview, includeButton, editButton, resultsCount, selectAllButton, clearButton, moreButton, printRecovery;
+  let pane = 'preview', viewMode = 'face', selectionFilter = 'all', visibleCount = 40, hasSelectionSession = false, localeInitialized = false, pendingSaves = 0, previewState = null;
+  let needsPreviewCheck=false,lastPreviewWidth=0,printFailure=null;
+  const paneButtons = {}, filterButtons = {}, viewButtons = {};
   const page = byId('page-products');
   if (!page) return;
 
-  function products() { return state().products || []; }
+  function products() { return Array.isArray(state().products) ? state().products : []; }
   function selectedIds() { return [...selected]; }
   function options() {
-    const query = (search?.value || '').trim().toLocaleLowerCase(language());
     const ids = new Set(available);
-    return products().filter(product => ids.has(String(product.id)) && (!query || (String(product.name) + ' ' + String(product.barcode || '')).toLocaleLowerCase(language()).includes(query)));
+    return products().filter(product => ids.has(String(product.id)) && core.matchesProduct(product,search?.value || '') &&
+      (selectionFilter !== 'selected' || selected.has(String(product.id))) &&
+      (selectionFilter !== 'review' || core.reviewProduct(product).length > 0));
   }
   function registerGuard() {
     if (!updateGuard && window.WFAppUpdates) {
-      window.WFAppUpdates.registerGuard('product-label-print', () => preparing || !!activePrint);
+      window.WFAppUpdates.registerGuard('product-label-print', () => preparing || !!activePrint || pendingSaves > 0);
       updateGuard = true;
     }
   }
@@ -199,6 +245,64 @@
     errorBox.textContent = t(key) + (['layoutError','barcodeError'].includes(key) && name ? ' ' + name : '');
     errorBox.hidden = false;
   }
+  function updateControls() {
+    if (!workspace) return;
+    const busy = preparing || !!activePrint;
+    const blocking = selected.has(currentId) && previewState?.id === currentId && previewState.state === 'error';
+    printButton.disabled = busy || !selected.size || blocking;
+    printButton.setAttribute('aria-busy',String(busy));
+    printButton.querySelector('span').textContent = t('printCount',{count:selected.size});
+    printButton.setAttribute('aria-label',t('printSheets',{count:selected.size}));
+    languageToggle.disabled = busy;
+    for (const choice of languageChoices.children) choice.disabled = busy;
+    if (selectAllButton) selectAllButton.disabled = busy || !options().length || options().every(product=>selected.has(String(product.id)));
+    if (clearButton) clearButton.disabled = busy || !selected.size;
+    if (editButton) editButton.disabled = busy || !currentId;
+    if (includeButton) {includeButton.hidden = !currentId || selected.has(currentId);includeButton.disabled = busy;}
+    if (summary) summary.textContent = t('selection')+' · '+t('count',{count:selected.size});
+    for (const check of list?.querySelectorAll('input[type="checkbox"]') || []) check.disabled = busy;
+    for (const row of list?.children || []) row.dataset.current = String(row.dataset.productId === currentId);
+  }
+  function showPane(name, scroll = false) {
+    if (!paneButtons[name]) return;
+    pane = name; workspace.dataset.pane = name;
+    for (const [key,control] of Object.entries(paneButtons)) {control.setAttribute('aria-selected',String(key===name));control.tabIndex=key===name?0:-1;}
+    requestAnimationFrame(()=>{scalePreview();if(name==='preview'&&opened&&needsPreviewCheck)renderPreview();});
+    if (scroll) workspace.scrollIntoView({block:'start',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth'});
+  }
+  function activateProduct(id, changePane = true) {
+    if (!available.includes(String(id))) return;
+    printFailure=null;currentId = String(id); renderPreview();
+    if (changePane) showPane('preview',true);
+  }
+  function setProductSelected(id, included) {
+    if(preparing||activePrint||!available.includes(String(id)))return false;
+    id=String(id);
+    if(included){selected.add(id);if(!currentId)currentId=id;}else selected.delete(id);
+    if(selectionFilter==='selected')renderSelection();renderPreview();updateControls();return true;
+  }
+  function revealPrintFailure(error) {
+    printFailure=error;
+    if(error.productId&&available.includes(String(error.productId)))currentId=String(error.productId);
+    needsPreviewCheck=true;showPane('preview',true);showError(error);status.dataset.state='error';status.textContent=t('cardBlocked');
+  }
+  function retainPrintFailure() {
+    if(printFailure&&(!printFailure.productId||String(printFailure.productId)===currentId)){
+      showError(printFailure);status.dataset.state='error';status.textContent=t('cardBlocked');
+    }
+  }
+  function renderQueue() {
+    if (!queue) return;
+    const fragment=doc.createDocumentFragment(),ids=selectedIds();
+    ids.forEach((id,index)=>{
+      const product=products().find(entry=>String(entry.id)===id);if(!product)return;
+      const choice=make('button','wf-label-queue-item');choice.type='button';choice.dataset.productId=id;
+      choice.setAttribute('aria-current',String(id===currentId));choice.title=t('previewProduct',{name:product.name||'—'});
+      choice.append(make('span','wf-label-queue-number',String(index+1)),make('bdi','',String(product.name??'—')));
+      choice.addEventListener('click',()=>activateProduct(id,false));fragment.append(choice);
+    });
+    queue.replaceChildren(fragment);queue.hidden=ids.length<2;queue.setAttribute('aria-label',t('selectedCards'));
+  }
   function refreshText() {
     for (const element of page.querySelectorAll('[data-wf-label-copy]')) element.textContent=t(element.dataset.wfLabelCopy);
     if (!workspace) return;
@@ -208,8 +312,8 @@
     search.placeholder = t('search'); search.setAttribute('aria-label',t('search'));
     languageToggle.querySelector('span').textContent = t('language') + ' · ' + languageNames[printLocale];
     for (const choice of languageChoices.children) choice.setAttribute('aria-pressed',String(choice.dataset.locale === printLocale));
-    summary.textContent = t('selection') + ' · ' + t('count',{count:selected.size});
     previous.setAttribute('aria-label',t('previous')); next.setAttribute('aria-label',t('next'));
+    updateControls();renderQueue();
     if (opened) renderPreview();
     enhanceActions();
   }
@@ -222,7 +326,23 @@
     heading.append(title,make('p','',t('subtitle')));
     printButton = button('print','wf-label-print btn btn-p','print',printSelected);
     toolbar.append(button('back','wf-label-back btn btn-s','back',()=>close(true)),heading,printButton);
-    const controls = make('div','wf-label-controls'), languageGroup = make('div','wf-label-language');
+    const tabs=make('div','wf-label-mobile-tabs');tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label',t('title'));
+    for (const [name,key] of [['catalog','catalogTab'],['preview','previewTab']]) {
+      const tab=button(key,'wf-label-tab',name==='catalog'?'search':'eye',()=>showPane(name,true));
+      tab.id='wfLabelTab-'+name;tab.dataset.pane=name;tab.setAttribute('role','tab');tab.setAttribute('aria-controls','wfLabelPanel-'+name);
+      paneButtons[name]=tab;tabs.append(tab);
+    }
+    tabs.addEventListener('keydown',event=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+      event.preventDefault();const target=event.key==='Home'?'catalog':event.key==='End'?'preview':pane==='catalog'?'preview':'catalog';
+      showPane(target);paneButtons[target].focus();
+    });
+    const body=make('div','wf-label-body');
+    catalogPanel=make('section','wf-label-catalog-panel');previewPanel=make('section','wf-label-preview-panel');
+    for(const [name,panel] of [['catalog',catalogPanel],['preview',previewPanel]]){
+      panel.id='wfLabelPanel-'+name;panel.setAttribute('aria-labelledby','wfLabelTab-'+name);
+    }
+    const languageGroup = make('div','wf-label-language');
     languageToggle = button('language','wf-label-language-toggle','globe',()=>{
       languageChoices.hidden = !languageChoices.hidden; languageToggle.setAttribute('aria-expanded',String(!languageChoices.hidden));
     });
@@ -236,50 +356,109 @@
     languageGroup.append(languageToggle,languageChoices,preferenceNote);
     selection = make('details','wf-label-selection'); summary=make('summary'); selection.append(summary);
     const selectionActions=make('div','wf-label-selection-actions');
-    selectionActions.append(button('all','btn btn-s',null,()=>{for(const product of options())selected.add(String(product.id));renderSelection();renderPreview();}),
-      button('clear','btn btn-s',null,()=>{selected.clear();renderSelection();renderPreview();}));
+    selectAllButton=button('all','btn btn-s','check',()=>{
+      if(preparing||activePrint)return;
+      for(const product of options())selected.add(String(product.id));
+      currentId=currentId||selectedIds()[0]||null;renderSelection();renderPreview();
+    });
+    clearButton=button('clear','btn btn-s',null,()=>{
+      if(preparing||activePrint)return;selected.clear();currentId=null;renderSelection();renderPreview();
+    });
+    selectionActions.append(selectAllButton,clearButton);
     search=make('input','fc');search.type='search';search.autocomplete='off';search.id='wfProductLabelSearch';
-    search.addEventListener('input',renderSelection);
-    list=make('div','wf-label-product-list'); selection.append(selectionActions,search,list);controls.append(languageGroup,selection);
+    search.addEventListener('input',()=>{visibleCount=40;renderSelection();});
+    const filters=make('div','wf-label-filters');filters.setAttribute('role','group');
+    for(const [name,key] of [['all','allProducts'],['selected','onlySelected'],['review','needsReview']]){
+      const filter=button(key,'wf-label-filter',null,()=>{selectionFilter=name;visibleCount=40;renderSelection();});
+      filterButtons[name]=filter;filters.append(filter);
+    }
+    resultsCount=make('p','wf-label-results-count');resultsCount.setAttribute('role','status');resultsCount.setAttribute('aria-live','polite');
+    list=make('div','wf-label-product-list');
+    moreButton=button('showMore','btn btn-s',null,()=>{visibleCount+=40;renderSelection();});
+    selection.append(search,filters,selectionActions,resultsCount,list,moreButton);selection.open=true;
+    catalogPanel.append(languageGroup,selection);
     const nav=make('div','wf-label-preview-nav');
     previous=button('previous','wf-label-prev','back',()=>move(-1));next=button('next','wf-label-next','next',()=>move(1));
     currentName=make('strong','wf-label-current');currentName.dir='auto';counter=make('span','wf-label-page-count');
     nav.append(previous,currentName,counter,next);
+    queue=make('div','wf-label-queue');queue.setAttribute('role','group');
+    const viewControls=make('div','wf-label-view-controls');viewControls.setAttribute('role','group');
+    for(const [name,key] of [['face','faceView'],['sheet','sheetView']]){
+      const control=button(key,'wf-label-view',name==='face'?'card':null,()=>{
+        viewMode=name;for(const [value,view]of Object.entries(viewButtons))view.setAttribute('aria-pressed',String(value===name));scalePreview();
+      });control.setAttribute('aria-pressed',String(name===viewMode));viewButtons[name]=control;viewControls.append(control);
+    }
     status=make('p','wf-label-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     errorBox=make('p','wf-label-error');errorBox.hidden=true;errorBox.setAttribute('role','alert');
+    printRecovery=button('printRecovery','wf-label-print-recovery btn btn-s','check',()=>activePrint?.cleanup(true));
+    printRecovery.hidden=true;printRecovery.title=t('printRecoveryHint');
     preview=make('div','wf-label-preview');stage=make('div','wf-label-preview-stage');preview.append(stage);
-    const source=translated(make('p','wf-label-source-note',t('source')),'source');
-    const edit=button('edit','btn btn-s','edit',()=>{
+    emptyPreview=make('div','wf-label-empty');emptyPreview.append(icon('card'),translated(make('p','',t('none')),'none'),button('chooseProducts','btn btn-s','search',()=>showPane('catalog',true)));preview.append(emptyPreview);
+    let swipe=null;
+    preview.addEventListener('touchstart',event=>{if(event.touches.length===1)swipe={x:event.touches[0].clientX,y:event.touches[0].clientY};},{passive:true});
+    preview.addEventListener('touchend',event=>{
+      if(!swipe||!event.changedTouches.length)return;const point=event.changedTouches[0],dx=point.clientX-swipe.x,dy=point.clientY-swipe.y;swipe=null;
+      if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.6)move((dx<0?1:-1)*(language()==='ar'?-1:1));
+    },{passive:true});
+    preview.addEventListener('touchcancel',()=>{swipe=null;},{passive:true});
+    const source=translated(make('p','wf-label-source-note',t('sourceDetails')),'sourceDetails');
+    editButton=button('edit','btn btn-s','edit',()=>{
+      if(preparing||activePrint)return;
       const product=products().find(item=>String(item.id)===currentId);if(!product)return;
       close(false); if(typeof window.editPr==='function')window.editPr(product.id);
     });
-    const foot=make('div','wf-label-source');foot.append(source,edit);
-    workspace.append(toolbar,controls,nav,status,errorBox,preview,foot);page.append(workspace);
-    if(typeof ResizeObserver==='function')new ResizeObserver(scalePreview).observe(preview);
+    includeButton=button('includeCard','btn btn-s','plus',()=>{
+      if(!currentId||preparing||activePrint)return;selected.add(currentId);renderSelection();renderPreview();
+    });
+    const foot=make('div','wf-label-source');foot.append(source,includeButton,editButton);
+    const construction=translated(make('p','wf-label-source-note',t('printConstruction')),'printConstruction');
+    const guide=make('details','wf-label-guide');guide.append(translated(make('summary','',t('guide')),'guide'),translated(make('p','',t('sheet')),'sheet'),translated(make('p','',t('ready')),'ready'));
+    previewPanel.append(nav,queue,viewControls,construction,status,errorBox,printRecovery,preview,foot,guide);
+    body.append(catalogPanel,previewPanel);workspace.append(toolbar,tabs,body);page.append(workspace);showPane(pane);
+    if(typeof ResizeObserver==='function')new ResizeObserver(entries=>{
+      const width=entries[0]?.contentRect.width||0,becameVisible=width>0&&lastPreviewWidth===0;lastPreviewWidth=width;
+      scalePreview();if(becameVisible&&opened&&needsPreviewCheck)renderPreview();
+    }).observe(preview);
     else window.addEventListener('resize',scalePreview,{passive:true});
     refreshText();
   }
   function chooseLanguage(locale) {
+    if(preparing||activePrint)return;
+    printFailure=null;
+    localeInitialized=true;pendingSaves++;
     printLocale=core.normalizeLocale(locale);savedNoteKey='saving';languageChoices.hidden=true;languageToggle.setAttribute('aria-expanded','false');
     refreshText();const revision=++saveRevision;
     saveQueue=saveQueue.catch(()=>{}).then(()=>persistLocale(state(),printLocaleFor(locale),wfWriteBatch)).then(()=>{
       if(revision===saveRevision){savedNoteKey='saved';preferenceNote.textContent=t(savedNoteKey);}
     },()=>{
       if(revision===saveRevision){savedNoteKey='saveError';preferenceNote.textContent=t(savedNoteKey);}
-    });
+    }).finally(()=>{pendingSaves--;updateControls();});
   }
   const printLocaleFor = locale => core.normalizeLocale(locale);
   function renderSelection() {
-    const source=options(),fragment=doc.createDocumentFragment();
-    for(const product of source) {
-      const id=String(product.id),row=make('label','wf-label-choice'),check=make('input');check.type='checkbox';check.checked=selected.has(id);check.value=id;
-      check.addEventListener('change',()=>{if(check.checked)selected.add(id);else selected.delete(id);renderPreview();summary.textContent=t('selection')+' · '+t('count',{count:selected.size});});
-      row.append(check);const src=safeImageSource(product.image,doc.baseURI);
-      if(src){const image=make('img');image.src=src;image.alt='';image.loading='lazy';row.append(image);}
-      const name=make('span','',product.name||'—');name.dir='auto';row.append(name);fragment.append(row);
+    const source=options(),shown=source.slice(0,visibleCount),fragment=doc.createDocumentFragment();
+    for(const product of shown) {
+      const id=String(product.id),row=make('div','wf-label-choice'),select=make('label','wf-label-choice-select'),check=make('input');
+      row.dataset.productId=id;row.dataset.current=String(id===currentId);check.type='checkbox';check.checked=selected.has(id);check.value=id;
+      check.addEventListener('change',()=>{
+        if(!setProductSelected(id,check.checked))check.checked=selected.has(id);
+      });
+      select.append(check);const src=safeImageSource(product.image,doc.baseURI);
+      if(src){const image=make('img');image.src=src;image.alt='';image.loading='lazy';image.addEventListener('error',()=>image.replaceWith(icon('image')),{once:true});select.append(image);}
+      else select.append(icon('image'));
+      const info=make('span','wf-label-choice-info'),name=make('strong','',String(product.name??'—'));name.dir='auto';
+      const code=make('small','',String(product.barcode??product.code??product.type??''));code.dir='auto';info.append(name,code);
+      const issues=core.reviewProduct(product);
+      if(issues.length)info.append(make('span','wf-label-product-note',issues.map(key=>t(key)).join(' · ')));
+      select.append(info);row.append(select);
+      const show=button('previewTab','wf-label-choice-preview','eye',()=>activateProduct(id));
+      show.title=t('previewProduct',{name:product.name||'—'});show.setAttribute('aria-label',show.title);row.append(show);fragment.append(row);
     }
-    if(!source.length)fragment.append(make('p','',t('empty')));
-    list.replaceChildren(fragment);summary.textContent=t('selection')+' · '+t('count',{count:selected.size});
+    if(!source.length)fragment.append(make('p','wf-label-empty',t(products().length?'noResults':'empty')));
+    list.replaceChildren(fragment);moreButton.hidden=shown.length>=source.length;
+    resultsCount.textContent=t('results',{shown:shown.length,count:source.length});
+    for(const [name,control]of Object.entries(filterButtons))control.setAttribute('aria-pressed',String(name===selectionFilter));
+    updateControls();renderQueue();
   }
   function modelFor(product, settings = state().settings || {}) {
     let logo=settings.logo||'';
@@ -350,21 +529,25 @@
     return face;
   }
   function buildPaper(model, owner = doc) {
-    const paper=make('div','wf-label-paper',undefined,owner);paper.lang=model.locale;paper.setAttribute('aria-label',model.name);
+    const paper=make('div','wf-label-paper',undefined,owner);paper.lang=model.locale;paper.dataset.productId=model.id;paper.setAttribute('aria-label',model.name);
     const guide=make('p','wf-label-sheet-guide',core.text(model.locale,'cut')+' · '+core.text(model.locale,'foldHint'),owner);guide.dir=model.dir;
     const pair=make('div','wf-label-pair',undefined,owner);pair.setAttribute('aria-label',core.text(model.locale,'front')+' / '+core.text(model.locale,'back'));
     pair.append(buildFace(model,owner),buildFace(model,owner));paper.append(guide,pair);return paper;
   }
   function scalePreview() {
     const paper=stage?.querySelector('.wf-label-paper');if(!paper || !opened)return;
-    const width=core.geometry.paperWidth*96/25.4,height=core.geometry.paperHeight*96/25.4;
+    const face=viewMode==='face',mm=96/25.4;
+    const width=(face?core.geometry.faceWidth:core.geometry.paperWidth)*mm,height=(face?core.geometry.faceHeight:core.geometry.paperHeight)*mm;
     const style=getComputedStyle(preview),padding=parseFloat(style.paddingLeft)+parseFloat(style.paddingRight)+2;
-    const scale=Math.min(1,Math.max(.1,(preview.clientWidth-padding)/width));
-    stage.style.width=width*scale+'px';stage.style.height=height*scale+'px';paper.style.transform='scale('+scale+')';
+    const scale=Math.min(face?1.2:1,Math.max(.1,(preview.clientWidth-padding)/width));
+    const x=face?(core.geometry.paperWidth-core.geometry.pairWidth)*mm/2:0,y=face?(core.geometry.paperHeight-core.geometry.pairHeight)*mm/2:0;
+    stage.dataset.view=viewMode;stage.style.width=width*scale+'px';stage.style.height=height*scale+'px';
+    paper.style.transform='translate('+(-x*scale)+'px,'+(-y*scale)+'px) scale('+scale+')';
   }
   function fitPaper(paper) {
     const view=paper.ownerDocument.defaultView;
     for(const face of paper.querySelectorAll('.wf-label-face')){
+      if(face.clientWidth<=0||face.clientHeight<=0)continue;
       const name=face.querySelector('.wf-label-product-name');
       const description=face.querySelector('.wf-label-facts > div:last-child bdi');
       const website=face.querySelector('.wf-label-website');
@@ -388,6 +571,7 @@
       const explicit=face.dataset.printError || face.querySelector('[data-print-error]')?.dataset.printError;
       if(explicit)throw new Error(explicit);
       const bounds=face.getBoundingClientRect();
+      if(face.clientWidth<=0||face.clientHeight<=0||bounds.width<=0||bounds.height<=0)throw new Error('LAYOUT_HIDDEN');
       for(const element of face.querySelectorAll('header,.wf-label-photo,table,.wf-label-facts,.wf-label-barcode,footer,.wf-label-product-name,.wf-label-facts bdi,.wf-label-barcode-value')){
         const rect=element.getBoundingClientRect();
         if(rect.left<bounds.left-1 || rect.right>bounds.right+1 || rect.top<bounds.top-1 || rect.bottom>bounds.bottom+1 ||
@@ -395,22 +579,46 @@
       }
     }
   }
-  function renderPreview() {
+  async function preparePapers(papers, owner, isCurrent = () => true) {
+    if(owner.fonts)await withTimeout(owner.fonts.ready,12000,'FONT_TIMEOUT');
+    const images=papers.flatMap(paper=>[...paper.querySelectorAll('img')].map(image=>({image,productId:paper.dataset.productId})));
+    for(let index=0;index<images.length;index+=6)await Promise.all(images.slice(index,index+6).map(async({image,productId})=>{
+      try{await waitForImage(image);}catch(error){error.productId=productId;throw error;}
+    }));
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    if(!isCurrent())return false;
+    for(const paper of papers){
+      try{fitPaper(paper);checkPaper(paper);}catch(error){error.productId=paper.dataset.productId;throw error;}
+    }
+    return true;
+  }
+  async function renderPreview() {
     if(!workspace || !opened)return;
-    const ids=selectedIds();if(!selected.has(currentId))currentId=ids[0]||null;
-    const index=ids.indexOf(currentId);printButton.disabled=preparing || !ids.length;
+    const ids=selectedIds();if(!available.includes(currentId))currentId=ids[0]||null;
+    const index=ids.indexOf(currentId);
     previous.disabled=index<=0;next.disabled=index<0 || index>=ids.length-1;
-    counter.textContent=ids.length?t('page',{page:index+1,count:ids.length}):'';
+    counter.textContent=currentId?(index>=0?t('page',{page:index+1,count:ids.length}):t('previewOnly')):'';
     errorBox.hidden=true;status.hidden=false;const revision=++previewRevision;
-    if(!currentId){stage.replaceChildren();stage.style.height='auto';currentName.textContent='';status.textContent=t('none');return;}
+    stage.hidden=!currentId;emptyPreview.hidden=!!currentId;
+    previewState=currentId?{id:currentId,state:'checking'}:null;needsPreviewCheck=!!currentId;
+    renderQueue();updateControls();
+    if(!currentId){stage.replaceChildren();stage.style.height='auto';currentName.textContent='';status.hidden=true;return;}
     try{
       const [product]=captureSelection(products(),[currentId]),model=modelFor(product),paper=buildPaper(model);
-      currentName.textContent=model.name;stage.replaceChildren(paper);status.textContent=t('ready');
+      currentName.textContent=model.name;stage.replaceChildren(paper);status.dataset.state='checking';status.textContent=t('checking');
+      scalePreview();await preparePapers([paper],doc,()=>revision===previewRevision&&opened);
+      if(revision!==previewRevision || !opened)return;
+      const review=core.reviewProduct(product);previewState={id:currentId,state:'ready'};needsPreviewCheck=false;
+      status.dataset.state=review.length?'review':'ready';status.textContent=t(review.length?'cardReview':'cardReady');
+      if(review.length)status.textContent+=' · '+review.map(key=>t(key)).join(' · ');
       if(paper.querySelector('[data-code="qr"]'))status.textContent+=' '+t('qr');
-      if(model.issues.includes('missingDimensions'))status.textContent+=' '+core.text(language(),'missingDimensions');
-      scalePreview();requestAnimationFrame(()=>{if(revision!==previewRevision)return;fitPaper(paper);});
-      for(const image of paper.querySelectorAll('img'))image.addEventListener('error',()=>{if(revision===previewRevision)showError(new Error('IMAGE_LOAD'));},{once:true});
-    }catch(error){stage.replaceChildren();showError(error);}
+      scalePreview();updateControls();retainPrintFailure();
+    }catch(error){
+      if(revision!==previewRevision || !opened)return;
+      if(error.message==='LAYOUT_HIDDEN'){needsPreviewCheck=true;retainPrintFailure();return;}
+      needsPreviewCheck=false;
+      previewState={id:currentId,state:'error'};status.dataset.state='error';status.textContent=t('cardBlocked');showError(error);updateControls();
+    }
   }
   function move(step) {
     const ids=selectedIds(),index=ids.indexOf(currentId),target=ids[index+step];if(target){currentId=target;renderPreview();}
@@ -418,12 +626,17 @@
   function open(productId, source) {
     if(typeof window.getCurrentPage==='function' && window.getCurrentPage()!=='products')window.showPage('products');
     mount();opener=source||doc.activeElement;
+    printFailure=null;
     const filter=state().prTabFilter||'all',query=(byId('prSearch')?.value||'').trim().toLowerCase();
     const sourceProducts=productId!==undefined?products().filter(product=>String(product.id)===String(productId)):
-      products().filter(product=>(filter==='all'||product.type===filter)&&(!query||String(product.name||'').toLowerCase().includes(query)));
-    available=sourceProducts.map(product=>String(product.id));selected=new Set(available);currentId=available[0]||null;
-    printLocale=core.resolveLocale(state().settings?.productLabels?.locale,language());savedNoteKey='preference';
-    search.value='';selection.open=sourceProducts.length>1;opened=true;workspace.hidden=false;page.classList.add('wf-label-mode');
+      products().filter(product=>(filter==='all'||product.type===filter)&&core.matchesProduct(product,query));
+    available=products().filter(product=>product.id!==null&&product.id!==undefined).map(product=>String(product.id));
+    if(productId!==undefined || !hasSelectionSession){selected=new Set(sourceProducts.map(product=>String(product.id)));currentId=selectedIds()[0]||null;search.value='';selectionFilter='all';visibleCount=40;}
+    else {selected=new Set(selectedIds().filter(id=>available.includes(id)));if(!available.includes(currentId))currentId=selectedIds()[0]||null;}
+    hasSelectionSession=true;
+    if(!localeInitialized){printLocale=core.resolveLocale(state().settings?.productLabels?.locale,language());savedNoteKey='preference';localeInitialized=true;}
+    selection.open=true;opened=true;workspace.hidden=false;page.classList.add('wf-label-mode');
+    showPane(currentId?'preview':'catalog');
     renderSelection();refreshText();registerGuard();workspace.focus({preventScroll:true});workspace.scrollIntoView({block:'start',behavior:'auto'});
   }
   function close(restoreFocus) {
@@ -431,8 +644,8 @@
     if(restoreFocus && opener?.isConnected)opener.focus({preventScroll:true});
   }
   async function printSelected() {
-    if(preparing || !selected.size)return;
-    activePrint?.cleanup();errorBox.hidden=true;preparing=true;workspace.setAttribute('aria-busy','true');printButton.disabled=true;
+    if(preparing || activePrint || !selected.size)return;
+    printFailure=null;errorBox.hidden=true;preparing=true;workspace.setAttribute('aria-busy','true');updateControls();
     status.hidden=false;status.textContent=t('preparing');registerGuard();
     let frame,cleanup;
     try{
@@ -442,10 +655,18 @@
       frame.style.cssText='position:fixed;left:-200vw;top:0;width:1123px;height:794px;border:0;pointer-events:none;';
       doc.body.append(frame);const printDoc=frame.contentDocument,printWindow=frame.contentWindow;
       if(!printDoc || typeof printWindow?.print!=='function')throw new Error('PRINT_UNAVAILABLE');
-      let timer;
-      cleanup=()=>{
+      let timer,cleaned=false;
+      const media=printWindow.matchMedia?.('print');
+      let enteredPrint=!!media?.matches;
+      const onMedia=event=>{if(event.matches)enteredPrint=true;else if(enteredPrint)cleanup(true);};
+      cleanup=(completed=false)=>{
+        if(cleaned)return;cleaned=true;
         clearTimeout(timer);printWindow.removeEventListener('afterprint',cleanup);window.removeEventListener('afterprint',cleanup);
+        media?.removeEventListener?.('change',onMedia);
         frame.remove();if(activePrint?.frame===frame)activePrint=null;
+        if(printRecovery)printRecovery.hidden=true;
+        if(completed&&opened){status.textContent=t('printReturned');status.dataset.state='ready';}
+        updateControls();
       };
       activePrint={frame,cleanup};
       printDoc.open();printDoc.write('<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>');printDoc.close();
@@ -456,16 +677,15 @@
       link.href=stylesheet;printDoc.head.append(link);
       for(const model of models)printDoc.body.append(buildPaper(model,printDoc));
       await withTimeout(loaded,12000,'STYLE_TIMEOUT');
-      if(printDoc.fonts)await withTimeout(printDoc.fonts.ready,12000,'FONT_TIMEOUT');
-      const images=[...printDoc.images];
-      for(let index=0;index<images.length;index+=6)await Promise.all(images.slice(index,index+6).map(image=>waitForImage(image)));
-      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-      for(const paper of printDoc.querySelectorAll('.wf-label-paper')){fitPaper(paper);checkPaper(paper);}
+      await preparePapers([...printDoc.querySelectorAll('.wf-label-paper')],printDoc);
       printWindow.addEventListener('afterprint',cleanup,{once:true});window.addEventListener('afterprint',cleanup,{once:true});
-      timer=setTimeout(()=>{if(!printWindow.matchMedia('print').matches)cleanup();},120000);
-      printWindow.focus();printWindow.print();status.textContent=t('opened');
-    }catch(error){if(cleanup)cleanup();else frame?.remove();showError(error);status.textContent=t('ready');}
-    finally{preparing=false;workspace.removeAttribute('aria-busy');printButton.disabled=!selected.size;}
+      media?.addEventListener?.('change',onMedia);
+      // A background transition cannot prove a native print sheet has closed.
+      // Browsers without completion events get an explicit user recovery action.
+      timer=setTimeout(()=>{if(activePrint?.frame===frame&&printRecovery){printRecovery.hidden=false;showPane('preview',true);}},8000);
+      printWindow.focus();printWindow.print();status.textContent=t(activePrint?'opened':'printReturned');
+    }catch(error){if(cleanup)cleanup();else frame?.remove();revealPrintFailure(error);}
+    finally{preparing=false;workspace.removeAttribute('aria-busy');updateControls();}
   }
   function enhanceActions() {
     const toolbar=page.querySelector('.co-toolbar-row');

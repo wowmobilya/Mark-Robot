@@ -63,3 +63,13 @@ test('asset timeout never silently prints before fonts or styles are ready',asyn
  await assert.rejects(()=>helpers.withTimeout(new Promise(()=>{}),5,'FONT_TIMEOUT'),/FONT_TIMEOUT/);
 });
 
+test('print image readiness waits for decoding and reports decode failure or timeout',async()=>{
+ let decoded=false,release;
+ const ready=new EventTarget();Object.assign(ready,{complete:true,naturalWidth:20,naturalHeight:20,decode:()=>new Promise(resolve=>{release=()=>{decoded=true;resolve();};})});
+ const waiting=helpers.waitForImage(ready,100);await Promise.resolve();assert.equal(decoded,false);release();await waiting;assert.equal(decoded,true);
+ const broken=new EventTarget();Object.assign(broken,{complete:true,naturalWidth:20,naturalHeight:20,decode:async()=>{throw new Error('bad image');}});
+ await assert.rejects(()=>helpers.waitForImage(broken,100),/IMAGE_LOAD/);
+ const stalled=new EventTarget();Object.assign(stalled,{complete:true,naturalWidth:20,naturalHeight:20,decode:()=>new Promise(()=>{})});
+ await assert.rejects(()=>helpers.waitForImage(stalled,5),/IMAGE_TIMEOUT/);
+});
+

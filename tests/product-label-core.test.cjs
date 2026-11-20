@@ -23,6 +23,56 @@ test('locale normalization accepts supported values and uses a validated fallbac
   assert(Object.isFrozen(core.locales));
 });
 
+test('catalog search normalizes Arabic marks and digits, Turkish letters, accents and compatibility forms', () => {
+  const cases = [
+    ['  أَرِيكَة إيطالية آفاق ٱلْبَاب ٤٢ ۴۲  ', 'اريكة ايطالية افاق الباب 42 42'],
+    ['İSTANBUL IĞDIR ışık', 'istanbul igdir isik'],
+    ['CAFÉ Étagère', 'cafe etagere'],
+    ['ＭＯＤＥＬ １２３', 'model 123'],
+    ['  КОМПЛЕКТ 42  ', 'комплект 42'],
+    [0, '0'],
+    [null, ''],
+    [undefined, ''],
+    [{name:'not text'}, ''],
+    [['MODEL'], ''],
+    [Infinity, '']
+  ];
+  for (const [value, expected] of cases) assert.equal(core.normalizeSearch(value), expected);
+});
+
+test('product search requires every whitespace token across name, barcode, code and type without changing stored values', () => {
+  const product = Object.freeze({name:'  Étagère İZMİR  ', barcode:'٠٠۱۲', code:'K-٤٢', type:'SET'});
+  assert.equal(core.matchesProduct(product, ' izmir\t0012\nset K-42 '), true);
+  assert.equal(core.matchesProduct(product, 'set etagere'), true);
+  assert.equal(core.matchesProduct(product, 'izmir missing'), false);
+  assert.equal(core.matchesProduct(product, '  \n\t '), true);
+  assert.equal(core.matchesProduct({name:'Model', barcode:0}, '0 model'), true);
+  assert.equal(core.matchesProduct({name:null, barcode:{}, code:[], type:false}, 'object'), false);
+  assert.equal(core.matchesProduct(null, 'model'), false);
+  assert.deepEqual(product, {name:'  Étagère İZMİR  ', barcode:'٠٠۱۲', code:'K-٤٢', type:'SET'});
+});
+
+test('product review reports missing fields safely and preserves useful partial physical rows', () => {
+  const all = ['missingName', 'missingImage', 'missingDimensions'];
+  assert.deepEqual(core.reviewProduct(null), all);
+  assert.deepEqual(core.reviewProduct({name:' \t ', image:'\n'}), all);
+  assert.deepEqual(core.reviewProduct({name:{}, image:42}), all);
+  const product = Object.freeze({name:0, image:'/photo.png', dims:Object.freeze([Object.freeze({l:200, w:0, h:0})])});
+  assert.deepEqual(core.reviewProduct(product), []);
+  assert.equal(product.name, 0);
+  assert.equal(product.dims[0].l, 200);
+  assert.deepEqual(core.reviewProduct({name:'W400', image:null, dims:[{l:'invalid', w:-1, h:Infinity}]}),
+    ['missingImage', 'missingDimensions']);
+});
+
+test('product review shares physical dimension precedence and never uses shipping packages', () => {
+  const metadata = {name:'W400', image:'photo.png'};
+  assert.deepEqual(core.reviewProduct({...metadata, dimPieces:[{l:100, w:50, h:40}]}), ['missingDimensions']);
+  assert.deepEqual(core.reviewProduct({...metadata, dimL:100, dimW:50, dimH:40}), []);
+  assert.deepEqual(core.reviewProduct({...metadata, dims:[], dimL:'100'}), []);
+  assert.deepEqual(core.reviewProduct({...metadata, dims:[{l:0, w:0, h:0}], dimL:100}), ['missingDimensions']);
+});
+
 test('geometry describes exactly two connected faces that fit on one landscape A4 sheet', () => {
   const g = core.geometry;
   assert.deepEqual(g, {paperWidth:297, paperHeight:210, margin:6, pairWidth:200, pairHeight:150, faceWidth:100, faceHeight:150});
@@ -104,6 +154,20 @@ test('the barcode uses only the stored code or name and preserves the exact payl
   assert.equal(absent.barcode, '');
   assert.equal(absent.barcodeValid, false);
   assert(absent.issues.includes('missingBarcode'));
+});
+
+test('numeric zero barcodes remain the actual payload and only absent codes fall back to the product name', () => {
+  for (const barcode of [0, '0', '0000']) {
+    const model = core.createLabelModel({name:'MODEL-0', barcode});
+    assert.equal(model.barcode, String(barcode));
+    assert.equal(model.barcodeValid, true);
+  }
+  for (const barcode of [undefined, null, '']) {
+    assert.equal(core.createLabelModel({name:'MODEL-0', barcode}).barcode, 'MODEL-0');
+  }
+  const blank = core.createLabelModel({name:'MODEL-0', barcode:'  '});
+  assert.equal(blank.barcode, '  ');
+  assert.equal(blank.barcodeValid, false);
 });
 
 test('unsupported barcode characters are retained as data and are never silently replaced', () => {
