@@ -8,11 +8,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
+const test = require('node:test');
 const source = fs.readFileSync(process.argv[2] || path.resolve(__dirname, '../robot-face.js'), 'utf8');
 let assertionCount = 0;
 function check(condition, message) { assertionCount++; assert.ok(condition, message); }
 
-function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], supported = true, recordings = false, audioPlay, snapshot, preferences = {autoExpressions:true,idleMotion:true}, offline = false, offlineReady = true, reference = false, referenceReady = true} = {}) {
+function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], supported = true, recordings = false, audioPlay, snapshot, preferences = {autoExpressions:true,idleMotion:true}, offline = false, offlineReady = true, reference = true, referenceReady = true} = {}) {
   const observers = [];
   const timers = new Map();
   let timerId = 0;
@@ -93,30 +94,31 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   win.SpeechSynthesisUtterance = supported ? Utterance : undefined;
   const audioRequests = [];
   class Audio {
-    constructor(url) { this.src = url; this.pauseCount = 0; audioRequests.push(this); }
-    play() { this.playCount = (this.playCount || 0) + 1; return audioPlay ? audioPlay(this) : Promise.resolve(); }
-    pause() { this.pauseCount++; }
+    constructor(url) { this.src = url; this.pauseCount = 0; this.currentTime=0;this.paused=true;audioRequests.push(this); }
+    play() { this.paused=false;this.playCount = (this.playCount || 0) + 1; return audioPlay ? audioPlay(this) : Promise.resolve(); }
+    pause() { this.paused=true;this.pauseCount++; }
     removeAttribute(name) { delete this[name]; }
     load() { this.loaded = true; }
   }
   if (recordings) win.Audio = Audio;
   win.wfBusinessOverviewSnapshot = snapshot;
-  // Legacy scenarios explicitly choose the lightweight backend. Reference
-  // scenarios override it, including undefined to exercise the new default.
-  win.WFRobotSettings = {getPreferences:()=>({speechBackend:'local',...preferences})};
+  win.WFRobotSettings = {getPreferences:()=>({...preferences})};
   // Lifecycle fixtures use a transparent pronunciation adapter; separate suites
   // validate real financial snapshots and the exact money wording.
   win.WFArabicReportSpeech = win.WFTurkishReportSpeech = {prepare:value=>[{text:value.narration,charIndex:0,charLength:value.narration.length}]};
   const offlineVoice = {calls:[],cancels:0,getStatus:()=>({ready:offlineReady}),speak(request){this.calls.push(request);return{cancel:()=>{this.cancels++;}};}};
   if (offline) win.WFOfflineVoice = offlineVoice;
-  const referenceVoice = {calls:[],cancels:0,unlocks:0,disposals:0,cancelledDownloads:[],prepares:[],releases:0,
+  const referenceVoice = {calls:[],handles:[],cancels:0,pauses:0,resumes:0,unlocks:0,disposals:0,cancelledDownloads:[],prepares:[],releases:0,
     list:()=>[{locale:'ar',locales:['ar','en','tr','fr','ru'],name:'Mark · local reference',bytes:921000000}],
-    getStatus:()=>({locale:lang,ready:referenceReady,state:referenceReady?'ready':'not-installed',name:'Mark · local reference',total:921000000}),
+    getStatus:()=>({locale:lang,ready:referenceReady,installed:referenceReady,state:referenceReady?'ready':'not-installed',engineState:'idle',engineError:'',name:'Mark · local reference',total:921000000}),
     preparePlayback(){this.unlocks++;return{dispose:()=>this.disposals++};},
     prepare(locale){this.prepares.push(locale);return Promise.resolve();},
     release(){this.releases++;},
     cancelDownload(locale){this.cancelledDownloads.push(locale);},
-    speak(request){this.calls.push(request);return{cancel:()=>{this.cancels++;}};}};
+    speak(request){this.calls.push(request);let cancelled=false,paused=false,finished=false;
+      const onEnd=request.onEnd;request.onEnd=(...args)=>{finished=true;onEnd?.(...args);};
+      const handle={cancel:()=>{if(!cancelled&&!finished){cancelled=true;this.cancels++;}},pause:()=>{if(cancelled||finished||paused)return false;paused=true;this.pauses++;request.onPause?.({reason:'user'});return true;},
+        resume:()=>{if(cancelled||finished||!paused)return false;paused=false;this.resumes++;request.onResume?.();return true;}};this.handles.push(handle);return handle;}};
   if (reference) win.WFReferenceVoice = referenceVoice;
   const reportEvents = [];
   for (const type of ['wf-robot-report-open','wf-robot-report-playback','wf-robot-report-boundary','wf-robot-report-voice']) win.addEventListener(type,event=>reportEvents.push({type,...event.detail}));
@@ -147,463 +149,313 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
     },
     hideDocument() { doc.hidden = true; doc.dispatchEvent(new CustomEvent('visibilitychange')); },
     voicesChanged(next) { synth.voices = next; synth.dispatchEvent(new CustomEvent('voiceschanged')); },
-    timeout() { for (const timer of [...timers.values()]) timer.fn(); },
+    timeout(minMs=0) { for (const timer of [...timers.values()])if(timer.ms>=minMs)timer.fn(); },
     pagehide(persisted) { win.dispatchEvent(new CustomEvent('pagehide', {persisted})); },
   };
 }
 
-{
-  const f = fixture();
-  check(f.track.children.length === 5 && f.face.getAttribute('aria-hidden') === 'true' && f.face.inert, 'Fifth face mounts synchronously and initially hidden');
-  check(f.synth.calls.length === 0, 'Mount does not auto-speak');
-  f.speak.click();
-  check(f.synth.calls.length === 0, 'Hidden face cannot start speech');
-  f.reveal();
-  check(!f.face.html.includes('wf-robot-expression'), 'Manual expression control is removed');
-  check(f.speak.getAttribute('aria-label') === 'هوية الروبوت', 'Identity control uses the requested full Arabic label');
-  f.speak.click();
-  check(f.synth.calls.length === 1 && f.synth.calls[0].lang === 'ar-SA', 'User action selects a matching Arabic voice');
-  check(f.face.dataset.voiceActive === 'true' && f.face.dataset.speaking === 'false', 'Queued voice has no fake mouth animation');
-  check(f.activity.join(',') === 'true', 'Queued voice emits bubbling carousel-pause event');
-  f.synth.start();
-  check(f.face.dataset.speaking === 'true' && f.face.dataset.expression === 'happy', 'Audio start drives eyes and mouth');
-  f.synth.end();
-  check(f.face.dataset.speaking === 'false' && f.face.dataset.expression === 'calm' && f.activity.join(',') === 'true,false', 'Audio end restores expression and releases carousel');
-  check(f.synth.cancelCount === 0, 'Natural completion does not cancel other speech');
-  f.speak.click(); const stale = f.synth.current; f.synth.start(); f.speak.click();
-  check(f.synth.cancelCount === 1 && f.face.dataset.voiceActive === 'false', 'Stop button cancels owned speech');
-  stale.onstart(); stale.onend();
-  check(f.face.dataset.speaking === 'false' && f.activity.join(',') === 'true,false,true,false', 'Stale callbacks cannot revive canceled speech');
-}
-for (const [name, stop] of [
-  ['hidden face', f => f.hide()], ['dashboard exit', f => f.leaveDashboard()],
-  ['hidden document', f => f.hideDocument()], ['language change', f => f.language('tr')],
-]) {
-  const f = fixture(); f.reveal(); f.speak.click(); f.synth.start(); stop(f);
-  check(f.synth.cancelCount === 1 && f.face.dataset.speaking === 'false' && f.activity.join(',') === 'true,false', 'Stops on ' + name);
-}
-{
-  const f = fixture({voices: [{lang: 'en-US', localService: true}]}); f.reveal(); f.speak.click();
-  check(f.synth.calls.length === 0 && f.status.textContent.includes('عربي'), 'Rejects wrong-language voice with localized status');
-  f.voicesChanged([{lang: 'ar-EG', localService: false}]); f.speak.click();
-  check(f.synth.calls.length === 0 && f.status.textContent.includes('دون اتصال'), 'Rejects network-backed platform voices for offline operation');
-  f.voicesChanged([{lang: 'ar-EG', localService: true}]); f.speak.click();
-  f.synth.error('audio-busy');
-  check(f.face.dataset.speaking === 'false' && f.status.textContent.includes('تعذّر'), 'Audio error displays localized failure');
-}
-{
-  const f = fixture({voices: [{lang: 'ar-EG', localService: false, default: true}, {lang: 'ar-SA', localService: true}]});
-  f.reveal(); f.speak.click();
-  check(f.synth.calls[0]?.voice.localService === true, 'Prefers matching installed voice');
-  f.timeout();
-  check(f.synth.cancelCount === 1 && f.face.dataset.voiceActive === 'false' && f.status.textContent.includes('تعذّر'), 'Blocked start times out and releases carousel');
-}
-for (const [lang, prefix] of [['ar', 'ar'], ['tr', 'tr'], ['en-US', 'en'], ['fr', 'fr'], ['ru', 'ru']]) {
-  const f = fixture({lang, voices: [{lang: prefix, localService: true}]}); f.reveal(); f.speak.click();
-  check(f.synth.calls[0]?.lang === prefix && f.synth.calls[0]?.text.length > 60, 'Localized speech selection: ' + lang);
-}
-{
-  const f = fixture({supported: false}); f.reveal(); f.speak.click();
-  check(f.speak.disabled && f.synth.calls.length === 0 && f.face.dataset.expression === 'calm', 'Unsupported browsers retain the idle face and disable speech');
-}
-{
-  const f = fixture(); f.reveal(); f.synth.speaking = true; f.speak.click();
-  check(f.synth.calls.length === 0 && f.synth.cancelCount === 0 && f.status.textContent.includes('مشغول'), 'Does not interrupt another feature’s speech');
-}
-{
-  const f = fixture(); f.reveal(); f.speak.click(); f.pagehide(true);
-  check(f.synth.cancelCount === 1 && f.synth.listeners.voiceschanged.size === 1, 'BFCache hide stops audio and preserves listeners');
-  f.pagehide(false);
-  check(f.synth.listeners.voiceschanged.size === 0 && f.observers.every(observer => observer.targets.length === 0), 'Final disposal removes voice listeners and observers');
-}
+const flush=async()=>{for(let turn=0;turn<8;turn++)await Promise.resolve();};
+const noAlternative=f=>check(!f.offlineVoice.calls.length&&!f.synth.calls.length,'No Nabra or platform voice is selected');
+const state=f=>f.win.WFProgramSpeech.getState();
 
+test('mounting and dashboard controls require a visible robot and a trusted action',async()=>{
+  let reads=0;const f=fixture({snapshot:()=>{reads++;return{narration:'Daily figures'};}});
+  check(f.track.children.length===5&&f.face.getAttribute('aria-hidden')==='true'&&f.face.inert,'Fifth face mounts hidden');
+  check(!f.referenceVoice.calls.length&&!f.activity.some(Boolean),'Mounting never starts speech');
+  f.speak.click();f.report.click();await flush();
+  check(!f.referenceVoice.calls.length&&!reads,'Hidden dashboard controls cannot start speech');
+  f.reveal();f.speak.click(false);f.report.click(false);await flush();
+  check(!f.referenceVoice.calls.length&&!reads,'Programmatic dashboard clicks cannot start speech');
+  check(!f.face.html.includes('wf-robot-expression'),'Manual expression selector stays removed');
+  f.speak.click();const request=f.referenceVoice.calls[0];
+  check(!!request&&request.locale==='ar','Trusted identity generation uses Mark in the current language');
+  check(f.face.dataset.voiceActive==='true'&&f.face.dataset.speaking==='false','Queued speech never animates a fake start');
+  check(f.activity.join(',')==='true','Queued speech acquires its activity owner');
+  request.onStart();check(f.face.dataset.speaking==='true'&&f.face.dataset.expression==='happy','Actual audio starts the mouth');
+  request.onEnd();check(!state(f).active&&f.activity.join(',')==='true,false','Natural end releases ownership');
+  check(f.referenceVoice.cancels===0,'Natural completion does not cancel another session');noAlternative(f);
+ });
 
-(async () => {
-  const flush = async () => { await Promise.resolve(); await Promise.resolve(); };
-  {
-    const f = fixture({recordings:true, offline:true}); f.reveal();
-    check(f.audioRequests.length === 0 && f.offlineVoice.calls.length === 0, 'Bundled identity never auto-starts during mount');
-    f.speak.click(false);
-    check(f.audioRequests.length === 0, 'Programmatic identity clicks cannot start audio');
-    f.speak.click();
-    check(f.audioRequests[0]?.src === 'assets/robot-identity/ar.mp3?v=3' && f.audioRequests[0].playCount === 1, 'Trusted click synchronously plays the versioned bundled identity');
-    check(f.offlineVoice.calls.length === 0 && f.synth.calls.length === 0, 'Identity prefers the small recording over both pack generation and native speech');
-    f.audioRequests[0].onplaying();
-    check(f.reportEvents.length === 0 && f.face.dataset.speechBeat !== 'true', 'Recorded identity does not fabricate report or word timing events');
-    f.speak.click();
-    check(f.audioRequests[0].pauseCount === 1 && f.face.dataset.voiceActive === 'false' && f.timers.size === 0, 'Identity Stop releases recorded audio and every animation timer');
+for(const backend of [undefined,'local','device','reference'])test('legacy '+String(backend)+' preferences always select Syrian Mark',async()=>{
+  const preferences={speechBackend:backend,arabicDialect:'eg',continuousSpeech:true,speechRate:1.1,speechVolume:.6};
+  const f=fixture({offline:true,preferences,snapshot:()=>({narration:'Reference report'})});f.reveal();f.report.click();await flush();
+  const request=f.referenceVoice.calls[0];check(!!request,'The reference engine owns the report');
+  check(request.dialect==='sy'&&request.continuous===false,'Legacy dialect and full buffering cannot reappear');
+  check(request.rate===1.1&&request.volume===.6,'Rate and volume preferences remain effective');
+  noAlternative(f);request.onStart();preferences.speechBackend=backend==='local'?'device':'local';preferences.arabicDialect='eg';
+  f.send('wf-robot-preferences',{});
+  check(state(f).active&&f.referenceVoice.cancels===0,'An obsolete preference cannot interrupt or change the canonical voice');
+  f.win.WFProgramSpeech.stop();request.onStart();request.onEnd();
+  check(!state(f).active&&f.face.dataset.speaking==='false','Stale Mark callbacks cannot revive a stopped session');
+});
+
+for(const lang of ['ar','tr','en','fr','ru'])test('the '+lang+' fixed Mark recording keeps the approved language and Syrian Arabic selection',()=>{
+  const f=fixture({lang,supported:false,recordings:true,preferences:{arabicDialect:'eg',speechRate:1.15,speechVolume:.4}});f.reveal();f.speak.click();
+  const audio=f.audioRequests[0];
+  check(audio?.src===`assets/robot-identity/${lang}.mp3?v=${lang==='ar'?3:2}`,'The approved bundled recording is selected');
+  check(audio.playCount===1&&audio.playbackRate===1.15&&audio.volume===.4,'Trusted click primes the recording with saved controls');
+  check(!f.referenceVoice.calls.length&&!f.synth.calls.length,'A fixed greeting does not synthesize or switch voices');
+  check(f.face.dataset.speaking==='false','A play promise does not imply audible playback');
+  audio.onplaying();check(f.face.dataset.speaking==='true','The real playing event starts speech animation');
+  audio.onended();check(!state(f).active&&audio.pauseCount===1,'Completion frees the recording');
+});
+
+test('recording startup failures may use Mark but never another voice',async()=>{
+  for(const audioPlay of [undefined,()=>Promise.reject(new Error('blocked')),()=>{throw new Error('unsupported codec');}]){
+    const f=fixture({recordings:true,offline:true,audioPlay});f.reveal();f.speak.click();
+    if(!audioPlay)f.audioRequests[0].onerror();await flush();
+    check(f.referenceVoice.calls.length===1,'The installed Mark engine can recover a greeting startup failure');
+    check(f.face.dataset.speaking==='false','Fallback generation cannot fake audio start');noAlternative(f);
+    f.referenceVoice.calls[0].onStart();f.referenceVoice.calls[0].onEnd();
+    check(f.activity.join(',')==='true,false','A recovered greeting retains one owner');
   }
-  for (const lang of ['ar','tr','en','fr','ru']) {
-    const f = fixture({lang, supported:false, recordings:true}); f.reveal(); f.speak.click();
-    check(f.audioRequests[0]?.src === `assets/robot-identity/${lang}.mp3?v=${lang === 'ar' ? 3 : 2}`, 'Exact bundled recording selected for '+lang);
-    check(!f.speak.disabled && f.face.dataset.voiceActive === 'true', 'Bundled '+lang+' identity remains available without platform voices');
+});
+
+test('a partially heard greeting is not repeated after an audio error',()=>{
+  const f=fixture({recordings:true,offline:true});f.reveal();f.speak.click();const audio=f.audioRequests[0];
+  audio.onplaying();audio.onwaiting();audio.onerror();
+  check(!state(f).active&&!f.referenceVoice.calls.length,'An error after playback does not replay the greeting');noAlternative(f);
+});
+
+for(const kind of ['recording','report','program','preview'])test(kind+' playback continues across carousel, routes and background visibility',async()=>{
+  const f=fixture({recordings:kind==='recording'||kind==='preview',snapshot:()=>({narration:'Persistent report'})});
+  if(kind==='program')f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:true}});
+  else if(kind==='preview'){f.visitPage('settings');f.win.WFProgramSpeech.preview({event:{isTrusted:true}});}
+  else{f.reveal();(kind==='report'?f.report:f.speak).click();await flush();}
+  const audio=f.audioRequests[0],request=f.referenceVoice.calls[0];
+  if(audio)audio.onplaying();else request.onStart();
+  for(const [name,change]of [['carousel',()=>f.hide()],['settings route',()=>f.visitPage('settings')],['background tab',()=>f.hideDocument()],['dashboard route',()=>f.visitPage('dashboard')],['history route',()=>f.send('hashchange')]]){
+    change();check(state(f).active,'Existing '+kind+' retains ownership through '+name);
+    check(f.referenceVoice.cancels===0&&(!audio||audio.pauseCount===0),'Visibility never stops owned '+kind+' audio');
   }
-  {
-    const f = fixture({voices: [{lang:'ar', localService:false}], recordings:true}); f.reveal(); f.speak.click();
-    check(f.synth.calls.length === 0 && f.audioRequests.length === 1, 'No local voice uses bundled recording, never network speech');
-    check(f.face.dataset.voiceActive === 'true' && f.face.dataset.speaking === 'false', 'Recording waits for actual playback before mouth movement');
-    const audio = f.audioRequests[0]; audio.onplaying();
-    check(f.face.dataset.speaking === 'true', 'Recording playing event starts mouth');
-    audio.onwaiting();
-    check(f.face.dataset.speaking === 'false', 'Recording buffering stops mouth');
-    audio.onplaying(); audio.onended();
-    check(f.face.dataset.voiceActive === 'false' && f.synth.cancelCount === 0 && audio.pauseCount === 1, 'Recording completion releases resources without canceling global speech');
+  if(audio)audio.onended();else request.onEnd();check(!state(f).active,'Natural completion still ends background speech');
+});
+
+for(const [name,stop]of [
+  ['language change',f=>f.language('tr')],['real page hide',f=>f.pagehide(true)],
+  ['disabled speech',(f,p)=>{p.speechEnabled=false;f.send('wf-robot-preferences',{});}],
+  ['muted speech',(f,p)=>{p.speechVolume=0;f.send('wf-robot-preferences',{});}],
+  ['changed volume',(f,p)=>{p.speechVolume=.4;f.send('wf-robot-preferences',{});}],
+  ['changed rate',(f,p)=>{p.speechRate=1.2;f.send('wf-robot-preferences',{});}],
+])test(name+' safely cancels the current owner and ignores its late callbacks',()=>{
+  const preferences={speechVolume:1,speechRate:1};const f=fixture({preferences});
+  f.win.WFProgramSpeech.speak({text:'Owned text',event:{isTrusted:true}});const request=f.referenceVoice.calls[0];request.onStart();
+  stop(f,preferences);request.onStart();request.onEnd();
+  check(f.referenceVoice.cancels===1&&!state(f).active&&f.face.dataset.speaking==='false','Only the current owner is cancelled');noAlternative(f);
+});
+
+test('program pause and resume retain ownership and wait for actual resumed audio',async()=>{
+  const f=fixture();const api=f.win.WFProgramSpeech;
+  check(!api.speak({text:'Selected text',event:{isTrusted:false}}),'Program reading requires a trusted action');
+  check(api.speak({text:'Selected text',event:{isTrusted:true}}),'Explicit program reading can start with the carousel hidden');
+  const request=f.referenceVoice.calls[0],before=api.getState();
+  for(const field of ['active','paused','canPause','kind','phase','reason','message','locale','voiceName'])check(field in before,'Shared state exposes '+field);
+  check(before.active&&!before.paused&&before.canPause&&before.kind==='program','Preparation owns a pausable program session');
+  check(before.locale==='ar'&&before.voiceName==='Mark · local reference'&&typeof before.message==='string','Shared status identifies the selected voice and language');
+  request.onStart();check(f.face.dataset.speaking==='true','Initial audio really starts');
+  check(api.pause()!==false,'Pause reaches the current stream handle');
+  check(f.referenceVoice.pauses===1&&api.getState().active&&api.getState().paused&&f.face.dataset.speaking==='false','Pause is active but silent');
+  request.onStart();request.onWaiting();
+  check(api.getState().paused&&f.face.dataset.speaking==='false','Late start or waiting callbacks cannot undo an intentional pause');
+  check(await api.resume()===true&&f.referenceVoice.resumes===1,'Resume reaches the same handle');
+  check(!api.getState().paused&&api.getState().active&&f.face.dataset.speaking==='false','Resume does not fabricate audible playback');
+  request.onStart();check(f.face.dataset.speaking==='true','A real resumed start restores the mouth');
+  request.onPause({reason:'browser'});
+  check(api.getState().paused&&api.getState().reason==='browser'&&!!api.getState().message,'Browser interruption has an explanatory paused state');
+  api.stop();request.onStart();request.onResume?.();
+  check(!api.getState().active&&f.face.dataset.speaking==='false'&&f.referenceVoice.cancels===1,'Stop rejects all later pause/resume/start callbacks');
+  check(api.pause()===false&&await api.resume()===false,'Idle controls do not affect another audio owner');
+});
+
+test('recording pause and resume preserve the media position and require a real playing event',async()=>{
+  const f=fixture({recordings:true});const api=f.win.WFProgramSpeech;
+  api.preview({event:{isTrusted:true}});const audio=f.audioRequests[0];audio.onplaying();audio.currentTime=4.25;
+  check(api.pause()!==false&&state(f).paused&&state(f).active,'A fixed greeting can be intentionally paused');
+  check(audio.pauseCount===1&&audio.currentTime===4.25,'Pause retains the existing recording position');
+  audio.onplaying();check(state(f).paused&&f.face.dataset.speaking==='false','A stale media playing event cannot clear pause');
+  check(await api.resume()===true,'Resume uses the same media element');await flush();
+  check(audio.playCount===2&&audio.currentTime===4.25&&!state(f).paused&&f.face.dataset.speaking==='false','Resume does not restart or fake playback');
+  audio.onplaying();check(f.face.dataset.speaking==='true','Actual resumed playback starts animation');api.stop();
+});
+
+test('generation phases and explanatory failures reach shared state without voice substitution',()=>{
+  const f=fixture({offline:true});f.win.WFProgramSpeech.speak({text:'Dynamic report',event:{isTrusted:true}});const request=f.referenceVoice.calls[0];
+  request.onProgress({phase:'loading',loaded:30,total:100});
+  check(state(f).phase==='loading'&&!!state(f).message&&f.face.dataset.speaking==='false','Model loading is shown before audio');
+  request.onProgress({phase:'initializing'});check(state(f).phase==='initializing','GPU initialization has its own phase');
+  request.onError(Object.assign(new Error('worker-startup-failed'),{code:'worker-startup-failed'}));
+  check(!state(f).active&&state(f).state==='failed'&&state(f).reason==='worker-startup-failed'&&!!state(f).message,'The actual failure code and readable status survive cleanup');
+  request.onStart();check(f.face.dataset.speaking==='false','Failure cannot be revived by late worker callbacks');noAlternative(f);
+});
+
+test('missing Mark never falls back to available Nabra or a device voice',async()=>{
+  const f=fixture({reference:false,offline:true,recordings:true,snapshot:()=>({narration:'Current report'})});f.reveal();f.report.click();await flush();
+  noAlternative(f);check(f.reportEvents.some(event=>event.type==='wf-robot-report-open'&&event.snapshot.narration==='Current report'),'Unavailable speech still exposes the actual written report');
+  check(f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.state==='unsupported'),'The missing reference adapter is explained');
+  check(!f.win.WFProgramSpeech.speak({text:'No replacement',event:{isTrusted:true}}),'Program reading also requires Mark');
+  f.voicesChanged([{lang:'ar',localService:true}]);f.send('wf-offline-voice-change',{locale:'ar',ready:true,state:'ready',name:'Nabra'});
+  check(state(f).state==='unavailable','Unrelated installed voices cannot erase Mark unavailability');
+  check(f.win.WFProgramSpeech.preview({event:{isTrusted:true}})&&f.audioRequests.length===1,'The bundled Mark recording remains available');
+});
+
+test('a pending report can be stopped or replaced without late playback',async()=>{
+  for(const replacement of ['stop','program']){
+    let resolve;const f=fixture({snapshot:()=>new Promise(done=>{resolve=done;})});f.reveal();f.report.click();
+    check(state(f).active&&f.face.dataset.speaking==='false','Snapshot work owns a silent, cancellable report');
+    if(replacement==='stop')f.report.click();else f.win.WFProgramSpeech.speak({text:'New program owner',event:{isTrusted:true}});
+    resolve({narration:'Stale report'});await flush();
+    check(f.referenceVoice.calls.length===(replacement==='program'?1:0),'A late snapshot cannot start a displaced report');
+    if(replacement==='program')check(f.referenceVoice.calls[0].text==='New program owner','The successor retains ownership');
   }
-  for (const [name, stop] of [
-    ['hidden face', f=>f.hide()], ['dashboard exit', f=>f.leaveDashboard()],
-    ['hidden tab', f=>f.hideDocument()], ['language switch', f=>f.language('en')],
-    ['page hide', f=>f.pagehide(true)], ['repeated identity click', f=>f.speak.click()],
-  ]) {
-    const f = fixture({recordings:true}); f.reveal(); f.speak.click();
-    const audio = f.audioRequests[0]; const staleStart = audio.onplaying; const staleError = audio.onerror;
-    audio.onplaying(); stop(f); staleStart(); staleError();
-    check(audio.pauseCount === 1 && !audio.src && f.face.dataset.voiceActive === 'false' && f.face.dataset.speaking === 'false' && f.synth.calls.length === 0,
-      'Recording cancels safely on '+name+' and ignores stale callbacks');
-  }
-  {
-    const f = fixture({recordings:true, offline:true}); f.reveal(); f.speak.click();
-    const audio = f.audioRequests[0]; const staleStart = audio.onplaying; audio.onerror(); staleStart();
-    check(audio.pauseCount === 1 && f.offlineVoice.calls.length === 1 && f.synth.calls.length === 0 && f.activity.join(',') === 'true', 'Recording failure before start falls back to the installed pack without releasing the carousel');
-    check(f.face.dataset.speaking === 'false', 'Stale recorded playing callback cannot fake playback during pack fallback');
-    f.offlineVoice.calls[0].onStart(); f.offlineVoice.calls[0].onEnd();
-    check(f.activity.join(',') === 'true,false', 'Pack fallback has one continuous owned speech session');
-  }
-  {
-    const f = fixture({recordings:true, audioPlay:()=>Promise.reject(new Error('blocked'))}); f.reveal(); f.speak.click(); await flush();
-    check(f.synth.calls.length === 1 && f.audioRequests[0].pauseCount === 1 && f.activity.join(',') === 'true', 'Rejected audio play recovers through an available local system voice');
-    f.synth.start(); f.synth.end();
-  }
-  {
-    const f = fixture({recordings:true, audioPlay:()=>{throw new Error('unsupported codec');}}); f.reveal(); f.speak.click();
-    check(f.synth.calls.length === 1 && f.audioRequests[0].pauseCount === 1, 'Synchronous audio failure has the same local-only fallback');
-  }
-  {
-    const f = fixture({recordings:true}); f.reveal(); f.speak.click(); f.timeout();
-    check(f.synth.calls.length === 1 && f.audioRequests[0].pauseCount === 1, 'A recording that never starts times out into the local fallback');
-  }
-  {
-    const f = fixture({recordings:true, offline:true}); f.reveal(); f.speak.click(); const audio=f.audioRequests[0];
-    audio.onplaying(); audio.onwaiting(); audio.onerror();
-    check(f.synth.calls.length === 0 && f.offlineVoice.calls.length === 0 && f.face.dataset.voiceActive === 'false', 'A partially heard identity is never repeated through another voice');
-  }
-  {
-    const f = fixture({recordings:true, voices:[]}); f.reveal(); f.speak.click(); f.audioRequests[0].onerror();
-    check(f.face.dataset.voiceActive === 'false' && f.face.dataset.speaking === 'false' && f.status.textContent.includes('تعذّر'), 'No fallback voice produces an honest failure with no mouth animation');
-  }
-  {
-    const f = fixture({recordings:true}); f.reveal(); f.speak.click(); const audio=f.audioRequests[0];
-    audio.onplaying(); audio.onpause();
-    check(f.face.dataset.speaking === 'false' && f.face.dataset.voiceActive === 'true', 'Media pause immediately suspends the mouth while retaining Stop');
-    audio.onplaying(); f.speak.click();
-  }
-  {
-    const f = fixture({supported:false, recordings:true});
-    check(f.status.textContent === 'صوت وتعبيرات بلمسة منك', 'Built-in identity keeps the initial header ready without any installed voice');
-    f.reveal(); f.speak.click();
-    check(f.audioRequests.length === 1 && !f.speak.disabled, 'Bundled intro works without Speech Synthesis support');
-    const audio = f.audioRequests[0]; audio.onplaying(); f.hideDocument();
-    check(audio.pauseCount === 1 && f.face.dataset.voiceActive === 'false', 'Tab hide cancels recording');
-  }
-  {
-    let reads = 0;
-    const f = fixture({voices:[{lang:'ar',localService:false}], recordings:true, snapshot:()=>{reads++; return {narration:'actual report'};}});
-    f.reveal(); f.report.click(); await flush();
-    check(reads === 1 && f.synth.calls.length === 0 && f.audioRequests.length === 0 && f.status.textContent.includes('التقرير يحتاج'), 'Written report opens without a local voice and never substitutes a static intro');
-    check(f.reportEvents.some(event=>event.type==='wf-robot-report-open' && event.snapshot.narration==='actual report') && f.reportEvents.at(-1).state==='unavailable', 'No-voice report emits its snapshot and an honest unavailable playback state');
-  }
-  {
-    let resolve;
-    const f = fixture({snapshot:()=>new Promise(done=>resolve=done)}); f.reveal(); f.report.click();
-    check(f.face.dataset.voiceActive === 'true' && f.face.dataset.speaking === 'false' && f.report.getAttribute('aria-pressed') === 'true', 'Async report is cancellable while preparing');
-    f.report.click(); resolve({narration:'late report'}); await flush();
-    check(f.synth.calls.length === 0 && f.face.dataset.voiceActive === 'false' && f.activity.join(',') === 'true,false', 'Stop invalidates a pending report');
-  }
-  for (const [name, stop] of [['language change',f=>f.language('en')], ['dashboard exit',f=>f.leaveDashboard()]]) {
-    let resolve;
-    const f = fixture({snapshot:()=>new Promise(done=>resolve=done)}); f.reveal(); f.report.click(); stop(f); resolve({narration:'late report'}); await flush();
-    check(f.synth.calls.length === 0 && f.face.dataset.voiceActive === 'false', 'Pending report cancels on '+name);
-  }
-  {
-    let requested;
-    const narration = 'Actual daily business figures from committed data.';
-    const f = fixture({snapshot:options=>{requested=options;return Promise.resolve({narration});}}); f.reveal(); f.report.click(); await flush();
-    check(requested.locale === 'ar' && f.synth.calls[0]?.text === narration && f.activity.join(',') === 'true', 'Daily report awaits localized current snapshot and speaks exact narration once');
-    f.synth.start();
-    const [expressionId, expressionTimer] = [...f.timers.entries()].find(([,timer])=>timer.ms===3200); f.timers.delete(expressionId); expressionTimer.fn();
-    check(f.face.dataset.speaking === 'true' && f.face.dataset.expression === 'calm', 'Actual speech automatically changes expression without another click');
-    f.synth.current.onboundary({name:'sentence',charIndex:0,charLength:25});
-    f.synth.current.onboundary({name:'word',charIndex:26,charLength:8});
-    check(f.reportEvents.filter(event=>event.type==='wf-robot-report-boundary').length === 2 && f.reportEvents.at(-1).charIndex===26, 'Every real sentence and word boundary reaches the report reader');
-    check(f.face.dataset.speechBeat === 'true', 'Word boundary drives a mouth beat');
-    f.send('wf-robot-report-control',{action:'stop'});
-    check(f.synth.cancelCount === 1 && f.face.dataset.speaking === 'false' && f.timers.size === 0, 'Report reader Stop cancels owned speech and animation timers');
-    check(f.reportEvents.at(-1).state==='stopped', 'Reader receives stopped state');
-    f.send('wf-robot-report-control',{action:'replay'}); await flush();
-    check(f.synth.calls.length===2 && f.synth.calls[1].text===narration, 'Reader replay follows the normal fresh-report path');
-    f.synth.start(); f.synth.end();
-    check(f.reportEvents.at(-1).state==='finished', 'Natural report completion reaches reader');
-  }
-  {
-    const f = fixture({snapshot:()=>Promise.resolve({narration:'',unavailableReason:'partial data'})}); f.reveal(); f.report.click(); await flush();
-    check(f.synth.calls.length === 0 && f.face.dataset.voiceActive === 'false' && f.status.textContent.includes('غير متاحة'), 'Incomplete report does not invent or speak totals');
-    check(f.reportEvents.find(event=>event.type==='wf-robot-report-open')?.snapshot.unavailableReason==='partial data', 'Incomplete report still exposes its actual qualification to the reader');
-  }
-  {
-    const f = fixture({preferences:{autoExpressions:false,idleMotion:false}});f.reveal();f.speak.click();f.synth.start();
-    check(f.face.dataset.expression==='calm' && f.face.dataset.idleMotion==='false', 'Saved expression and idle motion preferences are respected');
-    f.send('wf-robot-motion',{active:true,x:2,y:-2});
-    check(f.face.dataset.tracking==='true' && f.face.styles['--wf-robot-look-x']==='22px' && f.face.styles['--wf-robot-look-y']==='-12px', 'Camera gaze coordinates are bounded');
-    f.hide();check(f.face.dataset.tracking==='false' && f.face.styles['--wf-robot-look-x']==='0px', 'Hidden face immediately drops camera gaze');
-  }
-  {
-    const f = fixture({offline:true, supported:false}); f.reveal(); f.speak.click();
-    check(!f.speak.disabled && f.offlineVoice.calls.length===1 && f.face.dataset.speaking==='false', 'Installed pack can generate while unsupported system speech remains unused');
-    const request = f.offlineVoice.calls[0]; request.onStart();
-    check(f.face.dataset.speaking==='true' && f.face.dataset.expression==='happy', 'Pack mouth starts only when actual audio starts');
-    request.onWaiting();
-    check(f.face.dataset.speaking==='false' && f.face.dataset.voiceActive==='true', 'Sentence generation gaps stop the mouth without losing Stop');
-    request.onStart(); f.hide(); request.onStart(); request.onEnd();
-    check(f.offlineVoice.cancels===1 && f.face.dataset.voiceActive==='false' && f.face.dataset.speaking==='false', 'Hide cancels pack playback and rejects stale callbacks');
-  }
-  {
-    const f = fixture({offline:true});f.reveal();f.speak.click();f.offlineVoice.calls[0].onError();
-    check(f.synth.calls.length===1 && f.synth.calls[0].voice.localService===true && f.activity.join(',')==='true', 'Pack failure before audio falls back to a local system voice without restarting carousel');
-    f.synth.start();f.synth.end();
-  }
-  {
-    const f = fixture({offline:true});f.reveal();f.speak.click();const request=f.offlineVoice.calls[0];request.onStart();request.onWaiting();request.onError();
-    check(f.synth.calls.length===0 && f.face.dataset.voiceActive==='false' && f.status.textContent.includes('تعذّر'), 'Failure after a spoken sentence does not repeat the report through fallback');
-  }
-  {
-    const f = fixture({offline:true,offlineReady:false});f.reveal();f.speak.click();
-    check(f.offlineVoice.calls.length===0 && f.synth.calls.length===1, 'Partially installed packs never replace a ready native local voice');
-  }
-  {
-    const text='First sentence. Second sentence.';
-    const f=fixture({offline:true,voices:[],snapshot:()=>({narration:text})});f.reveal();f.report.click();await flush();
-    check(f.offlineVoice.calls[0]?.text===text && f.offlineVoice.calls[0]?.locale==='ar', 'Ready local pack receives the current report in the selected language');
-    const request=f.offlineVoice.calls[0];request.onStart();request.onBoundary({charIndex:0,charLength:15});request.onWaiting();request.onStart();request.onBoundary({charIndex:16,charLength:16});
-    const boundaries=f.reportEvents.filter(event=>event.type==='wf-robot-report-boundary');
-    check(boundaries.length===2 && boundaries[1].charIndex===16 && boundaries[1].charLength===16, 'Only actual sentence offsets from playback reach the reader');
-    request.onEnd();
-    check(f.reportEvents.at(-1).state==='finished' && f.face.dataset.speaking==='false', 'Pack completion releases reader and mouth state');
-  }
-  {
-    const order=[],leases=[];let downloads=0,ready=false,resolveDownload,downloadOptions;
-    const snapshot={narration:'المبيعات: ١٢٫٥٠ دولار.'},chunks=[{text:'الْمَبِيعَاتُ اثْنَا عَشَرَ فَاصِلَة خَمْسَة صِفْر دُولَار',charIndex:0,charLength:snapshot.narration.length}];
-    const f=fixture({offline:true,offlineReady:false,voices:[],snapshot:()=>{order.push('read');return snapshot;}});
-    f.offlineVoice.getStatus=()=>({state:ready?'ready':'not-installed',ready,total:33526399});
-    f.offlineVoice.list=()=>[{locale:'ar',engine:'nabra'}];
-    f.offlineVoice.preparePlayback=()=>{order.push('prime');const lease={disposed:false,dispose(){this.disposed=true;}};leases.push(lease);return lease;};
-    f.offlineVoice.download=(_locale,options)=>{downloads++;downloadOptions=options;return new Promise(resolve=>resolveDownload=()=>{ready=true;resolve();});};
-    f.win.WFArabicReportSpeech={prepare:value=>{check(value===snapshot,'Arabic speech uses the exact displayed committed snapshot');return chunks;}};
-    f.reveal();f.report.click();await flush();
-    check(order.join(',')==='prime,read'&&leases[0].disposed,'Report primes audio inside the tap before asynchronous records and releases an unused lease');
-    check(downloads===0&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.state==='missing'&&event.total===33526399),'Opening a missing report pack only offers its real download size');
-    f.send('wf-robot-report-control',{action:'install'});await flush();
-    check(downloads===1&&!downloadOptions.signal.aborted&&f.face.dataset.speaking==='false','Explicit installation owns a cancellable download and does not animate speech');
-    downloadOptions.onProgress({progress:.5,loaded:100,total:200});
-    check(f.reportEvents.at(-1).state==='downloading'&&f.reportEvents.at(-1).progress===.5,'Download progress is forwarded as a ratio and exact byte totals');
-    resolveDownload();await flush();
-    const request=f.offlineVoice.calls[0];
-    check(request.text===snapshot.narration&&request.chunks===chunks&&request.playback===leases[1],'Completed install passes vocalized chunks and the same primed audio lease into local speech');
-    check(f.face.dataset.speaking==='false','Successful installation alone never marks the robot as speaking');
-    request.onStart();check(f.face.dataset.speaking==='true','Downloaded report mouth begins at actual playback');request.onEnd();
-  }
-  for(const [name,stop] of [['Cancel',f=>f.send('wf-robot-report-control',{action:'cancel-download'})],['hidden robot',f=>f.hide()],['language change',f=>f.language('tr')],['route change',f=>f.leaveDashboard()]]){
-    let resolveDownload,signal,disposed=0;
-    const f=fixture({offline:true,offlineReady:false,voices:[],snapshot:()=>({narration:'actual report'})});
-    f.offlineVoice.getStatus=()=>({ready:false,state:'not-installed',total:33526399});
-    f.offlineVoice.preparePlayback=()=>({dispose(){disposed++;}});
-    f.offlineVoice.download=(_locale,options)=>{signal=options.signal;return new Promise(resolve=>resolveDownload=resolve);};
-    f.reveal();f.send('wf-robot-report-control',{action:'install'});await flush();stop(f);resolveDownload();await flush();
-    check(signal.aborted&&disposed===1&&f.offlineVoice.calls.length===0&&f.face.dataset.voiceActive==='false','First voice download cancels without late playback on '+name);
-  }
-  {
-    const f=fixture({offline:true,voices:[],snapshot:()=>({narration:'unexpected report template'})});
-    f.offlineVoice.list=()=>[{locale:'ar',engine:'nabra'}];f.win.WFArabicReportSpeech={prepare(){throw new Error('unsupported-report');}};
-    f.reveal();f.report.click();await flush();
-    check(!f.offlineVoice.calls.length&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.reason==='report-text-unsupported'),'Unrecognized financial text never produces guessed speech');
-  }
-  for (const [lang,globalName,spoken] of [['ar','WFArabicReportSpeech','صفر دولار أمريكي. مليون دولار أمريكي.'],['tr','WFTurkishReportSpeech','sıfır dolar. bir milyon dolar.']]) {
-    const narration='0.00 USD; 1,000,000.00 USD';
-    const f=fixture({lang,voices:[{lang,localService:true}],snapshot:()=>({narration})});
-    f.win[globalName]={prepare:()=>[{text:spoken,charIndex:0,charLength:narration.length}]};
-    f.reveal();f.report.click();await flush();
-    check(f.synth.calls[0]?.text===spoken,'Native '+lang+' speech receives normalized amounts rather than raw currency digits');
-    f.synth.start();f.synth.current.onboundary({name:'word',charIndex:7,charLength:4});
-    const boundary=f.reportEvents.filter(e=>e.type==='wf-robot-report-boundary').at(-1);
-    check(boundary.charIndex===0&&boundary.charLength===narration.length,'Changed '+lang+' speech offsets map back to original displayed report');
-    f.synth.end();
-  }
-  {
-    const f=fixture({snapshot:()=>({narration:'invalid source'})});
-    f.win.WFArabicReportSpeech={prepare(){throw new Error('source-mismatch');}};
-    f.reveal();f.report.click();await flush();
-    check(f.synth.calls.length===0,'Invalid Arabic source is rejected even when a native fallback exists');
-  }
-  {
-    const f=fixture({recordings:true,preferences:{arabicDialect:'eg',speechRate:1.15,speechVolume:.4}});f.reveal();f.speak.click();
-    const recording=f.audioRequests[0];
-    check(recording.src.includes('ar-EG.mp3')&&recording.playbackRate===1.15&&recording.volume===.4&&recording.preservesPitch===true,'Saved dialect, speed and volume apply to unprocessed Mark recording');
-  }
-  {
-    const preferences={speechEnabled:false};const f=fixture({recordings:true,offline:true,preferences});f.reveal();f.speak.click();f.report.click();await flush();
-    check(!f.audioRequests.length&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Speech disable applies to greetings and reports');
-    check(f.win.WFProgramSpeech.speak({text:'Read me',event:{isTrusted:true}})===false,'Disabled shared reader never starts speech');
-  }
-  {
-    const f=fixture({offline:true,preferences:{speechRate:1.1,speechVolume:.6}});
-    check(f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:false}})===false,'Program reader requires the actual user gesture');
-    check(f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:true}})===true,'Program reader works with the dashboard robot hidden');
-    const request=f.offlineVoice.calls[0];
-    check(request.continuous===true&&request.rate===1.1&&request.volume===.6,'Program reader uses full buffering and shared saved audio preferences');
-    request.onStart();check(f.win.WFProgramSpeech.getState().active===true,'Hidden robot does not cancel explicit program-wide playback');
-    f.win.WFProgramSpeech.stop();request.onStart();check(f.win.WFProgramSpeech.getState().active===false,'Program stop ignores stale offline start');
-  }
-  {
-    const f=fixture({offline:true,preferences:{speechBackend:'device',speechRate:.9,speechVolume:.2}});f.reveal();f.speak.click();
-    check(f.offlineVoice.calls.length===0&&f.synth.calls[0].rate===.9&&f.synth.calls[0].volume===.2,'Device preference chooses a local native voice and respects saved controls');
-    f.synth.start();f.send('wf-robot-preferences',{});f.synth.end();
-  }
-  {
-    const f=fixture({offline:true});
-    f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:true}});
-    f.leaveDashboard();
-    check(!f.win.WFProgramSpeech.getState().active&&f.offlineVoice.cancels===1,'Real page-class navigation stops program reading even without hashchange');
-  }
-  {
-    const f=fixture({offline:true,preferences:{speechVolume:0}});
-    check(f.win.WFProgramSpeech.getState().state==='muted'&&!f.win.WFProgramSpeech.speak({text:'Selected text',event:{isTrusted:true}})&&!f.offlineVoice.calls.length,'Muted audio reports mute without generating an inaudible report');
-  }
-  for (const origin of ['preview', 'program']) {
-    for (const ending of ['completed', 'cancelled']) {
-      for (const next of ['report', 'identity']) {
-        let reads = 0;
-        const f = fixture({recordings:true,offline:true,snapshot:()=>{reads++;return{narration:'Fresh daily figures'};}});
-        f.visitPage('settings');
-        const accepted = origin === 'preview' ? f.win.WFProgramSpeech.preview({event:{isTrusted:true}}) :
-          f.win.WFProgramSpeech.speak({text:'Selected settings text',event:{isTrusted:true}});
-        check(accepted, origin+' starts in Settings');
-        if (origin === 'preview') f.audioRequests[0].onplaying(); else f.offlineVoice.calls[0].onStart();
-        if (ending === 'cancelled') f.win.WFProgramSpeech.stop();
-        else if (origin === 'preview') f.audioRequests[0].onended(); else f.offlineVoice.calls[0].onEnd();
-        check(!f.win.WFProgramSpeech.getState().active, origin+' is inactive after '+ending);
-        const recordings = f.audioRequests.length, requests = f.offlineVoice.calls.length;
-        f.visitPage('dashboard'); f.reveal();
-        (next === 'report' ? f.report : f.speak).click(); await flush();
-        if (next === 'report') {
-          check(reads===1 && f.offlineVoice.calls.length===requests+1 && f.offlineVoice.calls.at(-1).text==='Fresh daily figures',
-            'Dashboard report starts after '+ending+' Settings '+origin);
-          check(f.audioRequests.length===recordings, 'A recovered report still uses its dynamic speech engine');
-          f.offlineVoice.calls.at(-1).onStart();
-        } else {
-          check(f.audioRequests.length===recordings+1 && f.offlineVoice.calls.length===requests,
-            'Dashboard identity starts after '+ending+' Settings '+origin);
-          f.audioRequests.at(-1).onplaying();
-        }
-        check(f.face.dataset.voiceKind===(next==='report'?'report':'intro'), 'New dashboard action owns its own session kind');
-        f.hide();
-        check(!f.win.WFProgramSpeech.getState().active, 'Hiding the face still cancels recovered '+next+' playback');
-      }
+});
+
+test('an authorized pending report follows its owner across navigation and background tabs',async()=>{
+  let resolve;const f=fixture({snapshot:()=>new Promise(done=>{resolve=done;})});f.reveal();f.report.click();
+  f.hide();f.visitPage('settings');f.hideDocument();resolve({narration:'The authorized report'});await flush();
+  check(f.referenceVoice.calls[0]?.text==='The authorized report'&&state(f).active,'An accepted request continues after its source UI disappears');
+  f.referenceVoice.calls[0].onStart();check(state(f).active,'Background audio start is not rejected for visibility');
+});
+
+test('daily reports keep the exact snapshot, real sentence boundaries and fresh replay semantics',async()=>{
+  let requested,reads=0;const narration='Actual daily business figures.';
+  const f=fixture({snapshot:options=>{requested=options;reads++;return Promise.resolve({narration});}});f.reveal();f.report.click();await flush();
+  check(requested.locale==='ar'&&f.referenceVoice.calls[0]?.text===narration&&reads===1,'Current localized data is read exactly once');
+  const request=f.referenceVoice.calls[0];request.onStart();request.onBoundary({charIndex:0,charLength:12});request.onBoundary({charIndex:13,charLength:8});
+  const boundaries=f.reportEvents.filter(event=>event.type==='wf-robot-report-boundary');
+  check(boundaries.length===2&&boundaries[1].charIndex===13&&boundaries[1].charLength===8,'Only actual supplied speech boundaries reach highlighting');
+  f.send('wf-robot-report-control',{action:'stop'});check(f.referenceVoice.cancels===1&&f.reportEvents.at(-1).state==='stopped','Reader Stop cancels its report');
+  f.hide();f.visitPage('settings');f.send('wf-robot-report-control',{action:'replay'});await flush();
+  check(reads===2&&f.referenceVoice.calls.length===2,'An authorized reader control replays fresh data from another page');
+  const replay=f.referenceVoice.calls[1];replay.onStart();replay.onEnd();
+  check(f.reportEvents.at(-1).state==='finished'&&!state(f).active,'Natural report completion reaches the reader');
+});
+
+test('a synchronous pause at report start rejects late highlight boundaries until resume',async()=>{
+  const f=fixture({snapshot:()=>({narration:'First sentence. Second sentence.'})});
+  f.reveal();f.report.click();await flush();
+  const request=f.referenceVoice.calls[0],api=f.win.WFProgramSpeech;
+  let pausedAtStart=false;
+  f.win.addEventListener('wf-program-speech-state',event=>{
+    if(!pausedAtStart&&event.detail.state==='speaking'){
+      pausedAtStart=true;api.pause();
     }
-    for (const gate of ['hidden face', 'inactive dashboard']) {
-      let reads = 0;
-      const f = fixture({recordings:true,offline:true,snapshot:()=>{reads++;return{narration:'Fresh daily figures'};}});
-      f.visitPage('settings');
-      if (origin === 'preview') {f.win.WFProgramSpeech.preview({event:{isTrusted:true}});f.audioRequests[0].onended();}
-      else {f.win.WFProgramSpeech.speak({text:'Selected settings text',event:{isTrusted:true}});f.offlineVoice.calls[0].onEnd();}
-      const recordings = f.audioRequests.length, requests = f.offlineVoice.calls.length;
-      if (gate === 'hidden face') f.visitPage('dashboard'); else f.reveal();
-      f.report.click(); f.speak.click(); await flush();
-      check(reads===0 && f.audioRequests.length===recordings && f.offlineVoice.calls.length===requests,
-        'Dashboard buttons retain the '+gate+' gate after Settings '+origin);
-    }
-    {
-      const f = fixture({recordings:true,offline:true}); f.visitPage('settings');
-      if (origin === 'preview') {f.win.WFProgramSpeech.preview({event:{isTrusted:true}});f.audioRequests[0].onplaying();}
-      else {f.win.WFProgramSpeech.speak({text:'Selected settings text',event:{isTrusted:true}});f.offlineVoice.calls[0].onStart();}
-      f.visitPage('dashboard');
-      check(!f.win.WFProgramSpeech.getState().active && (origin==='preview'?f.audioRequests[0].pauseCount===1:f.offlineVoice.cancels===1),
-        'Leaving Settings still cancels its active '+origin+' session');
-    }
+  });
+  request.onStart();request.onBoundary({charIndex:0,charLength:15});
+  check(pausedAtStart&&api.getState().paused,'A consumer may pause synchronously when real playback starts');
+  check(f.reportEvents.filter(event=>event.type==='wf-robot-report-playback').at(-1)?.state==='paused','A start callback cannot overwrite the paused reader with a stale speaking state');
+  check(!f.reportEvents.some(event=>event.type==='wf-robot-report-boundary'),'A boundary delivered after that pause cannot advance the report highlight');
+  await api.resume();request.onStart();request.onBoundary({charIndex:16,charLength:16});
+  const boundaries=f.reportEvents.filter(event=>event.type==='wf-robot-report-boundary');
+  check(boundaries.length===1&&boundaries[0].charIndex===16,'Actual resumed audio can advance the current report');
+});
+
+test('empty or unrecognized reports cannot invent financial speech',async()=>{
+  const empty=fixture({snapshot:()=>({narration:'',unavailableReason:'partial data'})});empty.reveal();empty.report.click();await flush();
+  check(!empty.referenceVoice.calls.length&&!state(empty).active,'An incomplete snapshot cannot speak invented totals');
+  check(empty.reportEvents.find(event=>event.type==='wf-robot-report-open')?.snapshot.unavailableReason==='partial data','The written reader retains the source qualification');
+  for(const adapter of [{prepare(){throw new Error('unsupported-report');}},{prepare:()=>[]}]){
+    const f=fixture({offline:true,snapshot:()=>({narration:'Invalid source'})});f.win.WFArabicReportSpeech=adapter;f.reveal();f.report.click();await flush();
+    check(!f.referenceVoice.calls.length&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.reason==='report-text-unsupported'),'Unrecognized narration is rejected before generation');noAlternative(f);
   }
-  {
-    const f=fixture({offline:true,reference:true,preferences:{speechBackend:undefined,arabicDialect:'eg',speechRate:1.1,speechVolume:.6},snapshot:()=>({narration:'Reference report'})});
-    f.reveal();f.report.click();await flush();
-    check(f.referenceVoice.calls.length===1&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'An unset backend selects the verified reference pack for reports');
-    const request=f.referenceVoice.calls[0];
-    check(request.dialect==='eg'&&request.rate===1.1&&request.volume===.6&&request.continuous===false,'Reference synthesis retains dialect and playback controls without waiting for a full report');
-    check(f.referenceVoice.unlocks===1&&f.win.WFProgramSpeech.getState().voiceName==='Mark · local reference','Reference playback uses its own audio lease and truthful voice name');
-    request.onError(new Error('inference-failed'));
-    check(!f.win.WFProgramSpeech.getState().active&&f.win.WFProgramSpeech.getState().state==='failed'&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Reference inference failure never silently switches to Nabra or a device voice');
-    check(f.win.WFProgramSpeech.speak({text:'Selected reference text',event:{isTrusted:true}})===true&&f.referenceVoice.calls.length===2,'The shared program reader uses the chosen reference engine too');
+});
+
+for(const [lang,adapterName,spoken]of [['ar','WFArabicReportSpeech','صفر دولار أمريكي. مليون دولار أمريكي.'],['tr','WFTurkishReportSpeech','sıfır dolar. bir milyon dolar.']])test(lang+' financial normalization preserves displayed offsets and exact source text',async()=>{
+  const narration='0.00 USD; 1,000,000.00 USD',snapshot={narration};
+  const chunks=[{text:spoken,charIndex:0,charLength:narration.length}];
+  const f=fixture({lang,snapshot:()=>snapshot});f.win[adapterName]={prepare:value=>{check(value===snapshot,'Normalization receives the displayed snapshot object');return chunks;}};
+  f.reveal();f.report.click();await flush();const request=f.referenceVoice.calls[0];
+  check(request.text===narration&&request.chunks===chunks,'Mark receives prepared wording and original displayed offsets together');
+  request.onStart();request.onBoundary({charIndex:0,charLength:narration.length});
+  const boundary=f.reportEvents.filter(event=>event.type==='wf-robot-report-boundary').at(-1);
+  check(boundary.charIndex===0&&boundary.charLength===narration.length,'Spoken amounts highlight their actual source range');
+});
+
+test('explicit Mark installation preserves the primed lease and survives navigation',async()=>{
+  const order=[],leases=[];let ready=false,downloads=0,resolveDownload,downloadOptions;
+  const snapshot={narration:'المبيعات اثنا عشر دولاراً.'},chunks=[{text:'الْمَبِيعَاتُ اثْنَا عَشَرَ دُولَارًا',charIndex:0,charLength:snapshot.narration.length}];
+  const f=fixture({referenceReady:false,offline:true,snapshot:()=>{order.push('read');return snapshot;}});
+  f.referenceVoice.getStatus=()=>({ready,state:ready?'ready':'not-installed',total:921000000,name:'Mark · local reference'});
+  f.referenceVoice.preparePlayback=()=>{order.push('prime');const lease={disposed:false,dispose(){this.disposed=true;}};leases.push(lease);return lease;};
+  f.referenceVoice.download=(_locale,options)=>{downloads++;downloadOptions=options;return new Promise(resolve=>{resolveDownload=()=>{ready=true;resolve();};});};
+  f.win.WFArabicReportSpeech={prepare:()=>chunks};f.reveal();f.report.click();await flush();
+  check(order.join(',')==='prime,read'&&leases[0].disposed,'The click primes audio before asynchronous record reads');
+  check(!downloads&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.state==='missing'&&event.total===921000000),'Opening a report does not silently download its large pack');
+  f.hide();f.visitPage('settings');f.send('wf-robot-report-control',{action:'install'});await flush();
+  check(downloads===1&&!downloadOptions.signal.aborted&&f.face.dataset.speaking==='false','Explicit reader installation remains available on another page');
+  downloadOptions.onProgress({progress:.5,loaded:100,total:200});
+  check(f.reportEvents.at(-1).state==='downloading'&&f.reportEvents.at(-1).progress===.5,'Exact download progress reaches the report reader');
+  f.hideDocument();resolveDownload();await flush();const request=f.referenceVoice.calls[0];
+  check(request?.text===snapshot.narration&&request.chunks===chunks&&request.playback===leases[1],'The verified install resumes its exact report and original primed lease');
+  check(f.face.dataset.speaking==='false','Installation completion is not a fabricated speech start');noAlternative(f);
+});
+
+for(const [name,stop]of [['cancel',f=>f.send('wf-robot-report-control',{action:'cancel-download'})],['language change',f=>f.language('tr')],['page teardown',f=>f.pagehide(true)]])test('Mark download cancellation on '+name+' cannot start late audio',async()=>{
+  let resolveDownload,signal,ready=false;const f=fixture({referenceReady:false,snapshot:()=>({narration:'Downloaded report'})});
+  f.referenceVoice.getStatus=()=>({ready,state:ready?'ready':'not-installed',total:921000000});
+  f.referenceVoice.download=(_locale,options)=>{signal=options.signal;return new Promise(resolve=>{resolveDownload=()=>{ready=true;resolve();};});};
+  f.reveal();f.send('wf-robot-report-control',{action:'install'});await flush();stop(f);resolveDownload();await flush();
+  check(signal.aborted&&!f.referenceVoice.calls.length&&!state(f).active,'Cancelled install cannot resume a stale report');
+  if(name==='cancel')check(f.referenceVoice.cancelledDownloads[0]==='ar','Cancellation targets the selected Mark manager');
+});
+
+test('saved expression and camera gaze preferences remain independent of persistent audio',()=>{
+  const f=fixture({preferences:{autoExpressions:false,idleMotion:false}});f.reveal();f.speak.click();f.referenceVoice.calls[0].onStart();
+  check(f.face.dataset.expression==='calm'&&f.face.dataset.idleMotion==='false','Saved expression controls remain effective');
+  f.send('wf-robot-motion',{active:true,x:2,y:-2});
+  check(f.face.dataset.tracking==='true'&&f.face.styles['--wf-robot-look-x']==='22px'&&f.face.styles['--wf-robot-look-y']==='-12px','Camera gaze is bounded');
+  f.hide();check(f.face.dataset.tracking==='false'&&f.face.styles['--wf-robot-look-x']==='0px','A hidden face releases camera gaze');
+  check(state(f).active,'Visual cleanup does not stop audio');
+});
+
+for(const preferences of [{speechEnabled:false},{speechVolume:0}])test((preferences.speechEnabled===false?'disabled':'muted')+' settings prevent all new speech',async()=>{
+  const f=fixture({recordings:true,offline:true,preferences,snapshot:()=>({narration:'Muted report'})});f.reveal();f.speak.click();f.report.click();await flush();
+  check(!f.audioRequests.length&&!f.referenceVoice.calls.length,'Disabled speech cannot generate an inaudible report or greeting');noAlternative(f);
+  check(!f.win.WFProgramSpeech.speak({text:'Read me',event:{isTrusted:true}}),'Shared program speech obeys the same setting');
+  check(state(f).state===(preferences.speechEnabled===false?'disabled':'muted'),'Shared state explains why speech is unavailable');
+});
+
+test('recovered Settings sessions do not leak stale ownership into a later dashboard action',async()=>{
+  for(const origin of ['preview','program'])for(const ending of ['completed','cancelled'])for(const next of ['report','identity']){
+    let reads=0;const f=fixture({recordings:true,snapshot:()=>{reads++;return{narration:'Fresh figures'};}});f.visitPage('settings');
+    check(origin==='preview'?f.win.WFProgramSpeech.preview({event:{isTrusted:true}}):f.win.WFProgramSpeech.speak({text:'Settings text',event:{isTrusted:true}}),'Settings starts its explicit speech session');
+    const oldAudio=f.audioRequests[0],oldRequest=f.referenceVoice.calls[0];if(origin==='preview')oldAudio.onplaying();else oldRequest.onStart();
+    if(ending==='cancelled')f.win.WFProgramSpeech.stop();else if(origin==='preview')oldAudio.onended();else oldRequest.onEnd();
+    check(!state(f).active,'The earlier Settings session has ended');
+    const recordings=f.audioRequests.length,calls=f.referenceVoice.calls.length;f.visitPage('dashboard');f.reveal();(next==='report'?f.report:f.speak).click();await flush();
+    if(next==='report')check(reads===1&&f.referenceVoice.calls.length===calls+1&&f.audioRequests.length===recordings,'Fresh reports recover their own dynamic session');
+    else check(f.audioRequests.length===recordings+1&&f.referenceVoice.calls.length===calls,'Identity recovers its own fixed recording session');
+    check(f.face.dataset.voiceKind===(next==='report'?'report':'intro'),'The new session kind does not inherit Settings ownership');
+    f.hide();check(state(f).active,'The recovered owner also persists when its dashboard face disappears');
   }
-  {
-    const f=fixture({offline:true,recordings:true,preferences:{speechBackend:'reference'},snapshot:()=>({narration:'No reference pack'})});
-    f.reveal();f.report.click();await flush();
-    check(!f.offlineVoice.calls.length&&!f.synth.calls.length&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.state==='unsupported'),'A missing reference adapter is shown instead of using another installed voice');
-    check(!f.win.WFProgramSpeech.speak({text:'No replacement voice',event:{isTrusted:true}})&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Program reading also refuses silent reference replacement');
-    f.voicesChanged([{lang:'ar-SA',localService:true}]);
-    f.send('wf-offline-voice-change',{locale:'ar',ready:true,state:'ready',name:'Nabra'});
-    check(f.win.WFProgramSpeech.getState().state==='unavailable','Device discovery and a ready Nabra pack cannot reset unavailable reference speech to ready');
-    check(f.win.WFProgramSpeech.preview({event:{isTrusted:true}})&&f.audioRequests.length===1,'The explicitly labelled fixed Mark greeting remains available separately');
+});
+
+test('warming an installed Mark engine never releases it merely because the page is hidden',async()=>{
+  const f=fixture();await flush();check(f.referenceVoice.prepares.length===1,'The installed Mark engine prepares once before reading');
+  check(!f.referenceVoice.calls.length&&!f.activity.some(Boolean),'Preparation does not pretend to speak');
+  f.hideDocument();f.visitPage('settings');f.send('wf-reference-voice-change',{locale:'ar',ready:true});await flush();
+  check(f.referenceVoice.releases===0,'Tab and route visibility do not release persistent speech resources');
+  check(f.referenceVoice.prepares.length===1,'Repeated readiness events do not restart preparation');
+});
+
+test('missing, disabled and muted Mark packs never start initialization implicitly',async()=>{
+  for(const options of [{referenceReady:false},{preferences:{speechEnabled:false}},{preferences:{speechVolume:0}}]){
+    const f=fixture(options);await flush();check(!f.referenceVoice.prepares.length,'Unavailable or unused speech does not initialize the GPU');
   }
-  for(const cancel of [false,true]) {
-    let resolveDownload,signal,ready=false,downloads=0;
-    const f=fixture({offline:true,reference:true,referenceReady:false,preferences:{speechBackend:'reference'},snapshot:()=>({narration:'Download reference report'})});
-    f.referenceVoice.getStatus=()=>({locale:'ar',name:'Mark · local reference',ready,state:ready?'ready':'not-installed',total:921000000});
-    f.referenceVoice.download=(_locale,options)=>{downloads++;signal=options.signal;return new Promise(resolve=>{resolveDownload=()=>{ready=true;resolve();};});};
-    f.reveal();f.report.click();await flush();
-    check(downloads===0&&!f.referenceVoice.calls.length&&!f.offlineVoice.calls.length&&!f.synth.calls.length&&f.reportEvents.some(event=>event.type==='wf-robot-report-voice'&&event.state==='missing'&&event.total===921000000),'The report explicitly offers the selected reference download despite other voices being ready');
-    f.send('wf-robot-report-control',{action:'install'});await flush();
-    check(downloads===1,'Only an explicit install action starts the reference download');
-    if(cancel)f.send('wf-robot-report-control',{action:'cancel-download'});
-    resolveDownload();await flush();
-    if(cancel)check(signal.aborted&&f.referenceVoice.cancelledDownloads[0]==='ar'&&!f.referenceVoice.calls.length&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Cancelling reference installation prevents late playback and cancels the selected manager');
-    else check(f.referenceVoice.calls.length===1&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'A verified reference download resumes the fresh report with that engine only');
-  }
-  {
-    const preferences={speechBackend:'reference',arabicDialect:'sy'};
-    const f=fixture({offline:true,reference:true,preferences});
-    f.win.WFProgramSpeech.speak({text:'Reference selection',event:{isTrusted:true}});
-    const old=f.referenceVoice.calls[0];old.onStart();
-    preferences.speechBackend='local';f.send('wf-robot-preferences',{});old.onStart();
-    check(f.referenceVoice.cancels===1&&!f.win.WFProgramSpeech.getState().active,'Changing the explicit backend cancels reference work and ignores old callbacks');
-    f.win.WFProgramSpeech.speak({text:'Explicit lightweight selection',event:{isTrusted:true}});
-    check(f.offlineVoice.calls.length===1&&f.referenceVoice.calls.length===1,'Nabra is available only after an explicit lightweight selection');
-  }
-  {
-    const f=fixture({offline:true,reference:true,preferences:{speechBackend:'reference'}});
-    f.referenceVoice.speak=()=>{throw new Error('reference-init-failed');};
-    f.win.WFProgramSpeech.speak({text:'Reference initialization',event:{isTrusted:true}});
-    check(f.win.WFProgramSpeech.getState().state==='failed'&&!f.offlineVoice.calls.length&&!f.synth.calls.length,'Synchronous reference initialization failure also cannot select a different voice');
-  }
-  {
-    const preferences={speechBackend:'reference'};
-    const f=fixture({reference:true,preferences});
-    await flush();
-    check(f.referenceVoice.prepares.length===1&&f.referenceVoice.prepares[0]==='ar', 'An installed selected Mark engine warms before the first reading');
-    check(!f.referenceVoice.calls.length&&!f.activity.some(Boolean), 'Warming does not start speech or announce reading');
-    preferences.speechBackend='local';f.send('wf-robot-preferences',{});
-    check(f.referenceVoice.releases>0,'Choosing another voice releases the unused warm Mark engine');
-    preferences.speechBackend='reference';f.send('wf-robot-preferences',{});await flush();
-    check(f.referenceVoice.prepares.length===2,'Selecting the installed Mark voice prepares it again');
-    f.hideDocument();
-    const count=f.referenceVoice.prepares.length;
-    f.send('wf-reference-voice-change',{locale:'ar',ready:true});await flush();
-    check(f.referenceVoice.prepares.length===count,'Hidden pages do not initialize the GPU engine');
-  }
-  for(const preferences of [{speechBackend:'local'},{speechBackend:'reference',speechEnabled:false},{speechBackend:'reference',speechVolume:0}]) {
-    const f=fixture({reference:true,preferences});await flush();
-    check(!f.referenceVoice.prepares.length,'Unused, disabled and muted Mark speech does not warm');
-  }
-  {
-    const f=fixture({reference:true,referenceReady:false,preferences:{speechBackend:'reference'}});await flush();
-    check(!f.referenceVoice.prepares.length,'Opening the program never downloads or prepares a missing voice pack');
-    f.referenceVoice.getStatus=()=>({ready:true,state:'ready',name:'Mark · local reference'});
-    f.send('wf-reference-voice-change',{locale:'ar',ready:true});await flush();
-    check(f.referenceVoice.prepares.length===1,'Completing the existing pack download warms Mark before the next tap');
-  }
-  console.log(`${assertionCount} robot offline speech/report lifecycle assertions passed.`);
-})().catch(error=>{console.error(error);process.exitCode=1;});
+});
+
+test('idle program controls cannot pause, resume or cancel another audio owner',async()=>{
+  const f=fixture();f.synth.speaking=true;
+  check(f.win.WFProgramSpeech.pause()===false&&await f.win.WFProgramSpeech.resume()===false,'Inactive controls have no speech handle');
+  f.win.WFProgramSpeech.stop();
+  check(f.synth.cancelCount===0&&f.referenceVoice.cancels===0,'Stop never cancels unrelated audio');
+  check(!f.win.WFProgramSpeech.speak({text:'New speech',event:{isTrusted:true}}),'A separate active speech owner is not interrupted');
+  noAlternative(f);
+});
+
+test('real page teardown removes listeners and stale callbacks cannot revive audio',()=>{
+  const f=fixture();f.win.WFProgramSpeech.speak({text:'Owned text',event:{isTrusted:true}});const request=f.referenceVoice.calls[0];request.onStart();
+  f.pagehide(true);check(f.referenceVoice.cancels===1&&!state(f).active,'BFCache teardown releases its actual audio session');
+  f.pagehide(false);check(!f.win.WFProgramSpeech&&f.observers.every(observer=>observer.targets.length===0),'Final teardown removes the controller and observers');
+  check(f.synth.listeners.voiceschanged.size===0,'Final teardown removes platform availability listeners too');
+  request.onStart();request.onEnd();check(f.face.dataset.speaking==='false','Post-disposal callbacks cannot restart the mouth');
+});

@@ -236,7 +236,20 @@
     if(!manager.getStatus(locale).ready)throw error('pack-not-installed');checkAbort(options.signal);
     return workerRequest(locale,text,options.signal);
   }
-  const playbackLeases=new WeakSet();
+  const playbackLeases=new WeakSet(),audioSessionLeases=new Set();let playbackSession=null,previousSessionType='auto';
+  function claimAudioSession(lease){
+    try{
+      const session=navigator.audioSession;if(!session)return;
+      if(!audioSessionLeases.size){playbackSession=session;previousSessionType=session.type;}
+      if(session!==playbackSession)return;
+      session.type='playback';audioSessionLeases.add(lease);
+    }catch(_){}
+  }
+  function releaseAudioSession(lease){
+    if(!audioSessionLeases.delete(lease)||audioSessionLeases.size)return;
+    try{if(playbackSession?.type==='playback')playbackSession.type=previousSessionType;}catch(_){}
+    playbackSession=null;
+  }
   function preparePlayback(options={}){
     // Call synchronously from the user's tap, before IndexedDB or a first download.
     // A streaming voice keeps this unlocked context for all of its PCM packets.
@@ -250,8 +263,10 @@
           if(lease.disposed)return;lease.disposed=true;primer.onended=null;
           try{primer.stop();primer.disconnect();}catch(_){}
           try{Promise.resolve(context.close()).catch(()=>{});}catch(_){}
+          releaseAudioSession(lease);
         }};
         primer.onended=()=>primer.disconnect();
+        claimAudioSession(lease);
         try{
           const resumed=context.resume();primer.start(0);
           lease.unlock=Promise.resolve(resumed).then(()=>null,problem=>error(problem?.name==='NotAllowedError'?'playback-blocked':'playback-failed'));
@@ -261,9 +276,9 @@
     }
     // The same unlocked element plays the later report on mobile browsers.
     const audio=new Audio(),lease={audio,unlock:null,disposed:false,dispose(){
-      if(lease.disposed)return;lease.disposed=true;audio.pause();audio.removeAttribute('src');audio.load();
+      if(lease.disposed)return;lease.disposed=true;audio.pause();audio.removeAttribute('src');audio.load();releaseAudioSession(lease);
     }};
-    playbackLeases.add(lease);
+    playbackLeases.add(lease);claimAudioSession(lease);
     const silence=URL.createObjectURL(new Blob([pcmToWav(new Float32Array(441),22050)],{type:'audio/wav'}));
     audio.src=silence;
     try{lease.unlock=Promise.resolve(audio.play()).then(()=>audio.pause()).catch(()=>{}).finally(()=>URL.revokeObjectURL(silence));}
@@ -273,15 +288,17 @@
   function speakStream(options,source,lease){
     // AudioBufferSources share a single clock: packet and sentence edges do not
     // restart a media element. The small lead absorbs normal scheduling jitter.
-    const START_LEAD=.12,MAX_AHEAD=8,SLICE_SECONDS=1,context=lease.context;
+    const START_LEAD=.12,MAX_AHEAD=8,SLICE_SECONDS=1,AUDIO_WAIT_MS=3000,context=lease.context;
     const controller=new AbortController(),nodes=new Set(),events=[],capacity=new Set();
     const rate=Number.isFinite(options.rate)?Math.max(.75,Math.min(1.3,options.rate)):1;
     const volume=Number.isFinite(options.volume)?Math.max(0,Math.min(1,options.volume)):1;
-    let stopped=false,finished=false,sourceReleased=false,started=false,waiting=false,generating=true;
-    let gain=null,timer=null,nextTime=0,sampleRate=0,totalBytes=0,totalSeconds=0,drain=null;
+    let stopped=false,finished=false,sourceReleased=false,started=false,waiting=false,generating=true,paused=false,pauseReason='';
+    let gain=null,timer=null,nextTime=0,audibleUntil=0,sampleRate=0,totalBytes=0,totalSeconds=0,drain=null,running=null;
     const inactive=()=>stopped||finished||controller.signal.aborted;
     const cleanup=()=>{
       clearTimeout(timer);timer=null;events.length=0;
+      context.onstatechange=null;running?.finish(aborted());
+      document.removeEventListener?.('visibilitychange',visibilityChanged);
       for(const node of nodes){node.onended=null;try{node.stop();node.disconnect();}catch(_){}}
       nodes.clear();try{gain?.disconnect();}catch(_){}
       for(const waiter of capacity)waiter.reject(aborted());capacity.clear();
@@ -290,17 +307,81 @@
       if(!sourceReleased){sourceReleased=true;try{source.dispose?.();}catch(_){}}
     };
     const fail=problem=>{if(stopped||finished)return;finished=true;controller.abort();cleanup();if(problem?.name!=='AbortError')options.onError?.(problem);};
-    const handle={cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();}};activeSpeech=handle;
+    function noticePause(reason){
+      if(pauseReason===reason)return;pauseReason=reason;if(started)waiting=true;
+      options.onPause?.({reason});
+    }
+    function suspendContext(){try{Promise.resolve(context.suspend()).catch(()=>fail(error('playback-failed')));}catch(_){fail(error('playback-failed'));}}
+    const handle={
+      cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();},
+      pause(){
+        if(inactive()||paused)return;paused=true;clearTimeout(timer);timer=null;
+        if(running){clearTimeout(running.timer);running.timer=null;}
+        noticePause('user');if(!inactive())suspendContext();
+      },
+      resume(){
+        if(inactive())return Promise.resolve();paused=false;
+        const resumed=ensureRunning(false,true);resumed.then(pump,fail);return resumed;
+      }
+    };activeSpeech=handle;
+    function ensureRunning(initial=false,explicit=false){
+      if(inactive())return Promise.reject(aborted());
+      if(!paused&&context.state==='running'){running?.finish();return Promise.resolve();}
+      if(context.state==='closed')return Promise.reject(error('playback-failed'));
+      let task=running;
+      if(!task){
+        task={code:initial?'playback-blocked':'playback-interrupted',timer:null,attempting:false};
+        task.promise=new Promise((resolve,reject)=>{
+          task.finish=problem=>{
+            if(running!==task)return;running=null;clearTimeout(task.timer);
+            controller.signal.removeEventListener('abort',abort);problem?reject(problem):resolve();
+          };
+          const abort=()=>task.finish(aborted());controller.signal.addEventListener('abort',abort,{once:true});
+        });
+        running=task;
+      }
+      // Browser/OS background suspension is a resumable hold, not a failed
+      // voice request. An intentional pause also keeps PCM and its worker credit.
+      if(paused||(document.hidden&&!explicit)){
+        clearTimeout(task.timer);task.timer=null;if(!paused)noticePause('background');return task.promise;
+      }
+      if(!document.hidden&&task.timer===null)task.timer=setTimeout(()=>{
+        task.timer=null;if(!paused&&!document.hidden)task.finish(error(task.code));
+      },AUDIO_WAIT_MS);
+      if(task.attempting&&!explicit)return task.promise;
+      task.attempting=true;
+      const rejected=problem=>{
+        if(running!==task)return;task.attempting=false;
+        if(!paused&&!document.hidden)task.finish(problem||error(task.code));
+      };
+      const observe=(pending,retry)=>Promise.resolve(pending).then(problem=>{
+        if(running!==task)return;
+        if(problem){rejected(problem);return;}
+        if(!paused&&context.state==='running')task.finish();
+        // The gesture unlock may have completed before records/model setup,
+        // followed by a browser interruption before this reading claimed it.
+        else if(retry&&!paused&&!document.hidden){try{observe(context.resume(),false);}catch(_){rejected(error(task.code));}}
+        else task.attempting=false;
+      },()=>rejected(error(task.code)));
+      try{
+        options.onProgress?.({phase:initial?'audio-unlock':'audio-resume'});checkAbort(controller.signal);
+        observe(initial?lease.unlock:context.resume(),initial);
+      }catch(problem){task.finish(problem?.name==='AbortError'?problem:error(task.code));}
+      return task.promise;
+    }
     const roomFor=duration=>nextTime-context.currentTime+duration<=MAX_AHEAD+.000001;
     function pump(){
-      if(inactive())return;
+      if(inactive()||paused)return;
       try{
-        if(context.state==='closed')throw error('playback-failed');
+        if(context.state!=='running'){ensureRunning().then(pump,fail);return;}
         const now=context.currentTime;
+        if(pauseReason){pauseReason='';options.onResume?.();if(inactive()||paused)return;}
+        if(started&&waiting&&audibleUntil>now){waiting=false;options.onStart?.();if(inactive()||paused)return;}
         while(events.length&&events[0].start<=now){
-          const event=events.shift();
-          if(!started||waiting){started=true;waiting=false;options.onStart?.();if(inactive())return;}
-          if(event.boundary){options.onBoundary?.({charIndex:event.boundary.charIndex,charLength:event.boundary.charLength,name:'sentence',type:'sentence'});if(inactive())return;}
+          const event=events[0];audibleUntil=Math.max(audibleUntil,event.end);
+          if(!started||waiting){started=true;waiting=false;options.onStart?.();if(inactive()||paused)return;}
+          events.shift();
+          if(event.boundary){options.onBoundary?.({charIndex:event.boundary.charIndex,charLength:event.boundary.charLength,name:'sentence',type:'sentence'});if(inactive()||paused)return;}
         }
         for(const waiter of capacity)if(roomFor(waiter.duration)){capacity.delete(waiter);waiter.resolve();}
         if(!nodes.size){
@@ -320,6 +401,7 @@
       totalBytes+=samples.length*2;totalSeconds+=samples.length/frequency;
       if(totalBytes>MAX_RENDERED_AUDIO_BYTES||totalSeconds>MAX_RENDERED_AUDIO_SECONDS)throw error('speech-too-long');
       sampleRate=frequency;
+      await ensureRunning();
       // Awaiting this callback gives the transport one packet of credit at a
       // time. Even a large packet is copied into bounded, promptly freed slices.
       const sliceLength=Math.max(1,Math.floor(frequency*rate*SLICE_SECONDS));
@@ -331,21 +413,37 @@
         const node=context.createBufferSource();node.buffer=buffer;node.playbackRate.value=rate;node.connect(gain);
         const start=nextTime>context.currentTime?nextTime:context.currentTime+START_LEAD;
         const boundary=chunk.queued?null:chunk;chunk.queued=true;
-        events.push({start,boundary});nodes.add(node);nextTime=start+duration;
+        events.push({start,end:start+duration,boundary});nodes.add(node);nextTime=start+duration;
         node.onended=()=>{if(inactive())return;node.onended=null;node.disconnect();nodes.delete(node);pump();};
         node.start(start);pump();
       }
     }
+    function visibilityChanged(){
+      if(inactive())return;
+      if(document.hidden){
+        if(running){clearTimeout(running.timer);running.timer=null;}
+        if(context.state!=='running')ensureRunning().then(pump,fail);
+      }else if(!paused)ensureRunning(false,true).then(pump,fail);
+    }
+    context.onstatechange=()=>{
+      if(inactive())return;
+      if(context.state==='running'){
+        if(paused){suspendContext();return;}
+        running?.finish();pump();
+      }else ensureRunning().then(pump,fail);
+    };
+    document.addEventListener?.('visibilitychange',visibilityChanged);
     (async()=>{
       try{
         const text=typeof options.text==='string'?options.text:'',locale=options.locale||'ar';
         if(!text.trim()||text.length>16000)throw error('text-length');if(!source.getStatus(locale).ready)throw error('pack-not-installed');
-        const chunks=speechChunks(text,options.chunks),unlockProblem=await lease.unlock;checkAbort(controller.signal);
-        if(unlockProblem)throw unlockProblem;if(context.state!=='running')throw error('playback-blocked');
+        const chunks=speechChunks(text,options.chunks);await ensureRunning(true);checkAbort(controller.signal);
         gain=context.createGain();gain.gain.value=volume;gain.connect(context.destination);
         for(let index=0;index<chunks.length;index++){
           const chunk=chunks[index];let accepting=true;
-          try{await source.stream(chunk.text,{locale,signal:controller.signal,onAudio:packet=>accepting&&!inactive()?append(packet,chunk):Promise.resolve()});}
+          try{await source.stream(chunk.text,{locale,signal:controller.signal,
+            onAudio:packet=>accepting&&!inactive()?append(packet,chunk):Promise.resolve(),
+            onProgress:value=>{if(accepting&&!inactive())options.onProgress?.(value);}});}
           finally{accepting=false;}
           checkAbort(controller.signal);if(!chunk.queued)throw error('invalid-audio');
           options.onProgress?.({completed:index+1,total:chunks.length,phase:'preparing'});
@@ -367,13 +465,17 @@
     if(lease.context&&!streaming){playbackLeases.delete(lease);lease.dispose();lease=preparePlayback();}
     playbackLeases.delete(lease);
     if(streaming&&lease.context)return speakStream(options,source,lease);
-    const controller=new AbortController(),audio=lease.audio;let stopped=false,url='',finished=false,sourceReleased=false;
+    const controller=new AbortController(),audio=lease.audio;let stopped=false,url='',finished=false,sourceReleased=false,paused=false,resumeClip=null;
     const text=typeof options.text==='string'?options.text:'',locale=options.locale||'ar';
     const clearAudioEvents=()=>{audio.onplaying=audio.onwaiting=audio.onended=audio.onerror=audio.ontimeupdate=null;};
-    const cleanup=()=>{clearAudioEvents();lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;
+    const cleanup=()=>{resumeClip=null;clearAudioEvents();lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;
       if(!sourceReleased){sourceReleased=true;try{source?.dispose?.();}catch(_){}}
     };
-    const handle={cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();}};activeSpeech=handle;
+    const handle={
+      cancel(){if(stopped||finished)return;stopped=true;controller.abort();cleanup();},
+      pause(){if(stopped||finished||paused)return;paused=true;audio.pause();options.onPause?.({reason:'user'});},
+      resume(){if(stopped||finished||!paused)return Promise.resolve();paused=false;options.onResume?.();return resumeClip?.()||Promise.resolve();}
+    };activeSpeech=handle;
     async function playClip(blob,boundaries){
       checkAbort(controller.signal);
       url=URL.createObjectURL(blob);audio.src=url;audio.volume=Number.isFinite(options.volume)?Math.max(0,Math.min(1,options.volume)):1;
@@ -383,14 +485,19 @@
         const publishBoundaries=time=>{while(!stopped&&boundaryIndex<boundaries.length&&boundaries[boundaryIndex].start<=time){
           const boundary=boundaries[boundaryIndex++];options.onBoundary?.({charIndex:boundary.charIndex,charLength:boundary.charLength,name:'sentence',type:'sentence'});
         }};
-        const finish=problem=>{if(settled)return;settled=true;controller.signal.removeEventListener('abort',abort);clearAudioEvents();problem?reject(problem):resolve();};
+        const finish=problem=>{if(settled)return;settled=true;resumeClip=null;controller.signal.removeEventListener('abort',abort);clearAudioEvents();problem?reject(problem):resolve();};
         const abort=()=>{audio.pause();finish(aborted());};
-        audio.onplaying=()=>{if(stopped)return;options.onStart?.();publishBoundaries(Number.isFinite(audio.currentTime)?audio.currentTime:0);};
+        audio.onplaying=()=>{if(stopped||paused)return;options.onStart?.();publishBoundaries(Number.isFinite(audio.currentTime)?audio.currentTime:0);};
         // currentTime is already in media seconds, independently of playbackRate.
         audio.ontimeupdate=()=>publishBoundaries(audio.currentTime);
-        audio.onwaiting=()=>options.onWaiting?.();audio.onended=()=>{publishBoundaries(Infinity);finish();};audio.onerror=()=>finish(error('playback-failed'));
+        audio.onwaiting=()=>{if(!paused)options.onWaiting?.();};audio.onended=()=>{publishBoundaries(Infinity);finish();};audio.onerror=()=>finish(error('playback-failed'));
         controller.signal.addEventListener('abort',abort,{once:true});
-        try{Promise.resolve(audio.play()).catch(problem=>finish(error(problem?.name==='NotAllowedError'?'playback-blocked':'playback-failed')));}catch(_){finish(error('playback-failed'));}
+        resumeClip=()=>{
+          if(stopped||finished||paused)return Promise.resolve();let playing;
+          try{playing=Promise.resolve(audio.play());}catch(problem){playing=Promise.reject(problem);}
+          playing.catch(problem=>finish(error(problem?.name==='NotAllowedError'?'playback-blocked':'playback-failed')));return playing;
+        };
+        if(!paused)resumeClip();
       });
       URL.revokeObjectURL(url);url='';checkAbort(controller.signal);
     }
@@ -414,7 +521,7 @@
           let next=generate(chunks[0]);
           for(let index=0;index<chunks.length;index++){
             const chunk=chunks[index];
-            if(!next.ready)options.onWaiting?.();
+            if(!next.ready&&!paused)options.onWaiting?.();
             const result=await next.promise;checkAbort(controller.signal);if(result.problem)throw result.problem;
             next=index+1<chunks.length?generate(chunks[index+1]):null;
             await playClip(result.blob,[{...chunk,start:0}]);

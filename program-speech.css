@@ -13,8 +13,12 @@
   html body #wfProgramSpeechButton:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
   #wfProgramSpeechButton svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
   #wfProgramSpeechButton .wf-reader-stop { display: none; fill: currentColor; }
+  #wfProgramSpeechButton :is(.wf-reader-pause,.wf-reader-resume) { display: none; }
   #wfProgramSpeechButton[data-active="true"] .wf-reader-speaker { display: none; }
   #wfProgramSpeechButton[data-active="true"] .wf-reader-stop { display: block; }
+  #wfProgramSpeechButton[data-active="true"][data-can-pause="true"] .wf-reader-stop { display: none; }
+  #wfProgramSpeechButton[data-active="true"][data-can-pause="true"][data-paused="false"] .wf-reader-pause { display: block; stroke-width: 3; }
+  #wfProgramSpeechButton[data-active="true"][data-can-pause="true"][data-paused="true"] .wf-reader-resume { display: block; fill: currentColor; }
   #wfProgramSpeechButton[data-active="true"] { color: var(--brand-primary); background: var(--ui-soft); }
   #wfProgramSpeechStatus {
     position: fixed; z-index: 1250; inset-inline: 16px; bottom: calc(96px + env(safe-area-inset-bottom, 0px));

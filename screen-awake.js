@@ -65,8 +65,9 @@
 
   function sync(state) {
     if (!state || typeof state.active !== 'boolean') return;
-    if (active !== state.active) {
-      active = state.active;
+    const reading = state.active && !state.paused && state.state !== 'paused';
+    if (active !== reading) {
+      active = reading;
       denied = false;
       revoked = false;
       canRecoverRelease = true;

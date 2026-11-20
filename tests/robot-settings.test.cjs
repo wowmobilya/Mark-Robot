@@ -38,16 +38,16 @@ test('one pack download disables other actions while leaving its own Cancel avai
 });
 
 test('normalizes preferences without restoring camera activation', () => {
-  assert.deepEqual(normalize(), {autoExpressions: true, idleMotion: true, trackingSensitivity: 'normal', speechEnabled:true, speechRate:1, speechVolume:1, arabicDialect:'sy', speechBackend:'reference', continuousSpeech:true});
+  assert.deepEqual(normalize(), {autoExpressions: true, idleMotion: true, trackingSensitivity: 'normal', speechEnabled:true, speechRate:1, speechVolume:1, arabicDialect:'sy', speechBackend:'reference', continuousSpeech:false});
   assert.deepEqual(normalize({autoExpressions: false, idleMotion: false, trackingSensitivity: 'high', cameraEnabled: true}),
     {...defaults, autoExpressions: false, idleMotion: false, trackingSensitivity: 'high'});
   assert.equal(normalize({trackingSensitivity: 'invalid'}).trackingSensitivity, 'normal');
 });
 
-test('speech controls preserve mute, clamp speed/volume and reject invalid voice choices', () => {
+test('speech controls preserve mute and rate while enforcing Mark with Syrian Arabic', () => {
   const chosen=normalize({speechEnabled:false,speechRate:1.2,speechVolume:0,arabicDialect:'eg',speechBackend:'device',continuousSpeech:false});
   assert.equal(chosen.speechEnabled,false); assert.equal(chosen.speechRate,1.2); assert.equal(chosen.speechVolume,0);
-  assert.equal(chosen.arabicDialect,'eg'); assert.equal(chosen.speechBackend,'device'); assert.equal(chosen.continuousSpeech,false);
+  assert.equal(chosen.arabicDialect,'sy'); assert.equal(chosen.speechBackend,'reference'); assert.equal(chosen.continuousSpeech,false);
   assert.equal(normalize({speechRate:8}).speechRate,1.25); assert.equal(normalize({speechRate:-2}).speechRate,.75);
   assert.equal(normalize({speechVolume:9}).speechVolume,1); assert.equal(normalize({speechVolume:-1}).speechVolume,0);
   for(const value of [NaN,Infinity,'1.1',null]) assert.equal(normalize({speechRate:value}).speechRate,1);
@@ -55,13 +55,14 @@ test('speech controls preserve mute, clamp speed/volume and reject invalid voice
   assert.equal(normalize({speechBackend:'remote'}).speechBackend,'reference');
 });
 
-test('the new default does not migrate an explicitly saved lightweight or device voice', () => {
-  assert.equal(defaults.speechBackend, 'reference');
+test('legacy voice choices migrate without losing rate, volume or unrelated saved preferences', () => {
   for (const backend of ['reference', 'local', 'device']) {
-    assert.equal(normalize({speechBackend:backend}).speechBackend, backend);
-    assert.equal(mergeSettings({robot:{speechBackend:backend}}, {}, {speechRate:1.1}).robot.speechBackend, backend);
+    const migrated=mergeSettings({companyName:'Saved company',robot:{speechBackend:backend,arabicDialect:'eg',continuousSpeech:true,
+      speechRate:1.2,speechVolume:.4,autoExpressions:false,futureOption:'keep'}}, {}, {});
+    assert.equal(migrated.robot.speechBackend,'reference');assert.equal(migrated.robot.arabicDialect,'sy');assert.equal(migrated.robot.continuousSpeech,false);
+    assert.equal(migrated.robot.speechRate,1.2);assert.equal(migrated.robot.speechVolume,.4);assert.equal(migrated.robot.autoExpressions,false);
+    assert.equal(migrated.robot.futureOption,'keep');assert.equal(migrated.companyName,'Saved company');
   }
-  assert.equal(mergeSettings({robot:{speechBackend:'local'}}, {}, {speechBackend:'reference'}).robot.speechBackend, 'reference');
 });
 
 test('one shared reference card retains its own manager and real status across languages', () => {
@@ -73,13 +74,12 @@ test('one shared reference card retains its own manager and real status across l
   const shared = entries.find(entry=>entry.backend==='reference');
   assert.equal(shared.key,'reference'); assert.equal(shared.locale,'tr'); assert.equal(shared.api,reference);
   assert.equal(shared.status.total,921000000); assert.equal(shared.status.state,'downloading');
-  assert.deepEqual(entries.filter(entry=>entry.backend==='local').map(entry=>entry.key),['local:ar','local:tr']);
-  assert(entries.filter(entry=>entry.backend==='local').every(entry=>entry.api===local));
+  assert.equal(entries.length,1,'other installed voice packs do not become settings choices');
   const missing = voicePackEntries(local, null, 'ar').find(entry=>entry.backend==='reference');
   assert.equal(missing.status.state,'unsupported'); assert.equal(missing.status.reason,'reference-unavailable');
 });
 
-function settingsUIFixture({localReady = false} = {}) {
+function settingsUIFixture({localReady = false, referenceReady = false, engineReady = false, preferences = {}} = {}) {
   const nodes = [], trace = [], listeners = new Map();
   class Element {
     constructor(tag) { this.tagName=tag.toUpperCase();this.children=[];this.events={};this.attributes={};this.dataset={};this.style={setProperty(){}};this.textContent='';this.classes=new Set();this.classList={contains:name=>this.classes.has(name),add:name=>this.classes.add(name),remove:name=>this.classes.delete(name),toggle:(name,enabled)=>enabled?this.classes.add(name):this.classes.delete(name)};nodes.push(this); }
@@ -98,14 +98,16 @@ function settingsUIFixture({localReady = false} = {}) {
   const workspace=new Element('div'),tabs=new Element('div'),content=new Element('div');workspace.map={'.tabs':tabs,'.wf-settings-content':content};
   const document={documentElement:root,hidden:false,querySelector:selector=>selector==='#page-settings .wf-settings-workspace'?workspace:null,
     getElementById:id=>nodes.find(node=>node.id===id)||null,createElement:tag=>new Element(tag),addEventListener(){},removeEventListener(){}};
-  const state={settings:{robot:{speechBackend:'reference',arabicDialect:'sy'}}};
-  const refStatus={state:'not-installed',ready:false,total:921000000};let releaseDownload,speechActive=false,audioActive=false;
+  const state={settings:{robot:{speechBackend:'reference',arabicDialect:'sy',...preferences}}};
+  const refStatus={state:referenceReady?'ready':'not-installed',ready:referenceReady,engineReady,total:922000000};let releaseDownload,finishPrepare,speechActive=false,audioActive=false;
   class CustomEvent {constructor(type,options={}){this.type=type;this.detail=options.detail;}}
   const window={isSecureContext:true,switchTab(){},applyTr(){},addEventListener(name,listener){const list=listeners.get(name)||[];list.push(listener);listeners.set(name,list);},removeEventListener(){},dispatchEvent(event){for(const listener of listeners.get(event.type)||[])listener(event);},
     WFOfflineVoice:{list:()=>['ar','en','tr','fr','ru'].map(locale=>({locale,name:'Light '+locale,bytes:30})),getStatus:locale=>({locale,state:localReady?'ready':'not-installed',ready:localReady}),
       async remove(locale){trace.push({kind:'remove-local',locale,ownerActive:speechActive});audioActive=false;}},
-    WFReferenceVoice:{list:()=>['ar','en','tr','fr','ru'].map(locale=>({locale,name:'Mark · local reference',bytes:921000000})),getStatus:locale=>({...refStatus,locale,name:'Mark · local reference'}),
-      download(locale,options){trace.push({kind:'download',locale,options});refStatus.state='downloading';options.onProgress?.();return new Promise(resolve=>{releaseDownload=()=>{refStatus.state='not-installed';resolve();};});},remove:async()=>{},cancelDownload(){}},
+    WFReferenceVoice:{list:()=>['ar','en','tr','fr','ru'].map(locale=>({locale,name:'Mark · local reference',bytes:922000000})),getStatus:locale=>({...refStatus,locale,name:'Mark · local reference'}),
+      download(locale,options){trace.push({kind:'download',locale,options});refStatus.state='downloading';options.onProgress?.();return new Promise(resolve=>{releaseDownload=()=>{refStatus.state='not-installed';resolve();};});},
+      prepare(locale){trace.push({kind:'prepare',locale});return new Promise((resolve,reject)=>{finishPrepare=problem=>{if(problem)reject(problem);else{refStatus.engineReady=true;resolve({...refStatus});}};});},
+      async remove(){trace.push({kind:'remove-reference'});},cancelDownload(){}},
     WFProgramSpeech:{speak(options){trace.push({kind:'speak',options});speechActive=audioActive=true;window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail:{state:'ready',active:false}}));window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail:{state:'preparing',active:true,voiceName:'Mark · local reference'}}));return true;},preview(options){trace.push({kind:'recording',options});return true;},
       stop(){trace.push({kind:'stop'});speechActive=audioActive=false;window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail:{state:'stopped',active:false}}));}}};
   vm.runInNewContext(readFileSync(require.resolve('../robot-settings.js'),'utf8'),{window,document,S:state,navigator:{mediaDevices:{}},MutationObserver:class{observe(){}disconnect(){}},CustomEvent,AbortController,Intl,setTimeout,clearTimeout});
@@ -115,14 +117,19 @@ function settingsUIFixture({localReady = false} = {}) {
     backend:nodes.find(node=>node.name==='speechBackend'),
     reference:nodes.find(node=>node.dataset.backend==='reference'),
     emitSpeech:detail=>window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail})),
-    releaseDownload:()=>releaseDownload()};
+    engineStatus:nodes.find(node=>node.className==='wf-robot-engine-status'),
+    updateReference(value){Object.assign(refStatus,value);window.dispatchEvent(new CustomEvent('wf-reference-voice-loading',{detail:{phase:'ready'}}));},
+    releaseDownload:()=>releaseDownload(),finishPrepare:problem=>finishPrepare(problem)};
 }
 
-test('settings has a separate trusted reading sample, no automatic download, and an explicit save gate', () => {
-  const f=settingsUIFixture();
+test('settings renders only Mark and Syrian Arabic with a generated preview and an explicit save gate', () => {
+  const f=settingsUIFixture({referenceReady:true,preferences:{speechBackend:'device',arabicDialect:'eg',continuousSpeech:true,speechRate:1.2,speechVolume:.4}});
   assert.equal(f.nodes.filter(node=>node.dataset.backend==='reference').length,1);
-  assert.equal(f.nodes.filter(node=>node.className==='wf-robot-voice-row').length,6);
-  assert.deepEqual(f.backend.children.map(option=>option.value),['reference','local','device']);
+  assert.equal(f.nodes.filter(node=>node.className==='wf-robot-voice-row').length,1);
+  assert.equal(f.backend,undefined);
+  assert.equal(f.nodes.some(node=>['arabicDialect','continuousSpeech'].includes(node.name)),false);
+  assert.equal(f.nodes.find(node=>node.name==='speechRate').value,1.2);
+  assert.equal(f.nodes.find(node=>node.name==='speechVolume').value,.4);
   assert.equal(f.trace.length,0);
   f.reading.events.click({isTrusted:false});assert.equal(f.trace.length,0);
   const event={isTrusted:true};f.reading.events.click(event);
@@ -131,7 +138,7 @@ test('settings has a separate trusted reading sample, no automatic download, and
   assert(f.status.textContent.includes('Mark · local reference'));
   f.emitSpeech({state:'ready',active:false});assert.equal(f.status.textContent,'انتهت عينة القراءة.');
   f.root.lang='tr';f.window.applyTr();assert.equal(f.status.textContent,'Okuma örneği tamamlandı.');
-  f.backend.value='local';f.backend.events.change();f.reading.events.click({isTrusted:true});
+  const rate=f.nodes.find(node=>node.name==='speechRate');rate.value=1.1;rate.events.input();f.reading.events.click({isTrusted:true});
   assert.equal(f.trace.length,1);assert(f.status.textContent.includes('kaydedin'));
 });
 
@@ -146,18 +153,53 @@ test('the shared reference download uses the current UI language and its own can
   assert.equal(f.trace.filter(item=>item.kind==='speak').length,0);
 });
 
-test('removing an installed lightweight pack stops reference playback and its UI owner before deletion', async () => {
-  const f=settingsUIFixture({localReady:true});
-  f.reading.events.click({isTrusted:true});
-  assert.deepEqual(f.speechState(),{active:true,audioActive:true});
-  const localCard=f.nodes.find(node=>node.dataset.backend==='local');
-  const remove=localCard.children.find(node=>node.className==='wf-robot-voice-action');
-  await remove.events.click({isTrusted:true});
-  assert.deepEqual(f.trace.map(item=>item.kind),['speak','stop','remove-local']);
-  assert.equal(f.trace.at(-1).ownerActive,false);
-  assert.deepEqual(f.speechState(),{active:false,audioActive:false});
-  assert.equal(f.status.textContent,'أُوقفت عينة القراءة.');
-  assert.equal(f.window.WFRobotSettings.getPreferences().speechBackend,'reference');
+test('reading preview distinguishes pause and preserves the speech owner preparation and error messages', () => {
+  const f=settingsUIFixture({referenceReady:true});f.reading.events.click({isTrusted:true});
+  f.emitSpeech({active:true,state:'preparing',message:'جارٍ تحميل ملفات Mark من الجهاز…'});
+  assert.equal(f.status.textContent,'جارٍ تحميل ملفات Mark من الجهاز…');
+  f.emitSpeech({active:true,state:'paused'});
+  assert.equal(f.status.textContent,'عينة القراءة متوقفة مؤقتًا.');
+  f.emitSpeech({active:false,state:'failed',message:'تعذّر تشغيل Mark. حاول التجهيز مجددًا.'});
+  assert.equal(f.status.textContent,'تعذّر تشغيل Mark. حاول التجهيز مجددًا.');
+});
+
+test('installed Mark prepares in place with visible progress and never deletes an installed package', async () => {
+  const f=settingsUIFixture({localReady:true,referenceReady:true});
+  const action=f.reference.children.find(node=>node.className==='wf-robot-voice-action');
+  const packStatus=f.reference.children.find(node=>node.className==='wf-robot-voice-status');
+  assert(packStatus.textContent.includes('مثبّت'));assert.equal(f.engineStatus.dataset.state,'cold');assert.equal(f.trace.length,0);
+  const pending=action.events.click({isTrusted:true});
+  assert.deepEqual(f.trace.map(item=>item.kind),['prepare']);assert.equal(f.engineStatus.dataset.state,'preparing');assert.equal(action.disabled,true);
+  f.finishPrepare();await pending;
+  assert.equal(f.engineStatus.dataset.state,'ready');assert.equal(action.hidden,true);
+  assert.equal(f.trace.some(item=>item.kind.startsWith('remove')||item.kind==='download'),false);
+  f.updateReference({engineReady:false});assert.equal(f.engineStatus.dataset.state,'cold');assert.equal(action.hidden,false);
+});
+
+test('a preparation failure preserves the installed package and exposes a retry', async () => {
+  const f=settingsUIFixture({referenceReady:true}),action=f.reference.children.find(node=>node.className==='wf-robot-voice-action');
+  const pending=action.events.click({isTrusted:true});assert.deepEqual(f.trace.map(item=>item.kind),['prepare']);
+  f.finishPrepare(Object.assign(new Error('engine-failed'),{code:'engine-failed'}));await pending;
+  assert.equal(f.engineStatus.dataset.state,'error');assert(f.engineStatus.textContent.includes('تعذّر'));assert.equal(action.disabled,false);
+  const retry=action.events.click({isTrusted:true});f.finishPrepare();await retry;
+  assert.deepEqual(f.trace.map(item=>item.kind),['prepare','prepare']);assert.equal(f.engineStatus.dataset.state,'ready');
+});
+
+test('missing Mark gives download guidance without playing a substitute or downloading automatically', () => {
+  const f=settingsUIFixture({localReady:true});f.reading.events.click({isTrusted:true});
+  assert.equal(f.trace.length,0);assert(f.status.textContent.includes('نزّل'));assert.equal(f.engineStatus.hidden,true);
+});
+
+test('all UI languages retain one Mark card and distinguish it from the saved recording', () => {
+  const f=settingsUIFixture({referenceReady:true,engineReady:true});
+  for(const locale of ['ar','en','tr','fr','ru']){
+    f.root.lang=locale;f.window.applyTr();
+    assert.equal(f.nodes.filter(node=>node.className==='wf-robot-voice-row').length,1);
+    const recording=f.nodes.find(node=>node.events.click&&node!==f.reading&&node.textContent.includes('Mark')&&node.parentNode?.className==='wf-robot-speech-actions');
+    assert(recording,'the saved recording has a separate labeled action');assert.notEqual(recording.textContent,f.reading.textContent);
+    assert(f.engineStatus.textContent&&!f.engineStatus.textContent.startsWith('voiceEngine'));
+    assert.equal(f.nodes.some(node=>/Nabra|Piper|WebGPU|Egyptian|Égyptien|مصري/.test(node.textContent)),false);
+  }
 });
 
 test('settings merge preserves the latest unrelated values and unknown robot preferences', () => {

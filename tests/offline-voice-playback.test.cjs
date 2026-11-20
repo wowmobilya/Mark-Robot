@@ -46,7 +46,7 @@ test('reference playback uses its generator and releases its engine on stop and 
 });
 
 async function flushUntil(check){for(let i=0;i<40&&!check();i++)await new Promise(resolve=>setImmediate(resolve));assert(check(),'asynchronous operation reached expected state');}
-function audioRuntime(){
+function audioRuntime(options={}){
  let now=0,timerId=0;const timers=new Map(),contexts=[];
  const clock={setTimeout(callback,delay=0){const id=++timerId;timers.set(id,{callback,at:now+Math.max(0,delay)});return id;},
   clearTimeout(id){timers.delete(id);},advance(seconds){const target=now+seconds*1000;
@@ -55,17 +55,20 @@ function audioRuntime(){
    }now=target;
   },get pending(){return timers.size;}};
  class AudioContext{
-  constructor(){this.state='suspended';this.sampleRate=44100;this.destination={};this.sources=[];this.gains=[];this.resumes=0;contexts.push(this);}
-  get currentTime(){return now/1000;}
-  resume(){this.resumes++;this.state='running';return Promise.resolve();}
-  close(){this.state='closed';return Promise.resolve();}
+  constructor(){this.state='suspended';this.elapsed=0;this.since=now;this.sampleRate=44100;this.destination={};this.sources=[];this.gains=[];this.resumes=0;contexts.push(this);}
+  get currentTime(){return this.elapsed+(this.state==='running'?(now-this.since)/1000:0);}
+  setState(state){if(this.state===state)return;this.elapsed=this.currentTime;this.since=now;this.state=state;for(const node of this.sources)node.reschedule?.();this.onstatechange?.();}
+  resume(){this.resumes++;if(options.resume)return options.resume(this,contexts);this.setState('running');return Promise.resolve();}
+  suspend(){this.setState('suspended');return Promise.resolve();}
+  close(){this.setState('closed');return Promise.resolve();}
   createBuffer(channels,length,sampleRate){assert.equal(channels,1);const data=new Float32Array(length);
    return {length,sampleRate,duration:length/sampleRate,copyToChannel(samples,channel){assert.equal(channel,0);data.set(samples);},getChannelData(){return data;}};
   }
   createGain(){const gain={gain:{value:1},connect(){},disconnect(){gain.disconnected=true;}};this.gains.push(gain);return gain;}
   createBufferSource(){const context=this;let timer;
    const node={buffer:null,playbackRate:{value:1},connect(){},disconnect(){node.disconnected=true;},
-    start(at=0){node.startedAt=at;node.endsAt=at+node.buffer.duration/node.playbackRate.value;
+    start(at=0){node.startedAt=at;node.endsAt=at+node.buffer.duration/node.playbackRate.value;node.reschedule();},
+    reschedule(){clock.clearTimeout(timer);if(node.startedAt===undefined||node.stopped||node.ended||context.state!=='running')return;
      timer=clock.setTimeout(()=>{node.ended=true;node.onended?.();},Math.max(0,node.endsAt-context.currentTime)*1000);
     },stop(){node.stopped=true;clock.clearTimeout(timer);}};
    this.sources.push(node);return node;
@@ -78,15 +81,15 @@ function streamedVoice(){
  const calls=[];let releases=0;
  return {calls,get releases(){return releases;},getStatus:()=>({ready:true}),
   synthesize:async()=>{throw new Error('streaming playback must not buffer a whole sentence');},dispose(){releases++;},
-  stream(text,{locale,signal,onAudio}){return new Promise((resolve,reject)=>{
+  stream(text,{locale,signal,onAudio,onProgress}){return new Promise((resolve,reject)=>{
    const finish=problem=>{signal.removeEventListener('abort',abort);problem?reject(problem):resolve();};
    const abort=()=>finish(Object.assign(new Error('cancelled'),{name:'AbortError'}));signal.addEventListener('abort',abort,{once:true});
-   calls.push({text,locale,signal,finish:()=>finish(),fail:finish,
+   calls.push({text,locale,signal,finish:()=>finish(),fail:finish,progress:value=>onProgress?.(value),
     emit(samples,sampleRate=44100){return Promise.resolve(onAudio({samples,sampleRate})).catch(problem=>{finish(problem);throw problem;});}});
   });}
  };
 }
-async function fixture({webAudio=false}={}){
+async function fixture({webAudio=false,audioOptions={},audioSession}={}){
  const clips=[],urls=new Map(),revoked=[],workers=[],audioElements=[],requests=[],events=[];let id=0;
  class FakeURL extends URL{
   static createObjectURL(blob){const url='blob:test-'+(++id);urls.set(url,blob);clips.push({url,blob});return url;}
@@ -114,15 +117,19 @@ async function fixture({webAudio=false}={}){
   const voice=catalog.find(item=>String(url).includes('/__infinity_voice__/'+item.id+'.json'));
   return voice?new Response(JSON.stringify({version:1,model:voice.files[0].sha256})):undefined;
  }};
- const web=webAudio?audioRuntime():null;
+ const web=webAudio?audioRuntime(audioOptions):null;
  const window={isSecureContext:true,caches:{open:async()=>cache},crypto:webcrypto,Worker,WebAssembly,...(web?{AudioContext:web.AudioContext}:{}),
   fetch:async()=>{throw new Error('speech must remain offline');},dispatchEvent:event=>events.push(event),addEventListener(){}};
+ const documentListeners=new Map(),document={baseURI:'https://example.test/',hidden:false,
+  addEventListener(type,listener){if(!documentListeners.has(type))documentListeners.set(type,new Set());documentListeners.get(type).add(listener);},
+  removeEventListener(type,listener){documentListeners.get(type)?.delete(listener);}};
  class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail;}}
- vm.runInNewContext(source,{window,document:{baseURI:'https://example.test/'},navigator:{},location:{origin:'https://example.test'},
+ vm.runInNewContext(source,{window,document,navigator:{audioSession},location:{origin:'https://example.test'},
   Audio,Worker,URL:FakeURL,Blob,Response,CustomEvent,WebAssembly,AbortController,crypto:webcrypto,
   setTimeout:web?web.clock.setTimeout:setTimeout,clearTimeout:web?web.clock.clearTimeout:clearTimeout});
  await flushUntil(()=>window.WFOfflineVoice.getStatus('ar').ready);
  return {api:window.WFOfflineVoice,requests,clips,urls,revoked,audioElements,workers,...web,
+  setHidden(value){document.hidden=value;for(const listener of documentListeners.get('visibilitychange')||[])listener();},
   respond(index,blob=wav(new Float32Array(2400)),problem){const request=requests[index];assert(request);request.worker.onmessage({data:{id:request.id,blob,error:problem}});}};
 }
 
@@ -162,6 +169,119 @@ test('PCM playback starts before its first sentence stream or remaining report h
   assert.equal(context.reportSources.length,1);assert.equal(context.reportSources[0].buffer.getChannelData(0)[0],.25);
   assert.equal(f.requests.length,0,'no other voice engine is used');
  }finally{handle.cancel();}
+});
+
+test('live engine stages reach the reader but late stages cannot overwrite a newer sentence or cancelled reading',async()=>{
+ const f=await fixture({webAudio:true}),voice=streamedVoice(),progress=[];
+ const handle=f.api.speakGenerated({text:'First. Next.',locale:'ar',streaming:true,onProgress:value=>progress.push(value)},voice);
+ try{
+  await flushUntil(()=>voice.calls.length===1);voice.calls[0].progress({phase:'loading',loaded:10,total:100});
+  assert.deepEqual(progress.map(value=>[value.phase,value.loaded,value.total]),[['loading',10,100]]);
+  await voice.calls[0].emit(new Float32Array(4410).fill(.25));voice.calls[0].finish();await flushUntil(()=>voice.calls.length===2);
+  const count=progress.length;voice.calls[0].progress({phase:'initializing'});assert.equal(progress.length,count);
+  voice.calls[1].progress({phase:'generating'});assert.equal(progress.at(-1).phase,'generating');
+  handle.cancel();voice.calls[1].progress({phase:'streaming'});assert.equal(progress.at(-1).phase,'generating');
+ }finally{handle.cancel();}
+});
+
+test('pending audio activation fails promptly and a fresh user playback lease can recover',async()=>{
+ const f=await fixture({webAudio:true,audioOptions:{resume(context,contexts){
+  if(contexts.length===1)return new Promise(()=>{});context.setState('running');return Promise.resolve();
+ }}}),voice=streamedVoice(),progress=[];let problem,started=0;
+ const blocked=f.api.speakGenerated({text:'Report.',locale:'ar',streaming:true,onProgress:event=>progress.push(event.phase),onError:value=>{problem=value;},onStart(){started++;}},voice);
+ try{
+  await new Promise(resolve=>setImmediate(resolve));f.clock.advance(5);await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(problem?.code,'playback-blocked','an unresolved resume must not leave the reader preparing indefinitely');
+  assert.deepEqual(progress,['audio-unlock']);assert.equal(voice.calls.length,0);assert.equal(started,0);
+  assert.equal(voice.releases,1);assert.equal(f.contexts[0].state,'closed');assert.equal(f.clock.pending,0);
+  const nextVoice=streamedVoice(),playback=f.api.preparePlayback({streaming:true});
+  const next=f.api.speakGenerated({text:'Retry.',locale:'ar',streaming:true,playback,onStart(){started++;}},nextVoice);
+  try{await flushUntil(()=>nextVoice.calls.length===1);await nextVoice.calls[0].emit(new Float32Array(4410).fill(.25));f.clock.advance(.15);assert.equal(started,1);}
+  finally{next.cancel();}
+ }finally{blocked.cancel();}
+});
+
+test('a context suspended while the first PCM is generating resumes before scheduling audible speech',async()=>{
+ const f=await fixture({webAudio:true}),voice=streamedVoice(),progress=[];let started=0,problem;
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',streaming:true,onProgress:event=>progress.push(event.phase),onStart(){started++;},onError:value=>{problem=value;}},voice);
+ try{
+  await flushUntil(()=>voice.calls.length===1);const context=f.contexts[0];await context.suspend();
+  await voice.calls[0].emit(new Float32Array(4410).fill(.25));
+  assert.equal(context.state,'running');assert.equal(context.resumes,2,'the previously unlocked context is resumed once');
+  assert.deepEqual(progress,['audio-resume']);assert.equal(started,0);f.clock.advance(.15);assert.equal(started,1);assert.equal(problem,undefined);
+ }finally{handle.cancel();}
+});
+
+test('blocked recovery from an audio interruption reports an error without pretending playback started',async()=>{
+ const f=await fixture({webAudio:true,audioOptions:{resume(context){
+  if(context.resumes>1)return new Promise(()=>{});context.setState('running');return Promise.resolve();
+ }}}),voice=streamedVoice();let started=0,ended=0,problem;
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',streaming:true,onStart(){started++;},onEnd(){ended++;},onError:value=>{problem=value;}},voice);
+ try{
+  await flushUntil(()=>voice.calls.length===1);await voice.calls[0].emit(new Float32Array(44100).fill(.25));
+  const context=f.contexts[0];await context.suspend();f.clock.advance(.5);
+  assert.equal(started,0,'the audio clock is suspended even though wall-clock timers run');
+  f.clock.advance(5);await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(problem?.code,'playback-interrupted');assert.equal(context.resumes,2);assert.equal(ended,0);
+  assert(context.reportSources.every(node=>node.stopped));assert.equal(voice.releases,1);assert.equal(f.clock.pending,0);
+ }finally{handle.cancel();}
+});
+
+test('intentional PCM pause preserves its queue for a later resume without reporting an interruption',async()=>{
+ const f=await fixture({webAudio:true}),voice=streamedVoice(),pauses=[];let started=0,resumed=0,ended=0,problem;
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',streaming:true,onStart(){started++;},onPause:event=>pauses.push(event.reason),onResume(){resumed++;},onEnd(){ended++;},onError:value=>{problem=value;}},voice);
+ try{
+  await flushUntil(()=>voice.calls.length===1);await voice.calls[0].emit(new Float32Array(44100).fill(.25));f.clock.advance(.2);assert.equal(started,1);
+  handle.pause();const context=f.contexts[0],pausedAt=context.currentTime;assert.equal(context.state,'suspended');
+  f.clock.advance(120);await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(context.currentTime,pausedAt);assert.equal(problem,undefined);assert.equal(ended,0);assert.equal(voice.releases,0);assert.deepEqual(pauses,['user']);
+  await handle.resume();assert.equal(context.state,'running');assert.equal(resumed,1);assert.equal(started,2,'audible queued speech resumes at its prior position');
+  voice.calls[0].finish();f.clock.advance(1);await flushUntil(()=>ended===1);assert.equal(voice.releases,1);
+ }finally{handle.cancel();}
+});
+
+test('a synchronous pause in onStart holds its original boundary until playback resumes',async()=>{
+ const f=await fixture({webAudio:true}),voice=streamedVoice(),boundaries=[];let started=0,handle;
+ handle=f.api.speakGenerated({text:'Report.',locale:'ar',streaming:true,
+  onStart(){started++;if(started===1)handle.pause();},onBoundary:value=>boundaries.push(value)},voice);
+ try{
+  await flushUntil(()=>voice.calls.length===1);await voice.calls[0].emit(new Float32Array(44100).fill(.25));f.clock.advance(.15);
+  assert.equal(f.contexts[0].state,'suspended');assert.equal(boundaries.length,0,'pause takes effect before a sentence is highlighted');
+  await handle.resume();assert.equal(started,2);assert.deepEqual(boundaries.map(value=>[value.charIndex,value.charLength]),[[0,7]]);
+ }finally{handle.cancel();}
+});
+
+test('a hidden page keeps playing and holds an OS interruption until foreground recovery',async()=>{
+ const f=await fixture({webAudio:true}),voice=streamedVoice(),pauses=[];let started=0,resumed=0,problem;
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',streaming:true,onStart(){started++;},onPause:event=>pauses.push(event.reason),onResume(){resumed++;},onError:value=>{problem=value;}},voice);
+ try{
+  await flushUntil(()=>voice.calls.length===1);await voice.calls[0].emit(new Float32Array(44100).fill(.25));f.setHidden(true);f.clock.advance(.2);
+  const context=f.contexts[0];assert.equal(started,1);assert.equal(context.state,'running');assert.deepEqual(pauses,[],'hiding alone does not stop audio');
+  context.setState('interrupted');const interruptedAt=context.currentTime;f.clock.advance(120);await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(context.currentTime,interruptedAt);assert.equal(problem,undefined);assert.equal(voice.releases,0);assert.deepEqual(pauses,['background']);
+  f.setHidden(false);await flushUntil(()=>context.state==='running');assert.equal(resumed,1);assert.equal(started,2);
+ }finally{handle.cancel();}
+});
+
+test('returning to the foreground never overrides an intentional PCM pause',async()=>{
+ const f=await fixture({webAudio:true}),voice=streamedVoice();let resumed=0;
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',streaming:true,onResume(){resumed++;}},voice);
+ try{
+  await flushUntil(()=>voice.calls.length===1);await voice.calls[0].emit(new Float32Array(44100).fill(.25));handle.pause();
+  const context=f.contexts[0];f.setHidden(true);f.clock.advance(120);f.setHidden(false);await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(context.state,'suspended');assert.equal(resumed,0);assert.equal(context.resumes,1);
+  await handle.resume();assert.equal(resumed,1);
+ }finally{handle.cancel();}
+});
+
+test('playback AudioSession ownership spans overlapping leases and does not overwrite another session type',async()=>{
+ const audioSession={type:'ambient'},f=await fixture({webAudio:true,audioSession,audioOptions:{resume(context){
+  assert.equal(audioSession.type,'playback','media session type is selected before gesture activation');context.setState('running');return Promise.resolve();
+ }}});
+ const first=f.api.preparePlayback({streaming:true}),next=f.api.preparePlayback({streaming:true});
+ assert.equal(await first.unlock,null);assert.equal(await next.unlock,null);
+ assert.equal(audioSession.type,'playback');first.dispose();assert.equal(audioSession.type,'playback');next.dispose();assert.equal(audioSession.type,'ambient');
+ const changed=f.api.preparePlayback({streaming:true});audioSession.type='play-and-record';changed.dispose();assert.equal(audioSession.type,'play-and-record');
 });
 
 test('PCM packets stay contiguous at the selected rate and finish only after the last original-text boundary drains',async()=>{
@@ -278,6 +398,29 @@ test('streaming requests retain sentence playback when Web Audio is unavailable'
  const handle=f.api.speakGenerated({text:'First. Next.',locale:'ar',streaming:true,onStart(){started++;}},voice);
  try{await flushUntil(()=>started===1);assert.equal(rendered,2);assert.equal(f.audioElements[0].played.length,2);assert.equal(f.requests.length,0);}
  finally{handle.cancel();}assert.equal(released,1);
+});
+
+test('buffered Mark fallback pauses and resumes the same audio position without synthesizing again',async()=>{
+ const f=await fixture(),pauses=[];let rendered=0,started=0,resumed=0,ended=0;
+ const voice={getStatus:()=>({ready:true}),synthesize:async()=>{rendered++;return wav(new Float32Array(2400));}};
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',streaming:true,onStart(){started++;},onPause:event=>pauses.push(event.reason),onResume(){resumed++;},onEnd(){ended++;}},voice);
+ try{
+  await flushUntil(()=>started===1);const audio=f.audioElements[0],url=audio.src;audio.advance(.04);
+  handle.pause();assert.deepEqual(pauses,['user']);assert.equal(audio.currentTime,.04);
+  await handle.resume();await flushUntil(()=>started===2);assert.equal(resumed,1);assert.equal(audio.src,url);assert.equal(audio.currentTime,.04);assert.equal(rendered,1);
+  audio.onended();await flushUntil(()=>ended===1);
+ }finally{handle.cancel();}
+});
+
+test('pausing buffered preparation keeps the later clip silent until explicit resume',async()=>{
+ const f=await fixture();let generated,started=0;
+ const voice={getStatus:()=>({ready:true}),synthesize:()=>new Promise(resolve=>{generated=resolve;})};
+ const handle=f.api.speakGenerated({text:'Report.',locale:'ar',onStart(){started++;}},voice);
+ try{
+  await flushUntil(()=>generated);handle.pause();generated(wav(new Float32Array(2400)));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.audioElements[0].played.length,1,'only the gesture primer played');assert.equal(started,0);
+  await handle.resume();await flushUntil(()=>started===1);assert.equal(f.audioElements[0].played.length,2);
+ }finally{handle.cancel();}
 });
 
 test('cancelling during preparation discards late worker output without speaking a partial report',async()=>{

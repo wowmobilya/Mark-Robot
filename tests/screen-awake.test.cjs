@@ -78,6 +78,16 @@ test('loading during preparation acquires from the current speech owner', async 
   assert.equal(lock.released, false);
 });
 
+test('pausing keeps the speech session but releases the display lock until playback resumes', async () => {
+  const f = fixture({active: true}), lock = f.grant(); await flush();
+  f.update(true, 'paused'); await flush();
+  assert.equal(lock.released, true);
+  assert.equal(f.requests.length, 1);
+  f.update(true, 'speaking');
+  const resumed = f.grant(1); await flush();
+  assert.equal(resumed.released, false);
+});
+
 test('an owner becoming ready after the script loads is synchronized', async () => {
   const f = fixture();
   f.setState(true); f.window.dispatchEvent(new Event('wf-robot-ready'));

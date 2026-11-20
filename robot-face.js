@@ -62,8 +62,24 @@
       greeting: "Здравствуйте, господин Хасан Аль-Хилу. Я ваш умный помощник в WOW Furniture. Я помогу организовать работу и ясно прочитать ваши отчёты. Меня создал и запрограммировал инженер Моатаз Беллах Хадж Шаабан. Я готов, давайте начнём.",
     },
   };
-  const egyptianGreeting = {"audioURL": "assets/robot-identity/ar-EG.mp3?v=1", "greeting": "أهلًا يا أستاذ حَسَن الحِلو. أنا مساعدك الذكي في واو فِرْنِتْشَر. موجود عشان أساعدك في تنظيم الشغل وقراية التقارير بوضوح. صمّمني وبرمجني المهندس مُعتَز بالله حاج شعبان. أنا جاهز، يلا نبدأ."};
-  const identityRecordings = new Set([...Object.values(messages).map(copy => copy.audioURL), egyptianGreeting.audioURL]);
+  const identityRecordings = new Set(Object.values(messages).map(copy => copy.audioURL));
+  const speechLanguages = ['ar', 'en', 'tr', 'fr', 'ru'];
+  const speechCopy = {
+    paused: ['القراءة متوقفة مؤقتًا', 'Reading paused', 'Okuma duraklatıldı', 'Lecture en pause', 'Чтение приостановлено'],
+    background: ['أوقف المتصفح الصوت مؤقتًا؛ اضغط استئناف للمتابعة', 'The browser paused audio. Resume to continue', 'Tarayıcı sesi duraklattı. Sürdürerek devam edin', 'Le navigateur a suspendu le son. Reprenez la lecture', 'Браузер приостановил звук. Нажмите «Продолжить»'],
+    loading: ['جارٍ تحميل حزمة مارك المحفوظة إلى الذاكرة…', 'Loading the saved Mark pack into memory…', 'Kayıtlı Mark paketi belleğe yükleniyor…', 'Chargement du pack Mark enregistré en mémoire…', 'Загрузка сохранённого пакета Mark в память…'],
+    initializing: ['جارٍ تهيئة محرك مارك على جهازك…', 'Starting the Mark engine on this device…', 'Mark motoru bu cihazda başlatılıyor…', 'Démarrage du moteur Mark sur cet appareil…', 'Запуск движка Mark на устройстве…'],
+    generating: ['مارك يجهّز أول مقطع للقراءة…', 'Mark is preparing the next spoken passage…', 'Mark sıradaki sesli bölümü hazırlıyor…', 'Mark prépare le prochain passage audio…', 'Mark готовит следующий фрагмент речи…'],
+    streaming: ['وصل الصوت؛ جارٍ بدء القراءة…', 'Audio received. Starting playback…', 'Ses alındı. Oynatma başlatılıyor…', 'Audio reçu. Démarrage de la lecture…', 'Звук получен. Начинается воспроизведение…'],
+    unlocking: ['جارٍ تفعيل مخرج الصوت…', 'Activating audio output…', 'Ses çıkışı etkinleştiriliyor…', 'Activation de la sortie audio…', 'Включение аудиовыхода…'],
+    blocked: ['المتصفح لم يفعّل الصوت. اضغط زر القراءة مجددًا لتشغيله.', 'The browser did not activate audio. Press Read again.', 'Tarayıcı sesi etkinleştirmedi. Oku düğmesine yeniden basın.', 'Le navigateur n’a pas activé le son. Appuyez de nouveau sur Lire.', 'Браузер не включил звук. Нажмите чтение ещё раз.'],
+    interrupted: ['تعذّر استئناف مخرج الصوت. اضغط القراءة مجددًا.', 'Audio output could not resume. Press Read again.', 'Ses çıkışı sürdürülemedi. Oku düğmesine yeniden basın.', 'La sortie audio n’a pas repris. Appuyez de nouveau sur Lire.', 'Не удалось возобновить звук. Нажмите чтение ещё раз.'],
+    workerFailed: ['تعذّر بدء مكوّن صوت مارك. الحزمة محفوظة؛ أعد تهيئة الصوت من إعدادات الروبوت.', 'A Mark audio component could not start. The pack is saved; prepare Mark again in Robot settings.', 'Mark ses bileşeni başlatılamadı. Paket kayıtlı; Robot ayarlarından Mark’ı yeniden hazırlayın.', 'Un composant Mark n’a pas démarré. Le pack est enregistré ; relancez Mark dans les réglages du robot.', 'Компонент Mark не запустился. Пакет сохранён; повторите подготовку в настройках робота.'],
+    timeout: ['لم يستجب محرك مارك في الوقت المحدد. الحزمة محفوظة؛ أعد تهيئته من الإعدادات.', 'Mark did not respond in time. The pack is saved; prepare it again in Settings.', 'Mark zamanında yanıt vermedi. Paket kayıtlı; Ayarlardan yeniden hazırlayın.', 'Mark n’a pas répondu à temps. Le pack est enregistré ; relancez sa préparation.', 'Mark не ответил вовремя. Пакет сохранён; повторите подготовку в настройках.'],
+    deviceLost: ['توقّف محرك الرسوم الذي يشغّل مارك. أعد تهيئة الصوت من إعدادات الروبوت.', 'The graphics engine running Mark stopped. Prepare the voice again in Robot settings.', 'Mark’ın grafik motoru durdu. Robot ayarlarından sesi yeniden hazırlayın.', 'Le moteur graphique de Mark s’est arrêté. Relancez la préparation dans les réglages.', 'Графический движок Mark остановился. Повторите подготовку в настройках робота.'],
+    packMissing: ['حزمة مارك غير مكتملة على هذا الجهاز. راجع حالتها في إعدادات الروبوت.', 'The Mark pack is incomplete on this device. Check Robot settings.', 'Mark paketi bu cihazda eksik. Robot ayarlarını kontrol edin.', 'Le pack Mark est incomplet sur cet appareil. Consultez les réglages du robot.', 'Пакет Mark на устройстве неполон. Проверьте настройки робота.'],
+    engineFailed: ['تعذّر توليد الصوت بمارك. الحزمة محفوظة؛ جرّب تهيئة مارك من إعدادات الروبوت.', 'Mark could not generate audio. The pack is saved; try preparing Mark in Robot settings.', 'Mark ses üretemedi. Paket kayıtlı; Robot ayarlarından Mark’ı hazırlamayı deneyin.', 'Mark n’a pas pu générer le son. Le pack est enregistré ; préparez Mark dans les réglages.', 'Mark не смог создать звук. Пакет сохранён; попробуйте подготовить Mark в настройках.'],
+  };
   // Original WOW ROBOT face proportions, with the dark-on-white identity from the user’s reference photo.
   const mouthShapes = {
     calm: 'M 274 252.72 Q 300 273.72 326 252.72',
@@ -158,24 +174,19 @@
     let expressionStep = 0;
     let voices = [];
     let disposed = false;
-    let preferences = {autoExpressions: true, idleMotion: true, speechEnabled: true, speechRate: 1, speechVolume: 1, arabicDialect: 'sy', speechBackend: 'reference', continuousSpeech: true};
+    let preferences = {autoExpressions: true, idleMotion: true, speechEnabled: true, speechRate: 1, speechVolume: 1, arabicDialect: 'sy', speechBackend: 'reference', continuousSpeech: false};
     let speakerName = '';
     let lastMotion = {active: false, x: 0, y: 0};
     let referenceWarmRequested = false;
+    let paused = false, pauseReason = '', phase = '', failureReason = '';
+    let retainedReport = null;
 
     function language() {
       const lang = (root.lang || 'ar').toLowerCase().split(/[-_]/)[0];
       return Object.prototype.hasOwnProperty.call(messages, lang) ? lang : 'en';
     }
 
-    function currentVoice() {
-      // A reference-voice choice must never become a different device voice.
-      if (preferences.speechBackend === 'reference') return null;
-      // The user requested offline speech: never select a network-backed system voice.
-      const local = voices.filter(voice => voice.localService === true &&
-        String(voice.lang || '').toLowerCase().split(/[-_]/)[0] === locale);
-      return local.find(voice => voice.default) || local[0] || null;
-    }
+    function currentVoice() { return null; }
 
     function recordingURL() {
       // Only recordings bundled with this application are allowed for offline playback.
@@ -184,9 +195,9 @@
         identityRecordings.has(value) ? value : '';
     }
 
-    function greeting() { return locale === 'ar' && preferences.arabicDialect === 'eg' ? egyptianGreeting : messages[locale]; }
+    function greeting() { return messages[locale]; }
 
-    function voiceManager() { return preferences.speechBackend === 'reference' ? window.WFReferenceVoice : window.WFOfflineVoice; }
+    function voiceManager() { return window.WFReferenceVoice; }
 
     function offlineReady() {
       try { const manager = voiceManager(); return preferences.speechBackend !== 'device' && typeof manager?.speak === 'function' && manager.getStatus(locale).ready === true; }
@@ -211,11 +222,8 @@
         face.getAttribute('aria-hidden') === 'false' && !!dashboard?.classList.contains('active');
     }
 
-    function visible() {
-      if (disposed || document.hidden) return false;
-      if (sessionKind === 'program' || sessionKind === 'preview') return sessionPage === document.querySelector('.page.active');
-      return robotVisible();
-    }
+    // Playback belongs to the application, not to the currently visible card.
+    function visible() { return !disposed; }
 
     function setExpression(expression) {
       face.dataset.expression = expression;
@@ -233,7 +241,7 @@
       const bounded = (value, min, max, fallback) => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
       preferences = {autoExpressions: stored.autoExpressions !== false, idleMotion: stored.idleMotion !== false,
         speechEnabled: stored.speechEnabled !== false, speechRate: bounded(stored.speechRate, .75, 1.25, 1), speechVolume: bounded(stored.speechVolume, 0, 1, 1),
-        arabicDialect: stored.arabicDialect === 'eg' ? 'eg' : 'sy', speechBackend: ['reference', 'local', 'device'].includes(stored.speechBackend) ? stored.speechBackend : 'reference', continuousSpeech: stored.continuousSpeech !== false};
+        arabicDialect: 'sy', speechBackend: 'reference', continuousSpeech: false};
       if (active() && ['speechEnabled', 'speechRate', 'speechVolume', 'arabicDialect', 'speechBackend', 'continuousSpeech'].some(key => previous[key] !== preferences[key])) finish('stopped', true);
       face.dataset.idleMotion = String(preferences.idleMotion);
       if (!preferences.autoExpressions) {
@@ -247,13 +255,15 @@
 
     function warmReferenceVoice() {
       const manager = window.WFReferenceVoice;
-      const selected = !disposed && !document.hidden && preferences.speechBackend === 'reference' &&
+      const selected = !disposed && preferences.speechBackend === 'reference' &&
         preferences.speechEnabled && preferences.speechVolume > 0;
       if (!selected) {
+        if (active()) return;
         referenceWarmRequested = false;
         try { manager?.release?.(); } catch (_) {}
         return;
       }
+      if (document.hidden) return;
       if (referenceWarmRequested || typeof manager?.prepare !== 'function' || !manager.getStatus(locale).ready) return;
       referenceWarmRequested = true;
       // Preparation reads the already installed pack only. It never speaks or downloads.
@@ -262,7 +272,7 @@
 
     function applyMotion(event) {
       if (event?.detail) lastMotion = event.detail;
-      const tracking = lastMotion.active === true && visible();
+      const tracking = lastMotion.active === true && robotVisible();
       face.dataset.tracking = String(tracking);
       const bound = value => Math.max(-1, Math.min(1, Number(value) || 0));
       face.style?.setProperty('--wf-robot-look-x', `${tracking ? bound(lastMotion.x) * 22 : 0}px`);
@@ -282,15 +292,15 @@
       title.textContent = copy.title;
       const statusKey = state === 'ready' && !supported && !recordingURL() && !offlineReady() ? 'unsupported' :
         state === 'ready' && !currentVoice() && !recordingURL() && !offlineReady() ? 'unavailable' : state;
-      status.textContent = copy[statusKey];
-      status.title = copy[statusKey];
+      status.textContent = speechMessage(statusKey);
+      status.title = status.textContent;
       const introActive = active() && sessionKind === 'intro';
       const reportActive = active() && sessionKind === 'report';
       speakButton.querySelector('span').textContent = copy[introActive ? 'stop' : 'speak'];
       speakButton.setAttribute('aria-label', copy[introActive ? 'stop' : 'speak']);
       speakButton.title = copy[introActive ? 'stop' : 'speak'];
       speakButton.setAttribute('aria-pressed', String(introActive));
-      speakButton.disabled = (!active() && !speechAllowed()) || (!supported && !recordingURL() && !offlineReady()) || reportActive;
+      speakButton.disabled = (!active() && !speechAllowed()) || (!recordingURL() && !offlineReady()) || reportActive;
       if (reportButton) {
         reportButton.querySelector('span').textContent = copy[reportActive ? 'stop' : 'report'];
         reportButton.setAttribute('aria-label', copy[reportActive ? 'stop' : 'report']);
@@ -304,7 +314,53 @@
     }
 
     function speechAllowed() { return preferences.speechEnabled && preferences.speechVolume > 0; }
-    function speechState() { return {state: !preferences.speechEnabled ? 'disabled' : preferences.speechVolume === 0 ? 'muted' : state, active: active(), locale, voiceName: speakerName}; }
+    function speechMessage(statusKey) {
+      let key;
+      if (statusKey === 'paused') key = pauseReason === 'background' ? 'background' : 'paused';
+      else if (statusKey === 'preparing') key = ({'audio-unlock': 'unlocking', 'audio-resume': 'unlocking', loading: 'loading', initializing: 'initializing', ready: 'generating', generating: 'generating', streaming: 'streaming'})[phase] || 'generating';
+      else if (statusKey === 'failed') key = failureReason === 'playback-blocked' ? 'blocked' : failureReason === 'playback-interrupted' ? 'interrupted' : /worker-startup|engine-load/.test(failureReason) ? 'workerFailed' : /timeout/.test(failureReason) ? 'timeout' : /gpu-device-lost|webgpu/.test(failureReason) ? 'deviceLost' : /pack-not-installed|integrity-failed/.test(failureReason) ? 'packMissing' : 'engineFailed';
+      return key ? speechCopy[key][Math.max(0, speechLanguages.indexOf(locale))] : messages[locale][statusKey] || messages[locale].ready;
+    }
+    function speechState() { return {state: !preferences.speechEnabled ? 'disabled' : preferences.speechVolume === 0 ? 'muted' : state, active: active(), paused, canPause: !!recording || typeof offlineRequest?.handle?.pause === 'function', kind: sessionKind, phase, reason: paused ? pauseReason : failureReason, message: speechMessage(state), locale, voiceName: speakerName}; }
+
+    function markPaused(reason = 'user') {
+      if (!active()) return;
+      paused = true; pauseReason = reason; state = 'paused'; phase = '';
+      clearTimeout(startTimer); startTimer = null;
+      clearTimeout(expressionTimer); expressionTimer = null;
+      face.dataset.speaking = 'false'; face.dataset.speechBeat = 'false';
+      automaticExpression('calm'); render(); reportPlayback('paused', speechMessage('paused'));
+    }
+
+    function pauseSpeech() {
+      if (!active() || paused) return false;
+      const target = recording || offlineRequest?.handle;
+      if (typeof target?.pause !== 'function') return false;
+      markPaused('user');
+      try { target.pause(); return true; }
+      catch (problem) { finish('failed', true, problem); return false; }
+    }
+
+    function resumeSpeech() {
+      if (!active() || !paused) return Promise.resolve(false);
+      const request = recording, handle = offlineRequest?.handle;
+      paused = false; pauseReason = ''; state = 'preparing'; phase = 'audio-resume';
+      render(); reportPlayback('preparing', speechMessage('preparing'));
+      let result;
+      try {
+        // Keep resume/play in this gesture, including a lock-screen media action.
+        if (request) {
+          result = request.play();
+          clearTimeout(startTimer);
+          startTimer = setTimeout(() => { if (recording === request && state === 'preparing' && !paused) finish('failed', true, {code: 'playback-blocked'}); }, 8000);
+        } else if (typeof handle?.resume === 'function') result = handle.resume();
+        else { markPaused('user'); return Promise.resolve(false); }
+      } catch (problem) { finish('failed', true, problem); return Promise.resolve(false); }
+      return Promise.resolve(result).then(() => true, problem => {
+        if ((request && recording === request) || (handle && offlineRequest?.handle === handle)) finish('failed', true, problem);
+        return false;
+      });
+    }
 
     function announceActivity(active) {
       face.dispatchEvent(new CustomEvent('wf-robot-speaking', {bubbles: true, detail: {active}}));
@@ -316,7 +372,7 @@
       catch (_) { /* Its callbacks are already detached and the session invalidated. */ }
     }
 
-    function finish(nextState = 'ready', cancel = false) {
+    function finish(nextState = 'ready', cancel = false, problem) {
       const wasActive = active();
       const ownedSpeech = !!utterance;
       const oldRecording = recording;
@@ -336,6 +392,8 @@
       face.dataset.speaking = 'false';
       face.dataset.speechBeat = 'false';
       state = nextState;
+      paused = false; pauseReason = ''; phase = '';
+      failureReason = nextState === 'failed' ? String(problem?.code || problem?.message || 'engine-failed') : '';
       setExpression('calm');
       if (oldRecording) releaseRecording(oldRecording);
       oldOffline?.handle?.cancel();
@@ -350,7 +408,7 @@
         const playbackState = nextState === 'failed' ? 'failed' :
           ['reportUnavailable', 'reportEmpty'].includes(nextState) ? 'unavailable' :
           cancel || nextState === 'stopped' ? 'stopped' : 'finished';
-        reportPlayback(playbackState, ['unavailable', 'failed'].includes(playbackState) ? messages[locale][nextState] : '');
+        reportPlayback(playbackState, ['unavailable', 'failed'].includes(playbackState) ? speechMessage(nextState) : '');
       }
     }
 
@@ -375,6 +433,8 @@
     }
 
     function beginTalking() {
+      if (paused || disposed) return;
+      phase = ''; failureReason = '';
       clearTimeout(startTimer);
       startTimer = null;
       state = 'speaking';
@@ -391,7 +451,7 @@
       };
       expressionTimer = setTimeout(nextExpression, 3200);
       render();
-      reportPlayback('speaking');
+      if (active() && !paused && state === 'speaking') reportPlayback('speaking');
     }
 
     function playRecording(url) {
@@ -407,9 +467,10 @@
       request.preservesPitch = true;
       speakerName = 'Mark · Natural Conversations';
       recording = request;
-      state = 'preparing';
+      state = 'preparing'; paused = false; pauseReason = ''; phase = ''; failureReason = '';
       automaticExpression('thinking');
       render();
+      if (recording !== request) return;
       announceActivity(true);
       const failed = () => {
         if (recording !== request) return;
@@ -424,7 +485,7 @@
         } else finish('failed', true);
       };
       const waiting = () => {
-        if (recording !== request) return;
+        if (recording !== request || paused) return;
         face.dataset.speaking = 'false';
         state = 'preparing';
         clearTimeout(expressionTimer); expressionTimer = null;
@@ -437,12 +498,13 @@
       };
       request.onplaying = () => {
         if (recording !== request) return;
+        if (paused) { try { request.pause(); } catch (_) {} return; }
         if (!visible()) { finish('ready', true); return; }
         started = true;
         beginTalking();
       };
       request.onwaiting = waiting;
-      request.onpause = waiting;
+      request.onpause = () => { if (recording === request && !paused) markPaused('background'); };
       request.onended = () => { if (recording === request) finish(); };
       request.onerror = failed;
       waiting();
@@ -454,8 +516,6 @@
 
     function speakIdentityFallback(alreadyActive = false) {
       if (offlineReady()) { speakOffline(greeting().greeting, alreadyActive); return true; }
-      const voice = currentVoice();
-      if (voice) { speakText(greeting().greeting, voice, alreadyActive); return true; }
       return false;
     }
 
@@ -482,14 +542,15 @@
       speakerName = voicePackState().name || manager?.list?.().find(item => item.locale === locale || item.locales?.includes(locale))?.name ||
         (preferences.speechBackend === 'reference' ? 'Mark · local reference' : 'Local · ' + locale);
       offlineRequest = request;
-      state = 'preparing';
+      state = 'preparing'; paused = false; pauseReason = ''; phase = ''; failureReason = '';
       automaticExpression('thinking');
       render();
+      if (offlineRequest !== request) return;
       if (!alreadyActive) announceActivity(true);
       const resetPreparationTimer = () => {
         clearTimeout(startTimer);
         startTimer = setTimeout(() => {
-          if (offlineRequest === request && state === 'preparing') finish('failed', true);
+          if (offlineRequest === request && state === 'preparing' && !paused) finish('failed', true, {code: 'speech-timeout'});
         }, 95000);
       };
       resetPreparationTimer();
@@ -497,20 +558,23 @@
       try {
         request.handle = manager.speak({text, locale, chunks, playback,
           rate: preferences.speechRate, volume: preferences.speechVolume,
-          continuous: preferences.speechBackend !== 'reference' && preferences.continuousSpeech, dialect: preferences.arabicDialect,
+          continuous: false, dialect: 'sy',
           onProgress(progress) {
-            if (offlineRequest !== request || request.started) return;
-            resetPreparationTimer();
+            if (offlineRequest !== request || paused) return;
+            if (progress.phase) phase = progress.phase;
+            if (!request.started || state === 'preparing') { resetPreparationTimer(); render(); reportPlayback('preparing', speechMessage('preparing')); }
             if (sessionKind === 'report') reportEvent('wf-robot-report-preparation', {completed: progress.completed, total: progress.total});
           },
           onStart() {
-            if (offlineRequest !== request) return;
+            if (offlineRequest !== request || paused) return;
             if (!visible()) { finish('ready', true); return; }
             request.started = true;
             beginTalking();
           },
+          onPause(detail) { if (offlineRequest === request) markPaused(detail?.reason || 'user'); },
+          onResume() { if (offlineRequest === request) { paused = false; pauseReason = ''; state = 'preparing'; phase = 'audio-resume'; resetPreparationTimer(); render(); reportPlayback('preparing', speechMessage('preparing')); } },
           onWaiting() {
-            if (offlineRequest !== request) return;
+            if (offlineRequest !== request || paused) return;
             face.dataset.speaking = 'false';
             state = 'preparing';
             clearTimeout(expressionTimer); expressionTimer = null;
@@ -518,91 +582,29 @@
             automaticExpression('thinking'); render(); reportPlayback('preparing');
           },
           onBoundary(boundary) {
-            if (offlineRequest !== request || sessionKind !== 'report') return;
+            if (offlineRequest !== request || sessionKind !== 'report' || paused) return;
             const charIndex = Math.max(0, Math.min(text.length, Number(boundary?.charIndex) || 0));
             const charLength = Math.max(0, Math.min(text.length - charIndex, Number(boundary?.charLength) || 0));
             reportEvent('wf-robot-report-boundary', {charIndex, charLength});
           },
           onEnd() { if (offlineRequest === request) finish(); },
-          onError() {
-            if (offlineRequest !== request) return;
-            // A ready local system voice can recover a pack failure before audio starts.
-            const fallback = currentVoice();
-            if (preferences.speechBackend !== 'reference' && !request.started && state === 'preparing' && fallback) {
-              offlineRequest = null; clearTimeout(startTimer); startTimer = null;
-              request.handle?.cancel(); speakText(text, fallback, true, chunks);
-            } else finish('failed', true);
+          onError(problem) {
+            if (offlineRequest === request) finish('failed', true, problem);
           },
         });
         if (offlineRequest !== request) request.handle?.cancel();
-      } catch (_) {
-        if (offlineRequest !== request) return;
-        const fallback = currentVoice();
-        if (preferences.speechBackend !== 'reference' && !request.started && state === 'preparing' && fallback) {
-          offlineRequest = null; clearTimeout(startTimer); startTimer = null;
-          request.handle?.cancel(); speakText(text, fallback, true, chunks);
-        } else finish('failed', true);
+        else render();
+      } catch (problem) {
+        if (offlineRequest === request) finish('failed', true, problem);
       }
-    }
-
-    function speakText(text, voice, alreadyActive = false, chunks) {
-      const prepared = Array.isArray(chunks) && chunks.length ? chunks.map(chunk => chunk.text).join(' ') : text;
-      const mapping = [];
-      if (prepared !== text && chunks) {
-        let offset = 0;
-        for (const chunk of chunks) { mapping.push({...chunk, speechStart: offset, speechEnd: offset + chunk.text.length}); offset += chunk.text.length + 1; }
-      }
-      const request = new window.SpeechSynthesisUtterance(prepared);
-      speakerName = voice.name || 'Device · ' + voice.lang;
-      request.voice = voice;
-      request.lang = voice.lang;
-      request.rate = preferences.speechRate;
-      request.pitch = 1;
-      request.volume = preferences.speechVolume;
-      utterance = request;
-      state = 'preparing';
-      automaticExpression('thinking');
-      render();
-      // Pause the carousel while queued; mouth animation begins only when audio starts.
-      if (!alreadyActive) announceActivity(true);
-      if (sessionKind === 'report') reportVoice('ready');
-      request.onstart = () => {
-        if (utterance !== request) return;
-        if (!visible()) { finish('ready', true); return; }
-        beginTalking();
-      };
-      request.onend = () => { if (utterance === request) finish(); };
-      request.onboundary = event => {
-        if (utterance === request && sessionKind === 'report') {
-          const index = Number.isFinite(event.charIndex) ? event.charIndex : 0;
-          const source = mapping.find(chunk => index >= chunk.speechStart && index <= chunk.speechEnd) || mapping.find(chunk => index < chunk.speechStart) || mapping.at(-1);
-          reportEvent('wf-robot-report-boundary', {
-            charIndex: source ? source.charIndex : index,
-            charLength: source ? source.charLength : Number.isFinite(event.charLength) ? event.charLength : 0,
-          });
-        }
-        if (utterance !== request || state !== 'speaking' || event.name === 'sentence') return;
-        face.dataset.speechBeat = 'true';
-        clearTimeout(beatTimer);
-        beatTimer = setTimeout(() => {
-          if (utterance === request) face.dataset.speechBeat = 'false';
-        }, 180);
-      };
-      request.onerror = event => {
-        if (utterance !== request) return;
-        finish(event.error === 'canceled' || event.error === 'interrupted' ? 'stopped' : 'failed');
-      };
-      startTimer = setTimeout(() => {
-        if (utterance === request && state === 'preparing') finish('failed', true);
-      }, 8000);
-      try { synth.speak(request); } catch (_) { finish('failed', true); }
     }
 
     async function toggleReport(event) {
       event.stopPropagation();
+      if (event.isTrusted !== true && event.control !== true) return;
       if (active()) { if (sessionKind === 'report') finish('stopped', true); return; }
       if (!speechAllowed()) return;
-      if (!robotVisible()) return;
+      if (!robotVisible() && event.control !== true) return;
       refreshVoices();
       const token = {controller: null, playback: null};
       // Prime audio in the click itself, before reading records or downloading a pack.
@@ -610,9 +612,10 @@
       reportRequest = token;
       sessionKind = 'report';
       speakerName = '';
-      state = 'preparing';
+      state = 'preparing'; paused = false; pauseReason = ''; phase = ''; failureReason = '';
       automaticExpression('thinking');
       render();
+      if (reportRequest !== token) return;
       announceActivity(true);
       reportPlayback('preparing');
       startTimer = setTimeout(() => {
@@ -622,7 +625,8 @@
       try { snapshot = await window.wfBusinessOverviewSnapshot?.({locale}); } catch (_) { /* A failed report never starts speech. */ }
       if (reportRequest !== token) return;
       if (!visible()) { finish('ready', true); return; }
-      reportEvent('wf-robot-report-open', {snapshot: snapshot || {narration: '', unavailableReason: messages[locale].reportEmpty}, locale});
+      retainedReport = {snapshot: snapshot || {narration: '', unavailableReason: messages[locale].reportEmpty}, locale};
+      reportEvent('wf-robot-report-open', retainedReport);
       if (reportRequest !== token) return;
       const narration = typeof snapshot?.narration === 'string' ? snapshot.narration.trim() : '';
       if (!narration) { finish('reportEmpty'); return; }
@@ -666,7 +670,7 @@
       reportRequest = null;
       reportVoice('ready');
       if (offlineReady()) speakOffline(narration, true, chunks, token.playback);
-      else { token.playback?.dispose(); speakText(narration, voice, true, chunks); }
+      else { token.playback?.dispose(); reportVoice('unsupported', voicePackState()); finish('reportUnavailable'); }
     }
 
     function reportControl(event) {
@@ -675,7 +679,7 @@
         if (event.detail?.action === 'cancel-download') { voiceManager()?.cancelDownload?.(locale); reportVoice('missing'); }
       } else if (event.detail?.action === 'replay' || event.detail?.action === 'install') {
         if (active()) finish('stopped', true);
-        toggleReport({stopPropagation() {}, install: event.detail.action === 'install'});
+        toggleReport({stopPropagation() {}, control: true, install: event.detail.action === 'install'});
       }
     }
 
@@ -696,8 +700,6 @@
         try { playback = voiceManager()?.preparePlayback?.(); } catch (_) {}
         speakOffline(text, false, undefined, playback); return true;
       }
-      const voice = currentVoice();
-      if (voice) { speakText(text, voice); return true; }
       speakerName = ''; state = 'unavailable'; render(); return false;
     }
 
@@ -714,13 +716,12 @@
       state = 'unavailable'; render(); return false;
     }
 
-    const programSpeech = Object.freeze({speak: speakProgram, preview: previewGreeting,
+    const programSpeech = Object.freeze({speak: speakProgram, preview: previewGreeting, pause: pauseSpeech, resume: resumeSpeech,
       stop() { if (active()) finish('stopped', true); }, getState: speechState});
     window.WFProgramSpeech = programSpeech;
-    function changedRoute() { if (active() && (sessionKind === 'program' || sessionKind === 'preview')) finish('stopped', true); }
+    function changedRoute() { applyMotion(); }
 
     function checkVisibility() {
-      if (active() && !visible()) finish(sessionKind === 'program' || sessionKind === 'preview' ? 'stopped' : 'ready', true);
       applyMotion();
       warmReferenceVoice();
     }

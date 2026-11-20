@@ -12,7 +12,8 @@
   function embeddingKey(locale,dialect){
     const key=localeKey(locale);
     if(!LANGUAGES[key])throw fail('locale-unsupported');
-    return key==='ar'&&dialect==='eg'?'ar-EG':key;
+    // Existing Egyptian preferences must keep the approved Syrian recording.
+    return key;
   }
 
   function generationBody({text,locale,embedding,embeddingName,stream=false}){
@@ -68,7 +69,7 @@
     sourceURL:manifest.sourceURL,licenseURL:new URL(manifest.licenseURL,appBase).href};
   const supported=!!(window.isSecureContext&&window.caches&&window.crypto?.subtle&&window.Worker&&navigator.gpu);
   const IDLE_MS=300000,REQUEST_TIMEOUT_MS=90000,MAX_STREAM_SAMPLES=44100*150;
-  let deviceAvailable=null,deviceCheck=null,worker=null,workerReady=false,job=null,preparation=null,nextId=0,activeHandle=null,idleTimer=null,speechOwner=0,playbackOwner=null;
+  let deviceAvailable=null,deviceCheck=null,worker=null,workerReady=false,engineState='idle',engineError='',job=null,preparation=null,nextId=0,activeHandle=null,idleTimer=null,speechOwner=0,playbackOwner=null;
   const emit=(type,detail)=>window.dispatchEvent(new CustomEvent(type,{detail}));
   const publish=(type,value)=>{for(const locale of Object.keys(LANGUAGES))emit(type,{...value,locale,name:NAME});};
   const manager=base.createManager({caches:window.caches,fetch:window.fetch.bind(window),
@@ -89,7 +90,7 @@
   }
 
   function getStatus(locale='ar'){
-    const key=localeKey(locale),value={...manager.getStatus('ref'),locale:key,name:NAME,engineReady:workerReady};
+    const key=localeKey(locale),value={...manager.getStatus('ref'),locale:key,name:NAME,engineReady:workerReady,engineState,engineError};
     if(!LANGUAGES[key])return {...value,state:'unsupported',ready:false,available:false,reason:'locale-unsupported'};
     if(!supported||deviceAvailable===false)return {...value,state:'unsupported',ready:false,available:false,reason:'webgpu-unavailable'};
     if(deviceAvailable===null)return {...value,state:'checking',ready:false,available:false,reason:''};
@@ -102,10 +103,17 @@
     return locale?getStatus(locale):Object.keys(LANGUAGES).map(getStatus);
   }
 
+  function setEngineState(state,reason=''){
+    if(engineState===state&&engineError===reason)return;
+    engineState=state;engineError=reason;
+    publish('wf-reference-voice-change',getStatus('ar'));
+  }
+
   function terminate(code='cancelled'){
     clearTimeout(idleTimer);idleTimer=null;
     if(worker){worker.terminate();worker=null;}workerReady=false;
     const tasks=[job,preparation];job=preparation=null;
+    setEngineState(code==='cancelled'?'idle':'error',code==='cancelled'?'':code);
     for(const task of tasks){if(!task)continue;clearTimeout(task.timer);task.cleanup();const problem=fail(code);if(code==='cancelled')problem.name='AbortError';task.reject(problem);}
   }
 
@@ -118,27 +126,33 @@
 
   function armTimeout(task){
     clearTimeout(task.timer);
-    task.timer=setTimeout(()=>{if(job===task||preparation===task)terminate('speech-timeout');},REQUEST_TIMEOUT_MS);
+    task.timer=null;
+    // An intentionally paused or full audio queue is not stalled inference.
+    // Abort remains active while playback owns this packet's credit.
+    if(task.delivering)return;
+    task.timer=setTimeout(()=>{if(job===task||preparation===task)terminate(workerReady?'speech-timeout':'engine-start-timeout');},REQUEST_TIMEOUT_MS);
   }
 
   function complete(task,value){
     if(job===task)job=null;else if(preparation===task)preparation=null;else return;
-    clearTimeout(task.timer);task.cleanup();workerReady=true;task.resolve(task.type==='prepare'?getStatus(task.locale):value);scheduleIdle();
+    clearTimeout(task.timer);task.cleanup();workerReady=true;if(!job)setEngineState('ready');
+    task.resolve(task.type==='prepare'?getStatus(task.locale):value);scheduleIdle();
   }
 
   function ensureWorker(){
     if(worker)return worker;
-    worker=new Worker(new URL('reference-voice-host.js?v=2',appBase),{type:'module'});
+    worker=new Worker(new URL('reference-voice-host.js?v=3',appBase),{type:'module'});
     const instance=worker;
     worker.onmessage=event=>{
       if(worker!==instance)return;
       const data=event.data||{};
-      if(data.type==='fatal'){terminate('engine-failed');return;}
+      if(data.type==='fatal'){terminate(data.error||'engine-failed');return;}
       const task=data.id===job?.id?job:data.id===preparation?.id?preparation:null;
       if(!task)return;
       if(data.error){terminate(data.error);return;}
       if(data.type==='progress'){
         armTimeout(task);if(data.phase==='ready')workerReady=true;
+        if(['loading','initializing','ready','generating','streaming'].includes(data.phase))setEngineState(data.phase);
         const progress={locale:task.locale,loaded:data.loaded,total:data.total,...(data.phase?{phase:data.phase}:{})};
         emit('wf-reference-voice-loading',progress);try{task.onProgress?.(progress);}catch(_){}return;
       }
@@ -147,7 +161,7 @@
         if(task.delivering||data.sequence!==task.sequence||data.sampleRate!==44100||!(data.samples instanceof ArrayBuffer)||!data.samples.byteLength||data.samples.byteLength%4){terminate('invalid-audio');return;}
         const samples=new Float32Array(data.samples);
         if(task.samples+samples.length>MAX_STREAM_SAMPLES||!samples.every(Number.isFinite)){terminate('invalid-audio');return;}
-        task.samples+=samples.length;task.sequence++;task.delivering=true;armTimeout(task);
+        workerReady=true;setEngineState('streaming');task.samples+=samples.length;task.sequence++;task.delivering=true;armTimeout(task);
         let accepted;
         try{accepted=task.onAudio({samples,sampleRate:data.sampleRate});}
         catch(_){terminate('playback-failed');return;}
@@ -167,7 +181,7 @@
       if(task.type==='synthesize'&&data.blob instanceof Blob&&data.blob.type==='audio/wav'&&data.blob.size>=46){complete(task,data.blob);return;}
       terminate('invalid-audio');
     };
-    worker.onerror=()=>{if(worker===instance)terminate('engine-failed');};
+    worker.onerror=()=>{if(worker===instance)terminate('worker-startup-failed');};
     return worker;
   }
 
@@ -183,16 +197,17 @@
       if(preparation)return preparation.promise;
     }
     clearTimeout(idleTimer);idleTimer=null;
-    let instance;try{instance=ensureWorker();}catch(_){return Promise.reject(fail('engine-failed'));}
+    let instance;try{instance=ensureWorker();}catch(_){setEngineState('error','worker-startup-failed');return Promise.reject(fail('worker-startup-failed'));}
     const id=++nextId,task={id,type,locale:localeKey(locale),onAudio:options.onAudio,onProgress:options.onProgress,samples:0,sequence:0,delivering:false,ended:false};
     task.promise=new Promise((resolve,reject)=>{task.resolve=resolve;task.reject=reject;});
     const abort=()=>{if(job===task||preparation===task)terminate();};
     task.cleanup=()=>options.signal?.removeEventListener('abort',abort);
     if(type==='prepare')preparation=task;else job=task;
+    if(!workerReady)setEngineState('initializing');
     armTimeout(task);
     try{
       options.signal?.addEventListener('abort',abort,{once:true});
-      instance.postMessage({id,type,text,locale:task.locale,dialect:options.dialect==='eg'?'eg':'sy'});
+      instance.postMessage({id,type,text,locale:task.locale,dialect:'sy'});
     }catch(_){terminate('engine-failed');}
     return task.promise;
   }

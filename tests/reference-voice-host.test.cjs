@@ -22,7 +22,7 @@ function fixture(t,{responseHeaders=headers,initGate=Promise.resolve()}={}){
   const stream=new ReadableStream({start(value){controller=value;}});
   const api={engine:{onFatal(){},async init(onProgress){initCount++;onProgress({loaded:4,total:8});await initGate;}},
     async localFetch(url,options){calls.push({url,options,body:JSON.parse(options.body)});return new Response(stream,{headers:responseHeaders});}};
-  const context=vm.createContext({URL,Response,ReadableStream,ArrayBuffer,Uint8Array,Float32Array,DataView,TextDecoder,AbortController,
+  const context=vm.createContext({URL,Response,ReadableStream,ArrayBuffer,Uint8Array,Float32Array,DataView,TextDecoder,AbortController,Worker:class{addEventListener(){}},
     crypto:crypto.webcrypto,WFReferenceVoiceAssets:manifest,WFReferenceVoiceCore:core,__engine:api,__hostURL:hostURL,
     caches:{async open(){return{async match(url){assert.equal(url,appBase+'embedding.npy');return new Response(embedding,{headers:{'X-WF-SHA256':asset.sha256,'Content-Length':'4'}});}};}},
     btoa:text=>Buffer.from(text,'binary').toString('base64'),postMessage:(message,transfer)=>posts.push({message,transfer})});

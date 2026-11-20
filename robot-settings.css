@@ -4,9 +4,9 @@
 #stab-robot { min-inline-size: 0; color: var(--text); }
 #stab-robot .wf-robot-settings-hint,
 #stab-robot .wf-robot-camera-hint { margin: 0; color: var(--text2); font-size: 13px; line-height: 1.7; }
-#stab-robot .wf-robot-settings-preview { display: grid; place-items: center; min-block-size: 134px; margin-block: 12px; overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: color-mix(in srgb, var(--brand-primary) 4%, var(--card)); }
-#stab-robot .wf-robot-settings-preview .wf-robot-display { inline-size: min(100%, 300px); block-size: 124px; }
-#stab-robot .wf-robot-settings-preview .wf-robot-face { max-block-size: 124px; }
+#stab-robot .wf-robot-settings-preview { display: grid; place-items: center; min-block-size: 96px; margin-block: 12px; overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: color-mix(in srgb, var(--brand-primary) 4%, var(--card)); }
+#stab-robot .wf-robot-settings-preview .wf-robot-display { inline-size: min(100%, 240px); block-size: 90px; }
+#stab-robot .wf-robot-settings-preview .wf-robot-face { max-block-size: 90px; }
 #stab-robot .wf-robot-preferences { display: grid; gap: 12px; margin: 0; padding: 0; border: 0; min-inline-size: 0; }
 #stab-robot .wf-robot-preference { display: flex; align-items: center; gap: 12px; min-block-size: 48px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); font-size: 13px; cursor: pointer; }
 #stab-robot .wf-robot-preference input { flex: 0 0 20px; inline-size: 20px; block-size: 20px; accent-color: var(--brand-primary); }
@@ -17,40 +17,49 @@ html body #stab-robot :is(.wf-robot-settings-save-button, .wf-robot-camera-toggl
 #stab-robot :is(.wf-robot-settings-save-button, .wf-robot-camera-toggle):focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
 #stab-robot .wf-robot-settings-save-button:disabled { opacity: .6; cursor: wait; }
 #stab-robot .wf-robot-settings-feedback { min-block-size: 20px; margin: 0; color: var(--text2); font-size: 12px; line-height: 1.6; }
-#stab-robot .wf-robot-camera-settings { display: grid; gap: 12px; margin-block-start: 18px; padding-block-start: 18px; border-block-start: 1px solid var(--border); }
-#stab-robot .wf-robot-camera-settings h3 { margin: 0; color: var(--text); font-size: 15px; line-height: 1.5; }
+#stab-robot :is(.wf-robot-movement-settings,.wf-robot-camera-settings) { min-inline-size: 0; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
+#stab-robot :is(.wf-robot-movement-settings,.wf-robot-camera-settings) summary { color: var(--text); font-size: 13px; font-weight: 650; line-height: 1.6; cursor: pointer; }
+#stab-robot :is(.wf-robot-movement-settings,.wf-robot-camera-settings)[open] > :not(summary) { margin-block-start: 12px; }
+#stab-robot :is(.wf-robot-movement-settings,.wf-robot-camera-settings):not([open]) > :not(summary) { display: none; }
+#stab-robot .wf-robot-movement-settings .wf-robot-preference { border: 0; padding-inline: 0; }
+#stab-robot .wf-robot-camera-settings { margin-block-start: 16px; }
 #stab-robot .wf-robot-camera-preview { display: block; inline-size: min(100%, 176px); aspect-ratio: 4 / 3; justify-self: center; object-fit: cover; border-radius: 12px; background: var(--card); transform: scaleX(-1); }
 #stab-robot .wf-robot-camera-preview[hidden] { display: none; }
 html body #stab-robot .wf-robot-camera-toggle { background: color-mix(in srgb, var(--brand-primary) 8%, var(--card)); color: var(--text); border-color: color-mix(in srgb, var(--brand-primary) 30%, var(--border)); }
 html body #stab-robot .wf-robot-camera-toggle[aria-checked="true"] { background: var(--brand-primary); color: #fff; }
 #stab-robot .wf-robot-camera-status { margin: 0; color: var(--text2); font-size: 12px; line-height: 1.7; }
-#stab-robot .wf-robot-voice-settings { margin-block-start: 20px; padding-block-start: 18px; border-block-start: 1px solid var(--border); }
+#stab-robot .wf-robot-voice-settings { margin-block: 12px 16px; }
 #stab-robot .wf-robot-voice-settings[hidden] { display: none; }
-#stab-robot .wf-robot-voice-settings summary { padding-block: 10px; color: var(--text); font-size: 15px; font-weight: 700; cursor: pointer; }
-#stab-robot .wf-robot-voice-list { display: grid; gap: 10px; margin-block-start: 14px; }
-#stab-robot .wf-robot-voice-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+#stab-robot .wf-robot-voice-list { display: grid; gap: 10px; }
+#stab-robot .wf-robot-voice-row { min-inline-size: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px 12px; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: color-mix(in srgb, var(--brand-primary) 4%, var(--card)); }
 #stab-robot .wf-robot-voice-row strong { color: var(--text); font-size: 14px; }
-html body #stab-robot .wf-robot-voice-action { min-block-size: 42px; margin: 0; padding: 7px 11px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--brand-primary) 8%, var(--card)); color: var(--text); font: inherit; font-size: 12px; line-height: 1.4; cursor: pointer; }
+html body #stab-robot .wf-robot-voice-action { max-inline-size: 100%; min-block-size: 44px; margin: 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; font-size: 12px; line-height: 1.4; white-space: normal; cursor: pointer; }
 #stab-robot .wf-robot-voice-action:disabled { opacity: .55; cursor: default; }
-#stab-robot .wf-robot-voice-status { grid-column: 1 / -1; color: var(--text2); font-size: 11px; line-height: 1.6; }
+#stab-robot .wf-robot-voice-status { grid-column: 1 / -1; color: var(--text); font-size: 12px; font-weight: 600; line-height: 1.6; }
+#stab-robot .wf-robot-engine-status { grid-column: 1 / -1; margin: 0; color: var(--text2); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+#stab-robot .wf-robot-engine-status[data-state="ready"] { color: var(--brand-primary); font-weight: 600; }
+#stab-robot .wf-robot-engine-status[data-state="error"] { padding-inline-start: 10px; border-inline-start: 3px solid var(--danger,#c75050); color: var(--text); }
+#stab-robot :is(.wf-robot-voice-action,.wf-robot-engine-status)[hidden] { display: none !important; }
 #stab-robot .wf-robot-voice-row progress { grid-column: 1 / -1; inline-size: 100%; block-size: 7px; accent-color: var(--brand-primary); }
 #stab-robot .wf-robot-voice-row progress[hidden] { display: none; }
 #stab-robot .wf-robot-voice-links { grid-column: 1 / -1; display: flex; gap: 12px; }
 #stab-robot .wf-robot-voice-links a { color: var(--brand-primary); font-size: 10px; line-height: 1.6; }
-#stab-robot .wf-robot-speech-controls { border-block-end: 1px solid var(--border); padding-block-end: 16px; margin-block-end: 8px; }
+#stab-robot .wf-robot-speech-controls { min-inline-size: 0; padding-block-end: 6px; }
 #stab-robot .wf-robot-speech-controls h3 { margin: 0 0 10px; font-size: 15px; }
-#stab-robot .wf-robot-selected-voice { display: block; text-align: start; color: var(--brand-primary); font-size: 13px; }
+#stab-robot .wf-robot-selected-voice { display: inline-block; padding: 5px 10px; border-radius: 999px; background: color-mix(in srgb, var(--brand-primary) 10%, var(--card)); text-align: start; color: var(--brand-primary); font-size: 12px; font-weight: 600; }
 #stab-robot .wf-robot-speech-range { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-block: 14px; font-size: 13px; }
-#stab-robot .wf-robot-speech-range input { grid-column: 1 / -1; width: 100%; accent-color: var(--brand-primary); direction: ltr; }
+#stab-robot .wf-robot-speech-range input { grid-column: 1 / -1; min-inline-size: 0; width: 100%; margin-inline: 0; accent-color: var(--brand-primary); direction: ltr; }
 #stab-robot .wf-robot-speech-range output { font-variant-numeric: tabular-nums; direction: ltr; }
-#stab-robot .wf-robot-speech-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-#stab-robot .wf-robot-speech-actions button { padding: 9px 12px; min-block-size: 40px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
-#stab-robot .wf-robot-speech-actions [data-wf-reading-preview="true"] { border-color: var(--brand-primary); color: var(--brand-primary); font-weight: 650; }
+#stab-robot .wf-robot-speech-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block-start: 14px; }
+#stab-robot .wf-robot-speech-actions button { flex: 1 1 140px; max-inline-size: 100%; margin: 0; padding: 10px 12px; min-block-size: 44px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); font: inherit; font-size: 12px; line-height: 1.5; white-space: normal; cursor: pointer; }
+#stab-robot .wf-robot-speech-actions [data-wf-reading-preview="true"] { border-color: var(--brand-primary); background: var(--brand-primary); color: #fff; font-weight: 650; }
+#stab-robot :is(.wf-robot-speech-actions button,.wf-robot-voice-action,summary):focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
+#stab-robot .wf-robot-recording-hint { margin: 4px 0 0; color: var(--text2); font-size: 11px; line-height: 1.7; }
 #stab-robot .wf-robot-reading-preview-status { min-block-size: 20px; margin: 6px 0 0; color: var(--text2); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
 #stab-robot .wf-robot-voice-row[data-backend="reference"] { border-color: color-mix(in srgb, var(--brand-primary) 45%, var(--border)); }
 #stab-robot .wf-robot-reference-hint { grid-column: 1 / -1; margin: 4px 0; color: var(--text2); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
 #stab-robot .wf-robot-reference-hint[hidden] { display: none; }
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   #stab-robot .wf-robot-speech-actions button { flex: 1 1 100%; }
   #stab-robot .wf-robot-voice-row[data-backend="reference"] { grid-template-columns: minmax(0, 1fr); }
   #stab-robot .wf-robot-voice-row[data-backend="reference"] .wf-robot-voice-action { justify-self: start; }

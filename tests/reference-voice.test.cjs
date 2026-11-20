@@ -47,7 +47,7 @@ test('omitted upstream features return an intentional local 404, not a failed ne
 
 test('reference selection retains the approved locale and Arabic dialect',()=>{
   assert.equal(core.embeddingKey('ar-SY','sy'),'ar');
-  assert.equal(core.embeddingKey('ar','eg'),'ar-EG');
+  assert.equal(core.embeddingKey('ar','eg'),'ar','an older saved dialect must keep the approved Syrian reference');
   assert.equal(core.embeddingKey('tr-TR','eg'),'tr');
   assert.equal(core.embeddingKey('fr-FR'),'fr');
   assert.throws(()=>core.embeddingKey('xx'),{code:'locale-unsupported'});
@@ -76,7 +76,7 @@ async function flushUntil(check) {
   assert(check(),'asynchronous operation reached the expected state');
 }
 
-async function browserFixture(t,{stubPlayer=false}={}) {
+async function browserFixture(t,{stubPlayer=false,onEvent}={}) {
   const requests=[],workers=[],events=[],audioElements=[],playbacks=[],objectURLs=new Set(),timers=new Map(),listeners=new Map();
   let nextURL=0,nextTimer=0,networkCalls=0,failNextPost=false;
   const schedule=(fn,ms)=>{const id=++nextTimer;timers.set(id,{fn,ms});return id;};
@@ -117,7 +117,7 @@ async function browserFixture(t,{stubPlayer=false}={}) {
   const window={isSecureContext:true,caches:{open:async()=>cache},crypto:crypto.webcrypto,Worker,WebAssembly,
     WFReferenceVoiceAssets:manifest,
     fetch:async()=>{networkCalls++;throw new Error('the installed voice coordinator must not fetch from the network');},
-    dispatchEvent:event=>events.push(event),addEventListener:(type,fn)=>listeners.set(type,fn)};
+    dispatchEvent:event=>{events.push(event);onEvent?.(event,window);},addEventListener:(type,fn)=>listeners.set(type,fn)};
   class CustomEvent {constructor(type,options){this.type=type;this.detail=options.detail;}}
   const context=vm.createContext({window,document:{baseURI:appBase},location:{origin:new URL(appBase).origin},
     navigator:{gpu:{requestAdapter:async()=>({limits:{maxBufferSize:268435456,maxStorageBufferBindingSize:268435456}})}},
@@ -251,4 +251,33 @@ test('a GPU failure while idle clears readiness so the next request creates a fr
   assert.equal(f.workers[0].terminated,true);assert.equal(f.api.getStatus('ar').engineReady,false);
   const retry=f.api.prepare();f.send(1,{type:'ready'});await retry;
   assert.equal(f.workers.length,2);
+});
+
+test('intentional audio backpressure suspends the inference timeout until playback accepts the packet',async t=>{
+  const f=await browserFixture(t);let accept;
+  const speech=f.api.stream('الرصيد صفر.',{onAudio:()=>new Promise(resolve=>{accept=resolve;})});speech.catch(()=>{});
+  f.send(0,{type:'audio',sequence:0,sampleRate:44100,samples:new Float32Array([0.25]).buffer});
+  for(const[id,timer]of [...f.timers])if(timer.ms===90000){f.timers.delete(id);timer.fn();}
+  assert.equal(f.workers[0].terminated,false,'a paused playback queue is not a failed inference request');
+  accept();await flushUntil(()=>f.requests.some(request=>request.type==='audio-ack'));
+  f.send(0,{type:'end'});await speech;
+});
+
+test('engine initialization failures remain visible without invalidating the installed voice pack',async t=>{
+  const f=await browserFixture(t),pending=f.api.prepare();const failed=assert.rejects(pending,{code:'worker-startup-failed'});
+  f.send(0,{error:'worker-startup-failed'});await failed;
+  const status=f.api.getStatus('ar');
+  assert.equal(status.installed,true);assert.equal(status.ready,true);assert.equal(status.engineReady,false);
+  assert.equal(status.engineState,'error');assert.equal(status.engineError,'worker-startup-failed');
+  assert(f.events.some(event=>event.type==='wf-reference-voice-change'&&event.detail.engineError==='worker-startup-failed'));
+});
+
+test('a runtime status subscriber cannot duplicate or orphan the active preparation',async t=>{
+  const subscribers=[];
+  const f=await browserFixture(t,{onEvent(event,window){
+    if(event.type==='wf-reference-voice-change'&&event.detail.engineState==='initializing')subscribers.push(window.WFReferenceVoice.prepare());
+  }});
+  const warm=f.api.prepare();warm.catch(()=>{});for(const pending of subscribers)pending.catch(()=>{});
+  assert.equal(f.requests.length,1,'preparation is registered before its initial state is published');
+  f.send(0,{type:'ready'});await Promise.all([warm,...subscribers]);
 });

@@ -1,7 +1,7 @@
 /* Keeps the complete WebGPU engine in a terminable worker tree. No report text
    or audio is sent over the network; only the explicit installer can fetch. */
 import './reference-voice-assets.js?v=1';
-import './reference-voice.js?v=1';
+import './reference-voice.js?v=2';
 
 const manifest=globalThis.WFReferenceVoiceAssets,core=globalThis.WFReferenceVoiceCore;
 const appBase=new URL('./',import.meta.url).href;
@@ -10,12 +10,25 @@ const modelBase=new URL('model/',engineBase).href;
 const cachedFetch=core.createCacheFetch({caches:globalThis.caches,digest:bytes=>crypto.subtle.digest('SHA-256',bytes),
   cacheName:manifest.cacheName,assets:manifest.assets,appBase,virtualBase:modelBase});
 globalThis.fetch=cachedFetch;
-let loading=null,api=null,activeId=null,fatal=false,credit=null;
+let loading=null,api=null,activeId=null,fatal=false,initialized=false,credit=null;
 const waitingReady=new Set(),SAMPLE_RATE=44100,MAX_SAMPLES=SAMPLE_RATE*150;
 
-function safeError(problem){
-  const allowed=['pack-not-installed','integrity-failed','voice-asset-not-allowed','voice-reference-missing','text-length','locale-unsupported','invalid-audio','speech-busy'];
-  return allowed.includes(problem?.code)?problem.code:'engine-failed';
+function safeError(problem,fallback='engine-failed'){
+  const allowed=['pack-not-installed','integrity-failed','voice-asset-not-allowed','voice-reference-missing','text-length','locale-unsupported','invalid-audio','speech-busy',
+    'worker-startup-failed','engine-load-failed','engine-init-failed','generation-failed','webgpu-unavailable','gpu-device-lost'];
+  const code=problem?.code||problem?.message;
+  if(allowed.includes(code))return code;
+  if(/GPU device lost/i.test(problem?.message||''))return 'gpu-device-lost';
+  if(/WebGPU is not available|No WebGPU adapter/i.test(problem?.message||''))return 'webgpu-unavailable';
+  return fallback;
+}
+
+const failure=code=>Object.assign(new Error(code),{code});
+
+function engineFatal(code){
+  if(fatal)return;fatal=true;initialized=false;
+  postMessage({type:'fatal',error:code});
+  credit?.reject(failure(code));credit=null;
 }
 
 function asBase64(bytes){
@@ -25,17 +38,35 @@ function asBase64(bytes){
 
 async function ready(id){
   if(fatal)throw new Error('engine-failed');
+  if(initialized){postMessage({id,type:'progress',phase:'ready'});return;}
   waitingReady.add(id);postMessage({id,type:'progress',phase:'initializing'});
   loading??=(async()=>{
-    api=await import(new URL('engine.js',engineBase).href);
-    api.engine.onFatal(()=>{
-      fatal=true;
-      postMessage({type:'fatal',error:'engine-failed'});
-      credit?.reject(new Error('engine-failed'));credit=null;
-    });
-    await api.engine.init(value=>{
-      for(const id of waitingReady)postMessage({id,type:'progress',phase:value.loaded>=value.total?'initializing':'loading',loaded:value.loaded,total:value.total});
-    },{base:modelBase,cache:false});
+    // The pinned engine creates child workers at module import, but installs
+    // its initialization rejection callback only after reading voices.json.
+    // Capture failures from construction onward so that early script errors
+    // cannot disappear and leave engine.init() pending forever.
+    const NativeWorker=globalThis.Worker;
+    let rejectWorker;
+    const workerFailed=new Promise((_,reject)=>{rejectWorker=reject;});
+    const WatchedWorker=class extends NativeWorker{
+      constructor(...args){
+        super(...args);
+        const failed=()=>{const problem=failure('worker-startup-failed');if(initialized)engineFatal(problem.code);else rejectWorker(problem);};
+        this.addEventListener('error',failed);
+        this.addEventListener('messageerror',failed);
+      }
+    };
+    globalThis.Worker=WatchedWorker;
+    try{
+      try{api=await Promise.race([import(new URL('engine.js',engineBase).href),workerFailed]);}
+      catch(problem){throw failure(safeError(problem,'engine-load-failed'));}
+      api.engine.onFatal(message=>engineFatal(safeError(new Error(String(message)))));
+      try{await Promise.race([api.engine.init(value=>{
+        for(const id of waitingReady)postMessage({id,type:'progress',phase:value.loaded>=value.total?'initializing':'loading',loaded:value.loaded,total:value.total});
+      },{base:modelBase,cache:false}),workerFailed]);}
+      catch(problem){throw failure(safeError(problem,'engine-init-failed'));}
+      initialized=true;
+    }finally{if(globalThis.Worker===WatchedWorker)globalThis.Worker=NativeWorker;}
   })();
   try{await loading;postMessage({id,type:'progress',phase:'ready'});}
   finally{waitingReady.delete(id);}
@@ -92,6 +123,6 @@ self.onmessage=async event=>{
     const blob=await audio.blob();
     if(blob.type!=='audio/wav'||blob.size<46)throw Object.assign(new Error('invalid-audio'),{code:'invalid-audio'});
     postMessage({id,blob});
-  }catch(problem){controller.abort();postMessage({id,error:safeError(problem)});}
+  }catch(problem){controller.abort();postMessage({id,error:safeError(problem,'generation-failed')});}
   finally{if(credit?.id===id)credit=null;activeId=null;}
 };

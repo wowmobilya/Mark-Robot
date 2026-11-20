@@ -120,10 +120,19 @@
     ru: ['Чтение отключено. Включите его в настройках голоса.', 'Сейчас звучит другой голос. Остановите его и повторите попытку.']
   };
   for (const locale of Object.keys(extra)) [words[locale].disabled, words[locale].busy] = extra[locale];
+  const transportCopy = {
+    ar: ['إيقاف مؤقت', 'استئناف القراءة', 'القراءة متوقفة مؤقتًا'],
+    en: ['Pause reading', 'Resume reading', 'Reading paused'],
+    tr: ['Okumayı duraklat', 'Okumayı sürdür', 'Okuma duraklatıldı'],
+    fr: ['Mettre en pause', 'Reprendre la lecture', 'Lecture en pause'],
+    ru: ['Приостановить чтение', 'Продолжить чтение', 'Чтение приостановлено'],
+  };
+  for (const locale of Object.keys(transportCopy)) [words[locale].pause, words[locale].resume, words[locale].paused] = transportCopy[locale];
   const button = document.createElement('button');
   button.id = 'wfProgramSpeechButton'; button.type = 'button'; button.className = 'icon-btn';
   button.setAttribute('aria-describedby', 'wfProgramSpeechStatus');
   button.innerHTML = '<svg class="wf-reader-speaker" aria-hidden="true" viewBox="0 0 24 24"><path d="M11 4 6 8H3v8h3l5 4V4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg><svg class="wf-reader-stop" aria-hidden="true" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+  button.innerHTML += '<svg class="wf-reader-pause" aria-hidden="true" viewBox="0 0 24 24"><path d="M8 6v12M16 6v12"/></svg><svg class="wf-reader-resume" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></svg>';
   const status = document.createElement('div');
   status.id = 'wfProgramSpeechStatus'; status.className = 'wf-program-speech-status'; status.hidden = true;
   status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
@@ -144,13 +153,14 @@
     if (!persistent) hideTimer = root.setTimeout(() => { status.hidden = true; }, 5000);
   }
   function render(current = state(), announce = false) {
-    const active = current.active === true, label = active ? message().stop : message().read;
+    const active = current.active === true, label = active ? current.canPause ? message()[current.paused ? 'resume' : 'pause'] : message().stop : message().read;
     button.title = label; button.setAttribute('aria-label', label);
     button.setAttribute('aria-pressed', String(active)); button.dataset.active = String(active);
+    button.dataset.paused = String(current.paused === true); button.dataset.canPause = String(current.canPause === true);
     button.setAttribute('aria-busy', String(current.state === 'preparing' || current.state === 'waiting'));
     if (announce) {
       const key = current.state === 'error' ? 'failed' : current.state;
-      const text = message()[key] || (active ? message().speaking : message().unavailable);
+      const text = ['preparing', 'failed', 'paused'].includes(key) && current.message ? current.message : message()[key] || (active ? message().speaking : message().unavailable);
       show(text + (active && current.voiceName ? ' — ' + current.voiceName : ''), active);
     }
   }
@@ -184,7 +194,15 @@
   function click(event) {
     if (event.isTrusted !== true || disposed) return;
     const current = state();
-    if (current.active) { remembered = null; root.WFProgramSpeech?.stop?.(); render(state()); show(message().stopped); return; }
+    if (current.active) {
+      remembered = null;
+      if (current.canPause) {
+        const result = root.WFProgramSpeech?.[current.paused ? 'resume' : 'pause']?.();
+        if (result?.catch) result.catch(() => {});
+        render(state());
+      } else { root.WFProgramSpeech?.stop?.(); render(state()); show(message().stopped); }
+      return;
+    }
     const selected = selection() || validRemembered(); remembered = null;
     if (!selected) { show(message().select); return; }
     if (current.state === 'muted') { show(message().muted); return; }
