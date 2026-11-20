@@ -42,3 +42,66 @@ test('daily feed supplies two comparable observations on first visit and skips m
  feed.base='EUR';
  await assert.rejects(()=>dailyQuotes(fetcher,new Date('2025-01-12')));
 });
+
+function rateView(history=[]) {
+ const fs=require('node:fs'),vm=require('node:vm'),observers=[];
+ class Node {
+  constructor(){this.children=[];this.dataset={};this.attributes={};this.classList={toggle(){}};this.textContent='';}
+  append(...nodes){this.children.push(...nodes);}
+  after(){}
+  setAttribute(key,value){this.attributes[key]=String(value);}
+  getAttribute(key){return this.attributes[key]??null;}
+  replaceChildren(...nodes){this.children=nodes;}
+ }
+ const pairs=['usd-try','try-usd','eur-usd','usd-eur','eur-try','try-eur'];
+ const cards=pairs.map(pair=>{const card=new Node();card.setAttribute('onclick',`openCurrCalc('${pair}')`);return card;});
+ const button=new Node(),top=new Node(),grid=new Node(),time=new Node();
+ top.querySelector=selector=>selector==='.curr-refresh'?button:null;
+ top.parentElement={querySelectorAll:()=>cards,querySelector:()=>grid};
+ const document={documentElement:{lang:'en',dir:'ltr'},querySelector:()=>top,querySelectorAll:()=>[button],
+  createElement:()=>new Node(),createElementNS:namespace=>Object.assign(new Node(),{namespaceURI:namespace}),
+  createTextNode(text){const node=new Node();node.textContent=text;return node;},getElementById:id=>id==='rateTime'?time:null};
+ const S={lang:'en',settings:{},usdTry:41,usdEur:.92,rateTime:'2026-11-20T10:00:00Z',rateUpdatedAt:'2026-11-20',rateSource:{id:'market',side:'reference',mode:'feed',via:'frankfurter'}};
+ let writes=0,requests=0;
+ const window={document,updateRateUI(){},fetch(){requests++;throw Error('Unexpected request');},WFCurrencySources:{
+  normalizeSource:value=>value,word:key=>key,describe:value=>value.id,mount:()=>({setState(){}})
+ }};
+ const localStorage={getItem:()=>JSON.stringify(history),setItem(){writes++;}};
+ vm.runInNewContext(fs.readFileSync(require.resolve('../rate-refresh.js'),'utf8'),{
+  window,document,S,localStorage,Intl,MutationObserver:class {constructor(callback){this.callback=callback;}observe(){observers.push(this.callback);}}
+ });
+ return {S,button,cards,counts:()=>({writes,requests}),trends:()=>cards.map(card=>card.children[0]),
+  language(lang){S.lang=lang;document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';for(const callback of observers)callback([{attributeName:'lang'}]);}
+ };
+}
+
+test('language-only changes refresh empty trend tooltips in all five languages',()=>{
+ const view=rateView(),labels={en:'Trend unavailable',ar:'الاتجاه غير متاح بعد',tr:'Yön henüz mevcut değil',fr:'Tendance indisponible',ru:'Тенденция недоступна'};
+ for(const [lang,label]of Object.entries(labels)){
+  view.language(lang);
+  for(const [index,trend]of view.trends().entries()){
+   assert.equal(trend.title,label);
+   assert.equal(view.cards[index].dataset.quoteTrend,'empty');
+   assert.equal(trend.children[1].textContent,'');
+  }
+ }
+ assert.deepEqual(view.counts(),{writes:0,requests:0});
+});
+
+test('language-only changes localize populated trend percentages without changing quotes or provenance',()=>{
+ const source='market/reference/frankfurter',view=rateView([
+  {at:'2026-11-19T00:00:00Z',try:40,eur:.9,source},
+  {at:'2026-11-20T00:00:00Z',try:41,eur:.92,source}
+ ]);
+ const saved=JSON.stringify({...view.S,lang:undefined}),directions=view.cards.map(card=>card.dataset.quoteTrend);
+ for(const lang of ['en','ar','tr','fr','ru']){
+  view.language(lang);
+  const format=new Intl.NumberFormat(lang==='ar'?'ar-u-nu-latn':lang,{style:'percent',maximumFractionDigits:2,signDisplay:'exceptZero'});
+  assert.equal(view.trends()[0].children[1].textContent,format.format(1/40));
+  assert.equal(view.trends()[1].children[1].textContent,format.format((1/41-1/40)/(1/40)));
+  assert(view.trends().every(trend=>trend.title===''));
+  assert.deepEqual(view.cards.map(card=>card.dataset.quoteTrend),directions);
+  assert.equal(JSON.stringify({...view.S,lang:undefined}),saved);
+ }
+ assert.deepEqual(view.counts(),{writes:0,requests:0});
+});

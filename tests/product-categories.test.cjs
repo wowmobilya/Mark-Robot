@@ -48,3 +48,35 @@ test('concurrent saves are guarded and data becomes visible only after commit',a
  let finish,entered;const committing=new Promise(resolve=>entered=resolve),gate=new Promise(resolve=>finish=resolve);const a=fixture({beforeCommit:async()=>{entered();await gate;}});
  const first=a.manager.save({labels:{en:'Storage'},image:''});await committing;assert.equal(a.state.settings.productCategories,undefined);await assert.rejects(a.manager.save({labels:{en:'Second'},image:''}),/busy/);finish();await first;assert.equal(a.written.length,1);assert.equal(label(a.manager.list().find(c=>c.id==='wfcat_test_uuid')),'Storage');
 });
+
+test('saved and validation statuses retranslate with severity intact, while a cleared status stays cleared',()=>{
+ const fs=require('node:fs'),vm=require('node:vm'),acorn=require('acorn'),walk=require('acorn-walk');
+ const source=fs.readFileSync(require.resolve('../product-categories.js'),'utf8'),ast=acorn.parse(source,{ecmaVersion:'latest'}),declarations=[],functions=[];
+ // Run the actual status/draft/translation closures. Category persistence is
+ // already exercised above; this isolates the missed language refresh boundary.
+ walk.simple(ast,{
+  VariableDeclaration(node){if(node.declarations.some(item=>['copy','t','status','editingLanguage','statusKey','statusError'].includes(item.id.name)))declarations.push(source.slice(node.start,node.end));},
+  FunctionDeclaration(node){if(['announce','renderStatus','setDraft','translateSettings','refresh'].includes(node.id.name))functions.push(source.slice(node.start,node.end));}
+ });
+ const errors=new Set(),statusNode={textContent:'',attributes:{},classList:{toggle:(key,on)=>on?errors.add(key):errors.delete(key)},setAttribute(key,value){this.attributes[key]=value;}};
+ const field=()=>({value:''}),fields={languageField:field(),nameField:field(),descriptionField:field(),urlField:field(),fileField:field()};
+ const context={language:'ar',locales:['ar','en','tr','fr','ru'],statusNode,...fields,currentLanguage:()=>context.language,
+  document:{querySelectorAll:()=>[],getElementById:()=>null},state:()=>({prType:'coffee_table'}),renderPreview(){},renderList(){},updateBusy(){},renderChooser(){},renderFilters(){},patchCatalog(){},renderBarcodeTabs(){},updateBanner(){},patchChart(){}};
+ vm.createContext(context);vm.runInContext(declarations.join('\n')+'\n'+functions.join('\n')+'\nstatus=statusNode;formTitle={textContent:""};'+Object.keys(fields).map(key=>key+'=globalThis.'+key+';').join(''),context);
+ const run=code=>vm.runInContext(code,context);
+ run('setDraft({id:"coffee_table",labels:{ar:"اسم العميل"},descriptions:{ar:"وصف العميل"},image:"",archived:false})');
+ const originalDraft=run('JSON.stringify(draft)');
+ for(const [key,isError]of [['saved',false],['archiveSaved',false],['saving',false],['imageLoading',false],['nameRequired',true],['duplicate',true],['imageURL',true],['failed',true]]){
+  context.key=key;context.isError=isError;context.language='ar';run('announce(key,isError)');
+  for(const language of ['en','tr','fr','ru','ar']){
+   context.language=language;run('translateSettings()');
+   assert.equal(statusNode.textContent,run('t(key)'),key+' '+language);
+   assert.equal(statusNode.attributes.role,isError?'alert':'status');assert.equal(errors.has('is-error'),isError);
+   assert.equal(run('JSON.stringify(draft)'),originalDraft);assert.equal(fields.nameField.value,'اسم العميل');assert.equal(fields.descriptionField.value,'وصف العميل');
+   run('refresh()');assert.equal(statusNode.textContent,run('t(key)'));
+  }
+ }
+ run('setDraft(null)');assert.equal(statusNode.textContent,'');assert.equal(statusNode.attributes.role,'status');assert.equal(errors.has('is-error'),false);
+ context.language='fr';run('translateSettings();refresh()');assert.equal(statusNode.textContent,'','cancelled/new-draft status must not return after translation');
+ run('announce("imageLoading");announce("")');context.language='tr';run('translateSettings()');assert.equal(statusNode.textContent,'','cleared upload status must not return');
+});

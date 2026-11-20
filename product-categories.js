@@ -275,8 +275,9 @@
   hook('wfRenderDashboardIntelligence',(_total,host=document.getElementById('dashIntelligence'))=>patchChart(host));
 
   let panel,form,fieldset,list,status,formTitle,nameField,descriptionField,languageField,urlField,fileField,preview,draft,saveButton;
-  let editingLanguage=currentLanguage(),busy=false,fileLoading=false,uploadVersion=0,urlDirty=false;
-  function announce(key,error=false){if(!status)return;status.textContent=t(key);status.classList.toggle('is-error',error);status.setAttribute('role',error?'alert':'status');}
+  let editingLanguage=currentLanguage(),busy=false,fileLoading=false,uploadVersion=0,urlDirty=false,statusKey='',statusError=false;
+  function renderStatus(){if(!status)return;status.textContent=statusKey?t(statusKey):'';status.classList.toggle('is-error',statusError);status.setAttribute('role',statusError?'alert':'status');}
+  function announce(key,error=false){statusKey=key;statusError=!!key&&error;renderStatus();}
   function updateBusy(){if(!fieldset)return;fieldset.disabled=busy;saveButton.disabled=busy||fileLoading;panel.setAttribute('aria-busy',String(busy||fileLoading));list.querySelectorAll('button').forEach(el=>el.disabled=busy);const add=panel.querySelector('.wf-category-new');if(add)add.disabled=busy;}
   function renderPreview(){if(preview)preview.replaceChildren(photo(draft,'wf-category-editor-photo'));}
   function setDraft(category){
@@ -286,7 +287,7 @@
     nameField.value=draft.labels[editingLanguage]||category?.name||'';
     descriptionField.value=draft.descriptions[editingLanguage]||'';
     urlField.value=/^https:/.test(draft.image)?draft.image:'';fileField.value='';
-    if(status)status.textContent='';
+    announce('');
     formTitle.textContent=t(draft.id?'editTitle':'add');renderPreview();renderList();updateBusy();
   }
   function rememberFields(){draft.labels[editingLanguage]=nameField.value;draft.descriptions[editingLanguage]=descriptionField.value;}
@@ -346,7 +347,7 @@
     urlField.addEventListener('change',()=>{const value=cleanImage(urlField.value);if(value===null){announce('imageURL',true);return;}draft.image=value;urlDirty=false;renderPreview();});
     fileField.addEventListener('change',async()=>{
       const file=fileField.files?.[0];if(!file)return;const version=++uploadVersion;fileLoading=true;updateBusy();announce('imageLoading');
-      try{const image=await readImage(file);if(version!==uploadVersion)return;draft.image=image;urlField.value='';urlDirty=false;renderPreview();status.textContent='';}
+      try{const image=await readImage(file);if(version!==uploadVersion)return;draft.image=image;urlField.value='';urlDirty=false;renderPreview();announce('');}
       catch(error){if(version===uploadVersion)announce(copy[error.message]?error.message:'imageInvalid',true);}
       finally{if(version===uploadVersion){fileLoading=false;fileField.value='';updateBusy();}}
     });
@@ -362,6 +363,7 @@
   }
   function translateSettings(){
     document.querySelectorAll('[data-wf-category-text]').forEach(el=>el.textContent=t(el.dataset.wfCategoryText));
+    renderStatus();
     if(formTitle)formTitle.textContent=t(draft?.id?'editTitle':'add');
     if(list){list.setAttribute('aria-label',t('title'));renderList();}
   }

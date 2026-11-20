@@ -408,11 +408,16 @@
   cameraSection.append(video, cameraButton, cameraStatus); panel.append(cameraSection);
   const voiceRows = new Map(), downloads = new Map(), preparations = new Set(), preparationErrors = new Set();
   let dirty = false, nonRateChanges = false, lastSpeech = {}, lastPublishedPreferences = '', saveState = '', latestMotion = {active: false, state: 'off', x: 0, y: 0}, disposed = false;
-  let readingRequested = false, readingStarted = false, readingStatusKey = '', readingVoiceName = '', readingMessage = '';
+  let readingRequested = false, readingStarted = false, readingStatusKey = '', readingVoiceName = '', readingMessage = '', readingMessageLocale = '';
   const getPreferences = () => normalize(state()?.settings?.robot);
-  function setReadingStatus(key, voiceName = '', message = '') {
-    readingStatusKey = key; readingVoiceName = voiceName; readingMessage = typeof message === 'string' ? message.trim().slice(0,500) : '';
-    readingStatus.textContent = (readingMessage || t(key)) + (voiceName ? ' · ' + displayVoiceName(voiceName, language()) : '');
+  function setReadingStatus(key, voiceName = '', message = '', messageLocale = language()) {
+    const locale = language();
+    readingStatusKey = key; readingVoiceName = voiceName;
+    readingMessageLocale = String(messageLocale || locale).toLowerCase().split(/[-_]/)[0];
+    // Provider details are already localized. Once their locale changes, keep
+    // the status key and render its translation instead of retaining stale text.
+    readingMessage = readingMessageLocale === locale && typeof message === 'string' ? message.trim().slice(0,500) : '';
+    readingStatus.textContent = (readingMessage || t(key)) + (voiceName ? ' · ' + displayVoiceName(voiceName, locale) : '');
   }
   function updatePreviewControls(current = lastSpeech) {
     const generated = readingRequested && current.active && (!current.kind || current.kind === 'preview');
@@ -472,10 +477,10 @@
     if (current.active) {
       readingStarted = true;
       const key = current.state === 'paused' || current.paused ? 'previewPaused' : current.state === 'speaking' ? 'previewSpeaking' : 'previewPreparing';
-      setReadingStatus(key, current.voiceName || '', key === 'previewPreparing' ? current.message : '');
+      setReadingStatus(key, current.voiceName || '', key === 'previewPreparing' ? current.message : '', current.locale);
     } else if (readingStarted) {
       const key = current.state === 'ready' ? 'previewFinished' : current.state === 'stopped' ? 'previewStopped' : 'previewFailed';
-      setReadingStatus(key, '', key === 'previewFailed' ? current.message : '');
+      setReadingStatus(key, '', key === 'previewFailed' ? current.message : '', current.locale);
       readingRequested = readingStarted = false;
     }
   }
@@ -550,7 +555,7 @@
   function translate() {
     for (const [node, key] of textNodes) node.textContent = t(key);
     selectedVoice.textContent = t('reference');updatePreviewControls();updateRateReset();
-    if (readingStatusKey) setReadingStatus(readingStatusKey, readingVoiceName, readingMessage);
+    if (readingStatusKey) setReadingStatus(readingStatusKey, readingVoiceName, readingMessage, readingMessageLocale);
     if (store.busy) save.textContent = t('saving');
     saveStatus.textContent = saveState ? t(saveState) : '';
     cameraUI(); updatePreview(); renderVoicePacks();

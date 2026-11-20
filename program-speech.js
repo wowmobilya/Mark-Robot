@@ -136,10 +136,39 @@
   const status = document.createElement('div');
   status.id = 'wfProgramSpeechStatus'; status.className = 'wf-program-speech-status'; status.hidden = true;
   status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
-  settings.parentNode.insertBefore(button, settings);
+  const home = settings.parentNode;
+  home.insertBefore(button, settings);
   document.body.append(status);
   document.documentElement.classList.add('wf-program-speech-enabled');
   let remembered = null, hideTimer = null, disposed = false, hadActivity = false, actionPending = false;
+  let mountedHeading = null, placementQueued = false;
+  function headingClass(element, enabled) {
+    if (element?.classList.contains('wf-program-speech-slot') !== enabled) element?.classList.toggle('wf-program-speech-slot', enabled);
+  }
+  function place() {
+    placementQueued = false;
+    if (disposed) return;
+    const html = document.documentElement, section = html.classList.contains('wf-section-mode');
+    const page = section ? document.querySelector('.page.active') : null;
+    const heading = [...(page?.querySelectorAll('.wf-heading-row') || [])].find(row =>
+      row.getClientRects().length && root.getComputedStyle(row).visibility === 'visible' &&
+      !row.closest('dialog,[role="dialog"],.modal-ov,[hidden],[inert]'));
+    const target = section ? heading || home : home;
+    if (button.parentNode !== target) {
+      if (target === home && settings.parentNode === home) home.insertBefore(button, settings);
+      else target.append(button);
+    }
+    button.hidden = (section && !heading) || html.classList.contains('wf-speech-toolbar-active');
+    button.dataset.location = section ? heading ? 'section' : 'none' : 'dashboard';
+    if (mountedHeading && mountedHeading !== heading) headingClass(mountedHeading, false);
+    mountedHeading = heading || null;
+    headingClass(mountedHeading, !button.hidden);
+  }
+  function schedulePlace() {
+    if (placementQueued || disposed) return;
+    placementQueued = true;
+    if (root.requestAnimationFrame) root.requestAnimationFrame(place); else place();
+  }
   const selectionScope = '.page.active,dialog[open],[role="dialog"]';
   const language = () => words[localeKey(document.documentElement.lang)] ? localeKey(document.documentElement.lang) : 'en';
   const message = () => words[language()];
@@ -158,6 +187,7 @@
     button.setAttribute('aria-pressed', String(active)); button.dataset.active = String(active);
     button.dataset.paused = String(current.paused === true); button.dataset.canPause = String(current.canPause === true);
     button.setAttribute('aria-busy', String(current.state === 'preparing' || current.state === 'waiting'));
+    place();
     if (announce) {
       const key = current.state === 'error' ? 'failed' : current.state;
       const text = ['preparing', 'failed', 'paused'].includes(key) && current.message ? current.message : message()[key] || (active ? message().speaking : message().unavailable);
@@ -229,17 +259,26 @@
   function changedPage() { remembered = null; status.hidden = true; render(); }
   const languageObserver = new MutationObserver(changedLanguage);
   languageObserver.observe(document.documentElement, {attributes: true, attributeFilter: ['lang']});
+  const placementObserver = new MutationObserver(records => {
+    if (records.some(record => !button.contains(record.target))) schedulePlace();
+  });
+  placementObserver.observe(document.documentElement, {attributes: true, attributeFilter: ['class']});
+  const main = document.getElementById('mainContent');
+  if (main) placementObserver.observe(main, {subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'inert']});
   function pagehide(event) { remembered = null; if (!event.persisted) destroy(); }
   function destroy() {
     if (disposed) return; disposed = true;
-    root.clearTimeout(hideTimer); languageObserver.disconnect();
+    root.clearTimeout(hideTimer); languageObserver.disconnect(); placementObserver.disconnect();
+    headingClass(mountedHeading, false);
     button.removeEventListener('pointerdown', remember); button.removeEventListener('click', click);
     root.removeEventListener('wf-program-speech-state', updated); root.removeEventListener('hashchange', changedPage);
     root.removeEventListener('pagehide', pagehide); root.removeEventListener('pageshow', changedPage);
+    root.removeEventListener('resize', schedulePlace);
     button.remove(); status.remove(); document.documentElement.classList.remove('wf-program-speech-enabled');
   }
   button.addEventListener('pointerdown', remember); button.addEventListener('click', click);
   root.addEventListener('wf-program-speech-state', updated); root.addEventListener('hashchange', changedPage);
   root.addEventListener('pagehide', pagehide); root.addEventListener('pageshow', changedPage);
+  root.addEventListener('resize', schedulePlace);
   render();
 })(typeof window === 'object' ? window : globalThis);

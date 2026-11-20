@@ -160,12 +160,12 @@ test('cashbox module emits its acknowledgment after committed clearing, never af
   const vm=require('node:vm'),fs=require('node:fs');
   function cashFixture(){
     const notices=[];let finish,fail;
-    const field=value=>({value,add(option){if(!this.value)this.value=option.value;},replaceChildren(...options){this.value=options[0]?.value||'';},closest:()=>({hidden:false})});
+    const field=value=>({value,options:[],add(option){this.options.push(option);if(!this.value)this.value=option.value;},replaceChildren(...options){this.options=options;this.value=options[0]?.value||'';},closest:()=>({hidden:false})});
     const fields={currency:field('USD'),type:field('expense'),amount:field('15'),target:field('TRY'),received:field(''),note:field('draft')},button={disabled:false},status={},output={},list={replaceChildren(){},append(){}};
     const form={elements:fields,querySelector:()=>button,dispatchEvent:event=>notices.push({type:event.type,bubbles:event.bubbles,amount:fields.amount.value,note:fields.note.value})};
-    const box={querySelector:selector=>({'form':form,'[role=status]':status,'output':output,'ol':list})[selector]};
+    const box={querySelector:selector=>({'form':form,'[role=status]':status,'output':output,'ol':list})[selector],querySelectorAll:()=>[]};
     const page={querySelector:selector=>selector==='header'?{after(){}}:null,classList:{contains:()=>false}};
-    const context={document:{getElementById:()=>null,querySelector:()=>page,createElement:()=>box},MutationObserver:class{observe(){}},Option:class{constructor(_label,value){this.value=value;}},CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}},FormData:class{constructor(){return Object.entries(fields).map(([key,field])=>[key,field.value]);}},wfNewRecordId:()=> 'test',dbPut:()=>new Promise((resolve,reject)=>{finish=resolve;fail=reject;}),dbGetAllKeysRaw:async()=>[],dbGetAll:async()=>[],WOWStatementCore:{collectPayments:()=>({groups:new Map(),unattached:[]})},Intl,Date};
+    const context={document:{documentElement:{lang:'ar'},getElementById:()=>null,querySelector:()=>page,querySelectorAll:()=>[],createElement:()=>box},MutationObserver:class{observe(){}},Option:class{constructor(label,value){this.textContent=label;this.value=value;}},CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}},FormData:class{constructor(){return Object.entries(fields).map(([key,field])=>[key,field.value]);}},wfNewRecordId:()=> 'test',dbPut:()=>new Promise((resolve,reject)=>{finish=resolve;fail=reject;}),dbGetAllKeysRaw:async()=>[],dbGetAll:async()=>[],WOWStatementCore:{collectPayments:()=>({groups:new Map(),unattached:[]})},Intl,Date};
     vm.runInNewContext(fs.readFileSync(require.resolve('../cashboxes.mjs'),'utf8').replaceAll('export function ','function ')+'\nmount();',context);
     return {fields,notices,submit:()=>form.onsubmit({preventDefault(){}}),commit:()=>finish(),reject:()=>fail(new Error('write failed'))};
   }

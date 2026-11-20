@@ -101,12 +101,16 @@
  };
  const headings=new Map();
  const saveSections = new Set(['bank', 'invoice']);
- let opener;
+ let opener, lastTitleOpener, lastTitleSource;
  function updateDialogTitle() {
    if (!opener) return;
+   const source = opener.textContent;
+   if (opener === lastTitleOpener && source === lastTitleSource) return;
+   lastTitleOpener = opener; lastTitleSource = source;
    const copy = opener.cloneNode(true);
    copy.querySelectorAll('.wf-settings-card-description, .wf-ui-icon').forEach(node => node.remove());
-   title.textContent = copy.textContent.trim();
+   const next = copy.textContent.trim();
+   if (title.textContent !== next) title.textContent = next;
  }
  function translateDescriptions() {
    const locale = Math.max(0, localeOrder.indexOf(document.documentElement.lang));
@@ -152,7 +156,9 @@
  translateDescriptions();
  new MutationObserver(translateDescriptions).observe(document.documentElement, {attributes: true, attributeFilter: ['lang']});
  new MutationObserver(updateDialogTitle).observe(tabs, {childList: true, subtree: true, characterData: true});
+ let panelAnimation;
  dialog.addEventListener('close', () => {
+   panelAnimation?.cancel(); panelAnimation = null;
    placeNavigation();
    if (page.classList.contains('active')) opener?.focus();
  });
@@ -160,8 +166,12 @@
  window.switchTab=function(key){
   const result=original.apply(this,arguments);
   const panel=document.getElementById('stab-'+key);
-  if(panel&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-   panel.classList.remove('wf-settings-panel-enter');void panel.offsetWidth;panel.classList.add('wf-settings-panel-enter');
+  panelAnimation?.cancel(); panelAnimation = null;
+  if(panel&&document.documentElement.dataset.wfMotion!=='reduced'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+   // Native animation starts at the next paint, without synchronously laying
+   // out every settings field just to restart a CSS class. Rapid navigation
+   // cancels its predecessor instead of leaving overlapping transitions.
+   panelAnimation=panel.animate?.([{opacity:.5,transform:'translateY(6px)'},{opacity:1,transform:'none'}],{duration:150,easing:'ease-out'}) || null;
   }
   return result;
  };

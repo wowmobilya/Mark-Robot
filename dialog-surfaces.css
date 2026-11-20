@@ -1,5 +1,6 @@
-/* Shared dialog chrome. Screen-only rules deliberately leave print documents,
-   image-viewer transforms, camera framing and each dialog's open state intact. */
+/* Shared dialog chrome. Primary workspaces use the viewport; transient
+   confirmations retain their own size. Screen-only rules leave printed paper,
+   image-viewer transforms, camera framing and open/close state intact. */
 @media screen {
   :root {
     --dialog-line: color-mix(in srgb, var(--brand-primary) 22%, var(--border));
@@ -23,7 +24,7 @@
 
   html body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal,
     #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
-    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady) :is(button, .btn):not(#bottomNav *) {
+    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady, #wfProductUpdateReview) :is(button, .btn):not(#bottomNav *) {
     min-block-size: 44px !important;
     touch-action: manipulation;
   }
@@ -35,7 +36,7 @@
   }
   html body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal,
     #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
-    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady) :is(button, input, select, textarea):focus-visible {
+    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady, #wfProductUpdateReview) :is(button, input, select, textarea):focus-visible {
     outline: 2px solid var(--ui-accent, var(--brand-primary)) !important;
     outline-offset: 2px;
   }
@@ -52,9 +53,6 @@
 
   /* A single settings surface: the dialog header supplies the panel title. */
   html body #mainContent #page-settings #wfSettingsDialog {
-    inline-size: min(42rem, calc(100vw - 28px));
-    max-inline-size: calc(100vw - 28px);
-    max-block-size: calc(100dvh - 28px);
     overflow: hidden;
   }
   html body #mainContent #page-settings #wfSettingsDialog > header {
@@ -287,11 +285,6 @@
     }
   }
   @media (max-width: 600px) {
-    html body #mainContent #page-settings #wfSettingsDialog {
-      inline-size: 100%;
-      max-inline-size: 100%;
-      max-block-size: min(90dvh, calc(100dvh - 12px));
-    }
     html body #mainContent #page-settings #wfSettingsDialog > .wf-settings-content { padding: 16px; }
     html body #mainContent #page-settings #wfSettingsDialog [role="tabpanel"] > .card { padding: 14px !important; }
     html body #mainContent #page-settings #wfSettingsDialog :is(#stab-company, #stab-bank, #stab-invoice) > .card { padding: 0 !important; }
@@ -301,13 +294,262 @@
       margin: 0 -16px 14px;
     }
   }
+
+  /* Deliberate opt-in: do not size anonymous/empty overlays, cash controls,
+     the exchange calculator, image zoom or the existing report readers. */
+  html:root body :is(#pdfModal, #printOptionsModal, #scannerModal,
+    #wfUnifiedShareOverlay, #wfExcelShareReady, #wfProductUpdateReview) {
+    padding: 0 !important;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow: hidden;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  html:root body :is(#wfSettingsDialog, #wfDevDialog, dialog#wfDevDialog.wf-developer-profile,
+    #pdfModal > .modal, #printOptionsModal > .modal, #scannerModal > .modal,
+    #wfUnifiedShareOverlay > .wf-share-panel, #wfExcelShareReady > .modal,
+    #wfProductUpdateReview > .modal) {
+    --wf-dialog-gutter: max(clamp(16px, 2.2vw, 32px), env(safe-area-inset-left), env(safe-area-inset-right));
+    box-sizing: border-box;
+    inline-size: 100% !important;
+    min-inline-size: 0;
+    max-inline-size: none !important;
+    block-size: 100vh !important;
+    block-size: 100dvh !important;
+    min-block-size: 0;
+    max-block-size: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    overscroll-behavior: contain;
+  }
+  html body :is(dialog#wfSettingsDialog, dialog#wfDevDialog) {
+    position: fixed;
+    inset: 0;
+  }
+  html body :is(dialog#wfSettingsDialog, dialog#wfDevDialog)[open] {
+    display: flex;
+    flex-direction: column;
+  }
+  html body :is(dialog#wfSettingsDialog, dialog#wfDevDialog)::backdrop {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  html body #mainContent #page-settings #wfSettingsDialog > header {
+    padding-block-start: calc(10px + env(safe-area-inset-top));
+    padding-inline: var(--wf-dialog-gutter);
+  }
+  html body #mainContent #page-settings #wfSettingsDialog > .wf-settings-content {
+    padding: var(--wf-dialog-gutter);
+    padding-block-end: max(var(--wf-dialog-gutter), env(safe-area-inset-bottom));
+  }
+  html body #mainContent #page-settings #wfSettingsDialog > footer:not([hidden]) {
+    padding-inline: var(--wf-dialog-gutter);
+    padding-block-end: max(12px, env(safe-area-inset-bottom));
+    flex: 0 0 auto;
+  }
+  /* The mobile navigation already is the settings action dock. Its existing
+     cutout and reserved footprint stay outside the scrolling content. */
+  html body #mainContent #page-settings #wfSettingsDialog > #bottomNav {
+    flex: 0 0 auto;
+  }
+
+  html body #wfDevDialog.wf-developer-profile > header {
+    padding-block-start: calc(13px + env(safe-area-inset-top)) !important;
+    padding-inline: var(--wf-dialog-gutter) !important;
+  }
+  html body #wfDevDialog.wf-developer-profile .wf-dev-body {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    padding: var(--wf-dialog-gutter);
+    padding-block-end: max(var(--wf-dialog-gutter), env(safe-area-inset-bottom));
+  }
+  html body #pdfModal > .modal > .pdf-bar {
+    padding-block-start: calc(12px + env(safe-area-inset-top));
+    padding-inline: var(--wf-dialog-gutter);
+  }
+  html body #pdfModal > .modal > div:has(> #invoicePaperWrap) {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    padding-inline: var(--wf-dialog-gutter) !important;
+    padding-block-end: max(16px, env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Scanner controls are a separate dock; the camera keeps its original
+     video fit and frame, and can give space back to the on-screen keyboard. */
+  html:root body #scannerModal > .modal {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden !important;
+  }
+  html body #scannerModal > .modal > :first-child {
+    flex: 0 0 auto;
+    padding-block-start: calc(12px + env(safe-area-inset-top)) !important;
+    padding-inline: var(--wf-dialog-gutter) !important;
+  }
+  html body #scannerModal .scanner-wrap {
+    flex: 1 1 auto;
+    min-block-size: 0;
+  }
+  html body #scannerModal .scanner-actions {
+    flex: 0 0 auto;
+    max-block-size: 65dvh;
+    overflow: auto;
+    box-sizing: border-box;
+    padding-inline: var(--wf-dialog-gutter);
+    padding-block-end: max(14px, env(safe-area-inset-bottom));
+  }
+
+  /* Print options have no body wrapper. Content-sized grid rows and sticky
+     chrome keep one scroll owner, including when text or zoom makes it tall. */
+  html body #printOptionsModal > .modal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(max-content, 1fr) auto;
+    gap: 16px;
+    padding: 0;
+    scroll-padding-block: 88px 132px;
+  }
+  html body #printOptionsModal .modal-hdr {
+    grid-column: 1 / -1;
+    inset-block-start: 0;
+    margin: 0;
+    padding: calc(10px + env(safe-area-inset-top)) var(--wf-dialog-gutter) 10px;
+    background: var(--window-muted, var(--card));
+  }
+  html body #printOptionsModal > .modal > :is(.wf14-print-language-card, .print-options-panel) {
+    min-inline-size: 0;
+    margin: 0 var(--wf-dialog-gutter) !important;
+  }
+  html body #printOptionsModal > .modal > .wf14-print-language-card {
+    grid-column: 1 / -1;
+  }
+  html body #printOptionsModal > .modal > div:last-child:has(> #poSaveActionBtn) {
+    grid-column: 1 / -1;
+    align-self: end;
+    inset-block-end: 0;
+    margin: 0;
+    padding: 12px var(--wf-dialog-gutter) max(12px, env(safe-area-inset-bottom));
+  }
+  html body #printOptionsModal > .modal > div:last-child:has(> #poSaveActionBtn) > button {
+    min-inline-size: 0;
+    white-space: normal;
+  }
+
+  html:root body #wfUnifiedShareOverlay > .wf-share-panel {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden !important;
+  }
+  html body #wfUnifiedShareOverlay .wf-share-handle { display: none; }
+  html body #wfUnifiedShareOverlay .wf-share-head {
+    flex: 0 0 auto;
+    position: relative;
+    inset: auto;
+    margin: 0;
+    padding: calc(12px + env(safe-area-inset-top)) var(--wf-dialog-gutter) 12px;
+    background: var(--window-muted, var(--card));
+    border-block-end: 1px solid var(--dialog-line);
+  }
+  html body #wfUnifiedShareOverlay .wf-share-invoice-chip {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    margin: 16px var(--wf-dialog-gutter);
+    max-inline-size: calc(100% - 2 * var(--wf-dialog-gutter));
+  }
+  html body #wfUnifiedShareOverlay .wf-share-choices {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    min-inline-size: 0;
+    align-content: start;
+    grid-auto-rows: max-content;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 0 var(--wf-dialog-gutter) 16px;
+  }
+  html body #wfUnifiedShareOverlay .wf-share-note {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 12px var(--wf-dialog-gutter) max(12px, env(safe-area-inset-bottom));
+    border-radius: 0;
+  }
+
+  html body :is(#wfExcelShareReady, #wfProductUpdateReview) > .modal {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: auto !important;
+    scroll-padding-block: 88px 96px;
+  }
+  html body :is(#wfExcelShareReady, #wfProductUpdateReview) > .modal > :is(.wf-fullscreen-header, h2, h3) {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
+    flex: none;
+    margin: 0;
+    padding: calc(14px + env(safe-area-inset-top)) var(--wf-dialog-gutter) 14px;
+    font-size: 18px;
+    line-height: 1.5;
+    background: var(--window-muted, var(--card));
+    border-block-end: 1px solid var(--dialog-line);
+  }
+  html body :is(#wfExcelShareReady, #wfProductUpdateReview) .wf-fullscreen-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  html body :is(#wfExcelShareReady, #wfProductUpdateReview) .wf-fullscreen-header > :is(h2, h3) {
+    min-inline-size: 0;
+    margin: 0;
+    font-size: inherit;
+    line-height: inherit;
+    overflow-wrap: anywhere;
+  }
+  html body :is(#wfExcelShareReady, #wfProductUpdateReview) .wf-fullscreen-header > .modal-close {
+    inline-size: 44px;
+    block-size: 44px;
+    flex: 0 0 44px;
+    border-radius: 11px;
+  }
+  html body :is(#wfExcelShareReady, #wfProductUpdateReview) > .modal > :is(p, section) {
+    flex: none;
+    min-inline-size: 0;
+    margin-inline: var(--wf-dialog-gutter) !important;
+  }
+  html body :is(#wfExcelShareReady, #wfProductUpdateReview) > .modal > div:last-child {
+    position: sticky;
+    inset-block-end: 0;
+    z-index: 2;
+    flex: none;
+    margin-block-start: auto !important;
+    padding: 12px var(--wf-dialog-gutter) max(12px, env(safe-area-inset-bottom));
+    background: var(--window-surface, var(--card));
+    border-block-start: 1px solid var(--dialog-line);
+  }
+  @media (min-width: 960px) {
+    html body #printOptionsModal > .modal {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: auto auto minmax(max-content, 1fr) auto;
+      column-gap: 0;
+    }
+    html body #printOptionsModal > .modal > div:last-child:has(> #poSaveActionBtn) {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     html body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal, #pdfModal,
       #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
-      #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady),
+      #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady, #wfProductUpdateReview),
     html body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal, #pdfModal,
       #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
-      #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady) * {
+      #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady, #wfProductUpdateReview) * {
       animation: none !important;
       transition: none !important;
       scroll-behavior: auto !important;
@@ -315,10 +557,10 @@
   }
   html[data-wf-motion="reduced"] body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal, #pdfModal,
     #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
-    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady),
+    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady, #wfProductUpdateReview),
   html[data-wf-motion="reduced"] body :is(#wfSettingsDialog, #wfDevDialog, #currCalcModal, #pdfModal,
     #printOptionsModal, #scannerModal, #deleteModal, #deliverModal,
-    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady) * {
+    #wfRestoreModal, #wfUnifiedShareOverlay, #wfExcelShareReady, #wfProductUpdateReview) * {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;

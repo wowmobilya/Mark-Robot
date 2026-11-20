@@ -1,6 +1,13 @@
 // Only authored UI bindings are translated. Product names, notes, inputs and records are never traversed.
 (function(root){'use strict';
 const COPY={
+  "Cashboxes": {
+    "en": "Cashboxes",
+    "ar": "صناديق العملات",
+    "tr": "Para kasaları",
+    "fr": "Caisses",
+    "ru": "Кассы"
+  },
   "Close": {
     "en": "Close",
     "ar": "إغلاق",

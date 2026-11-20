@@ -29,12 +29,21 @@
     text-align: start; overflow-wrap: anywhere; pointer-events: none;
   }
   #wfProgramSpeechStatus[hidden] { display: none; }
-  /* Inner pages hide the navbar with visibility. Only this control is exposed
-     in the unused end slot of the section heading, opposite its Back button. */
-  html.wf-section-mode:not(.wf-booting) body #wfProgramSpeechButton {
-    visibility: visible !important; pointer-events: auto !important;
-    position: fixed !important; inset-inline-start: auto; inset-inline-end: 16px;
-    top: 16px; transform: none; z-index: 121;
+  /* The same control moves into the active section's actual heading. Equal
+     reserved side columns keep its title centered beside Back and Menu. */
+  html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page .wf-heading-row.wf-program-speech-slot {
+    grid-template-columns:48px 44px minmax(0,1fr) 44px 48px!important;
+  }
+  html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page .wf-heading-row.wf-program-speech-slot > .wf-centered-heading {grid-column:3!important;}
+  html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page .wf-heading-row.wf-program-speech-slot > .wf-section-menu {grid-column:5!important;}
+  html.wf-section-mode body #mainContent .page .wf-heading-row > #wfProgramSpeechButton {
+    position:static!important;inset:auto!important;transform:none!important;z-index:auto;
+    grid-column:4;grid-row:1;justify-self:center;align-self:center;
+    width:44px;height:44px;min-width:44px;min-height:44px;margin:0;padding:0;
+  }
+  html.wf-section-mode body #wfProgramSpeechButton[hidden],html body #wfProgramSpeechButton[data-location="none"] {display:none!important;}
+  @media(max-width:480px) {
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page .wf-heading-row.wf-program-speech-slot {column-gap:4px!important;}
   }
 }
 @media screen {

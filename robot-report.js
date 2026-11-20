@@ -364,17 +364,31 @@
   window.visualViewport?.addEventListener('scroll',schedulePlace,{passive:true});
   window.addEventListener('pagehide',()=>dismiss(false));window.addEventListener('hashchange',()=>dismiss(false));
   // Workspace materials live on #mainContent. The dialog and mini card live in body.
+  let materialFrame=0;
+  function materialSignature(){
+    const root=document.documentElement;
+    const style=(root.getAttribute('style')||'').split(';').map(value=>value.trim()).filter(value=>value&&!/^--wf-scroll-progress\s*:/.test(value)).join(';');
+    return (root.getAttribute('data-theme')||'')+'|'+style;
+  }
+  let lastMaterialSignature=materialSignature();
   function syncCardMaterials(){
+    materialFrame=0;
     const workspace=document.querySelector('#mainContent');
     if(!workspace)return;
     const styles=getComputedStyle(workspace);
     for(const token of ['paper','wash','canvas','hairline','ink']){
       const value=styles.getPropertyValue?.('--'+token).trim();
-      if(value)document.body.style.setProperty('--wf-reader-'+token,value);
+      if(value&&document.body.style.getPropertyValue('--wf-reader-'+token)!==value)document.body.style.setProperty('--wf-reader-'+token,value);
     }
   }
   syncCardMaterials();
-  new MutationObserver(syncCardMaterials).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','style']});
+  new MutationObserver(()=>{
+    // Scroll progress also lives on the root style. It must not re-read the
+    // whole workspace's computed palette on every scrolling frame.
+    const signature=materialSignature();if(signature===lastMaterialSignature)return;
+    lastMaterialSignature=signature;
+    if(!materialFrame)materialFrame=requestAnimationFrame(syncCardMaterials);
+  }).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','style']});
   const main=document.querySelector('#mainContent');let routePage=document.querySelector('.page.active');
   if(main)new MutationObserver(()=>{const next=document.querySelector('.page.active');if(next!==routePage){routePage=next;dismiss(false);}}).observe(main,{attributes:true,subtree:true,attributeFilter:['class']});
   new MutationObserver(()=>{if(!sheet.hidden&&document.documentElement.lang!==locale)dismiss(false);}).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});

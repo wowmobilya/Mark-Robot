@@ -1,4 +1,4 @@
-/* Company details, local artwork and the bank editor share one settings row. */
+/* Company sections navigate inside the existing settings window. */
 (() => {
   'use strict';
   const languages = ['ar', 'en', 'tr', 'fr', 'ru'];
@@ -233,7 +233,7 @@
     const tile = node('button', 'wf-company-tile');
     tile.type = 'button'; tile.id = key === 'bank' ? 'wfCompanyOpenBank' : 'wfCompanyOpen-'+key;
     tile.dataset.companySection = key;
-    tile.setAttribute('aria-haspopup', 'dialog'); tile.setAttribute('aria-controls', 'wfCompanySectionDialog');
+    tile.setAttribute('aria-expanded', 'false'); tile.setAttribute('aria-controls', 'wfCompanySectionDialog');
     const text = node('span', 'wf-company-tile-copy'), title = label('strong', section.title), hint = label('small', section.hint);
     title.id = tile.id+'-title'; hint.id = tile.id+'-hint';
     tile.setAttribute('aria-labelledby', title.id); tile.setAttribute('aria-describedby', hint.id);
@@ -243,21 +243,24 @@
     tileGrid.append(tile); section.tile = tile; storage.append(section.panel);
     section.panel.classList.add('wf-company-editor-panel');
   }
-  company.replaceChildren(hub, storage);
   company.classList.add('wf-company-hub-panel');
   company.setAttribute('aria-labelledby', 'wfSettingsDialogTitle');
-  const editor = node('dialog', 'wf-company-editor'); editor.id = 'wfCompanySectionDialog';
+  // Preserve the ID used by the colour/branding integrations, without creating
+  // another modal or top-layer surface. The outer settings dialog owns focus.
+  const editor = node('section', 'wf-company-editor'); editor.id = 'wfCompanySectionDialog'; editor.hidden = true;
   editor.setAttribute('aria-labelledby', 'wfCompanySectionTitle'); editor.setAttribute('aria-describedby', 'wfCompanySectionHint');
   const editorHeader = node('header'), editorTitles = node('div', 'wf-company-editor-titles');
   const editorTitle = node('h2'), editorHint = node('p');
   editorTitle.id = 'wfCompanySectionTitle'; editorHint.id = 'wfCompanySectionHint';
   const back = button('back', requestClose, 'btn btn-s wf-company-back');
+  back.id = 'wfCompanySectionBack';
   back.prepend(icon('<path d="m15 5-7 7 7 7"/>', 'wf-company-back-icon'));
   editorTitles.append(editorTitle, editorHint); editorHeader.append(back, editorTitles);
   const editorBody = node('div', 'wf-company-editor-body'), footer = node('footer');
   const cancel = button('cancel', requestClose), saveButton = button('save', saveSection, 'btn btn-p');
+  cancel.id = 'wfCompanySectionCancel';
   saveButton.id = 'wfCompanySectionSave';
-  footer.append(cancel, saveButton); editor.append(editorHeader, editorBody, footer); settingsPage.append(editor);
+  footer.append(cancel, saveButton); editor.append(editorHeader, editorBody, footer); company.replaceChildren(hub, editor, storage);
 
   function setLogo(src) {
     wfPendingSettingsLogo = src;
@@ -268,7 +271,6 @@
     back.disabled = cancel.disabled = saveButton.disabled = busy();
     editorBody.inert = busy();
     editor.setAttribute('aria-busy', String(busy()));
-    if (!busy() && editor.open && !parentDialog?.open) editor.close();
     saveButton.querySelector('span').textContent = word(writing ? 'saving' : 'save', lang());
   }
   function deletePending(key) { pending.delete(key); uploading = pending.size > 0; syncBusy(); }
@@ -316,7 +318,7 @@
     return valuesFor(key);
   }
   function openSection(key) {
-    if (editor.open || busy() || !parentDialog?.open) return;
+    if (activeSession || busy() || !parentDialog?.open) return;
     const section = sections[key]; if (!section) return;
     const session = { key, values: sectionValues(key), saved: false };
     if (key === 'logo') {
@@ -328,11 +330,13 @@
     if (key === 'marks') { session.artChanges = { ...artChanges }; status.textContent = ''; }
     activeSession = session; editor.dataset.companySection = key;
     editorTitle.textContent = word(section.title, lang()); editorHint.textContent = word(section.hint, lang());
+    session.scrollTop = parentDialog.querySelector('.wf-settings-content')?.scrollTop || 0;
+    hub.hidden = true; editor.hidden = false; section.tile.setAttribute('aria-expanded', 'true');
+    company.classList.add('wf-company-editing'); parentDialog.classList.add('wf-company-section-active');
     editorBody.append(section.panel); section.panel.style.removeProperty('display');
-    editorBody.scrollTop = 0; syncBusy(); editor.showModal(); back.focus();
+    editorBody.scrollTop = 0; syncBusy(); back.focus({ preventScroll: true });
   }
-  function requestClose() { if (!busy()) editor.close(); }
-  editor.addEventListener('cancel', event => { if (busy()) event.preventDefault(); });
+  function requestClose() { if (!busy()) closeSection(); }
   function restoreSection(session) {
     for (const [key, value] of Object.entries(valuesFor(session.key))) {
       if (key in session.values) byId(idOf(key)).value = session.values[key];
@@ -348,16 +352,38 @@
     }
     window.WFCompanyBranding.refresh();
   }
-  editor.addEventListener('close', () => {
+  function closeSection({ restoreFocus = true } = {}) {
     const session = activeSession; if (!session) return;
+    // Restore the colour picker's visual-only preview before rolling back the
+    // branding draft, otherwise its later close could repaint a stale colour.
+    if (session.key === 'logo') window.WFColorPicker?.close();
+    const uploads = session.key === 'logo' ? ['logo'] : session.key === 'marks' ? ['signature', 'stamp'] : [];
+    for (const key of uploads) { rev[key] = (rev[key] || 0)+1; pending.delete(key); }
+    uploading = pending.size > 0;
     if (!session.saved) restoreSection(session);
     const section = sections[session.key]; storage.append(section.panel); section.panel.style.display = 'none';
     window.WFAppUpdates?.markClean(section.panel);
     activeSession = null; delete editor.dataset.companySection;
-    if (parentDialog?.open) section.tile.focus();
+    editor.hidden = true; hub.hidden = false; section.tile.setAttribute('aria-expanded', 'false');
+    company.classList.remove('wf-company-editing'); parentDialog?.classList.remove('wf-company-section-active');
+    const content = parentDialog?.querySelector('.wf-settings-content'); if (content) content.scrollTop = session.scrollTop;
+    syncBusy();
+    if (restoreFocus && parentDialog?.open && settingsPage.classList.contains('active') && company.style.display !== 'none') section.tile.focus({ preventScroll: true });
+  }
+  parentDialog?.addEventListener('cancel', event => {
+    if (!activeSession) return;
+    event.preventDefault();
+    requestClose();
   });
-  parentDialog?.addEventListener('cancel', event => { if (editor.open && busy()) event.preventDefault(); });
-  parentDialog?.addEventListener('close', () => { if (editor.open && !busy()) editor.close(); });
+  parentDialog?.addEventListener('close', () => closeSection({ restoreFocus: false }));
+  const originalSwitchTab = window.switchTab;
+  if (typeof originalSwitchTab === 'function') window.switchTab = function(key, ...args) {
+    if (activeSession && key !== 'company') closeSection({ restoreFocus: false });
+    return originalSwitchTab.call(this, key, ...args);
+  };
+  new MutationObserver(() => {
+    if (activeSession && (company.hidden || company.style.display === 'none')) closeSection({ restoreFocus: false });
+  }).observe(company, { attributes: true, attributeFilter: ['style', 'hidden'] });
 
   const persist = patch => commitPatch(S, patch, wfWriteBatch, wfHydrateDBValue);
   async function saveSection() {
@@ -369,6 +395,12 @@
     try {
       saved = await wfRunSave('saveCompanySection', async () => { await persist(patch); return true; });
       if (saved) {
+        // A requested atomic save may finish after the user closes/navigates.
+        // Refresh only this section's committed fields, without reopening it
+        // or overwriting an unrelated draft in another settings section.
+        if (activeSession !== session) for (const field of fields[key] || []) {
+          const input = byId(idOf(field)); if (input) input.value = S.settings[field] ?? '';
+        }
         Object.assign(baseline, valuesFor(key));
         if (key === 'logo') { wfPendingSettingsLogo = undefined; window.WFCompanyBranding.reload(); }
         if (key === 'marks') { delete artChanges.signature; delete artChanges.stamp; refreshArtwork(); }
@@ -376,7 +408,7 @@
         session.saved = true;
       }
     } finally { writing = false; syncBusy(); }
-    if (saved) { editor.close(); showToast(t('settings_saved'), 'ok'); }
+    if (saved) { if (activeSession === session) closeSection(); showToast(t('settings_saved'), 'ok'); }
     return saved;
   }
   function load() {
@@ -391,22 +423,22 @@
   const originalLoad = window.loadSettingsToForm;
   window.loadSettingsToForm = function(...args) {
     // Keep the open editor's snapshot and preview stable during unrelated refreshes.
-    if (editor.open) return;
+    if (activeSession) return;
     const result = originalLoad.apply(this, args); load(); formLoaded = true; return result;
   };
   new MutationObserver(() => {
     if (!settingsPage.classList.contains('active')) {
       formLoaded = false;
-      if (editor.open && !busy()) editor.close();
+      closeSection({ restoreFocus: false });
       return;
     }
-    if (!formLoaded && !editor.open) window.loadSettingsToForm();
+    if (!formLoaded && !activeSession) window.loadSettingsToForm();
   }).observe(settingsPage, { attributes: true, attributeFilter: ['class'] });
   async function save() {
-    if (editor.open) return saveSection();
+    if (activeSession) return saveSection();
     if (busy() || !parentDialog?.open) return false;
     const section = document.querySelector('#page-settings .tab-btn.active')?.id?.replace('wf-settings-tab-', '');
-    // The company hub has no global save. Child sections commit their own fields.
+    // The company hub has no global save. Its inline sections commit their own fields.
     if (!['bank', 'invoice', 'currency'].includes(section)) return false;
     let patch;
     try { patch = fieldChanges(section, baseline, valuesFor(section)); }
@@ -424,11 +456,10 @@
     } finally { writing = false; if (content) content.inert = false; }
   }
   function translate() {
+    // Translation can rebuild other settings labels/controls. Finish the local
+    // edit transaction first so a previous-language draft cannot survive it.
+    closeSection();
     for (const [el, key] of labels) el.textContent = word(key, lang());
-    if (activeSession) {
-      editorTitle.textContent = word(sections[activeSession.key].title, lang());
-      editorHint.textContent = word(sections[activeSession.key].hint, lang());
-    }
     syncBusy();
   }
   new MutationObserver(translate).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });

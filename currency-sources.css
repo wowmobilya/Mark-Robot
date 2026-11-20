@@ -1,7 +1,8 @@
-/* The source chooser uses the same paper, border and accent tokens as Settings. */
+/* The source chooser uses the same paper, border and accent tokens as Settings.
+   The settings body owns scrolling, so the directory can use the whole screen. */
 #stab-currency [hidden] {display:none!important}
 #stab-currency .wf-fx-source {display:grid;gap:14px;margin:0 0 14px;padding:0;min-width:0;color:var(--text)}
-#stab-currency .wf-fx-picker,#stab-currency .wf-fx-details {display:grid;gap:14px;min-width:0}
+#stab-currency .wf-fx-picker,#stab-currency .wf-fx-details {display:grid;gap:14px;min-width:0;align-content:start}
 #stab-currency .wf-fx-icon {display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--brand-primary,var(--gold2));width:22px;height:22px}
 #stab-currency .wf-fx-icon svg {width:100%;height:100%;display:block}
 #stab-currency .wf-fx-sr-only {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
@@ -36,10 +37,15 @@
 #stab-currency .wf-fx-bank-filter {min-height:44px;padding:8px 10px;border:1px solid var(--border);border-radius:11px;background:var(--card);color:var(--text2);font-size:11px!important;font-weight:650!important;line-height:1.45}
 #stab-currency .wf-fx-bank-filter[aria-pressed="true"] {background:var(--input);color:var(--text);border-color:var(--brand-primary)}
 #stab-currency .wf-fx-results-top {display:flex;justify-content:space-between;align-items:center;color:var(--text2);font-size:11px;margin-block-end:-8px}
-#stab-currency .wf-fx-source-list {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:7px;max-height:min(46dvh,420px);min-height:0;overflow:auto;overscroll-behavior:contain;scroll-padding:5px;padding:4px;margin:-4px;scrollbar-width:thin;scrollbar-color:var(--brand-primary) transparent}
-#stab-currency .wf-fx-provider {display:grid;grid-template-columns:30px minmax(0,1fr) 18px;gap:5px 9px;align-items:center;min-width:0;min-height:84px;text-align:start;border:1px solid var(--border);border-radius:14px;padding:11px 10px;background:var(--card);color:var(--text)}
+#stab-currency .wf-fx-source-list {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:max-content;align-content:start;gap:9px;max-height:none;min-width:0;min-height:0;overflow:visible;padding:4px;margin:-4px}
+#stab-currency .wf-fx-provider {display:grid;grid-template-columns:30px minmax(0,1fr) 18px;gap:5px 9px;align-items:center;min-width:0;max-width:100%;min-height:84px;text-align:start;border:1px solid var(--border);border-radius:14px;padding:11px 10px;background:var(--card);color:var(--text)}
+/* Directory rows grow to fit their complete contents.
+   Shared dialog chrome sets min-block-size:44px!important on buttons; keep
+   these multi-line cards at their own touch size without clipping bank names. */
+html body #page-settings #stab-currency .wf-fx-source-list>.wf-fx-provider {box-sizing:border-box;block-size:auto;max-block-size:none;min-block-size:var(--wf-fx-provider-min-height,84px)!important;white-space:normal}
 #stab-currency .wf-fx-provider>.wf-fx-icon {width:30px;height:30px;padding:6px;box-sizing:border-box;background:var(--input);border-radius:9px}
-#stab-currency .wf-fx-provider-copy {display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}
+#stab-currency .wf-fx-provider-copy {display:grid;grid-template-columns:minmax(0,1fr);gap:4px;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:normal}
+#stab-currency .wf-fx-provider-copy :is(strong,small) {min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
 #stab-currency .wf-fx-provider-copy strong {font-size:12px;line-height:1.5;font-weight:750}
 #stab-currency .wf-fx-provider-copy small {font-size:10px;line-height:1.45;color:var(--text2)}
 #stab-currency .wf-fx-provider[aria-pressed="true"] {border-color:var(--brand-primary);background:color-mix(in srgb,var(--brand-primary) 5%,var(--card))}
@@ -85,13 +91,26 @@ html[dir="rtl"] #stab-currency .wf-fx-back .wf-fx-icon {transform:rotate(180deg)
 #stab-currency .wf-fx-summary span:first-child {font-weight:750;color:var(--text)}
 .wf-fx-origin {display:block;text-align:center;padding:0 10px 4px;color:var(--text2);font-size:11px;line-height:1.4}
 .wf-fx-origin:empty {display:none}
+@media (min-width:900px) {
+  #stab-currency .wf-fx-picker {grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px}
+  #stab-currency .wf-fx-picker>* {grid-column:1/-1}
+  #stab-currency .wf-fx-picker>.wf-fx-current {grid-column:1;grid-row:1/3}
+  #stab-currency .wf-fx-picker>.wf-fx-picker-heading {grid-column:2;grid-row:1;align-self:end}
+  #stab-currency .wf-fx-picker>.wf-fx-search {grid-column:2;grid-row:2;align-self:start}
+  #stab-currency .wf-fx-source-list {grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  #stab-currency .wf-fx-choice-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+  #stab-currency .wf-fx-source .wf-fx-apply {width:min(100%,28rem);margin-inline-start:auto}
+}
+@media (min-width:1280px) {
+  #stab-currency .wf-fx-source-list {grid-template-columns:repeat(4,minmax(0,1fr))}
+}
 @media (max-width:520px) {
   #stab-currency .wf-fx-current {grid-template-columns:28px minmax(0,1fr);padding:12px}
   #stab-currency .wf-fx-current-edit {grid-column:2;justify-self:start;max-width:none}
   #stab-currency .wf-fx-current-quotes {grid-column:1/-1}
   #stab-currency .wf-fx-groups {grid-template-columns:repeat(2,minmax(0,1fr))}
-  #stab-currency .wf-fx-source-list {grid-template-columns:1fr;max-height:40dvh}
-  #stab-currency .wf-fx-provider {min-height:74px}
+  #stab-currency .wf-fx-source-list {grid-template-columns:1fr}
+  #stab-currency .wf-fx-provider {--wf-fx-provider-min-height:74px;min-height:74px}
 }
 @media (max-width:380px) {
   #stab-currency .wf-fx-fields {grid-template-columns:1fr}

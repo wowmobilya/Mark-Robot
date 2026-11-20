@@ -1527,15 +1527,17 @@
  }
 }
 
-/* A destination opens its page; a separate control opens its related actions. */
+/* A parent row expands its actions; the first child explicitly opens the page. */
 @media screen {
  html body #sidebar .wf-destination-row {
-   display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:3px;align-items:stretch;min-width:0;
+   display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:3px;align-items:stretch;min-width:0;
  }
  html body #sidebar .wf-destination-row[hidden] {display:none!important;}
  html body #sidebar .wf-destination-row .nav-item {min-width:0;width:100%;}
+ html body #sidebar:not(.wf-icon-rail) .wf-destination-row>.nav-item[aria-expanded] {grid-template-columns:32px minmax(0,1fr) auto!important;}
+ html body #sidebar:not(.wf-icon-rail) .wf-destination-row>.nav-item[aria-expanded]::after {display:none!important;}
  html body #sidebar .wf-destination-toggle {
-   display:grid;place-items:center;min-width:40px;min-height:44px;margin:0;padding:0;
+   display:grid;place-items:center;min-width:44px;min-height:44px;margin:0;padding:0;
    border:1px solid transparent;border-radius:10px;background:transparent;
    color:var(--text2);cursor:pointer;touch-action:manipulation;
  }
@@ -1547,4 +1549,7 @@
  html body #sidebar .wf-destination-toggle:focus-visible {outline:2px solid var(--ui-accent);outline-offset:-2px;}
  html body #sidebar.wf-icon-rail .wf-destination-row {grid-template-columns:minmax(0,1fr);}
  html body #sidebar .wf-destination-toggle[hidden] {display:none!important;}
+ html body #sidebar .wf-context-actions button {min-height:44px;}
+ html body #sidebar .wf-context-actions button[aria-current="page"] {background:var(--wash);color:var(--ui-accent);font-weight:700;}
+ @media(prefers-reduced-motion:no-preference) {html:not([data-wf-motion="reduced"]) body #sidebar .wf-destination-toggle svg {transition:transform .18s ease;}}
 }

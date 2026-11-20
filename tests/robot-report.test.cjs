@@ -91,13 +91,13 @@ test('voice setup uses download and cancellation actions instead of a dead repla
 });
 
 function reportUIFixture(){
- const nodes=[],events=new Map(),documentEvents=new Map(),timers=new Map(),calls=[],observers=[];let timerId=0;
+ const nodes=[],events=new Map(),documentEvents=new Map(),timers=new Map(),calls=[],observers=[],materialValues={};let timerId=0,styleReads=0;
  let document;
  class Element{
   constructor(tag){this.tagName=tag.toUpperCase();this.children=[];this.events={};this.attributes={};this.dataset={};this.inert=false;this.hidden=false;this.disabled=false;
    this.tabIndex=['BUTTON','A','INPUT'].includes(this.tagName)?0:-1;this.scrollTop=0;this.scrolls=[];this._classes=new Set();
    this.classList={add:(...names)=>names.forEach(name=>this._classes.add(name)),remove:(...names)=>names.forEach(name=>this._classes.delete(name)),contains:name=>this._classes.has(name),toggle:(name,value)=>value?this._classes.add(name):this._classes.delete(name)};
-   this.style={setProperty(name,value){this[name]=value;}};nodes.push(this);}
+   this.style={setProperty(name,value){this[name]=value;},getPropertyValue(name){return this[name]||'';}};nodes.push(this);}
   set className(value){this._classes=new Set(value.split(/\s+/).filter(Boolean));}get className(){return [...this._classes].join(' ');}
   append(...children){for(const child of children){child.parentNode=this;this.children.push(child);}}
   replaceChildren(...children){this.children=[];this.append(...children);}
@@ -127,10 +127,10 @@ function reportUIFixture(){
   WFProgramSpeech:{pause(){calls.push('pause');},resume(){calls.push('resume');},stop(){calls.push('stop');}},visualViewport:{width:390,height:844,offsetLeft:0,offsetTop:0,addEventListener(){}}};
  const schedule=callback=>{const id=++timerId;timers.set(id,callback);return id;};
  vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../robot-report.js'),'utf8'),{window,document,CustomEvent,Intl,innerWidth:390,innerHeight:844,
-  matchMedia:()=>({matches:true}),getComputedStyle:()=>({visibility:'visible'}),setTimeout:schedule,clearTimeout:id=>timers.delete(id),requestAnimationFrame:schedule,cancelAnimationFrame:id=>timers.delete(id),
-  MutationObserver:class{constructor(callback){this.callback=callback;observers.push(this);}observe(target){this.target=target;}}});
+  matchMedia:()=>({matches:true}),getComputedStyle:()=>{styleReads++;return {visibility:'visible',getPropertyValue:name=>materialValues[name]||''};},setTimeout:schedule,clearTimeout:id=>timers.delete(id),requestAnimationFrame:schedule,cancelAnimationFrame:id=>timers.delete(id),
+  MutationObserver:class{constructor(callback){this.callback=callback;observers.push(this);}observe(target,options){this.target=target;this.options=options;}}});
  const get=className=>nodes.find(node=>node.classList.contains(className));
- return {window,document,nodes,calls,behind,main,dashboard,get,observers,
+ return {window,document,nodes,calls,behind,main,dashboard,get,observers,materialValues,get styleReads(){return styleReads;},
   emit(type,detail){window.dispatchEvent(new CustomEvent(type,{detail}));},
   click(className){get(className).events.click({isTrusted:true});},
   key(key,shiftKey=false){let prevented=false;documentEvents.get('keydown')?.({key,shiftKey,preventDefault(){prevented=true;}});return prevented;},
@@ -140,6 +140,19 @@ function exampleReport(){
  const narration='Sales: 12.50. Balance: 9.25.';
  return {date:'2026-11-20',narration,narrationSegments:[{text:'Sales: 12.50.',start:0,end:13},{text:'Balance: 9.25.',start:14,end:28}]};
 }
+
+test('scroll-only style changes do not recalculate reader colors while real theme changes coalesce',()=>{
+ const f=reportUIFixture(),root=f.document.documentElement;
+ const observer=f.observers.find(value=>value.target===root&&value.options.attributeFilter.includes('data-theme'));
+ const before=f.styleReads;
+ for(let i=0;i<100;i++){root.setAttribute('style','--wf-scroll-progress: '+i+'%');observer.callback();}
+ f.flush();assert.equal(f.styleReads,before,'idle reader must not force workspace style reads during scrolling');
+ f.materialValues['--paper']='#172c37';root.setAttribute('data-theme','dark');observer.callback();
+ root.setAttribute('style','--brand-primary: #3f7c94; --wf-scroll-progress: 42%');observer.callback();
+ assert.equal(f.styleReads,before,'color reads wait for the next paint');f.flush();
+ assert.equal(f.styleReads,before+1);assert.equal(f.document.body.style.getPropertyValue('--wf-reader-paper'),'#172c37');
+ root.setAttribute('style','--brand-primary: #3f7c94; --wf-scroll-progress: 99%');observer.callback();f.flush();assert.equal(f.styleReads,before+1);
+});
 
 test('minimizing and reopening preserves the exact report and follows boundaries received while hidden',()=>{
  const f=reportUIFixture(),snapshot=exampleReport();

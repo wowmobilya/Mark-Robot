@@ -94,7 +94,7 @@
   'eur-try':point=>point.try/point.eur,
   'try-eur':point=>point.eur/point.try,
  };
- const arrows=new Intl.NumberFormat('en',{style:'percent',maximumFractionDigits:2,signDisplay:'exceptZero'});
+ const trendFormats=new Map();
  const cards=Array.from(top.parentElement.querySelectorAll('.curr-item'),card=>{
   const pair=card.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
   const trend=document.createElement('span');
@@ -111,6 +111,13 @@
   if(item)grid.append(item.card);
  }
  function renderTrends(){
+  const lang=Object.hasOwn(locales,S.lang)?S.lang:'en';
+  if(!trendFormats.has(lang)){
+   const percent=new Intl.NumberFormat(locales[lang],{style:'percent',maximumFractionDigits:2,signDisplay:'exceptZero'});
+   const threshold=percent.formatToParts(.0001).filter(part=>part.type!=='plusSign').map(part=>part.value).join('');
+   trendFormats.set(lang,{percent,threshold});
+  }
+  const {percent,threshold}=trendFormats.get(lang);
   for(const quote of cards){
    const {pair,card,trend}=quote;
    const manual=(pair.includes('try')&&S.settings.manualUsdTry)||(pair.includes('eur')&&S.settings.manualUsdEur);
@@ -120,9 +127,9 @@
    const prices=manual||source?.mode==='manual'?[]:history.filter(p=>p.source===comparison).map(pairs[pair]);
    const hasTrend=prices.length>1;
    const delta=hasTrend?(prices.at(-1)-prices.at(-2))/prices.at(-2):0;
-   const change=delta!==0 && Math.abs(delta)<0.0001 ? (delta>0?'+':'−')+'<0.01%' : arrows.format(delta);
+   const change=delta!==0 && Math.abs(delta)<0.0001 ? (delta>0?'+':'−')+'<'+threshold : percent.format(delta);
    const direction=!hasTrend?'empty':delta===0?'flat':delta>0?'up':'down';
-   const signature=hasTrend?JSON.stringify([history.at(-1).at,direction,change]):'empty';
+   const signature=JSON.stringify([lang,hasTrend?history.at(-1).at:null,direction,change]);
    if(quote.lastTrend===signature)continue;
    quote.lastTrend=signature;
    card.dataset.quoteTrend=direction;
@@ -138,7 +145,7 @@
    }else arrow.textContent='–';
    trend.replaceChildren(arrow, document.createTextNode(hasTrend ? change : ''));
    trend.hidden=false;
-   trend.title=hasTrend ? '' : ({ar:'الاتجاه غير متاح بعد',en:'Trend unavailable',tr:'Yön henüz mevcut değil',fr:'Tendance indisponible',ru:'Тенденция недоступна'}[S.lang] || 'Trend unavailable');
+   trend.title=hasTrend ? '' : ({ar:'الاتجاه غير متاح بعد',en:'Trend unavailable',tr:'Yön henüz mevcut değil',fr:'Tendance indisponible',ru:'Тенденция недоступна'}[lang]);
   }
  }
  let pending=null,state='';
@@ -203,10 +210,10 @@
   });
   render();return pending;
  };
- new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:['lang','dir']});
+ new MutationObserver(()=>{render();renderTrends();}).observe(document.documentElement,{attributes:true,attributeFilter:['lang','dir']});
  render();renderTrends();
 })(typeof window==='undefined'?globalThis:window);
 
 if (typeof document !== 'undefined' && document.getElementById('page-exchange')) {
-  import('./cashboxes.mjs').then(module => module.mount()).catch(console.error);
+  import('./cashboxes.mjs?v=1').then(module => module.mount()).catch(console.error);
 }

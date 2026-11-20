@@ -202,6 +202,41 @@ test('reading preview distinguishes pause and preserves the speech owner prepara
   assert.equal(f.status.textContent,'تعذّر تشغيل Mark. حاول التجهيز مجددًا.');
 });
 
+test('a failed preview translates on locale changes while keeping runtime details within the same locale', () => {
+  const f=settingsUIFixture({referenceReady:true});f.reading.events.click({isTrusted:true});
+  const detail='تعذّر تشغيل Mark. حاول التجهيز مجددًا.';
+  f.emitSpeech({active:false,state:'failed',locale:'ar',message:detail});
+  f.window.applyTr();assert.equal(f.status.textContent,detail,'refreshing the same locale retains the actual failure detail');
+  const calls=f.trace.length,playback=f.speechState();
+  const failures={
+    en:'The sample could not start. Stop any current reading and try again.',
+    tr:'Örnek başlatılamadı. Devam eden okumayı durdurup yeniden deneyin.',
+    fr:'Impossible de lancer l’extrait. Arrêtez la lecture en cours et réessayez.',
+    ru:'Не удалось запустить пример. Остановите текущее чтение и повторите.',
+    ar:'تعذّر بدء العينة. أوقف أي قراءة جارية ثم حاول مجددًا.'
+  };
+  for(const [locale,message] of Object.entries(failures)){
+    f.root.lang=locale;f.window.applyTr();assert.equal(f.status.textContent,message);
+  }
+  assert.equal(f.trace.length,calls,'translating a status never starts, stops or prepares speech');
+  assert.deepEqual(f.speechState(),playback);
+});
+
+test('active preview translation drops stale provider messages without changing playback or its controls', () => {
+  const f=settingsUIFixture({referenceReady:true});f.reading.events.click({isTrusted:true});
+  const detail='جارٍ تحميل ملفات Mark من الجهاز…';
+  f.emitSpeech({active:true,kind:'preview',state:'preparing',locale:'ar',message:detail,canPause:false});
+  f.window.applyTr();assert.equal(f.status.textContent,detail);
+  const calls=f.trace.length,playback=f.speechState();
+  f.root.lang='en';f.window.applyTr();assert.equal(f.status.textContent,'Preparing the Mark sample…');
+  f.emitSpeech({active:true,kind:'preview',state:'preparing',locale:'ar',message:detail,canPause:false});
+  assert.equal(f.status.textContent,'Preparing the Mark sample…','a late message from the original locale must stay translated');
+  assert.equal(f.reading.dataset.action,'pause');assert.equal(f.reading.disabled,true);
+  f.emitSpeech({active:true,kind:'preview',state:'preparing',locale:'en',message:'Loading the local Mark files…',canPause:false});
+  f.window.applyTr();assert.equal(f.status.textContent,'Loading the local Mark files…');
+  assert.equal(f.trace.length,calls);assert.deepEqual(f.speechState(),playback);
+});
+
 test('installed Mark prepares in place with visible progress and never deletes an installed package', async () => {
   const f=settingsUIFixture({localReady:true,referenceReady:true});
   const action=f.reference.children.find(node=>node.className==='wf-robot-voice-action');
