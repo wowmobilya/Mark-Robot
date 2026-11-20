@@ -49,8 +49,42 @@ function setup({mobile=false}={}){
  const activate=p=>{for(const name of pages)ids['page-'+name].classList.toggle('active',name===p);sync();};
  const click=i=>{let stopped=false;const event={target:buttons[i],preventDefault(){},stopImmediatePropagation(){stopped=true;}};for(const fn of nav.events.click||[]){fn(event);if(stopped)break;}if(!stopped)buttons[i].click();flush();};
  const notifyNav=records=>{for(const observer of observers.filter(item=>item.target===nav))observer.callback(records);flush();};
- return {ctx,ids,root,body,nav,buttons,calls,original,upperBack,cart,form,tierOverlay,target,activate,click,sync,flush,notifyNav,setBarcodePhase(phase){ctx.QBL.phase=phase;tierOverlay.style.opacity=phase===2?'1':'0';tierOverlay.style.pointerEvents=phase===2?'auto':'none';sync();},setCompact(value){media.matches=value;media.listeners.forEach(fn=>fn());flush();},emit:type=>{win.dispatchEvent({type});flush();},setModals:m=>modals=m};
+ const notifyRoot=()=>{for(const observer of observers.filter(item=>item.target===root))observer.callback([{target:root,attributeName:'class'}]);flush();};
+ return {ctx,ids,root,body,nav,buttons,calls,original,upperBack,cart,form,tierOverlay,target,activate,click,sync,flush,notifyNav,notifyRoot,setBarcodePhase(phase){ctx.QBL.phase=phase;tierOverlay.style.opacity=phase===2?'1':'0';tierOverlay.style.pointerEvents=phase===2?'auto':'none';sync();},setCompact(value){media.matches=value;media.listeners.forEach(fn=>fn());flush();},emit:type=>{win.dispatchEvent({type});flush();},setModals:m=>modals=m};
 }
+
+function recordWrites(element,writes){
+ for(const name of ['setAttribute','removeAttribute']){const original=element[name];element[name]=function(...args){writes.push([this.id,name,...args]);return original.apply(this,args);};}
+ for(const name of ['add','remove','toggle']){const original=element.classList[name];element.classList[name]=function(...args){writes.push([element.id,'class '+name,...args]);return original.apply(this,args);};}
+ for(const name of ['hidden','disabled','title','textContent','innerHTML']){let value=element[name];Object.defineProperty(element,name,{get:()=>value,set(next){writes.push([element.id,name,next]);value=next;},configurable:true});}
+ element.dataset=new Proxy(element.dataset,{set(target,name,value){writes.push([element.id,'data '+name,value]);target[name]=value;return true;},deleteProperty(target,name){writes.push([element.id,'delete data '+name]);delete target[name];return true;}});
+ element.children.forEach(child=>recordWrites(child,writes));
+}
+
+test('settled dock refreshes do not mutate controls, including disabled busy actions',()=>{
+ const a=setup({mobile:true});a.activate('add-company');a.original.clientSave.setAttribute('aria-busy','true');a.sync();
+ const writes=[];recordWrites(a.nav,writes);a.sync();a.sync();assert.deepEqual(writes,[]);
+ assert(a.buttons[4].disabled);assert.equal(a.buttons[4].getAttribute('aria-busy'),'true');
+ a.original.clientSave.removeAttribute('aria-busy');a.sync();assert.equal(a.buttons[4].disabled,false);assert.equal(a.buttons[4].getAttribute('aria-busy'),null);
+ assert.equal(writes.filter(([id,kind])=>id==='bnav-4'&&kind==='disabled').length,1);writes.length=0;a.sync();assert.deepEqual(writes,[]);
+});
+
+test('one availability refresh resolves each visible source once and activation still rechecks its current guard',()=>{
+ const a=setup({mobile:true});a.activate('select-client-type');const original=a.original['select-client-typeexternal'];let reads=0;
+ const measure=original.getClientRects;original.getClientRects=function(){reads++;return measure.call(this);};
+ a.sync();assert.equal(reads,1,'busy and availability share the same resolved original control');
+ original.setAttribute('aria-disabled','true');a.click(1);assert.equal(original.clicks,0,'a stale enabled footer cannot bypass a newly disabled source');
+ original.removeAttribute('aria-disabled');a.sync();a.click(1);assert.equal(original.clicks,1);
+});
+
+test('unrelated root classes skip action scans while boot and Home state still refresh the menu',()=>{
+ const a=setup({mobile:true});a.activate('select-client-type');const page=a.ids['page-select-client-type'],original=a.original['select-client-typeexternal'];let reads=0;
+ const measure=original.getClientRects;original.getClientRects=function(){reads++;return measure.call(this);};
+ a.root.classList.add('wf-dashboard-scrolled');a.notifyRoot();a.root.classList.add('wf-home-customizer-open');a.notifyRoot();assert.equal(reads,0);
+ page.style.opacity='0';a.root.classList.add('wf-booting');a.notifyRoot();assert(a.buttons[1].disabled);
+ page.style.opacity='1';a.root.classList.remove('wf-booting');a.notifyRoot();assert.equal(a.buttons[1].disabled,false);
+ a.root.classList.add('wf-home-scroll-top');a.notifyRoot();assert.equal(a.buttons[2].title,'للأعلى');a.click(1);assert.equal(original.clicks,1);
+});
 
 test('mobile form actions use their hidden original sources and restore the desktop controls',()=>{
  const a=setup({mobile:true});a.activate('add-company');

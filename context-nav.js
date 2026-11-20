@@ -10,12 +10,15 @@
  let current=null,queued=false;
  function sync(){queued=false;const next=compactDock.matches?null:(entries.find(item=>item.section.classList.contains('active'))||null);
   if(current!==next){if(current)current.anchor.after(current.bar);current=next;if(current)dock.append(current.bar);}
-  dock.hidden=!current;root.classList.toggle('wf-context-nav-open',!!current);
+  if(dock.hidden===!!current)dock.hidden=!current;
+  if(root.classList.contains('wf-context-nav-open')!==!!current)root.classList.toggle('wf-context-nav-open',!!current);
   const lang=root.lang||'ar',labels={ar:['تصنيفات القسم','الرئيسية'],en:['Section filters','Home'],tr:['Bölüm filtreleri','Ana sayfa'],fr:['Filtres de section','Accueil'],ru:['Фильтры раздела','Главная']}[lang]||['Section filters','Home'];
-  dock.setAttribute('aria-label',labels[0]);home.setAttribute('aria-label',labels[1]);home.title=labels[1];
+  if(dock.getAttribute('aria-label')!==labels[0])dock.setAttribute('aria-label',labels[0]);
+  if(home.getAttribute('aria-label')!==labels[1])home.setAttribute('aria-label',labels[1]);
+  if(home.title!==labels[1])home.title=labels[1];
   if(!current)return;
   const state=typeof S==='object'?S:{};
-  current.bar.querySelectorAll('.co-stat-pill').forEach(pill=>{const value=pill.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];const selected=value===(state[current.key]||'all');pill.classList.toggle('active',selected);pill.setAttribute('aria-pressed',String(selected));});
+  current.bar.querySelectorAll('.co-stat-pill').forEach(pill=>{const value=pill.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];const selected=value===(state[current.key]||'all');if(pill.classList.contains('active')!==selected)pill.classList.toggle('active',selected);if(pill.getAttribute('aria-pressed')!==String(selected))pill.setAttribute('aria-pressed',String(selected));});
  }
  function schedule(){if(!queued){queued=true;requestAnimationFrame(sync);}}
  for(const item of entries){
@@ -118,7 +121,7 @@
   const search=id=>control('.wf-search-toggle[aria-controls="'+id+'"]','search','search');
   const save=selector=>control(selector,'save','save');
   const choice=(fn,type,label,icon)=>control('[onclick="'+fn+'(\''+type+'\',event)"]',label,icon);
-  let currentPage=null,currentKey='',slots=[],activeIndex=2,queued=false,ariaQueued=false,lastVisual='',centerRestore=null;
+  let currentPage=null,currentKey='',slots=[],activeIndex=2,queued=false,ariaQueued=false,lastVisual='',lastRootState='',centerRestore=null;
   // Only these plain action buttons may move into the shared mobile menu.
   // Type cards, rate values, price choices and other data-bearing controls stay
   // in the page even when the bottom menu offers a shortcut to them.
@@ -258,12 +261,12 @@
     const backPath=root.dir==='rtl'?'<path d="M5 12h14m-6-6 6 6-6 6"/>':'<path d="M19 12H5m6-6-6 6 6 6"/>';
     return '<svg data-wf-nav-icon="'+name+'" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+(name==='back'?backPath:paths[name]||paths.menu)+'</svg>';
   }
-  function available(action){
+  function available(action,resolvedTarget){
     if(!action)return false;
     if(action.kind==='settings')return window.WFSettingsActions?.canRun(action.name)===true;
     if(action.kind==='route')return !!document.getElementById('page-'+action.page);
     if(action.kind==='function')return typeof window[action.name]==='function';
-    const target=targetFor(action);
+    const target=resolvedTarget===undefined?targetFor(action):resolvedTarget;
     return !!target&&!target.disabled&&!target.matches(':disabled')&&target.getAttribute('aria-disabled')!=='true'&&target.getAttribute('aria-busy')!=='true';
   }
   function normalizeCurrent(){
@@ -280,15 +283,15 @@
       (!window.WFSettingsActions||window.WFSettingsActions.getState().open);
     const center=buttons[2],homeLabel=center.querySelector('.bnav-label:not(.settings-save-label)'),settingsLabel=center.querySelector('.settings-save-label');
     if(settings&&window.WFSettingsActions?.getState().open){
-      homeLabel?.removeAttribute('aria-hidden');
-      settingsLabel?.setAttribute('aria-hidden','true');
+      if(homeLabel?.hasAttribute('aria-hidden'))homeLabel.removeAttribute('aria-hidden');
+      if(settingsLabel&&settingsLabel.getAttribute('aria-hidden')!=='true')settingsLabel.setAttribute('aria-hidden','true');
       const label=caption(slots[2]);
       if(center.getAttribute('aria-label')!==label)center.setAttribute('aria-label',label);
       if(center.title!==label)center.title=label;
       return;
     }
-    if(homeLabel){if(settings)homeLabel.setAttribute('aria-hidden','true');else homeLabel.removeAttribute('aria-hidden');}
-    if(settingsLabel){if(settings)settingsLabel.removeAttribute('aria-hidden');else settingsLabel.setAttribute('aria-hidden','true');}
+    if(homeLabel){if(settings&&homeLabel.getAttribute('aria-hidden')!=='true')homeLabel.setAttribute('aria-hidden','true');else if(!settings&&homeLabel.hasAttribute('aria-hidden'))homeLabel.removeAttribute('aria-hidden');}
+    if(settingsLabel){if(settings&&settingsLabel.hasAttribute('aria-hidden'))settingsLabel.removeAttribute('aria-hidden');else if(!settings&&settingsLabel.getAttribute('aria-hidden')!=='true')settingsLabel.setAttribute('aria-hidden','true');}
     if(settings){
       const dialog=document.getElementById('wfSettingsDialog');
       const close=nav.classList.contains('settings-close-action')||!!(dialog?.open&&dialog.querySelector('footer')?.hidden);
@@ -316,14 +319,15 @@
       document.getElementById('mainContent')?.scrollTop||0,currentPage?.scrollTop||0);
   }
   function run(action){
-    if(!available(action))return;
+    // Resolve afresh at activation; do not retain a prior frame's enabled state.
+    const target=action?.kind==='control'||action?.kind==='focus'?targetFor(action):null;
+    if(!available(action,target))return;
     if(action.kind==='settings')window.WFSettingsActions.run(action.name);
     else if(action.kind==='route'){
       if(action.page===currentKey || action.page==='dashboard'&&scrollAmount()>90)scrollToTop();
       else window.showPage(action.page);
     }else if(action.kind==='function')window[action.name]();
     else{
-      const target=targetFor(action);
       if(action.kind==='focus'){
         target.scrollIntoView({block:'center',behavior:root.dataset.wfMotion==='reduced'?'auto':'smooth'});
         const first=target.querySelector('button,[role="button"],[onclick]')||target;
@@ -380,6 +384,7 @@
   });
   function sync(){
     queued=false;
+    lastRootState=rootState();
     const page=document.querySelector('.page.active');
     if(!page){syncContextStage(null);return;}
     if(page!==currentPage){
@@ -391,19 +396,20 @@
     const config=configuration(page);
     slots=config.items;activeIndex=config.active;
     const settings=currentKey==='settings'&&(!window.WFSettingsActions||window.WFSettingsActions.getState().open);
-    nav.dataset.taskMode=settings?'settings':'context';
-    nav.dataset.section=currentKey;
+    const taskMode=settings?'settings':'context';
+    if(nav.dataset.taskMode!==taskMode)nav.dataset.taskMode=taskMode;
+    if(nav.dataset.section!==currentKey)nav.dataset.section=currentKey;
     if(nav.classList.contains('wf-nav-secondary'))nav.classList.remove('wf-nav-secondary');
-    nav.setAttribute('aria-label',t('navigation'));
+    if(nav.getAttribute('aria-label')!==t('navigation'))nav.setAttribute('aria-label',t('navigation'));
     syncContextStage(page);
     syncDockedSources(page,config);
     const visual=[currentKey,root.lang,root.dir,activeIndex,root.classList.contains('wf-home-scroll-top'),
       ...slots.map(action=>action&&[action.kind,action.label,action.text,action.icon,action.selector,action.suffix].join(':'))].join('|');
     buttons.forEach((button,i)=>{
-      const action=slots[i];button.hidden=!action;
+      const action=slots[i];if(button.hidden!==!action)button.hidden=!action;
       if(!action)return;
       const label=button.querySelector('.bnav-label:not(.settings-save-label)'),icon=button.querySelector('.bnav-icon');
-      if(label){label.removeAttribute('data-i18n');if(label.textContent!==caption(action))label.textContent=caption(action);}
+      if(label){if(label.hasAttribute('data-i18n'))label.removeAttribute('data-i18n');if(label.textContent!==caption(action))label.textContent=caption(action);}
       if(i===2&&icon){
         if(action.kind==='settings'&&centerRestore===null)centerRestore=icon.innerHTML;
         else if(action.kind!=='settings'&&centerRestore!==null){
@@ -412,18 +418,20 @@
       }
       // Home's icon is owned by the existing page-aware scroll-to-top controller.
       if(icon&&(i!==2||action.kind==='settings')){
-        icon.removeAttribute('data-wf-business-icon');
+        if(icon.hasAttribute('data-wf-business-icon'))icon.removeAttribute('data-wf-business-icon');
         const markup=graphic(action.icon);
         if(icon.dataset.wfContextIcon!==markup){icon.innerHTML=markup;icon.dataset.wfContextIcon=markup;}
       }
       const text=settings&&i===2&&action.kind!=='settings'?(nav.classList.contains('settings-close-action')?t('close'):t('save')):caption(action);
       if(button.title!==text)button.title=text;
       if(button.getAttribute('aria-label')!==text)button.setAttribute('aria-label',text);
-      const target=action.kind==='control'?targetFor(action):null;
-      const busy=action.kind==='settings'?window.WFSettingsActions.getState().busy:!!target&&(target.disabled||target.matches(':disabled')||target.getAttribute('aria-busy')==='true');
-      button.disabled=settings&&action.kind!=='settings'?false:!available(action);
-      if(busy)button.setAttribute('aria-busy','true');else button.removeAttribute('aria-busy');
-      button.classList.toggle('bnav-active',i===activeIndex);
+      const target=action.kind==='control'||action.kind==='focus'?targetFor(action):null;
+      const busy=action.kind==='settings'?window.WFSettingsActions.getState().busy:action.kind==='control'&&!!target&&(target.disabled||target.matches(':disabled')||target.getAttribute('aria-busy')==='true');
+      const disabled=settings&&action.kind!=='settings'?false:!available(action,target);
+      if(button.disabled!==disabled)button.disabled=disabled;
+      if(busy&&button.getAttribute('aria-busy')!=='true')button.setAttribute('aria-busy','true');
+      else if(!busy&&button.hasAttribute('aria-busy'))button.removeAttribute('aria-busy');
+      if(button.classList.contains('bnav-active')!==(i===activeIndex))button.classList.toggle('bnav-active',i===activeIndex);
     });
     if(visual!==lastVisual){
       lastVisual=visual;
@@ -432,6 +440,11 @@
     normalizeCurrent();
   }
   function schedule(){if(!queued){queued=true;requestAnimationFrame(sync);}}
+  function rootState(){
+    // Unrelated dashboard/editor classes do not change action availability.
+    // Retain the boot and visibility gates, plus the Home/Top presentation.
+    return [root.lang,root.dir,...['wf-booting','wf-section-mode','wf-settings-open','wf-context-nav-open','wf-mobile-menu-open','wf-sidebar-collapsed','wf-home-scroll-top'].map(name=>root.classList.contains(name))].join('|');
+  }
   const pageObserver=new MutationObserver(schedule),knownPages=new WeakSet();
   function observePages(){
     document.querySelectorAll('.page').forEach(page=>{
@@ -453,7 +466,7 @@
   observePages();
   const main=document.getElementById('mainContent');
   if(main)new MutationObserver(observePages).observe(main,{childList:true});
-  new MutationObserver(schedule).observe(root,{attributes:true,attributeFilter:['lang','dir','class']});
+  new MutationObserver(()=>{if(rootState()!==lastRootState)schedule();}).observe(root,{attributes:true,attributeFilter:['lang','dir','class']});
   new MutationObserver(scheduleAria).observe(nav,{subtree:true,attributes:true,attributeFilter:['aria-current','aria-label','title','class']});
   new MutationObserver(schedule).observe(nav,{attributes:true,attributeFilter:['hidden','style','class']});
   if(typeof ResizeObserver==='function')new ResizeObserver(schedule).observe(nav);

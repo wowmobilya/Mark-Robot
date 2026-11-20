@@ -151,13 +151,16 @@
     .wf-home-editor-header > .wf-home-editor-icon { display: none; }
     .wf-home-editor-title h2 { font-size: 21px; }
     .wf-home-editor-body { padding: 16px; }
-    .wf-home-editor-intro { align-items: flex-start; flex-direction: column; gap: 10px; margin-block-end: 14px; }
+    .wf-home-editor-intro { align-items: center; flex-direction: row; gap: 10px; margin-block-end: 12px; }
+    .wf-home-editor-intro p { display: none; }
+    .wf-home-editor-intro h3 { font-size: 16px; }
     .wf-home-editor-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
     .wf-home-section-tile { padding: 14px; }
     .wf-home-section-name h3 { font-size: 18px; }
     .wf-home-section-heading > .wf-home-editor-icon { display: inline-flex; }
     .wf-home-section-rank { display: none; }
-    .wf-home-section-preview { margin-block: 13px; }
+    .wf-home-section-preview { min-block-size: 54px; margin-block: 10px; padding: 8px 12px; }
+    .wf-home-section-name p { font-size: 12px; }
     .wf-home-editor-footer { padding: 12px 16px max(12px, env(safe-area-inset-bottom)); gap: 8px; }
     .wf-home-editor-reset { inline-size: 100%; min-block-size: 44px; }
     .wf-home-editor-actions { flex: 1; margin: 0; }

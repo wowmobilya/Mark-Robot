@@ -26,8 +26,8 @@ test('editing core normalizes localized numbers and separates unfinished drafts 
 // A small DOM boundary runs the production module and real draft listeners in
 // Node. It does not simulate rendering or OS-keyboard visibility; those checks
 // live in touch-keyboard.browser.cjs and the managed-preview smoke test.
-function domFixture({touch=true,lang='en',pickers=false}={}){
-  const observers=[],frames=[];let doc;
+function domFixture({touch=true,coarse=false,width=1280,lang='en',pickers=false}={}){
+  const observers=[],frames=[],nativeEvents=[],pointerMedia={matches:coarse};let doc,mediaQueries=0;
   class Event {
     constructor(type,options={}){this.type=type;Object.assign(this,options);this.defaultPrevented=false;}
     preventDefault(){if(this.cancelable)this.defaultPrevented=true;}
@@ -80,7 +80,8 @@ function domFixture({touch=true,lang='en',pickers=false}={}){
     setSelectionRange(start,end){this.selectionStart=start;this.selectionEnd=end;}
     select(){this.setSelectionRange(0,this.value.length);}
     showModal(){this.open=true;this.querySelector('button')?.focus();}
-    close(){this.open=false;this.dispatchEvent(new Event('close'));}
+    // Native dialog.close() clears open immediately but queues its close event.
+    close(){if(!this.open)return;this.open=false;nativeEvents.push(()=>this.dispatchEvent(new Event('close')));}
     getClientRects(){return this.isConnected&&!this.closest('[hidden],dialog:not([open])')?[{width:300,height:44}]:[];}
     getBoundingClientRect(){return{left:0,top:0,right:800,bottom:600};}
   }
@@ -89,7 +90,7 @@ function domFixture({touch=true,lang='en',pickers=false}={}){
   const make=(tag,id,parent=doc.body)=>{const node=new Element(tag);node.id=id||'';parent.append(node);return node;};
   const scope=make('section','workspace'),name=make('input','name',scope),other=make('input','other',scope);name.value='draft';other.value='untouched';
   if(pickers){make('input','prHsCode',scope);make('input','prDesc',scope);}
-  const window={document:doc,navigator:{maxTouchPoints:touch?5:0},matchMedia:()=>({matches:false}),PointerEvent:Event,addEventListener(){},getComputedStyle:()=>({visibility:'visible',display:'block'}),localStorage:{getItem(){return null;},setItem(){}},qblEnableSound(){},qblStopCamera(){}};
+  const window={document:doc,innerWidth:width,navigator:{maxTouchPoints:touch?5:0},matchMedia:()=>{mediaQueries++;return pointerMedia;},PointerEvent:Event,addEventListener(){},getComputedStyle:()=>({visibility:'visible',display:'block'}),localStorage:{getItem(){return null;},setItem(){}},qblEnableSound(){},qblStopCamera(){}};
   const context=vm.createContext({window,document:doc,Intl,Event,InputEvent:Event,FocusEvent:Event,KeyboardEvent:Event,
     MutationObserver:class{constructor(callback){this.callback=callback;this.targets=[];observers.push(this);}observe(target,options){this.targets.push({target,options});}disconnect(){this.targets=[];}},
     requestAnimationFrame(callback){frames.push(callback);return frames.length;},cancelAnimationFrame(){},setTimeout,clearTimeout,setInterval,clearInterval});
@@ -97,13 +98,15 @@ function domFixture({touch=true,lang='en',pickers=false}={}){
   const api=window.WFTouchKeyboard,events=[];
   for(const type of ['input','change'])scope.addEventListener(type,event=>events.push([event.target.id,type,event.target.value]));
   const byId=id=>doc.getElementById(id),dispatch=(node,type,props={})=>node.dispatchEvent(new Event(type,{bubbles:true,cancelable:true,...props}));
-  return {doc,window,api,scope,name,other,make,byId,dispatch,events,
+  return {doc,window,api,scope,name,other,make,byId,dispatch,events,pointerMedia,get mediaQueries(){return mediaQueries;},
     tap(field){dispatch(field,'pointerdown',{pointerType:touch?'touch':'mouse',pointerId:1,button:0,clientX:20,clientY:50});dispatch(field,'pointerup',{pointerType:touch?'touch':'mouse',pointerId:1,button:0,clientX:20,clientY:50});return dispatch(field,'click',{detail:1});},
     action(action){byId('wfTouchKeyboard').querySelector('[data-action="'+action+'"]').click();},
     key(value){const node=byId('wfTouchKeyboard').querySelectorAll('[data-key]').find(node=>node.dataset.key===value);assert(node,'key '+value+' is present');node.click();},
     select(start,end=start){byId('wfTouchKeyboardEditor').setSelectionRange(start,end);},
     paste(value){dispatch(byId('wfTouchKeyboardEditor'),'paste',{clipboardData:{getData(){return value;}}});},
-    flush(target,attributeName='hidden'){for(const observer of [...observers])if(observer.targets.some(item=>item.target===target&&item.options.attributes))observer.callback([{type:'attributes',target,attributeName}]);},
+    flush(target,attributeName='hidden'){for(const observer of [...observers])if(observer.targets.some(item=>item.target===target&&item.options.attributes&&(!item.options.attributeFilter||item.options.attributeFilter.includes(attributeName))))observer.callback([{type:'attributes',target,attributeName}]);},
+    flushChildren(target){for(const observer of [...observers])if(observer.targets.some(item=>item.options.childList&&(item.target===target||item.options.subtree&&item.target.contains(target))))observer.callback([{type:'childList',target}]);},
+    flushNativeEvents(){while(nativeEvents.length)nativeEvents.shift()();},
     frames(){for(const callback of frames.splice(0))callback();}
   };
 }
@@ -114,6 +117,45 @@ test('DOM: touch interception keeps originals editable and uses a readonly mirro
   assert.equal(f.byId('wfTouchKeyboardEditor').readOnly,true);assert.equal(f.byId('wfTouchKeyboardEditor').getAttribute('inputmode'),'none');
   f.key('x');assert.equal(f.name.value,'draftx');assert.equal(f.other.value,'untouched');assert.deepEqual(f.events,[['name','input','draftx']]);
   f.action('done');assert.deepEqual(f.events,[['name','input','draftx'],['name','change','draftx']]);assert.equal(f.api.isOpen,false);f.frames();assert.equal(f.api.isOpen,false);
+});
+
+test('DOM: touch eligibility follows live device capabilities with one media query, regardless of width',()=>{
+  const desktop=domFixture({touch:false,width:360});
+  for(let i=0;i<8;i++){assert.equal(desktop.tap(desktop.name),true);desktop.dispatch(desktop.name,'focusin');}
+  assert.equal(desktop.api.isOpen,false);assert.equal(desktop.mediaQueries,1,'desktop events reuse the live media-query object');
+  const touchPC=domFixture({touch:true,width:1920});assert.equal(touchPC.tap(touchPC.name),false);assert.equal(touchPC.api.isOpen,true);touchPC.api.close();
+  const coarse=domFixture({touch:false,coarse:true,width:1920});assert.equal(coarse.tap(coarse.name),false);assert.equal(coarse.api.isOpen,true);coarse.api.close();
+  desktop.pointerMedia.matches=true;assert.equal(desktop.api.isTouchDevice(),true);assert.equal(desktop.tap(desktop.name),false);assert.equal(desktop.mediaQueries,1);desktop.api.close();
+  const lateTouch=domFixture({touch:false,width:1920});lateTouch.dispatch(lateTouch.name,'pointerdown',{pointerType:'touch',pointerId:1,clientX:20,clientY:50});lateTouch.dispatch(lateTouch.name,'click',{detail:1});assert.equal(lateTouch.api.isOpen,true);lateTouch.api.close();
+});
+
+test('DOM: opening scans neighboring fields once and ordinary typing keeps its keys and avoids field scans',()=>{
+  const f=domFixture(),query=f.scope.querySelectorAll.bind(f.scope);let scans=0;
+  f.scope.querySelectorAll=selector=>{if(selector==='input,textarea')scans++;return query(selector);};
+  f.tap(f.name);assert.equal(scans,1);
+  const keyboard=f.byId('wfTouchKeyboard'),key=keyboard.querySelectorAll('[data-key]').find(node=>node.dataset.key==='a');
+  f.key('a');f.key('b');f.action('backspace');assert.equal(scans,1);assert.equal(keyboard.querySelectorAll('[data-key]').find(node=>node.dataset.key==='a'),key);
+  assert.equal(keyboard.querySelector('[data-action="previous"]').disabled,true);assert.equal(keyboard.querySelector('[data-action="next"]').disabled,false);
+  f.action('shift');assert.equal(scans,2,'a layout change makes one fresh navigation scan');f.action('done');
+});
+
+test('DOM: replacement fields retain drafts and transfer visibility and eligibility observers to their new ancestry',()=>{
+  for(const change of ['readonly','hidden','disabled']){
+    const f=domFixture();f.tap(f.name);f.key('x');
+    const wrapper=f.make('fieldset','replacement-group',f.scope),replacement=f.make('input','name',wrapper);replacement.value='draft';f.name.remove();f.flushChildren(f.scope);
+    assert.equal(f.api.activeField,replacement);assert.equal(replacement.value,'draftx');
+    if(change==='readonly'){replacement.readOnly=true;f.flush(replacement,'readonly');}
+    else if(change==='hidden'){wrapper.hidden=true;f.flush(wrapper,'hidden');}
+    else{wrapper.disabled=true;f.flush(wrapper,'disabled');}
+    assert.equal(f.api.isOpen,false,change+' on the new field or ancestor dismisses the keyboard');
+    assert.deepEqual(f.events.filter(row=>row[1]==='change'),[['name','change','draftx']]);
+    f.flushChildren(f.scope);assert.equal(f.events.filter(row=>row[1]==='change').length,1);
+  }
+});
+
+test('DOM: disabling an existing fieldset dismisses its active field without allowing another edit',()=>{
+  const f=domFixture(),group=f.make('fieldset','group',f.scope),field=f.make('input','group-field',group);field.value='safe';f.tap(field);
+  group.disabled=true;f.flush(group,'disabled');assert.equal(f.api.isOpen,false);assert.equal(field.value,'safe');assert.deepEqual(f.events,[]);
 });
 
 test('DOM: numeric keypad preserves partial decimals, localized paste and the source input handlers',()=>{
@@ -150,6 +192,32 @@ test('DOM: dynamic row replacement rebinds safely, and Next commits before editi
   const listen=field=>field.oninput=()=>{const replacement=f.make('input','name',f.scope);replacement.value=field.value;listen(replacement);field.replaceWith(replacement);current=replacement;};listen(current);
   f.tap(current);f.key('a');f.key('b');assert.equal(current.value,'draftab');f.action('next');assert.equal(f.api.activeField,f.other);
   f.action('select');f.key('z');f.action('done');assert.equal(f.other.value,'z');assert.deepEqual(f.events.filter(row=>row[1]==='change'),[['name','change','draftab'],['other','change','z']]);
+});
+
+test('DOM: queued native close events cannot dismiss the new Next or Previous field session',()=>{
+  const f=domFixture(),closed=[];
+  for(const field of [f.name,f.other])f.api.register(field,{onClose({reason,field}){closed.push([field.id,reason]);}});
+  f.tap(f.name);f.key('x');f.action('next');f.flushNativeEvents();
+  assert.ok(f.api.activeField===f.other,'Next keeps the following field session');assert.equal(f.byId('wfTouchKeyboard').open,true);assert.ok(f.doc.activeElement===f.byId('wfTouchKeyboardEditor'));
+  assert.equal(f.byId('wfTouchKeyboardEditor').value,'untouched');f.key('z');f.action('previous');f.flushNativeEvents();
+  assert.ok(f.api.activeField===f.name,'Previous keeps the preceding field session');assert.equal(f.byId('wfTouchKeyboard').open,true);assert.equal(f.byId('wfTouchKeyboardEditor').value,'draftx');
+  assert.deepEqual(f.events.filter(row=>row[1]==='change'),[['name','change','draftx'],['other','change','untouchedz']]);
+  assert.deepEqual(closed,[['name','next'],['other','next']]);f.action('done');f.flushNativeEvents();assert.equal(f.api.isOpen,false);
+});
+
+test('DOM: rapid close and reopen ignores every queued close event from previous sessions',()=>{
+  const f=domFixture();f.tap(f.name);f.key('a');f.api.close();f.api.open(f.other);f.key('b');f.api.close();f.api.open(f.name);
+  f.flushNativeEvents();assert.ok(f.api.activeField===f.name,'queued old close events preserve the newest session');assert.equal(f.byId('wfTouchKeyboard').open,true);
+  f.key('c');f.action('done');f.flushNativeEvents();assert.equal(f.api.isOpen,false);
+  assert.deepEqual(f.events.filter(row=>row[1]==='change'),[['name','change','drafta'],['other','change','untouchedb'],['name','change','draftac']]);
+});
+
+test('DOM: a true external native-dialog close still cleans up and commits the active session exactly once',()=>{
+  const f=domFixture(),closed=[];f.api.register(f.name,{onClose({reason}){closed.push(reason);}});f.tap(f.name);f.key('x');
+  f.byId('wfTouchKeyboard').close();assert.equal(f.byId('wfTouchKeyboard').open,false);f.flushNativeEvents();
+  assert.equal(f.api.isOpen,false);assert.equal(f.name.readOnly,false);assert.equal(f.doc.documentElement.classList.contains('wf-touch-keyboard-open'),false);
+  assert.deepEqual(closed,['dismiss']);assert.deepEqual(f.events.filter(row=>row[1]==='change'),[['name','change','draftx']]);
+  f.flushNativeEvents();assert.equal(closed.length,1);f.api.open(f.other);assert.equal(f.api.activeField,f.other);f.action('done');f.flushNativeEvents();
 });
 
 test('DOM: all five layouts and Turkish shift work without changing the interface language',()=>{

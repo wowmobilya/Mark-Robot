@@ -6433,9 +6433,9 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=34">
      <script src="cart-page.js?v=1" defer></script>
-<script src="ui-navigation.js?v=29" defer></script>
+<script src="ui-navigation.js?v=30" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
-<script src="context-nav.js?v=8" defer></script>
+<script src="context-nav.js?v=9" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=3" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
@@ -6448,7 +6448,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="reference-voice.js?v=4" defer></script>
 <script src="robot-settings.js?v=11" defer></script>
 <script src="smart-card-settings.js?v=2" defer></script>
-<script src="settings-navigation.js?v=18" defer></script>
+<script src="settings-navigation.js?v=19" defer></script>
 <script src="branding-settings.js?v=4" defer></script>
 <script src="company-identity.js?v=5" defer></script>
 <script src="color-picker.js?v=1" defer></script>
@@ -6458,7 +6458,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="currency-sources.js?v=3" defer></script>
 <script src="rate-refresh.js?v=8" defer></script>
 <script src="settings-actions.js?v=1" defer></script>
-<script src="product-workspace.js?v=2" defer></script>
+<script src="product-workspace.js?v=3" defer></script>
 <script src="business-workspace.js?v=1" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
 <script src="arabic-report-speech.js?v=3" defer></script>
@@ -6474,9 +6474,9 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="home-customizer.js?v=1" defer></script>
 <script src="invoice-workspace.js?v=1" defer></script>
 <script src="barcode-workspace.js?v=1" defer></script>
-<script src="touch-keyboard.js?v=1" defer></script>
+<script src="touch-keyboard.js?v=2" defer></script>
 <script src="developer-profile.js?v=1" defer></script>
-<script src="app-updates.js?v=2" defer data-release="191"></script>
+<script src="app-updates.js?v=2" defer data-release="192"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
@@ -6510,7 +6510,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="product-workspace.css?v=3">
 <link rel="stylesheet" href="business-workspace.css?v=1">
 <link rel="stylesheet" href="home-layout.css?v=1">
-<link rel="stylesheet" href="home-customizer.css?v=1">
+<link rel="stylesheet" href="home-customizer.css?v=2">
 <link rel="stylesheet" href="invoice-workspace.css?v=1">
 <link rel="stylesheet" href="barcode-workspace.css?v=1">
 <link rel="stylesheet" href="touch-keyboard.css?v=1">
@@ -7984,7 +7984,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 </style>
 
 <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-  <input type="text" class="fc" id="invPrSearch" placeholder="🔍 ابحث عن منتج..." oninput="renderPrSelector()" style="flex:1; height: 48px; padding: 0 14px; font-size: 14px; border-radius: 12px; border: 1.5px solid var(--border);" data-wf-ui-placeholder="🔍 Search for a product...">
+  <input type="text" class="fc" id="invPrSearch" placeholder="🔍 ابحث عن منتج..." oninput="wfDebouncedRenderPrSelector()" style="flex:1; height: 48px; padding: 0 14px; font-size: 14px; border-radius: 12px; border: 1.5px solid var(--border);" data-wf-ui-placeholder="🔍 Search for a product...">
   <button class="btn-scanner-large" onclick="openBarcodeScanner('invoice')" title="مسح الباركود" data-wf-ui-title="Scan barcode">
     📷
   </button>
@@ -10888,9 +10888,11 @@ function toDisplayAmt(usdAmt,cur){
   return usdAmt;
 }
 function symOf(cur){return cur==='TRY'?'₺':cur==='EUR'?'€':'$';}
+// Reuse the formatter across catalog rows, invoice lines and live calculations.
+const WF_CURRENCY_NUMBER_FORMAT=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 function fmtCurr(usdAmt,cur){
   const v=toDisplayAmt(usdAmt,cur);
-  return symOf(cur)+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return symOf(cur)+(typeof v==='number'?WF_CURRENCY_NUMBER_FORMAT.format(v):v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));
 }
 
 
@@ -13445,16 +13447,26 @@ window.addEventListener('resize', function() {
    LIGHTWEIGHT SEARCH RENDER SCHEDULER — TABLET SAFE
 ============================================================ */
 const WF_RENDER_TIMERS=Object.create(null);
+const WF_RENDER_FRAMES=Object.create(null);
+function wfCancelPendingRender(key){
+  if(WF_RENDER_TIMERS[key]!==undefined)clearTimeout(WF_RENDER_TIMERS[key]);
+  if(WF_RENDER_FRAMES[key]!==undefined)cancelAnimationFrame(WF_RENDER_FRAMES[key]);
+  delete WF_RENDER_TIMERS[key];delete WF_RENDER_FRAMES[key];
+}
+function wfCancelPendingRenders(){
+  for(const key of new Set([...Object.keys(WF_RENDER_TIMERS),...Object.keys(WF_RENDER_FRAMES)]))wfCancelPendingRender(key);
+}
 function wfDebouncedRender(key,fn,delay=90){
-  clearTimeout(WF_RENDER_TIMERS[key]);
+  wfCancelPendingRender(key);
   WF_RENDER_TIMERS[key]=setTimeout(()=>{
     delete WF_RENDER_TIMERS[key];
-    requestAnimationFrame(fn);
+    WF_RENDER_FRAMES[key]=requestAnimationFrame(()=>{delete WF_RENDER_FRAMES[key];fn();});
   },delay);
 }
 function wfDebouncedRenderCo(){wfDebouncedRender('co',renderCo);}
 function wfDebouncedRenderPr(){wfDebouncedRender('pr',renderPr);}
 function wfDebouncedRenderInv(){wfDebouncedRender('inv',renderInvList);}
+function wfDebouncedRenderPrSelector(){wfDebouncedRender('invoice-products',renderPrSelector);}
 function wfToggleSearch(inputId,button){
   const input=document.getElementById(inputId);if(!input)return;
   const open=!input.classList.contains('open');input.classList.toggle('open',open);button.classList.toggle('active',open);button.setAttribute('aria-expanded',String(open));
@@ -13477,12 +13489,15 @@ function wfIsTouchTablet(){
 ============================================================ */
 let _isPopState=false;
 function showPage(id,pushHistory=true){
-  document.documentElement.classList.toggle('wf-section-mode',id!=='dashboard');
-  document.documentElement.classList.remove('wf-header-hidden');
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  const pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
-  document.documentElement.classList.remove('wf-booting');
+  wfCancelPendingRenders();
+  const root=document.documentElement;
+  root.classList.toggle('wf-section-mode',id!=='dashboard');
+  if(root.classList.contains('wf-header-hidden'))root.classList.remove('wf-header-hidden');
+  const pg=document.getElementById('page-'+id);
+  document.querySelectorAll('.page.active').forEach(p=>{if(p!==pg)p.classList.remove('active');});
+  document.querySelectorAll('.nav-item.active').forEach(n=>n.classList.remove('active'));
+  if(pg&&!pg.classList.contains('active'))pg.classList.add('active');
+  if(root.classList.contains('wf-booting'))root.classList.remove('wf-booting');
 const map = {
   dashboard:             0,
   companies:             1,
@@ -13519,7 +13534,7 @@ if(id==='add-product'){
   // ✅ أوقف الكاميرا القديمة أولاً قبل إعادة التهيئة
   qblStopCamera();
   // ✅ ثم أعد التهيئة
-  setTimeout(() => { if(getCurrentPage()==='quick-barcode')initQblPage(); }, 50);
+  wfDebouncedRender('qbl-init',() => { if(getCurrentPage()==='quick-barcode')initQblPage(); },50);
 
   const bar = document.getElementById('qblStickyCart');
   if (bar) bar.classList.remove('visible');
@@ -13529,14 +13544,14 @@ if(id==='add-product'){
 } else {
   qblStopCamera();
   qblCloseCart();
-  setTimeout(() => qblUpdateCartUI(), 100);
+  wfDebouncedRender('qbl-cart',qblUpdateCartUI,100);
 }
 
 
 
 closeSidebar();
 updateQabActive(id); // ✅ أضف هنا
-window.scrollTo({top:0,behavior:wfIsTouchTablet()?'auto':'smooth'});
+window.scrollTo({top:0,behavior:'auto'});
   if(pushHistory&&!_isPopState){
     const url='#'+id;
     if(window.location.hash===url)history.replaceState({page:id},'',url);
@@ -14922,6 +14937,7 @@ function wfBuildClientFinancialIndex(){return WOWStatementCore.financialIndex(S)
    COMPANIES RENDER
 ============================================================ */
 function renderCo(){
+  wfCancelPendingRender('co');
   const grid=document.getElementById('coGrid');if(!grid)return;
   const search=(document.getElementById('coSearch')?.value||'').toLowerCase();
   const counts={all:0,external:0,internal_retail:0,internal_wholesale:0};
@@ -15660,6 +15676,7 @@ function setPrTab(filter){
   renderPr();
 }
 function renderPr(){
+  wfCancelPendingRender('pr');
   const grid=document.getElementById('prGrid');if(!grid)return;
   const search=(document.getElementById('prSearch')?.value||'').toLowerCase();
   const counts={all:0,coffee_table:0,dresser:0,side_table:0,tv_table:0,other:0};
@@ -16314,6 +16331,7 @@ function updateKdvDisplay(){
    PRODUCT SELECTOR IN INVOICE
 ============================================================ */
 function renderPrSelector(){
+  wfCancelPendingRender('invoice-products');
   const container=document.getElementById('prSelectorList');if(!container)return;
   const search=(document.getElementById('invPrSearch')?.value||'').toLowerCase();
   const list=S.products.filter(p=>p.name.toLowerCase().includes(search));
@@ -16343,9 +16361,12 @@ function wfProductSnapshot(p,tier){
 const WF_PRODUCT_FIELDS=['name','dimensions','dimPieces','color','cbm','packets','weight','image','type','hsCode','priceUSD'];
 let wfIgnoredProductUpdate='';
 function wfProductUpdates(){
-  const changes=[];
-  for(const [index,item] of (S.invItems||[]).entries()){
-    const product=S.products.find(p=>p.id===item.productId);if(!product)continue;
+  const changes=[],items=S.invItems||[];
+  if(!items.length)return changes;
+  const productsById=items.length>1?new Map():null;
+  if(productsById)for(const product of S.products)if(!productsById.has(product.id))productsById.set(product.id,product);
+  for(const [index,item] of items.entries()){
+    const product=productsById?productsById.get(item.productId):S.products.find(p=>p.id===item.productId);if(!product)continue;
     const next=wfProductSnapshot(product,item.tier||S.invTier),base=item.productSnapshot;
     // Older invoices have no source snapshot: compare the invoice values, and show
     // every difference for explicit review rather than changing them silently.
@@ -16745,6 +16766,7 @@ function setInvTab(filter){
 }
 
 function renderInvList(){
+  wfCancelPendingRender('inv');
   const container=document.getElementById('invListContainer');
   if(!container)return;
 
@@ -20623,7 +20645,7 @@ document.addEventListener('visibilitychange',()=>{
   }
 },{passive:true});
 window.addEventListener('pagehide',()=>{
-  for(const k of Object.keys(WF_RENDER_TIMERS)){clearTimeout(WF_RENDER_TIMERS[k]);delete WF_RENDER_TIMERS[k];}
+  wfCancelPendingRenders();
   try{if(typeof qblStopCamera==='function')qblStopCamera();}catch(_){}
   try{if(S.scannerInterval){clearInterval(S.scannerInterval);S.scannerInterval=null;}}catch(_){}
 },{passive:true});

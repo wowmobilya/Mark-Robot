@@ -4,9 +4,9 @@ const start=source.indexOf("(() => {\n  const search = document.getElementById('
 assert(start>=0&&end>start);const controller=source.slice(start,end)+'})();';
 
 function setup(){
- const nodes=[],observers=[],calls={routes:[],actions:[],legacy:0,sidebar:0};let document,context;
+ const nodes=[],observers=[],frames=[],resize=[],calls={routes:[],actions:[],legacy:0,sidebar:0};let document,context,viewportResize;
  class Element{
-  constructor(tag='div'){this.tagName=tag.toUpperCase();this.children=[];this.dataset={};this.attrs={};this.events={};this.classes=new Set();this.hidden=false;this.disabled=false;this._text='';this.style={setProperty(){}};nodes.push(this);
+  constructor(tag='div'){this.tagName=tag.toUpperCase();this.children=[];this.dataset={};this.attrs={};this.events={};this.classes=new Set();this.hidden=false;this.disabled=false;this._text='';const styles=new Map();this.style={getPropertyValue:key=>styles.get(key)||'',setProperty:(key,value)=>styles.set(key,value)};nodes.push(this);
    this.classList={add:(...names)=>names.forEach(name=>this.classes.add(name)),remove:(...names)=>names.forEach(name=>this.classes.delete(name)),contains:name=>this.classes.has(name),toggle:(name,value)=>{if(value===undefined)value=!this.classes.has(name);if(value)this.classes.add(name);else this.classes.delete(name);return value;}};}
   set className(value){this.classes=new Set(value.split(/\s+/).filter(Boolean));}get className(){return [...this.classes].join(' ');}
   set textContent(value){this._text=String(value);this.children=[];}get textContent(){return this._text+this.children.map(child=>child.textContent).join('');}
@@ -44,8 +44,8 @@ function setup(){
  const extra=make('section','page-add-company','page');body.append(extra);pages['add-company']=extra;
  document={documentElement:root,body,activeElement:null,createElement:tag=>new Element(tag),getElementById:id=>nodes.find(node=>node.id===id)||null,querySelector:selector=>body.querySelector(selector),querySelectorAll:selector=>selector==='#wf-nav-main .wf-nav-group'?groups:body.querySelectorAll(selector)};
  const location={hash:'#dashboard'};
- context={document,location,innerHeight:844,Intl,visualViewport:{height:844,addEventListener(){}},matchMedia:()=>({matches:true}),getComputedStyle:()=>({paddingTop:'0',paddingBottom:'0',rowGap:'3'}),
-  MutationObserver:class{constructor(callback){this.callback=callback;this.targets=[];observers.push(this);}observe(target,options){this.targets.push({target,options});}},ResizeObserver:class{constructor(callback){this.callback=callback;}observe(){}},
+ context={document,location,innerHeight:844,Intl,requestAnimationFrame:callback=>frames.push(callback),visualViewport:{height:844,addEventListener(type,callback){viewportResize=callback;}},matchMedia:()=>({matches:true}),getComputedStyle:()=>({paddingTop:'0',paddingBottom:'0',rowGap:'3'}),
+  MutationObserver:class{constructor(callback){this.callback=callback;this.targets=[];observers.push(this);}observe(target,options){this.targets.push({target,options});}},ResizeObserver:class{constructor(callback){this.callback=callback;resize.push(callback);}observe(){}},
   showPage(destination){calls.routes.push(destination);location.hash='#'+destination;for(const [name,page]of Object.entries(pages))page.classList.toggle('active',name===destination);const selected=destination==='add-company'?'select-client-type':destination;for(const [name,item]of Object.entries(items))item.classList.toggle('active',name===selected);},
   wfToggleDesktopSidebar(){calls.sidebar++;root.classList.remove('wf-sidebar-collapsed');}
  };
@@ -61,9 +61,10 @@ function setup(){
   return event;
  }
  vm.runInNewContext(controller,context);
- const notifyRoot=()=>{for(const observer of observers)if(observer.targets.some(entry=>entry.target===root))observer.callback([]);};
+ const flush=()=>{let turns=0;while(frames.length){assert(++turns<50,'layout work settles');frames.shift()();}};
+ const notifyRoot=(run=true)=>{for(const observer of observers)if(observer.targets.some(entry=>entry.target===root))observer.callback([]);if(run)flush();};
  const submenu=destination=>document.getElementById('actions-'+({companies:'nav_companies',products:'nav_products',invoices:'nav_invoices'})[destination]);
- return {context,calls,location,root,drawer,nav,groups,items,pages,document,submenu,dispatch,notifyRoot,
+ return {context,calls,location,root,drawer,nav,groups,items,pages,document,submenu,dispatch,notifyRoot,frames,flush,notifyResize(){resize.forEach(callback=>callback());viewportResize?.();},
   key(target,key){const event=dispatch(target,'keydown',{key});if(!event.defaultPrevented&&['Enter',' '].includes(key)&&target.tagName==='BUTTON')dispatch(target,'click',{detail:0});return event;},
   expander:destination=>items[destination].parentElement.querySelector('.wf-destination-toggle')};
 }
@@ -75,6 +76,17 @@ test('parent rows and chevrons expand without navigation; only the explicit View
  assert.equal(submenu.children[0].textContent,'View products');assert.equal(parent.querySelectorAll('button').length,0);assert.equal(f.expander('products').parentElement,parent.parentElement);
  f.expander('products').click();assert(submenu.hidden);assert.equal(parent.getAttribute('aria-expanded'),'false');assert.deepEqual(f.calls.routes,[]);
  parent.click();submenu.children[0].click();assert.deepEqual(f.calls.routes,['products']);assert.equal(f.location.hash,'#products');assert.equal(f.calls.actions.length,1);assert.equal(f.calls.actions[0].source,parent);assert.equal(f.calls.legacy,0);assert.equal(submenu.children[0].getAttribute('aria-current'),'page');
+});
+
+test('unrelated root classes do not remeasure rail pagination and resize notifications share one update',()=>{
+ const f=setup();let measurements=0;
+ Object.defineProperty(f.nav,'clientHeight',{get(){measurements++;return 170;}});f.nav.scrollHeight=600;
+ f.root.classList.add('wf-sidebar-collapsed');f.notifyRoot();assert(f.drawer.classList.contains('wf-icon-rail'));assert(measurements>0);measurements=0;
+ f.root.classList.add('wf-home-scroll-top');f.notifyRoot();f.root.classList.add('wf-home-customizer-open');f.notifyRoot();assert.equal(measurements,0);
+ f.root.lang='fr';f.notifyRoot(false);f.notifyResize();f.notifyResize();assert.equal(f.frames.length,1);assert.equal(measurements,0);f.flush();assert(measurements>0);
+ assert.equal(f.submenu('products').children[0].textContent,'Voir les produits');
+ f.root.classList.remove('wf-sidebar-collapsed');f.notifyRoot();assert(!f.drawer.classList.contains('wf-icon-rail'));
+ f.items.products.click();assert(!f.submenu('products').hidden);assert.deepEqual(f.calls.routes,[]);
 });
 
 test('only one child menu stays expanded, current destination is independent, and original Add actions remain intact',()=>{

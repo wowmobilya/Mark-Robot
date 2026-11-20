@@ -108,25 +108,35 @@
  };
  const headings=new Map();
  const saveSections = new Set(['bank', 'invoice']);
- let opener, lastTitleOpener, lastTitleSource, lastSectionTitle;
+ let opener, lastTitleOpener, lastTitleSource, lastTitleCaption, lastIconSignature;
  function updateDialogTitle() {
    if (!opener) return;
    const source = opener.textContent;
+   // Section actions change more often than their caption. Keep the source
+   // caption separate so entering a company subsection does not clone its tab.
+   if (opener !== lastTitleOpener || source !== lastTitleSource) {
+     const copy = opener.cloneNode(true);
+     copy.querySelectorAll('.wf-settings-card-description, .wf-ui-icon').forEach(node => node.remove());
+     lastTitleCaption = copy.textContent.trim();
+     lastTitleOpener = opener; lastTitleSource = source;
+   }
    const sectionTitle = opener.id === 'wf-settings-tab-company' ? window.WFCompanyIdentity?.getSectionTitle?.() || '' : '';
-   if (opener === lastTitleOpener && source === lastTitleSource && sectionTitle === lastSectionTitle) return;
-   lastTitleOpener = opener; lastTitleSource = source; lastSectionTitle = sectionTitle;
-   const copy = opener.cloneNode(true);
-   copy.querySelectorAll('.wf-settings-card-description, .wf-ui-icon').forEach(node => node.remove());
-   const next = sectionTitle || copy.textContent.trim();
+   const next = sectionTitle || lastTitleCaption;
    if (titleLabel.textContent !== next) titleLabel.textContent = next;
    const sourceIcon = opener.querySelector('svg');
+   const identityIcon = opener.id === 'wf-settings-tab-app-identity';
+   const iconSignature = sourceIcon ? sourceIcon.outerHTML : identityIcon ? 'fallback:identity' : 'fallback:section';
+   // Replacing an identical icon wakes the dialog's action observer. Caption
+   // and language changes retain the icon; a real SVG change still refreshes it.
+   if (iconSignature === lastIconSignature && titleSymbol.firstElementChild) return;
+   lastIconSignature = iconSignature;
    if (sourceIcon) {
      const icon = sourceIcon.cloneNode(true);
      icon.removeAttribute('id');
      icon.setAttribute('focusable', 'false');
      titleSymbol.replaceChildren(icon);
    } else {
-     const path = opener.id === 'wf-settings-tab-app-identity'
+     const path = identityIcon
        ? '<path d="M6 16c5 0 7-8 12-8a4 4 0 0 1 0 8c-5 0-7-8-12-8a4 4 0 1 0 0 8Z"/>'
        : '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>';
      titleSymbol.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">' + path + '</svg>';

@@ -70,6 +70,9 @@
   function catalog() {
     const grid = byId('prGrid'); if (!grid) return;
     const products = new Map((state().products || []).map(product => [String(product.id), product]));
+    const priceFormat = new Intl.NumberFormat(language(), {
+      style: 'currency', currency: 'USD', currencyDisplay: 'code', minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
     for (const card of grid.querySelectorAll('.pr-card-new')) {
       const image = card.querySelector('.pr-card-new-img'), body = card.querySelector('.pr-card-new-body');
       const product = image && products.get(image.id.slice('prCardImg-'.length));
@@ -111,9 +114,7 @@
       }
       const value = activePrice(product);
       price.querySelector('.wf-product-price-label').textContent = text('price') + ' · ' + value.tier;
-      price.querySelector('.wf-product-price-value').textContent = new Intl.NumberFormat(language(), {
-        style: 'currency', currency: 'USD', currencyDisplay: 'code', minimumFractionDigits: 2, maximumFractionDigits: 2
-      }).format(value.value);
+      price.querySelector('.wf-product-price-value').textContent = priceFormat.format(value.value);
       const remove = card.querySelector('.wf-product-delete');
       if (remove) {
         remove.setAttribute('aria-label', text('remove') + ' · ' + product.name);

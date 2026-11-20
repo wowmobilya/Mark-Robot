@@ -74,6 +74,9 @@
   const symbols=[['@','#','$','€','₺','£','%','&','*','+'],['(',')','[',']','{','}','=','_','-'],['!','?',':',';','"',"'",'،','؟','\\','/'],['.',',','…','°','×','÷','<','>','|']];
   const supported=new Set(['text','search','email','tel','url','password','number']);
   const registrations=new Map(), nodeRegistrations=new WeakMap();
+  // MediaQueryList.matches stays live as devices change; pointer/focus events
+  // can reuse it instead of allocating another query on every desktop event.
+  const coarsePointer=global.matchMedia?.('(any-pointer: coarse)');
   let observedTouch=false, active=null, dialog, editor, title, caption, toolbar, languageBar, keys, footer, error;
   let suppressFocus=0, lastIntercept=null, focusFrame=0, repeatTimer=0, repeatInterval=0, repeated=false;
   let gesture=null, ignoredClick=null, ignoreClickUntil=0;
@@ -82,7 +85,7 @@
   try { const saved=global.localStorage.getItem('wf_touch_keyboard_language'); if(locales.includes(saved))chosenLanguage=saved; } catch (_) {}
   const uiLanguage=()=>locales.includes(root.lang)?root.lang:'en';
   const t=key=>copy[key]?.[locales.indexOf(uiLanguage())]||key;
-  function isTouchDevice() { return observedTouch||Number(global.navigator?.maxTouchPoints)>0||Number(global.navigator?.msMaxTouchPoints)>0||!!global.matchMedia?.('(any-pointer: coarse)').matches; }
+  function isTouchDevice() { return observedTouch||Number(global.navigator?.maxTouchPoints)>0||Number(global.navigator?.msMaxTouchPoints)>0||!!coarsePointer?.matches; }
   function supports(field) {
     return !!field && !registrations.get(field.id)?.picker && (field.tagName==='TEXTAREA'||field.tagName==='INPUT'&&supported.has(field.type||'text')) && !field.readOnly&&!field.disabled&&!field.matches(':disabled')&&!field.closest('[inert]')&&!dialog?.contains(field);
   }
@@ -111,11 +114,12 @@
   function source() {
     if(!active)return null;
     const field=resolve(active.locator);
-    if(field){
+    if(field&&field!==active.field){
       // Change-only invoice controls can be rebuilt from the old model while
       // editing. Rebind the same logical control with its latest live draft.
-      if(field!==active.field&&supports(field))field.value=active.publishedValue;
-      active.field=field;active.locator.field=field;
+      if(supports(field))field.value=active.publishedValue;
+      active.field=field;active.locator=locate(field);
+      observeActiveField(active);
     }
     return field;
   }
@@ -141,7 +145,9 @@
     error=make('p','wf-tk-error');error.hidden=true;error.setAttribute('role','status');
     footer=make('footer','wf-tk-footer');dialog.append(header,editHost,toolbar,body,error,footer);doc.body.append(dialog);
     dialog.addEventListener('cancel',event=>{event.preventDefault();close('dismiss');});
-    dialog.addEventListener('close',()=>{if(active)close('dismiss');});
+    // Native close events are queued. Next/Previous may have already reopened
+    // this dialog for another field before an old session's event is delivered.
+    dialog.addEventListener('close',()=>{if(active&&!dialog.open)close('dismiss');});
     dialog.addEventListener('click',event=>{
       const node=event.target.closest('button');
       if(!node){if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)close('dismiss');}return;}
@@ -210,7 +216,8 @@
     keys.replaceChildren(...rows);
     footer.replaceChildren(button('previous','‹ '+t('previous')),button('next',t('next')+' ›'),button('done',t(active.search?'search':'done'),active.search?'search':'done'));
     footer.querySelector('[data-action="done"]').classList.add('wf-tk-done');
-    for(const [action,step]of [['previous',-1],['next',1]])footer.querySelector('[data-action="'+action+'"]').disabled=!neighbor(step);
+    const adjacent=neighbors();
+    for(const action of ['previous','next'])footer.querySelector('[data-action="'+action+'"]').disabled=!adjacent[action];
   }
   function focusEditor() { if(!active)return;const start=editor.selectionStart,end=editor.selectionEnd;editor.focus({preventScroll:true});editor.setSelectionRange(start,end); }
   function snapshot() { return {value:editor.value,start:editor.selectionStart??editor.value.length,end:editor.selectionEnd??editor.value.length}; }
@@ -259,16 +266,16 @@
     const before=snapshot(),result={...from[from.length-1],inputType:redo?'historyRedo':'historyUndo',data:null};
     if(!publish(result)||!active)return;from.pop();to.push(before);paint(result);focusEditor();toolbar.querySelector('[data-action="undo"]').disabled=!active.undo.length;
   }
-  function neighbor(step) {
-    const field=source();if(!field)return null;
+  function neighbors() {
+    const field=source();if(!field)return {};
     const scope=active.locator.scope?.isConnected?active.locator.scope:field.parentElement;
     const fields=Array.from(scope.querySelectorAll('input,textarea')).filter(node=>supports(node)&&visible(node));
-    const index=fields.indexOf(field);return index<0?null:fields[index+step]||null;
+    const index=fields.indexOf(field);return index<0?{}:{previous:fields[index-1]||null,next:fields[index+1]||null};
   }
   function canCommit() { if(!active?.numeric||numberValue(editor.value)!==null)return true;error.textContent=t('numeric');error.hidden=false;return false; }
   function moveField(step) {
     if(!active||!canCommit())return;
-    const next=neighbor(step),locator=next?locate(next):null;
+    const next=neighbors()[step<0?'previous':'next'],locator=next?locate(next):null;
     if(!next){close('done');return;}
     close('next',false);const field=resolve(locator);if(field&&supports(field)&&visible(field))open(field);
   }
@@ -305,18 +312,26 @@
       global.navigator.clipboard.readText().then(value=>{if(active===session)edit('insert',value);},()=>{if(active===session){error.textContent=t('clipboard');error.hidden=false;}});
     }
   }
+  function observeActiveField(session) {
+    if(!session.ancestors)return;
+    session.ancestors.disconnect();session.children.disconnect();
+    for(let parent=session.field.parentElement;parent&&parent!==doc.body;parent=parent.parentElement)session.ancestors.observe(parent,{attributes:true,attributeFilter:['hidden','class','style','open','inert','disabled']});
+    session.ancestors.observe(session.field,{attributes:true,attributeFilter:['disabled','readonly','hidden','class','style','inert','type']});
+    // Rebinding a rendered row must move both observers to the new field and
+    // its container, so a later hide/disable cannot leave a stale editor open.
+    const scope=session.locator.scope;
+    if(scope&&scope!==doc.body&&scope!==root)session.children.observe(scope,{childList:true,subtree:true});
+  }
   function watch(session) {
     const check=()=>{
       if(active!==session)return;
       const field=source();if(!field||!supports(field)||!visible(field))close('navigation');
     };
     session.ancestors=new MutationObserver(check);
-    for(let parent=session.field.parentElement;parent&&parent!==doc.body;parent=parent.parentElement)session.ancestors.observe(parent,{attributes:true,attributeFilter:['hidden','class','style','open','inert']});
-    session.ancestors.observe(session.field,{attributes:true,attributeFilter:['disabled','readonly','hidden']});
     // Only the active form/container is watched. Added inputs elsewhere require
     // no scanning: pointer/focus delegation discovers them at interaction time.
-    const scope=session.locator.scope;
-    if(scope&&scope!==doc.body&&scope!==root){session.children=new MutationObserver(()=>{if(active===session&&!session.field.isConnected)check();});session.children.observe(scope,{childList:true,subtree:true});}
+    session.children=new MutationObserver(()=>{if(active===session&&!session.field.isConnected)check();});
+    observeActiveField(session);
   }
   function open(field,options={}) {
     if(typeof field==='string')field=doc.getElementById(field);

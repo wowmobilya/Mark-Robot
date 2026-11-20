@@ -6,7 +6,7 @@ const acorn=require('acorn');
 const walk=require('acorn-walk');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../ui-navigation.js'),'utf8');
 const functions={};
-walk.simple(acorn.parse(source,{ecmaVersion:'latest'}),{FunctionDeclaration(node){if(['syncBackButtons','syncControls','syncSectionHeadings','updatePosition'].includes(node.id.name))functions[node.id.name]=source.slice(node.start,node.end)}});
+walk.simple(acorn.parse(source,{ecmaVersion:'latest'}),{FunctionDeclaration(node){if(['syncBackButtons','syncControls','controlsRootState','syncSectionHeadings','updatePosition'].includes(node.id.name))functions[node.id.name]=source.slice(node.start,node.end)}});
 function fixture(){
  const root={dir:'rtl',lang:'ar',classList:{contains:()=>false}};
  const text={nodeType:3,nodeValue:'← '};const label={nodeType:1,textContent:'رجوع'};
@@ -14,12 +14,12 @@ function fixture(){
  const handler=()=>42;
  const button={childNodes:[text,label],onclick:handler,attrs:{},icon:null,
   querySelector(){return this.icon},querySelectorAll(){return [oldIcon]},
-  prepend(icon){this.icon=icon;this.childNodes.unshift(icon)},setAttribute(k,v){this.attrs[k]=v}};
+  prepend(icon){this.icon=icon;this.childNodes.unshift(icon)},setAttribute(k,v){this.attrs[k]=v},getAttribute(k){return this.attrs[k]??null}};
  const document={createElement(){return {dataset:{},attrs:{},setAttribute(k,v){this.attrs[k]=v}}},
   getElementById(){return null},querySelector(){return null},
   querySelectorAll(selector){if(selector==='.page .sct-back-btn')return [button];return []}};
  const context=vm.createContext({root,document,compact:{matches:false},sidebar:{querySelectorAll:()=>[]},menuSvg:'',foldSvg:''});
- vm.runInContext(functions.syncBackButtons+'\n'+functions.syncSectionHeadings+'\n'+functions.syncControls,context);
+ vm.runInContext(functions.syncBackButtons+'\n'+functions.syncSectionHeadings+'\n'+functions.controlsRootState+'\n'+functions.syncControls,context);
  return {context,root,button,text,label,oldIcon,handler};
 }
 test('original back handler and localized label are retained',()=>{
