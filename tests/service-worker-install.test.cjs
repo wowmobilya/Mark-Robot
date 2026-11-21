@@ -43,7 +43,7 @@ test('offline installation bounds network work and activates only after the requ
   const stored=f.stores.get(f.context.qa.CACHE_NAME);
   assert(stored.has(url('./index.html')));assert(stored.has(url('./')));
   assert.equal(f.calls.filter(value=>value===url('./')||value===url('./index.html')).length,1,'fetch the HTML once for both cache aliases');
-  for(const asset of ['purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=6','accounts-settings.css?v=1','modules/platform/cloud/wow-cloud-client.js?v=3','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/cloud/wow-cloud-settings.js?v=2','modules/platform/push/wow-push-device.js?v=2','modules/platform/push/wow-push-client.js?v=2','modules/platform/push/wow-push-settings.js?v=2','modules/platform/push/wow-push-sw.js?v=3'])assert(stored.has(url('./'+asset)));
+  for(const asset of ['purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=6','accounts-settings.css?v=1','modules/platform/cloud/wow-cloud-client.js?v=4','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/cloud/wow-cloud-settings.js?v=2','modules/platform/push/wow-push-device.js?v=2','modules/platform/push/wow-push-client.js?v=2','modules/platform/push/wow-push-settings.js?v=2','modules/platform/push/wow-push-sw.js?v=3'])assert(stored.has(url('./'+asset)));
 });
 test('updates reuse exactly versioned prior assets and fetch fresh unversioned configuration and HTML',async()=>{
   const f=fixture({seed:true});await f.install();
@@ -65,7 +65,7 @@ test('an update downloads new versions and retains installed speech compatibilit
   await f.install();
   assert(f.calls.includes(url('./speech-controls.js?v=5')),'changed code must be downloaded');
   assert(f.calls.includes(url('./purchase-planner.js?v=3')),'new modules must be downloaded');
-  for(const asset of ['accounts-core.js?v=3','accounts-access.js?v=6','modules/platform/cloud/wow-cloud-client.js?v=3','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/push/wow-push-sw.js?v=3'])assert(f.calls.includes(url('./'+asset)),'current owner and cloud code must replace the previous assets');
+  for(const asset of ['accounts-core.js?v=3','accounts-access.js?v=6','modules/platform/cloud/wow-cloud-client.js?v=4','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/push/wow-push-sw.js?v=3'])assert(f.calls.includes(url('./'+asset)),'current owner and cloud code must replace the previous assets');
   assert.equal(f.calls.includes(url(unchanged)),false,'only exact unchanged URLs may be reused');
   assert.equal(f.calls.includes(url('./speech-controls.js?v=4')),false);
   await f.activate();
@@ -95,6 +95,18 @@ test('failed HTML, CSS or JavaScript installation leaves every previous-cache en
     assert.deepEqual([...f.stores.get('wow-furniture-v205-test')].map(([key,value])=>[key,value.tag]),before);
   }
 });
+test('an installed release 215 device downloads local-owner recovery and connection-state notices',async()=>{
+  const prior215=['./modules/platform/cloud/wow-cloud-client.js?v=3','./modules/platform/registry.js?v=1'];
+  const f=fixture({seed:prior215});await f.install();
+  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+  const current=[...html.matchAll(/<script\b[^>]*\bsrc="([^\"]+)"/g)].map(match=>'./'+match[1].replace(/^\.\//,''));
+  const stored=f.stores.get(f.context.qa.CACHE_NAME);
+  for(const old of prior215){
+    const asset=current.find(value=>value.split('?')[0]===old.split('?')[0]);
+    assert(asset,'connection asset remains in the page');
+    assert.match(stored.get(url(asset)).tag,/^network:/,'a release 215 cache must download corrected '+asset);
+  }
+});
 test('the released HTML and offline shell use the same existing local script and stylesheet versions',()=>{
   const f=fixture(),root=path.join(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const assets=new Set(f.context.qa.urlsToCache.map(value=>url(value)));
@@ -107,7 +119,7 @@ test('the released HTML and offline shell use the same existing local script and
 });
 test('warm navigation uses exact active-release asset hits without issuing network requests',async()=>{
   const f=fixture();await f.install();f.calls.length=0;
-  const asset='./modules/platform/cloud/wow-cloud-client.js?v=3',cached=f.stores.get(f.context.qa.CACHE_NAME).get(url(asset));
+  const asset='./modules/platform/cloud/wow-cloud-client.js?v=4',cached=f.stores.get(f.context.qa.CACHE_NAME).get(url(asset));
   assert.equal((await f.request(asset)).tag,cached.tag);assert.equal(f.calls.length,0);
   f.stores.get(f.context.qa.CACHE_NAME).delete(url(asset));
   assert.match((await f.request(asset)).tag,/^network:/);assert.deepEqual(f.calls,[url(asset)]);
@@ -117,10 +129,10 @@ test('configuration, navigation, unlisted versions and sensitive requests keep t
   await f.request('./modules/platform/cloud/wow-cloud-config.js?v=2');
   await f.request('./index.html',{mode:'navigate'});
   await f.request('./modules/platform/cloud/wow-cloud-client.js?v=900');
-  await f.request('./modules/platform/cloud/wow-cloud-client.js?v=3',{cache:'no-store'});
+  await f.request('./modules/platform/cloud/wow-cloud-client.js?v=4',{cache:'no-store'});
   await f.request('https://example.supabase.co/rest/v1/private',{headers:{has:()=>true}});
   await f.request('./sensitive',{headers:{has:key=>key==='authorization'}});
-  assert.deepEqual(f.calls,[url('./modules/platform/cloud/wow-cloud-config.js?v=2'),url('./index.html'),url('./modules/platform/cloud/wow-cloud-client.js?v=900'),url('./modules/platform/cloud/wow-cloud-client.js?v=3'),'https://example.supabase.co/rest/v1/private',url('./sensitive')]);
+  assert.deepEqual(f.calls,[url('./modules/platform/cloud/wow-cloud-config.js?v=2'),url('./index.html'),url('./modules/platform/cloud/wow-cloud-client.js?v=900'),url('./modules/platform/cloud/wow-cloud-client.js?v=4'),'https://example.supabase.co/rest/v1/private',url('./sensitive')]);
   assert.equal(f.stores.get(f.context.qa.CACHE_NAME).has('https://example.supabase.co/rest/v1/private'),false);
   assert.equal(f.stores.get(f.context.qa.CACHE_NAME).has(url('./sensitive')),false);
 });

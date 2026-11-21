@@ -74,7 +74,9 @@ test('only the matching verified local owner and cloud actor, tenant and epoch c
  const locked=realApp(f,localSignedOut);await locked.ready();assert.equal(locked.calls.length,0);assert.equal(locked.app.WFCloud.getSnapshot().authenticated,false);
  for(const patch of [{userId:randomUUID()},{workspaceId:randomUUID()},{cloudVersion:6}]){
    const clone=new Map(h.tab);clone.set(key,JSON.stringify({...JSON.parse(clone.get(key)),...patch}));const other=realApp(f,clone);await other.ready();
-   assert.equal(other.calls.length,1);assert.equal(other.app.WFCloud.getSnapshot().authenticated,false);assert(!clone.has(key));}
+   assert.deepEqual(other.calls.map(c=>c.action),['auth.refresh','auth.signOut']);
+   assert.equal(other.app.WFCloud.getSnapshot().authenticated,false);assert.equal(other.app.WFCloud.getSnapshot().currentAccount,null);
+   assert.equal(other.app.WFCloud.can('accounts.edit'),false);assert.equal(other.app.WFCloud.isLinkedOwner(),false);assert(!clone.has(key));}
 });
 test('a real local account switch erases live and stored cloud credentials, fences token renewal, and retires an issued offline grant before reload',async()=>{
  const f=fixture(),h=realApp(f);await pair(h);await h.app.WFAccountAccess.beforeInit();
