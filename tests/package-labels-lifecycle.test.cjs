@@ -63,7 +63,8 @@ function fixture(options={}) {
   const state={invoices:[first,second],products:[],settings:{logo:png}};
   const calls={prints:0,frames:[],images:[],renderTurns:0,navigation:[],brand:0};
   const guards=new Map(),timers=new Map();let context, timerId=0, mode=options.printMode||'async';
-  const fields=['printButton','detail','preview','empty','stage','invoiceTitle','customerName','counts','summary','identity','issueList','issues','counter','previous','next','status','retry','viewInvoice','change','list','more','filters','chooser','search','printRecovery','printRecoveryHint','mediaIcon','badge','stockText','geometryNote','stockSizeNote','scaleNote','preferenceHint','printerHint'];
+  const fields=['printButton','detail','preview','empty','stage','invoiceTitle','customerName','counts','summary','identity','issueList','issues','counter','previous','next','status','retry','viewInvoice','change','list','more','filters','chooser','search','printRecovery','printRecoveryHint','mediaIcon','badge','stockText','geometryNote','stockSizeNote','scaleNote','preferenceHint','printerHint',
+    'selectionPanel','selectionCount','allLabels','lostLabels','selectionHint','selectionTools','labelSearch','clearLabels','labelOptions','moreLabels','historyHost'];
   const ui=Object.fromEntries(fields.map(name=>[name,element()]));ui.printRecovery.hidden=true;ui.printRecoveryHint.hidden=true;
   const document=Object.assign(new Events(),{body:element(),baseURI:'https://wow.example/app/',visibilityState:'visible',hidden:false,activeElement:null});
   const animationFrame=callback=>{calls.renderTurns++;queueMicrotask(()=>callback(0));return calls.renderTurns;};
@@ -609,5 +610,141 @@ test('the actual picker captions cover Arabic, Turkish, English, French and Russ
   for(const language of Object.keys(local)){
     for(const key of keys)assert(local[language][key]?.trim(),language+' '+key);
     if(language!=='en')assert.notEqual(local[language].pickerTitle,local.en.pickerTitle);
+  }
+});
+
+test('lost-label mode starts empty and rapid selection previews only original labels without reloading the invoice assets',async()=>{
+  const app=fixture();app.state.invoices[0].items[0].qty=3;app.state.invoices[0].items[0].packets=3;
+  const original=JSON.stringify(app.state.invoices[0]);
+  try{
+    await app.context.prepare(true);
+    const preloads=app.calls.images.filter(image=>image.kind==='preload').length,barcodes=app.read('barcodeImages');
+    assert.equal(app.context.changeSelectionMode('selected'),true);await tick();
+    assert.equal(app.read('batch.labelCount'),0);assert.equal(app.ui.printButton.disabled,true);assert.equal(app.ui.preview.hidden,true);
+    await app.context.print();assert.equal(app.calls.prints,0);
+    const id=app.read('fullBatch.labels[5].labelId'),other=app.read('fullBatch.labels[8].labelId');
+    assert.equal(app.context.toggleLabel(id),true);assert.equal(app.context.toggleLabel(other),true);await tick();
+    assert.equal(app.read('ready'),true);assert.deepEqual(Array.from(app.read('batch.labels'),label=>label.sequenceNumber),[6,9]);
+    assert.equal(app.read('batch.labels[0].currentPacket'),2);assert.equal(app.read('batch.labels[0].unitIndex'),3);
+    assert.equal(app.read('batch.originalLabelCount'),9);assert.equal(app.read('batch.model.items[0].qty'),3);
+    assert.equal(app.read('previewFrame.contentDocument.querySelectorAll(".barcode").length'),2);
+    assert.equal(app.read('barcodeImages'),barcodes);
+    assert.equal(app.calls.images.filter(image=>image.kind==='preload').length,preloads);
+    assert.equal(JSON.stringify(app.state.invoices[0]),original);
+    app.context.toggleLabel(id);app.context.toggleLabel(other);await tick();
+    assert.equal(app.read('batch.labelCount'),0);assert.equal(app.ui.printButton.disabled,true);
+    await app.context.print();assert.equal(app.calls.prints,0);
+  }finally{app.dispose();}
+});
+
+test('paper, orientation, language and all-label mode preserve a selected original label; source edits and another invoice clear it safely',async()=>{
+  const app=fixture();app.state.invoices[0].items[0].qty=4;app.state.invoices[0].items[0].packets=2;
+  try{
+    await app.context.prepare(true);app.context.changeSelectionMode('selected');
+    const id=app.read('fullBatch.labels[6].labelId');app.context.toggleLabel(id);await tick();
+    const preloadCount=app.calls.images.filter(image=>image.kind==='preload').length;
+    app.context.changeProfile('thermal100x50');await tick();
+    assert.equal(app.read('batch.labels[0].labelId'),id);assert.equal(app.read('batch.labels[0].sequenceNumber'),7);
+    assert.equal(app.read('batch.labels[0].currentPacket'),2);assert.equal(app.read('batch.pageCount'),1);
+    app.context.ops.locale=()=>'ar';app.context.renderMeta();
+    assert.equal(app.read('selectedLabelIds.has(batch.labels[0].labelId)'),true);
+    app.context.changeSelectionMode('all');await tick();assert.equal(app.read('batch.labelCount'),8);
+    app.context.changeSelectionMode('selected');await tick();assert.equal(app.read('batch.labels[0].labelId'),id);
+    assert.equal(app.calls.images.filter(image=>image.kind==='preload').length,preloadCount);
+    app.state.invoices[0].items[0].color='Changed';await app.context.prepare(true);
+    assert.equal(app.read('selectedLabelIds.size'),0);assert.equal(app.read('batch.labelCount'),0);assert.equal(app.read('selectionMode'),'selected');
+    assert.equal(app.ui.printButton.disabled,true);assert.equal(app.read('selectionWasReset'),true);
+    app.context.toggleLabel(app.read('fullBatch.labels[0].labelId'));await tick();
+    app.context.chooseInvoice('i2');await app.context.prepare(true);
+    assert.equal(app.read('selectedLabelIds.size'),0);assert.equal(app.read('batch.labelCount'),0);assert.equal(app.read('selectionMode'),'selected');
+    await app.context.print();assert.equal(app.calls.prints,0);
+  }finally{app.dispose();}
+});
+
+test('large label lists are bounded and search keeps hidden selections while matching an exact original number in Arabic digits',async()=>{
+  const app=fixture();app.state.invoices[0].items[0].qty=2000;
+  try{
+    await app.context.prepare(true);app.context.changeSelectionMode('selected');await tick();
+    assert.equal(app.read('labelControls.size'),80);assert.equal(app.ui.moreLabels.hidden,false);
+    const id=app.read('fullBatch.labels[199].labelId');app.context.toggleLabel(id);await tick();
+    vm.runInContext("labelQuery='#٢٠٠';",app.context);app.context.renderLabelChoices();
+    assert.equal(app.read('labelControls.size'),1);assert.equal(app.read('labelControls.has(fullBatch.labels[199].labelId)'),true);
+    assert.equal(app.read('labelControls.get(fullBatch.labels[199].labelId).getAttribute("aria-checked")'),'true');
+    vm.runInContext("labelQuery='no such product';",app.context);app.context.renderLabelChoices();
+    assert.equal(app.read('labelControls.size'),0);assert.equal(app.read('selectedLabelIds.has(fullBatch.labels[199].labelId)'),true);
+    assert.equal(app.read('batch.labelCount'),1);
+    vm.runInContext("labelQuery='Oak';",app.context);app.context.renderLabelChoices();
+    assert.equal(app.read('labelControls.size'),80);assert.equal(app.read('batch.labels[0].sequenceNumber'),200);
+  }finally{app.dispose();}
+});
+
+test('a selective print records the exact immutable request before native printing and dialog close is never a printed confirmation',async()=>{
+  const gate=deferred(),app=fixture(),auditCalls=[];
+  app.state.invoices[0].items[0].qty=3;app.state.invoices[0].items[0].packets=3;
+  app.window.WFLabelReprintHistory={
+    async recordRequested(job,reason){auditCalls.push({method:'requested',job,reason,prints:app.calls.prints});await gate.promise;return 'audit-1';},
+    async recordDialogClosed(id){auditCalls.push({method:'dialog_closed',id});},
+    async recordFailed(id,error){auditCalls.push({method:'failed',id,error});}
+  };
+  const original=JSON.stringify(app.state.invoices);
+  try{
+    await app.context.prepare(true);app.context.changeSelectionMode('selected');
+    const id=app.read('fullBatch.labels[5].labelId');app.context.toggleLabel(id);await tick();
+    const pending=app.context.print();await tick();
+    assert.equal(auditCalls.length,1);assert.equal(auditCalls[0].prints,0);assert.equal(app.calls.prints,0);
+    assert.equal(app.context.toggleLabel(id),false);assert.equal(app.context.changeProfile('tw2004'),false);
+    const job=auditCalls[0].job;
+    assert(Object.isFrozen(job));assert(Object.isFrozen(job.labels));assert(Object.isFrozen(job.labels[0]));
+    assert.equal(job.invoiceId,'i1');assert.equal(job.invoiceNumber,'A1');assert.equal(job.customerName,'First customer');
+    assert.equal(job.selectedLabelCount,1);assert.equal(job.originalLabelCount,9);assert.equal(job.labels[0].sequenceNumber,6);
+    assert.equal(job.labels[0].currentPacket,2);assert.equal(job.labels[0].unitIndex,3);assert.equal(job.labels[0].quantity,3);
+    assert.equal(job.profileId,'tw2008');assert.equal(job.paperProfile.pageWidthMM,210);assert.equal(auditCalls[0].reason.reason,'lost');
+    assert.match(job.sourceFingerprint,/^wfpl-v1-[0-9a-f]{16}$/);assert(!job.sourceFingerprint.includes('data:'));
+    gate.resolve();await pending;assert.equal(app.calls.prints,1);
+    assert.equal(app.read('activePrint.frame.contentDocument.querySelectorAll(".barcode").length'),1);
+    app.finish();await tick();assert.deepEqual(auditCalls.map(call=>call.method),['requested','dialog_closed']);
+    assert.equal(auditCalls[1].id,'audit-1');assert.equal(JSON.stringify(app.state.invoices),original);
+  }finally{gate.resolve();app.dispose();}
+});
+
+test('unavailable reprint history blocks native printing, and a failed native call records failure without changing quantities',async()=>{
+  for(const failure of ['missing','storage','native']){
+    const app=fixture({printMode:failure==='native'?'throw':'async'}),auditCalls=[];
+    if(failure!=='missing')app.window.WFLabelReprintHistory={
+      async recordRequested(){auditCalls.push('requested');if(failure==='storage')throw new Error('STORAGE');return 'audit-1';},
+      async recordDialogClosed(){auditCalls.push('closed');},async recordFailed(id,error){auditCalls.push([id,error]);}
+    };
+    const original=JSON.stringify(app.state.invoices);
+    try{
+      await app.context.prepare(true);app.context.changeSelectionMode('selected');app.context.toggleLabel(app.read('fullBatch.labels[0].labelId'));await tick();
+      await app.context.print();
+      assert.equal(app.read('activePrint'),null);assert.equal(app.read('ready'),false);
+      assert.equal(JSON.stringify(app.state.invoices),original);
+      if(failure==='native'){assert.equal(app.calls.prints,1);assert.deepEqual(auditCalls,['requested',['audit-1','PRINT']]);}
+      else{assert.equal(app.calls.prints,0);assert.equal(app.read('errorKey'),'auditError');}
+    }finally{app.dispose();}
+  }
+});
+
+test('an invoice changed while its audit request saves cannot open a stale selective print',async()=>{
+  const gate=deferred(),app=fixture(),failed=[];
+  app.window.WFLabelReprintHistory={async recordRequested(){await gate.promise;return 'audit-stale';},async recordFailed(id,error){failed.push([id,error]);}};
+  try{
+    await app.context.prepare(true);app.context.changeSelectionMode('selected');app.context.toggleLabel(app.read('fullBatch.labels[0].labelId'));await tick();
+    const pending=app.context.print();await tick();app.state.invoices[0].items[0].qty=2;gate.resolve();await pending;
+    assert.equal(app.calls.prints,0);assert.deepEqual(failed,[['audit-stale','STALE']]);assert.equal(app.read('activePrint'),null);
+    await app.context.prepare(true);assert.equal(app.read('batch.labelCount'),0);assert.equal(app.read('selectedLabelIds.size'),0);
+  }finally{gate.resolve();app.dispose();}
+});
+
+test('lost-label actions and errors have complete Arabic, Turkish, English, French and Russian captions',()=>{
+  const declaration=mount.body.body.find(node=>node.type==='VariableDeclaration'&&node.declarations.some(item=>item.id.name==='selectionWords'));
+  const local=vm.runInNewContext(source.slice(declaration.start,declaration.end)+';selectionWords');
+  const keys=Object.keys(local.en);
+  assert.deepEqual(Object.keys(local).sort(),['ar','en','fr','ru','tr']);
+  for(const [language,values] of Object.entries(local)){
+    assert.deepEqual(Object.keys(values),keys,language);
+    for(const key of keys)assert(values[key]?.trim(),language+' '+key);
+    if(language!=='en')assert.notEqual(values.lostLabels,local.en.lostLabels);
   }
 });

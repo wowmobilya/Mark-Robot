@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-src 'self' about:; connect-src 'none'; object-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>WOW · Operations QA 206</title>
+  <link rel="icon" href="../../favicon-32.png">
+  <link rel="stylesheet" href="../../operations-workspace.css?v=206">
+  <link rel="stylesheet" href="../../package-labels.css?v=206">
+  <link rel="stylesheet" href="../../invoice-archive.css?v=206">
+  <link rel="stylesheet" href="../../product-costs.css?v=206">
+  <link rel="stylesheet" href="../../material-library.css?v=206">
+  <link rel="stylesheet" href="../../manufacturing.css?v=206">
+  <link rel="stylesheet" href="../../cost-analysis.css?v=206">
+  <link rel="stylesheet" href="../../label-reprint-history.css?v=206">
+  <link rel="stylesheet" href="../../daily-tasks.css?v=206">
+  <link rel="stylesheet" href="../../review-center.css?v=206">
+  <link rel="stylesheet" href="../../global-search.css?v=206">
+  <link rel="stylesheet" href="../../purchase-planner.css?v=206">
+  <style>
+    :root {--bg:#f0f4f8;--card:#fff;--input:#f8fafc;--nav:#1a1a2e;--text:#1a202c;--text2:#4a5568;--muted:#718096;--border:#e2e8f0;--gold:#3f7c94;--gold2:#326d83;--gold-light:#edf5f8;--green:#38a169;--red:#e53e3e;--blue:#3182ce;--purple:#805ad5;--shadow:0 2px 16px rgb(0 0 0/.07);--brand-primary:var(--gold);color-scheme:light}
+    [data-theme="dark"] {--bg:#111923;--card:#1a2533;--input:#202e3e;--nav:#101b27;--text:#e7edf5;--text2:#aebbcf;--muted:#94a3b8;--border:#324255;--gold-light:#203b49;--gold2:#a5cddd;color-scheme:dark}
+    * {box-sizing:border-box}
+    body {margin:0;background:var(--bg);color:var(--text);font:16px/1.55 'Segoe UI','Cairo','Tajawal',system-ui,sans-serif}
+    button,input,select,textarea {font:inherit}
+    button {cursor:pointer}
+    button:disabled {cursor:default;opacity:.55}
+    [hidden],.page {display:none!important}
+    .page.active {display:block!important}
+    .qa-tools,main {max-inline-size:1250px;margin:auto;padding:14px clamp(12px,3vw,32px)}
+    .qa-tools {display:flex;align-items:end;gap:10px 16px;flex-wrap:wrap;border-block-end:1px solid var(--border)}
+    .qa-intro {flex:1 1 250px}
+    .qa-intro strong {color:var(--gold2)}
+    .qa-intro p {margin:0;color:var(--text2);font-size:13px}
+    .qa-tools label {display:grid;gap:3px;color:var(--text2);font-size:12px;font-weight:650}
+    .qa-tools :is(select,button),.btn,.sct-back-btn {min-block-size:42px;border:1px solid var(--border);border-radius:10px;padding:7px 11px;background:var(--card);color:var(--text)}
+    .qa-tools select {max-inline-size:100%;font-size:15px}
+    .btn {display:inline-flex;align-items:center;justify-content:center;gap:6px}
+    .btn-p {background:var(--gold);border-color:var(--gold);color:#211b12;font-weight:650}
+    .wf-heading-row {display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:10px 0 18px}
+    .wf-centered-heading {flex:1 1 180px;min-inline-size:0}
+    .wf-centered-heading h1 {margin:0;font-size:clamp(20px,3vw,30px);line-height:1.3}
+    .wf-centered-heading p {margin:3px 0 0;color:var(--text2);font-size:14px}
+    .wf-heading-actions,.sct-back-btn {display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+    .sct-back-btn svg {display:block;inline-size:18px;block-size:18px}
+    .wf-section-menu {display:none}
+    #qaFeedback {margin:0;color:var(--text2);font-size:14px}
+    #qaFeedback:not(:empty) {margin-block:5px 12px;padding:8px 12px;background:var(--card);border-inline-start:3px solid var(--gold);border-radius:6px}
+    #qaFeedback[data-kind="er"] {border-color:var(--red)}
+    @media(max-width:620px){.qa-tools{gap:8px}.qa-intro{flex-basis:100%}.qa-tools label{flex:1 1 85px}.qa-tools .qa-section{flex:2 1 160px}.qa-tools select{inline-size:100%}.wf-heading-actions{flex:1 1 100%}}
+    @media print {.qa-tools,#qaFeedback,main{display:none!important}}
+  </style>
+</head>
+<body>
+  <header class="qa-tools">
+    <div class="qa-intro"><strong>WOW · QA 206</strong><p id="qaNotice">بيانات اختبار اصطناعية. إعادة تحميل الصفحة تعيد الحالة الأولية.</p></div>
+    <label class="qa-section"><span id="qaSectionLabel">القسم</span>
+      <select id="qaSection">
+        <option value="print-history">print-history</option>
+        <option value="review-center">review-center</option>
+        <option value="daily-tasks">daily-tasks</option>
+        <option value="global-search">global-search</option>
+        <option value="purchase-planner">purchase-planner</option>
+        <option value="package-labels">إتيكيت الطرود</option>
+        <option value="invoice-archive">أرشيف الفواتير</option>
+        <option value="material-library">مكتبة المواد</option>
+        <option value="manufacturing">بطاقات التصنيع</option>
+        <option value="cost-analysis">تحليل الكلفة والربح</option>
+        <option value="product-costs" hidden>كلفة المنتجات</option>
+      </select>
+    </label>
+    <label><span id="qaLangLabel">اللغة</span><select id="qaLang">
+      <option value="ar">العربية</option><option value="tr">Türkçe</option><option value="en">English</option><option value="fr">Français</option><option value="ru">Русский</option>
+    </select></label>
+    <label><span id="qaThemeLabel">المظهر</span><select id="qaTheme"><option value="light">فاتح</option><option value="dark">داكن</option></select></label>
+    <button id="qaReset" type="button">إعادة ضبط</button>
+  </header>
+  <nav id="wf-nav-main" hidden></nav>
+  <main id="mainContent"><p id="qaFeedback" role="status"></p></main>
+
+  <!-- Real modules with synthetic records and a session-only preference adapter. -->
+  <script src="../../package-label-core.js?v=206"></script>
+  <script src="../../vendor/JsBarcode.code128.min.js?v=3.11.5"></script>
+  <script src="../../product-cost-core.js?v=206"></script>
+  <script src="../../material-library-core.js?v=206"></script>
+  <script src="../../manufacturing-core.js?v=206"></script>
+  <script src="../../account-statement-core.js?v=206"></script>
+  <script src="../../invoice-archive-core.js?v=206"></script>
+  <script src="../../cost-analysis-core.js?v=206"></script>
+
+  <script src="../../label-reprint-history-core.js?v=206"></script>
+  <script src="../../daily-tasks-core.js?v=206"></script>
+  <script src="../../purchase-planner-core.js?v=206"></script>
+  <script id="qa-fixtures">
+    (() => {
+      'use strict';
+      const clone = structuredClone;
+      // The picker preference belongs only to this synthetic fixture session.
+      const preferences=new Map();
+      Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:key=>preferences.get(String(key))??null,setItem:(key,value)=>preferences.set(String(key),String(value)),removeItem:key=>preferences.delete(String(key))}});
+      const at = '2026-11-18T09:00:00Z';
+      const later = '2026-11-19T10:00:00Z';
+      const rates = {usdTry:40,usdEur:.9};
+      const material = (id,name,unit,category,currency,unitPrice) =>
+        WFMaterialLibraryCore.prepareMaterial({id,name,unit,category,currency,unitPrice,rates},at);
+      const oak = material('qa-oak','QA · Oak veneer','m²','Panels','TRY',720);
+      const brass = material('qa-brass','QA · Brass inserts','pc','Hardware','EUR',1.8);
+      const finish = material('qa-finish','QA · Satin finish','L','Finishes','USD',null);
+      const settings = {id:'main',companyName:'QA WOW Furniture',address:'QA showroom',authPerson:'QA Operator',materialLibrary:{version:1,materials:[oak,brass,finish],updatedAt:at}};
+      const quote = {id:'usdTry',value:40,eur:.9,updatedAt:at};
+      const image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHAAAABIBAMAAADc52y4AAAAMFBMVEX08elzVDpTPjC6oG/Kt5QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa4yX7AAAA2UlEQVR42u3UwRGDIBAF0C9aQOyASQWZ2H8JpgTHCoIVQA4ocdHAyiUH9l8cRt8s7KwAEolEsqXlftjQ5UBWIxsOvz8cE7B98HbpXgA6VjnqFuwht9zqoArdVpG7zeA8bJ6Xne9qc/MLpTPOAMDyPkBkvAHMoau72Mk/72f1ANKc00SeuCSkvgcAS6Ezu3ep2LmPKyoNTDlv5/RWVx/1mrrUGdcDBE8coznOQGnAUheGPB/qLsCQpRSiRmirb040cZwb4Px+VEWDWsnIdd/bW5dWnOVHlkj+mw8KiDm+d3D7oQAAAABJRU5ErkJggg==';
+      function component(row,id,quantity) {
+        return {...WFMaterialLibraryCore.createLinkedRow(row,{currency:'USD',rates},id),quantity};
+      }
+      function cost(materials,labor,overhead) {
+        return WFCostCore.prepareCosting({currency:'USD',rates,materials,labor,overhead},at);
+      }
+      function product(id,name,type,color,l,w,h,packets,prices,costing) {
+        return {id,name,type,color,barcode:id.toUpperCase(),image,packets,dimensions:[l,w,h].join(' × '),
+          dimPieces:[{l,w,h,packets,unit:'cm'}],...prices,...(costing?{costing}:{})};
+      }
+      const products = [
+        product('qa-atlas','QA Atlas 90','coffee_table','Oak / Black',90,55,42,2,{priceA:88,priceB:46,priceC:0},
+          cost([component(oak,'qa-atlas-oak',2)],12,5)),
+        product('qa-luna','QA Luna','side_table','Walnut',50,50,55,1,{priceA:34,priceB:29,priceC:27},
+          cost([component(brass,'qa-luna-brass',4)],12,4)),
+        product('qa-mesa','QA Mesa','tv_table','Natural',140,42,55,2,{priceUSD:70},null),
+        product('qa-sample','QA Sample','other','White',20,20,10,1,{priceA:0,priceB:0},
+          cost([],0,0))
+      ];
+      function invoice(id,invNo,companyName,lines,archived=false) {
+        return {id,invNo,companyName,archived,delivered:false,regDate:'2026-11-18',items:lines.map(([p,qty])=>({
+          productId:p.id,name:p.name,type:p.type,color:p.color,qty,packets:p.packets,image:p.image,
+          dimensions:p.dimensions,dimPieces:clone(p.dimPieces)
+        }))};
+      }
+      function tracked(source,steps) {
+        const ticketId='qa-ticket-'+source.id;
+        let next=WFManufacturingCore.merge(source,{kind:'create',id:source.id,ticketId,at});
+        steps.forEach(([index,status,note])=>{
+          const line=next.manufacturingTicket.lines[index];
+          next=WFManufacturingCore.merge(next,{kind:'update',id:source.id,ticketId,lineId:line.id,
+            base:{status:line.status,note:line.note},changes:{status,note},at:later});
+        });
+        return next;
+      }
+      const invoices=[
+        tracked(invoice('qa-inv-done','QA-204-03','QA · Studio C',[[products[1],3]],true),[[0,'completed','QA · final inspection complete']]),
+        invoice('qa-inv-new','QA-204-02','QA · Studio B',[[products[2],1]]),
+        tracked(invoice('qa-inv-working','QA-204-01','QA · Studio A',[[products[0],2],[products[1],1]]),[
+          [0,'in_progress','QA · veneer cut; edge finishing in progress'],[1,'completed','QA · packed and checked']
+        ])
+      ];
+      invoices.push(invoice('qa-bulk','QA-BULK','QA Bulk',[[products[0],80]]));
+      invoices.push({...invoice('qa-last-year','QA-LAST-YEAR','QA Private client',[[products[1],24]]),regDate:'2025-07-01',delivered:true});
+      // Synthetic past print-dialog close, intentionally awaiting a human outcome.
+      // This fixture does not invoke a printer or alter any production record.
+      const request=WFLabelReprintHistoryCore.createRequest({mode:'selected',invoiceId:'qa-inv-working',
+        invoiceNumber:'QA-204-01',customerName:'QA · Studio A',sourceFingerprint:'qa-fixture',
+        profileId:'tanex-tw-2004',paperProfile:{name:'TANEX TW-2004',mediaType:'sheet'},
+        originalLabelCount:5,selectedLabelCount:1,labels:[{labelId:'qa-label-3',sequenceNumber:3,
+          lineIndex:0,productId:'qa-atlas',name:'QA Atlas 90',color:'Oak / Black',unitIndex:1,
+          currentPacket:2,totalPackets:2,quantity:2,barcodeText:'QA Atlas 90 - Packet 2/2'}]},
+        {id:'qa-reprint-pending',reason:'lost',now:at,operator:{name:'QA Operator',source:'settings'}});
+      const requested=WFLabelReprintHistoryCore.mergeChange(settings,{type:'request',request});
+      settings.labelReprintHistory=WFLabelReprintHistoryCore.mergeChange(requested,{type:'event',id:request.id,
+        event:{type:'dialog_closed',at:later,operator:{name:'QA Operator',source:'settings'}}}).labelReprintHistory;
+      const stores = new Map([
+        ['settings',new Map([[settings.id,clone(settings)],[quote.id,clone(quote)]])],
+        ['products',new Map(products.map(p=>[p.id,clone(p)]))],
+        ['invoices',new Map(invoices.map(i=>[i.id,clone(i)]))]
+      ]);
+      window.S={lang:'ar',settings:clone(settings),companies:[{id:'qa-customer',name:'QA Private client',country:'TR'}],products:clone(products),invoices:clone(invoices),...rates};
+      window.dbGet=async (store,id)=>clone(stores.get(store)?.get(id) ?? null);
+      window.wfHydrateDBValue=async record=>clone(record);
+      let sequence=0;
+      window.wfNewRecordId=()=> 'qa-generated-'+(++sequence);
+      window.wfWriteBatch=async operations=>{
+        const staged=new Map(), results=[];
+        for(const op of operations){
+          if(op.type!=='merge'||typeof op.merge!=='function'||!stores.has(op.store))throw Error('QA_UNSUPPORTED_OPERATION');
+          if(!staged.has(op.store))staged.set(op.store,new Map(stores.get(op.store)));
+          const rows=staged.get(op.store);
+          const next=op.merge(clone(rows.get(op.id)),clone(op.value));
+          if(!next||next.id!==op.id)throw Error('QA_INVALID_RECORD');
+          rows.set(op.id,clone(next));
+          results.push(clone(next));
+        }
+        for(const [name,rows] of staged)stores.set(name,rows);
+        return results;
+      };
+    })();
+  </script>
+  <script id="qa-navigation">
+    (() => {
+      'use strict';
+      const query=new URLSearchParams(location.search);
+      const languages=['ar','tr','en','fr','ru'];
+      const sections=['package-labels','invoice-archive','material-library','manufacturing','cost-analysis','product-costs','print-history','review-center','daily-tasks','global-search','purchase-planner'];
+      const labels={
+        notice:['بيانات اختبار اصطناعية. إعادة تحميل الصفحة تعيد الحالة الأولية.','Örnek test verileri. Sayfayı yenileyince başlangıç durumuna dönülür.','Synthetic test data. Reload to restore the starting state.','Données de test fictives. Rechargez pour rétablir l’état initial.','Тестовые данные. Перезагрузка возвращает начальное состояние.'],
+        section:['القسم','Bölüm','Workspace','Espace','Раздел'],language:['اللغة','Dil','Language','Langue','Язык'],
+        theme:['المظهر','Tema','Theme','Thème','Тема'],light:['فاتح','Açık','Light','Clair','Светлая'],dark:['داكن','Koyu','Dark','Sombre','Тёмная'],
+        reset:['إعادة ضبط','Sıfırla','Reset fixtures','Réinitialiser','Сбросить данные']
+      };
+      const byId=id=>document.getElementById(id);
+      const picker=byId('qaSection'),lang=byId('qaLang'),theme=byId('qaTheme');
+      let active='',previous='material-library';
+      function translate(){
+        const locale=languages.includes(lang.value)?lang.value:'ar',index=languages.indexOf(locale);
+        document.documentElement.lang=locale;document.documentElement.dir=locale==='ar'?'rtl':'ltr';S.lang=locale;
+        for(const [id,key] of [['qaNotice','notice'],['qaSectionLabel','section'],['qaLangLabel','language'],['qaThemeLabel','theme'],['qaReset','reset']])byId(id).textContent=labels[key][index];
+        for(const option of theme.options)option.textContent=labels[option.value][index];
+        if(window.WFOperations)for(const option of picker.options)option.textContent=WFOperations.label(option.value)||option.textContent;
+      }
+      window.showPage=function(requested){
+        if(!sections.includes(requested))return window.WFOperations?.open(previous) || false;
+        const target=requested;
+        const next=byId('page-'+target);
+        if(!next)return false;
+        if(active && active!==target && active!=='product-costs')previous=active;
+        for(const page of document.querySelectorAll('#mainContent > .page'))page.classList.toggle('active',page===next);
+        active=target;picker.value=target;byId('qaFeedback').textContent='';
+        return true;
+      };
+      window.showToast=(message,kind)=>{
+        const status=byId('qaFeedback');
+        status.textContent=String(message);status.dataset.kind=kind||'ok';
+      };
+      window.qaOpenSection=section=>{
+        if(section==='purchase-planner')return WFPurchasePlanner.open();
+        if(section==='print-history')return WFLabelReprintHistory.open();
+        if(section==='daily-tasks')return WFDailyTasks.open();
+        if(section==='review-center')return WFReviewCenter.open();
+        if(section==='global-search')return WFGlobalSearch.open();
+        if(section==='package-labels'){WFPackageLabels.open('qa-inv-working');return true;}
+        if(section==='invoice-archive'){WFInvoiceArchive.open();return true;}
+        if(section==='manufacturing')return WFManufacturing.open('qa-inv-working');
+        if(section==='cost-analysis')return WFCostAnalysis.open();
+        if(section==='product-costs')return WFCosting.open('qa-atlas');
+        return WFMaterialLibrary.open('qa-oak');
+      };
+      lang.value=languages.includes(query.get('lang'))?query.get('lang'):'ar';
+      theme.value=query.get('theme')==='dark'?'dark':'light';
+      document.documentElement.dataset.theme=theme.value;
+      lang.addEventListener('change',translate);
+      theme.addEventListener('change',()=>{document.documentElement.dataset.theme=theme.value;});
+      picker.addEventListener('change',()=>window.qaOpenSection(picker.value));
+      byId('qaReset').addEventListener('click',()=>location.reload());
+      translate();
+      window.addEventListener('DOMContentLoaded',()=>{
+        translate();
+        const selected=sections.includes(query.get('section'))?query.get('section'):'material-library';
+        try{
+          if(!window.WFMaterialLibrary || !window.WFManufacturing || !window.WFCostAnalysis || !window.WFCosting)throw Error('QA workspace module missing');
+          if(!window.qaOpenSection(selected))throw Error('QA registration missing');
+          document.documentElement.dataset.qaReady='true';
+        } catch(error){
+          document.documentElement.dataset.qaReady='false';
+          window.showToast('QA 206 · '+error.message,'er');
+        }
+      },{once:true});
+    })();
+  </script>
+  <script src="../../operations-workspace.js?v=206"></script>
+  <script src="../../label-reprint-history.js?v=206"></script>
+  <script src="../../package-labels.js?v=206"></script>
+  <script src="../../daily-tasks.js?v=206"></script>
+  <script src="../../purchase-planner.js?v=206"></script>
+  <script src="../../review-center.js?v=206"></script>
+  <script src="../../global-search.js?v=206"></script>
+  <script src="../../invoice-archive.js?v=206"></script>
+  <script src="../../product-costs.js?v=206"></script>
+  <script src="../../material-library.js?v=206"></script>
+  <script src="../../manufacturing.js?v=206"></script>
+  <script src="../../cost-analysis.js?v=206"></script>
+</body>
+</html>

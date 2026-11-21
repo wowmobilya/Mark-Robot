@@ -90,7 +90,7 @@ function streamedVoice(){
  };
 }
 async function fixture({webAudio=false,audioOptions={},audioSession,voiceLoudness}={}){
- const clips=[],urls=new Map(),revoked=[],workers=[],audioElements=[],requests=[],events=[];let id=0;
+ const clips=[],urls=new Map(),revoked=[],workers=[],audioElements=[],requests=[],events=[],windowListeners=new Map();let id=0;
  class FakeURL extends URL{
   static createObjectURL(blob){const url='blob:test-'+(++id);urls.set(url,blob);clips.push({url,blob});return url;}
   static revokeObjectURL(url){revoked.push(url);urls.delete(url);}
@@ -117,18 +117,19 @@ async function fixture({webAudio=false,audioOptions={},audioSession,voiceLoudnes
   const voice=catalog.find(item=>String(url).includes('/__infinity_voice__/'+item.id+'.json'));
   return voice?new Response(JSON.stringify({version:1,model:voice.files[0].sha256})):undefined;
  }};
- const web=webAudio?audioRuntime(audioOptions):null;
+ const web=webAudio?audioRuntime(audioOptions):null,clock=web?.clock||audioRuntime().clock;
  const window={isSecureContext:true,caches:{open:async()=>cache},crypto:webcrypto,Worker,WebAssembly,WFVoiceLoudness:voiceLoudness,...(web?{AudioContext:web.AudioContext}:{}),
-  fetch:async()=>{throw new Error('speech must remain offline');},dispatchEvent:event=>events.push(event),addEventListener(){}};
+  fetch:async()=>{throw new Error('speech must remain offline');},dispatchEvent:event=>events.push(event),addEventListener(type,listener){if(!windowListeners.has(type))windowListeners.set(type,new Set());windowListeners.get(type).add(listener);}};
  const documentListeners=new Map(),document={baseURI:'https://example.test/',hidden:false,
   addEventListener(type,listener){if(!documentListeners.has(type))documentListeners.set(type,new Set());documentListeners.get(type).add(listener);},
   removeEventListener(type,listener){documentListeners.get(type)?.delete(listener);}};
  class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail;}}
  vm.runInNewContext(source,{window,document,navigator:{audioSession},location:{origin:'https://example.test'},
   Audio,Worker,URL:FakeURL,Blob,Response,CustomEvent,WebAssembly,AbortController,crypto:webcrypto,
-  setTimeout:web?web.clock.setTimeout:setTimeout,clearTimeout:web?web.clock.clearTimeout:clearTimeout});
+  setTimeout:clock.setTimeout,clearTimeout:clock.clearTimeout});
  await flushUntil(()=>window.WFOfflineVoice.getStatus('ar').ready);
- return {api:window.WFOfflineVoice,requests,clips,urls,revoked,audioElements,workers,...web,
+ return {api:window.WFOfflineVoice,requests,clips,urls,revoked,audioElements,workers,clock,...web,
+  pagehide(){for(const listener of windowListeners.get('pagehide')||[])listener();},
   setHidden(value){document.hidden=value;for(const listener of documentListeners.get('visibilitychange')||[])listener();},
   respond(index,blob=wav(new Float32Array(2400)),problem){const request=requests[index];assert(request);request.worker.onmessage({data:{id:request.id,blob,error:problem}});}};
 }
@@ -150,6 +151,36 @@ test('continuous speech waits for the complete report and uses one audio source 
   audio.advance(.19);assert.equal(boundaries.length,2);audio.onended();await flushUntil(()=>ended===1);
   assert.equal(f.urls.size,0);assert.equal(audio.ontimeupdate,null);
  }finally{handle.cancel();}
+});
+
+test('an unused synthesis worker is reused briefly, expires after idle time and releases every timer on pagehide',async()=>{
+ const f=await fixture();
+ const first=f.api.synthesize('First.',{locale:'ar'});f.respond(0);await first;
+ assert.equal(f.workers.length,1);f.clock.advance(299);assert.equal(f.workers[0].terminated,false);
+ const second=f.api.synthesize('Next.',{locale:'ar'});assert.equal(f.workers.length,1);
+ f.clock.advance(2);assert.equal(f.workers[0].terminated,false,'old idle deadline cannot terminate a current inference');
+ f.respond(1);await second;f.clock.advance(300);assert.equal(f.workers[0].terminated,true);assert.equal(f.clock.pending,0);
+ const third=f.api.synthesize('Again.',{locale:'ar'});assert.equal(f.workers.length,2);f.respond(2);await third;
+ f.pagehide();assert.equal(f.workers[1].terminated,true);assert.equal(f.clock.pending,0);
+});
+
+test('active and paused audio retain their local engine until playback releases ownership',async()=>{
+ const f=await fixture();let started=0;
+ const handle=f.api.speak({text:'A complete phrase.',locale:'ar',continuous:true,onStart(){started++;}});
+ await flushUntil(()=>f.requests.length===1);f.respond(0);await flushUntil(()=>started===1);
+ f.clock.advance(600);assert.equal(f.workers[0].terminated,false);
+ handle.pause();f.clock.advance(600);assert.equal(f.workers[0].terminated,false);
+ await handle.resume();handle.cancel();f.clock.advance(299);assert.equal(f.workers[0].terminated,false);
+ f.clock.advance(1);assert.equal(f.workers[0].terminated,true);assert.equal(f.clock.pending,0);assert.equal(f.urls.size,0);
+});
+
+test('a synchronous worker transport failure releases its job so a new request can retry immediately',async()=>{
+ const f=await fixture();const first=f.api.synthesize('First.',{locale:'ar'});f.respond(0);await first;
+ f.workers[0].postMessage=()=>{throw new Error('worker unavailable');};
+ await assert.rejects(f.api.synthesize('Failed.',{locale:'ar'}),error=>error.code==='engine-failed');
+ assert.equal(f.workers[0].terminated,true);assert.equal(f.clock.pending,0);
+ const next=f.api.synthesize('Retry.',{locale:'ar'});assert.equal(f.workers.length,2);f.respond(1);await next;
+ f.pagehide();assert.equal(f.clock.pending,0);
 });
 
 test('PCM playback starts before its first sentence stream or remaining report has finished',async()=>{

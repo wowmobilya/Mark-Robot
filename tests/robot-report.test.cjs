@@ -43,7 +43,7 @@ test('voice setup uses download and cancellation actions instead of a dead repla
 });
 
 function reportUIFixture(){
- const nodes=[],events=new Map(),documentEvents=new Map(),timers=new Map(),calls=[],observers=[],materialValues={};let timerId=0,styleReads=0;
+ const nodes=[],events=new Map(),documentEvents=new Map(),timers=new Map(),calls=[],observers=[],materialValues={};let timerId=0,styleReads=0,routeReads=0;
  let document;
  class Element{
   constructor(tag){this.tagName=tag.toUpperCase();this.children=[];this.events={};this.attributes={};this.dataset={};this.inert=false;this.hidden=false;this.disabled=false;
@@ -75,7 +75,7 @@ function reportUIFixture(){
  const card=new Element('div');card.className='wf-greeting-flip';dashboard.append(card);
  const faces=new Element('div');faces.className='wf-greeting-faces';card.append(faces);
  const behind=new Element('button');body.append(main,behind);
- document={documentElement:html,body,activeElement:behind,createElement:tag=>new Element(tag),getElementById:id=>nodes.find(node=>node.id===id)||null,querySelector:selector=>selector==='#mainContent'?main:selector==='#page-dashboard'?dashboard:selector==='.page.active'?activePage:selector==='.wf-greeting-flip'?card:selector==='.wf-greeting-faces'?faces:null,
+ document={documentElement:html,body,activeElement:behind,createElement:tag=>new Element(tag),getElementById:id=>nodes.find(node=>node.id===id)||null,querySelector:selector=>{if(selector==='.page.active'){routeReads++;return activePage;}return selector==='#mainContent'?main:selector==='#page-dashboard'?dashboard:selector==='.wf-greeting-flip'?card:selector==='.wf-greeting-faces'?faces:null;},
   querySelectorAll:()=>nodes.filter(node=>node.tagName==='BUTTON'||node.tabIndex>=0),addEventListener:(name,listener)=>documentEvents.set(name,listener),removeEventListener:name=>documentEvents.delete(name)};
  class CustomEvent{constructor(type,{detail}={}){this.type=type;this.detail=detail;}}
  const window={addEventListener(name,listener){const group=events.get(name)||[];group.push(listener);events.set(name,group);},dispatchEvent(event){if(event.type==='wf-robot-report-control')calls.push(event.detail.action);for(const listener of events.get(event.type)||[])listener(event);},
@@ -86,7 +86,7 @@ function reportUIFixture(){
   matchMedia:()=>({matches:true}),getComputedStyle:()=>{styleReads++;return {visibility:'visible',getPropertyValue:name=>materialValues[name]||''};},setTimeout:schedule,clearTimeout:id=>timers.delete(id),requestAnimationFrame:schedule,cancelAnimationFrame:id=>timers.delete(id),
   MutationObserver:class{constructor(callback){this.callback=callback;observers.push(this);}observe(target,options){this.target=target;this.options=options;}}});
  const get=className=>nodes.find(node=>node.classList.contains(className));
- return {window,document,nodes,calls,behind,main,dashboard,card,faces,get,observers,materialValues,get styleReads(){return styleReads;},
+ return {window,document,nodes,calls,behind,main,dashboard,card,faces,get,observers,materialValues,get styleReads(){return styleReads;},get routeReads(){return routeReads;},
   emit(type,detail){window.dispatchEvent(new CustomEvent(type,{detail}));},
   click(className){get(className).events.click({isTrusted:true});},
   key(key,shiftKey=false){let prevented=false;documentEvents.get('keydown')?.({key,shiftKey,preventDefault(){prevented=true;}});return prevented;},
@@ -221,10 +221,20 @@ test('route changes minimize without stopping and a show event restores the read
 test('reopening from another section returns to the original smart card without an immediate route collapse',()=>{
  const f=reportUIFixture();f.emit('wf-robot-report-open',{snapshot:exampleReport(),locale:'en'});
  const routeObserver=f.observers.find(item=>item.target===f.main&&item.options.attributeFilter.includes('class'));
- f.window.showPage('settings');routeObserver.callback();f.flush();assert.equal(f.get('wf-robot-report-sheet').hidden,true);
- assert.equal(f.window.WFRobotReport.show(),true);routeObserver.callback();f.flush();
+ f.window.showPage('settings');routeObserver.callback([{target:f.dashboard,attributeName:'class'}]);f.flush();assert.equal(f.get('wf-robot-report-sheet').hidden,true);
+ assert.equal(f.window.WFRobotReport.show(),true);routeObserver.callback([{target:f.dashboard,attributeName:'class'}]);f.flush();
  assert.equal(f.dashboard.classList.contains('active'),true);assert.equal(f.get('wf-robot-report-sheet').hidden,false);
  assert.deepEqual(f.calls,[]);
+});
+
+test('sentence highlighting and dashboard decoration never rescan the active route',()=>{
+ const f=reportUIFixture();f.emit('wf-robot-report-open',{snapshot:exampleReport(),locale:'en'});
+ const observer=f.observers.find(item=>item.target===f.main&&item.options.attributeFilter.includes('class'));
+ const before=f.routeReads;
+ for(let index=0;index<100;index++)observer.callback([{target:f.get('wf-report-sentence')||f.card,attributeName:'class'}]);
+ assert.equal(f.routeReads,before);assert.equal(f.get('wf-robot-report-sheet').hidden,false);
+ f.window.showPage('settings');observer.callback([{target:f.dashboard,attributeName:'class'}]);f.flush();
+ assert.equal(f.routeReads,before+1);assert.equal(f.get('wf-robot-report-sheet').hidden,true);
 });
 
 test('a hidden smart card keeps the minimized speech controls available instead of opening an invisible report',()=>{

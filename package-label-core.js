@@ -229,9 +229,10 @@
     });
   }
 
-  function buildLabelBatch(model, options) {
+  // Reuse the exact print validation without allocating physical label objects.
+  // Review screens can inspect large invoice collections in linear item time.
+  function inspectLabelBatch(model) {
     const source = record(model), issues = Array.isArray(source.issues) ? source.issues.slice() : [];
-    const profile = profileFor(record(options).profileId);
     const validItems = [], items = Array.isArray(source.items) ? source.items : [];
     let total = 0;
     for (const item of items) {
@@ -243,17 +244,29 @@
       // name or substitute another barcode payload without the user's choice.
       if (!/^[\x20-\x7e]+$/.test(item.name)) addIssue(issues, 'unsupportedBarcode', 'error', item, item.name);
     }
-    const labels = [], pages = [];
-    if (!Number.isSafeInteger(total) || total > maxLabels) {
+    const withinLimit = Number.isSafeInteger(total) && total <= maxLabels;
+    if (!withinLimit) {
       addIssue(issues, 'tooManyLabels', 'error', null, String(total));
-    } else {
+    }
+    return Object.freeze({issues:Object.freeze(issues),items:Object.freeze(validItems),totalLabels:total,withinLimit});
+  }
+
+  function buildLabelBatch(model, options) {
+    const source = record(model), profile = profileFor(record(options).profileId);
+    const inspection = inspectLabelBatch(source), issues = inspection.issues;
+    const labels = [], pages = [];
+    if (inspection.withinLimit) {
       // Keep each invoice line separate, including same-name products and color
       // variants; retain the source template's packet-major order within it.
-      for (const item of validItems) {
+      for (const item of inspection.items) {
         for (let currentPacket = 1; currentPacket <= item.packets; currentPacket++) {
           for (let unitIndex = 1; unitIndex <= item.qty; unitIndex++) {
             labels.push(Object.freeze({
               ...item, unitIndex, currentPacket, totalPackets:item.packets,
+              // Identity belongs to the saved invoice line, packet and unit.
+              // Paper size and a later reprint selection must never renumber it.
+              labelId:JSON.stringify([string(source.invoiceId)||string(source.invNo),item.lineIndex,currentPacket,unitIndex]),
+              sequenceNumber:labels.length+1,
               barcodeText:`${item.name} - Packet ${currentPacket}/${item.packets}`
             }));
           }
@@ -266,8 +279,20 @@
       model:source, profileId:profile.id, invoiceId:string(source.invoiceId), invNo:string(source.invNo),
       customerLogo:safeImageSource(source.customerLogo), companyLogo:safeImageSource(source.companyLogo),
       labels:Object.freeze(labels), pages:Object.freeze(pages), issues:Object.freeze(issues),
-      labelCount:labels.length, pageCount:pages.length
+      labelCount:labels.length, originalLabelCount:labels.length, pageCount:pages.length
     });
+  }
+
+  function selectLabelBatch(batch, labelIds) {
+    const source=record(batch), selected=new Set(Array.isArray(labelIds)?labelIds:[]);
+    const paper=profileFor(source.profileId), cardsPerPage=paper.columns*paper.rows;
+    // Filter the original ordered objects. Never reduce qty/packets or rebuild
+    // labels from a requested count: that would lose the missing label's number.
+    const labels=(Array.isArray(source.labels)?source.labels:[]).filter(label=>selected.has(label.labelId));
+    const pages=[];
+    for(let index=0;index<labels.length;index+=cardsPerPage)pages.push(Object.freeze(labels.slice(index,index+cardsPerPage)));
+    return Object.freeze({...source,labels:Object.freeze(labels),pages:Object.freeze(pages),
+      originalLabelCount:source.originalLabelCount??source.labelCount??0,labelCount:labels.length,pageCount:pages.length});
   }
 
   function barcodeImage(images, text) {
@@ -551,5 +576,5 @@
     return html + `</body></html>`;
   }
 
-  return Object.freeze({geometry, defaultProfileId, profiles, maxLabels, normalizeInvoice, buildLabelBatch, renderDocument, safeImageSource});
+  return Object.freeze({geometry, defaultProfileId, profiles, maxLabels, normalizeInvoice, inspectLabelBatch, buildLabelBatch, selectLabelBatch, renderDocument, safeImageSource});
 });

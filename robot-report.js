@@ -350,7 +350,12 @@
     if(!materialFrame)materialFrame=requestAnimationFrame(syncCardMaterials);
   }).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','style']});
   const main=document.querySelector('#mainContent');let routePage=document.querySelector('.page.active');
-  if(main)new MutationObserver(()=>{const next=document.querySelector('.page.active');if(next!==routePage){routePage=next;dismiss(false,false);}}).observe(main,{attributes:true,subtree:true,attributeFilter:['class']});
+  if(main)new MutationObserver(records=>{
+    // Highlighted report sentences, carousel states and row selection classes
+    // do not change the current page and need no document-wide route lookup.
+    if(!records.some(record=>record.target.classList?.contains('page')))return;
+    const next=document.querySelector('.page.active');if(next!==routePage){routePage=next;dismiss(false,false);}
+  }).observe(main,{attributes:true,subtree:true,attributeFilter:['class']});
   new MutationObserver(()=>{if(card.closest('[inert],[hidden]'))dismiss(false,false);}).observe(card,{attributes:true,attributeFilter:['hidden','inert']});
   new MutationObserver(()=>{if(!sheet.hidden&&document.documentElement.lang!==locale)dismiss(false,false);}).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   window.WFRobotReport=Object.freeze({show,minimize:()=>dismiss(false),close:closeReader,hasReport:()=>!!snapshot,isMinimized:()=>minimized,isOpen:()=>!sheet.hidden&&!sheet.classList.contains('is-closing')});

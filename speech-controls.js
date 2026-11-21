@@ -63,6 +63,16 @@
   }
   function place() {
     placementQueued = false;
+    // An idle reader has no visible slot to measure. Keep its DOM available
+    // for the next speech event without reading every workspace heading.
+    if (dock.hidden) {
+      setClass(mountedHeader, 'wf-speech-toolbar-host', false);
+      mountedHeader = null;
+      setClass(document.documentElement, 'wf-speech-toolbar-active', false);
+      if (dock.dataset.location !== 'none') dock.dataset.location = 'none';
+      if (dock.dataset.staging !== String(staging)) dock.dataset.staging = String(staging);
+      return;
+    }
     const target = targetHeader();
     if (target && dock.parentNode !== target.slot) target.slot.append(dock);
     if (mountedHeader && mountedHeader !== target?.header) setClass(mountedHeader, 'wf-speech-toolbar-host', false);
@@ -73,7 +83,7 @@
     dock.dataset.staging = String(staging);
   }
   function schedulePlace() {
-    if (placementQueued) return;
+    if (placementQueued || dock.hidden) return;
     placementQueued = true;
     if (root.requestAnimationFrame) root.requestAnimationFrame(place); else place();
   }
@@ -143,9 +153,16 @@
   root.addEventListener('hashchange', schedulePlace);
   root.addEventListener('popstate', schedulePlace);
   if (typeof MutationObserver === 'function') {
-    new MutationObserver(() => render()).observe(document.documentElement, {attributes:true,attributeFilter:['class','lang','dir']});
+    const layoutState = () => [document.documentElement.lang, document.documentElement.dir,
+      document.documentElement.classList.contains('wf-section-mode')].join('|');
+    let previousLayout = layoutState();
+    new MutationObserver(() => {
+      const next = layoutState(); if (next === previousLayout) return;
+      previousLayout = next; render();
+    }).observe(document.documentElement, {attributes:true,attributeFilter:['class','lang','dir']});
     const main = document.getElementById('mainContent');
     if (main) new MutationObserver(records => {
+      if (dock.hidden) return;
       if (records.some(record => !dock.contains(record.target) && !(record.target === mountedHeader && record.attributeName === 'class'))) schedulePlace();
     }).observe(main, {subtree:true,childList:true,attributes:true,attributeFilter:['class','style','hidden']});
   }

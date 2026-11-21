@@ -409,6 +409,7 @@
   const voiceRows = new Map(), downloads = new Map(), preparations = new Set(), preparationErrors = new Set();
   let dirty = false, nonRateChanges = false, lastSpeech = {}, lastPublishedPreferences = '', saveState = '', latestMotion = {active: false, state: 'off', x: 0, y: 0}, disposed = false;
   let readingRequested = false, readingStarted = false, readingStatusKey = '', readingVoiceName = '', readingMessage = '', readingMessageLocale = '';
+  let voiceRenderQueued = false, voiceRenderFrame = null;
   const getPreferences = () => normalize(state()?.settings?.robot);
   function notifyActions() { window.dispatchEvent(new CustomEvent('wf-settings-actions-change')); }
   function setReadingStatus(key, voiceName = '', message = '', messageLocale = language()) {
@@ -583,7 +584,20 @@
     saveStatus.textContent = saveState ? t(saveState) : '';
     cameraUI(); updatePreview(); renderVoicePacks();
   }
+  function scheduleVoicePacks() {
+    if (disposed || voiceRenderQueued) return;
+    if (typeof window.requestAnimationFrame !== 'function') { renderVoicePacks(); return; }
+    // A shared reference pack publishes its state for every supported locale.
+    // Draw its single settings row once per paint, using the latest state.
+    voiceRenderQueued = true;
+    voiceRenderFrame = window.requestAnimationFrame(() => {
+      voiceRenderQueued = false; voiceRenderFrame = null;
+      if (!disposed) renderVoicePacks();
+    });
+  }
   function renderVoicePacks() {
+    if (voiceRenderFrame !== null) window.cancelAnimationFrame?.(voiceRenderFrame);
+    voiceRenderQueued = false; voiceRenderFrame = null;
     const entries = voicePackEntries(null, window.WFReferenceVoice, language());
     voiceSection.hidden = false;
     const anyDownloading = entries.some(entry => entry.status.state === 'downloading');
@@ -615,7 +629,7 @@
             }
             else {
               const controller = new AbortController(); downloads.set(key, controller);
-              await api.download(locale, {signal: controller.signal, onProgress: renderVoicePacks});
+              await api.download(locale, {signal: controller.signal, onProgress: scheduleVoicePacks});
             }
           } catch (_) { if (preparations.has(key)) preparationErrors.add(key); }
           finally { preparations.delete(key); downloads.delete(key); action.disabled = false; if (!disposed) renderVoicePacks(); }
@@ -719,17 +733,19 @@
   languageObserver.observe(root, {attributes: true, attributeFilter: ['lang']});
   document.addEventListener('visibilitychange', checkVisibility);
   window.addEventListener('wf-robot-ready', populatePreview);
-  window.addEventListener('wf-reference-voice-change', renderVoicePacks);
-  window.addEventListener('wf-reference-voice-progress', renderVoicePacks);
-  window.addEventListener('wf-reference-voice-loading', renderVoicePacks);
+  window.addEventListener('wf-reference-voice-change', scheduleVoicePacks);
+  window.addEventListener('wf-reference-voice-progress', scheduleVoicePacks);
+  window.addEventListener('wf-reference-voice-loading', scheduleVoicePacks);
   window.addEventListener('wf-program-speech-state', readingStateChanged);
   window.addEventListener('pagehide', event => {
     tracker.stop('hidden');
     if (!event.persisted) { disposed = true; tracker.destroy(); observer.disconnect(); dialogObserver.disconnect(); languageObserver.disconnect();
+      if (voiceRenderFrame !== null) window.cancelAnimationFrame?.(voiceRenderFrame);
+      voiceRenderFrame = null; voiceRenderQueued = false;
       for (const controller of downloads.values()) controller.abort(); downloads.clear();
       document.removeEventListener('visibilitychange', checkVisibility); window.removeEventListener('wf-robot-ready', populatePreview);
-      window.removeEventListener('wf-reference-voice-change', renderVoicePacks); window.removeEventListener('wf-reference-voice-progress', renderVoicePacks);
-      window.removeEventListener('wf-reference-voice-loading', renderVoicePacks);
+      window.removeEventListener('wf-reference-voice-change', scheduleVoicePacks); window.removeEventListener('wf-reference-voice-progress', scheduleVoicePacks);
+      window.removeEventListener('wf-reference-voice-loading', scheduleVoicePacks);
       window.removeEventListener('wf-program-speech-state', readingStateChanged); }
   });
   window.WFRobotSettings = {getPreferences, displayVoiceName, stopTracking: () => tracker.stop('off'), checkVisibility, getSettingsActions};

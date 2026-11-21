@@ -4,15 +4,16 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const file=path.resolve(__dirname,'../speech-controls.js');
 
 function fixture({initial={active:false},apiPresent=true,methods,report=true}={}){
- const events=new Map(),calls=[],observers=[];let current=initial,activePage=null;
+ const events=new Map(),calls=[],observers=[],metrics={measurements:0,routeReads:0,iconWrites:0};let current=initial,activePage=null;
  class Element{
-  constructor(tag){this.tagName=tag.toUpperCase();this.children=[];this.attributes={};this.dataset={};this.events=new Map();this.hidden=false;this.disabled=false;this.textContent='';this.innerHTML='';this.classes=new Set();this.classList={contains:name=>this.classes.has(name),add:name=>this.classes.add(name),remove:name=>this.classes.delete(name),toggle:(name,on)=>on?this.classes.add(name):this.classes.delete(name)};}
+  constructor(tag){this.tagName=tag.toUpperCase();this.children=[];this.attributes={};this.dataset={};this.events=new Map();this.hidden=false;this.disabled=false;this.textContent='';this.markup='';this.classes=new Set();this.classList={contains:name=>this.classes.has(name),add:name=>this.classes.add(name),remove:name=>this.classes.delete(name),toggle:(name,on)=>on?this.classes.add(name):this.classes.delete(name)};}
+  get innerHTML(){return this.markup;}set innerHTML(value){metrics.iconWrites++;this.markup=value;}
   append(...children){for(const child of children){if(child.parentNode)child.parentNode.children=child.parentNode.children.filter(item=>item!==child);this.children.push(child);child.parentNode=this;}}
   setAttribute(name,value){this.attributes[name]=String(value);}
   getAttribute(name){return this.attributes[name]??null;}
   addEventListener(type,handler){this.events.set(type,handler);}
   contains(node){return node===this||this.children.some(child=>child.contains(node));}
-  getClientRects(){return this.hidden?[]:[{}];}
+  getClientRects(){metrics.measurements++;return this.hidden?[]:[{}];}
   querySelector(selector){return this.querySelectorAll(selector)[0]||null;}
   querySelectorAll(selector){const name=selector.startsWith('.')?selector.slice(1):'';return this.children.flatMap(child=>[...(child.classList.contains(name)?[child]:[]),...child.querySelectorAll(selector)]);}
  }
@@ -22,7 +23,7 @@ function fixture({initial={active:false},apiPresent=true,methods,report=true}={}
  const page1=new Element('section'),page2=new Element('section'),row1=new Element('header'),row2=new Element('header');
  row1.classList.add('wf-heading-row');row2.classList.add('wf-heading-row');page1.append(row1);page2.append(row2);main.append(page1,page2);body.append(nav,main);
  const find=(node,id)=>node.id===id?node:node.children.map(child=>find(child,id)).find(Boolean);
- const document={body,documentElement:html,createElement:tag=>new Element(tag),getElementById:id=>find(body,id)||null,querySelector:selector=>selector==='.navbar'?nav:selector==='.page.active'?activePage:null};
+ const document={body,documentElement:html,createElement:tag=>new Element(tag),getElementById:id=>find(body,id)||null,querySelector:selector=>{if(selector==='.page.active'){metrics.routeReads++;return activePage;}return selector==='.navbar'?nav:null;}};
  const api={getState:()=>current,...(methods||{pause(){calls.push('pause');},resume(){calls.push('resume');return Promise.resolve();},stop(){calls.push('stop');}}),
   speak(){calls.push('unexpected-speak');},preview(){calls.push('unexpected-preview');}};
  const window={document,...(apiPresent?{WFProgramSpeech:api}:{}),...(report?{WFRobotReport:{show(){calls.push('show-report');return true;},close(){calls.push('close-report');emit('wf-robot-report-visibility',{open:false,minimized:false,locale:'ar'});return true;}}}:{}),
@@ -30,10 +31,12 @@ function fixture({initial={active:false},apiPresent=true,methods,report=true}={}
  const emit=(type,detail)=>{for(const handler of events.get(type)||[])handler({detail});};
  assert(fs.existsSync(file),'Persistent speech controls must be implemented');
  const context={window,MutationObserver:class{constructor(callback){this.callback=callback;observers.push(this);}observe(target){this.target=target;}}};const source=fs.readFileSync(file,'utf8');vm.runInNewContext(source,context);
- return {window,document,body,nav,home,main,row1,row2,classes,calls,api,node:id=>find(body,id),
+ return {window,document,body,nav,home,main,row1,row2,classes,calls,api,metrics,node:id=>find(body,id),
   update(value){current=value;emit('wf-program-speech-state',value);},ready(){emit('wf-robot-ready');},
   reportOpen(open,minimized=false,transition){open?classes.add('wf-robot-report-open'):classes.delete('wf-robot-report-open');emit('wf-robot-report-visibility',{open,minimized,locale:'ar',transition});},
   navigate(page){activePage=page===1?page1:page===2?page2:null;activePage?classes.add('wf-section-mode'):classes.delete('wf-section-mode');for(const observer of observers.filter(item=>item.target===main))observer.callback([{target:activePage||main,attributeName:'class'}]);},
+  mutateRoot(name){classes.add(name);for(const observer of observers.filter(item=>item.target===html))observer.callback([{target:html,attributeName:'class'}]);},
+  mutateWorkspace(){for(const observer of observers.filter(item=>item.target===main))observer.callback([{target:row1,attributeName:'style'}]);},
   click(id,trusted=true){find(body,id)?.events.get('click')?.({isTrusted:trusted,preventDefault(){},stopPropagation(){}});},
   reload(){vm.runInNewContext(source,context);}};
 }
@@ -118,4 +121,20 @@ test('the silent minimized reader can be closed directly and returns the toolbar
  f.click('wfSpeechControlsStop',false);assert.deepEqual(f.calls,[]);
  f.click('wfSpeechControlsStop');assert.deepEqual(f.calls,['close-report']);
  assert(f.node('wfSpeechControls').hidden);assert(!f.classes.has('wf-speech-toolbar-active'));assert(!f.row1.classList.contains('wf-speech-toolbar-host'));
+});
+
+test('an idle reader does not scan or measure workspaces while their content changes',()=>{
+ const f=fixture();f.navigate(1);
+ Object.keys(f.metrics).forEach(key=>f.metrics[key]=0);
+ for(let index=0;index<50;index++)f.mutateWorkspace();
+ assert.deepEqual(f.metrics,{measurements:0,routeReads:0,iconWrites:0});
+ f.update(active());assert.equal(f.node('wfSpeechControls').parentNode,f.row1);assert(f.metrics.measurements>0);
+});
+
+test('unrelated root classes do not rebuild live reader controls or force header layout',()=>{
+ const f=fixture({initial:active()});f.navigate(1);f.mutateRoot('wf-section-mode');
+ Object.keys(f.metrics).forEach(key=>f.metrics[key]=0);
+ for(const name of ['wf-home-scroll-top','wf-sidebar-collapsed','wf-dashboard-scrolled','wf-header-hidden'])f.mutateRoot(name);
+ assert.deepEqual(f.metrics,{measurements:0,routeReads:0,iconWrites:0});
+ assert.equal(f.node('wfSpeechControls').parentNode,f.row1);assert.deepEqual(f.calls,[]);
 });

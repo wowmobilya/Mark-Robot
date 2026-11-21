@@ -295,23 +295,35 @@
   const emit=(type,detail)=>window.dispatchEvent(new CustomEvent(type,{detail}));
   const manager=createManager({caches:window.caches,fetch:window.fetch.bind(window),digest:bytes=>crypto.subtle.digest('SHA-256',bytes),origin:location.origin,supported:supported(),
     estimate:navigator.storage?.estimate?()=>navigator.storage.estimate():null,onChange:value=>emit('wf-offline-voice-change',value),onProgress:value=>emit('wf-offline-voice-progress',value)});
-  let worker=null,workerEngine='',requestId=0,job=null,activeSpeech=null;
-  function terminate(){if(worker){worker.terminate();worker=null;}workerEngine='';if(job){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();task.reject(aborted());}}
+  const WORKER_IDLE_MS=300000;
+  let worker=null,workerEngine='',requestId=0,job=null,activeSpeech=null,idleTimer=null;
+  function terminate(){clearTimeout(idleTimer);idleTimer=null;if(worker){worker.terminate();worker=null;}workerEngine='';if(job){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();task.reject(aborted());}}
+  function scheduleWorkerIdle(){
+    clearTimeout(idleTimer);idleTimer=null;
+    if(!worker||job||activeSpeech)return;
+    const instance=worker;
+    // Keep a recently used model warm, then release its worker/WASM memory.
+    // A paused reader still owns its engine and never expires here.
+    idleTimer=setTimeout(()=>{idleTimer=null;if(worker===instance&&!job&&!activeSpeech)terminate();},WORKER_IDLE_MS);
+  }
   function workerRequest(locale,text,signal){
     if(job)return Promise.reject(error('speech-busy'));checkAbort(signal);
+    clearTimeout(idleTimer);idleTimer=null;
     const engine=catalog.find(voice=>voice.locale===localeKey(locale))?.engine||'piper';
     if(worker&&workerEngine!==engine)terminate();
     if(!worker){
       worker=engine==='nabra'?new Worker(new URL('nabra-report-worker.js?v=3',document.baseURI),{type:'module'}):new Worker(new URL('offline-voice-worker.js?v=5',document.baseURI));
       workerEngine=engine;
       const instance=worker;
-      worker.onmessage=event=>{if(worker!==instance||!job||event.data?.id!==job.id)return;const task=job;job=null;clearTimeout(task.timeout);task.cleanup();if(event.data.error){worker?.terminate();worker=null;task.reject(error(event.data.error));}else task.resolve(event.data.blob);};
-      worker.onerror=()=>{if(worker!==instance)return;if(job){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();task.reject(error('engine-failed'));}worker?.terminate();worker=null;};
+      worker.onmessage=event=>{if(worker!==instance||!job||event.data?.id!==job.id)return;const task=job;job=null;clearTimeout(task.timeout);task.cleanup();if(event.data.error){terminate();task.reject(error(event.data.error));}else{task.resolve(event.data.blob);scheduleWorkerIdle();}};
+      worker.onerror=()=>{if(worker!==instance)return;if(job){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();task.reject(error('engine-failed'));}terminate();};
     }
     return new Promise((resolve,reject)=>{
       const id=++requestId,abort=()=>{if(job?.id===id)terminate();};
-      job={id,resolve,reject,cleanup:()=>signal?.removeEventListener('abort',abort),timeout:setTimeout(()=>{if(job?.id===id){const task=job;job=null;task.cleanup();worker?.terminate();worker=null;task.reject(error('speech-timeout'));}},90000)};
-      signal?.addEventListener('abort',abort,{once:true});worker.postMessage({id,locale:localeKey(locale),text});
+      job={id,resolve,reject,cleanup:()=>signal?.removeEventListener('abort',abort),timeout:setTimeout(()=>{if(job?.id===id){const task=job;job=null;task.cleanup();terminate();task.reject(error('speech-timeout'));}},90000)};
+      signal?.addEventListener('abort',abort,{once:true});
+      try{worker.postMessage({id,locale:localeKey(locale),text});}
+      catch(_){const task=job;job=null;clearTimeout(task.timeout);task.cleanup();terminate();reject(error('engine-failed'));}
     });
   }
   async function synthesize(text,options={}){
@@ -386,7 +398,7 @@
       nodes.clear();try{gain?.disconnect();}catch(_){}
       for(const waiter of capacity)waiter.reject(aborted());capacity.clear();
       if(drain){drain();drain=null;}
-      lease.dispose();if(activeSpeech===handle)activeSpeech=null;
+      lease.dispose();if(activeSpeech===handle){activeSpeech=null;scheduleWorkerIdle();}
       if(!sourceReleased){sourceReleased=true;try{source.dispose?.();}catch(_){}}
     };
     const fail=problem=>{if(stopped||finished)return;finished=true;controller.abort();cleanup();if(problem?.name!=='AbortError')options.onError?.(problem);};
@@ -573,7 +585,7 @@
     const controller=new AbortController(),audio=lease.audio;let rate=speechRate(options.rate),stopped=false,url='',finished=false,sourceReleased=false,paused=false,resumeClip=null,playAttempt=0;
     const text=typeof options.text==='string'?options.text:'',locale=options.locale||'ar';
     const clearAudioEvents=()=>{audio.onplaying=audio.onwaiting=audio.onended=audio.onerror=audio.ontimeupdate=null;};
-    const cleanup=()=>{resumeClip=null;clearAudioEvents();lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle)activeSpeech=null;
+    const cleanup=()=>{resumeClip=null;clearAudioEvents();lease.dispose();if(url){URL.revokeObjectURL(url);url='';}if(activeSpeech===handle){activeSpeech=null;scheduleWorkerIdle();}
       if(!sourceReleased){sourceReleased=true;try{source?.dispose?.();}catch(_){}}
     };
     const handle={

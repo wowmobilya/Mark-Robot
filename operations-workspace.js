@@ -14,9 +14,14 @@
     'invoice-archive': {ar:'أرشيف الفواتير',tr:'Fatura arşivi',en:'Invoice archive',fr:'Archives des factures',ru:'Архив счетов'},
     'manufacturing': {ar:'بطاقات التصنيع',tr:'Üretim fişleri',en:'Manufacturing tickets',fr:'Fiches de fabrication',ru:'Производственные задания'},
     'material-library': {ar:'مكتبة المواد والخامات',tr:'Malzeme kütüphanesi',en:'Material library',fr:'Bibliothèque des matières',ru:'Библиотека материалов'},
-    'cost-analysis': {ar:'تحليل الكلفة والربح',tr:'Maliyet ve kâr analizi',en:'Cost and profit analysis',fr:'Analyse des coûts et des bénéfices',ru:'Анализ себестоимости и прибыли'}
+    'cost-analysis': {ar:'تحليل الكلفة والربح',tr:'Maliyet ve kâr analizi',en:'Cost and profit analysis',fr:'Analyse des coûts et des bénéfices',ru:'Анализ себестоимости и прибыли'},
+    'print-history': {ar:'سجل إعادة الطباعة',tr:'Yeniden baskı geçmişi',en:'Reprint history',fr:'Historique des réimpressions',ru:'История повторной печати'},
+    'review-center': {ar:'مركز المتابعة',tr:'Kontrol merkezi',en:'Review center',fr:'Centre de suivi',ru:'Центр проверки'},
+    'daily-tasks': {ar:'المهام اليومية',tr:'Günlük görevler',en:'Daily tasks',fr:'Tâches quotidiennes',ru:'Ежедневные задачи'},
+    'global-search': {ar:'البحث الشامل',tr:'Genel arama',en:'Global search',fr:'Recherche globale',ru:'Общий поиск'},
+    'purchase-planner': {ar:'مساعد الشراء وإعادة الطلب',tr:'Satın alma ve yeniden sipariş',en:'Purchase and reorder planner',fr:'Achats et réapprovisionnement',ru:'Планирование закупок'}
   };
-  const groupNames = {ar:'التصنيع والمتابعة',tr:'Üretim ve takip',en:'Production and records',fr:'Production et suivi',ru:'Производство и учёт'};
+  const groupNames = {ar:'الأدوات والمتابعة',tr:'Araçlar ve takip',en:'Tools and follow-up',fr:'Outils et suivi',ru:'Инструменты и контроль'};
   const backNames = {ar:'رجوع',tr:'Geri',en:'Back',fr:'Retour',ru:'Назад'};
   const icons = {
     package:'<path d="m3 7 9-4 9 4v10l-9 4-9-4Zm0 0 9 5 9-5M12 12v9M7.5 5l9 4"/>',
@@ -33,6 +38,8 @@
     restore:'<path d="M3 10a9 9 0 1 1 1 8M3 4v6h6M12 7v5l3 2"/>',
     eye:'<path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
     check:'<path d="m5 12 4 4L19 6"/>',
+    review:'<path d="m3 6 2 2 4-4m3 2h9M3 13h6m3 0h9M3 20h6m3 0h9"/>',
+    calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-14 5 3 3 7-5"/>',
     close:'<path d="m6 6 12 12M18 6 6 18"/>',
     invoice:'<path d="M14 3H5a1 1 0 0 0-1 1v16h16V9Zm0 0v6h6M8 13h8m-8 4h6"/>',
     menu:'<path d="M4 6h16M4 12h16M4 18h16"/>'
@@ -54,7 +61,7 @@
   group.append(groupTitle);
   for (const [id, title] of Object.entries(names)) {
     const link = make('button', 'nav-item'); link.type = 'button'; link.dataset.page = id;
-    const symbol = make('span', 'nav-icon'); symbol.innerHTML = icon({'package-labels':'label','product-costs':'cost','invoice-archive':'archive','manufacturing':'factory','material-library':'material','cost-analysis':'chart'}[id]);
+    const symbol = make('span', 'nav-icon'); symbol.innerHTML = icon({'package-labels':'label','product-costs':'cost','invoice-archive':'archive','manufacturing':'factory','material-library':'material','cost-analysis':'chart','print-history':'print','review-center':'review','daily-tasks':'calendar','global-search':'search','purchase-planner':'package'}[id]);
     const caption = make('span'); link.append(symbol, caption);
     // The shared sidebar search invokes the original item's onclick handler.
     link.onclick = () => open(id);

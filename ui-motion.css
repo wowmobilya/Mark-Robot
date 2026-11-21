@@ -1,20 +1,42 @@
 /* Short compositor-only transitions; interaction and document layout stay immediate. */
+@media screen {
+ /* One layer owns Settings entry/exit; legacy panel reveal must not stack on it. */
+ html body #wfSettingsDialog[open] {animation:none!important;}
+ html body #wfSettingsDialog,html body #wfSettingsDialog::backdrop {backdrop-filter:none;-webkit-backdrop-filter:none;}
+}
 @media screen and (prefers-reduced-motion:no-preference) {
  html:not([data-wf-motion="reduced"]) body .page.active {animation:wf-page-arrive .18s ease-out both;}
  html:not([data-wf-motion="reduced"]) body :is(.wf-settings-panel-enter,.wf-business-details:not([hidden])) {animation:wf-panel-arrive .18s ease-out both;}
  html:not([data-wf-motion="reduced"]) body :is(.wf-settings-workspace .tab-btn,.wf-category-choice) {transition:border-color .15s ease,background-color .15s ease,box-shadow .15s ease;}
  @supports (transition-behavior:allow-discrete) {
-  html:not([data-wf-motion="reduced"]) body :is(#wfSettingsDialog,#wfDevDialog) {
+  html:not([data-wf-motion="reduced"]) body #wfDevDialog {
    opacity:0;transform:translateY(12px) scale(.99);
    transition:opacity .16s ease,transform .18s cubic-bezier(.2,.7,.3,1),display .18s allow-discrete,overlay .18s allow-discrete;
   }
-  html:not([data-wf-motion="reduced"]) body :is(#wfSettingsDialog,#wfDevDialog)[open] {opacity:1;transform:none;}
-  @starting-style {
-   html:not([data-wf-motion="reduced"]) body :is(#wfSettingsDialog,#wfDevDialog)[open] {opacity:0;transform:translateY(12px) scale(.99);}
+  html:not([data-wf-motion="reduced"]) body #wfDevDialog[open] {opacity:1;transform:none;}
+  html:not([data-wf-motion="reduced"]) body #wfSettingsDialog {
+   opacity:0;transform:translateY(8px);
+   transition:opacity .14s ease-out,transform .14s ease-out,display .14s allow-discrete,overlay .14s allow-discrete;
   }
+  html:not([data-wf-motion="reduced"]) body #wfSettingsDialog[open] {opacity:1;transform:none;}
+  html:not([data-wf-motion="reduced"]) body #wfSettingsDialog::backdrop {
+   opacity:0;transition:opacity .14s ease-out,display .14s allow-discrete,overlay .14s allow-discrete;
+  }
+  html:not([data-wf-motion="reduced"]) body #wfSettingsDialog[open]::backdrop {opacity:1;}
+  @starting-style {
+   html:not([data-wf-motion="reduced"]) body #wfDevDialog[open] {opacity:0;transform:translateY(12px) scale(.99);}
+   html:not([data-wf-motion="reduced"]) body #wfSettingsDialog[open] {opacity:0;transform:translateY(8px);}
+   html:not([data-wf-motion="reduced"]) body #wfSettingsDialog[open]::backdrop {opacity:0;}
+  }
+ }
+ @supports not (transition-behavior:allow-discrete) {
+  html:not([data-wf-motion="reduced"]) body #wfSettingsDialog[open] {animation:wf-settings-arrive .14s ease-out!important;}
  }
 }
 @keyframes wf-page-arrive {from{opacity:.3;transform:translateY(4px)}to{opacity:1;transform:none}}
 @keyframes wf-panel-arrive {from{opacity:.35;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes wf-settings-arrive {from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce) {html body :is(.page.active,.wf-settings-panel-enter,.wf-business-details) {animation:none!important;}}
 html[data-wf-motion="reduced"] body :is(.page.active,.wf-settings-panel-enter,.wf-business-details) {animation:none!important;}
+@media (prefers-reduced-motion:reduce) {html body #wfSettingsDialog,html body #wfSettingsDialog::backdrop {animation:none!important;transition:none!important;}}
+html[data-wf-motion="reduced"] body #wfSettingsDialog,html[data-wf-motion="reduced"] body #wfSettingsDialog::backdrop {animation:none!important;transition:none!important;}

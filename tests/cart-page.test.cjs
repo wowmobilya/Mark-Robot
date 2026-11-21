@@ -4,7 +4,7 @@ const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'),source=f
 function existingFunction(name){const start=html.indexOf('function '+name+'(');assert(start>=0,name);const node=acorn.parseExpressionAt(html,start,{ecmaVersion:'latest'});return html.slice(node.start,node.end);}
 const textsStart=html.indexOf('const QBL_CART_TEXTS = ')+ 'const QBL_CART_TEXTS = '.length;
 const textsNode=acorn.parseExpressionAt(html,textsStart,{ecmaVersion:'latest'}),cartTexts=html.slice(textsNode.start,textsNode.end);
-const legacyNames=['qblCartSave','qblCartLoad','qblUpdateCartUI','qblUpdateStickyBar','qblCartChangeQty','qblCartRemoveItem','qblClearCart','qblClearCartConfirm','qblCloseCart','qblOpenCart','qblToggleCart','qblSendToInvoice','getTierPrice'];
+const legacyNames=['wfValidateCartEntries','qblCartSave','qblCartLoad','qblUpdateCartUI','qblUpdateStickyBar','qblCartChangeQty','qblCartRemoveItem','qblClearCart','qblClearCartConfirm','qblCloseCart','qblOpenCart','qblToggleCart','qblSendToInvoice','getTierPrice'];
 const legacy=legacyNames.map(existingFunction).join('\n');
 
 function setup({items=[],saved=null,products=[],customer='selected-client',customerValid=true}={}){

@@ -79,8 +79,8 @@ test('one shared reference card retains its own manager and real status across l
   assert.equal(missing.status.state,'unsupported'); assert.equal(missing.status.reason,'reference-unavailable');
 });
 
-function settingsUIFixture({localReady = false, referenceReady = false, engineReady = false, preferences = {}, connect = async () => { throw Error('No database fixture'); }} = {}) {
-  const nodes = [], trace = [], listeners = new Map();
+function settingsUIFixture({localReady = false, referenceReady = false, engineReady = false, preferences = {}, scheduledFrames = false, connect = async () => { throw Error('No database fixture'); }} = {}) {
+  const nodes = [], trace = [], listeners = new Map(), frames = new Map();let frameId=0,referenceReads=0;
   class Element {
     constructor(tag) { this.tagName=tag.toUpperCase();this.children=[];this.events={};this.attributes={};this.dataset={};this.style={setProperty(){}};this.textContent='';this.classes=new Set();this.classList={contains:name=>this.classes.has(name),add:name=>this.classes.add(name),remove:name=>this.classes.delete(name),toggle:(name,enabled)=>enabled?this.classes.add(name):this.classes.delete(name)};nodes.push(this); }
     append(...values) { for(const value of values){this.children.push(value);value.parentNode=this;} }
@@ -104,12 +104,13 @@ function settingsUIFixture({localReady = false, referenceReady = false, engineRe
   const window={isSecureContext:true,switchTab(){},applyTr(){},addEventListener(name,listener){const list=listeners.get(name)||[];list.push(listener);listeners.set(name,list);},removeEventListener(){},dispatchEvent(event){for(const listener of listeners.get(event.type)||[])listener(event);},
     WFOfflineVoice:{list:()=>['ar','en','tr','fr','ru'].map(locale=>({locale,name:'Light '+locale,bytes:30})),getStatus:locale=>({locale,state:localReady?'ready':'not-installed',ready:localReady}),
       async remove(locale){trace.push({kind:'remove-local',locale,ownerActive:speechActive});audioActive=false;}},
-    WFReferenceVoice:{list:()=>['ar','en','tr','fr','ru'].map(locale=>({locale,name:'Mark · local reference',bytes:922000000})),getStatus:locale=>({...refStatus,locale,name:'Mark · local reference'}),
+    WFReferenceVoice:{list:()=>['ar','en','tr','fr','ru'].map(locale=>({locale,name:'Mark · local reference',bytes:922000000})),getStatus:locale=>{referenceReads++;return {...refStatus,locale,name:'Mark · local reference'};},
       download(locale,options){trace.push({kind:'download',locale,options});refStatus.state='downloading';options.onProgress?.();return new Promise(resolve=>{releaseDownload=()=>{refStatus.state='not-installed';resolve();};});},
       prepare(locale){trace.push({kind:'prepare',locale});return new Promise((resolve,reject)=>{finishPrepare=problem=>{if(problem)reject(problem);else{refStatus.engineReady=true;resolve({...refStatus});}};});},
       async remove(){trace.push({kind:'remove-reference'});},cancelDownload(){}},
     WFProgramSpeech:{speak(options){trace.push({kind:'speak',options});speechActive=audioActive=true;window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail:{state:'ready',active:false}}));window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail:{state:'preparing',active:true,voiceName:'Mark · local reference'}}));return true;},preview(options){trace.push({kind:'recording',options});return true;},
       stop(){trace.push({kind:'stop'});speechActive=audioActive=false;window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail:{state:'stopped',active:false}}));}}};
+  if(scheduledFrames){window.requestAnimationFrame=callback=>{frames.set(++frameId,callback);return frameId;};window.cancelAnimationFrame=id=>frames.delete(id);}
   vm.runInNewContext(readFileSync(require.resolve('../robot-settings.js'),'utf8'),{window,document,S:state,initDB:connect,navigator:{mediaDevices:{}},MutationObserver:class{observe(){}disconnect(){}},CustomEvent,AbortController,Intl,setTimeout,clearTimeout});
   return {nodes,trace,root,page,state,window,speechState:()=>({active:speechActive,audioActive}),
     reading:nodes.find(node=>node.dataset.wfReadingPreview==='true'),
@@ -119,6 +120,8 @@ function settingsUIFixture({localReady = false, referenceReady = false, engineRe
     emitSpeech:detail=>window.dispatchEvent(new CustomEvent('wf-program-speech-state',{detail})),
     engineStatus:nodes.find(node=>node.className==='wf-robot-engine-status'),
     updateReference(value){Object.assign(refStatus,value);window.dispatchEvent(new CustomEvent('wf-reference-voice-loading',{detail:{phase:'ready'}}));},
+    get pendingFrames(){return frames.size;},get referenceReads(){return referenceReads;},
+    flushFrames(){for(const [id,callback]of [...frames]){frames.delete(id);callback();}},
     releaseDownload:()=>releaseDownload(),finishPrepare:problem=>finishPrepare(problem)};
 }
 
@@ -294,6 +297,17 @@ test('background preparation and user preparation share one disabled settings ac
   }
   f.updateReference({engineState:'error',engineError:'gpu-operation-failed'});
   assert.equal(action.disabled,false);assert.match(f.engineStatus.textContent,/معالج الرسومات/);
+});
+
+test('shared voice progress is coalesced into one current settings render and stops after disposal',()=>{
+  const f=settingsUIFixture({referenceReady:true,scheduledFrames:true}),before=f.referenceReads;
+  for(let index=0;index<25;index++)f.updateReference({engineReady:index===24});
+  assert.equal(f.pendingFrames,1);assert.equal(f.referenceReads,before);
+  f.flushFrames();assert.equal(f.referenceReads,before+1);assert.equal(f.engineStatus.dataset.state,'ready');
+  f.updateReference({engineReady:false});assert.equal(f.pendingFrames,1);
+  f.window.dispatchEvent({type:'pagehide',persisted:false});assert.equal(f.pendingFrames,0);
+  const disposedReads=f.referenceReads;f.updateReference({engineReady:true});f.flushFrames();
+  assert.equal(f.referenceReads,disposedReads);
 });
 test('a preparation failure preserves the installed package and exposes a retry', async () => {
   const f=settingsUIFixture({referenceReady:true}),action=f.reference.children.find(node=>node.className==='wf-robot-voice-action');

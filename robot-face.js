@@ -882,7 +882,9 @@
     if (dashboard) visibilityObserver.observe(dashboard, {attributes: true, attributeFilter: ['class']});
     // showPage uses history.pushState, which does not dispatch hashchange.
     // Observe actual page activation without altering the existing router.
-    const pageObserver = new MutationObserver(checkVisibility);
+    const pageObserver = new MutationObserver(records => {
+      if (records.some(record => record.target.classList?.contains('page'))) checkVisibility();
+    });
     pageObserver.observe(document.getElementById('mainContent') || root, {attributes: true, subtree: true, attributeFilter: ['class']});
     const languageObserver = new MutationObserver(syncLanguage);
     languageObserver.observe(root, {attributes: true, attributeFilter: ['lang']});

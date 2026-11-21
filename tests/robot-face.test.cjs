@@ -16,7 +16,7 @@ function check(condition, message) { assertionCount++; assert.ok(condition, mess
 function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], supported = true, recordings = false, audioPlay, snapshot, preferences = {autoExpressions:true,idleMotion:true}, offline = false, offlineReady = true, reference = true, referenceReady = true} = {}) {
   const observers = [];
   const timers = new Map();
-  let timerId = 0;
+  let timerId = 0,styleWrites = 0;
   function changed(target, name) {
     for (const observer of [...observers]) {
       if (observer.targets.some(item => item.target === target &&
@@ -29,7 +29,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
     constructor(tag = 'div') {
       this.tagName = tag.toUpperCase();
       this.attributes = {}; this.dataset = {}; this.children = []; this.listeners = {}; this.map = {};
-      this.isConnected = true; this.textContent = ''; this.classes = new Set(); this.style = {setProperty:(key,value)=>{this.styles ||= {}; this.styles[key]=value;}};
+      this.isConnected = true; this.textContent = ''; this.classes = new Set(); this.style = {setProperty:(key,value)=>{styleWrites++;this.styles ||= {}; this.styles[key]=value;}};
       this.classList = {contains: name => this.classes.has(name)};
     }
     setAttribute(name, value) { this.attributes[name] = String(value); changed(this, name); }
@@ -72,8 +72,8 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
     disconnect() { this.targets = []; }
   }
   const root = new Element('html'); root.lang = lang;
-  const dashboard = new Element('section'); dashboard.classes.add('active');
-  const settingsPage = new Element('section');
+  const dashboard = new Element('section'); dashboard.classes.add('active');dashboard.classes.add('page');
+  const settingsPage = new Element('section');settingsPage.classes.add('page');
   let activePage = dashboard;
   const track = new Element('div'); track.parentNode = dashboard;
   for (let i = 0; i < 4; i++) track.append(new Element());
@@ -132,7 +132,7 @@ function fixture({lang = 'ar', voices = [{lang: 'ar-SA', localService: true}], s
   });
   const face = doc.getElementById('wfGreetingRobot');
   return {
-    face, track, doc, win, root, dashboard, synth, activity, observers, timers, audioRequests, reportEvents, offlineVoice, referenceVoice,
+    face, track, doc, win, root, dashboard, synth, activity, observers, timers, audioRequests, reportEvents, offlineVoice, referenceVoice,get styleWrites(){return styleWrites;},
     speak: face.querySelector('.wf-robot-speak'),
     report: face.querySelector('.wf-robot-report'),
     readReport() { win.dispatchEvent(new CustomEvent('wf-robot-report-control',{detail:{action:'replay'}})); },
@@ -492,6 +492,15 @@ test('warming an installed Mark engine never releases it merely because the page
   f.hideDocument();f.visitPage('settings');f.send('wf-reference-voice-change',{locale:'ar',ready:true});await flush();
   check(f.referenceVoice.releases===0,'Tab and route visibility do not release persistent speech resources');
   check(f.referenceVoice.prepares.length===1,'Repeated readiness events do not restart preparation');
+});
+
+test('unrelated descendant classes do not rewrite robot motion or restart visibility work',()=>{
+  const f=fixture(),observer=f.observers.find(item=>item.targets.some(target=>target.options.subtree&&target.options.attributeFilter.includes('class')));
+  assert(observer);const child=f.doc.createElement('span'),before=f.styleWrites;
+  for(let index=0;index<100;index++)observer.callback([{target:child,attributeName:'class'}]);
+  assert.equal(f.styleWrites,before);
+  observer.callback([{target:f.dashboard,attributeName:'class'}]);assert(f.styleWrites>before);
+  assert.equal(f.referenceVoice.prepares.length,1);
 });
 
 test('missing, disabled and muted Mark packs never start initialization implicitly',async()=>{

@@ -19,7 +19,7 @@ class El {
  click(){this.clicks++;this.onclick?.();for(const fn of this.events.click||[])fn({target:this});}
  focus(){this.focused=true;}scrollIntoView(){this.scrolled=true;}scrollTo(){this.scrollTop=0;}
 }
-const pages=['dashboard','companies','products','cart','invoices','select-client-type','add-company','add-product','select-invoice-type','create-invoice','payment-management','reports','exchange','cashboxes','quick-barcode','settings','package-labels','product-costs','invoice-archive','manufacturing','material-library','cost-analysis'];
+const pages=['dashboard','companies','products','cart','invoices','select-client-type','add-company','add-product','select-invoice-type','create-invoice','payment-management','reports','exchange','cashboxes','quick-barcode','settings','package-labels','product-costs','invoice-archive','manufacturing','material-library','cost-analysis','print-history','review-center','global-search'];
 function setup({mobile=false}={}){
  const root=new El,body=new El,main=new El('mainContent'),nav=new El('bottomNav'),ids={mainContent:main,bottomNav:nav},queue=[],observers=[],calls={routes:[],back:0,menu:0,moves:[]};root.lang='ar';root.dir='rtl';root.append(body);body.append(main,nav);
  for(const p of pages){const el=new El('page-'+p,'page');ids[el.id]=el;main.append(el);}ids['page-dashboard'].classes.add('active');
@@ -30,6 +30,7 @@ function setup({mobile=false}={}){
   ['addClient','companies','[onclick="showPage(\'select-client-type\')"]'],['addProduct','products','[onclick="showPage(\'add-product\')"]'],['addInvoice','invoices','[onclick="showPage(\'select-invoice-type\')"]'],
   ['invoiceSave','create-invoice','[onclick="saveInvoice()"]'],['preview','create-invoice','[onclick="previewInvoice()"]'],['payment','payment-management','[onclick="addPaymentToInv()"]'],['movement','cashboxes','.cashboxes form button[type="submit"]'],['statement','companies','[onclick="wfOpenStatement()"]'],['refresh','exchange','.curr-refresh'],['calculator','exchange','.curr-item[onclick="openCurrCalc(\'usd-try\')"]'],
   ['packagePrint','package-labels','#wfPackagePrint','wfPackagePrint'],['costSave','product-costs','#wfCostSave','wfCostSave'],['costSearch','product-costs','#wfCostProductSearch','wfCostProductSearch'],['archiveSearch','invoice-archive','#wfArchiveSearch','wfArchiveSearch'],
+  ['historySearch','print-history','#wfReprintHistorySearch','wfReprintHistorySearch'],['reviewRefresh','review-center','#wfReviewRefresh','wfReviewRefresh'],['globalSearch','global-search','#wfGlobalSearchInput','wfGlobalSearchInput'],
   ['scan','quick-barcode','#qblScanMode','qblScanMode'],['browse','quick-barcode','#qblBrowseMode','qblBrowseMode'],['search','quick-barcode','.qbl-search-trigger'],['cancel','quick-barcode','#qblCancelTierBtn','qblCancelTierBtn'],['changeTier','quick-barcode','[onclick="qblChangeTier()"]'],['addCart','quick-barcode','[onclick="qblAddToInvoice()"]'],['cartInvoice','cart','#wfCartCreateInvoice','wfCartCreateInvoice']
  ])original[name]=target(page,sel,id);
  for(const [page,id] of [['companies','coSearch'],['products','prSearch'],['invoices','invSearch']])target(page,'.wf-search-toggle[aria-controls="'+id+'"]');
@@ -242,9 +243,16 @@ test('a separate active modal blocks shared settings actions without forwarding 
  a.setModals([s.dialog]);a.click(2);assert.deepEqual(s.runs,['primary']);
 });
 test('all actual sections have five scoped controls, correct primary actions, and no actions on entry',()=>{
- const a=setup(),expected={dashboard:2,companies:0,products:0,cart:3,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2,'package-labels':4,'product-costs':4,'invoice-archive':3,'manufacturing':4,'material-library':4,'cost-analysis':3};
+ const a=setup(),expected={dashboard:2,companies:0,products:0,cart:3,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2,'package-labels':4,'product-costs':4,'invoice-archive':3,'manufacturing':4,'material-library':4,'cost-analysis':3,'print-history':3,'review-center':4,'global-search':4};
  for(const page of pages){a.activate(page);const config=a.ctx.navTest.configuration(a.ids['page-'+page]);assert.equal(config.items.length,5,page);assert.equal(config.active,expected[page],page);assert.equal(a.nav.dataset.section,page);assert.equal(a.buttons.filter(b=>b.classList.contains('bnav-active')).length,1);for(const item of config.items){assert(item.icon&&item.label,page);if(item.kind==='route')assert(a.ids['page-'+item.page],item.page);}}
  assert.equal(a.calls.routes.length,0);assert.equal(a.calls.back,0);assert.equal(Object.values(a.original).reduce((n,b)=>n+b.clicks,0),0);
+});
+test('review, print history and global search use their own live controls and retain source busy guards',()=>{
+ const a=setup({mobile:true});a.activate('review-center');a.click(4);assert.equal(a.original.reviewRefresh.clicks,1);assert(a.original.reviewRefresh.hasAttribute('data-wf-shared-dock-source'));
+ a.original.reviewRefresh.disabled=true;a.sync();a.click(4);assert.equal(a.original.reviewRefresh.clicks,1);assert(a.buttons[4].disabled);
+ a.click(3);assert.equal(a.calls.routes.at(-1),'print-history');
+ a.activate('print-history');a.click(4);assert(a.original.historySearch.focused);
+ a.activate('global-search');a.click(4);assert(a.original.globalSearch.focused);assert.equal(a.original.globalSearch.clicks,0);
 });
 test('save, reset, payment and cash form actions click exact original controls and respect busy/hidden guards',()=>{
  const a=setup();for(const [page,index,name] of [['add-company',4,'clientSave'],['add-company',3,'clientReset'],['create-invoice',4,'invoiceSave'],['create-invoice',3,'preview'],['payment-management',4,'payment'],['cashboxes',4,'movement'],['companies',3,'statement'],['exchange',4,'refresh'],['exchange',1,'calculator']]){a.activate(page);a.click(index);assert.equal(a.original[name].clicks,1,name);assert.equal(a.buttons[index].getAttribute('aria-current'),null);}

@@ -23,6 +23,71 @@
    }else open();
  }
 })();
+/* Register shortcuts to existing tools before the drawer captures its search
+   and pagination entries. The feature's original button still owns the action. */
+(() => {
+ const nav=document.getElementById('wf-nav-main'),root=document.documentElement;
+ if(!nav)return;
+ const definitions=[
+  {id:'wfShowroomCardsNav',group:'.wf-ops-nav',target:'wfProductLabelsOpen',parent:'products',controls:'wfProductLabels',
+   labels:{ar:'بطاقات المعرض',en:'Showroom cards',tr:'Mağaza etiketleri',fr:'Fiches d’exposition',ru:'Карточки для выставки'},
+   icon:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M6 9h3m-3 4h3m6-5h3m-3 4h3m-3 4h3"/>'},
+  {id:'wfAccountStatementNav',group:'.wf-nav-settings',selector:'#page-companies [onclick="wfOpenStatement()"]',parent:'companies',controls:'wfsa',dialog:true,
+   labels:{ar:'كشف الحساب',en:'Account statement',tr:'Hesap ekstresi',fr:'Relevé de compte',ru:'Выписка по счёту'},
+   icon:'<path d="M6 3h14v15H6Zm-3 3v15h14M9 7h8M9 11h8m-8 3h5"/>'},
+  {id:'wfNotificationsNav',group:'.wf-nav-settings',target:'wfNotificationsButton',page:'notifications',controls:'page-notifications',
+   labels:{ar:'الإشعارات',en:'Notifications',tr:'Bildirimler',fr:'Notifications',ru:'Уведомления'},
+   icon:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>'}
+ ];
+ const entries=[];
+ const source=entry=>entry.target?document.getElementById(entry.target):document.querySelector(entry.selector);
+ const enabled=control=>!!control&&!control.disabled&&!control.matches(':disabled')&&control.getAttribute('aria-disabled')!=='true'&&control.getAttribute('aria-busy')!=='true';
+ for(const definition of definitions){
+  const group=nav.querySelector(definition.group);
+  if(!group||document.getElementById(definition.id))continue;
+  const link=document.createElement('button'),symbol=document.createElement('span'),caption=document.createElement('span');
+  link.type='button';link.className='nav-item';link.id=definition.id;
+  if(definition.page)link.dataset.page=definition.page;
+  link.setAttribute('aria-controls',definition.controls);
+  if(definition.dialog)link.setAttribute('aria-haspopup','dialog');
+  symbol.className='nav-icon';symbol.setAttribute('aria-hidden','true');
+  symbol.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+definition.icon+'</svg>';
+  link.append(symbol,caption);group.append(link);
+  const entry={...definition,link,caption};entries.push(entry);
+  link.onclick=()=>{
+   if(!enabled(source(entry)))return;
+   // Keep the original page and its focus return target available for tools
+   // such as the statement dialog and the showroom-card workspace.
+   if(entry.parent&&document.querySelector('.page.active')?.id!=='page-'+entry.parent)window.showPage(entry.parent);
+   window.closeSidebar?.();
+   const control=source(entry);
+   if(!enabled(control))return;
+   if(control.getClientRects().length)control.focus({preventScroll:true});
+   control.click();
+  };
+ }
+ if(!entries.length)return;
+ const observed=new WeakSet();
+ function refresh(){
+  const lang=root.lang||'ar';
+  for(const entry of entries){
+   const label=entry.labels[lang]||entry.labels.en,control=source(entry),disabled=!enabled(control);
+   if(entry.caption.textContent!==label)entry.caption.textContent=label;
+   if(entry.link.title!==label)entry.link.title=label;
+   if(entry.link.getAttribute('aria-label')!==label)entry.link.setAttribute('aria-label',label);
+   if(entry.link.disabled!==disabled)entry.link.disabled=disabled;
+   if(control&&!observed.has(control)){
+    observed.add(control);
+    new MutationObserver(refresh).observe(control,{attributes:true,attributeFilter:['disabled','aria-disabled','aria-busy']});
+   }
+  }
+ }
+ // Deferred feature scripts finish before DOMContentLoaded. Observe only the
+ // three original controls after that, never the catalog or document subtree.
+ document.addEventListener('DOMContentLoaded',refresh,{once:true});
+ new MutationObserver(refresh).observe(root,{attributes:true,attributeFilter:['lang']});
+ refresh();
+})();
 /* Keep dashboard controls steady and show reading progress while scrolling. */
 (()=>{'use strict';
  const root=document.documentElement;

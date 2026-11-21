@@ -142,7 +142,7 @@ test('the existing invoice renderer and edit handlers use USD inputs and convert
   const context = vm.createContext({S, document: {getElementById: id => nodes[id]}, wfRefreshProductUpdateNotice() {}, updateSummary() {}, isKnownColor: () => true, getInvColorOptionsHTML: () => '<option>Standard</option>', wfUiText: value => value});
   const currencyStart = html.indexOf('const usdToTry=');
   vm.runInContext(html.slice(currencyStart, html.indexOf('const CC_CONFIGS', currencyStart)), context);
-  for (const name of ['renderInvTable', 'changeQty', 'setQty', 'setPrice', 'changeInvItemDim']) vm.runInContext(source(name), context);
+  for (const name of ['wfEsc', 'wfJsArg', 'wfImageSource', 'renderInvTable', 'changeQty', 'setQty', 'setPrice', 'changeInvItemDim']) vm.runInContext(source(name), context);
   context.renderInvTable(); assert.match(nodes.invItemsTbody.innerHTML, /value="12\.34" onchange="setPrice\(0,this\.value\)"/); assert.equal(nodes.invTblTotal.textContent, '₺1,480.80');
   context.setPrice(0, '17.125'); assert.equal(item.priceUSD, 17.125); assert.equal(item.priceTRY, 685); assert.equal(item.priceEUR, 15.4125); assert.equal(item.totalUSD, 51.375); assert.equal(nodes.invTblTotal.textContent, '₺2,055.00');
   context.setQty(0, '2'); assert.equal(item.qty, 2); assert.equal(item.priceUSD, 17.125); assert.equal(nodes.invTblTotal.textContent, '₺1,370.00');

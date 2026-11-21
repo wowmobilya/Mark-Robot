@@ -53,6 +53,7 @@
     packageLabels:['إتيكيت الطرود','Package labels','Koli etiketleri','Étiquettes de colis','Этикетки упаковок'],
     productCosts:['الكلفة','Product costs','Maliyetler','Coûts','Себестоимость'],
     invoiceArchive:['الأرشيف','Archive','Arşiv','Archives','Архив'],
+    printHistory:['سجل الطباعة','Print history','Baskı geçmişi','Historique','История печати'],
     printTicket:['طباعة البطاقة','Print ticket','Fişi yazdır','Imprimer la fiche','Печать задания'],
     printLabels:['طباعة','Print labels','Yazdır','Imprimer','Печать'],
     reports:['التقارير','Reports','Raporlar','Rapports','Отчёты'],
@@ -142,6 +143,7 @@
     'payment-management':['[onclick="addPaymentToInv()"]'],
     cashboxes:['.cashboxes form button[type="submit"]'],
     cart:['#wfCartCreateInvoice'],
+    'review-center':['#wfReviewRefresh'],
     exchange:['.curr-refresh'],
     'quick-barcode':['#qblBrowseMode','#qblScanMode','.qbl-search-trigger','#qblCancelTierBtn','[onclick="qblChangeTier()"]','[onclick="qblAddToInvoice()"]']
   };
@@ -237,6 +239,9 @@
       'package-labels':{active:4,items:[back(),invoices(),home(),route('invoice-archive','invoiceArchive','archive'),control('#wfPackagePrint','printLabels','print')]},
       'product-costs':{active:4,items:[back(),products(),home(),{kind:'focus',selector:'#wfCostProductSearch',label:'search',icon:'search'},save('#wfCostSave')]},
       'invoice-archive':{active:3,items:[back(),invoices(),home(),route('invoice-archive','invoiceArchive','archive'),{kind:'focus',selector:'#wfArchiveSearch',label:'search',icon:'search'}]},
+      'print-history':{active:3,items:[back(),invoices(),home(),route('print-history','printHistory','print'),{kind:'focus',selector:'#wfReprintHistorySearch',label:'search',icon:'search'}]},
+      'review-center':{active:4,items:[back(),invoices(),home(),route('print-history','printHistory','print'),control('#wfReviewRefresh','refresh','refresh')]},
+      'global-search':{active:4,items:[back(),clients(),home(),products(),{kind:'focus',selector:'#wfGlobalSearchInput',label:'search',icon:'search'}]},
       'manufacturing':{active:4,items:[back(),invoices(),home(),{kind:'focus',selector:'#wfMfgSearch',label:'search',icon:'search'},control('#wfMfgPrint','printTicket','print')]},
       'material-library':{active:4,items:[back(),products(),home(),{kind:'focus',selector:'#wfMaterialSearch',label:'search',icon:'search'},save('#wfMaterialSave')]},
       'cost-analysis':{active:3,items:[back(),products(),home(),route('product-costs','productCosts','calculator'),{kind:'focus',selector:'#wfAnalysisSearch',label:'search',icon:'search'}]},

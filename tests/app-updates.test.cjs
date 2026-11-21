@@ -17,6 +17,14 @@ test('the first controller claim is an installation, not an update notification'
   const a=coordinator({bootController:null});assert.equal(a.api.changed(worker()),false);assert.equal(a.api.status().available,false);
   assert.equal(a.api.changed(worker()),true);
 });
+test('no pending update performs no form safety scans, while an actual update checks the latest guard',()=>{
+  let reads=0,safety={visible:true,idle:true,route:'dashboard'};
+  const a=coordinator({getSafety:()=>{reads++;return safety;}});
+  for(let index=0;index<100;index++)assert.equal(a.api.status().canReload,false);
+  assert.equal(a.api.attempt(true),false);assert.equal(reads,0);
+  a.api.changed(worker());assert(reads>0);safety={...safety,dirty:true};
+  assert.equal(a.api.attempt(true),false);assert.equal(a.api.status().reason,'draft');assert.equal(a.reloads,0);
+});
 test('automatic reload rechecks current drafts and runs only once on a clean idle dashboard',()=>{
   const a=coordinator();a.api.changed(worker());assert.equal(a.api.status().canAutoReload,true);
   a.set({dirty:true});assert.equal(a.api.attempt(),false);assert.equal(a.api.attempt(true),false);assert.equal(a.reloads,0);
@@ -92,17 +100,17 @@ test('legacy opacity-hidden, offscreen and parent-hidden dialogs do not block up
 });
 function browserFixture(){
   const vm=require('node:vm'),fs=require('node:fs'),events=()=>({handlers:{},addEventListener(name,fn){(this.handlers[name]??=[]).push(fn);},emit(name,event={}){for(const fn of this.handlers[name]||[])fn(event);}});
-  const ids=new Map(),timers=new Map();let timerID=0,reloads=0,registerArgs;
+  const ids=new Map(),timers=new Map();let timerID=0,reloads=0,registerArgs,scans=0;
   function node(tag){return Object.assign(events(),{tagName:tag.toUpperCase(),dataset:{},children:[],attrs:{},hidden:false,classList:{add(){}},style:{setProperty(){}},append(...children){this.children.push(...children);for(const child of children)if(child.id)ids.set(child.id,child);},setAttribute(name,value){this.attrs[name]=value;},getAttribute(name){return this.attrs[name]??null;},removeAttribute(name){delete this.attrs[name];},getClientRects(){return this.hidden?[]:[{}];},querySelector(){return null;},querySelectorAll(){return [];}});}
   const page=node('section');page.id='page-dashboard';const robot=node('div');ids.set('wfGreetingRobot',robot);
-  const document=Object.assign(events(),{currentScript:{dataset:{release:'174'}},documentElement:{lang:'ar'},body:node('body'),visibilityState:'visible',readyState:'complete',activeElement:null,createElement:node,getElementById:id=>ids.get(id)||null,querySelector:selector=>selector==='.page.active'?page:null,querySelectorAll:()=>[]});
+  const document=Object.assign(events(),{currentScript:{dataset:{release:'174'}},documentElement:{lang:'ar'},body:node('body'),visibilityState:'visible',readyState:'complete',activeElement:null,createElement:node,getElementById:id=>ids.get(id)||null,querySelector:selector=>selector==='.page.active'?page:null,querySelectorAll:()=>{scans++;return [];}});
   const registration=Object.assign(events(),{updates:0,async update(){this.updates++;}});
   const sw=Object.assign(events(),{controller:Object.assign(events(),worker()),async register(...args){registerArgs=args;return registration;}});
-  const context=Object.assign(events(),{document,navigator:{serviceWorker:sw,onLine:true},S:{settings:{},invoices:[],payments:[]},location:{reload:()=>reloads++},getComputedStyle:()=>({visibility:'visible'}),sessionStorage:{getItem:()=>null,setItem(){}},MutationObserver:class{observe(){}},URL,queueMicrotask,console,setTimeout:fn=>{timers.set(++timerID,fn);return timerID;},clearTimeout:id=>timers.delete(id),setInterval:fn=>{timers.set(++timerID,fn);return timerID;},clearInterval:id=>timers.delete(id)});
+  const context=Object.assign(events(),{document,navigator:{serviceWorker:sw,onLine:true},S:{settings:{},invoices:[],payments:[]},location:{reload:()=>reloads++},getComputedStyle:()=>({visibility:'visible'}),sessionStorage:{getItem:()=>null,setItem(){}},MutationObserver:class{observe(){}},URL,queueMicrotask,console,setTimeout:(fn,delay)=>{timers.set(++timerID,{fn,delay,interval:false});return timerID;},clearTimeout:id=>timers.delete(id),setInterval:(fn,delay)=>{timers.set(++timerID,{fn,delay,interval:true});return timerID;},clearInterval:id=>timers.delete(id)});
   context.window=context;vm.createContext(context);
   vm.runInContext('let wfPendingSettingsLogo; const DEFAULT_WOW_LOGO="default-logo"; function resetSettingsLogo(){wfPendingSettingsLogo=DEFAULT_WOW_LOGO;}',context);
   vm.runInContext(fs.readFileSync(require.resolve('../app-updates.js'),'utf8'),context);
-  return {context,document,node,evaluate:source=>vm.runInContext(source,context),sw,registration,robot,page,ids,get registerArgs(){return registerArgs;},get reloads(){return reloads;}};
+  return {context,document,node,evaluate:source=>vm.runInContext(source,context),sw,registration,robot,page,ids,timers,get scans(){return scans;},get registerArgs(){return registerArgs;},get reloads(){return reloads;}};
 }
 test('browser integration registers the real worker without cache reuse or an extra initial update fetch',async()=>{
   const f=browserFixture();await Promise.resolve();await Promise.resolve();await Promise.resolve();
@@ -110,12 +118,43 @@ test('browser integration registers the real worker without cache reuse or an ex
   f.registration.installing={state:'installed',addEventListener(){}};f.registration.emit('updatefound');assert.equal(f.context.WFAppUpdates.status().available,false);
   f.sw.controller={state:'activated',addEventListener(){}};f.sw.emit('controllerchange');assert.equal(f.context.WFAppUpdates.status().available,true);assert.equal(f.reloads,0);
 });
+test('ordinary typing and speech status do not scan dialog or header geometry without an update',async()=>{
+  const f=browserFixture();await new Promise(setImmediate);const before=f.scans;
+  const {target}=draftRoot(f,'page-add-company');
+  f.document.emit('pointerdown',{target});
+  for(let index=0;index<20;index++){f.document.emit('input',{target});f.context.emit('wf-robot-speaking');}
+  assert.equal(f.scans,before);
+  f.sw.controller={state:'activated',addEventListener(){}};f.sw.emit('controllerchange');assert(f.scans>before);
+});
+test('update clocks stop in hidden or suspended pages and resume once after a cached-page return',async()=>{
+  const f=browserFixture();await new Promise(setImmediate);
+  f.sw.controller={state:'activated',addEventListener(){}};f.sw.emit('controllerchange');
+  assert.equal([...f.timers.values()].filter(timer=>timer.interval).length,1);
+  f.document.visibilityState='hidden';f.document.emit('visibilitychange');assert.equal(f.timers.size,0);
+  f.context.emit('wf-robot-speaking');assert.equal(f.timers.size,0);
+  f.document.visibilityState='visible';f.document.emit('visibilitychange');
+  assert.equal([...f.timers.values()].filter(timer=>timer.interval).length,1);
+  f.context.emit('pagehide',{persisted:true});assert.equal(f.timers.size,0);
+  f.context.emit('focus');f.context.emit('wf-robot-speaking');assert.equal(f.timers.size,0);
+  f.context.emit('pageshow',{persisted:true});
+  assert.equal([...f.timers.values()].filter(timer=>timer.interval).length,1);
+  assert.equal([...f.timers.values()].filter(timer=>timer.delay===60000).length,1);
+  assert.equal(f.reloads,0);
+});
 test('browser integration defers real refresh through report loading and pack downloads',async()=>{
   const f=browserFixture();await Promise.resolve();await Promise.resolve();await Promise.resolve();
   f.sw.controller={state:'activated',addEventListener(){}};f.sw.emit('controllerchange');
   f.robot.dataset.voiceActive='true';assert.equal(f.context.WFAppUpdates.refresh(),false);assert.equal(f.reloads,0);
   f.robot.dataset.voiceActive='false';f.context.WFOfflineVoice={list:()=>[{locale:'ar'}],getStatus:()=>({state:'downloading'})};assert.equal(f.context.WFAppUpdates.refresh(),false);
   f.context.WFOfflineVoice.getStatus=()=>({state:'ready'});assert.equal(f.context.WFAppUpdates.refresh(),true);assert.equal(f.reloads,1);
+});
+test('an active shared Mark pack download blocks refresh after returning to the dashboard',async()=>{
+  const f=browserFixture();await new Promise(setImmediate);
+  f.context.WFReferenceVoice={list:()=>[{locale:'ar'},{locale:'en'}],getStatus:()=>({state:'downloading'})};
+  f.sw.controller={state:'activated',addEventListener(){}};f.sw.emit('controllerchange');
+  assert.equal(f.context.WFAppUpdates.status().reason,'busy');assert.equal(f.context.WFAppUpdates.refresh(),false);
+  assert.equal(f.reloads,0);f.context.WFReferenceVoice.getStatus=()=>({state:'ready'});
+  assert.equal(f.context.WFAppUpdates.refresh(),true);assert.equal(f.reloads,1);
 });
 test('previously viewed saved product and company images do not prevent refreshing the dashboard',async()=>{
   const f=browserFixture();await new Promise(setImmediate);

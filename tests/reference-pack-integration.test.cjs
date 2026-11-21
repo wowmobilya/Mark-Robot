@@ -52,7 +52,12 @@ test('every installed local reference asset matches its published bytes and hash
 
 function serviceWorker({offline=false}={}){
   const handlers={},network=[],cached=[],entries=new Map(),shellEntries=new Map();
-  const makeCache=items=>({match:async request=>items.get(request.url||String(request))?.clone(),add:async request=>cached.push(request.url),put:async()=>{}});
+  const cacheKey=request=>new URL(request.url||String(request),'https://example.test/').href;
+  const makeCache=items=>({
+    match:async request=>items.get(cacheKey(request))?.clone(),
+    add:async request=>{cached.push(request.url);items.set(cacheKey(request),new Response('cached shell asset'));},
+    put:async(request,response)=>{items.set(cacheKey(request),response.clone());}
+  });
   const cache=makeCache(entries),shell=makeCache(shellEntries);
   const self={location:{origin:'https://example.test'},addEventListener:(name,handler)=>handlers[name]=handler,skipWaiting(){},clients:{claim:async()=>{}}};
   class LocalRequest extends Request{constructor(input,options){super(new URL(input,'https://example.test/'),options);}}

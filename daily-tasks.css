@@ -1,0 +1,49 @@
+@media screen {
+  .wf-daily-tasks { display:grid; gap:16px; min-inline-size:0; }
+  .wf-daily-tasks [hidden] { display:none!important; }
+  .wf-task-notice { margin:0; padding:12px 14px; border:1px solid var(--border); border-radius:12px; background:var(--input); color:var(--text2); line-height:1.6; }
+  .wf-task-notice[data-error="true"] { color:var(--red,var(--text)); }
+  .wf-task-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+  .wf-task-metric { display:grid; gap:6px; text-align:start; padding:16px; border:1px solid var(--border); border-radius:15px; background:var(--card); color:var(--text); cursor:pointer; font:inherit; }
+  .wf-task-metric strong { color:var(--brand-primary); font-size:28px; font-variant-numeric:tabular-nums; }
+  .wf-task-metric span { color:var(--text2); font-size:13px; line-height:1.5; }
+  .wf-task-toolbar { display:grid; grid-template-columns:minmax(180px,2fr) repeat(3,minmax(120px,1fr)); gap:10px; padding:15px; border:1px solid var(--border); border-radius:15px; background:var(--card); }
+  .wf-task-filter,.wf-task-field { min-inline-size:0; }
+  .wf-task-filter label,.wf-task-field label { display:block; margin-block-end:7px; color:var(--text2); font-size:13px; line-height:1.5; }
+  .wf-daily-tasks .fi { inline-size:100%; min-block-size:44px; box-sizing:border-box; }
+  .wf-daily-tasks textarea.fi { resize:vertical; min-block-size:88px; }
+  .wf-task-editor { min-inline-size:0; border-color:var(--brand-primary); }
+  .wf-task-editor h2 { margin:0 0 18px; font-size:19px; color:var(--text); }
+  .wf-task-editor-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+  .wf-task-wide { grid-column:1/-1; }
+  .wf-task-reference-fields { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; padding:12px; background:var(--input); border-radius:11px; }
+  .wf-task-reference-fields p { grid-column:1/-1; margin:0; font-size:12px; line-height:1.5; }
+  .wf-task-editor-actions,.wf-task-card-actions { display:flex; gap:8px; flex-wrap:wrap; margin-block-start:16px; }
+  .wf-daily-tasks .btn { min-block-size:44px; white-space:normal; }
+  .wf-task-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:12px; }
+  .wf-task-card { padding:17px; border:1px solid var(--border); border-radius:15px; background:var(--card); min-inline-size:0; }
+  .wf-task-card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .wf-task-card h3 { margin:0; font-size:16px; line-height:1.5; color:var(--text); overflow-wrap:anywhere; }
+  .wf-task-tag { flex:none; padding:4px 8px; border-radius:7px; border:1px solid var(--border); background:var(--input); color:var(--text2); font-size:12px; }
+  .wf-task-card[data-status="done"] .wf-task-tag { color:var(--green,var(--text)); }
+  .wf-task-card-meta { display:flex; flex-wrap:wrap; gap:7px 14px; margin-block-start:10px; color:var(--text2); font-size:12px; line-height:1.5; }
+  .wf-task-priority[data-priority="high"],.wf-task-overdue { color:var(--brand-primary); }
+  .wf-task-notes { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.7; font-size:14px; margin:12px 0 0; color:var(--text); }
+  .wf-task-reference { margin:12px 0 0; padding-block-start:10px; border-block-start:1px solid var(--border); color:var(--text2); font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+  .wf-task-card-actions .btn { padding:7px 11px; font-size:13px; }
+  .wf-task-delete-prompt { padding:14px; border:1px solid var(--red,var(--border)); border-radius:13px; background:var(--card); }
+  .wf-task-delete-prompt p { margin:0 0 12px; line-height:1.6; overflow-wrap:anywhere; }
+  .wf-task-delete-prompt .btn { margin-inline-end:8px; }
+  .wf-daily-tasks button:focus-visible { outline:2px solid var(--gold2,var(--brand-primary)); outline-offset:3px; }
+  @media(max-width:760px) {
+    .wf-task-toolbar { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .wf-task-list { grid-template-columns:minmax(0,1fr); }
+  }
+  @media(max-width:480px) {
+    .wf-task-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .wf-task-metric { padding:12px; }.wf-task-metric strong { font-size:24px; }
+    .wf-task-editor-grid,.wf-task-reference-fields { grid-template-columns:minmax(0,1fr); }
+    .wf-task-card { padding:14px; }.wf-task-editor-actions>.btn { flex:1; }
+  }
+}
+@media print { .wf-daily-tasks { display:none!important; } }

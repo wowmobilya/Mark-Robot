@@ -1,11 +1,26 @@
 importScripts('./install-identity.js?v=2');
-const CACHE_NAME = 'wow-furniture-v205-refined-workspaces';
+const CACHE_NAME = 'wow-furniture-v206-assisted-workflows';
 const urlsToCache = [
-  './operations-workspace.js?v=5',
+  './invoice-preview.js?v=1',
+  './invoice-preview.css?v=1',
+  './label-reprint-history-core.js?v=1',
+  './label-reprint-history.js?v=1',
+  './label-reprint-history.css?v=1',
+  './daily-tasks-core.js?v=1',
+  './daily-tasks.js?v=1',
+  './daily-tasks.css?v=1',
+  './purchase-planner-core.js?v=1',
+  './purchase-planner.js?v=1',
+  './purchase-planner.css?v=1',
+  './review-center.js?v=1',
+  './review-center.css?v=1',
+  './global-search.js?v=1',
+  './global-search.css?v=1',
+  './operations-workspace.js?v=6',
   './operations-workspace.css?v=3',
-  './package-label-core.js?v=5',
-  './package-labels.js?v=6',
-  './package-labels.css?v=3',
+  './package-label-core.js?v=6',
+  './package-labels.js?v=7',
+  './package-labels.css?v=4',
   './product-cost-core.js?v=2',
   './product-costs.js?v=2',
   './product-costs.css?v=3',
@@ -22,8 +37,8 @@ const urlsToCache = [
   './invoice-archive.js?v=1',
   './invoice-archive.css?v=2',
   './workspace-surfaces.css?v=37',
-  './context-nav.js?v=11',
-  './context-nav.css?v=5',
+  './context-nav.js?v=12',
+  './context-nav.css?v=6',
   './settings-actions.js?v=1',
   './product-workspace.js?v=3',
   './vendor/JsBarcode.code128.min.js?v=3.11.5',
@@ -51,21 +66,21 @@ const urlsToCache = [
   './settings-actions.css?v=1',
   './',
   './bottomnav-fit.css?v=1',
-  './bottomnav-fit.js?v=1',
+  './bottomnav-fit.js?v=2',
   './index.html',
   './developer-portrait.jpg',
   './business-ui.css?v=1',
   './settings-responsive.css?v=6',
   './smart-card-settings.js?v=2',
   './smart-card-settings.css?v=1',
-  './settings-navigation.js?v=19',
+  './settings-navigation.js?v=20',
   './dashboard-visuals.css?v=36',
   './rate-refresh.js?v=8',
   './cashboxes.mjs?v=1',
   './section-headings.css?v=7',
   './topbar-dock.css?v=7',
   './topbar-dock.js?v=6',
-  './robot-face.js?v=13',
+  './robot-face.js?v=14',
   './robot-face.css?v=9',
   './dialog-surfaces.css?v=2',
   './product-categories.js?v=4',
@@ -89,7 +104,7 @@ const urlsToCache = [
   './ui-i18n.js?v=27',
   './modern-ui.css?v=47',
   './ui-identity.css?v=34',
-  './ui-navigation.js?v=31',
+  './ui-navigation.js?v=32',
   './ui-logo.js?v=3',
   './ui-settings.js?v=2',
   './ui-icons.js?v=49',
@@ -101,13 +116,14 @@ const urlsToCache = [
   './app-identity.js?v=3',
   './app-identity.css?v=2',
   './settings-unified.css?v=3',
-  './ui-motion.css?v=1',
+  './ui-motion.css?v=2',
   './annual-sales.js?v=2',
   './annual-sales.css?v=1',
   './voice-loudness.js?v=1',
-  './offline-voice.js?v=10',
+  './offline-voice.js?v=11',
   './offline-voice-worker.js?v=5',
   './reference-voice-assets.js?v=1',
+  // Older installed speech workers still import these compatibility URLs.
   './reference-voice.js?v=1',
   './reference-voice.js?v=2',
   './reference-voice.js?v=4',
@@ -119,18 +135,18 @@ const urlsToCache = [
   './program-speech.js?v=5',
   './screen-awake.js?v=2',
   './speech-media.js?v=2',
-  './speech-controls.js?v=4',
+  './speech-controls.js?v=5',
   './speech-controls.css?v=3',
   './program-speech.css?v=5',
   './nabra-report-worker.js?v=3',
   './nabra-phonemizer.js?v=1',
-  './robot-settings.js?v=11',
+  './robot-settings.js?v=12',
   './robot-settings.css?v=5',
-  './robot-report.js?v=9',
+  './robot-report.js?v=10',
   './robot-report.css?v=6',
   './developer-profile.js?v=2',
   './developer-profile.css?v=2',
-  './app-updates.js?v=2',
+  './app-updates.js?v=3',
   './app-updates.css?v=1',
   './assets/robot-identity/ar.mp3?v=3',
   './assets/robot-identity/ar-EG.mp3?v=1',
@@ -153,16 +169,44 @@ const urlsToCache = [
   'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
   'https://h.top4top.io/p_3861refg81.png'
 ];
+async function wfPrecacheShell() {
+  const cache = await caches.open(CACHE_NAME);
+  const priorNames = (await caches.keys()).filter(name => name !== CACHE_NAME && name.startsWith('wow-furniture-'));
+  const prior = await Promise.all(priorNames.map(name => caches.open(name)));
+  // An unchanged versioned URL has unchanged content. Reuse its existing bytes;
+  // always fetch HTML and unversioned configuration so updates cannot go stale.
+  const assets = [...new Set(urlsToCache.filter(url => url.startsWith('./') && url !== './'))];
+  let next = 0, requiredFailure = null;
+  async function copy(url) {
+    const request = new Request(url, {cache:'reload'});
+    try {
+      let cached;
+      if (/[?&]v=/.test(url)) {
+        for (const previous of prior) {
+          cached = await previous.match(request);
+          if (cached?.ok) break;
+        }
+      }
+      if (cached?.ok) await cache.put(request, cached);
+      else await cache.add(request);
+    } catch (error) {
+      // Never activate a partial application shell. Optional images/audio can
+      // retry on use without preventing a complete code update from installing.
+      if (url === './index.html' || /\.(?:m?js|css)(?:\?|$)/.test(url)) requiredFailure ||= error;
+    }
+  }
+  async function worker() {
+    while (next < assets.length) await copy(assets[next++]);
+  }
+  // Bound startup network and parsing pressure on mobile connections.
+  await Promise.all(Array.from({length:Math.min(6, assets.length)}, worker));
+  if (requiredFailure) throw requiredFailure;
+  const index = await cache.match('./index.html');
+  if (!index?.ok) throw new Error('OFFLINE_SHELL_INCOMPLETE');
+  await cache.put('./', index);
+}
 self.addEventListener('install', event => {
-  self.skipWaiting();
-  event.waitUntil(caches.open(CACHE_NAME).then(async cache => {
-    // One unavailable asset must never block the entire new version from activating.
-    await Promise.allSettled(
-      urlsToCache.filter(u=>u.startsWith('./'))
-        .map(url=>cache.add(new Request(url,{cache:'reload'})))
-    );
-    // Third-party assets are cached on first use without delaying activation.
-  }));
+  event.waitUntil(wfPrecacheShell().then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', event => {
   event.waitUntil(

@@ -24,16 +24,27 @@
 
 // Check for a published release when the installed app returns to the dashboard.
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-  let lastCheck=0;
-  async function checkRelease() {
-    if (document.hidden || !document.getElementById('page-dashboard')?.classList.contains('active') ||
-        document.querySelector('dialog[open]') || Date.now()-lastCheck<60000) return;
-    lastCheck=Date.now();
-    try { const registration=await navigator.serviceWorker.getRegistration(); await registration?.update(); }
-    catch { /* The next online or foreground event retries. */ }
+  function startReleaseFallback() {
+    // Deferred scripts load in order: the central updater is mounted later.
+    // Wait for it before installing a second poller for the same worker.
+    if(window.WFAppUpdates)return;
+    let lastCheck=0,interval=null;
+    async function checkRelease() {
+      if(window.WFAppUpdates){
+        clearInterval(interval);document.removeEventListener('visibilitychange',checkRelease);
+        window.removeEventListener('online',checkRelease);window.removeEventListener('pageshow',checkRelease);return;
+      }
+      if (document.hidden || !document.getElementById('page-dashboard')?.classList.contains('active') ||
+          document.querySelector('dialog[open]') || Date.now()-lastCheck<60000) return;
+      lastCheck=Date.now();
+      try { const registration=await navigator.serviceWorker.getRegistration(); await registration?.update(); }
+      catch { /* The next online or foreground event retries. */ }
+    }
+    document.addEventListener('visibilitychange',checkRelease);
+    window.addEventListener('online',checkRelease);
+    window.addEventListener('pageshow',checkRelease);
+    interval=setInterval(checkRelease,60000);
   }
-  document.addEventListener('visibilitychange',checkRelease);
-  window.addEventListener('online',checkRelease);
-  window.addEventListener('pageshow',checkRelease);
-  setInterval(checkRelease,60000);
+  if(document.readyState==='complete')startReleaseFallback();
+  else window.addEventListener('load',startReleaseFallback,{once:true});
 }

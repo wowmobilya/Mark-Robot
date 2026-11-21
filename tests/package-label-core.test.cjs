@@ -100,6 +100,39 @@ test('packet-major ordering retains separate same-name products and line color v
   assert.equal(batch.labels[4].barcodeText, 'SAME - Packet 1/3');
 });
 
+test('selective reprints preserve original sequence, packet, unit and invoice quantities across every paper profile', () => {
+  const invoice={id:'invoice:one',invNo:'A42',items:[
+    {productId:'same',name:'SAME',color:'Oak',type:'other',qty:3,packets:3},
+    {productId:'same',name:'SAME',color:'Black',type:'other',qty:2,packets:2}
+  ]};
+  const original=JSON.stringify(invoice),model=core.normalizeInvoice(invoice),first=core.buildLabelBatch(model);
+  const wanted=[first.labels[12].labelId,first.labels[5].labelId,first.labels[5].labelId];
+  for(const profileId of Object.keys(core.profiles)){
+    const full=core.buildLabelBatch(model,{profileId}),selected=core.selectLabelBatch(full,wanted);
+    assert.deepEqual(selected.labels.map(label=>label.sequenceNumber),[6,13]);
+    assert.deepEqual(selected.labels.map(label=>[label.currentPacket,label.unitIndex,label.totalPackets,label.qty]),[[2,3,3,3],[2,2,2,2]]);
+    assert.deepEqual(selected.labels.map(label=>label.barcodeText),['SAME - Packet 2/3','SAME - Packet 2/2']);
+    assert.equal(selected.labels[0],full.labels[5],'the selected original label object is retained');
+    assert.equal(selected.model,model);assert.equal(selected.labelCount,2);assert.equal(selected.originalLabelCount,13);
+    assert.equal(selected.pageCount,Math.ceil(2/(core.profiles[profileId].columns*core.profiles[profileId].rows)));
+    assert(Object.isFrozen(selected));assert(Object.isFrozen(selected.labels));assert(Object.isFrozen(selected.pages[0]));
+  }
+  assert.equal(JSON.stringify(invoice),original);
+});
+
+test('stable label IDs distinguish repeated product lines and invoices, and an empty or unknown selection never means all labels', () => {
+  const items=[{productId:'p',name:'SAME',type:'other',qty:2,packets:2},{productId:'p',name:'SAME',type:'other',qty:2,packets:2}];
+  const first=make(items),second=make(items,{id:'other'});
+  assert.equal(new Set(first.labels.map(label=>label.labelId)).size,8);
+  assert(first.labels.every(label=>!second.labels.some(other=>label.labelId===other.labelId)));
+  for(const selection of [[],undefined,null,['unknown']]){
+    const result=core.selectLabelBatch(first,selection);
+    assert.equal(result.labelCount,0);assert.equal(result.pageCount,0);assert.equal(result.originalLabelCount,8);
+    assert.equal(core.renderDocument(result).includes('class="barcode"'),false);
+  }
+  assert.equal(first.labelCount,8);assert.deepEqual(first.labels.map(label=>label.sequenceNumber),[1,2,3,4,5,6,7,8]);
+});
+
 test('malformed, zero, fractional and nonfinite quantities or packet counts never become labels', () => {
   for (const qty of [undefined,null,'',0,-1,1.2,'1.2','invalid',Infinity,NaN,true,[],{}]) {
     const batch = make([{name:'M', type:'other', qty, packets:1}]);

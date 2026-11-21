@@ -58,6 +58,14 @@
       ru:{oneLabel:'1 этикетка / стр.',pickerTitle:'Выбор носителя',changePaper:'Сменить носитель',sheetPaper:'Листы A4',rollPaper:'Терморулоны',cancelPaper:'Отмена',applyPaper:'Применить',paperPreview:'Вид носителя'}
     };
     for(const [locale,values] of Object.entries(pickerWords))Object.assign(words[locale],values);
+    const selectionWords={
+      ar:{selectionTitle:'الملصقات المطلوبة',allLabels:'كل الملصقات',lostLabels:'ملصقات مفقودة',selectionSearch:'ابحث بالمنتج أو اللون أو رقم الملصق / الطرد',selectedLabels:'محدد',clearLabels:'مسح التحديد',selectionEmpty:'اختر الملصقات المفقودة لعرضها وطباعتها.',selectionNoMatches:'لا توجد ملصقات مطابقة.',packet:'الطرد',unit:'القطعة',originalLabels:'إجمالي الفاتورة',reprintSelected:'إعادة طباعة المحدد',selectionReset:'تغيّرت بيانات الفاتورة؛ اختر الملصقات المفقودة من جديد.',selectionHint:'اختر كل ملصق مفقود برقمه الأصلي. كمية الفاتورة وعدد الطرود لا يتغيّران.',auditError:'تعذّر حفظ سجل إعادة الطباعة. لم تُفتح نافذة الطباعة؛ أعد المحاولة.'},
+      tr:{selectionTitle:'Yazdırılacak etiketler',allLabels:'Tüm etiketler',lostLabels:'Kayıp etiketler',selectionSearch:'Ürün, renk veya etiket / paket numarası ara',selectedLabels:'seçili',clearLabels:'Seçimi temizle',selectionEmpty:'Önizleme ve baskı için kayıp etiketleri seçin.',selectionNoMatches:'Eşleşen etiket yok.',packet:'Paket',unit:'Adet',originalLabels:'Faturadaki toplam',reprintSelected:'Seçilenleri yeniden yazdır',selectionReset:'Fatura verileri değişti; kayıp etiketleri yeniden seçin.',selectionHint:'Her kayıp etiketi özgün numarasıyla seçin. Fatura miktarı ve paket sayısı değişmez.',auditError:'Yeniden baskı kaydı kaydedilemedi. Yazdırma penceresi açılmadı; yeniden deneyin.'},
+      en:{selectionTitle:'Labels to print',allLabels:'All labels',lostLabels:'Lost labels',selectionSearch:'Search product, color or label / packet number',selectedLabels:'selected',clearLabels:'Clear selection',selectionEmpty:'Select the lost labels to preview and print them.',selectionNoMatches:'No matching labels.',packet:'Packet',unit:'Unit',originalLabels:'Invoice total',reprintSelected:'Reprint selected',selectionReset:'The invoice data changed; select the lost labels again.',selectionHint:'Choose each lost label by its original number. Invoice quantities and package counts stay the same.',auditError:'The reprint record could not be saved. The print dialog was not opened; please retry.'},
+      fr:{selectionTitle:'Étiquettes à imprimer',allLabels:'Toutes les étiquettes',lostLabels:'Étiquettes perdues',selectionSearch:'Produit, couleur ou numéro d’étiquette / colis',selectedLabels:'sélectionnées',clearLabels:'Effacer la sélection',selectionEmpty:'Sélectionnez les étiquettes perdues pour les prévisualiser et les imprimer.',selectionNoMatches:'Aucune étiquette correspondante.',packet:'Colis',unit:'Unité',originalLabels:'Total de la facture',reprintSelected:'Réimprimer la sélection',selectionReset:'Les données de la facture ont changé ; sélectionnez à nouveau les étiquettes perdues.',selectionHint:'Choisissez chaque étiquette perdue avec son numéro d’origine. Les quantités de la facture et de colis restent inchangées.',auditError:'Impossible d’enregistrer la réimpression. La fenêtre d’impression n’a pas été ouverte ; réessayez.'},
+      ru:{selectionTitle:'Этикетки для печати',allLabels:'Все этикетки',lostLabels:'Утерянные этикетки',selectionSearch:'Товар, цвет или номер этикетки / упаковки',selectedLabels:'выбрано',clearLabels:'Снять выбор',selectionEmpty:'Выберите утерянные этикетки для просмотра и печати.',selectionNoMatches:'Подходящих этикеток нет.',packet:'Упаковка',unit:'Единица',originalLabels:'Всего в счёте',reprintSelected:'Повторить выбранные',selectionReset:'Данные счёта изменились; выберите утерянные этикетки заново.',selectionHint:'Выберите каждую утерянную этикетку по исходному номеру. Количество товаров и упаковок в счёте не изменяется.',auditError:'Не удалось сохранить запись повторной печати. Окно печати не открывалось; повторите попытку.'}
+    };
+    for(const [locale,values] of Object.entries(selectionWords))Object.assign(words[locale],values);
     const t = key => words[ops.locale()][key] || words.en[key] || key;
     const make = ops.make;
     let selectedId = '', query = '', filter = 'all', limit = 30, revision = 0, sheetIndex = 0;
@@ -66,6 +74,9 @@
     let selectedSignature = '', pendingSelectedId = null, pendingRefresh = false;
     let profileId = core.defaultProfileId || 'tw2008';
     let preferenceSaved = true;
+    let fullBatch=null,selectionMode='all',selectedLabelIds=new Set(),labelQuery='',labelLimit=80;
+    let selectionSource='',assetsSignature='',selectionWasReset=false,labelSearchTimer=null;
+    let choiceBatch=null,choiceLocale='',choiceQuery='',choiceLimit=0,labelMatchCount=0,labelControls=new Map();
     // Paper choice belongs to this printing device, not to invoice identity.
     try { profileId=helpers.readProfilePreference(window.localStorage,core); } catch (_) {}
     const labels = [];
@@ -124,6 +135,25 @@
     const printRecoveryHint=textNode('p','wf-ops-muted','printRecoveryHint');printRecoveryHint.hidden=true;
     actions.append(retry,viewInvoice,printRecovery);
     detail.append(counts,summary,identity,issues,status,actions,printRecoveryHint);
+    const selectionPanel=make('section','wf-ops-card wf-package-selection');selectionPanel.hidden=true;
+    const selectionHeading=make('div','wf-package-selection-heading');
+    selectionHeading.append(textNode('h2','','selectionTitle'));
+    const selectionCount=make('output','wf-package-selection-count');selectionCount.setAttribute('aria-live','polite');
+    selectionHeading.append(selectionCount);
+    const selectionModes=make('div','wf-package-selection-modes');selectionModes.setAttribute('role','group');
+    const allLabels=button('allLabels','btn btn-s',()=>changeSelectionMode('all'));
+    const lostLabels=button('lostLabels','btn btn-s',()=>changeSelectionMode('selected'));
+    allLabels.id='wfPackageAllLabels';lostLabels.id='wfPackageLostLabels';selectionModes.append(allLabels,lostLabels);
+    const selectionHint=make('p','wf-ops-muted wf-package-selection-hint');
+    const selectionTools=make('div','wf-package-selection-tools');
+    const labelSearch=make('input','fi');labelSearch.id='wfPackageLabelSearch';labelSearch.type='search';labelSearch.autocomplete='off';labelSearch.enterKeyHint='search';
+    labelSearch.addEventListener('input',()=>{labelQuery=labelSearch.value;labelLimit=80;clearTimeout(labelSearchTimer);labelSearchTimer=setTimeout(renderLabelChoices,120);});
+    const clearLabels=button('clearLabels','btn btn-s',()=>{if(activePrint)return;selectedLabelIds.clear();applyLabelSelection();});
+    selectionTools.append(labelSearch,clearLabels);
+    const labelOptions=make('div','wf-package-label-options');labelOptions.id='wfPackageLabelOptions';
+    const moreLabels=button('showMore','btn btn-s',()=>{labelLimit+=80;renderLabelChoices();});
+    selectionPanel.append(selectionHeading,selectionModes,selectionHint,selectionTools,labelOptions,moreLabels);
+    const historyHost=make('div','wf-package-history');historyHost.id='wfPackageReprintHistory';historyHost.hidden=true;
     const preview = make('section','wf-package-preview wf-ops-card'); preview.hidden = true;
     const previewHeading = make('div','wf-package-preview-heading');
     previewHeading.append(textNode('h2','','preview'));
@@ -135,7 +165,7 @@
     const stage = make('div','wf-package-stage'); stage.id = 'wfPackagePreview';
     const geometryNote = make('p','wf-ops-muted'),stockSizeNote=make('p','wf-ops-muted'),scaleNote=make('p','wf-package-scale-note');
     preview.append(previewHeading,stage,geometryNote,stockSizeNote,scaleNote,printerHint);
-    content.append(empty,detail,preview); layout.append(chooser,content); page.body.append(profile,layout);
+    content.append(empty,detail,selectionPanel,preview,historyHost); layout.append(chooser,content); page.body.append(profile,layout);
 
     function renderList() {
       const term = normalize(query);
@@ -160,7 +190,81 @@
       more.hidden=invoices.length<=limit;
       for(const control of filters.children) control.setAttribute('aria-pressed',String(control.dataset.filter===filter));
     }
-    function normalize(value) { return String(value||'').normalize('NFKD').replace(/\p{M}/gu,'').replace(/[أإآٱ]/g,'ا').toLowerCase().trim(); }
+    function normalize(value) { return String(value||'').normalize('NFKD').replace(/\p{M}/gu,'').replace(/[أإآٱ]/g,'ا').replace(/[٠-٩۰-۹]/g,value=>String('٠١٢٣٤٥٦٧٨٩'.includes(value)?'٠١٢٣٤٥٦٧٨٩'.indexOf(value):'۰۱۲۳۴۵۶۷۸۹'.indexOf(value))).toLowerCase().trim(); }
+    function renderLabelChoices() {
+      if(!fullBatch||selectionMode!=='selected'){labelOptions.hidden=true;moreLabels.hidden=true;return;}
+      labelOptions.hidden=false;
+      const locale=ops.locale();
+      if(choiceBatch!==fullBatch||choiceLocale!==locale||choiceQuery!==labelQuery||choiceLimit!==labelLimit){
+        choiceBatch=fullBatch;choiceLocale=locale;choiceQuery=labelQuery;choiceLimit=labelLimit;
+        labelOptions.replaceChildren();labelControls=new Map();
+        const terms=normalize(labelQuery).split(/\s+/).filter(Boolean);
+        const matches=fullBatch.labels.filter(label=>{
+          const value=normalize([label.name,label.color,label.type,label.productId,'#'+label.sequenceNumber,t('packet'),label.currentPacket+'/'+label.totalPackets,t('unit'),label.unitIndex+'/'+label.qty].join(' '));
+          return terms.every(term=>/^#\d+$/.test(term)?label.sequenceNumber===Number(term.slice(1)):value.includes(term));
+        });
+        labelMatchCount=matches.length;
+        let currentLine=-1,grid;
+        for(const label of matches.slice(0,labelLimit)){
+          if(label.lineIndex!==currentLine){
+            currentLine=label.lineIndex;
+            const group=make('section','wf-package-label-group'),heading=make('div','wf-package-label-group-heading');
+            heading.append(make('strong','',label.name),make('span','',label.color||'—'),make('small','',label.qty+' '+t('units')+' · '+label.totalPackets+' '+t('packets')));
+            grid=make('div','wf-package-label-grid');group.append(heading,grid);labelOptions.append(group);
+          }
+          const option=make('button','wf-package-label-option');option.type='button';option.dataset.labelId=label.labelId;
+          option.setAttribute('role','checkbox');
+          const detail=t('packet')+' '+label.currentPacket+'/'+label.totalPackets+' · '+t('unit')+' '+label.unitIndex+'/'+label.qty;
+          option.setAttribute('aria-label',label.name+' · '+label.color+' · #'+label.sequenceNumber+' · '+detail);
+          option.append(make('strong','wf-package-label-number','#'+label.sequenceNumber),make('span','wf-package-label-detail',detail));
+          const check=make('span','wf-package-label-check','✓');check.setAttribute('aria-hidden','true');option.append(check);
+          option.addEventListener('click',()=>toggleLabel(label.labelId));grid.append(option);labelControls.set(label.labelId,option);
+        }
+        if(!matches.length)labelOptions.append(make('p','wf-ops-empty',t('selectionNoMatches')));
+      }
+      moreLabels.hidden=labelMatchCount<=labelLimit;
+      for(const [id,control] of labelControls){control.setAttribute('aria-checked',String(selectedLabelIds.has(id)));control.disabled=Boolean(activePrint)||assetsSignature!==selectionSource;}
+    }
+    function renderSelection() {
+      const available=Boolean(selectedRecord&&fullBatch);
+      selectionPanel.hidden=!available;historyHost.hidden=!available;
+      if(!available)return;
+      const selected=selectionMode==='selected';
+      allLabels.setAttribute('aria-pressed',String(!selected));lostLabels.setAttribute('aria-pressed',String(selected));
+      selectionCount.textContent=(selected?selectedLabelIds.size:fullBatch.labelCount)+' '+t('selectedLabels')+' / '+fullBatch.labelCount;
+      selectionHint.textContent=t(selectionWasReset?'selectionReset':'selectionHint');selectionHint.hidden=!selected;
+      selectionTools.hidden=!selected;
+      labelSearch.placeholder=t('selectionSearch');labelSearch.setAttribute('aria-label',t('selectionSearch'));
+      if(labelSearch.value!==labelQuery)labelSearch.value=labelQuery;
+      renderLabelChoices();
+      window.WFLabelReprintHistory?.mount?.(historyHost,{invoiceId:selectedId});
+    }
+    function changeSelectionMode(mode) {
+      if(activePrint||!fullBatch||!['all','selected'].includes(mode)||assetsSignature!==selectionSource)return false;
+      if(mode===selectionMode)return true;
+      selectionMode=mode;applyLabelSelection();return true;
+    }
+    function toggleLabel(id) {
+      if(activePrint||selectionMode!=='selected'||assetsSignature!==selectionSource||!fullBatch?.labels.some(label=>label.labelId===id))return false;
+      if(selectedLabelIds.has(id))selectedLabelIds.delete(id);else selectedLabelIds.add(id);
+      selectionWasReset=false;applyLabelSelection();return true;
+    }
+    async function applyLabelSelection() {
+      if(activePrint||!fullBatch||assetsSignature!==selectionSource)return;
+      if(!sourceIsCurrent(selectedSignature)){await prepare(true);return;}
+      const token=++revision;
+      batch=selectionMode==='selected'?core.selectLabelBatch(fullBatch,[...selectedLabelIds]):fullBatch;
+      sheetIndex=0;ready=false;errorKey='';preview.hidden=true;previewFrame=null;stage.replaceChildren();stage.style.height='auto';
+      if(!batch.labelCount){busy=false;statusKey='selectionEmpty';renderMeta();return;}
+      busy=true;statusKey='preparing';renderMeta();
+      try{
+        await showSheet(token);
+        if(token!==revision)return;
+        if(!sourceIsCurrent(selectedSignature))throw new Error('STALE');
+        ready=true;statusKey='ready';
+      }catch(error){if(token===revision){errorKey=error.message==='STALE'?'changed':/IMAGE/.test(error.message)?'imageError':'error';statusKey='';}}
+      finally{if(token===revision){busy=false;renderMeta();}}
+    }
     function renderProfile() {
       const paper=core.profiles[profileId],stock=core.profiles[paper.sourceProfileId]||paper,large=stock.id==='tw2004',roll=paper.mediaType==='roll';
       const brand=profileId.startsWith('thermal')?t('thermal'):'Zebra';
@@ -199,16 +303,23 @@
     }
     function updateControls() {
       const locked=Boolean(busy||activePrint);
+      const selectionLocked=Boolean(activePrint)||!fullBatch||assetsSignature!==selectionSource;
       paperPicker.trigger.disabled=Boolean(activePrint);
-      printButton.disabled=!ready||locked||paperPicker.isOpen()||Boolean(errorKey);
+      printButton.disabled=!ready||locked||paperPicker.isOpen()||Boolean(errorKey)||!batch?.labelCount;
+      const printCaption=printButton.querySelector('[data-wf-package-text]');
+      if(printCaption)printCaption.textContent=selectionMode==='selected'?t('reprintSelected')+' ('+(batch?.labelCount||0)+')':t('print');
       printButton.setAttribute('aria-busy',String(locked));
       page.page?.setAttribute('aria-busy',String(locked));
       retry.disabled=locked;change.disabled=Boolean(activePrint);viewInvoice.disabled=Boolean(activePrint);
       previous.disabled=locked||sheetIndex<=0;next.disabled=locked||!batch||sheetIndex>=batch.pageCount-1;
       for(const item of list.children)if(item.dataset.invoiceId)item.disabled=Boolean(activePrint);
+      allLabels.disabled=selectionLocked;lostLabels.disabled=selectionLocked;labelSearch.disabled=Boolean(activePrint);
+      clearLabels.disabled=selectionLocked||!selectedLabelIds.size;moreLabels.disabled=Boolean(activePrint);
+      for(const control of labelControls.values())control.disabled=selectionLocked;
       registerGuard();
     }
     function renderMeta() {
+      renderSelection();
       updateControls();
       if(!selectedRecord || !batch)return;
       invoiceTitle.textContent=String(selectedRecord.invNo||'—');
@@ -217,6 +328,7 @@
       for(const [number,key] of [[batch.labelCount,'labels'],[batch.pageCount,core.profiles[profileId]?.mediaType==='roll'?'rollPages':'sheets']]) {
         const chip=make('div','wf-package-count');chip.append(make('strong','',String(number)),make('span','',t(key)));counts.append(chip);
       }
+      if(selectionMode==='selected'){const total=make('div','wf-package-count wf-package-original-count');total.append(make('strong','',String(fullBatch.labelCount)),make('span','',t('originalLabels')));counts.append(total);}
       summary.textContent=t('source');
       identity.textContent=t(Object.prototype.hasOwnProperty.call(selectedRecord,'packageLabelSnapshot')?'savedIdentity':'currentIdentity');
       issueList.replaceChildren();
@@ -253,9 +365,10 @@
         // A supplied asset rejected by the safe renderer is lost content, not an
         // optional absent logo. Keep the core diagnostic and block this print.
         issues:model.issues.map(issue=>issue.code==='unsafeImage'?{...issue,severity:'error'}:issue)};
-      const signature=JSON.stringify([profileId,resolved.invoiceId,resolved.invNo,resolved.customerLogo,resolved.companyLogo,
+      const sourceSignature=JSON.stringify([resolved.invoiceId,resolved.invNo,resolved.customerLogo,resolved.companyLogo,
+        source.record.companyName,source.record.buyerName,source.record.regDate,source.record.date,Boolean(source.record.archived),
         resolved.items.map(item=>[item.productId,item.name,item.type,item.color,item.qty,item.packets,item.image]),resolved.issues]);
-      return {...source,model:resolved,signature};
+      return {...source,model:resolved,sourceSignature,signature:profileId+'|'+sourceSignature};
     }
     function sourceIsCurrent(signature) {
       try{return captureSource().signature===signature;}catch(_){return false;}
@@ -272,19 +385,27 @@
       try { source=captureSource(); }
       catch (_) {
         ready=false;busy=false;batch=null;selectedRecord=null;selectedIssuer='';selectedSignature='';barcodeImages=new Map();
+        fullBatch=null;selectedLabelIds.clear();selectionSource='';assetsSignature='';labelQuery='';
         errorKey=selectedId?'missingInvoice':'';statusKey='';previewFrame=null;stage.replaceChildren();stage.style.height='auto';
         detail.hidden=true;preview.hidden=true;empty.hidden=false;empty.textContent=t(selectedId?'missingInvoice':'none');
         renderMeta();return;
       }
       if(!force && !busy && ready && !errorKey && selectedSignature===source.signature && batch) {selectedRecord=source.record;renderMeta();return;}
+      const reuseAssets=assetsSignature===source.sourceSignature;
+      if(selectionSource!==source.sourceSignature){
+        selectionWasReset=Boolean(selectionSource&&selectionMode==='selected'&&selectedLabelIds.size);
+        selectedLabelIds.clear();labelQuery='';labelLimit=80;selectionSource=source.sourceSignature;
+      }
       ready=false;busy=true;errorKey='';statusKey='preparing';
-      selectedRecord=source.record;selectedIssuer=source.companyLogo;selectedSignature=source.signature;sheetIndex=0;barcodeImages=new Map();
-      batch=core.buildLabelBatch(source.model,{profileId});
+      selectedRecord=source.record;selectedIssuer=source.companyLogo;selectedSignature=source.signature;sheetIndex=0;
+      if(!reuseAssets){barcodeImages=new Map();assetsSignature='';}
+      fullBatch=core.buildLabelBatch(source.model,{profileId});
+      batch=selectionMode==='selected'?core.selectLabelBatch(fullBatch,[...selectedLabelIds]):fullBatch;
       const capturedBatch=batch,capturedBarcodes=barcodeImages;
       empty.hidden=true;detail.hidden=false;preview.hidden=true;stage.replaceChildren();previewFrame=null;renderMeta();
       if(batch.issues.some(issue=>issue.severity==='error')){busy=false;errorKey='blocked';statusKey='';renderMeta();return;}
       try {
-        const unique=[...new Set(capturedBatch.labels.map(label=>label.barcodeText))];
+        const unique=reuseAssets?[]:[...new Set(fullBatch.labels.map(label=>label.barcodeText))];
         for(let index=0;index<unique.length;index++){
           if(token!==revision)return;
           const code=helpers.barcodeBits(unique[index],window.JsBarcode);
@@ -301,11 +422,11 @@
         await showSheet(token);
         if(token!==revision)return;
         // Validate all source images, including products only present on later sheets.
-        const sources=[capturedBatch.customerLogo,capturedBatch.companyLogo,...capturedBatch.model.items.map(item=>item.image)].filter(Boolean);
+        const sources=reuseAssets?[]:[capturedBatch.customerLogo,capturedBatch.companyLogo,...capturedBatch.model.items.map(item=>item.image)].filter(Boolean);
         await Promise.all([...new Set(sources)].map(src=>{const img=new window.Image();img.src=src;return helpers.waitForImage(img);}));
         if(token!==revision)return;
         if(!sourceIsCurrent(source.signature))throw new Error('STALE');
-        ready=true;statusKey='ready';
+        assetsSignature=source.sourceSignature;ready=Boolean(capturedBatch.labelCount);statusKey=ready?'ready':'selectionEmpty';
       } catch(error) {
         if(token!==revision)return;
         errorKey=error.message==='STALE'?'changed':/BARCODE/.test(error.message)?'barcodeError':/IMAGE/.test(error.message)?'imageError':'error';statusKey='';
@@ -352,22 +473,41 @@
       // an explicit user action, and is disabled while print media is active.
       if(activePrint&&!activePrint.media?.matches)activePrint.cleanup(true);
     }
+    function reprintSnapshot(capturedBatch) {
+      const paper=core.profiles[capturedBatch.profileId];
+      return Object.freeze({
+        invoiceId:capturedBatch.invoiceId,invoiceNumber:capturedBatch.invNo,customerName:String(selectedRecord?.companyName||selectedRecord?.buyerName||''),
+        sourceFingerprint:helpers.sourceFingerprint(selectionSource),profileId:capturedBatch.profileId,
+        paperProfile:Object.freeze({id:paper.id,name:paper.name,mediaType:paper.mediaType||'sheet',pageWidthMM:paper.pageWidthMM,pageHeightMM:paper.pageHeightMM,
+          stockWidthMM:paper.stockWidthMM,stockHeightMM:paper.stockHeightMM,columns:paper.columns,rows:paper.rows}),
+        originalLabelCount:capturedBatch.originalLabelCount,selectedLabelCount:capturedBatch.labelCount,mode:'selected',requestedAt:new Date().toISOString(),
+        labels:Object.freeze(capturedBatch.labels.map(label=>Object.freeze({labelId:label.labelId,sequenceNumber:label.sequenceNumber,lineIndex:label.lineIndex,
+          productId:label.productId,name:label.name,color:label.color,unitIndex:label.unitIndex,currentPacket:label.currentPacket,totalPackets:label.totalPackets,
+          quantity:label.qty,barcodeText:label.barcodeText})))
+      });
+    }
     async function print() {
-      if(!ready||busy||activePrint||paperPicker.isOpen()||!batch||errorKey)return;
+      if(!ready||busy||activePrint||paperPicker.isOpen()||!batch?.labelCount||errorKey)return;
       if(!sourceIsCurrent(selectedSignature)){errorKey='changed';ready=false;renderMeta();return;}
       const token=revision,signature=selectedSignature,capturedBatch=batch,capturedBarcodes=new Map(barcodeImages);
+      const audit=selectionMode==='selected'?reprintSnapshot(capturedBatch):null;
       const frame=document.createElement('iframe');frame.className='wf-package-print-frame';frame.title=t('print');frame.setAttribute('aria-hidden','true');
       const paper=core.profiles[capturedBatch.profileId]||core.profiles.tw2008;
       frame.style.width=paper.pageWidthMM+'mm';frame.style.height=paper.pageHeightMM+'mm';
       frame.tabIndex=-1;
       document.body.append(frame);
       let timer,media,view,entered=false,started=false;
-      const job={frame,cleanup,media:null};activePrint=job;statusKey='preparing';renderMeta();
+      const job={frame,cleanup,media:null,auditId:null};activePrint=job;statusKey='preparing';renderMeta();
       function cleanup(completed=false) {
         if(activePrint!==job)return;
         clearTimeout(timer);view?.removeEventListener('afterprint',afterPrint);window.removeEventListener('afterprint',afterPrint);
         if(media?.removeEventListener)media.removeEventListener('change',mediaChanged);else media?.removeListener?.(mediaChanged);
         window.removeEventListener('focus',returned);document.removeEventListener('visibilitychange',visible);
+        if(completed&&job.auditId){
+          // A closed native dialog is not evidence that a physical label printed.
+          // The history module asks the user for the actual outcome separately.
+          Promise.resolve().then(()=>window.WFLabelReprintHistory.recordDialogClosed(job.auditId)).catch(()=>{});
+        }
         activePrint=null;frame.remove();printRecovery.hidden=true;printRecoveryHint.hidden=true;
         statusKey=completed?'printed':'';
         const refresh=pendingRefresh||pendingSelectedId!==null;
@@ -391,6 +531,14 @@
         if(token!==revision||!sourceIsCurrent(signature))throw new Error('STALE');
         if(doc.querySelectorAll('.page').length!==capturedBatch.pageCount||doc.querySelectorAll('.barcode').length!==capturedBatch.labelCount)throw new Error('PRINT_CONTENT');
         view=frame.contentWindow;if(typeof view?.print!=='function')throw new Error('PRINT');
+        if(audit){
+          try{
+            if(typeof window.WFLabelReprintHistory?.recordRequested!=='function')throw new Error('AUDIT');
+            job.auditId=await window.WFLabelReprintHistory.recordRequested(audit,{reason:'lost'});
+            if(typeof job.auditId!=='string'||!job.auditId)throw new Error('AUDIT');
+          }catch(_){throw new Error('AUDIT');}
+          if(activePrint!==job||token!==revision||!sourceIsCurrent(signature))throw new Error('STALE');
+        }
         view.addEventListener('afterprint',afterPrint);window.addEventListener('afterprint',afterPrint);
         media=view.matchMedia?.('print');job.media=media;entered=Boolean(media?.matches);
         if(media?.addEventListener)media.addEventListener('change',mediaChanged);else media?.addListener?.(mediaChanged);
@@ -401,9 +549,10 @@
         // Keep the print document alive for nonblocking mobile print sheets.
         // The guard clears only on actual afterprint/media completion.
       } catch(error) {
+        if(job.auditId){try{await window.WFLabelReprintHistory.recordFailed(job.auditId,String(error.message||error));}catch(_){} }
         cleanup(false);
         if(token!==revision)return;
-        ready=false;errorKey=error.message==='STALE'?'changed':/IMAGE/.test(error.message)?'imageError':'error';statusKey='';renderMeta();
+        ready=false;errorKey=error.message==='AUDIT'?'auditError':error.message==='STALE'?'changed':/IMAGE/.test(error.message)?'imageError':'error';statusKey='';renderMeta();
       }
     }
     function enhance() {
@@ -627,6 +776,15 @@
     if(!bits||!/^[01]+$/.test(bits))throw new Error('BARCODE');
     return {value,bits,quiet:10};
   }
+  function sourceFingerprint(value){
+    // A compact audit identifier only. Exact source comparisons retain the
+    // original signature, so a hash collision cannot preserve a stale selection.
+    const text=String(value||'');let first=0x811c9dc5,second=0x9e3779b9;
+    for(let index=0;index<text.length;index++){
+      const code=text.charCodeAt(index);first=Math.imul(first^code,0x01000193);second=Math.imul(second^code,0x85ebca6b);
+    }
+    return 'wfpl-v1-'+(first>>>0).toString(16).padStart(8,'0')+(second>>>0).toString(16).padStart(8,'0');
+  }
   function withTimeout(promise,timeout,message){
     return new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>reject(new Error(message)),timeout);
@@ -645,5 +803,5 @@
     });
     return withTimeout(loaded.then(async item=>{if(typeof item.decode==='function'){try{await item.decode();}catch(_){throw new Error('IMAGE_LOAD');}}}),timeout,'IMAGE_TIMEOUT');
   }
-  return {captureIdentity,resolveInvoiceSource,barcodeBits,waitForImage,withTimeout,readProfilePreference,writeProfilePreference,orientationChoices,createPaperPicker,mediaSummary};
+  return {captureIdentity,resolveInvoiceSource,barcodeBits,sourceFingerprint,waitForImage,withTimeout,readProfilePreference,writeProfilePreference,orientationChoices,createPaperPicker,mediaSummary};
 });

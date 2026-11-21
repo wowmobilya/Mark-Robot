@@ -69,7 +69,7 @@
  const mobile=matchMedia('(max-width:1024px)');
  function placeNavigation(){
    if (!nav) return;
-   if (dialog.open) dialog.append(nav);
+   if (dialog.open) { if (nav.parentNode!==dialog) dialog.append(nav); }
    else if (anchor.nextSibling!==nav) anchor.after(nav);
    const done=dialog.open && actions?.hidden;
    const label=center?.querySelector('.settings-save-label');
@@ -181,7 +181,7 @@
      if (!dialog.open) dialog.showModal();
      placeNavigation();
      content.scrollTop = 0;
-     close.focus();
+     close.focus({preventScroll:true});
    });
  }
  translateDescriptions();
@@ -189,19 +189,22 @@
  new MutationObserver(updateDialogTitle).observe(tabs, {childList: true, subtree: true, characterData: true});
  let panelAnimation;
  dialog.addEventListener('close', () => {
+   // Native close events are queued. A newer showModal() already owns focus
+   // and the shared dock if the user reopened a section in the meantime.
+   if (dialog.open) return;
    panelAnimation?.cancel(); panelAnimation = null;
    placeNavigation();
-   if (page.classList.contains('active')) opener?.focus();
+   if (page.classList.contains('active')) opener?.focus({preventScroll:true});
  });
  const original=window.switchTab;
  window.switchTab=function(key){
   const result=original.apply(this,arguments);
   const panel=document.getElementById('stab-'+key);
   panelAnimation?.cancel(); panelAnimation = null;
-  if(panel&&document.documentElement.dataset.wfMotion!=='reduced'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+  if(panel&&dialog.open&&document.documentElement.dataset.wfMotion!=='reduced'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
    // Native animation starts at the next paint, without synchronously laying
-   // out every settings field just to restart a CSS class. Rapid navigation
-   // cancels its predecessor instead of leaving overlapping transitions.
+   // out every settings field. The dialog owns its first opening transition;
+   // only changes inside an already open editor animate the panel itself.
    panelAnimation=panel.animate?.([{opacity:.5,transform:'translateY(6px)'},{opacity:1,transform:'none'}],{duration:150,easing:'ease-out'}) || null;
   }
   return result;

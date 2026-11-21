@@ -12,7 +12,12 @@
   }
   function createCoordinator({bootController,release,getSafety,readGuard,writeGuard,reload,now=Date.now,onChange=()=>{}}){
     let baseline=bootController||null,target=null,reloaded=false,dismissed=false,automaticSuppressed=false;
-    const status=()=>{const safety=getSafety(),reason=blocking(safety);return {available:!!target,reloaded,dismissed,reason,canReload:!!target&&!reloaded&&!reason,canAutoReload:!!target&&!reloaded&&!dismissed&&!automaticSuppressed&&!reason&&safety.route==='dashboard'&&safety.idle};};
+    const status=()=>{
+      // Keystrokes and speech progress also ask for banner state. Without a
+      // replacement worker there is no reload to guard or form to serialize.
+      if(!target)return {available:false,reloaded,dismissed,reason:'',canReload:false,canAutoReload:false};
+      const safety=getSafety(),reason=blocking(safety);return {available:true,reloaded,dismissed,reason,canReload:!reloaded&&!reason,canAutoReload:!reloaded&&!dismissed&&!automaticSuppressed&&!reason&&safety.route==='dashboard'&&safety.idle};
+    };
     function changed(controller){
       if(!controller||controller.state!=='activated')return false;
       // A first installation is not an update of the page that is already open.
@@ -96,7 +101,7 @@
   }
   function revision(root){const settings=state().settings||{};return root.id==='stab-app-identity'?settings.appIdentity:root.id==='stab-product-categories'?settings.productCategories:null;}
   const drafts=createDraftTracker({snapshot,revision});
-  let lastInteraction=Date.now(),cameraBusy=false,registration=null,registering=null,autoTimer=0,tickTimer=0,checkTimer=0,ready=false;
+  let lastInteraction=Date.now(),cameraBusy=false,registration=null,registering=null,autoTimer=0,tickTimer=0,checkTimer=0,ready=false,suspended=false;
   const guards=new Map();
   const banner=document.createElement('aside');banner.id='wfAppUpdate';banner.hidden=true;banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');
   const content=document.createElement('div'),title=document.createElement('strong'),detail=document.createElement('p'),actions=document.createElement('div'),refreshButton=document.createElement('button'),laterButton=document.createElement('button');
@@ -104,7 +109,7 @@
   function safety(){
     const data=state();let extra=false,downloading=false;
     for(const check of guards.values()){try{if(check())extra=true;}catch(_){extra=true;}}
-    try{downloading=!!window.WFOfflineVoice?.list().some(voice=>window.WFOfflineVoice.getStatus(voice.locale).state==='downloading');}catch(_){downloading=true;}
+    try{downloading=[window.WFOfflineVoice,window.WFReferenceVoice].some(api=>api?.list().some(voice=>api.getStatus(voice.locale).state==='downloading'));}catch(_){downloading=true;}
     const active=document.activeElement;
     const focused=!!active?.matches?.('input:not([type="button"]):not([type="submit"]),textarea,select,[contenteditable="true"]')&&isVisible(active);
     const route=document.querySelector('.page.active')?.id?.replace(/^page-/,'')||'';
@@ -123,15 +128,17 @@
   function render(update=coordinator.status()){
     const text=language();title.textContent=text.title;detail.textContent=text[update.reason]||text.ready;refreshButton.textContent=text.refresh;laterButton.textContent=text.later;
     refreshButton.disabled=!update.canReload;banner.hidden=!update.available||update.dismissed||update.reloaded;
-    const header=[...document.querySelectorAll('.navbar,.page.active > .sct-sticky-header')].find(isVisible);banner.style.setProperty('--wf-update-top',Math.max(12,header?header.getBoundingClientRect().bottom+8:12)+'px');
+    if(!banner.hidden){const header=[...document.querySelectorAll('.navbar,.page.active > .sct-sticky-header')].find(isVisible);banner.style.setProperty('--wf-update-top',Math.max(12,header?header.getBoundingClientRect().bottom+8:12)+'px');}
     if(versionLabel)versionLabel.textContent=text.version+' '+release;
     if(checkButton&&!checkButton.disabled)checkButton.textContent=text.check;
-    if(update.available&&!update.dismissed&&!tickTimer)tickTimer=setInterval(()=>{render();scheduleAuto();},1000);
-    if(!update.available||update.dismissed||update.reloaded){clearInterval(tickTimer);tickTimer=0;}
+    const ticking=update.available&&!update.dismissed&&!update.reloaded&&!suspended&&document.visibilityState==='visible';
+    if(ticking&&!tickTimer)tickTimer=setInterval(()=>{render();scheduleAuto();},1000);
+    if(!ticking){clearInterval(tickTimer);tickTimer=0;}
   }
   const coordinator=createCoordinator({bootController:navigator.serviceWorker?.controller,release,getSafety:safety,readGuard,writeGuard,reload:()=>location.reload(),onChange:render});
   function scheduleAuto(){
     clearTimeout(autoTimer);autoTimer=0;
+    if(suspended||document.visibilityState!=='visible')return;
     if(coordinator.status().canAutoReload)autoTimer=setTimeout(()=>coordinator.attempt(false),750);
   }
   let versionLabel=null,checkButton=null;
@@ -159,7 +166,12 @@
     if(controller&&controller.state!=='activated'){controller.addEventListener('statechange',inspectController,{once:true});return;}
     if(coordinator.changed(controller)){render();scheduleAuto();}
   }
-  function checkVisible(){clearTimeout(checkTimer);checkTimer=0;if(document.visibilityState!=='visible')return;check();render();scheduleAuto();checkTimer=setTimeout(checkVisible,INTERVAL);}
+  function stopTimers(){clearTimeout(checkTimer);checkTimer=0;clearTimeout(autoTimer);autoTimer=0;clearInterval(tickTimer);tickTimer=0;}
+  function checkVisible(){
+    clearTimeout(checkTimer);checkTimer=0;
+    if(suspended||document.visibilityState!=='visible'){stopTimers();return;}
+    check();render();scheduleAuto();checkTimer=setTimeout(checkVisible,INTERVAL);
+  }
   function interaction(){lastInteraction=Date.now();clearTimeout(autoTimer);autoTimer=0;}
   document.addEventListener('pointerdown',event=>{interaction();drafts.begin(editor(event.target));},{passive:true,capture:true});
   document.addEventListener('focusin',event=>{interaction();drafts.begin(editor(event.target));});
@@ -187,6 +199,8 @@
   refreshButton.addEventListener('click',()=>coordinator.attempt(true));laterButton.addEventListener('click',()=>coordinator.dismiss());
   navigator.serviceWorker?.addEventListener('controllerchange',inspectController);
   document.addEventListener('visibilitychange',checkVisible);window.addEventListener('focus',checkVisible);window.addEventListener('online',checkVisible);
+  window.addEventListener('pagehide',()=>{suspended=true;stopTimers();});
+  window.addEventListener('pageshow',event=>{if(suspended||event.persisted){suspended=false;checkVisible();}});
   window.addEventListener('resize',()=>render(),{passive:true});
   window.addEventListener('wf-robot-motion',event=>{cameraBusy=!!event.detail?.active||event.detail?.state==='requesting';render();});
   window.addEventListener('wf-robot-speaking',()=>render());window.addEventListener('wf-offline-voice-change',()=>render());
@@ -194,6 +208,6 @@
   new MutationObserver(records=>{for(const {target} of records)if((target.id==='stab-app-identity'||target.id==='stab-product-categories')&&target.getAttribute('aria-busy')!=='true')drafts.settled(target);}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['aria-busy']});
   window.WFAppUpdates={release,check:()=>check(true),status:()=>coordinator.status(),refresh:()=>coordinator.attempt(true),markClean:root=>drafts.clean(typeof root==='string'?document.querySelector(root):root),registerGuard:(name,guard)=>{if(typeof guard==='function')guards.set(name,guard);return()=>guards.delete(name);}};
   aboutVersion();render();
-  function start(){ready=true;register().then(()=>{render();scheduleAuto();clearTimeout(checkTimer);if(document.visibilityState==='visible')checkTimer=setTimeout(checkVisible,INTERVAL);});}
+  function start(){ready=true;register().then(()=>{render();scheduleAuto();clearTimeout(checkTimer);if(!suspended&&document.visibilityState==='visible')checkTimer=setTimeout(checkVisible,INTERVAL);});}
   if(document.readyState==='complete')start();else window.addEventListener('load',start,{once:true});
 })();
