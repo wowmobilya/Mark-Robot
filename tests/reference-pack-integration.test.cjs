@@ -52,15 +52,19 @@ test('every installed local reference asset matches its published bytes and hash
 
 function serviceWorker({offline=false}={}){
   const handlers={},network=[],cached=[],entries=new Map(),shellEntries=new Map();
-  const cacheKey=request=>new URL(request.url||String(request),'https://example.test/').href;
+  // WorkerLocation includes the worker script URL; relative imports and shell
+  // entries resolve against that URL, not against an origin-only placeholder.
+  const workerURL=new URL('https://example.test/sw.js');
+  const location=Object.freeze(Object.fromEntries(['href','origin','protocol','host','hostname','port','pathname','search','hash'].map(key=>[key,workerURL[key]])));
+  const cacheKey=request=>new URL(request.url||String(request),location.href).href;
   const makeCache=items=>({
     match:async request=>items.get(cacheKey(request))?.clone(),
     add:async request=>{cached.push(request.url);items.set(cacheKey(request),new Response('cached shell asset'));},
     put:async(request,response)=>{items.set(cacheKey(request),response.clone());}
   });
   const cache=makeCache(entries),shell=makeCache(shellEntries);
-  const self={location:{origin:'https://example.test'},addEventListener:(name,handler)=>handlers[name]=handler,skipWaiting(){},clients:{claim:async()=>{}}};
-  class LocalRequest extends Request{constructor(input,options){super(new URL(input,'https://example.test/'),options);}}
+  const self={location,addEventListener:(name,handler)=>handlers[name]=handler,skipWaiting(){},clients:{claim:async()=>{}}};
+  class LocalRequest extends Request{constructor(input,options){super(new URL(input,location.href),options);}}
   vm.runInNewContext(fs.readFileSync(path.join(root,'sw.js'),'utf8'),{
     self,URL,Request:LocalRequest,Response,Promise,importScripts(){},
     caches:{open:async name=>name==='infinity-offline-voice-v1'?cache:shell,match:async request=>(await cache.match(request))||(await shell.match(request)),keys:async()=>[],delete:async()=>true},
