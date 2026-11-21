@@ -134,7 +134,7 @@
       try{
         response=await fetcher(config.endpoint,{method:'POST',headers,body:JSON.stringify({...payload,action}),signal:controller?.signal,credentials:'omit',cache:'no-store'});
         try{body=await response.json();}catch(error){
-          if(error?.name==='SyntaxError'&&!controller?.signal.aborted)throw failure('INVALID_RESPONSE',response.status||502);
+          if(error?.name==='SyntaxError'&&!response.ok&&!controller?.signal.aborted)throw failure('INVALID_RESPONSE',response.status||502);
           throw error;
         }
       }catch(error){

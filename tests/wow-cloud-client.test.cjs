@@ -194,3 +194,11 @@ test('response body remains under the network deadline after headers arrive',asy
   const request=h.client.request('sync.push',{batchId:'deadline-fixture'});await started;expire();
   await assert.rejects(request,{code:'NETWORK'});assert.equal(h.client.getSnapshot().connection,'offline');
 });
+
+test('truncated successful response remains retryable with the original operation identity',async()=>{
+ const h=harness();await login(h.client);let first=true;
+ h.handle(()=>first?(first=false,{ok:true,status:200,json:async()=>{throw new SyntaxError('truncated JSON');}}):response({ok:true}));
+ const payload={batchId:'truncated-fixture',operations:[]};
+ await assert.rejects(h.client.request('sync.push',payload),{code:'NETWORK'});await h.client.request('sync.push',payload);
+ assert.deepEqual(h.calls.filter(x=>x.body.action==='sync.push').map(x=>x.body.batchId),['truncated-fixture','truncated-fixture']);
+});
