@@ -173,9 +173,12 @@
     actions.replaceChildren();
     if(state.authenticated){
       actions.append(button('sync',()=>perform(async()=>{await root.wfInitializeCloudSync?.();if(!root.WFCloudSyncEngine?.syncNow)throw Object.assign(Error('SYNC_UNAVAILABLE'),{code:'SYNC_UNAVAILABLE'});await root.WFCloudSyncEngine.syncNow();})),button('refresh',()=>perform(()=>client.refresh())),button('signOut',()=>perform(()=>client.signOut())));
-      if(state.role==='owner'){const url=new URL(client.entryUrl());url.searchParams.set('wf-accounts','cloud');url.hash='settings';actions.prepend(linkButton('manage',url.href));}
+      if(state.role==='owner'){
+        if(client.isRemote())actions.prepend(button('manage',()=>root.WFAccounts?.open?.()));
+        else{const url=new URL(client.entryUrl());url.searchParams.set('wf-accounts','cloud');url.hash='settings';actions.prepend(linkButton('manage',url.href));}
+      }
     }
-    if(client.isRemote()){const url=new URL(root.location.href);url.searchParams.delete('wf-cloud');url.searchParams.delete('workspace');url.searchParams.delete('wf-accounts');url.hash='settings';actions.append(linkButton('local',url.href));}
+    if(client.isRemote()){const url=new URL(root.location.href);url.searchParams.set('wf-cloud','local');url.searchParams.delete('workspace');url.searchParams.delete('wf-accounts');url.hash='settings';actions.append(linkButton('local',url.href));}
     const dashboard=client.getConfig().dashboardUrl;if(/^https:\/\/supabase\.com\/dashboard\/project\//.test(dashboard)){const anchor=linkButton('dashboard',dashboard);anchor.target='_blank';anchor.rel='noopener noreferrer';actions.append(anchor);}
     for(const control of actions.querySelectorAll('button'))control.disabled=busy;
     details.replaceChildren();

@@ -47,6 +47,15 @@ test('the same release cannot enter an automatic reload loop across page boots',
   const a=coordinator({readGuard:()=>stored,now:()=>24*60*60*1000});a.api.changed(worker());assert.equal(a.api.attempt(),false);assert.equal(a.api.status().canAutoReload,false);assert.equal(a.api.attempt(true),true);
   const b=coordinator({release:'175',readGuard:()=>stored});b.api.changed(worker());assert.equal(b.api.attempt(),true);
 });
+test('the deployed page can update after a device already completed the release 211 reload',()=>{
+  const html=require('node:fs').readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
+  const release=/<script\b[^>]*src="app-updates\.js[^\"]*"[^>]*data-release="([^\"]+)"/.exec(html)?.[1];
+  assert(release,'the page must identify the running release for its update guard');
+  const a=coordinator({release,readGuard:()=>({key:'from-release:211',at:0})});
+  a.api.changed(worker());
+  assert.equal(a.api.attempt(),true,'an earlier release must not suppress this release\'s safe automatic update');
+  assert.equal(a.reloads,1);
+});
 test('unavailable loop-guard storage disables automatic refresh but preserves an explicit safe refresh',()=>{
   const a=coordinator({writeGuard:()=>false});a.api.changed(worker());assert.equal(a.api.attempt(),false);assert.equal(a.api.status().canAutoReload,false);assert.equal(a.api.attempt(true),true);
 });

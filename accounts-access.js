@@ -116,18 +116,28 @@
     if(refreshing)return refreshing;
     refreshing=ready.then(()=>service.refresh()).finally(()=>{refreshing=null;});return refreshing;
   }
+  function remoteOwner(state=snapshot()){
+    return remoteMode&&state.authenticated===true&&state.currentAccount?.role==='owner'&&state.currentAccount.status==='active';
+  }
+  function transientOwnerFailure(error){
+    if(!remoteOwner()||error?.status===401||error?.status===403||
+      ['AUTH_REQUIRED','SESSION_REVOKED','SESSION_EXPIRED','ACCOUNT_UNAVAILABLE','ACCOUNT_REVOKED','ACCOUNT_SUSPENDED','ACCOUNT_DELETED',
+        'IDENTITY_STORAGE','STORAGE_ERROR','IDENTITY_STATE_INVALID','CONFLICT'].includes(error?.code))return false;
+    return error?.code==='NETWORK'||Number.isInteger(error?.status)&&error.status>=500&&error.status<600;
+  }
+  function refreshFailed(error){if(booted&&!transientOwnerFailure(error))invalidate();}
   function verifyResume(){
     // A restored page must not use cached permissions while its current account
     // status is being read. Periodic refreshes can remain visually unobtrusive.
     if(booted){resumeChecking=true;scheduleControls();}
-    return fresh().catch(()=>{if(booted)invalidate();}).finally(()=>{
+    return fresh().catch(refreshFailed).finally(()=>{
       resumeChecking=false;scheduleControls();
       root.dispatchEvent?.(new root.Event('wf-account-access-change'));
     });
   }
   function invalidate(){
     if(!remoteMode)root.WFCloud?.lockLocalAccess?.();
-    if(reloading)return;reloading=true;buildLock();setLocked(true);
+    if(reloading)return;reloading=true;checking=true;buildLock();setLocked(true);
     // Reload drops all account-specific drafts, generated previews, JS caches and
     // in-memory records; no employee inherits the previous user's open state.
     root.location.reload();
@@ -138,13 +148,14 @@
     if(booted&&state.configured&&!state.currentAccount){if(!explicitLockPending)invalidate();return;}
     if(previous?.currentAccount&&state.currentAccount&&previous.currentAccount.id!==state.currentAccount.id&&booted){invalidate();return;}
     const account=state.currentAccount,key=[state.configured,account?.id,account?.sessionVersion,account?.updatedAt,account?.role,account?.permissions?.join('|')].join(':');
+    if(loginResolve&&remoteOwner(state)&&policy.safeHome(account)&&!explicitLockPending&&!reloading){const resolve=loginResolve;loginResolve=null;resolve();}
     if(key!==lastUIKey){lastUIKey=key;updateSession();scheduleControls();root.dispatchEvent?.(new root.Event('wf-account-access-change'));}
   }
   async function beforeInit(){
     try{await ready;}catch(error){showLogin(error);throw error;}
-    const state=snapshot();
-    if(state.configured&&!state.currentAccount){
-      loginWait=loginWait||new Promise(resolve=>{loginResolve=resolve;});showLogin();await loginWait;
+    let state=snapshot();
+    while(state.configured&&!state.currentAccount){
+      loginWait=loginWait||new Promise(resolve=>{loginResolve=resolve;});showLogin();await loginWait;loginWait=null;state=snapshot();
     }
     booted=true;setLocked(false);updateSession();scheduleControls();
   }
@@ -344,7 +355,8 @@
     service=root.WFAccountsCore.createService({read:provider.read,commit:async(revision,state)=>{await provider.commit(revision,state);channel?.postMessage({revision:state.revision});},crypto:root.crypto,policy,sessionStore});
     }
     service.subscribe(onSnapshot);
-    ready=service.refresh().then(state=>{checking=false;lastSnapshot=service.getSnapshot();if(!remoteMode)root.WFCloud?.localIdentityChanged?.();if(!lastSnapshot.configured)setLocked(false);scheduleControls();return state;});
+    ready=service.refresh().catch(error=>{if(!transientOwnerFailure(error))throw error;return service.getSnapshot();})
+      .then(state=>{checking=false;lastSnapshot=service.getSnapshot();if(!remoteMode)root.WFCloud?.localIdentityChanged?.();if(!lastSnapshot.configured)setLocked(false);scheduleControls();return state;});
   }catch(error){ready=Promise.reject(error);}
   // Keep a rejected initialization visible without turning it into a new owner setup.
   ready.catch(error=>{if(!remoteMode)root.WFCloud?.lockLocalAccess?.();showLogin(error);});
@@ -356,5 +368,6 @@
   new MutationObserver(()=>{translateLock();updateSession();}).observe(doc.documentElement,{attributes:true,attributeFilter:['lang']});
   doc.addEventListener('visibilitychange',()=>{if(doc.visibilityState==='visible')verifyResume();});
   root.addEventListener('pageshow',event=>{if(event.persisted)verifyResume();});
-  root.setInterval(()=>{if(booted&&snapshot().configured&&doc.visibilityState==='visible')fresh().catch(invalidate);},30000);
+  for(const event of ['online','focus'])root.addEventListener(event,()=>{if(booted&&remoteOwner())verifyResume();});
+  root.setInterval(()=>{if(booted&&snapshot().configured&&doc.visibilityState==='visible')fresh().catch(refreshFailed);},30000);
 })(typeof window==='object'?window:globalThis);

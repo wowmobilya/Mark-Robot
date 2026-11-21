@@ -1,4 +1,4 @@
-/* WOW remote identity is opt-in. The existing local owner remains independent. */
+/* Only a previously verified device owner resumes automatically. Local owners remain independent. */
 (function(root,factory){
   'use strict';
   const api=factory(root);
@@ -6,7 +6,7 @@
   else {root.WFCloudClient=api;root.WFCloud=api.getClient();}
 })(typeof window==='object'?window:globalThis,function(root){
   'use strict';
-  const OLD_OWNER_KEY='wf_wow_cloud_owner_v1',OWNER_KEY='wf_wow_cloud_linked_owner_v2',REMOTE_OWNER_KEY='wf_wow_cloud_remote_owner_v1',IDLE_MS=30*60*1000,SESSION_MS=8*60*60*1000;
+  const OLD_OWNER_KEY='wf_wow_cloud_owner_v1',OWNER_KEY='wf_wow_cloud_linked_owner_v2',REMOTE_OWNER_KEY='wf_wow_cloud_remote_owner_v1',IDLE_MS=30*60*1000,SESSION_MS=8*60*60*1000,OWNER_RETENTION_MS=30*24*60*60*1000;
   const copy=value=>value==null?value:JSON.parse(JSON.stringify(value));
   const freeze=value=>{if(value&&typeof value==='object'&&!Object.isFrozen(value)){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
   const roles=new Set(['owner','manager','sales','carpentry','assembly','warehouse','customer','custom']);
@@ -23,14 +23,59 @@
     // The first head script keeps the fragment out of DOM properties and storage.
     // Consuming its lexical closure here also prevents a second client from replaying it.
     let activation=null;try{if(typeof wfTakeOwnerActivation==='function')activation=wfTakeOwnerActivation();}catch(_){activation={invalid:true};}
-    const config=options.config||root.WOW_CLOUD_CONFIG||{},mode=options.mode==='remote'||(!options.mode&&remoteRequest(root.location?.search))?'remote':'local';
-    const ownerEntry=mode==='remote'&&ownerRequest(root.location?.search);
+    const config=options.config||root.WOW_CLOUD_CONFIG||{};
     const fetcher=options.fetch||root.fetch?.bind(root),now=options.now||Date.now,store=options.sessionStore||browserStore();
     const configured=config.enabled===true&&typeof config.endpoint==='string'&&/^https:\/\//.test(config.endpoint)&&typeof config.publishableKey==='string'&&!!config.publishableKey;
     let workspaceHint=config.workspaceId||'';try{workspaceHint=new URLSearchParams(root.location?.search||'').get('workspace')||workspaceHint;}catch(_){}
+    let durableUsable=true,remoteStoreUsable=true,remoteContinuation=null,remoteSource=null,recovering=null;
+    const explicitOwner=options.mode!=='local'&&ownerRequest(root.location?.search);
+    let ordinaryEntry=!options.mode;try{ordinaryEntry=ordinaryEntry&&!new URLSearchParams(root.location?.search||'').has('wf-cloud');}catch(_){ordinaryEntry=false;}
+    function ownerEnvelope(value,legacy=false){
+      if(!value||value.mode!=='owner'||value.endpoint!==config.endpoint||!uuid(config.workspaceId)||value.workspaceId!==config.workspaceId||
+        value.workspaceId!==workspaceHint||!uuid(value.userId)||!Number.isSafeInteger(value.cloudVersion)||value.cloudVersion<1||
+        typeof value.refreshToken!=='string'||!value.refreshToken||value.refreshToken.length>8192)return false;
+      if(legacy&&value.version===1)return true;
+      return value.version===2&&uuid(value.continuationId)&&Number.isSafeInteger(value.verifiedAt)&&value.verifiedAt>=0&&value.verifiedAt<=now()+30000&&
+        Number.isSafeInteger(value.expiresAt)&&value.expiresAt>now()&&value.expiresAt>value.verifiedAt&&value.expiresAt-value.verifiedAt<=OWNER_RETENTION_MS;
+    }
+    const remoteStorage=source=>source==='local'?root.localStorage:root.sessionStorage;
+    function ownerRetirementKey(value){
+      if(!value||value.mode!=='owner'||!uuid(value.userId)||!uuid(value.workspaceId)||
+        !(uuid(value.continuationId)||value.version===1&&!value.continuationId))return null;
+      return REMOTE_OWNER_KEY+':retired:'+JSON.stringify([value.endpoint,value.workspaceId,value.userId,value.cloudVersion,value.continuationId||'legacy']);
+    }
+    function ownerIsRetired(value,source){
+      const key=ownerRetirementKey(value);if(!key)return false;
+      // The credential's own cancellation state must be readable before restore.
+      if(remoteStorage(source)?.getItem(key)!=null)return true;
+      try{return remoteStorage(source==='local'?'session':'local')?.getItem(key)!=null;}catch(_){return false;}
+    }
+    function retireRemoteOwner(value){
+      const key=ownerRetirementKey(value);if(!key)return;
+      // A scoped marker never overwrites a newer explicit login when the current
+      // credential cannot be read. No credential is copied into this marker.
+      for(const source of ['local','session'])try{remoteStorage(source)?.setItem(key,'1');}catch(_){}
+    }
+    function readOwner(){
+      for(const source of ['local','session'])try{
+        const storage=remoteStorage(source),raw=storage?.getItem(REMOTE_OWNER_KEY);if(!raw)continue;
+        let value;try{value=JSON.parse(raw);}catch(_){}
+        if(ownerEnvelope(value,source==='session'&&explicitOwner)){
+          let retired;try{retired=ownerIsRetired(value,source);}catch(_){return null;}
+          if(!retired)return {value,source};
+        }
+        storage.removeItem(REMOTE_OWNER_KEY);
+      }catch(_){if(source==='local')durableUsable=false;else remoteStoreUsable=false;}
+      return null;
+    }
+    const savedOwner=configured&&(explicitOwner||ordinaryEntry)?readOwner():null;
+    const automaticOwner=ordinaryEntry&&!!savedOwner;
+    const mode=options.mode==='remote'||!options.mode&&(remoteRequest(root.location?.search)||automaticOwner)?'remote':'local';
+    const ownerEntry=mode==='remote'&&(explicitOwner||automaticOwner);
+    if(ownerEntry&&savedOwner){remoteContinuation=savedOwner.value;remoteSource=savedOwner.source;}
     const empty=()=>({configured:true,revision:0,currentAccount:null,accounts:[],audit:[]});
     let identity=empty(),session=null,workspaceId='',link=null,generation=0,connection=configured?'idle':'unconfigured',lastError='',refreshing=null;
-    let signedAt=0,lastActiveAt=0,pendingActivity=false,lastVerifiedAt=0,storeUsable=true,remoteStoreUsable=true;
+    let signedAt=0,lastActiveAt=0,pendingActivity=false,lastVerifiedAt=0,storeUsable=true;
     const listeners=new Set();
     const localSnapshot=options.getLocalSnapshot||(()=>root.WFAccountAccess?.service?.getSnapshot?.());
     let localChecked=typeof options.getLocalSnapshot==='function',localScope=null,localAvailable;
@@ -74,7 +119,48 @@
     }
     if(localChecked&&mode==='local')localScope=principal();
     function clearStored(){try{store.clear();}catch(_){storeUsable=false;}}
-    function clearRemoteStored(){try{root.sessionStorage?.removeItem(REMOTE_OWNER_KEY);}catch(_){remoteStoreUsable=false;}}
+    function clearRemoteStored(all=false){
+      const previous=remoteContinuation;remoteContinuation=null;remoteSource=null;recovering=null;
+      for(const kind of ['local','session']){
+       let retiring=previous;
+       try{
+        if(!all&&!previous)continue;
+        const storage=remoteStorage(kind);let raw;
+        try{raw=storage?.getItem(REMOTE_OWNER_KEY);}catch(error){if(!all)throw error;}
+        // A stale tab may end its own session, never erase a newer explicit sign-in.
+        // Retire matching copies in both stores: a failed promotion cleanup may
+        // have left a tab fallback beside the durable copy, including offline.
+        if(raw){let current;try{current=JSON.parse(raw);}catch(_){}
+          if(!all){const sameContinuation=previous.continuationId?(current?.continuationId===previous.continuationId||current?.version===1&&!current.continuationId):
+              !current?.continuationId&&current?.refreshToken===previous.refreshToken;
+            if(current?.mode!=='owner'||current.userId!==previous.userId||current.workspaceId!==previous.workspaceId||current.endpoint!==previous.endpoint||
+              current.cloudVersion!==previous.cloudVersion||!sameContinuation)continue;}
+          retiring=current||previous;
+        }
+        storage?.removeItem(REMOTE_OWNER_KEY);
+       }catch(_){
+        retireRemoteOwner(previous);if(retiring!==previous)retireRemoteOwner(retiring);
+        if(kind==='local')durableUsable=false;else remoteStoreUsable=false;
+       }
+      }
+    }
+    function currentRemoteOwner(){
+      if(!remoteContinuation||!remoteSource)return null;
+      let raw,value,retired;
+      try{raw=remoteStorage(remoteSource)?.getItem(REMOTE_OWNER_KEY);retired=ownerIsRetired(remoteContinuation,remoteSource);}
+      catch(_){
+        // Storage loss may keep an already verified session in memory. It must
+        // never restore a not-yet-verified owner whose logout fence is unreadable.
+        // Keep the original fence so a later successful read still sees logout.
+        if(session)return null;
+        throw failure('AUTH_REQUIRED',401);
+      }
+      try{value=raw?JSON.parse(raw):null;}catch(_){throw failure('AUTH_REQUIRED',401);}
+      if(retired||!ownerEnvelope(value,remoteSource==='session')||value.userId!==remoteContinuation.userId||value.cloudVersion!==remoteContinuation.cloudVersion||
+        (remoteContinuation.continuationId?value.continuationId!==remoteContinuation.continuationId:value.refreshToken!==remoteContinuation.refreshToken))throw failure('AUTH_REQUIRED',401);
+      return value;
+    }
+    function reconcileRemote(){if(ownerEntry&&remoteContinuation)try{currentRemoteOwner();}catch(error){invalidateSession(error.code);}}
     function snapshot(){
       expire();
       const account=identity.currentAccount;
@@ -88,8 +174,8 @@
     function invalidateSession(reason='AUTH_REQUIRED'){
       generation++;refreshing=null;session=null;identity=empty();pendingActivity=false;lastVerifiedAt=0;lastError=String(reason);connection=configured?'signed-out':'unconfigured';clearStored();if(mode==='remote')clearRemoteStored();return emit();
     }
-    function expire(){reconcileLocal();if(session&&identity.currentAccount?.role!=='owner'&&(now()<signedAt||now()<lastActiveAt||now()-signedAt>=SESSION_MS||now()-lastActiveAt>=IDLE_MS)){invalidateSession('SESSION_EXPIRED');}}
-    function checkGeneration(expected){reconcileLocal();if(expected!==generation||mode==='local'&&(!localChecked||!localScope))throw failure('AUTH_REQUIRED',401);}
+    function expire(){reconcileLocal();reconcileRemote();if(session&&identity.currentAccount?.role!=='owner'&&(now()<signedAt||now()<lastActiveAt||now()-signedAt>=SESSION_MS||now()-lastActiveAt>=IDLE_MS)){invalidateSession('SESSION_EXPIRED');}}
+    function checkGeneration(expected){reconcileLocal();reconcileRemote();if(expected!==generation||mode==='local'&&(!localChecked||!localScope))throw failure('AUTH_REQUIRED',401);}
     function safeIdentity(value){
       const account=value?.currentAccount;
       if(!value||!account||typeof account.id!=='string'||!account.id||!roles.has(account.role)||account.status!=='active'||
@@ -107,12 +193,30 @@
       // Employee entry never inherits or creates an owner continuation.
       if(mode!=='local'){
         if(!ownerEntry)return;
-        if(!remoteStoreUsable||!session||identity.currentAccount?.role!=='owner'){clearRemoteStored();return;}
-        try{
-          if(!root.sessionStorage)throw Error('SESSION_STORAGE');
-          root.sessionStorage.setItem(REMOTE_OWNER_KEY,JSON.stringify({version:1,mode:'owner',endpoint:config.endpoint,workspaceId,
-            userId:identity.currentAccount.id,cloudVersion:identity.currentAccount.sessionVersion,refreshToken:session.refresh_token}));
-        }catch(_){clearRemoteStored();remoteStoreUsable=false;}
+        if(!session||identity.currentAccount?.role!=='owner'){clearRemoteStored();return;}
+        const latest=currentRemoteOwner();
+        if(remoteContinuation&&!latest)return;
+        // Without Web Locks, another tab can finish a rotation first. Keep its
+        // newer shared credential instead of overwriting it with our late reply.
+        if(latest&&latest.refreshToken!==remoteContinuation.refreshToken){remoteContinuation=latest;session.refresh_token=latest.refreshToken;return;}
+        let value;
+        try{value={version:2,mode:'owner',endpoint:config.endpoint,workspaceId,userId:identity.currentAccount.id,
+          cloudVersion:identity.currentAccount.sessionVersion,refreshToken:session.refresh_token,
+          continuationId:remoteContinuation?.continuationId||root.crypto.randomUUID(),verifiedAt:lastVerifiedAt,expiresAt:lastVerifiedAt+OWNER_RETENTION_MS};}
+        catch(_){return;}
+        for(const source of ['local','session'])try{
+          // An existing durable owner must keep its shared logout fence even
+          // when a refresh cannot persist. First-time owners may use tab storage.
+          if(source==='session'&&remoteSource==='local'&&remoteContinuation)return;
+          if(source==='local'?!durableUsable:!remoteStoreUsable)continue;
+          const storage=remoteStorage(source);if(!storage)throw Error('OWNER_STORAGE');
+          storage.setItem(REMOTE_OWNER_KEY,JSON.stringify(value));
+          remoteContinuation=value;remoteSource=source;
+          if(source==='local')try{root.sessionStorage?.removeItem(REMOTE_OWNER_KEY);}catch(_){}
+          return;
+        }catch(_){if(source==='local')durableUsable=false;else remoteStoreUsable=false;}
+        // A failed write cannot detach a previously verified logout fence.
+        // First-time owners without any usable store remain memory-only.
         return;
       }
       if(!localChecked||!localScope?.ownerId||!storeUsable||!session||identity.currentAccount?.role!=='owner'){clearStored();return;}
@@ -141,6 +245,7 @@
       rememberOwner();return emit();
     }
     function terminalAuth(error){return error?.status===401||['AUTH_REQUIRED','SESSION_REVOKED','SESSION_EXPIRED','ACCOUNT_UNAVAILABLE','ACCOUNT_REVOKED','ACCOUNT_SUSPENDED','ACCOUNT_DELETED'].includes(error?.code);}
+    function temporary(error){return error?.code==='NETWORK'||[408,425,429].includes(error?.status)||error?.status>=500;}
     async function transport(action,payload={},token,{quiet=false}={}){
       if(!configured||typeof fetcher!=='function')throw failure('CLOUD_UNCONFIGURED');
       const sentGeneration=generation;
@@ -180,11 +285,47 @@
       }
       catch(error){if(restoreOwner?.mode==='owner')await discardReturnedSession(result);throw error;}
     }
+    function ownerRefresh(expected,restore=false){
+      const run=async()=>{
+        checkGeneration(expected);
+        let saved=currentRemoteOwner();
+        if(restore&&!saved)throw failure('AUTH_REQUIRED',401);
+        // A failed durable write can leave the shared logout fence behind the
+        // newer verified token in memory. A changed shared token still wins.
+        const sharedAdvanced=saved&&saved.refreshToken!==remoteContinuation?.refreshToken;
+        const token=restore||sharedAdvanced?saved?.refreshToken:session?.refresh_token||saved?.refreshToken;
+        if(saved)remoteContinuation=saved;
+        try{return await refreshToken(token,expected,restore?saved:false);}
+        catch(error){
+          // Providers rotate refresh tokens. A concurrent tab without Web Locks
+          // may already have persisted the current token; retry that token once.
+          checkGeneration(expected);const newer=currentRemoteOwner();
+          if(!terminalAuth(error)||!newer||newer.refreshToken===token||newer.refreshToken===saved?.refreshToken)throw error;
+          remoteContinuation=newer;return refreshToken(newer.refreshToken,expected,restore?newer:false);
+        }
+      };
+      const locks=root.navigator?.locks;
+      return remoteSource==='local'&&typeof locks?.request==='function'?
+        locks.request('wf-owner-refresh:'+config.endpoint+':'+config.workspaceId,{mode:'exclusive'},run):run();
+    }
+    function recoverOwner(){
+      if(recovering)return recovering;
+      if(!ownerEntry||session||!remoteContinuation)return Promise.resolve(snapshot());
+      const expected=generation;connection='checking';emit();
+      const task=ownerRefresh(expected,true).catch(error=>{
+        if(expected===generation){
+          if(temporary(error)){connection=error.code==='NETWORK'?'offline':'error';lastError=error.code||'CLOUD_ERROR';emit();}
+          else invalidateSession(error.code);
+        }
+        return snapshot();
+      }).finally(()=>{if(recovering===task)recovering=null;});
+      recovering=task;return task;
+    }
     async function ensureAccess(){
       expire();if(!session||!identity.currentAccount)throw failure('AUTH_REQUIRED',401);
       if(session.expires_at*1000-now()>30000)return;
       if(!refreshing){const expected=generation,token=session.refresh_token;
-        const task=refreshToken(token,expected).catch(error=>{if(expected===generation&&terminalAuth(error))invalidateSession(error.code);throw error;})
+        const task=(ownerEntry?ownerRefresh(expected):refreshToken(token,expected)).catch(error=>{if(expected===generation&&terminalAuth(error))invalidateSession(error.code);throw error;})
           .finally(()=>{if(refreshing===task)refreshing=null;});refreshing=task;}
       await refreshing;expire();if(!session)throw failure('AUTH_REQUIRED',401);
     }
@@ -243,7 +384,7 @@
       return snapshot();
     }
     async function refresh(){
-      await ready;expire();if(!session)return snapshot();
+      await ready;expire();if(!session)return ownerEntry?recoverOwner():snapshot();
       const expected=generation,touched=pendingActivity;pendingActivity=false;
       try{return adopt(await request(touched?'session.touch':'session.snapshot'),expected);}
       catch(error){if(expected===generation){if(touched)pendingActivity=true;if(terminalAuth(error))invalidateSession(error.code);}throw error;}
@@ -271,17 +412,9 @@
       if(mode==='remote'){
         clearStored();
         if(activation){const proof=activation;activation=null;return activateOwner(proof);}
-        if(!ownerEntry){clearRemoteStored();return snapshot();}
+        if(!ownerEntry){clearRemoteStored(true);return snapshot();}
         if(!configured)return snapshot();
-        let saved;try{const raw=root.sessionStorage?.getItem(REMOTE_OWNER_KEY);saved=raw?JSON.parse(raw):null;}
-        catch(_){clearRemoteStored();return snapshot();}
-        if(!saved)return snapshot();
-        if(saved.version!==1||saved.mode!=='owner'||saved.endpoint!==config.endpoint||!uuid(config.workspaceId)||
-          saved.workspaceId!==config.workspaceId||saved.workspaceId!==workspaceHint||!uuid(saved.userId)||
-          !Number.isSafeInteger(saved.cloudVersion)||saved.cloudVersion<1||typeof saved.refreshToken!=='string'||!saved.refreshToken){clearRemoteStored();return snapshot();}
-        const expected=generation;connection='checking';
-        try{return await refreshToken(saved.refreshToken,expected,saved);}
-        catch(error){if(expected===generation){if(error.code==='NETWORK'){connection='offline';lastError='NETWORK';emit();}else invalidateSession(error.code);}return snapshot();}
+        return recoverOwner();
       }
       activation=null;
       if(!configured)return snapshot();
@@ -300,6 +433,15 @@
         connection='offline';lastError='NETWORK';emit();
       }else invalidateSession(error.code);}return snapshot();}
     })();
+    if(ownerEntry){
+      const resume=()=>{if(root.navigator?.onLine===false||root.document?.visibilityState==='hidden')return;
+        return ready.then(()=>{expire();if(!session&&remoteContinuation)return recoverOwner();}).catch(()=>{});};
+      for(const type of ['online','focus','pageshow'])root.addEventListener?.(type,resume);
+      root.document?.addEventListener?.('visibilitychange',resume);
+      root.addEventListener?.('storage',event=>{
+        if(event.key===REMOTE_OWNER_KEY||event.key===null||event.key===ownerRetirementKey(remoteContinuation))reconcileRemote();
+      });
+    }
     return Object.freeze({ready,request,getSnapshot:snapshot,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
       isConfigured:()=>configured,isRemote:()=>mode==='remote',isRemoteMode:()=>mode==='remote',isLinkedOwner:()=>mode==='local'&&!!link,
       localIdentityChanged,lockLocalAccess,invalidateSession,cacheName,entryUrl,can,touch,refresh,signIn,signOut,enrollOwner,bootstrapOwner:enrollOwner,
@@ -319,5 +461,6 @@
       getConfig:()=>freeze({enabled:configured,projectRef:config.projectRef||'',dashboardUrl:config.dashboardUrl||'',endpoint:config.endpoint||''})});
   }
   let singleton;
-  return Object.freeze({create,getClient:()=>singleton||(singleton=create()),isRemoteMode:()=>remoteRequest(root.location?.search)});
+  const getClient=()=>singleton||(singleton=create());
+  return Object.freeze({create,getClient,isRemoteMode:()=>getClient().isRemoteMode()});
 });

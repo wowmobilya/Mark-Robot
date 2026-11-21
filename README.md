@@ -1,12 +1,12 @@
 # Mark Robot
 
-المستودع الأساسي لتطوير برنامج Mark Robot. الموقع الحالي: [galeri.wowfurniture.com.tr](https://galeri.wowfurniture.com.tr/).
+المستودع الأساسي لتطوير برنامج Mark Robot. الموقع الحالي: [markrobot.wowfurniture.com.tr](https://markrobot.wowfurniture.com.tr/).
 
 ## حالة المصدر والنشر
 
 - الفرع `main` هو مصدر الموقع الحالي على GitHub Pages، من جذر المستودع. لا يعني تحديث التوثيق تفعيل السيرفر الجديد.
-- [الإصدار السحابي قيد التجهيز](https://github.com/wowmobilya/Mark-Robot/pull/22) موجود في الفرع `feat/wow-cloud-211`، ولم يُدمج في `main`. ملفات `modules/` و`supabase/` المذكورة أدناه تخص ذلك الفرع حتى دمجه. راجع حالته المباشرة قبل العمل.
-- مشروع Supabase المستهدف هو **Mark Robot** بالمعرّف `sldthbnigivpsqixccah`. الاتصال به متاح؛ وجود المشروع لا يعني تثبيت هذا الإصدار أو نقل بياناته.
+- [الإصدار السحابي](https://github.com/wowmobilya/Mark-Robot/pull/22) مدمج في `main`؛ ملفات `modules/` و`supabase/` أدناه ضمن المصدر الحالي.
+- مشروع Supabase المستهدف هو **Mark Robot** بالمعرّف `sldthbnigivpsqixccah`. نُشرت `wow-cloud` بالإصدار 2، وأعاد فحص الخدمة وجلسة المالك `200` في 21 نوفمبر 2026. أعاد فحص المساعد الموثق `provider.configured:false`؛ تهيئة مزود الذكاء وقبول الأجهزة ونقل التاريخ تبقى بنودًا مستقلة في [سجل القبول](docs/release-acceptance.md).
 - يحتفظ التطبيق الحالي ببيانات الشركة والمعرض. لا تغيّر النطاق أو تمسح قواعد أو ملفات قديمة، ولا تطبق ترقيات على القاعدة المشتركة قبل استكمال النسخ والاستعادة والجرد والقبول.
 
 [افتح دليل التطوير العربي وروابط الوحدات](دليل%20التطوير/README.md)
@@ -23,7 +23,7 @@
 | قاعدة البيانات وخدمات السيرفر | `supabase/wow-schema.sql` و`supabase/modules/` و`supabase/functions/wow-cloud/` |
 | ترتيب الترقية | `supabase/release.json`؛ لا تطبقه على الإنتاج قبل بوابات التشغيل |
 | الاختبارات والتحقق | `tests/` و`scripts/verify-release.mjs` و`.github/workflows/` |
-| تعليمات التشغيل والاستعادة | `docs/production-operations.md` و`docs/release-acceptance.md` في فرع الإصدار |
+| تعليمات التشغيل والاستعادة | `docs/production-operations.md` و`docs/release-acceptance.md` |
 
 ## تعديل أو إضافة أو إزالة وحدة
 
