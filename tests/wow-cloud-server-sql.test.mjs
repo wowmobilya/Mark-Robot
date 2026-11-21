@@ -9,9 +9,16 @@ import {createProviderTestDatabase} from '../supabase/testing/provider-fixtures.
 // possible in this in-memory test. Live provider compatibility is a separate gate.
 
 
-test('PostgreSQL compiles the real schema and passes rolled-back identity, CAS, idempotency, queue and permission gates',async()=>{
+for(const includeModules of [false,true])test(`PostgreSQL ${includeModules?'complete release':'foundation'} passes rolled-back identity, CAS, idempotency, queue and permission gates`,async()=>{
   const db=await createProviderTestDatabase();
   try{
+    if(includeModules){
+      const release=JSON.parse(await readFile(new URL('../supabase/release.json',import.meta.url),'utf8'));
+      // The provider harness installs the foundation; add every remaining module
+      // in the production manifest order before exercising the same live gates.
+      assert.equal(release.migrations[0],'wow-schema.sql');
+      for(const name of release.migrations.slice(1))await db.exec(await readFile(new URL('../supabase/'+name,import.meta.url),'utf8'));
+    }
     const gate=await readFile(new URL('./wow-cloud-server-transaction.sql',import.meta.url),'utf8');
     const results=await db.exec(gate);
     assert(results.some(result=>result.rows?.some(row=>row.result==='WOW_SQL_TRANSACTION_GATE_PASSED')));

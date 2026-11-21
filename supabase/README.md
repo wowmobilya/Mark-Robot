@@ -2,7 +2,9 @@
 
 This directory contains the backend foundation and encrypted Web Push implementation for the existing app. The final website address is **https://markrobot.wowfurniture.com.tr**. The previous `galeri.wowfurniture.com.tr` origin remains allowed during the controlled data handover. Changing origins does not move a browser's IndexedDB data; the owner migration must be verified before the domain cutover.
 
-**Status:** implemented and tested locally; not deployed by the backend agent. Deployment is authorized, but the intended Supabase project must be accessible and the combined gallery/chat/files/finance modules must pass review before publication. Do not substitute a different accessible project. No WOW project, Auth account, paid resource, live setup claim, or live VAPID key was created by this implementation work.
+**Status — 2026-11-21:** the additive release migration `mark_robot_release_211` was applied successfully to `sldthbnigivpsqixccah` after the revised full-schema rollback rehearsal passed. All 12 production SQL files are unchanged from `c7ea6e7ab2349d6b461d78c1245653bd3c6e4caa`; `wow-cloud` is deployed and ACTIVE at version 1. Live probes at `2026-11-21T19:01:27Z` confirmed health, unauthenticated-request rejection and CORS behavior. These are infrastructure checks, not completed owner onboarding or device/provider acceptance. The frontend remains `enabled:false`; this rollout created no live WOW owner/workspace and configured no new application secrets or push keys. A subsequent `main` update, `8e1a5b8c54519ea03c6ab9c24790c97d73c3d518` at `19:02:58Z`, changed `CNAME` to the final origin. At `19:05:04Z`, DNS resolved to `wowmobilya.github.io` and the new HTTP origin returned 200; the HTTPS probe through the proxy returned 503 and the old HTTP/HTTPS origin returned 404 without a redirect. HTTPS acceptance and owner-origin data handover remain pending. See the [deployment record and remaining acceptance gates](../docs/release-acceptance.md).
+
+Post-apply comparison matched the counts and SHA-256 fingerprints of all 84 legacy tables and the catalog metadata for 163 Storage objects. The seven existing buckets, existing Storage policies, and Auth user/session state and trigger are unchanged. File contents were not fetched or rehashed. The 62 new tables have RLS enabled; the 97 application functions and seven private schemas deny browser-role access. Five WOW Cron jobs are active; only the correspondence job has observed successful runs so far. This does not establish account onboarding, backup restoration, or provider delivery.
 
 ## Files
 
@@ -25,6 +27,8 @@ The three copied policy/cost modules under `functions/wow-cloud/` must match the
 
 ## Verification
 
+The deployed source baseline `c7ea6e7` passed 1,566/1,566 local release tests and the source check (192 assets, 128 scripts, 3,996,233 bytes). After correcting the push gate's synthetic payment to a canonical cash receipt, five targeted tests passed, including both rollback gates with all release modules installed. The complete suite has not yet been rerun with that additional regression. No production finance rule was changed.
+
 Run from the repository root:
 
 ```sh
@@ -36,14 +40,14 @@ The local suite exercises protected fields and trusted cost capture, actor/sessi
 
 It also compiles and executes the actual foundation schema in PostgreSQL via pinned PGlite. The local harness substitutes only provider-owned Auth/Storage/Vault/Cron/Net surfaces; business tables, policies, triggers, functions, transactions and `pgcrypto` execute in PostgreSQL. This caught a PL/pgSQL name collision before deployment. It is not a replacement for live provider integration tests.
 
-Two rollback-only gates are ready for the authorized management connection:
+Both rollback-only gates passed in the revised full-schema rehearsal through the authorized management connection before deployment:
 
 - `../tests/wow-cloud-server-transaction.sql`: anonymous/authenticated grants, Storage isolation, owner and worker timeout rules, direct Dashboard suspension, epoch revocation, batch replay, whole-batch CAS rollback, invoice uniqueness, typed IDs, tombstones, immutable media timestamps, reference pagination, last-owner protection, and one-time proof replay.
 - `../tests/wow-cloud-server-push-transaction.sql`: run **before real push initialization**. It checks secret isolation, endpoint ownership, owner-only finance recipients, atomic event creation, exact retry deduplication, import suppression, queue leases, expired-lease recovery, provider retry, dead endpoint cancellation, account bans, endpoint rotation and epoch revocation.
 
 These gates create synthetic Auth rows without passwords or usable login credentials and roll them back. They do not borrow real user identities. The push gate also rolls back its synthetic Vault/Cron/Net rows. Keep each complete `BEGIN … ROLLBACK` transaction intact. `pg_net` sends only after commit, so no test notification is sent. Sequence gaps after rollback are normal. The local harness verifies zero fixture identities, workspaces, secrets and network calls remain.
 
-Live gates still required: actual Auth login/refresh/admin operations, new-secret-key gateway compatibility, immutable Storage upload/signing, Edge runtime/module compatibility, two-device offline sync/conflict resolution, and a real permitted device receiving an encrypted push with the app closed. A provider HTTP success is not proof that the operating system displayed the notification.
+Live gates still required: actual Auth login/refresh/admin operations, immutable Storage upload/signing, authenticated module flows, two-device offline sync/conflict resolution, and a real permitted device receiving an encrypted push with the app closed. Cold offline owner reopening also requires the server signing secret and matching public pin. Edge startup and health/CORS/auth-rejection probes have passed; they do not establish these user flows. A provider HTTP success is not proof that the operating system displayed the notification.
 
 ## Trust and data boundaries
 
