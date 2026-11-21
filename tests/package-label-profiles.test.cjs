@@ -11,6 +11,7 @@ const invoice = core.normalizeInvoice({
 }, {companyLogo:'/issuer.png'});
 
 const batchFor = profileId => core.buildLabelBatch(invoice, {profileId});
+const realCards = html => html.match(/<div class="label-card">[\s\S]*?MADE IN TÜRKIYE<\/span>\s*<\/div>\s*<\/div>/g);
 const twipsToMM = twips => twips * 25.4 / 1440;
 function close(actual, expected, tolerance = 0.000001) {
   assert(Math.abs(actual - expected) < tolerance, `expected ${actual} to be within ${tolerance} of ${expected}`);
@@ -26,7 +27,7 @@ test('the current paper preference is TW-2004 while the old core entry point pre
   assert(Object.isFrozen(core.profiles));
   assert(Object.isFrozen(core.profiles.tw2004));
   assert(Object.isFrozen(core.profiles.tw2008));
-  for (const p of Object.values(core.profiles)) {
+  for (const p of [core.profiles.tw2004,core.profiles.tw2008]) {
     assert.equal(p.stockWidthMM, 99.1);
     assert.equal(p.stockHeightMM, p.id === 'tw2004' ? 139 : 67.7);
   }
@@ -71,7 +72,6 @@ test('four-up print and single-sheet preview uniformly enlarge the complete orig
   const single = core.renderDocument({...large, pages:[large.pages[0]]}, options);
   const sameFour = core.renderDocument({...original, pages:[large.pages[0]]}, options);
   // Both profiles share the complete card markup with every saved value and graphic.
-  const realCards = document => document.match(/<div class="label-card">[\s\S]*?MADE IN TÜRKIYE<\/span>\s*<\/div>\s*<\/div>/g);
   assert.equal(realCards(single).length, 4);
   assert.deepEqual(realCards(single), realCards(sameFour));
   assert.match(single, /grid-template-columns:\s*repeat\(2, 99\.1mm\)/);
@@ -91,3 +91,66 @@ test('four-up print and single-sheet preview uniformly enlarge the complete orig
   assert.equal((html.match(/class="label-card" style="background:#f3faf6;"/g)||[]).length, 3);
   assert.match(html, /\.page:last-child\s*{[^}]*break-after: auto/);
 });
+
+const rollProfiles = [
+  {id:'zebra100x150', width:100, height:150, angle:90, printedWidth:97, printedHeight:142.129909},
+  {id:'zebra150x100', width:150, height:100, angle:0, printedWidth:142.129909, printedHeight:97}
+];
+for (const {id,width,height,angle,printedWidth,printedHeight} of rollProfiles) {
+  test(`${id} has one die per page and keeps the artwork inside its safe inset`, () => {
+    const p = core.profiles[id];
+    assert(p && Object.isFrozen(p));
+    assert.equal(p.name, `Zebra ${width} × ${height}`);
+    assert.equal(p.labelsPerRoll, 250);
+    assert.deepEqual([p.pageWidthMM,p.pageHeightMM,p.stockWidthMM,p.stockHeightMM,p.cardWidthMM,p.cardHeightMM], [width,height,width,height,width,height]);
+    assert.deepEqual([p.columns,p.rows,p.gapColumnMM,p.gapRowMM], [1,1,0,0]);
+    assert.deepEqual([p.marginLeftMM,p.marginRightMM,p.marginTopMM,p.marginBottomMM], [0,0,0,0]);
+    assert.equal(p.insetMM, 1.5);
+    assert.equal(p.artworkRotationDeg, angle);
+    close(p.artworkScale, 97 / 66.2);
+    close(p.artworkScale * (angle === 90 ? 66.2 : 97), printedWidth);
+    close(p.artworkScale * (angle === 90 ? 97 : 66.2), printedHeight);
+    close(Math.min((width - printedWidth) / 2, (height - printedHeight) / 2), p.insetMM);
+  });
+
+  test(`${id} emits one original card and its matching barcode per roll label and single-page preview`, () => {
+    const roll = batchFor(id), original = batchFor('tw2008');
+    assert.equal(roll.profileId, id);
+    assert.equal(roll.pageCount, 9);
+    assert.equal(roll.pages.length, roll.labelCount);
+    assert(roll.pages.every(page => page.length === 1 && Object.isFrozen(page)));
+    assert.deepEqual(roll.pages.flat(), original.labels);
+    const options = {barcodeImages:new Map([
+      ['TAB-20 - Packet 1/2','data:image/png;base64,AA=='],
+      ['TAB-20 - Packet 2/2','data:image/png;base64,AQ=='],
+      ['TAB-30 - Packet 1/1','data:image/png;base64,Ag==']
+    ])};
+    const html = core.renderDocument(roll, options), cards = realCards(core.renderDocument(original, options));
+    const pageRule = `@page { size: ${width}mm ${height}mm; margin: 0; }`;
+    assert(html.replace(/\s+/g,' ').includes(pageRule));
+    assert.doesNotMatch(html, /210mm|297mm/);
+    assert(html.includes(`grid-template-columns: repeat(1, ${width}mm);`));
+    assert(html.includes(`grid-template-rows: repeat(1, ${height}mm);`));
+    assert(html.includes(`transform: rotate(${angle}deg) scale(${core.profiles[id].artworkScale});`));
+    assert.match(html, /\.page:last-child\s*{[^}]*break-after: auto/);
+    const pages = html.split('<div class="page">').slice(1);
+    assert.equal(pages.length, 9);
+    pages.forEach((page, index) => {
+      assert.deepEqual(realCards(page), [cards[index]]);
+      assert.equal((page.match(/class="label-card"/g)||[]).length, 1);
+    });
+    const preview = core.renderDocument({...roll, pages:[roll.pages[2]]}, options);
+    assert(preview.replace(/\s+/g,' ').includes(pageRule));
+    assert.equal((preview.match(/class="page"/g)||[]).length, 1);
+    assert.deepEqual(realCards(preview), [cards[2]]);
+  });
+
+  test(`${id} roll capacity describes the media without limiting invoice length or adding an extra page`, () => {
+    for (const qty of [0,1,249,250,251,core.maxLabels]) {
+      const model = core.normalizeInvoice({invNo:'A2', items:[{name:'TAB',type:'other',qty,packets:1}]});
+      const roll = core.buildLabelBatch(model, {profileId:id});
+      assert.equal(roll.pageCount, qty);
+      assert.equal(roll.labelCount, qty);
+    }
+  });
+}

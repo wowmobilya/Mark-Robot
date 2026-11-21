@@ -25,13 +25,23 @@
     };
     for(const [locale,values] of Object.entries(recoveryWords))Object.assign(words[locale],{printRecovery:values[0],printRecoveryHint:values[1]});
     const profileWords = {
-      ar:{subtitle:'من الفاتورة إلى إتيكيت الطرود تلقائيًا',profile:'قالب ورق الطباعة',remembered:'يتذكّر اختيار الورق، ويحسب الملصقات ويوزّعها تلقائيًا.',preferenceError:'سيُستخدم القالب الآن، لكن تعذّر حفظ الاختيار للطباعة التالية.',geometryLarge:'التصميم الأصلي مكبّر بالتناسب، مع تدوير تلقائي لاستغلال مساحة الملصق الكبير.',stockLarge:'Tanex TW-2004 · 4 ملصقات في ورقة A4',sizeLarge:'مقاس ملصق Tanex الرسمي: 99.1 × 139 مم',ready:'المعاينة جاهزة للطباعة وفق قالب الورق المختار.'},
+      ar:{subtitle:'من الفاتورة إلى إتيكيت الطرود تلقائيًا',profile:'قالب ورق الطباعة',remembered:'يتذكّر اختيار الورق، ويحسب الملصقات ويوزّعها تلقائيًا.',preferenceError:'سيُستخدم القالب الآن، لكن تعذّر حفظ الاختيار للطباعة التالية.',geometryLarge:'التصميم الأصلي مكبّر بالتناسب، مع ضبط الاتجاه تلقائيًا لاستغلال مساحة الملصق الكبير.',stockLarge:'Tanex TW-2004 · 4 ملصقات في ورقة A4',sizeLarge:'مقاس ملصق Tanex الرسمي: 99.1 × 139 مم',ready:'المعاينة جاهزة للطباعة وفق قالب الورق المختار.'},
       tr:{subtitle:'Faturadan koli etiketlerine, otomatik',profile:'Yazdırma kâğıdı şablonu',remembered:'Kâğıt seçimi hatırlanır; etiketler otomatik sayılır ve yerleştirilir.',preferenceError:'Şablon bu baskıda kullanılacak, ancak sonraki baskı için seçim kaydedilemedi.',geometryLarge:'Özgün tasarım orantılı büyütülür ve büyük etikete sığacak şekilde otomatik döndürülür.',stockLarge:'Tanex TW-2004 · A4 başına 4 etiket',sizeLarge:'Resmî Tanex etiket ölçüsü: 99.1 × 139 mm',ready:'Önizleme seçilen kâğıt şablonuyla yazdırılmaya hazır.'},
-      en:{subtitle:'From invoice to package labels, automatically',profile:'Printing paper template',remembered:'Remembers your paper choice and counts and arranges labels automatically.',preferenceError:'This template will be used now, but the choice could not be saved for the next print.',geometryLarge:'The original artwork is enlarged proportionally and rotated automatically to fit the larger label.',stockLarge:'Tanex TW-2004 · 4 labels per A4 sheet',sizeLarge:'Official Tanex label size: 99.1 × 139 mm',ready:'The preview is ready to print on the selected paper template.'},
+      en:{subtitle:'From invoice to package labels, automatically',profile:'Printing paper template',remembered:'Remembers your paper choice and counts and arranges labels automatically.',preferenceError:'This template will be used now, but the choice could not be saved for the next print.',geometryLarge:'The original artwork is enlarged proportionally with its orientation set automatically to fit the larger label.',stockLarge:'Tanex TW-2004 · 4 labels per A4 sheet',sizeLarge:'Official Tanex label size: 99.1 × 139 mm',ready:'The preview is ready to print on the selected paper template.'},
       fr:{subtitle:'De la facture aux étiquettes, automatiquement',profile:'Gabarit du papier',remembered:'Le choix du papier est mémorisé ; les étiquettes sont comptées et réparties automatiquement.',preferenceError:'Ce gabarit sera utilisé, mais le choix n’a pas pu être mémorisé pour la prochaine impression.',geometryLarge:'Le dessin original est agrandi proportionnellement et tourné automatiquement pour remplir la grande étiquette.',stockLarge:'Tanex TW-2004 · 4 étiquettes par feuille A4',sizeLarge:'Format officiel Tanex : 99.1 × 139 mm',ready:'L’aperçu est prêt pour le gabarit de papier choisi.'},
       ru:{subtitle:'От счёта к этикеткам — автоматически',profile:'Шаблон бумаги для печати',remembered:'Выбор бумаги запоминается; этикетки подсчитываются и размещаются автоматически.',preferenceError:'Шаблон будет использован сейчас, но сохранить выбор для следующей печати не удалось.',geometryLarge:'Исходный макет пропорционально увеличивается и автоматически поворачивается для большой этикетки.',stockLarge:'Tanex TW-2004 · 4 этикетки на листе A4',sizeLarge:'Официальный размер Tanex: 99.1 × 139 мм',ready:'Предпросмотр готов к печати на выбранном шаблоне бумаги.'}
     };
     for(const [locale,values] of Object.entries(profileWords))Object.assign(words[locale],values);
+    const rollWords={
+      ar:{stockRoll:'Zebra {size} مم · ملصق واحد لكل صفحة رول',sizeRoll:'مقاس الرول {size} مم · 250 ملصقًا في الرول',rollPages:'صفحة رول',rollScale:'ورق {size} مم · المقاس الفعلي 100% · ملصق واحد لكل صفحة',rollOption:'رول'},
+      tr:{stockRoll:'Zebra {size} mm · Her rulo sayfasında 1 etiket',sizeRoll:'Rulo etiketi {size} mm · Rulo başına 250 etiket',rollPages:'rulo sayfası',rollScale:'{size} mm kâğıt · Gerçek boyut %100 · Sayfa başına 1 etiket',rollOption:'Rulo'},
+      en:{stockRoll:'Zebra {size} mm · 1 label per roll page',sizeRoll:'Roll label {size} mm · 250 labels per roll',rollPages:'roll pages',rollScale:'{size} mm paper · Actual size 100% · 1 label per page',rollOption:'Roll'},
+      fr:{stockRoll:'Zebra {size} mm · 1 étiquette par page de rouleau',sizeRoll:'Étiquette {size} mm · 250 étiquettes par rouleau',rollPages:'pages du rouleau',rollScale:'Papier {size} mm · Taille réelle 100% · 1 étiquette par page',rollOption:'Rouleau'},
+      ru:{stockRoll:'Zebra {size} мм · 1 этикетка на страницу рулона',sizeRoll:'Этикетка {size} мм · 250 этикеток в рулоне',rollPages:'страниц рулона',rollScale:'Бумага {size} мм · Масштаб 100% · 1 этикетка на страницу',rollOption:'Рулон'}
+    };
+    for(const [locale,values] of Object.entries(rollWords))Object.assign(words[locale],values);
+    const orientations={ar:['عمودي','أفقي','طابق مقاس الورق في إعدادات الطابعة مع القالب المختار.','يتطلب هذا الاتجاه طابعة تقبل ورقًا بعرض 150 مم.'],tr:['Dikey','Yatay','Yazıcıdaki kâğıt ölçüsünü seçilen şablonla eşleştirin.','Bu yön, 150 mm genişliğinde kâğıt kabul eden bir yazıcı gerektirir.'],en:['Portrait','Landscape','Match the printer’s paper size to the selected template.','This orientation requires a printer that accepts 150 mm wide media.'],fr:['Portrait','Paysage','Réglez le format du papier de l’imprimante sur le gabarit choisi.','Cette orientation exige une imprimante acceptant du papier de 150 mm de large.'],ru:['Портрет','Альбом','Установите в принтере размер бумаги, соответствующий шаблону.','Для этой ориентации нужен принтер, принимающий бумагу шириной 150 мм.']};
+    for(const [locale,values] of Object.entries(orientations))Object.assign(words[locale],{portrait:values[0],landscape:values[1],printerSize:values[2],widePrinter:values[3]});
     const t = key => words[ops.locale()][key] || words.en[key] || key;
     const make = ops.make;
     let selectedId = '', query = '', filter = 'all', limit = 30, revision = 0, sheetIndex = 0;
@@ -60,13 +70,13 @@
     const profileText = make('div','wf-package-profile-copy');
     const profileLabel=textNode('label','','profile');profileLabel.htmlFor='wfPackageProfile';
     const profileSelect=make('select','fi');profileSelect.id='wfPackageProfile';profileSelect.dir='ltr';
-    for(const id of ['tw2004','tw2008']){
+    for(const id of ['tw2004','tw2008','zebra100x150','zebra150x100']){
       const paper=core.profiles?.[id];if(!paper)continue;
-      const option=make('option','',paper.name+' · '+(paper.stockWidthMM||paper.cardWidthMM)+' × '+(paper.stockHeightMM||paper.cardHeightMM)+' mm · '+(paper.columns*paper.rows)+' / A4');option.value=id;profileSelect.append(option);
+      const option=make('option');option.value=id;profileSelect.append(option);
     }
     profileSelect.value=profileId;profileSelect.addEventListener('change',()=>changeProfile(profileSelect.value));
-    const stockText=make('p'),preferenceHint=make('p','wf-package-preference');preferenceHint.setAttribute('role','status');
-    profileText.append(profileLabel,profileSelect,stockText,preferenceHint);
+    const stockText=make('p'),preferenceHint=make('p','wf-package-preference'),printerHint=make('p','wf-package-preference');preferenceHint.setAttribute('role','status');
+    profileText.append(profileLabel,profileSelect,stockText,preferenceHint,printerHint);
     profile.append(badge,profileText);
     const layout = make('div','wf-package-layout');
     const chooser = make('details','wf-package-chooser wf-ops-card'); chooser.open = true;
@@ -109,8 +119,8 @@
     const counter = make('output'); counter.setAttribute('aria-live','polite');
     paging.append(previous,counter,next); previewHeading.append(paging);
     const stage = make('div','wf-package-stage'); stage.id = 'wfPackagePreview';
-    const geometryNote = make('p','wf-ops-muted'),stockSizeNote=make('p','wf-ops-muted');
-    preview.append(previewHeading,stage,geometryNote,stockSizeNote,textNode('p','wf-package-scale-note','scale'));
+    const geometryNote = make('p','wf-ops-muted'),stockSizeNote=make('p','wf-ops-muted'),scaleNote=make('p','wf-package-scale-note');
+    preview.append(previewHeading,stage,geometryNote,stockSizeNote,scaleNote);
     content.append(empty,detail,preview); layout.append(chooser,content); page.body.append(profile,layout);
 
     function renderList() {
@@ -138,12 +148,19 @@
     }
     function normalize(value) { return String(value||'').normalize('NFKD').replace(/\p{M}/gu,'').replace(/[أإآٱ]/g,'ا').toLowerCase().trim(); }
     function renderProfile() {
-      const large=profileId==='tw2004';
-      badge.textContent=large?'TANEX TW-2004':'TANEX TW-2008';
+      const paper=core.profiles[profileId],large=profileId==='tw2004',roll=Boolean(paper?.labelsPerRoll);
+      const size=paper.stockWidthMM+' × '+paper.stockHeightMM,copy=key=>t(key).replace('{size}',size);
+      badge.textContent=roll?'ZEBRA '+size:large?'TANEX TW-2004':'TANEX TW-2008';
+      for(const option of profileSelect.children){
+        const item=core.profiles[option.value],isRoll=Boolean(item.labelsPerRoll);
+        option.textContent=(isRoll?'Zebra':item.name)+' · '+(item.stockWidthMM||item.cardWidthMM)+' × '+(item.stockHeightMM||item.cardHeightMM)+' mm · '+(isRoll?t('rollOption')+' '+t(item.pageWidthMM>item.pageHeightMM?'landscape':'portrait'):(item.columns*item.rows)+' / A4');
+      }
       profileSelect.value=profileId;profileSelect.disabled=Boolean(activePrint);
-      stockText.textContent=t(large?'stockLarge':'stock');
-      geometryNote.textContent=t(large?'geometryLarge':'geometry');
-      stockSizeNote.textContent=t(large?'sizeLarge':'stockSize');
+      stockText.textContent=copy(roll?'stockRoll':large?'stockLarge':'stock');
+      geometryNote.textContent=t(large||roll?'geometryLarge':'geometry');
+      stockSizeNote.textContent=copy(roll?'sizeRoll':large?'sizeLarge':'stockSize');
+      scaleNote.textContent=copy(roll?'rollScale':'scale');
+      printerHint.hidden=!roll;printerHint.textContent=roll?t(profileId==='zebra150x100'?'widePrinter':'printerSize'):'';
       preferenceHint.textContent=t(preferenceSaved?'remembered':'preferenceError');
     }
     function changeProfile(next) {
@@ -183,7 +200,7 @@
       invoiceTitle.textContent=String(selectedRecord.invNo||'—');
       customerName.textContent=String(selectedRecord.companyName||'—');
       counts.replaceChildren();
-      for(const [number,key] of [[batch.labelCount,'labels'],[batch.pageCount,'sheets']]) {
+      for(const [number,key] of [[batch.labelCount,'labels'],[batch.pageCount,core.profiles[profileId]?.labelsPerRoll?'rollPages':'sheets']]) {
         const chip=make('div','wf-package-count');chip.append(make('strong','',String(number)),make('span','',t(key)));counts.append(chip);
       }
       summary.textContent=t('source');
@@ -303,7 +320,8 @@
     }
     function scalePreview() {
       if(!previewFrame)return;
-      const width=210*96/25.4,height=297*96/25.4;
+      const paper=core.profiles[batch?.profileId||profileId]||core.profiles.tw2008;
+      const width=paper.pageWidthMM*96/25.4,height=paper.pageHeightMM*96/25.4;
       const scale=Math.min(1,Math.max(0.1,(stage.clientWidth||width)/width));
       previewFrame.style.width=width+'px';previewFrame.style.height=height+'px';
       previewFrame.style.transform='scale('+scale+')';stage.style.height=height*scale+'px';
@@ -325,6 +343,8 @@
       if(!sourceIsCurrent(selectedSignature)){errorKey='changed';ready=false;renderMeta();return;}
       const token=revision,signature=selectedSignature,capturedBatch=batch,capturedBarcodes=new Map(barcodeImages);
       const frame=document.createElement('iframe');frame.className='wf-package-print-frame';frame.title=t('print');frame.setAttribute('aria-hidden','true');
+      const paper=core.profiles[capturedBatch.profileId]||core.profiles.tw2008;
+      frame.style.width=paper.pageWidthMM+'mm';frame.style.height=paper.pageHeightMM+'mm';
       frame.tabIndex=-1;
       document.body.append(frame);
       let timer,media,view,entered=false,started=false;

@@ -23,26 +23,44 @@
   // Keep those origins while using the published 99.1 × 139 mm die size.
   const twipsToMM = value => value * 25.4 / 1440;
   const defaultProfileId = 'tw2004';
-  const largeStockWidthMM = 99.1, largeStockHeightMM = 139, largeInsetMM = 1.5;
+  const largeStockWidthMM = 99.1, largeStockHeightMM = 139;
+  function fittedStock(stockWidthMM, stockHeightMM) {
+    const insetMM = 1.5;
+    const portrait = stockHeightMM > stockWidthMM;
+    const artworkWidthMM = portrait ? geometry.cardHeightMM : geometry.cardWidthMM;
+    const artworkHeightMM = portrait ? geometry.cardWidthMM : geometry.cardHeightMM;
+    return {
+      cardWidthMM:stockWidthMM, cardHeightMM:stockHeightMM,
+      stockWidthMM, stockHeightMM, insetMM, artworkRotationDeg:portrait ? 90 : 0,
+      artworkScale:Math.min(
+        (stockWidthMM - 2 * insetMM) / artworkWidthMM,
+        (stockHeightMM - 2 * insetMM) / artworkHeightMM
+      )
+    };
+  }
+  function zebraRoll(widthMM, heightMM) {
+    return Object.freeze({
+      id:`zebra${widthMM}x${heightMM}`, name:`Zebra ${widthMM} × ${heightMM}`, labelsPerRoll:250,
+      pageWidthMM:widthMM, pageHeightMM:heightMM, columns:1, rows:1,
+      marginTopMM:0, marginBottomMM:0, marginLeftMM:0, marginRightMM:0,
+      gapColumnMM:0, gapRowMM:0, ...fittedStock(widthMM, heightMM)
+    });
+  }
   const profiles = Object.freeze({
     tw2004:Object.freeze({
       id:'tw2004', name:'Tanex TW-2004',
       pageWidthMM:210, pageHeightMM:297,
       marginTopMM:twipsToMM(567), marginBottomMM:0,
       marginLeftMM:twipsToMM(284), marginRightMM:twipsToMM(284),
-      columns:2, rows:2, cardWidthMM:largeStockWidthMM, cardHeightMM:largeStockHeightMM,
-      stockWidthMM:largeStockWidthMM, stockHeightMM:largeStockHeightMM,
-      gapColumnMM:twipsToMM(5619 + 164) - largeStockWidthMM, gapRowMM:twipsToMM(7881) - largeStockHeightMM,
-      insetMM:largeInsetMM,
-      artworkScale:Math.min(
-        (largeStockWidthMM - 2 * largeInsetMM) / geometry.cardHeightMM,
-        (largeStockHeightMM - 2 * largeInsetMM) / geometry.cardWidthMM
-      )
+      columns:2, rows:2, ...fittedStock(largeStockWidthMM, largeStockHeightMM),
+      gapColumnMM:twipsToMM(5619 + 164) - largeStockWidthMM, gapRowMM:twipsToMM(7881) - largeStockHeightMM
     }),
     tw2008:Object.freeze({
       ...geometry, id:'tw2008', name:'Tanex TW-2008',
-      stockWidthMM:99.1, stockHeightMM:67.7, insetMM:0, artworkScale:1
-    })
+      stockWidthMM:99.1, stockHeightMM:67.7, insetMM:0, artworkRotationDeg:0, artworkScale:1
+    }),
+    zebra100x150:zebraRoll(100, 150),
+    zebra150x100:zebraRoll(150, 100)
   });
   const maxLabels = 2000;
   const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -235,10 +253,9 @@
     const availableHeightMM = settings.pageHeightMM - settings.marginTopMM - settings.marginBottomMM;
     const customerLogo = safeImageSource(source.customerLogo), companyLogo = safeImageSource(source.companyLogo);
     const invNo = string(source.invNo), printedNumber = own(orderNames, invNo) ? orderNames[invNo] : invNo || 'A****';
-    // The Word table begins at the physical left margin. Its fixed-width cells
-    // slightly exceed the section's text width. Center the original artwork in
-    // each die, preserving its proportions, CSS units and RTL layout throughout.
-    const largePaperCSS = settings.id === 'tw2004' ? `
+    // Anchor the die grid to physical margins, independent of RTL text flow.
+    // A single transform scales all the original artwork around its center.
+    const fittedArtworkCSS = settings.artworkScale !== 1 || settings.artworkRotationDeg !== 0 ? `
       .labels-grid {
         position: absolute;
         top: ${settings.marginTopMM}mm;
@@ -249,7 +266,7 @@
       }
       .label-card {
         place-self: center;
-        transform: rotate(90deg) scale(${settings.artworkScale});
+        transform: rotate(${settings.artworkRotationDeg}deg) scale(${settings.artworkScale});
         transform-origin: center;
       }` : '';
 
@@ -375,7 +392,7 @@
         object-fit: contain;
         border: none;
         display: block;
-      }${largePaperCSS}
+      }${fittedArtworkCSS}
     </style>
   </head>
   <body>

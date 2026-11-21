@@ -165,6 +165,7 @@
   // The existing router delegates here before its hierarchical Back behavior.
   // Keep the capture listener as a fallback, without relying on listener order.
   function handleHistory(event) {
+    if (document.querySelector('.modal-ov.open') || document.getElementById('sidebar')?.classList.contains('open')) return false;
     const target = route(event.state);
     if (current() !== 'notifications' && target !== 'notifications') return false;
     event.stopImmediatePropagation();

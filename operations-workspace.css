@@ -3,7 +3,8 @@
   .wf-ops-page { min-inline-size:0; }
   .wf-ops-body { display:grid; gap:18px; min-inline-size:0; padding-block-end:16px; }
   .wf-ops-page :is(input, select, textarea, button) { font-family:inherit; }
-  .wf-ops-page :is(input, select, textarea) { min-inline-size:0; max-inline-size:100%; font-size:16px; }
+  .wf-ops-page :is(input, select, textarea) { min-inline-size:0; max-inline-size:100%; min-block-size:46px; padding:11px 13px; border:1px solid var(--border); border-radius:12px; background:var(--input); color:var(--text); box-sizing:border-box; font-size:16px; line-height:1.5; }
+  .wf-ops-page label { color:var(--text); }
   .wf-ops-page :is(input, select, textarea):focus-visible,
   .wf-ops-page button:focus-visible { outline:3px solid var(--brand-primary, var(--gold)); outline-offset:3px; }
   .wf-ops-page :is(button, .btn) { min-block-size:44px; white-space:normal; overflow-wrap:anywhere; }

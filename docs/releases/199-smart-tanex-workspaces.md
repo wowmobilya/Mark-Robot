@@ -71,6 +71,12 @@ a real test sheet; software checks cannot establish those hardware properties.
 
 ## Deployed browser verification
 
-Pending the deployment of this release. The local cloud browser could not reach
-the isolated development server, so this final check is performed against the
-published application. No physical printer has been exercised.
+The package-label page and both Tanex options were verified in the published
+application. The synthetic nine-label fixture produced 4/4/1 labels across three
+A4 pages for TW-2004 and 8/1 across two A4 pages for TW-2008. Browser measurements
+confirmed approximately 92.816 × 135.998 mm for the enlarged artwork and
+96.999 × 66.200 mm for the original artwork, within CSS pixel rounding.
+
+A subsequent user request added two Zebra roll sizes in release 200. That release
+also supplies native input theming and persistent back icons found during the
+live check. No physical printer has been exercised.

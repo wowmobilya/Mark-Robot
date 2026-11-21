@@ -10,7 +10,7 @@ delegated routine design decisions, and requested specialized agents.
 
 ## Binding print specification
 
-The print page offers two physical stock profiles. The user's latest instruction
+The print page offers four physical stock profiles. The user's latest instruction
 makes **Tanex TW-2004** the initial default and retains the last selected profile
 for the next job. Invoice choice, packet multiplication, local barcodes, sheet
 pagination and preview refresh run automatically. A native print dialog remains
@@ -25,6 +25,16 @@ the final printer control.
 - Enlarge the entire unchanged artwork uniformly and rotate it to use the tall
   die cell. Preserve proportions, all content and a safe inset; do not stretch
   or individually reposition artwork components.
+
+### Zebra thermal rolls — both requested orientations
+
+- `100 × 150 mm`: one portrait label per page, artwork oriented at 90°.
+- `150 × 100 mm`: one landscape label per page, artwork upright.
+- Both retain every original element and enlarge uniformly by 46.53% with a
+  minimum 1.5 mm inset. There is no A4 page in either roll profile.
+- A roll contains 250 labels per the supplied stock description; this is not a
+  job limit. The driver controls media gap, calibration and feeding.
+- The 150 mm feed width requires compatible printer hardware.
 
 ### Tanex TW-2008 — original calibrated template
 

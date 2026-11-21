@@ -57,7 +57,7 @@ function fixture(options={}) {
   const state={invoices:[first,second],products:[],settings:{logo:png}};
   const calls={prints:0,frames:[],images:[],renderTurns:0,navigation:[],brand:0};
   const guards=new Map(),timers=new Map();let context, timerId=0, mode=options.printMode||'async';
-  const fields=['printButton','detail','preview','empty','stage','invoiceTitle','customerName','counts','summary','identity','issueList','issues','counter','previous','next','status','retry','viewInvoice','change','list','more','filters','chooser','search','printRecovery','printRecoveryHint','profileSelect','badge','stockText','geometryNote','stockSizeNote','preferenceHint'];
+  const fields=['printButton','detail','preview','empty','stage','invoiceTitle','customerName','counts','summary','identity','issueList','issues','counter','previous','next','status','retry','viewInvoice','change','list','more','filters','chooser','search','printRecovery','printRecoveryHint','profileSelect','badge','stockText','geometryNote','stockSizeNote','scaleNote','preferenceHint','printerHint'];
   const ui=Object.fromEntries(fields.map(name=>[name,element()]));ui.printRecovery.hidden=true;ui.printRecoveryHint.hidden=true;
   const document=Object.assign(new Events(),{body:element(),baseURI:'https://wow.example/app/',visibilityState:'visible',hidden:false,activeElement:null});
   const animationFrame=callback=>{calls.renderTurns++;queueMicrotask(()=>callback(0));return calls.renderTurns;};
@@ -380,5 +380,39 @@ test('an open print job locks paper choice and retains every original sheet',asy
     assert.equal(app.read('profileId'),'tw2008');assert.equal(app.read('batch.pageCount'),2);
     assert.equal(app.read('activePrint'),job);assert.equal(app.calls.prints,1);
     app.finish();await tick();assert.equal(app.ui.profileSelect.disabled,false);
+  }finally{app.dispose();}
+});
+
+test('Zebra rolls resize both preview and native print to 100 by 150 mm with one label per page',async()=>{
+  const app=fixture(),preferences=new Map();
+  app.window.localStorage={setItem:(key,value)=>preferences.set(key,value)};
+  app.state.invoices[0].items[0].qty=9;
+  try{
+    assert.equal(app.context.changeProfile('zebra100x150'),true);await tick();
+    assert.equal(app.read('ready'),true);assert.equal(app.read('batch.pageCount'),9);
+    assert.equal(app.ui.scaleNote.textContent,'rollScale');
+    assert(Math.abs(parseFloat(app.read('previewFrame.style.width'))-100*96/25.4)<0.01);
+    assert(Math.abs(parseFloat(app.read('previewFrame.style.height'))-150*96/25.4)<0.01);
+    await app.context.print();
+    const frame=app.read('activePrint.frame');
+    assert.equal(frame.style.width,'100mm');assert.equal(frame.style.height,'150mm');
+    assert.equal(frame.contentDocument.querySelectorAll('.page').length,9);
+    assert.equal(frame.contentDocument.querySelectorAll('.barcode').length,9);
+    assert.equal(preferences.get('wf_package_label_profile_v1'),'zebra100x150');
+  }finally{app.dispose();}
+});
+
+test('the separate 150 by 100 mm roll preference uses landscape paper and restores the A4 job when selected',async()=>{
+  const app=fixture();app.state.invoices[0].items[0].qty=9;
+  try{
+    app.context.changeProfile('zebra150x100');await tick();
+    assert.equal(app.read('batch.pageCount'),9);assert.equal(app.ui.printerHint.textContent,'widePrinter');
+    assert(Math.abs(parseFloat(app.read('previewFrame.style.width'))-150*96/25.4)<0.01);
+    assert(Math.abs(parseFloat(app.read('previewFrame.style.height'))-100*96/25.4)<0.01);
+    await app.context.print();const frame=app.read('activePrint.frame');
+    assert.equal(frame.style.width,'150mm');assert.equal(frame.style.height,'100mm');
+    app.finish();await tick();app.context.changeProfile('tw2004');await tick();
+    assert.equal(app.read('batch.pageCount'),3);assert.equal(app.ui.printerHint.hidden,true);
+    assert(Math.abs(parseFloat(app.read('previewFrame.style.width'))-210*96/25.4)<0.01);
   }finally{app.dispose();}
 });

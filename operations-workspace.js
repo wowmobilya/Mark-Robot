@@ -73,7 +73,9 @@
       entry.title.textContent = entry.definition.title?.[lang] || names[entry.id][lang];
       entry.subtitle.textContent = entry.definition.subtitle?.[lang] || '';
       entry.subtitle.hidden = !entry.subtitle.textContent;
-      entry.back.textContent = backNames[lang]; entry.back.setAttribute('aria-label', backNames[lang]);
+      entry.backCaption.textContent = backNames[lang]; entry.back.setAttribute('aria-label', backNames[lang]);
+      entry.backIcon.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="'+(lang==='ar'?'M5 12h14m-6-6 6 6-6 6':'M19 12H5m6-6-6 6 6 6')+'"/></svg>';
+      entry.backIcon.dataset.direction=lang==='ar'?'right':'left';
       entry.definition.onLanguage?.();
     }
   }
@@ -91,6 +93,8 @@
     const page = make('section', 'page wf-ops-page'); page.id = 'page-' + id;
     const header = make('header', 'sct-sticky-header wf-heading-row');
     const back = make('button', 'sct-back-btn'); back.type = 'button';
+    const backIcon=make('span','wf-ui-icon');backIcon.dataset.wfBackIcon='';backIcon.dataset.wfUiIcon='back';backIcon.setAttribute('aria-hidden','true');
+    const backCaption=make('span');back.append(backIcon,backCaption);
     back.addEventListener('click', () => root.showPage(definition.parent || 'dashboard'));
     const heading = make('div', 'sct-sticky-title wf-centered-heading');
     const title = make('h1'); title.id = 'wfOpsTitle-' + id; title.tabIndex = -1;
@@ -102,12 +106,13 @@
     const actions = make('div', 'wf-heading-actions wf-ops-actions');
     header.append(back, heading, menu, actions);
     const body = make('div', 'wf-ops-body'); page.append(header, body); main.append(page);
-    const entry = {id, definition, page, header, actions, body, title, subtitle, back};
+    const entry = {id, definition, page, header, actions, body, title, subtitle, back, backIcon, backCaption};
     registry.set(id, entry);
     const lang = locale(); page.lang = lang; page.dir = lang === 'ar' ? 'rtl' : 'ltr';
     title.textContent = definition.title?.[lang] || names[id][lang];
     subtitle.textContent = definition.subtitle?.[lang] || ''; subtitle.hidden = !subtitle.textContent;
-    back.textContent = backNames[lang];
+    backCaption.textContent = backNames[lang];back.setAttribute('aria-label',backNames[lang]);
+    backIcon.innerHTML='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="'+(lang==='ar'?'M5 12h14m-6-6 6 6-6 6':'M19 12H5m6-6-6 6 6 6')+'"/></svg>';backIcon.dataset.direction=lang==='ar'?'right':'left';
     return entry;
   }
   function open(id) {
@@ -123,6 +128,8 @@
     return result;
   };
   function handleHistory(event) {
+    // The original app owns closing its invoice preview and mobile drawer first.
+    if(document.querySelector('.modal-ov.open')||document.getElementById('sidebar')?.classList.contains('open'))return false;
     const from = current();
     const target = event?.state?.page || root.location.hash.slice(1) || 'dashboard';
     if (!registry.has(from) && !registry.has(target)) return false;
