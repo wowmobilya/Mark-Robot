@@ -53,7 +53,7 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     deleteUser:id=>call('/auth/v1/admin/users/'+encodeURIComponent(id),{method:'DELETE',kind:'auth-admin'}),
     updatePassword:(id,password)=>call('/auth/v1/admin/users/'+encodeURIComponent(id),{method:'PUT',body:{password},kind:'auth-admin'})
   };
-  const objectPath=path=>'wow-files/'+path.split('/').map(encodeURIComponent).join('/');
+  const objectPath=path=>'mark-robot-private/'+path.split('/').map(encodeURIComponent).join('/');
   return {
     rpc:(action,data)=>call('/rest/v1/rpc/wow_service',{body:{p_action:action,p_data:data},kind:'rpc'}),
     pushRpc:(action,data)=>call('/rest/v1/rpc/wow_push_worker',{body:{p_action:action,p_data:data},kind:'rpc'}),
@@ -69,7 +69,7 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
       // Each call removes exactly one database-generated name in the private bucket.
       remove:path=>{
         if(!isStorageCleanupPath(path))throw failure('INVALID_STORAGE_PATH',422);
-        return call('/storage/v1/object/wow-files',{method:'DELETE',body:{prefixes:[path]},kind:'storage',removeObject:true}).then(result=>{
+        return call('/storage/v1/object/mark-robot-private',{method:'DELETE',body:{prefixes:[path]},kind:'storage',removeObject:true}).then(result=>{
           if(!Array.isArray(result)||result.length>1||result.some(object=>object?.name!==path))throw failure('STORAGE_UNAVAILABLE',503);
           return result;
         });
@@ -81,7 +81,7 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
         const signed=value.signedURL||value.signedUrl;
         if(typeof signed!=='string')throw failure('STORAGE_UNAVAILABLE',503);
         const resolved=new URL(signed.startsWith('http')?signed:base+'/storage/v1'+signed);
-        if(resolved.origin!==new URL(base).origin||!resolved.pathname.startsWith('/storage/v1/object/sign/wow-files/'))throw failure('STORAGE_UNAVAILABLE',503);
+        if(resolved.origin!==new URL(base).origin||!resolved.pathname.startsWith('/storage/v1/object/sign/mark-robot-private/'))throw failure('STORAGE_UNAVAILABLE',503);
         return resolved.href;
       }
     }

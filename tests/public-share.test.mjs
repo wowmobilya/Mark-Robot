@@ -29,8 +29,8 @@ async function fixture(t){
  const calls=[];let fetches=0,onFetch;
  const moduleRpc=async(name,action,data)=>{assert.equal(name,'wow_public_share_service');calls.push({action,data});return (await db.query('select public.wow_public_share_service($1,$2::jsonb) v',[action,JSON.stringify(data)])).rows[0].v;};
  const options={moduleRpc,projectUrl:project,publicOrigin:site,allowedOrigins:[site],
-  storage:{sign:async(p,ttl)=>{assert.equal(p,path);assert.equal(ttl,60);return project+'/storage/v1/object/sign/wow-files/'+p+'?token=fixture';}},
-  fetch:async(url,opts)=>{fetches++;assert.equal(url,project+'/storage/v1/object/sign/wow-files/'+path+'?token=fixture');assert.equal(opts.redirect,'error');await onFetch?.();return new Response(png,{headers:{'content-type':'image/png'}});}};
+  storage:{sign:async(p,ttl)=>{assert.equal(p,path);assert.equal(ttl,60);return project+'/storage/v1/object/sign/mark-robot-private/'+p+'?token=fixture';}},
+  fetch:async(url,opts)=>{fetches++;assert.equal(url,project+'/storage/v1/object/sign/mark-robot-private/'+path+'?token=fixture');assert.equal(opts.redirect,'error');await onFetch?.();return new Response(png,{headers:{'content-type':'image/png'}});}};
  const actions=createPublicShareActions(options),api=createPublicShareAPI(options);
  const publish=(body={},actor=owner)=>actions['gallery.share.publish']({actor,body:{commandId:randomUUID(),revision:0,presentationVersion:1,language:'ar',confirmed:true,...body}});
  return {db,wid,other,owner,staff,foreign,imageId,path,moduleRpc,options,actions,api,publish,calls,get fetches(){return fetches;},set onFetch(fn){onFetch=fn;}};

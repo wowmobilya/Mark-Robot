@@ -34,7 +34,7 @@ update storage.buckets set allowed_mime_types=array(select distinct x from unnes
  'image/bmp','image/tiff','image/heic','video/mp4','video/quicktime','video/webm','video/x-matroska','video/x-msvideo',
  'audio/webm','audio/mp4','audio/mpeg','audio/ogg','audio/wav','audio/flac','audio/aac',
  'application/pdf','application/zip','application/octet-stream','text/plain']) x)
-where id='wow-files' and not public;
+where id='mark-robot-private' and not public;
 
 create or replace function wow_collab.file_path(f wow_collab.files) returns text language sql immutable set search_path='' as $$
  select 'files/'||f.workspace_id||'/'||f.owner_id||'/'||f.id||'/'||f.digest
@@ -84,7 +84,7 @@ begin
   -- Durable tombstones survive interrupted clients and failed storage deletion.
   if p_action='gcAck' then
    update wow_collab.files f set state='removed' where f.owner_id=uid and f.id=fid and f.state='trash'
-    and not exists(select from storage.objects o where o.bucket_id='wow-files' and o.name=wow_collab.file_path(f)); return '{}'; end if;
+    and not exists(select from storage.objects o where o.bucket_id='mark-robot-private' and o.name=wow_collab.file_path(f)); return '{}'; end if;
   update wow_collab.files f set state='trash' where f.owner_id=uid and f.state='pending' and f.created_at<now()-interval '1 day'
    and coalesce(f.upload_until,f.created_at)<=now();
   select coalesce(jsonb_agg(jsonb_build_object('id',q.id,'path',q.path)),'[]') into result from

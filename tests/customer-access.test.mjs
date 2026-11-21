@@ -15,7 +15,7 @@ import {localDOM} from './fixtures/module-dom.mjs';
 const require=createRequire(import.meta.url),policy=require('../accounts-policy.js');
 const cloud=require('../modules/platform/cloud/wow-cloud-client.js');
 const read=path=>readFile(new URL('../'+path,import.meta.url),'utf8');
-const origin='https://customer-fixture.invalid',signPath='/storage/v1/object/sign/wow-files/';
+const origin='https://customer-fixture.invalid',signPath='/storage/v1/object/sign/mark-robot-private/';
 const password='fixture password for this test';
 const access=promise=>assert.rejects(promise,{code:'ACCESS_DENIED',status:403});
 const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/WZkAAAAASUVORK5CYII=';

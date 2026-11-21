@@ -43,7 +43,7 @@ export function createPublicShareActions({moduleRpc,storage,projectUrl,publicOri
     !Number.isSafeInteger(prepared.size)||prepared.size<12||prepared.size>imageLimit||
     typeof prepared.path!=='string'||!new RegExp('^'+UUID+'/gallery/'+UUID+'/'+UUID+'\\.'+prepared.type+'$').test(prepared.path))fail('SHARE_UNAVAILABLE',503);
    const signed=new URL(await storage.sign(prepared.path,60));
-   if(signed.origin!==project||signed.username||signed.password||signed.hash||signed.pathname!=='/storage/v1/object/sign/wow-files/'+prepared.path)fail('SHARE_UNAVAILABLE',503);
+   if(signed.origin!==project||signed.username||signed.password||signed.hash||signed.pathname!=='/storage/v1/object/sign/mark-robot-private/'+prepared.path)fail('SHARE_UNAVAILABLE',503);
    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
    let bytes;
    try{

@@ -213,7 +213,7 @@ begin
   return jsonb_build_object('me',(select wow_collab.person(a) from public.wow_accounts a where a.id=uid));
  elsif p_action in ('gc','gcAck') then
   if p_action='gcAck' then update wow_collab.chat_assets b set state='removed' where b.id=aid and b.workspace_id=wid and b.state='trash'
-   and not exists(select from storage.objects o where o.bucket_id='wow-files' and o.name=wow_collab.asset_path(b)); return '{}'; end if;
+   and not exists(select from storage.objects o where o.bucket_id='mark-robot-private' and o.name=wow_collab.asset_path(b)); return '{}'; end if;
   delete from wow_collab.chat_notifications q where q.workspace_id=wid and q.created_at<now()-interval '1 day';
   update wow_collab.messages x set deleted=true,text_body='',asset_id=null,mentions='{}' where x.id in
    (select y.id from wow_collab.messages y join wow_collab.rooms r on r.id=y.room_id where r.workspace_id=wid and not y.deleted and (not r.active or y.expires_at<=now()) order by y.id limit 250);

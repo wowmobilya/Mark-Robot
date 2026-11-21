@@ -531,12 +531,12 @@ comment on table public.wow_records is 'WOW business records with per-record CAS
 comment on view public.wow_control_metrics is 'WOW-only status and usage. No Masarifi objects are included.';
 
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values('wow-files','wow-files',false,8388608,array['image/png','image/jpeg','image/webp','image/gif','image/avif','image/svg+xml']) on conflict(id) do nothing;
-do $$ begin if exists(select 1 from storage.buckets where id='wow-files' and public) then raise exception 'WOW_BUCKET_MUST_BE_PRIVATE'; end if; end $$;
+values('mark-robot-private','mark-robot-private',false,8388608,array['image/png','image/jpeg','image/webp','image/gif','image/avif','image/svg+xml']) on conflict(id) do nothing;
+do $$ begin if exists(select 1 from storage.buckets where id='mark-robot-private' and public) then raise exception 'WOW_BUCKET_MUST_BE_PRIVATE'; end if; end $$;
 -- Restrictive isolation also defeats a future broad permissive storage policy.
 drop policy if exists wow_files_server_only on storage.objects;
 create policy wow_files_server_only on storage.objects as restrictive for all to anon,authenticated
-  using (bucket_id<>'wow-files') with check (bucket_id<>'wow-files');
+  using (bucket_id<>'mark-robot-private') with check (bucket_id<>'mark-robot-private');
 
 -- Owner financial Web Push. Payload rows stay private; endpoint encryption and
 -- VAPID signing run in the private Edge worker after the business commit.

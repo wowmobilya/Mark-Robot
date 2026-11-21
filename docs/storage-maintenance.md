@@ -12,7 +12,7 @@ Gallery reservations allow 256 MiB per workspace and 64 MiB per account. Each ac
 
 ## Delivery and retries
 
-Each claim locks up to four eligible workspaces, sharing the workspace lock used by edits. One scan considers up to 30 candidates of each asset type per workspace. Each worker claims up to 12 objects for five minutes and performs at most four Storage requests concurrently. It rechecks the owner setting, object state, references, and immutable address before removing a single key from the private `wow-files` bucket.
+Each claim locks up to four eligible workspaces, sharing the workspace lock used by edits. One scan considers up to 30 candidates of each asset type per workspace. Each worker claims up to 12 objects for five minutes and performs at most four Storage requests concurrently. It rechecks the owner setting, object state, references, and immutable address before removing a single key from the private `mark-robot-private` bucket.
 
 An expired lease makes the same object eligible again. A provider failure moves the job to a delayed retry. The delay starts at five minutes and doubles up to six hours. A successful provider response for the exact key, together with an absent Storage catalog entry, permits the quota credit. If Storage already removed the object but the worker lost its acknowledgement, the next exact removal completes that same reservation. The source tombstone survives cleanup of the seven-day completed-job history.
 

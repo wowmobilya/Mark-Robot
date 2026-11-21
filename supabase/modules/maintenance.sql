@@ -184,7 +184,7 @@ begin
  if p_data->>'path' is distinct from target.path then raise exception 'INVALID_STORAGE_PATH';end if;
  outcome=p_data->>'outcome';
  if outcome='retry' then retry_code='STORAGE_UNAVAILABLE';
- elsif exists(select from storage.objects o where o.bucket_id='wow-files' and o.name=target.path) then retry_code='OBJECT_PRESENT';end if;
+ elsif exists(select from storage.objects o where o.bucket_id='mark-robot-private' and o.name=target.path) then retry_code='OBJECT_PRESENT';end if;
  if retry_code is not null then
   update wow_ops.storage_jobs set lease_token=null,lease_until=null,last_error=retry_code,
    next_attempt_at=now()+least(interval '6 hours',interval '5 minutes'*(2^least(j.attempts-1,7))) where id=j.id;

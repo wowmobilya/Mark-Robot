@@ -128,7 +128,7 @@ test('unattended Storage maintenance runs on the complete PostgreSQL release',as
   });
   await scenario('an object still visible in provider metadata keeps its quota, and disabled automation stops a leased deletion',async()=>{
     const a=await image(owner,false);await age(a.id,'3 days');
-    await db.query("insert into storage.objects(bucket_id,name) values('wow-files',$1)",[a.path]);
+    await db.query("insert into storage.objects(bucket_id,name) values('mark-robot-private',$1)",[a.path]);
     const [job]=await lease();
     assert.equal((await rpc('finish',{...job,path:a.path,outcome:'removed'})).status,'retry');
     assert.equal(await lifecycle(a.id),'trash');
@@ -235,7 +235,7 @@ test('the REST adapter accepts only exact immutable keys and specific Storage ac
   }});
   await deps.storage.remove(path);
   const last=calls.at(-1);
-  assert.equal(last.url,origin+'/storage/v1/object/wow-files');assert.equal(last.options.redirect,'error');
+  assert.equal(last.url,origin+'/storage/v1/object/mark-robot-private');assert.equal(last.options.redirect,'error');
   assert.deepEqual(JSON.parse(last.options.body),{prefixes:[path]});
   for(const invalid of [origin+'/'+path,path+'.png',path+'/',path+'?x=1',path.replace('/gallery/','/gallery/../'),path.replace('.webp','.svg')])
     assert.throws(()=>deps.storage.remove(invalid),/INVALID_STORAGE_PATH/);

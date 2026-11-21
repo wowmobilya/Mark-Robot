@@ -58,7 +58,7 @@
   }
   function authorizedUrl(value){
     const url=new URL(value),config=root.WOW_CLOUD_CONFIG;
-    if(!config?.projectUrl||url.protocol!=='https:'||url.origin!==new URL(config.projectUrl).origin||!url.pathname.startsWith('/storage/v1/object/sign/wow-files/')||url.username||url.password)throw Error('INVALID_RESPONSE');
+    if(!config?.projectUrl||url.protocol!=='https:'||url.origin!==new URL(config.projectUrl).origin||!url.pathname.startsWith('/storage/v1/object/sign/mark-robot-private/')||url.username||url.password)throw Error('INVALID_RESPONSE');
     return url.href;
   }
   async function downloadBlob(handle,signal){
