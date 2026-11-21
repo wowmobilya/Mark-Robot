@@ -416,3 +416,27 @@ test('the separate 150 by 100 mm roll preference uses landscape paper and restor
     assert(Math.abs(parseFloat(app.read('previewFrame.style.width'))-210*96/25.4)<0.01);
   }finally{app.dispose();}
 });
+
+test('80 by 100 mm thermal stock is remembered and printed as roll pages without inventing a roll capacity',async()=>{
+  const app=fixture(),preferences=new Map();app.state.invoices[0].items[0].qty=9;
+  app.window.localStorage={setItem:(key,value)=>preferences.set(key,value)};
+  try{
+    assert.equal(app.context.changeProfile('thermal80x100'),true);await tick();
+    assert.equal(app.read('ready'),true);assert.equal(app.read('batch.pageCount'),9);
+    assert.equal(app.ui.scaleNote.textContent,'rollScale');
+    assert.equal(app.ui.stockSizeNote.textContent,'sizeRoll');
+    assert.equal(app.ui.counts.children[1].children[1].textContent,'rollPages');
+    assert.equal(app.ui.printerHint.hidden,false);assert.equal(app.ui.printerHint.textContent,'printerSize');
+    assert(Math.abs(parseFloat(app.read('previewFrame.style.width'))-80*96/25.4)<0.01);
+    assert(Math.abs(parseFloat(app.read('previewFrame.style.height'))-100*96/25.4)<0.01);
+    assert.equal(preferences.get('wf_package_label_profile_v1'),'thermal80x100');
+    await app.context.print();const frame=app.read('activePrint.frame');
+    assert.equal(frame.style.width,'80mm');assert.equal(frame.style.height,'100mm');
+    assert.equal(frame.contentDocument.querySelectorAll('.page').length,9);
+    assert.equal(frame.contentDocument.querySelectorAll('.barcode').length,9);
+    assert.equal(app.context.changeProfile('zebra100x150'),false);
+    app.finish();await tick();
+    assert.equal(app.context.changeProfile('tw2004'),true);await tick();
+    assert.equal(app.read('batch.pageCount'),3);assert.equal(app.ui.printerHint.hidden,true);
+  }finally{app.dispose();}
+});

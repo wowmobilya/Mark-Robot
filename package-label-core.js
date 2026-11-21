@@ -38,13 +38,15 @@
       )
     };
   }
-  function zebraRoll(widthMM, heightMM) {
-    return Object.freeze({
-      id:`zebra${widthMM}x${heightMM}`, name:`Zebra ${widthMM} × ${heightMM}`, labelsPerRoll:250,
+  function rollProfile(name, widthMM, heightMM, labelsPerRoll) {
+    const profile = {
+      id:`${name.toLowerCase()}${widthMM}x${heightMM}`, name:`${name} ${widthMM} × ${heightMM}`, mediaType:'roll',
       pageWidthMM:widthMM, pageHeightMM:heightMM, columns:1, rows:1,
       marginTopMM:0, marginBottomMM:0, marginLeftMM:0, marginRightMM:0,
       gapColumnMM:0, gapRowMM:0, ...fittedStock(widthMM, heightMM)
-    });
+    };
+    if (labelsPerRoll !== undefined) profile.labelsPerRoll = labelsPerRoll;
+    return Object.freeze(profile);
   }
   const profiles = Object.freeze({
     tw2004:Object.freeze({
@@ -59,8 +61,9 @@
       ...geometry, id:'tw2008', name:'Tanex TW-2008',
       stockWidthMM:99.1, stockHeightMM:67.7, insetMM:0, artworkRotationDeg:0, artworkScale:1
     }),
-    zebra100x150:zebraRoll(100, 150),
-    zebra150x100:zebraRoll(150, 100)
+    zebra100x150:rollProfile('Zebra', 100, 150, 250),
+    zebra150x100:rollProfile('Zebra', 150, 100, 250),
+    thermal80x100:rollProfile('Thermal', 80, 100)
   });
   const maxLabels = 2000;
   const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -255,6 +258,9 @@
     const invNo = string(source.invNo), printedNumber = own(orderNames, invNo) ? orderNames[invNo] : invNo || 'A****';
     // Anchor the die grid to physical margins, independent of RTL text flow.
     // A single transform scales all the original artwork around its center.
+    // On narrow stock the unrotated layout box extends beyond the page. Clip
+    // its overflow at the grid edge so it cannot widen the print viewport.
+    const containOverflow = settings.cardWidthMM < geometry.cardWidthMM ? '\n        overflow: hidden;' : '';
     const fittedArtworkCSS = settings.artworkScale !== 1 || settings.artworkRotationDeg !== 0 ? `
       .labels-grid {
         position: absolute;
@@ -262,7 +268,7 @@
         left: ${settings.marginLeftMM}mm;
         width: max-content;
         height: max-content;
-        margin: 0;
+        margin: 0;${containOverflow}
       }
       .label-card {
         place-self: center;

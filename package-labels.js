@@ -1,4 +1,4 @@
-/* Invoice-backed Tanex paper workspace. Physical artwork lives only in the
+/* Invoice-backed package label workspace. Physical artwork lives only in the
    isolated original renderer; this file controls selection, readiness and print. */
 (function (root, factory) {
   'use strict';
@@ -33,11 +33,11 @@
     };
     for(const [locale,values] of Object.entries(profileWords))Object.assign(words[locale],values);
     const rollWords={
-      ar:{stockRoll:'Zebra {size} مم · ملصق واحد لكل صفحة رول',sizeRoll:'مقاس الرول {size} مم · 250 ملصقًا في الرول',rollPages:'صفحة رول',rollScale:'ورق {size} مم · المقاس الفعلي 100% · ملصق واحد لكل صفحة',rollOption:'رول'},
-      tr:{stockRoll:'Zebra {size} mm · Her rulo sayfasında 1 etiket',sizeRoll:'Rulo etiketi {size} mm · Rulo başına 250 etiket',rollPages:'rulo sayfası',rollScale:'{size} mm kâğıt · Gerçek boyut %100 · Sayfa başına 1 etiket',rollOption:'Rulo'},
-      en:{stockRoll:'Zebra {size} mm · 1 label per roll page',sizeRoll:'Roll label {size} mm · 250 labels per roll',rollPages:'roll pages',rollScale:'{size} mm paper · Actual size 100% · 1 label per page',rollOption:'Roll'},
-      fr:{stockRoll:'Zebra {size} mm · 1 étiquette par page de rouleau',sizeRoll:'Étiquette {size} mm · 250 étiquettes par rouleau',rollPages:'pages du rouleau',rollScale:'Papier {size} mm · Taille réelle 100% · 1 étiquette par page',rollOption:'Rouleau'},
-      ru:{stockRoll:'Zebra {size} мм · 1 этикетка на страницу рулона',sizeRoll:'Этикетка {size} мм · 250 этикеток в рулоне',rollPages:'страниц рулона',rollScale:'Бумага {size} мм · Масштаб 100% · 1 этикетка на страницу',rollOption:'Рулон'}
+      ar:{stockRoll:'{brand} {size} مم · ملصق واحد لكل صفحة رول',sizeRoll:'مقاس الرول {size} مم',rollCapacity:'{count} ملصقًا في الرول',thermal:'رول حراري',geometryRoll:'التصميم والمحتوى الأصليان محفوظان؛ يُضبط الحجم والاتجاه بالتناسب مع مقاس الرول.',rollPages:'صفحة رول',rollScale:'ورق {size} مم · المقاس الفعلي 100% · ملصق واحد لكل صفحة',rollOption:'رول'},
+      tr:{stockRoll:'{brand} {size} mm · Her rulo sayfasında 1 etiket',sizeRoll:'Rulo etiketi {size} mm',rollCapacity:'Rulo başına {count} etiket',thermal:'Termal rulo',geometryRoll:'Özgün tasarım ve içerik korunur; boyut ve yön rulo ölçüsüne orantılı olarak uyarlanır.',rollPages:'rulo sayfası',rollScale:'{size} mm kâğıt · Gerçek boyut %100 · Sayfa başına 1 etiket',rollOption:'Rulo'},
+      en:{stockRoll:'{brand} {size} mm · 1 label per roll page',sizeRoll:'Roll label {size} mm',rollCapacity:'{count} labels per roll',thermal:'Thermal roll',geometryRoll:'The original artwork and content are preserved, with proportional sizing and orientation for the selected roll.',rollPages:'roll pages',rollScale:'{size} mm paper · Actual size 100% · 1 label per page',rollOption:'Roll'},
+      fr:{stockRoll:'{brand} {size} mm · 1 étiquette par page de rouleau',sizeRoll:'Étiquette {size} mm',rollCapacity:'{count} étiquettes par rouleau',thermal:'Rouleau thermique',geometryRoll:'Le dessin et le contenu d’origine sont conservés ; la taille et l’orientation sont adaptées proportionnellement au rouleau.',rollPages:'pages du rouleau',rollScale:'Papier {size} mm · Taille réelle 100% · 1 étiquette par page',rollOption:'Rouleau'},
+      ru:{stockRoll:'{brand} {size} мм · 1 этикетка на страницу рулона',sizeRoll:'Этикетка {size} мм',rollCapacity:'{count} этикеток в рулоне',thermal:'Терморулон',geometryRoll:'Исходный макет и содержание сохранены; размер и ориентация пропорционально адаптируются к выбранному рулону.',rollPages:'страниц рулона',rollScale:'Бумага {size} мм · Масштаб 100% · 1 этикетка на страницу',rollOption:'Рулон'}
     };
     for(const [locale,values] of Object.entries(rollWords))Object.assign(words[locale],values);
     const orientations={ar:['عمودي','أفقي','طابق مقاس الورق في إعدادات الطابعة مع القالب المختار.','يتطلب هذا الاتجاه طابعة تقبل ورقًا بعرض 150 مم.'],tr:['Dikey','Yatay','Yazıcıdaki kâğıt ölçüsünü seçilen şablonla eşleştirin.','Bu yön, 150 mm genişliğinde kâğıt kabul eden bir yazıcı gerektirir.'],en:['Portrait','Landscape','Match the printer’s paper size to the selected template.','This orientation requires a printer that accepts 150 mm wide media.'],fr:['Portrait','Paysage','Réglez le format du papier de l’imprimante sur le gabarit choisi.','Cette orientation exige une imprimante acceptant du papier de 150 mm de large.'],ru:['Портрет','Альбом','Установите в принтере размер бумаги, соответствующий шаблону.','Для этой ориентации нужен принтер, принимающий бумагу шириной 150 мм.']};
@@ -70,7 +70,7 @@
     const profileText = make('div','wf-package-profile-copy');
     const profileLabel=textNode('label','','profile');profileLabel.htmlFor='wfPackageProfile';
     const profileSelect=make('select','fi');profileSelect.id='wfPackageProfile';profileSelect.dir='ltr';
-    for(const id of ['tw2004','tw2008','zebra100x150','zebra150x100']){
+    for(const id of ['tw2004','tw2008','zebra100x150','zebra150x100','thermal80x100']){
       const paper=core.profiles?.[id];if(!paper)continue;
       const option=make('option');option.value=id;profileSelect.append(option);
     }
@@ -148,17 +148,20 @@
     }
     function normalize(value) { return String(value||'').normalize('NFKD').replace(/\p{M}/gu,'').replace(/[أإآٱ]/g,'ا').toLowerCase().trim(); }
     function renderProfile() {
-      const paper=core.profiles[profileId],large=profileId==='tw2004',roll=Boolean(paper?.labelsPerRoll);
-      const size=paper.stockWidthMM+' × '+paper.stockHeightMM,copy=key=>t(key).replace('{size}',size);
-      badge.textContent=roll?'ZEBRA '+size:large?'TANEX TW-2004':'TANEX TW-2008';
+      const paper=core.profiles[profileId],large=profileId==='tw2004',roll=paper?.mediaType==='roll';
+      const brand=profileId==='thermal80x100'?t('thermal'):'Zebra';
+      const size=paper.stockWidthMM+' × '+paper.stockHeightMM,copy=key=>t(key).replace('{size}',size).replace('{brand}',brand);
+      badge.textContent=roll?brand+' '+size:large?'TANEX TW-2004':'TANEX TW-2008';
       for(const option of profileSelect.children){
-        const item=core.profiles[option.value],isRoll=Boolean(item.labelsPerRoll);
-        option.textContent=(isRoll?'Zebra':item.name)+' · '+(item.stockWidthMM||item.cardWidthMM)+' × '+(item.stockHeightMM||item.cardHeightMM)+' mm · '+(isRoll?t('rollOption')+' '+t(item.pageWidthMM>item.pageHeightMM?'landscape':'portrait'):(item.columns*item.rows)+' / A4');
+        const item=core.profiles[option.value],isRoll=item.mediaType==='roll';
+        const name=isRoll?(item.id==='thermal80x100'?t('thermal'):'Zebra'):item.name;
+        option.textContent=name+' · '+(item.stockWidthMM||item.cardWidthMM)+' × '+(item.stockHeightMM||item.cardHeightMM)+' mm · '+(isRoll?t('rollOption')+' '+t(item.pageWidthMM>item.pageHeightMM?'landscape':'portrait'):(item.columns*item.rows)+' / A4');
       }
       profileSelect.value=profileId;profileSelect.disabled=Boolean(activePrint);
       stockText.textContent=copy(roll?'stockRoll':large?'stockLarge':'stock');
-      geometryNote.textContent=t(large||roll?'geometryLarge':'geometry');
+      geometryNote.textContent=t(roll?'geometryRoll':large?'geometryLarge':'geometry');
       stockSizeNote.textContent=copy(roll?'sizeRoll':large?'sizeLarge':'stockSize');
+      if(roll&&paper.labelsPerRoll)stockSizeNote.textContent+=' · '+t('rollCapacity').replace('{count}',paper.labelsPerRoll);
       scaleNote.textContent=copy(roll?'rollScale':'scale');
       printerHint.hidden=!roll;printerHint.textContent=roll?t(profileId==='zebra150x100'?'widePrinter':'printerSize'):'';
       preferenceHint.textContent=t(preferenceSaved?'remembered':'preferenceError');
@@ -200,7 +203,7 @@
       invoiceTitle.textContent=String(selectedRecord.invNo||'—');
       customerName.textContent=String(selectedRecord.companyName||'—');
       counts.replaceChildren();
-      for(const [number,key] of [[batch.labelCount,'labels'],[batch.pageCount,core.profiles[profileId]?.labelsPerRoll?'rollPages':'sheets']]) {
+      for(const [number,key] of [[batch.labelCount,'labels'],[batch.pageCount,core.profiles[profileId]?.mediaType==='roll'?'rollPages':'sheets']]) {
         const chip=make('div','wf-package-count');chip.append(make('strong','',String(number)),make('span','',t(key)));counts.append(chip);
       }
       summary.textContent=t('source');

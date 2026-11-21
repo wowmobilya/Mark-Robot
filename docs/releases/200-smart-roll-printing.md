@@ -55,5 +55,7 @@ Live verification is recorded after deployment below.
 
 ## Final verification
 
-Pending release 200 deployment. Physical feed alignment and barcode scanning on a
-user printer have not been tested.
+Release 200 was published as `8bf3b730f367ad8cadec27bbe34be25cc0675bc9`.
+The user added an 80 × 100 mm roll before final browser verification; the
+complete five-profile review continues in [release 201](201-five-print-templates.md).
+Physical feed alignment and barcode scanning on a user printer have not been tested.

@@ -80,3 +80,12 @@ financial arithmetic/currency conversion, snapshot stability, restore behavior,
 failed writes, navigation history, Arabic RTL and five-language responsive UI.
 Run the established project checks, inspect mobile/desktop browser layouts,
 review the combined changes independently, then publish the verified release.
+
+## Additional roll stock: 80 × 100 mm
+
+The user also requested a separate 80 × 100 mm thermal roll option. Use one
+label per page, rotate the complete original artwork by 90 degrees at scale 1,
+and preserve its content and proportions. The resulting artwork is 66.2 × 97 mm,
+with 6.9 mm side clearance and 1.5 mm top/bottom clearance. Do not infer a brand,
+printer model or roll capacity. Remember this selection like the other four
+profiles, and regenerate preview/pagination automatically.

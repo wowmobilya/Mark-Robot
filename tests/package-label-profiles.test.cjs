@@ -93,21 +93,23 @@ test('four-up print and single-sheet preview uniformly enlarge the complete orig
 });
 
 const rollProfiles = [
-  {id:'zebra100x150', width:100, height:150, angle:90, printedWidth:97, printedHeight:142.129909},
-  {id:'zebra150x100', width:150, height:100, angle:0, printedWidth:142.129909, printedHeight:97}
+  {id:'zebra100x150', name:'Zebra 100 × 150', width:100, height:150, angle:90, scale:97/66.2, printedWidth:97, printedHeight:142.129909, labelsPerRoll:250},
+  {id:'zebra150x100', name:'Zebra 150 × 100', width:150, height:100, angle:0, scale:97/66.2, printedWidth:142.129909, printedHeight:97, labelsPerRoll:250},
+  {id:'thermal80x100', name:'Thermal 80 × 100', width:80, height:100, angle:90, scale:1, printedWidth:66.2, printedHeight:97}
 ];
-for (const {id,width,height,angle,printedWidth,printedHeight} of rollProfiles) {
+for (const {id,name,width,height,angle,scale,printedWidth,printedHeight,labelsPerRoll} of rollProfiles) {
   test(`${id} has one die per page and keeps the artwork inside its safe inset`, () => {
     const p = core.profiles[id];
     assert(p && Object.isFrozen(p));
-    assert.equal(p.name, `Zebra ${width} × ${height}`);
-    assert.equal(p.labelsPerRoll, 250);
+    assert.equal(p.name, name);
+    assert.equal(p.mediaType, 'roll');
+    assert.equal(p.labelsPerRoll, labelsPerRoll);
     assert.deepEqual([p.pageWidthMM,p.pageHeightMM,p.stockWidthMM,p.stockHeightMM,p.cardWidthMM,p.cardHeightMM], [width,height,width,height,width,height]);
     assert.deepEqual([p.columns,p.rows,p.gapColumnMM,p.gapRowMM], [1,1,0,0]);
     assert.deepEqual([p.marginLeftMM,p.marginRightMM,p.marginTopMM,p.marginBottomMM], [0,0,0,0]);
     assert.equal(p.insetMM, 1.5);
     assert.equal(p.artworkRotationDeg, angle);
-    close(p.artworkScale, 97 / 66.2);
+    close(p.artworkScale, scale);
     close(p.artworkScale * (angle === 90 ? 66.2 : 97), printedWidth);
     close(p.artworkScale * (angle === 90 ? 97 : 66.2), printedHeight);
     close(Math.min((width - printedWidth) / 2, (height - printedHeight) / 2), p.insetMM);
@@ -145,7 +147,7 @@ for (const {id,width,height,angle,printedWidth,printedHeight} of rollProfiles) {
     assert.deepEqual(realCards(preview), [cards[2]]);
   });
 
-  test(`${id} roll capacity describes the media without limiting invoice length or adding an extra page`, () => {
+  test(`${id} emits exactly one page per package across short, long and empty jobs`, () => {
     for (const qty of [0,1,249,250,251,core.maxLabels]) {
       const model = core.normalizeInvoice({invNo:'A2', items:[{name:'TAB',type:'other',qty,packets:1}]});
       const roll = core.buildLabelBatch(model, {profileId:id});
@@ -154,3 +156,11 @@ for (const {id,width,height,angle,printedWidth,printedHeight} of rollProfiles) {
     }
   });
 }
+
+test('the narrow roll contains the original 97 mm layout box within its 80 mm page after rotation', () => {
+  const html = core.renderDocument(batchFor('thermal80x100'));
+  assert.match(html, /\.labels-grid\s*\{[^}]*overflow:\s*hidden/);
+  const profile = core.profiles.thermal80x100;
+  close((profile.pageWidthMM - core.geometry.cardHeightMM * profile.artworkScale) / 2, 6.9);
+  close((profile.pageHeightMM - core.geometry.cardWidthMM * profile.artworkScale) / 2, 1.5);
+});
