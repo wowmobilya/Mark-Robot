@@ -5,8 +5,11 @@
   if(!doc||!ops||root.WFModules)return;
   const entries=new Map(),words={
     connect:{ar:'اربط مارك ربوت بحسابك السحابي لفتح هذا القسم.',tr:'Bu bölümü açmak için Mark Robot bulut hesabınıza bağlanın.',en:'Connect your Mark Robot cloud account to open this section.',fr:'Connectez votre compte cloud Mark Robot pour ouvrir cette section.',ru:'Подключите облачную учётную запись Mark Robot для открытия раздела.'},
+    checking:{ar:'جارٍ التحقق من حسابك والاتصال بالسحابة…',tr:'Hesabınız ve bulut bağlantısı doğrulanıyor…',en:'Verifying your account and cloud connection…',fr:'Vérification de votre compte et de la connexion cloud…',ru:'Проверяем вашу учётную запись и подключение к облаку…'},
+    temporary:{ar:'الاتصال بالسحابة غير متاح مؤقتًا. أعد المحاولة لإعادة اتصال حساب الأدمن المرتبط.',tr:'Bulut bağlantısı geçici olarak kullanılamıyor. Bağlı yönetici hesabına yeniden bağlanmayı deneyin.',en:'The cloud connection is temporarily unavailable. Retry to reconnect your linked admin account.',fr:'La connexion cloud est temporairement indisponible. Réessayez pour reconnecter votre compte administrateur associé.',ru:'Подключение к облаку временно недоступно. Повторите попытку подключения связанной учётной записи администратора.'},
     offline:{ar:'اتصل بالسيرفر للتحقق من حساب المالك وإتاحة النسخ المحفوظة على هذا الجهاز.',tr:'Bu cihazdaki kayıtlı kopyalar için sunucuya bağlanarak sahibi doğrulayın.',en:'Connect to the server to verify the owner and enable saved copies on this device.',fr:'Connectez-vous au serveur pour vérifier le propriétaire et activer les copies enregistrées.',ru:'Подключитесь к серверу для проверки владельца и доступа к сохранённым копиям.'},
     setup:{ar:'إعداد اتصال السيرفر',tr:'Sunucu bağlantısını ayarla',en:'Set up server connection',fr:'Configurer la connexion',ru:'Настроить соединение'},
+    ownerSignIn:{ar:'الدخول بحساب الأدمن',tr:'Yönetici hesabıyla giriş',en:'Sign in as admin',fr:'Connexion administrateur',ru:'Войти как администратор'},
     denied:{ar:'هذا القسم غير متاح لصلاحيات حسابك.',tr:'Hesabınızın bu bölüme erişim izni yok.',en:'Your account does not have permission to open this section.',fr:'Votre compte ne peut pas ouvrir cette section.',ru:'У вашей учётной записи нет доступа к этому разделу.'},
     retry:{ar:'إعادة المحاولة',tr:'Yeniden dene',en:'Try again',fr:'Réessayer',ru:'Повторить'},
     error:{ar:'تعذّر تحميل القسم. بقيت البيانات المحفوظة كما هي.',tr:'Bölüm yüklenemedi. Kaydedilmiş veriler korunuyor.',en:'The section could not load. Saved data is preserved.',fr:'Le chargement a échoué. Les données enregistrées sont conservées.',ru:'Раздел не загрузился. Сохранённые данные не изменены.'}
@@ -72,22 +75,42 @@
     entry.status?.dispose();entry.transport?.dispose();entry.status=null;entry.transport=null;
     entry.instance=null;entry.mountedScope='';entry.surface.body.replaceChildren();
   }
+  function localOwner(){
+    const active=local(),account=active?.currentAccount;
+    return active?.configured===true&&account?.role==='owner'&&account.status==='active'&&
+      (!account.expiresAt||Date.parse(account.expiresAt)>Date.now());
+  }
+  const linkedLocalOwner=state=>state.mode==='local'&&state.linkedOwner===true&&localOwner();
+  function connectionNotice(entry,state){
+    if(state.connection==='checking'||entry.reconnecting&&linkedLocalOwner(state))return 'checking';
+    if(linkedLocalOwner(state)&&['offline','error'].includes(state.connection))return 'temporary';
+    return root.navigator?.onLine===false||state.connection==='offline'?'offline':'connect';
+  }
+  async function retryConnection(entry){
+    const state=session();
+    if(entry.reconnecting||current()!==entry.id||!linkedLocalOwner(state)||!['offline','error'].includes(state.connection))return;
+    entry.reconnecting=true;notice(entry,'checking');
+    try{await cloud.refresh();}catch(_){/* The cloud client retains the actual connection/authentication state. */}
+    finally{entry.reconnecting=false;schedule();}
+  }
   function notice(entry,type){
     const body=entry.surface.body;body.replaceChildren();
     const box=doc.createElement('section');box.className='wf-module-notice';box.setAttribute('role',type==='error'?'alert':'status');
+    if(type==='checking')box.setAttribute('aria-busy','true');
     const text=doc.createElement('p');text.textContent=label(words[type]);box.append(text);
     const allowedSetup=['connect','offline'].includes(type)&&root.WFAccountAccess?.can?.('settings.view');
-    if(type==='error'||allowedSetup){
-      const button=doc.createElement('button');button.type='button';button.className='btn';button.textContent=label(words[type==='error'?'retry':'setup']);
-      button.addEventListener('click',()=>type==='error'?activate(entry,true):root.WFCloudSettings?.open?.());box.append(button);
+    if(type==='error'||type==='temporary'||allowedSetup){
+      const caption=type==='error'||type==='temporary'?'retry':cloud?.isConfigured?.()===true&&localOwner()?'ownerSignIn':'setup';
+      const button=doc.createElement('button');button.type='button';button.className='btn';button.textContent=label(words[caption]);
+      button.addEventListener('click',()=>type==='temporary'?retryConnection(entry):type==='error'?activate(entry,true):root.WFCloudSettings?.open?.());box.append(button);
     }
     body.append(box);
   }
   async function activate(entry,force=false){
     if(current()!==entry.id)return;
     const state=moduleSession(),identity=scope(state);
-    if(!identity){release(entry);notice(entry,root.navigator?.onLine===false||state.connection==='offline'?'offline':'connect');return;}
-    if(state.offlineVerified&&!offlineRoute(entry.definition.permission)){release(entry);notice(entry,'connect');return;}
+    if(!identity){release(entry);notice(entry,connectionNotice(entry,state));return;}
+    if(state.offlineVerified&&!offlineRoute(entry.definition.permission)){release(entry);notice(entry,connectionNotice(entry,session()));return;}
     if(!can(entry.definition.permission)){release(entry);notice(entry,'denied');return;}
     if(!force&&(entry.loading||entry.mountedScope===identity))return;
     release(entry);const generation=entry.generation;entry.loading=true;
@@ -109,7 +132,7 @@
         try{typeof instance==='function'?instance():instance?.dispose?.();}catch(_){}return;
       }
       entry.instance=instance;entry.mountedScope=identity;entry.loading=false;
-    }catch(_){if(generation===entry.generation){release(entry);notice(entry,scope(moduleSession())?'error':'connect');}}
+    }catch(_){if(generation===entry.generation){release(entry);const latest=moduleSession();notice(entry,scope(latest)?'error':connectionNotice(entry,latest));}}
   }
   function sync(){
     ownerGrant?.update().catch(()=>{});transport?.update();

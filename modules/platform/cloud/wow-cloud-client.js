@@ -75,7 +75,7 @@
     if(ownerEntry&&savedOwner){remoteContinuation=savedOwner.value;remoteSource=savedOwner.source;}
     const empty=()=>({configured:true,revision:0,currentAccount:null,accounts:[],audit:[]});
     let identity=empty(),session=null,workspaceId='',link=null,generation=0,connection=configured?'idle':'unconfigured',lastError='',refreshing=null;
-    let signedAt=0,lastActiveAt=0,pendingActivity=false,lastVerifiedAt=0,storeUsable=true;
+    let signedAt=0,lastActiveAt=0,pendingActivity=false,lastVerifiedAt=0,storeUsable=true,linkedRecovering=null;
     const listeners=new Set();
     const localSnapshot=options.getLocalSnapshot||(()=>root.WFAccountAccess?.service?.getSnapshot?.());
     let localChecked=typeof options.getLocalSnapshot==='function',localScope=null,localAvailable;
@@ -119,6 +119,17 @@
     }
     if(localChecked&&mode==='local')localScope=principal();
     function clearStored(){try{store.clear();}catch(_){storeUsable=false;}}
+    function readLinkedOwner(){
+      if(mode!=='local'||!configured||!storeUsable)return null;
+      reconcileLocal();
+      if(!localChecked||!localScope?.ownerId){clearStored();return null;}
+      let saved;try{saved=store.read();}catch(_){storeUsable=false;clearStored();return null;}
+      if(!saved)return null;
+      if(saved.version!==2||saved.mode!=='local'||saved.endpoint!==config.endpoint||saved.localOwnerId!==localScope.ownerId||
+        saved.localVersion!==localScope.version||!Number.isSafeInteger(saved.cloudVersion)||saved.cloudVersion<1||typeof saved.userId!=='string'||!saved.userId||
+        typeof saved.refreshToken!=='string'||!saved.refreshToken||typeof saved.workspaceId!=='string'||!saved.workspaceId){clearStored();return null;}
+      return saved;
+    }
     function clearRemoteStored(all=false){
       const previous=remoteContinuation;remoteContinuation=null;remoteSource=null;recovering=null;
       for(const kind of ['local','session']){
@@ -172,7 +183,7 @@
     function emit(){const state=snapshot();for(const listener of listeners){try{listener(state);}catch(_){}}
       try{if(root.dispatchEvent&&root.CustomEvent)root.dispatchEvent(new root.CustomEvent('wf-cloud-session-change',{detail:state}));}catch(_){}return state;}
     function invalidateSession(reason='AUTH_REQUIRED'){
-      generation++;refreshing=null;session=null;identity=empty();pendingActivity=false;lastVerifiedAt=0;lastError=String(reason);connection=configured?'signed-out':'unconfigured';clearStored();if(mode==='remote')clearRemoteStored();return emit();
+      generation++;refreshing=null;linkedRecovering=null;session=null;identity=empty();pendingActivity=false;lastVerifiedAt=0;lastError=String(reason);connection=configured?'signed-out':'unconfigured';clearStored();if(mode==='remote')clearRemoteStored();return emit();
     }
     function expire(){reconcileLocal();reconcileRemote();if(session&&identity.currentAccount?.role!=='owner'&&(now()<signedAt||now()<lastActiveAt||now()-signedAt>=SESSION_MS||now()-lastActiveAt>=IDLE_MS)){invalidateSession('SESSION_EXPIRED');}}
     function checkGeneration(expected){reconcileLocal();reconcileRemote();if(expected!==generation||mode==='local'&&(!localChecked||!localScope))throw failure('AUTH_REQUIRED',401);}
@@ -275,6 +286,13 @@
       const result=await transport('auth.refresh',{refreshToken:token});
       try{
         checkGeneration(expected);
+        if(restoreOwner?.mode==='local'){
+          // A retry must not recreate a credential removed or replaced while
+          // the server was verifying it. The binding hint alone grants nothing.
+          const current=readLinkedOwner();
+          if(!current||current.refreshToken!==restoreOwner.refreshToken||current.userId!==restoreOwner.userId||
+            current.workspaceId!==restoreOwner.workspaceId||current.cloudVersion!==restoreOwner.cloudVersion)throw failure('AUTH_REQUIRED',401);
+        }
         const previous=identity.currentAccount,next=result.identity?.currentAccount;
         if(previous&&(previous.id!==next?.id||previous.role!==next?.role||previous.sessionVersion!==next?.sessionVersion))throw failure('SESSION_REVOKED',401);
         const oldSignedAt=signedAt,oldActiveAt=lastActiveAt,oldPending=pendingActivity;
@@ -283,7 +301,7 @@
         if(!restoreOwner){signedAt=oldSignedAt;lastActiveAt=oldActiveAt;pendingActivity=oldPending;}
         return value;
       }
-      catch(error){if(restoreOwner?.mode==='owner')await discardReturnedSession(result);throw error;}
+      catch(error){if(restoreOwner?.mode==='owner'||restoreOwner?.mode==='local')await discardReturnedSession(result);throw error;}
     }
     function ownerRefresh(expected,restore=false){
       const run=async()=>{
@@ -320,6 +338,24 @@
         return snapshot();
       }).finally(()=>{if(recovering===task)recovering=null;});
       recovering=task;return task;
+    }
+    function recoverLinkedOwner(){
+      if(linkedRecovering)return linkedRecovering;
+      if(mode!=='local'||session)return Promise.resolve(snapshot());
+      const saved=readLinkedOwner();if(!saved)return Promise.resolve(snapshot());
+      const expected=generation;connection='checking';emit();
+      const task=refreshToken(saved.refreshToken,expected,saved).catch(error=>{
+        if(expected===generation){
+          if(temporary(error)){
+            // Keep only a remembered binding until live identity verification
+            // succeeds; no cached account is installed during an outage.
+            link={workspaceId:saved.workspaceId,userId:saved.userId};
+            connection=error.code==='NETWORK'?'offline':'error';lastError=error.code||'CLOUD_ERROR';emit();
+          }else invalidateSession(error.code);
+        }
+        return snapshot();
+      }).finally(()=>{if(linkedRecovering===task)linkedRecovering=null;});
+      linkedRecovering=task;return task;
     }
     async function ensureAccess(){
       expire();if(!session||!identity.currentAccount)throw failure('AUTH_REQUIRED',401);
@@ -384,7 +420,7 @@
       return snapshot();
     }
     async function refresh(){
-      await ready;expire();if(!session)return ownerEntry?recoverOwner():snapshot();
+      await ready;expire();if(!session)return ownerEntry?recoverOwner():mode==='local'?recoverLinkedOwner():snapshot();
       const expected=generation,touched=pendingActivity;pendingActivity=false;
       try{return adopt(await request(touched?'session.touch':'session.snapshot'),expected);}
       catch(error){if(expected===generation){if(touched)pendingActivity=true;if(terminalAuth(error))invalidateSession(error.code);}throw error;}
@@ -419,19 +455,7 @@
       activation=null;
       if(!configured)return snapshot();
       await localReady;reconcileLocal();
-      if(!localChecked||!localScope?.ownerId){clearStored();return snapshot();}
-      let saved;try{saved=store.read();}catch(_){storeUsable=false;clearStored();return snapshot();}
-      if(!saved)return snapshot();
-      if(saved.version!==2||saved.mode!=='local'||saved.endpoint!==config.endpoint||saved.localOwnerId!==localScope.ownerId||
-        saved.localVersion!==localScope.version||!Number.isSafeInteger(saved.cloudVersion)||typeof saved.userId!=='string'||!saved.userId||
-        typeof saved.refreshToken!=='string'||!saved.refreshToken||typeof saved.workspaceId!=='string'||!saved.workspaceId){clearStored();return snapshot();}
-      const expected=generation;connection='checking';
-      try{return await refreshToken(saved.refreshToken,expected,saved);}
-      catch(error){if(expected===generation){if(error.code==='NETWORK'){
-        // This is a remembered binding hint only, never an authenticated role.
-        if(typeof saved.userId==='string'&&saved.userId)link={workspaceId:saved.workspaceId,userId:saved.userId};
-        connection='offline';lastError='NETWORK';emit();
-      }else invalidateSession(error.code);}return snapshot();}
+      return recoverLinkedOwner();
     })();
     if(ownerEntry){
       const resume=()=>{if(root.navigator?.onLine===false||root.document?.visibilityState==='hidden')return;
@@ -441,6 +465,11 @@
       root.addEventListener?.('storage',event=>{
         if(event.key===REMOTE_OWNER_KEY||event.key===null||event.key===ownerRetirementKey(remoteContinuation))reconcileRemote();
       });
+    }else if(mode==='local'){
+      const resume=()=>{if(root.navigator?.onLine===false||root.document?.visibilityState==='hidden')return;
+        return ready.then(()=>{expire();if(!session)return recoverLinkedOwner();}).catch(()=>{});};
+      for(const type of ['online','focus','pageshow'])root.addEventListener?.(type,resume);
+      root.document?.addEventListener?.('visibilitychange',resume);
     }
     return Object.freeze({ready,request,getSnapshot:snapshot,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
       isConfigured:()=>configured,isRemote:()=>mode==='remote',isRemoteMode:()=>mode==='remote',isLinkedOwner:()=>mode==='local'&&!!link,
