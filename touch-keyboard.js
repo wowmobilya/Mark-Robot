@@ -143,7 +143,7 @@
     keys=make('div','wf-tk-keys');keys.setAttribute('dir','ltr');
     const body=make('div','wf-tk-body');body.append(languageBar,keys);
     error=make('p','wf-tk-error');error.hidden=true;error.setAttribute('role','status');
-    footer=make('footer','wf-tk-footer');dialog.append(header,editHost,toolbar,body,error,footer);doc.body.append(dialog);
+    footer=make('footer','wf-tk-footer');dialog.append(header,editHost,toolbar,body,error,footer);
     dialog.addEventListener('cancel',event=>{event.preventDefault();close('dismiss');});
     // Native close events are queued. Next/Previous may have already reopened
     // this dialog for another field before an old session's event is delivered.
@@ -339,6 +339,12 @@
     if(active?.field===field){focusEditor();return true;}
     if(active)close('switch',false);
     build();
+    // The account gate hides and inerts its body siblings while locked.
+    const lock=field.closest('#wfAccountLock'),host=lock||doc.body;
+    if(dialog.parentElement!==host)host.append(dialog);
+    if(lock&&dialog.matches('[data-wf-account-inert]')){
+      dialog.removeAttribute('inert');dialog.removeAttribute('data-wf-account-inert');
+    }
     const settings={...(registrations.get(field.id)||{}),...(nodeRegistrations.get(field)||{}),...options};
     const locator=locate(field),value=field.value;
     const focused=doc.activeElement===field;

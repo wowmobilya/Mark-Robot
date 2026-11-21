@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=3');
 importScripts('./modules/platform/push/wow-push-sw.js?v=3');
-const CACHE_NAME = 'wow-furniture-v216-cloud';
+const CACHE_NAME = 'wow-furniture-v217-cloud';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -100,7 +100,7 @@ const urlsToCache = [
   './invoice-workspace.css?v=1',
   './barcode-workspace.js?v=1',
   './barcode-workspace.css?v=1',
-  './touch-keyboard.js?v=2',
+  './touch-keyboard.js?v=3',
   './touch-keyboard.css?v=1',
   './settings-actions.css?v=1',
   './',

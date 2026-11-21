@@ -66,6 +66,11 @@ jobs:
         timeout-minutes: 2
         # The fixture aborts every request outside gallery-fixture.invalid.
         run: node tests/gallery.browser.cjs
+      - name: Verify touch keyboard on the locked sign-in screen
+        if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
+        timeout-minutes: 2
+        # Synthetic browser fixtures with local assets; no live account or credentials.
+        run: node --test tests/touch-keyboard.browser.cjs
       - name: Verify synthetic closed-app push with a native service worker
         if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
         timeout-minutes: 2

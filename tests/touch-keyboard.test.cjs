@@ -272,3 +272,23 @@ test('DOM: native focus during a tap cannot prematurely commit and remove a cust
   f.key('r');f.action('done');assert.equal(color,'r');assert.equal(commits,1);
 });
 
+
+test('a reused keyboard leaves the locked background to edit the login and returns after unlock',()=>{
+  const f=domFixture();
+  f.tap(f.name);f.action('done');
+  const lock=f.make('section','wfAccountLock');
+  const password=f.make('input','wfAccountLoginPassword',lock);password.type='password';
+  const keyboard=f.byId('wfTouchKeyboard');
+  // The account lock marks its existing body siblings, including the closed dialog.
+  for(const sibling of [f.scope,keyboard]){
+    sibling.setAttribute('inert','');sibling.setAttribute('data-wf-account-inert','');
+  }
+  f.tap(password);
+  assert.equal(keyboard.closest('[inert]'),null,'login keys must be outside the inert background');
+  assert.equal(lock.contains(keyboard),true,'the visible login surface must contain its keyboard');
+  assert.equal(f.scope.getAttribute('inert'),'');
+  f.key('a');f.action('done');assert.equal(password.value,'a');
+  lock.hidden=true;f.scope.removeAttribute('inert');f.scope.removeAttribute('data-wf-account-inert');
+  f.tap(f.name);assert.equal(keyboard.closest('[hidden]'),null);
+  f.key('b');assert.equal(f.name.value,'draftb');
+});
