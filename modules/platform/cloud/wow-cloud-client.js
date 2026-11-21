@@ -130,11 +130,18 @@
       const headers={'Content-Type':'application/json',apikey:config.publishableKey};if(token)headers.Authorization='Bearer '+token;
       const controller=typeof root.AbortController==='function'?new root.AbortController():null;
       const timeout=controller?setTimeout(()=>controller.abort(),15000):null;
-      let response;
-      try{response=await fetcher(config.endpoint,{method:'POST',headers,body:JSON.stringify({...payload,action}),signal:controller?.signal,credentials:'omit',cache:'no-store'});}
-      catch(_){if(sentGeneration===generation){connection='offline';lastError='NETWORK';emit();}throw failure('NETWORK');}
-      finally{if(timeout)clearTimeout(timeout);}
-      let body;try{body=await response.json();}catch(_){throw failure('INVALID_RESPONSE',response.status||502);}
+      let response,body;
+      try{
+        response=await fetcher(config.endpoint,{method:'POST',headers,body:JSON.stringify({...payload,action}),signal:controller?.signal,credentials:'omit',cache:'no-store'});
+        try{body=await response.json();}catch(error){
+          if(error?.name==='SyntaxError'&&!controller?.signal.aborted)throw failure('INVALID_RESPONSE',response.status||502);
+          throw error;
+        }
+      }catch(error){
+        if(error?.code==='INVALID_RESPONSE')throw error;
+        if(sentGeneration===generation){connection='offline';lastError='NETWORK';emit();}
+        throw failure('NETWORK');
+      }finally{if(timeout)clearTimeout(timeout);}
       if(!response.ok||body?.ok!==true)throw failure(body?.error?.code||'CLOUD_ERROR',response.status||500,body?.error);
       if(sentGeneration===generation){connection='online';lastError='';}return body;
     }

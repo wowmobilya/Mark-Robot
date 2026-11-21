@@ -175,3 +175,22 @@ test('a stalled device push cleanup reaches the logout deadline and revokes the 
   assert.equal(h.client.getSnapshot().authenticated,false);assert.equal(h.stored(),null);
   assert.equal(h.calls.at(-1).body.action,'auth.signOut');assert.equal(h.calls.at(-1).headers.Authorization,'Bearer access-owner');
 });
+
+test('a lost response body is retryable and retains the same batch identity',async()=>{
+  const h=harness();await login(h.client);let first=true;
+  h.handle(()=>{if(first){first=false;return {ok:true,status:200,json:async()=>{throw new TypeError('body stream interrupted');}};}return response({ok:true});});
+  const payload={batchId:'batch-fixture',operations:[]};
+  await assert.rejects(h.client.request('sync.push',payload),{code:'NETWORK'});
+  assert.equal(h.client.getSnapshot().connection,'offline');
+  await h.client.request('sync.push',payload);
+  assert.deepEqual(h.calls.filter(c=>c.body.action==='sync.push').map(c=>c.body.batchId),['batch-fixture','batch-fixture']);
+});
+
+test('response body remains under the network deadline after headers arrive',async t=>{
+  const h=harness();await login(h.client);let expire,bodyStarted;const started=new Promise(r=>{bodyStarted=r;});
+  const original=globalThis.setTimeout;
+  t.mock.method(globalThis,'setTimeout',(fn,ms,...args)=>ms===15000?(expire=fn,123456):original(fn,ms,...args));
+  h.handle((body,opts)=>({ok:true,status:200,json:()=>new Promise((resolve,reject)=>{bodyStarted();opts.signal.addEventListener('abort',()=>reject(new DOMException('aborted','AbortError')));})}));
+  const request=h.client.request('sync.push',{batchId:'deadline-fixture'});await started;expire();
+  await assert.rejects(request,{code:'NETWORK'});assert.equal(h.client.getSnapshot().connection,'offline');
+});

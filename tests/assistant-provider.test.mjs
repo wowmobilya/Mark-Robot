@@ -77,3 +77,9 @@ test('validated actions ignore forged actor, query schema, endpoint, system and 
   assert.throws(()=>assistantSpec({mode:'chat',roomId:'../../room'}));
   assert.deepEqual(assistantSpec({mode:'checks',where:'cost',limit:9999,userId:'other',filters:{role:'owner'},outputs:['password']}),{mode:'checks',source:'all'});
 });
+
+test('redacts short synthetic credentials following non-Latin labels',()=>{
+  for(const label of ['كلمة المرور','مفتاح','пароль','şifre']){
+    const result=cleanExcerpt(label+': x7');assert(!result.includes('x7'),label);
+  }
+});

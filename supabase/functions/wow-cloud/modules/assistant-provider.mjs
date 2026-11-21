@@ -16,7 +16,7 @@ export function cleanExcerpt(value) {
   return String(value??'').replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g,' ')
     .replace(/-----BEGIN [^\n]{0,60}PRIVATE KEY-----[\s\S]*/gi,'[redacted]')
     .replace(/(?:https?:\/\/|data:)[^\s<>"']+/gi,'[redacted]')
-    .replace(/\b(?:bearer\s+|(?:password|passwd|api[_ -]?key|access[_ -]?token|refresh[_ -]?token|secret|token|şifre|пароль|كلمة المرور|مفتاح)\s*[:=]\s*)[^\s,;]+/gi,'[redacted]')
+    .replace(/(?<![\p{L}\p{N}_])(?:bearer\s+|(?:password|passwd|api[_ -]?key|access[_ -]?token|refresh[_ -]?token|secret|token|şifre|пароль|كلمة المرور|مفتاح)\s*[:=]\s*)[^\s,;]+/giu,'[redacted]')
     .replace(/\b(?:sk[-_]|sb_(?:secret|publishable)_|gh[pousr]_|github_pat_|eyJ)[A-Za-z0-9._-]{4,}/g,'[redacted]')
     .replace(/\b[A-Za-z0-9_-]{36,}\b/g,'[redacted]')
     .replace(/[^\s<>@]+@[^\s<>@]+\.[A-Za-z]{2,}/g,'[redacted]')
