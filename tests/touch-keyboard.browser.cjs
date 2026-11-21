@@ -5,10 +5,16 @@ const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');let browser;
 after(async()=>{await browser?.close();});
 
-async function fixture(t,{touch=true,lang='en',html=''}={}){
+async function fixture(t,{touch=true,lang='en',html='',localAccounts=false}={}){
   browser ||= await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
   const context=await browser.newContext({hasTouch:touch,viewport:{width:1280,height:900}});
   const page=await context.newPage();t.after(()=>context.close());
+  if(localAccounts){
+    // A local, secure origin gives the real identity provider IndexedDB and Web Crypto.
+    await page.route('https://keyboard.test/',route=>route.fulfill({contentType:'text/html',body:'<!doctype html>'}));
+    await page.goto('https://keyboard.test/');
+    await page.setViewportSize({width:390,height:844});
+  }
   await page.setContent('<!doctype html><html lang="'+lang+'"><head><style>body{font:16px sans-serif}input,textarea,button{min-height:32px}label{display:block;margin:8px}section{padding:10px}</style></head><body><section id="workspace"><label>Name <input id="name" value="draft"></label><label>Other <input id="other" value="untouched"></label>'+html+'</section></body></html>');
   for(const file of ['touch-keyboard.css','touch-keyboard.js'])if(fs.existsSync(path.join(root,file))){if(file.endsWith('.css'))await page.addStyleTag({path:path.join(root,file)});else await page.addScriptTag({path:path.join(root,file)});}
   await page.evaluate(()=>{window.seen=[];for(const event of ['input','change','blur'])document.addEventListener(event,e=>{if(e.target.closest?.('#workspace'))seen.push([e.target.id||e.target.name,event,e.target.value]);},true);});
@@ -98,4 +104,53 @@ test('cancelled beforeinput and existing input normalizers are respected',async 
   const page=await fixture(t);await page.locator('#name').evaluate(el=>{el.value='';el.addEventListener('beforeinput',event=>{if(event.data==='x')event.preventDefault();});el.addEventListener('input',()=>{el.value=el.value.toUpperCase();});});
   await page.locator('#name').click();await key(page,'x');assert.equal(await page.locator('#name').inputValue(),'');await key(page,'a');assert.equal(await page.locator('#name').inputValue(),'A');assert.equal(await page.locator('#wfTouchKeyboardEditor').inputValue(),'A');
   await page.locator('#wfTouchKeyboardEditor').press('Escape');assert.equal(await page.locator('#wfTouchKeyboard[open]').count(),0);
+});
+
+test('account login accepts touch typing while the rest of the app stays locked',async t=>{
+  for(const reuse of [false,true])await t.test(reuse?'keyboard used before locking':'first keyboard opened at login',async t=>{
+    const page=await fixture(t,{localAccounts:true});
+    await page.addStyleTag({path:path.join(root,'accounts-access.css')});
+    for(const file of ['accounts-policy.js','accounts-data-policy.js','accounts-core.js','accounts-local-provider.js','accounts-access.js']){
+      await page.addScriptTag({path:path.join(root,file)});
+    }
+    const username='ضğqéй',password='keyboardtest';
+    await page.evaluate(async({username,password})=>{
+      await WFAccountAccess.ready;
+      await WFAccountAccess.service.bootstrapOwner({name:'Keyboard Test',username,password});
+      await WFAccountAccess.service.signOut();
+    },{username,password});
+    const pad=page.locator('#wfTouchKeyboard'),editor=page.locator('#wfTouchKeyboardEditor');
+    const tapKey=character=>pad.locator('[data-key="'+character+'"]').tap();
+    if(reuse){
+      await page.locator('#name').tap();
+      await pad.locator('[data-action="done"]').tap();
+    }
+    await page.evaluate(()=>{window.loginReady=WFAccountAccess.beforeInit();});
+    await page.waitForSelector('#wfTouchKeyboard[open]',{state:'attached'});
+    assert.equal(await pad.isVisible(),true,'login autofocus must show the app keyboard');
+    const background=page.locator('#workspace');
+    assert.equal(await background.evaluate(el=>el.inert),true);
+    assert.equal(await background.isVisible(),false);
+    for(const [language,character]of [['ar','ض'],['tr','ğ'],['en','q'],['fr','é'],['ru','й']]){
+      await pad.locator('[data-language="'+language+'"]').tap();
+      await tapKey(character);
+    }
+    assert.equal(await page.locator('#wfAccountLoginUsername').inputValue(),username);
+    await pad.locator('[data-action="next"]').tap();
+    assert.equal(await editor.getAttribute('type'),'password');
+    assert.equal(await editor.getAttribute('inputmode'),'none');
+    assert.equal(await editor.evaluate(el=>el.readOnly),true);
+    await pad.locator('[data-language="en"]').tap();
+    for(const character of password)await tapKey(character);
+    await pad.locator('[data-action="done"]').tap();
+    assert.equal(await page.locator('#wfAccountLoginPassword').inputValue(),password);
+    assert.equal(await background.evaluate(el=>el.inert),true);
+    await page.locator('#wfAccountLoginForm [type="submit"]').tap();
+    await page.evaluate(()=>window.loginReady);
+    assert.equal(await page.evaluate(()=>WFAccountAccess.actor().username),username);
+    await page.locator('#name').tap();
+    await tapKey('x');
+    await pad.locator('[data-action="done"]').tap();
+    assert.equal(await page.locator('#name').inputValue(),'draftx');
+  });
 });
