@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-21-wow-cloud-push-design.md`
 
-**Status, 2026-11-21:** Backend, client, sync and combined assembly are implemented and tested locally; the pre-music baseline passed 1,530/1,530 tests with no skips. The full follow-up rerun after the music/worker fixes is underway; its result belongs in the release owner's `docs/verification-report.md`. Checked items below do not establish native Chromium, hosted service operation or phone delivery. Connector access to the intended paid target was denied again; Supabase, DNS, provider and push deployment remain open. The expanded plan is `2026-11-21-mark-robot-operations.md` and the current acceptance ledger is `docs/release-acceptance.md`.
+**Status, 2026-11-21:** Backend, client, sync and combined assembly are implemented. Commit `bf428ba3bff01c20babfa6711d206ee1e822976a` passed 1,562/1,562 tests with zero failures/skips and all four remote native Chromium fixtures in the [PR run](https://github.com/wowmobilya/WOW-Galeri/actions/runs/44914543018) and [push run](https://github.com/wowmobilya/WOW-Galeri/actions/runs/44914539861). Local executor socket restrictions still prevent local Chromium launch; remote synthetic browser acceptance is complete. These results do not establish hosted service operation or physical-phone delivery. Connector access to the intended paid target was denied again; Supabase, DNS, provider and push deployment remain open. Aggregate evidence belongs in `docs/verification-report.md`; the expanded plan is `2026-11-21-mark-robot-operations.md` and the current acceptance ledger is `docs/release-acceptance.md`.
 
 ## Global constraints
 
@@ -42,12 +42,13 @@
 
 Native low-balance warnings already use per-box thresholds and exact monetary units. The public legacy source's overdue/payroll options were stored toggles without reminder execution; its only balance reminder was a browser toast. Unseen private jobs remain unknown until target access is restored. New server-scheduled finance reminders are an optional, unimplemented and inactive enhancement outside base acceptance. Existing proforma/payment/expense event push is implemented and retains its live-phone gate.
 
-## Open release and data gates
+## Release acceptance and remaining data/deployment gates
 
-- [x] Record the pre-music baseline regression (1,530/1,530, no skips), production dependency audit and local review in `docs/verification-report.md`.
+- [x] Record final regression (1,562/1,562, zero failures/skips), source verification (192 assets, 128 scripts, 3,995,963 bytes), zero reported audit vulnerabilities and local review. [Source job](https://github.com/wowmobilya/WOW-Galeri/actions/runs/44914543018/job/136877221453); aggregate record: `docs/verification-report.md`.
+- [x] Pass all four [remote Chromium fixtures](https://github.com/wowmobilya/WOW-Galeri/actions/runs/44914543018/job/136877221302): gallery controls/RTL/PDF, real browser notification with all WOW tabs closed and the worker stopped using a simulated provider, native muted music lifecycle, and actual-root-worker cached `206` ranges/offline playback advancing without a second MP3 fetch. These use synthetic data and no live services.
 - [ ] Restore authorized access to `sldthbnigivpsqixccah`, inventory its existing schema/data/plan/region and verify a recoverable backup before any change.
 - [ ] Complete the historical migration: authorized private export, explicit identity/product/file-ownership map, repeatable adapters and Storage-byte verification. Current preflight retains `applyReady:false` and `objects.contentVerified:false`; no history has been imported by it.
-- [ ] Record the full follow-up regression and actual results of the prepared native music and actual-worker offline Chromium fixtures; keep phone/audio acceptance separate.
+- [ ] Validate physical-phone layout, audible music/lifecycle and offline behavior; measure field latency on the user's network.
 - [ ] Run deployed Auth/Storage/Edge API smoke checks and inspect advisors; verify configured Vault/Cron/worker behavior and actual closed-app phone notifications.
 - [ ] Verify SMTP/templates and real emitted challenge/token fragments, a permitted correspondence delivery, public-share hosting and enabled quote/AI provider requests.
 - [ ] Verify independent Storage backup, database restoration and private recovery archive for the actual target.

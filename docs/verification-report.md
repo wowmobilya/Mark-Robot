@@ -1,6 +1,6 @@
 # Release 211 — local verification report
 
-Verification checkpoint: **21 November 2026, 17:26 Europe/Istanbul**.
+Verification checkpoint: **21 November 2026, 17:35 Europe/Istanbul**.
 
 This report records executable local evidence for the assembled Mark Robot / WOW FURNITURE branch. It does not certify a hosted deployment, actual device delivery, the private project's condition, or a completed historical data migration.
 
@@ -14,7 +14,8 @@ This report records executable local evidence for the assembled Mark Robot / WOW
 | Root dependency audit | `npm audit --json --ignore-scripts`: zero reported vulnerabilities. |
 | Server production dependency audit | `npm audit --omit=dev --json --ignore-scripts` in `supabase`: zero reported vulnerabilities. |
 | Modified/new-file credential scan | 194 files scanned; no matches for the configured private-key, provider-token, GitHub-token, Supabase-secret or long credential-assignment patterns. No private export/key/archive paths in the publication set. This is a bounded pattern scan, not proof of the absence of all secrets or defects. |
-| Independent specialist review | Findings in the reviewed authorization, customer recovery, financial quotes, public sharing, correspondence and supporting storage/notification boundaries closed locally. |
+| Independent specialist review | Findings in the reviewed authorization, customer recovery, financial quotes, public sharing, correspondence, storage/notification and music lifecycle/cache boundaries closed. |
+| Remote Chromium | All four synthetic native-browser fixtures passed on code commit `bf428ba3bff01c20babfa6711d206ee1e822976a`. Physical phones, audible speaker output and the hosted target remain separate. |
 
 Commands:
 
@@ -26,7 +27,7 @@ npm audit --json --ignore-scripts
 npm audit --prefix supabase --omit=dev --json --ignore-scripts
 ```
 
-Runtime: Node **v24.22.3**, Python **3.12.14**, pypdf **6.21.4**, PGlite **0.5.17**, fake-indexeddb **6.2.4**, server web-push **4.0.0**. The pinned CI workflow installs Node 24 and Python 3.13. The pre-music base commit `0523877b93fe3ca315b390201e0a859ddfb9b946` passed both its [push run](https://github.com/wowmobilya/WOW-Galeri/actions/runs/44912380030) and [pull-request run](https://github.com/wowmobilya/WOW-Galeri/actions/runs/44912402081). The follow-up adds a separate Chromium job; its execution evidence is recorded through [draft PR 22](https://github.com/wowmobilya/WOW-Galeri/pull/22).
+Runtime: Node **v24.22.3**, Python **3.12.14**, pypdf **6.21.4**, PGlite **0.5.17**, fake-indexeddb **6.2.4**, server web-push **4.0.0**. The pinned CI workflow installs Node 24 and Python 3.13. Code commit `bf428ba3bff01c20babfa6711d206ee1e822976a` passed both its [pull-request run](https://github.com/wowmobilya/WOW-Galeri/actions/runs/44914543018) and [push run](https://github.com/wowmobilya/WOW-Galeri/actions/runs/44914539861). The remote source job repeated all **1,562 tests with no failures or skips** in 65.11 seconds, verified the same asset/script counts, and reported zero production dependency vulnerabilities. The independent Chromium job completed all four fixtures. [Draft PR 22](https://github.com/wowmobilya/WOW-Galeri/pull/22) remains unmerged.
 
 The first complete run found five failures. Four occurred before the speech/cache assertions because the worker fixture omitted the real browser's `WorkerLocation.href`; that fixture now provides the worker URL and resolves requests against it. The fifth asserted that random Base64 ciphertext could not contain the short sequence `E1`. It now independently decrypts the exact PostgreSQL receipt with AES-256-GCM, verifies its IV and authenticated ciphertext size, and requires a different key or account/session binding to fail authentication. A full 1,530-test baseline passed after both corrections. The complete 1,562-test follow-up above also includes the music lifecycle and immutable-cache regressions; no product checks were disabled.
 
@@ -54,7 +55,16 @@ Focused suites overlap the complete run and one another; their counts are not ad
 
 ## Remaining acceptance
 
-Native browser launch was blocked in this executor. Four bounded Chromium fixtures are now wired into GitHub Actions: gallery controls/RTL/PDF, simulated-provider closed-tab push, native muted music lifecycle, and the actual root worker playing the installed track offline. The offline fixture serves 221 exact public-shell URLs from loopback, clears/disables the HTTP cache, requires real worker 206 responses, and checks that playback adds no track network request. Syntax, static fixture validation and independent fixture review passed; native execution remains pending at this local checkpoint. These synthetic fixtures do not replace actual target login, camera, printing, browser quota behavior, physical audio or an installed phone test. No closed-app phone notification, real SMTP/signup/recovery message, delivered customer correspondence, live model result, public crawler preview, keyed metals quote, target Cron heartbeat or backup restoration has been accepted for this release.
+Native browser launch was blocked in this executor, so the fixtures were executed in the authorized GitHub Actions environment with real Chromium. The remote results below supplement the SQL/DOM fixtures; they do not establish actual target login, camera or printer operation, device storage quotas, audible physical output or installed-phone delivery.
+
+| Executed Chromium fixture | Observed outcome |
+| --- | --- |
+| Gallery | Registered controls, order confirmation, a native PDF download and Arabic mobile / English desktop width passed. Business responses used synthetic fixtures. |
+| Push | Both controls passed exact labels in five locales. After all WOW tabs closed and its worker stopped, a DevTools-simulated provider event produced a native browser notification; the reopened Arabic inbox contained the single expected item. No real provider or phone was used. |
+| Music lifecycle | The real muted MP3 decoded, advanced and looped after a trusted click. Saved preferences did not autoplay; speech and a hidden retained route interrupted playback, including a pending native start. |
+| Installed offline worker | The actual root worker installed 221 explicitly allowlisted public-shell URLs. The cached MP3 matched its SHA-256. With the browser HTTP cache disabled/cleared, online and offline range requests produced exact service-worker 206 responses, and trusted muted playback advanced offline without another track request. |
+
+The first remote push fixture stopped at its exact Arabic-label assertion. Its synthetic document/classic-script responses were aligned with the real application’s UTF-8 declaration, bounded native UI waits and failure diagnostics were added, and all four fixtures passed on rerun without changing product behavior or weakening the assertions. Independent browser fixtures now continue after another fixture fails when browser setup has succeeded; a failing fixture still fails the job. No closed-app phone notification, real SMTP/signup/recovery message, delivered customer correspondence, live model result, public crawler preview, keyed metals quote, target Cron heartbeat or backup restoration has been accepted for this release.
 
 Historical Galeri.TR transfer remains separate. The local tool inventories **28 source families** and validates explicit mappings and relationships; it always returns `applyReady:false`, and Storage bytes retain `objects.contentVerified:false`. Authorized private source/target exports, identity/product/file-ownership maps, verified file bytes and repeatable import adapters are still required. The financial importer does not constitute a full historical importer. Existing WOW data and the old repository must remain available through reconciliation.
 
