@@ -60,5 +60,14 @@
 .wfg-asset-field{display:grid;gap:.55rem;justify-items:start}
 .wfg-footnote,.wfg-empty{color:var(--text2);padding:.65rem 0}
 .wfg-more{margin-block-start:.65rem}
+.wfg-music{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem .85rem;margin-block-end:1rem;padding:.75rem .9rem;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg,16px)}
+.wfg-music-title{font-size:.92rem;color:var(--text)}
+.wfg-music-controls,.wfg-music-volume{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;min-width:0}
+.wfg-music-volume{font-size:.82rem;color:var(--text2)}
+.wfg-workspace .wfg-music-volume input[type=range]{inline-size:7rem;min-height:38px;padding:0;border:0;background:transparent;accent-color:var(--brand-primary)}
+.wfg-music-volume output{min-inline-size:3ch;font-variant-numeric:tabular-nums;direction:ltr}
+.wfg-workspace .wfg-music-status{flex-basis:100%;font-size:.8rem;color:var(--text2)}
+.wfg-music[data-state=error] .wfg-music-status,.wfg-music[data-state=blocked] .wfg-music-status{color:var(--danger,var(--red,#b42318))}
+@media print{.wfg-music{display:none}}
 @media(max-width:600px){.wfg-hero{grid-template-columns:1fr}.wfg-hero>.wfg-photo{max-height:10rem}.wfg-filters>*{max-width:100%}.wfg-tabs .wfg-button,.wfg-actions .wfg-button{font-size:.84rem}.wfg-product-info,.wfg-order,.wfg-hero-copy{padding:.72rem}.wfg-dialog{width:96vw;max-height:92dvh}}
 @media print{.wfg-workspace .wfg-toolbar,.wfg-workspace .wfg-tabs,.wfg-workspace .wfg-filters{display:none}}

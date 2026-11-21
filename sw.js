@@ -17,8 +17,10 @@ const urlsToCache = [
   './modules/gallery/core.js?v=1',
   './modules/gallery/exports.js?v=1',
   './modules/gallery/public-share.js?v=1',
-  './modules/gallery/workspace.js?v=1',
-  './modules/gallery/styles.css?v=1',
+  './modules/gallery/music.js?v=1',
+  './modules/gallery/workspace.js?v=2',
+  './assets/gallery/wow-ambient-v1.mp3',
+  './modules/gallery/styles.css?v=2',
   './modules/files/workspace.js?v=1',
   './modules/files/styles.css?v=1',
   './modules/chat/workspace.js?v=1',
@@ -231,6 +233,105 @@ const VERSIONED_SHELL_URLS = new Set(urlsToCache.filter(value =>
   value.startsWith('./') && /[?&]v=/.test(value) && /\.(?:m?js|css)(?:\?|$)/.test(value) &&
   !/config[^/]*\.(?:m?js)(?:\?|$)/.test(value)
 ).map(value => new URL(value, self.location.href).href));
+// This versioned filename is the only audio asset using this cache-first path.
+// Keep a full, bounded representation: media elements commonly request ranges.
+const GALLERY_MUSIC_URL = new URL('./assets/gallery/wow-ambient-v1.mp3', self.location.href).href;
+const GALLERY_MUSIC_MAX_BYTES = 200 * 1024;
+const GALLERY_MUSIC_BYTES = 128832;
+const GALLERY_MUSIC_SHA256 = '7f82a2f73c58741b44fd63f966f36d93cbc05883c4d22c1ac3fab2f03a9719eb';
+let galleryMusicLoad = null;
+function wfCancelMusicBody(body) {
+  // A cached Response may be a tee branch; cancelling must not wait for an
+  // unrelated branch to be consumed before returning the failed media request.
+  try { body?.cancel().catch(() => {}); } catch (_) {}
+}
+async function wfReadGalleryMusic(response) {
+  if (response?.status !== 200 || response.headers.has('content-range') ||
+      Number(response.headers.get('content-length')) > GALLERY_MUSIC_MAX_BYTES || !response.body?.getReader) {
+    wfCancelMusicBody(response?.body);
+    throw new Error('INVALID_MUSIC_RESPONSE');
+  }
+  const reader = response.body.getReader(), chunks = [];
+  let length = 0;
+  try {
+    for (;;) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      length += value.byteLength;
+      if (length > GALLERY_MUSIC_MAX_BYTES) {
+        reader.cancel().catch(() => {});
+        throw new Error('MUSIC_RESPONSE_TOO_LARGE');
+      }
+      chunks.push(value);
+    }
+  } finally { reader.releaseLock(); }
+  if (length !== GALLERY_MUSIC_BYTES) throw new Error('INVALID_MUSIC_LENGTH');
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  // A 200 HTML hosting fallback, truncated download or poisoned old cache must
+  // never become an immutable audio hit. This digest belongs to this filename.
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  if (Array.from(digest, value => value.toString(16).padStart(2, '0')).join('') !== GALLERY_MUSIC_SHA256)
+    throw new Error('INVALID_MUSIC_DIGEST');
+  const cacheControl = response.headers.get('cache-control') || '';
+  return {bytes, cacheControl, cacheable:!/(?:^|,)\s*(?:no-store|private)(?:\s|,|=|$)/i.test(cacheControl)};
+}
+function wfGalleryMusicResponse(asset, request) {
+  const length = asset.bytes.byteLength;
+  // Fetch/CacheStorage bodies are decoded. Do not copy stale Content-Encoding,
+  // Transfer-Encoding or Content-Length from the source response.
+  const headers = new Headers({'Content-Type':'audio/mpeg', 'Content-Length':String(length), 'Accept-Ranges':'bytes'});
+  if (asset.cacheControl) headers.set('Cache-Control', asset.cacheControl);
+  const range = request?.headers?.get?.('range');
+  // RFC 9110 permits ignoring unsupported units, malformed/multipart ranges,
+  // and Range itself. Conditional ranges are conservatively answered in full.
+  const match = typeof range === 'string' && range.length <= 128 && !request.headers.has('if-range') &&
+    /^bytes=(\d*)-(\d*)$/i.exec(range.trim());
+  if (!match || (!match[1] && !match[2])) return new Response(asset.bytes, {status:200, headers});
+  const total = BigInt(length);
+  let start, end;
+  if (match[1]) {
+    start = BigInt(match[1]); end = match[2] ? BigInt(match[2]) : total - 1n;
+  } else {
+    const suffix = BigInt(match[2]);
+    start = suffix >= total ? 0n : total - suffix; end = total - 1n;
+  }
+  if (start >= total || end < start) {
+    headers.set('Content-Range', 'bytes */' + length); headers.set('Content-Length', '0');
+    return new Response(null, {status:416, headers});
+  }
+  end = end < total ? end : total - 1n;
+  const first = Number(start), last = Number(end);
+  headers.set('Content-Range', 'bytes ' + first + '-' + last + '/' + length);
+  headers.set('Content-Length', String(last - first + 1));
+  return new Response(asset.bytes.slice(first, last + 1), {status:206, headers});
+}
+async function wfLoadGalleryMusic() {
+  if (galleryMusicLoad) return galleryMusicLoad;
+  const pending = (async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const request = new Request(GALLERY_MUSIC_URL, {cache:'no-cache', credentials:'same-origin', redirect:'error'});
+    const cached = await cache.match(request);
+    if (cached) {
+      try {
+        const asset = await wfReadGalleryMusic(cached);
+        if (asset.cacheable) return asset;
+      } catch (_) {}
+      // Earlier workers could store an unusable partial response at this key.
+      try { await cache.delete(request); } catch (_) {}
+    }
+    // Never forward Range or If-Range: only a full 200 can populate the cache.
+    const asset = await wfReadGalleryMusic(await fetch(request));
+    if (asset.cacheable) {
+      try { await cache.put(request, wfGalleryMusicResponse(asset)); } catch (_) {}
+    }
+    return asset;
+  })();
+  galleryMusicLoad = pending;
+  try { return await pending; }
+  finally { if (galleryMusicLoad === pending) galleryMusicLoad = null; }
+}
 async function wfPrecacheShell() {
   const cache = await caches.open(CACHE_NAME);
   const priorNames = (await caches.keys()).filter(name => name !== CACHE_NAME && name.startsWith('wow-furniture-'));
@@ -242,6 +343,10 @@ async function wfPrecacheShell() {
   async function copy(url) {
     const request = new Request(url, {cache:'reload'});
     try {
+      if (new URL(url, self.location.href).href === GALLERY_MUSIC_URL) {
+        await wfLoadGalleryMusic();
+        return;
+      }
       let cached;
       if (/[?&]v=/.test(url)) {
         for (const previous of prior) {
@@ -305,6 +410,10 @@ self.addEventListener('fetch', event => {
   }
 
   const sameOrigin = url.origin === self.location.origin;
+  if (sameOrigin && request.mode !== 'navigate' && url.href === GALLERY_MUSIC_URL) {
+    event.respondWith(wfLoadGalleryMusic().then(asset => wfGalleryMusicResponse(asset, request)).catch(() => Response.error()));
+    return;
+  }
   // The reference installer is the only network path for its runtime modules.
   // Worker imports then stay offline too; a missing module is a failed pack,
   // never a reason to fetch a different engine or silently change the voice.

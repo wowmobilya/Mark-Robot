@@ -6,6 +6,8 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const require=createRequire(import.meta.url),acorn=require('acorn');
 const html=await readFile(path.join(root,'index.html'),'utf8'),sw=await readFile(path.join(root,'sw.js'),'utf8');
 const references=new Set([...html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"]+)"/g)].map(m=>m[1].replace(/^\.\//,'')).filter(s=>!/^https?:|^data:|^#/.test(s)));
+// This optional presentation asset is created by the music controller at runtime.
+references.add('assets/gallery/wow-ambient-v1.mp3');
 let bytes=0,scripts=0;
 for(const source of references){
  const filename=source.split('?')[0],full=path.resolve(root,filename);
@@ -15,7 +17,7 @@ for(const source of references){
   const code=await readFile(full,'utf8');acorn.parse(code,{ecmaVersion:'latest',sourceType:'script'});scripts++;
   if(/-----BEGIN (?:RSA |EC )?PRIVATE KEY-----|sb_secret_[A-Za-z0-9_-]{20,}|WF_PDF_CERT_KEY_PKCS8_B64/.test(code))throw Error('Private credential pattern in client asset: '+source);
  }
- if(/\.(?:js|css)$/.test(filename)&&!sw.includes("'./"+source+"'"))throw Error('App/offline asset version mismatch: '+source);
+ if(/\.(?:js|css|mp3)$/.test(filename)&&!sw.includes("'./"+source+"'"))throw Error('App/offline asset version mismatch: '+source);
 }
 for(const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)){
  if(/\bsrc\s*=/.test(match[1])||/\btype=["'](?:application\/ld\+json|application\/json|importmap)["']/.test(match[1]))continue;

@@ -41,6 +41,7 @@
     const text=key=>core.t(key,language),can=key=>api.can(key);
     const alive=()=>!disposed&&core.scopeKey(api.getSession())===scope;
     const assertActive=()=>{if(!alive())throw error('AUTH_REQUIRED');};
+    const music=['gallery','gallery-studio'].includes(route)?root.WFGalleryMusic?.mount({container:main,api,lang,permission:routes[route][1]}):null;
     const cartStorage=core.cartKey(startSession);
     const localRead=key=>{try{return root.localStorage.getItem(key);}catch{return null;}};
     const localWrite=(key,value)=>{try{if(value==null)root.localStorage.removeItem(key);else root.localStorage.setItem(key,value);}catch{/* Keep current-tab cart available. */}};
@@ -587,11 +588,13 @@
     });
     return {dispose(){
       if(disposed)return;disposed=true;++generation;abort.abort();root.clearInterval(slideTimer);root.clearInterval(pollTimer);
+      music?.dispose();
       sharePanel?.dispose();sharePanel=null;
       root.removeEventListener('online',refresh);doc.removeEventListener('visibilitychange',refresh);
       observer?.disconnect();lazy.clear();for(const modal of dialogs){if(modal.node.open)modal.node.close();modal.node.remove();}dialogs.clear();
       for(const url of objectUrls)URL.revokeObjectURL(url);objectUrls.clear();imageCache.clear();selected.clear();draft.clear();pending.clear();cart.clear();products=[];orders=[];main.remove();
     },updateLanguage(next){language=typeof next==='string'?next:api.locale?.()||doc.documentElement.lang||language;
+      music?.updateLanguage(language);
       if(!dialogs.size&&!dirty)render();},hasUnsavedChanges(){return dirty||[...dialogs].some(modal=>modal.dirty||modal.busy);}};
   }
   root.WFGallery=Object.freeze({mount});

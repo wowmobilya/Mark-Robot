@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-21-mark-robot-operations.md`
 
-**Status, 2026-11-21:** Checked implementation items describe the local branch and fixture evidence, not deployment or actual delivery. The completed full regression rerun passed 1,530/1,530 tests with no skips. The intended paid project denied connector access again; no Supabase, DNS, provider or push activation has been accepted.
+**Status, 2026-11-21:** Checked implementation items describe the local branch and fixture evidence, not deployment or actual delivery. The pre-music baseline passed 1,530/1,530 tests with no skips; the release owner is rerunning the complete suite after music and worker fixes and records the result in `docs/verification-report.md`. Native Chromium and phone acceptance remain pending. The intended paid project denied connector access again; no Supabase, DNS, provider or push activation has been accepted.
 
 ## Global constraints
 
@@ -70,7 +70,7 @@ Owner: offline platform specialist. Files: `modules/platform/offline/*`, registr
 - [x] Connect reference currency quotes and the optional metals provider with source/unit/time validation; add the one-to-three-item low-stock badge.
 - [x] Add read-only preflight for 28 historical source families. It always retains `applyReady:false`; Storage bytes remain unverified (`objects.contentVerified:false`).
 - [ ] Obtain private authorized source exports and explicit identity/product/file-ownership maps; build and validate repeatable historical import adapters before applying any history.
-- [ ] Verify the background music implementation currently in progress before marking parity complete.
+- [x] Complete and independently review local background music parity: original 128,832-byte bundled file, explicit trusted gesture, pause on inactive retained routes/speech/session changes, bounded scoped preferences, and SHA-pinned full-cache/single-range delivery with a 200 KiB stream guard. Evidence: `docs/gallery-music.md`, `tests/gallery-music.test.mjs`, `tests/service-worker-install.test.cjs`, `tests/reference-pack-integration.test.cjs`.
 
 **Finance source clarification:** Native per-box low-balance thresholds and exact units already cover the working warning feature. The public legacy page only showed a repeated in-page balance toast; its overdue/payroll toggles had no visible reminder implementation. Private legacy jobs cannot be confirmed or excluded without target access. New opt-in server-scheduled reminders would be an optional enhancement, currently unimplemented and inactive, not a base-rollout gate. Implemented proforma/payment/expense event push still requires real-phone acceptance.
 
@@ -79,7 +79,8 @@ Evidence and live requirements: `docs/release-acceptance.md`, `docs/customer-ema
 ### Task 6: Combined acceptance and deployment gates
 
 - [x] Prepare the permanent operations/recovery guide and an evidence-linked acceptance ledger that separates local implementation from live observations.
-- [x] Record the release owner's complete regression (1,530/1,530, no skips), dependency audits and independent local review in `docs/verification-report.md`; hosted acceptance remains separate.
+- [x] Record the pre-music baseline regression (1,530/1,530, no skips), dependency audits and independent local review in `docs/verification-report.md`; follow-up aggregate verification and hosted acceptance remain separate.
+- [ ] Record the complete follow-up regression and execute the prepared `gallery-music.browser.cjs` / `gallery-music-offline.browser.cjs` Chromium fixtures; validate real phone playback separately.
 - [ ] Resolve intended-project access, inspect actual plan/region/schema/data and back up before migration.
 - [ ] Run live Auth/Storage/Edge, two-device and closed-app push tests; verify SMTP/templates/emitted link fragments, correspondence delivery, public sharing, enabled quote/AI providers and backup restoration.
 - [ ] Record actual phone/browser layout, offline behavior and latency on the user's network.
