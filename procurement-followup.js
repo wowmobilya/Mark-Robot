@@ -116,7 +116,9 @@
   }
   function button(action, key, handler, primary=false) {
     const node = make('button','btn '+(primary?'btn-p':'btn-s'),t(key));
-    node.type = 'button'; node.dataset.followupAction = action; node.addEventListener('click',handler); return node;
+    const permission = ['ordered','reopen','all','partial','expected','cancel','void_receipt','confirm'].includes(action) ? 'purchasing.edit' : null;
+    if (permission) node.dataset.wfPermission = permission;
+    node.type = 'button'; node.dataset.followupAction = action; node.addEventListener('click',event => {if(permission && root.WFAccountAccess && !root.WFAccountAccess.allow(permission)) return; return handler(event);}); return node;
   }
   function field(key, node) {
     const label = make('label','wf-followup-field'); label.append(make('span','',t(key)),node); return label;
@@ -160,6 +162,7 @@
     rebuild();
   }
   function open(id) {
+    if (root.WFAccountAccess && !root.WFAccountAccess.allow('purchasing.view')) return false;
     if (id !== undefined) select(id, false);
     else select('',false);
     return ops.open(route);
@@ -356,6 +359,7 @@
     paginate(box,events.length,historyPage,next=>{historyPage=next;render();},'History');page.body.append(box);
   }
   function start(order, mode, receiptId) {
+    if (root.WFAccountAccess && !root.WFAccountAccess.allow('purchasing.edit')) return false;
     const orderId=idOf(order.id);
     if(busy || reading || readError || order.futureEvents || order.status==='unknown' || selected!==orderId || drafts.has(orderId) || order.revision!==orderNow()?.revision)return false;
     const draft={orderId,revision:order.revision,mode,receiptId,expectedDate:order.expectedDate||'',reason:'',quantities:new Map(),offset:0,error:'',locked:false,intent:null};
@@ -445,6 +449,7 @@
       MISSING_ORDER:'missing',FOLLOWUP_CAPACITY:'capacity',INVALID_FOLLOWUP:'readError',ORDER_HISTORY_INVALID:'readError'})[code]||'saveError';
   }
   async function submit(order,draft) {
+    if (root.WFAccountAccess && !root.WFAccountAccess.allow('purchasing.edit')) return false;
     if(busy||reading||readError||draft.locked||drafts.get(draft.orderId)!==draft||selected!==draft.orderId)return false;
     if(orderNow()?.revision!==draft.revision||orderNow()?.futureEvents||orderNow()?.status==='unknown'){draft.locked=true;render();return false;}
     try {draft.intent ??= makeIntent(order,draft);}

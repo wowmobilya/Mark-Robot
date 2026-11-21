@@ -112,12 +112,13 @@
     return span;
   }
 
-  function button(label, callback, primary = false, pictogram) {
+  function button(label, callback, primary = false, pictogram, permission) {
     const element = make('button', 'btn ' + (primary ? 'btn-p' : 'btn-s') + ' wf-archive-btn');
     element.type = 'button';
+    if (permission) element.setAttribute('data-wf-permission', permission);
     if (pictogram) element.append(icon(pictogram));
     element.append(make('span', '', label));
-    element.addEventListener('click', callback);
+    element.addEventListener('click', event => {if(permission && root.WFAccountAccess && !root.WFAccountAccess.allow(permission)) return; return callback(event);});
     return element;
   }
 
@@ -158,6 +159,7 @@
   }
 
   async function confirmChange() {
+    if (root.WFAccountAccess && !root.WFAccountAccess.allow('archives.edit')) return false;
     if (busy || !pending) return;
     const {id, action} = pending;
     busy = true;
@@ -199,6 +201,7 @@
   }
 
   function requestChange(id, action) {
+    if (root.WFAccountAccess && !root.WFAccountAccess.allow('archives.edit')) return false;
     if (busy) return;
     const row = find(id);
     choosing = false;
@@ -237,7 +240,7 @@
       const summary = make('bdi','wf-archive-ref',row ? [row.invNo,row.companyName].filter(Boolean).join(' · ') || L.numberMissing : L.missing);
       const details = make('p','',archiving ? L.detailArchive : L.detailRestore);
       const buttons = make('div','wf-archive-actions');
-      const confirm = button(busy ? L.saving : archiving ? L.archive : L.restore, confirmChange, true);
+      const confirm = button(busy ? L.saving : archiving ? L.archive : L.restore, confirmChange, true, undefined, 'archives.edit');
       const close = button(L.cancel,cancel);
       confirm.disabled = busy || !row;
       close.disabled = busy;
@@ -326,9 +329,9 @@
     if (row.archiveCostCapturedAt) fact(facts,L.archiveCostDate,day(row.archiveCostCapturedAt));
     const actions = make('div','wf-archive-actions');
     if (row.id != null) {
-      actions.append(button(L.preview,() => root.previewSaved(row.id), false, 'eye'),
-        button(L.labels,() => root.WFPackageLabels.open(row.id), false, 'print'),
-        button(L.restore,() => requestChange(row.id,'restore'), false, 'restore'));
+      actions.append(button(L.preview,() => root.previewSaved(row.id), false, 'eye', 'invoices.view'),
+        button(L.labels,() => root.WFPackageLabels.open(row.id), false, 'print', 'labels.view'),
+        button(L.restore,() => requestChange(row.id,'restore'), false, 'restore', 'archives.edit'));
     }
     element.append(header,facts,actions);
     return element;
@@ -380,7 +383,7 @@
       error = '';
       renderPrompt();
       if (choosing) focusPrompt();
-    },true,'archive');
+    },true,'archive','archives.edit');
     add.setAttribute('aria-controls','wfArchivePrompt');
     shell.actions.replaceChildren(add);
     prompt = make('section','wf-archive-prompt');
@@ -397,6 +400,7 @@
   }
 
   function showArchive() {
+    if (root.WFAccountAccess && !root.WFAccountAccess.allow('archives.view')) return false;
     if (shell.page.classList.contains('active')) refresh();
     else operations.open(route);
   }

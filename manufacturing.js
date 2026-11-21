@@ -156,11 +156,13 @@
     printButton.disabled=printActive() || busy || !core.isTicket(ticket) || ticket.lines.some(line=>dirty(drafts.get(keyOf(ticket,line))));
   }
   function createTicket() {
+    if(root.WFAccountAccess&&!root.WFAccountAccess.allow('manufacturing.edit'))return;
     const invoice=find(selected);
     if(!invoice || busy)return;
     return persist({kind:'create',id:invoice.id,ticketId:wfNewRecordId(),at:new Date().toISOString()});
   }
   function saveLine(ticket,line) {
+    if(root.WFAccountAccess&&!root.WFAccountAccess.allow('manufacturing.edit'))return;
     const draft=draftFor(ticket,line),changes={};
     if(draft.status!==draft.base.status)changes.status=draft.status;
     if(draft.note!==draft.base.note)changes.note=draft.note;
@@ -226,8 +228,8 @@
       const entry=make('div','');entry.append(make('dt','',t(name)),make('dd','',value));dl.append(entry);
     }
     const current=drafts.get(key);
-    const state=select(core.statuses,current?.status ?? line.status);state.disabled=busy;
-    const note=make('textarea','fi');note.rows=2;note.dir='auto';note.value=current?.note ?? line.note;note.disabled=busy;
+    const state=select(core.statuses,current?.status ?? line.status);state.disabled=busy||!!(root.WFAccountAccess&&!root.WFAccountAccess.can('manufacturing.edit'));
+    const note=make('textarea','fi');note.rows=2;note.dir='auto';note.value=current?.note ?? line.note;note.disabled=busy||!!(root.WFAccountAccess&&!root.WFAccountAccess.can('manufacturing.edit'));
     note.id='wfMfgNote-'+ticket.id+'-'+line.id;
     const fields=make('div','wf-mfg-fields');fields.append(field(t('state'),state),field(t('note'),note));
     const actions=make('div','wf-mfg-actions');
@@ -304,6 +306,7 @@
     renderList();renderDetail();
   }
   function printTicket(){
+    if(root.WFAccountAccess&&!root.WFAccountAccess.allow('manufacturing.print'))return;
     const ticket=find(selected)?.manufacturingTicket;
     if(!core.isTicket(ticket) || printButton.disabled)return;
     let win;

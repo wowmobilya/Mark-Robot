@@ -215,5 +215,5 @@
 })(typeof window==='undefined'?globalThis:window);
 
 if (typeof document !== 'undefined' && document.getElementById('page-exchange')) {
-  import('./cashboxes.mjs?v=1').then(module => module.mount()).catch(console.error);
+  import('./cashboxes.mjs?v=2').then(module => module.mount()).catch(console.error);
 }

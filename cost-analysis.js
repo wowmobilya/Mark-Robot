@@ -153,7 +153,7 @@
       const title=row.name || String(row.id ?? '—');
       if(row.id != null && typeof root.WFCosting?.open==='function') {
         const open=make('button','wf-analysis-open',title);
-        open.type='button';open.setAttribute('aria-label',text('openCost',{name:title}));open.addEventListener('click',()=>root.WFCosting.open(row.id));
+        open.type='button';open.dataset.wfPermission='costs.view';open.setAttribute('aria-label',text('openCost',{name:title}));open.addEventListener('click',()=>{if(root.WFAccountAccess&&!root.WFAccountAccess.allow('costs.view'))return;root.WFCosting.open(row.id);});
         product.append(open);
       } else product.append(make('span','',title));
       if(row.barcode && row.barcode!==title)product.append(make('bdi','wf-analysis-meta',row.barcode));
@@ -199,5 +199,5 @@
     }
   }
   page=ops.register({id:'cost-analysis',title:titles('title'),subtitle:titles('subtitle'),icon:'cost',parent:'products',onEnter:refresh,onLanguage:localize});
-  root.WFCostAnalysis=Object.freeze({open:()=>ops.open('cost-analysis'),refresh});
+  root.WFCostAnalysis=Object.freeze({open:()=>{if(root.WFAccountAccess&&!root.WFAccountAccess.allow('costs.view'))return false;return ops.open('cost-analysis');},refresh});
 })(typeof window==='object'?window:globalThis);

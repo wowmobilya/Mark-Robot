@@ -62,14 +62,16 @@
  const fixed=(tag,cls,key)=>{const node=make(tag,cls,text(key));bound.push([node,key]);return node;};
  const format=value=>new Intl.NumberFormat(ops.locale()||'en').format(value);
  const actions={editClient:()=>root.editCo,editProduct:()=>root.editPr,statement:()=>root.wfOpenStatement,preview:()=>root.previewSaved,card:()=>root.WFProductLabels?.open,labels:()=>root.WFPackageLabels?.open};
+ const actionPermissions={editClient:'customers.edit',editProduct:'products.edit',statement:'payments.view',preview:'invoices.view',card:'products.print',labels:'labels.view'};
  function activate(entry,key){
+  if(actionPermissions[key]&&root.WFAccountAccess&&!root.WFAccountAccess.allow(actionPermissions[key]))return false;
   const current=(ops.state()[entry.kind]||[]).find(row=>row?.id!=null&&String(row.id)===String(entry.id)),handler=actions[key]?.();
   if(!current){ops.notify?.(text('missing'),'in');refresh();return;}
   if(typeof handler!=='function')return;
   root.WFTouchKeyboard?.close?.('navigation',false);
   handler(current.id);
  }
- function button(key,handler,persistent=false){const node=make('button','btn btn-s');node.type='button';node.append(persistent?fixed('span','',key):make('span','',text(key)));node.addEventListener('click',handler);return node;}
+ function button(key,handler,persistent=false){const node=make('button','btn btn-s');node.type='button';if(actionPermissions[key])node.dataset.wfPermission=actionPermissions[key];node.append(persistent?fixed('span','',key):make('span','',text(key)));node.addEventListener('click',handler);return node;}
  function render(){
   queued=false;
   let result=searchEntries(index,input.value,{kind,offset});
@@ -109,6 +111,6 @@
  shell.body.append(search,filterBar,total,list,pager);
  const registerKeyboard=()=>root.WFTouchKeyboard?.register?.(input.id,{action:'search',onSubmit:()=>{offset=0;render();}});
  registerKeyboard();root.document.addEventListener('DOMContentLoaded',registerKeyboard,{once:true});
- root.WFGlobalSearch=Object.freeze({open:()=>ops.open(route),refresh});
+ root.WFGlobalSearch=Object.freeze({open:()=>{if(root.WFAccountAccess&&!root.WFAccountAccess.allow('search.view'))return false;return ops.open(route);},refresh});
  translate();
 })(typeof window==='object'?window:globalThis);

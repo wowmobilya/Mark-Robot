@@ -44,7 +44,7 @@
   function buyer(){const value=state().settings||{};return{companyName:value.companyName||'WOW Furniture',address:value.address||'',phone:value.phone||'',email:value.email||'',website:value.website||'',logo:typeof root.wfCompanyLogo==='function'?root.wfCompanyLogo(value.logo):value.logo||'',brandColor:root.getComputedStyle?.(document.documentElement)?.getPropertyValue('--brand-primary')?.trim()||'#3f7c94'};}
   function fresh(){const today=root.WOWStatementCore.today();return{id:newId(),createdAt:new Date().toISOString(),supplier:{name:'',contact:''},buyer:buyer(),currency:'USD',locale:locale(),notes:'',lines:[],period:{mode:'year',year:today.slice(0,4),from:today.slice(0,4)+'-01-01',to:today},delivery:'all'};}
   function ensure(){if(draft)return;const section=state().settings?.procurementOrders;expectedDraftRevision=section?.draftRevision||0;try{draft=section?.draft?core.prepareDraft(section.draft):fresh();}catch(_){draft=fresh();autoError='draftConflict';}}
-  function button(key,fn,primary=false){const node=make('button','btn '+(primary?'btn-p':'btn-s'));node.type='button';node.textContent=t(key);node.addEventListener('click',fn);return node;}
+  function button(key,fn,primary=false){const node=make('button','btn '+(primary?'btn-p':'btn-s'));node.type='button';node.textContent=t(key);const permission={print:'purchasing.print',html:'purchasing.export',csv:'purchasing.export',save:'purchasing.edit',create:'purchasing.edit',remove:'purchasing.edit',add:'purchasing.edit'}[key];if(permission)node.dataset.wfPermission=permission;node.addEventListener('click',event=>{if(permission&&root.WFAccountAccess&&!root.WFAccountAccess.allow(permission))return;return fn(event);});return node;}
   function field(key,input){const label=make('label','wf-purchase-field');label.append(make('span','',t(key)),input);return label;}
   function input(id,type,value,handler){const node=make('input','fi');node.id=id;node.type=type;node.value=value??'';node.autocomplete='off';node.addEventListener('input',()=>handler(node.value));return node;}
   function select(id,options,value,handler){const node=make('select','fi');node.id=id;for(const [key,label]of options){const option=make('option','',label);option.value=key;node.append(option);}node.value=value;node.addEventListener('change',()=>handler(node.value));return node;}
@@ -222,6 +222,7 @@
     copy.buyer.logo=images.get(copy.buyer.logo)||'';for(const line of copy.lines)line.image=images.get(line.image)||'';return copy;
   }
   async function download(extension){
+    if(root.WFAccountAccess&&!root.WFAccountAccess.allow('purchasing.export'))return;
     if(!selectedOrder||activePrint||exportBusy)return;const order=selectedOrder,isCSV=extension==='csv';exportBusy=true;guard();
     const buttons=[...(previewHost.querySelector('.wf-purchase-document-actions')?.querySelectorAll('button')||[])].map(button=>({button,disabled:button.disabled}));
     for(const {button}of buttons)button.disabled=true;
@@ -242,6 +243,7 @@
     }catch(_){if(token===previewRevision)notice('printError',true);}
   }
   async function printOrder(){
+    if(root.WFAccountAccess&&!root.WFAccountAccess.allow('purchasing.print'))return;
     if(activePrint||exportBusy||!previewReady||!selectedOrder||controls.print?.disabled)return;const order=selectedOrder,frame=make('iframe','wf-purchase-print-frame');frame.setAttribute('aria-hidden','true');frame.tabIndex=-1;frame.title=t('print');document.body.append(frame);
     let view,media,timer,entered=false,started=false;const job={frame,media:null,cleanup};activePrint=job;computed();controls.print.disabled=true;guard();
     function cleanup(closed=false){if(activePrint!==job)return;clearTimeout(timer);view?.removeEventListener('afterprint',afterPrint);root.removeEventListener('afterprint',afterPrint);media?.removeEventListener?.('change',mediaChanged);media?.removeListener?.(mediaChanged);root.removeEventListener('focus',recover);document.removeEventListener('visibilitychange',visible);activePrint=null;frame.remove();recovery.hidden=true;if(controls.print)controls.print.disabled=false;computed();guard();if(pendingTranslate){pendingTranslate=false;translate();}if(closed)notice('printClosed');}

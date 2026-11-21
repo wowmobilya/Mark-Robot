@@ -1,0 +1,35 @@
+/* Generated using AppDeploy UI skill */
+/* Local account access uses the app's current identity, fonts and theme. */
+html[data-wf-account-state="checking"] body > :not(script):not(style):not(link):not(#wfAccountLock),
+html[data-wf-account-state="locked"] body > :not(script):not(style):not(link):not(#wfAccountLock){visibility:hidden!important;pointer-events:none!important}
+html[data-wf-account-state="checking"],html[data-wf-account-state="locked"]{overflow:hidden}
+[data-wf-access-hidden]{display:none!important}
+#wfAccountLock{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;padding:20px;overflow:auto;background:var(--bg,var(--input));color:var(--text);font-family:inherit}
+#wfAccountLock[hidden]{display:none!important}
+.wf-account-login{inline-size:min(100%,440px);min-inline-size:0;margin:auto;padding:clamp(20px,5vw,36px);border:1px solid var(--border);border-radius:24px;background:var(--card);box-shadow:0 20px 65px color-mix(in srgb,var(--text) 8%,transparent)}
+.wf-account-login-brand{display:flex;align-items:center;gap:12px;margin-block-end:28px;font-size:16px;font-weight:800;letter-spacing:.02em}
+.wf-account-login-brand img{inline-size:56px;block-size:56px;object-fit:contain;border-radius:12px}
+.wf-account-login-emblem{display:grid;place-items:center;inline-size:48px;block-size:48px;border:1px solid var(--border);border-radius:14px;color:var(--brand-primary,var(--gold2));background:var(--input)}
+.wf-account-login-emblem svg{inline-size:25px;block-size:25px}
+.wf-account-login h1{margin:0 0 8px;font-size:24px;line-height:1.4}
+.wf-account-login p{margin:0 0 20px;font-size:13px;line-height:1.8;color:var(--text2)}
+.wf-account-login form{display:grid;gap:18px}
+.wf-account-login label{display:grid;gap:8px;font-size:13px;font-weight:650}
+.wf-account-login .fi{inline-size:100%;min-inline-size:0;min-block-size:48px;font:inherit;box-sizing:border-box}
+.wf-account-password-row{display:flex;gap:6px;align-items:stretch}
+.wf-account-password-row input{flex:1}
+.wf-account-password-row button{flex:none;min-inline-size:52px;min-block-size:48px;padding:8px;font:inherit;font-size:12px;border-radius:10px;border:1px solid var(--border);background:var(--input);color:var(--text);cursor:pointer}
+.wf-account-login button:focus-visible{outline:2px solid var(--brand-primary,var(--gold2));outline-offset:3px}
+.wf-account-login-submit{inline-size:100%;min-block-size:48px;justify-content:center;font:inherit;font-weight:750}
+.wf-account-login-status{min-block-size:22px;margin:12px 0 0!important;font-size:13px!important;color:var(--red,var(--text))!important;overflow-wrap:anywhere}
+.wf-account-login-local{display:block;padding-block-start:20px;margin-block-start:20px;border-block-start:1px solid var(--border);font-size:11px;line-height:1.8;color:var(--text2)}
+.wf-account-login-languages{display:flex;justify-content:flex-end;margin-block-end:16px}
+.wf-account-login-languages select{max-inline-size:100%;min-block-size:36px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--input);color:var(--text);font:inherit;font-size:12px}
+.wf-account-session{display:flex;align-items:center;gap:9px;inline-size:calc(100% - 24px);min-block-size:50px;margin:10px 12px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--input);color:var(--text);font:inherit;text-align:start;cursor:pointer}
+.wf-account-session svg{inline-size:19px;block-size:19px;flex:none;color:var(--brand-primary,var(--gold2))}
+.wf-account-session span{display:grid;gap:2px;min-inline-size:0}
+.wf-account-session strong{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wf-account-session small{color:var(--text2);font-size:10px;line-height:1.5}
+.wf-account-session[hidden]{display:none!important}
+@media(max-width:420px){#wfAccountLock{padding:12px}.wf-account-login{padding:20px 16px;border-radius:18px}.wf-account-login h1{font-size:22px}}
+@media print{#wfAccountLock,.wf-account-session,[data-wf-access-hidden]{display:none!important}html[data-wf-account-state="locked"] body>*{display:none!important}}

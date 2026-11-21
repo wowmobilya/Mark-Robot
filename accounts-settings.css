@@ -1,0 +1,160 @@
+/* Generated using AppDeploy UI skill */
+/* Account administration follows the program's existing identity and settings shell. */
+@media screen {
+  #stab-accounts.wf-accounts { min-inline-size:0; color:var(--text); }
+  .wf-accounts, .wf-accounts * { box-sizing:border-box; }
+  .wf-accounts :is(input,select,textarea,button) { font-family:inherit; }
+  .wf-accounts :is(h3,h4,p) { overflow-wrap:anywhere; }
+  .wf-accounts h3 { margin:0 0 12px; color:var(--text); font-size:18px; line-height:1.5; }
+  .wf-accounts h4 { margin:0 0 10px; font-size:15px; line-height:1.5; }
+  .wf-accounts p { line-height:1.7; }
+  .wf-accounts .btn { min-block-size:44px; max-inline-size:100%; padding:10px 14px; white-space:normal; overflow-wrap:anywhere; font-size:13px; line-height:1.5; }
+  .wf-accounts :is(button,input,select,textarea,summary):focus-visible { outline:2px solid var(--brand-primary,var(--gold2)); outline-offset:3px; }
+  .wf-accounts :is(button,input,select,textarea):disabled { cursor:not-allowed; opacity:.55; }
+  .wf-accounts .fi { inline-size:100%; min-inline-size:0; min-block-size:44px; padding:10px 12px; border:1px solid var(--border); border-radius:11px; background:var(--input); color:var(--text); font-size:16px; line-height:1.5; }
+  .wf-accounts textarea.fi { resize:vertical; }
+  .wf-accounts [hidden] { display:none!important; }
+  .wf-account-icon { display:inline-flex; align-items:center; justify-content:center; flex:none; inline-size:24px; block-size:24px; color:var(--brand-primary,var(--gold2)); }
+  .wf-account-icon svg { inline-size:100%; block-size:100%; }
+  .wf-accounts .btn-p > .wf-account-icon { color:inherit; }
+  #wf-settings-tab-accounts > .wf-account-icon { inline-size:26px; block-size:26px; }
+  .wf-account-scope { display:flex; align-items:flex-start; gap:10px; margin-block-end:20px; padding:12px 14px; border:1px solid var(--border); border-radius:13px; background:var(--input); }
+  .wf-account-scope p { margin:0; color:var(--text2); font-size:13px; }
+  .wf-account-scope .wf-account-icon { inline-size:20px; block-size:20px; margin-block-start:2px; }
+  .wf-account-notice { margin:0 0 16px; padding:12px 14px; border:1px solid var(--border); border-inline-start:3px solid var(--brand-primary,var(--gold2)); border-radius:11px; background:var(--card); font-size:14px; }
+  .wf-account-notice[data-error="true"] { border-inline-start-color:var(--red,var(--text)); }
+  .wf-account-muted { display:block; color:var(--text2); font-size:12px; line-height:1.7; }
+  .wf-account-toolbar { display:grid; grid-template-columns:minmax(180px,1fr) minmax(140px,.48fr) auto; align-items:end; gap:12px; }
+  .wf-account-field { display:flex; flex-direction:column; gap:7px; min-inline-size:0; margin:0; color:var(--text2); font-size:13px; font-weight:600; line-height:1.5; }
+  .wf-account-field > small { font-weight:400; }
+  .wf-account-wide { grid-column:1/-1; }
+  .wf-account-list-count { margin:16px 0 10px; color:var(--text2); font-size:12px; }
+  .wf-account-list { display:grid; gap:12px; margin-block-end:16px; }
+  .wf-account-row { display:grid; grid-template-columns:minmax(180px,1.2fr) minmax(130px,.7fr) auto; align-items:center; gap:12px 16px; padding:16px; border:1px solid var(--border); border-radius:15px; background:var(--card); }
+  .wf-account-row-identity { display:flex; align-items:center; gap:12px; min-inline-size:0; }
+  .wf-account-row-identity > div { min-inline-size:0; }
+  .wf-account-row h3 { margin:0 0 3px; font-size:15px; }
+  .wf-account-avatar { display:grid; place-items:center; flex:0 0 42px; inline-size:42px; block-size:42px; border:1px solid var(--border); border-radius:13px; background:var(--input); color:var(--brand-primary,var(--gold2)); font-size:16px; font-weight:750; }
+  .wf-account-username { display:block; max-inline-size:100%; color:var(--text2); font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+  .wf-account-row-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+  .wf-account-role { color:var(--text2); font-size:12px; }
+  .wf-account-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 9px; border:1px solid var(--border); border-radius:7px; background:var(--input); color:var(--text2); font-size:11px; line-height:1.6; white-space:normal; }
+  .wf-account-badge::before { content:""; flex:none; inline-size:6px; block-size:6px; border-radius:50%; background:currentColor; }
+  .wf-account-badge[data-status="active"] { color:var(--green,var(--brand-primary)); }
+  .wf-account-badge:is([data-status="revoked"],[data-status="expired"],[data-status="deleted"]) { color:var(--red,var(--text2)); }
+  .wf-account-metrics { display:flex; flex-wrap:wrap; gap:7px 13px; grid-column:1/3; }
+  .wf-account-metric { display:inline-flex; align-items:baseline; gap:4px; color:var(--text2); font-size:12px; }
+  .wf-account-metric b { color:var(--text); font-size:14px; }
+  .wf-account-last { grid-column:1/3; margin:0; color:var(--text2); font-size:11px; }
+  .wf-account-row > .btn { grid-column:3; grid-row:1/4; }
+  .wf-account-empty { display:flex; flex-direction:column; align-items:center; gap:12px; padding:32px 18px; border:1px dashed var(--border); border-radius:15px; text-align:center; }
+  .wf-account-empty p,.wf-account-empty h3 { margin:0; }
+  .wf-account-empty > .wf-account-icon { inline-size:34px; block-size:34px; }
+  .wf-account-editor-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-block-end:20px; }
+  .wf-account-editor-head h3 { margin:0; }
+  .wf-account-editor-head > p { flex-basis:100%; margin:0; }
+  .wf-account-editor { display:grid; gap:22px; }
+  .wf-account-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  .wf-account-form-grid > p { margin:0; }
+  .wf-account-password { display:flex; align-items:stretch; min-inline-size:0; border:1px solid var(--border); border-radius:11px; background:var(--input); overflow:hidden; }
+  .wf-account-password > .fi { flex:1 1 0; min-inline-size:0; border:0; background:transparent; border-radius:0; }
+  .wf-account-password > .btn { flex:0 0 auto; min-inline-size:52px; padding:8px 10px; border:0; border-inline-start:1px solid var(--border); border-radius:0; background:transparent; box-shadow:none; color:var(--brand-primary,var(--gold2)); font-size:12px; }
+  .wf-account-editor-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px; }
+  .wf-account-permissions,.wf-account-preview,.wf-account-details,.wf-account-sessions,.wf-account-lifecycle,.wf-account-activity { min-inline-size:0; padding:18px; border:1px solid var(--border); border-radius:15px; background:var(--card); }
+  .wf-accounts > :is(.wf-account-preview,.wf-account-details,.wf-account-sessions,.wf-account-lifecycle,.wf-account-activity) { margin-block-start:16px; }
+  .wf-account-permissions > p { margin:0 0 14px; }
+  .wf-account-customized { display:inline-flex; color:var(--brand-primary,var(--gold2)); font-size:12px; }
+  .wf-account-permission-grid { display:grid; }
+  .wf-account-permission-head,.wf-account-permission-row { display:grid; grid-template-columns:minmax(130px,1.3fr) repeat(5,minmax(45px,.55fr)); gap:6px; align-items:center; }
+  .wf-account-permission-head { padding:10px 6px; border-block-end:1px solid var(--border); color:var(--text2); font-size:11px; text-align:center; }
+  .wf-account-permission-head > strong { text-align:start; }
+  .wf-account-permission-row { padding:7px 6px; border-block-end:1px solid var(--border); }
+  .wf-account-permission-row:last-child { border-block-end:0; }
+  .wf-account-permission-name { min-inline-size:0; padding-inline-end:5px; }
+  .wf-account-permission-name strong { display:block; font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+  .wf-account-permission-name small { font-size:10px; }
+  .wf-account-permission-cell { display:flex; align-items:center; justify-content:center; min-inline-size:0; min-block-size:44px; margin:0; cursor:pointer; }
+  .wf-account-permission-cell > input { inline-size:21px; block-size:21px; margin:0; accent-color:var(--brand-primary,var(--gold2)); cursor:pointer; }
+  .wf-account-action-label { display:none; }
+  .wf-account-permission-unavailable { cursor:default; color:var(--text2); opacity:.6; }
+  .wf-account-unavailable { font-size:15px; }
+  .wf-account-owner-note { margin:0; padding:10px 0; color:var(--text2); font-size:12px; }
+  .wf-account-preview-metrics { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin-block-end:16px; }
+  .wf-account-preview-metrics > div { display:flex; flex-direction:column; align-items:center; gap:4px; padding:11px 5px; border:1px solid var(--border); border-radius:10px; background:var(--input); }
+  .wf-account-preview-metrics strong { color:var(--brand-primary,var(--gold2)); font-size:20px; line-height:1.4; }
+  .wf-account-preview-metrics span { color:var(--text2); font-size:11px; line-height:1.5; overflow-wrap:anywhere; text-align:center; }
+  .wf-account-allowed { display:grid; gap:0; }
+  .wf-account-allowed > div { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; padding:10px 0; border-block-end:1px solid var(--border); }
+  .wf-account-allowed > div:last-child { border-block-end:0; }
+  .wf-account-allowed strong { font-size:12px; line-height:1.7; }
+  .wf-account-permission-tags { display:flex; flex-wrap:wrap; gap:5px; }
+  .wf-account-permission-tags > span { padding:3px 7px; border:1px solid var(--border); border-radius:6px; background:var(--input); color:var(--text2); font-size:11px; line-height:1.6; }
+  .wf-account-hidden { margin-block-start:12px; padding-block-start:10px; border-block-start:1px solid var(--border); }
+  .wf-account-hidden > summary { min-block-size:44px; padding:10px 0; color:var(--text2); font-size:12px; line-height:1.6; cursor:pointer; }
+  .wf-account-detail-head { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+  .wf-account-detail-head > div:first-child { flex:1 1 160px; min-inline-size:0; }
+  .wf-account-detail-head h3 { margin:0 0 3px; }
+  .wf-account-detail-buttons { display:flex; flex-wrap:wrap; gap:8px; }
+  .wf-account-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:15px 20px; margin:0; }
+  .wf-account-facts > div { min-inline-size:0; }
+  .wf-account-facts dt { margin:0 0 5px; color:var(--text2); font-size:11px; line-height:1.6; }
+  .wf-account-facts dd { margin:0; color:var(--text); font-size:13px; line-height:1.7; overflow-wrap:anywhere; }
+  .wf-account-admin-note { margin-block-start:16px; padding-block-start:14px; border-block-start:1px solid var(--border); }
+  .wf-account-admin-note strong { font-size:12px; color:var(--text2); }
+  .wf-account-admin-note p { white-space:pre-wrap; font-size:13px; }
+  .wf-account-sessions > p { margin:0 0 7px; font-size:13px; }
+  .wf-account-inline-actions { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-block-start:14px; }
+  .wf-accounts .wf-account-danger { color:var(--red,var(--text)); }
+  .wf-account-lifecycle > small { margin-block-start:12px; }
+  .wf-account-confirmation { padding:16px; margin-block-start:16px; border:1px solid var(--border); border-inline-start:3px solid var(--brand-primary,var(--gold2)); border-radius:12px; background:var(--input); }
+  .wf-account-confirmation > p { margin:0 0 14px; font-size:13px; }
+  .wf-account-events { list-style:none; display:grid; margin:14px 0 0; padding:0; }
+  .wf-account-events > li { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:5px 12px; padding:14px 0; border-block-end:1px solid var(--border); }
+  .wf-account-events > li:last-child { border-block-end:0; }
+  .wf-account-events strong { font-size:13px; line-height:1.6; }
+  .wf-account-events > li > small { grid-column:1/-1; }
+  .wf-account-events > li > p { grid-column:1/-1; margin:3px 0 0; white-space:pre-wrap; font-size:12px; }
+  .wf-account-events time { font-size:11px; }
+  .wf-account-failed-event { color:var(--red,var(--text2)); font-size:11px; }
+  @media (max-width:760px) {
+    .wf-account-toolbar { grid-template-columns:minmax(0,1fr) minmax(0,.7fr); }
+    .wf-account-toolbar > .btn { grid-column:1/-1; justify-self:start; }
+    .wf-account-row { grid-template-columns:minmax(0,1fr) auto; }
+    .wf-account-row-meta { grid-column:1; }
+    .wf-account-row > .btn { grid-column:2; grid-row:1/3; }
+    .wf-account-metrics,.wf-account-last { grid-column:1/-1; }
+    .wf-account-permission-head { display:none; }
+    .wf-account-permission-row { display:flex; flex-wrap:wrap; gap:3px 12px; padding:11px 0; }
+    .wf-account-permission-name { flex-basis:100%; padding:0; }
+    .wf-account-permission-name strong { font-size:13px; }
+    .wf-account-permission-cell { justify-content:flex-start; gap:7px; flex:0 1 auto; }
+    .wf-account-action-label { display:inline; font-size:12px; }
+    .wf-account-permission-unavailable { display:none; }
+    .wf-account-permission-cell > input { inline-size:20px; block-size:20px; }
+  }
+  @media (max-width:480px) {
+    .wf-account-scope { padding:11px; }
+    .wf-account-toolbar,.wf-account-form-grid,.wf-account-facts { grid-template-columns:minmax(0,1fr); }
+    .wf-account-toolbar > .btn { justify-self:stretch; }
+    .wf-account-field { gap:6px; }
+    .wf-account-row { gap:10px; padding:13px; }
+    .wf-account-avatar { flex-basis:36px; inline-size:36px; block-size:36px; border-radius:10px; font-size:14px; }
+    .wf-account-row-identity { gap:9px; }
+    .wf-account-row > .btn { padding:8px 10px; font-size:12px; }
+    .wf-account-editor-head { align-items:flex-start; }
+    .wf-account-editor-head > .btn { inline-size:100%; }
+    .wf-account-permissions,.wf-account-preview,.wf-account-details,.wf-account-sessions,.wf-account-lifecycle,.wf-account-activity { padding:13px; border-radius:13px; }
+    .wf-account-preview-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+    .wf-account-preview-metrics > div { padding:8px 4px; }
+    .wf-account-preview-metrics strong { font-size:18px; }
+    .wf-account-detail-buttons { flex-basis:100%; }
+    .wf-account-detail-buttons .btn { flex:1 1 110px; }
+    .wf-account-inline-actions .btn,.wf-account-editor-actions .btn { flex:1 1 130px; }
+    .wf-account-events > li { grid-template-columns:minmax(0,1fr); }
+    .wf-account-events > li > small,.wf-account-events > li > p { grid-column:auto; }
+    .wf-account-confirmation { padding:12px; }
+  }
+}
+@media print {
+  #stab-accounts,.wf-account-password { display:none!important; }
+}

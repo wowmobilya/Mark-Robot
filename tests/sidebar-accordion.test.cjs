@@ -1,10 +1,12 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'../ui-navigation.js'),'utf8');
+const policy=require('../accounts-policy.js');
 const start=source.indexOf("(() => {\n  const search = document.getElementById('wfSidebarSearch');"),end=source.indexOf("  const dialog=document.getElementById('wfSearchDialog');",start);
 assert(start>=0&&end>start);const controller=source.slice(start,end)+'})();';
+const searchController=source.slice(start,source.indexOf('/* WF dashboard six-link',end));
 
-function setup(){
- const nodes=[],observers=[],frames=[],resize=[],calls={routes:[],actions:[],legacy:0,sidebar:0};let document,context,viewportResize;
+function setup({permissions,search=false}={}){
+ const nodes=[],observers=[],frames=[],resize=[],events={},calls={routes:[],actions:[],legacy:0,sidebar:0};let document,context,viewportResize;
  class Element{
   constructor(tag='div'){this.tagName=tag.toUpperCase();this.children=[];this.dataset={};this.attrs={};this.events={};this.classes=new Set();this.hidden=false;this.disabled=false;this._text='';const styles=new Map();this.style={getPropertyValue:key=>styles.get(key)||'',setProperty:(key,value)=>styles.set(key,value)};nodes.push(this);
    this.classList={add:(...names)=>names.forEach(name=>this.classes.add(name)),remove:(...names)=>names.forEach(name=>this.classes.delete(name)),contains:name=>this.classes.has(name),toggle:(name,value)=>{if(value===undefined)value=!this.classes.has(name);if(value)this.classes.add(name);else this.classes.delete(name);return value;}};}
@@ -13,6 +15,7 @@ function setup(){
   get parentNode(){return this.parentElement;}get nextElementSibling(){const all=this.parentElement?.children||[];return all[all.indexOf(this)+1]||null;}get previousElementSibling(){const all=this.parentElement?.children||[];return all[all.indexOf(this)-1]||null;}
   append(...children){for(const child of children){child.remove();child.parentElement=this;this.children.push(child);}}
   prepend(child){child.remove();child.parentElement=this;this.children.unshift(child);}
+  replaceChildren(...children){for(const child of [...this.children])child.remove();this._text='';this.append(...children);}
   before(child){const parent=this.parentElement;child.remove();parent.children.splice(parent.children.indexOf(this),0,child);child.parentElement=parent;}
   after(child){const parent=this.parentElement;child.remove();parent.children.splice(parent.children.indexOf(this)+1,0,child);child.parentElement=parent;}
   remove(){if(this.parentElement)this.parentElement.children=this.parentElement.children.filter(child=>child!==this);this.parentElement=null;}
@@ -33,6 +36,10 @@ function setup(){
  const groups=[make('div','','wf-nav-group'),make('div','','wf-nav-group'),make('div','','wf-nav-group')];nav.append(...groups);
  groups.forEach((group,index)=>{const caption=make('div','','side-sec');caption.dataset.i18n='group-'+index;caption.textContent=['Main','Actions','Settings'][index];group.append(caption);});
  for(const id of ['wfSidebarSearch','wfSidebarEmpty','wfSidebarPager','wfSidebarPrev','wfSidebarNext','wfSidebarPage'])drawer.append(make(id==='wfSidebarSearch'?'input':'div',id));
+ if(search){
+  const dialog=make('div','wfSearchDialog'),toggle=make('button','wfSidebarSearchToggle'),results=make('div','wfSearchResults'),close=make('button');
+  close.setAttribute('data-dialog-close','');dialog.append(close,results);dialog.hidden=true;drawer.append(toggle,dialog,make('button','wfDevCredit'),make('dialog','wfDevDialog'));
+ }
  const definitions=[['dashboard','nav_dashboard',0,'Dashboard'],['companies','nav_companies',0,'Clients'],['products','nav_products',0,'Products'],['invoices','nav_invoices',0,'Invoices'],['cart','cart',0,'Cart'],['select-client-type','nav_add_co',1,'Add client'],['add-product','nav_add_pr',1,'Add product'],['quick-barcode','Quick Barcode',1,'Quick Barcode'],['select-invoice-type','nav_create',1,'Create invoice'],['settings','settings',2,'Settings']];
  const items={},pages={};
  for(const [destination,key,index,caption]of definitions){
@@ -42,14 +49,20 @@ function setup(){
  }
  pages.dashboard.classList.add('active');items.dashboard.classList.add('active');
  const extra=make('section','page-add-company','page');body.append(extra);pages['add-company']=extra;
- document={documentElement:root,body,activeElement:null,createElement:tag=>new Element(tag),getElementById:id=>nodes.find(node=>node.id===id)||null,querySelector:selector=>body.querySelector(selector),querySelectorAll:selector=>selector==='#wf-nav-main .wf-nav-group'?groups:body.querySelectorAll(selector)};
+ document={documentElement:root,body,activeElement:null,createElement:tag=>new Element(tag),createTextNode(text){const node=new Element('#text');node.textContent=text;return node;},getElementById:id=>nodes.find(node=>node.id===id)||null,querySelector:selector=>body.querySelector(selector),querySelectorAll:selector=>selector==='#wf-nav-main .wf-nav-group'?groups:body.querySelectorAll(selector)};
  const location={hash:'#dashboard'};
  context={document,location,innerHeight:844,Intl,requestAnimationFrame:callback=>frames.push(callback),visualViewport:{height:844,addEventListener(type,callback){viewportResize=callback;}},matchMedia:()=>({matches:true}),getComputedStyle:()=>({paddingTop:'0',paddingBottom:'0',rowGap:'3'}),
+  addEventListener(type,callback){(events[type]??=[]).push(callback);},
   MutationObserver:class{constructor(callback){this.callback=callback;this.targets=[];observers.push(this);}observe(target,options){this.targets.push({target,options});}},ResizeObserver:class{constructor(callback){this.callback=callback;resize.push(callback);}observe(){}},
   showPage(destination){calls.routes.push(destination);location.hash='#'+destination;for(const [name,page]of Object.entries(pages))page.classList.toggle('active',name===destination);const selected=destination==='add-company'?'select-client-type':destination;for(const [name,item]of Object.entries(items))item.classList.toggle('active',name===selected);},
   wfToggleDesktopSidebar(){calls.sidebar++;root.classList.remove('wf-sidebar-collapsed');}
  };
  context.window=context;
+ const account={role:'custom',permissions};
+ if(permissions)context.WFAccountAccess={
+  can:key=>policy.can(account,key),canRoute:route=>policy.canRoute(account,route),
+  requiredForElement(element){return element.getAttribute('data-wf-permission')||(element.id==='wfSidebarSearchToggle'?'search.view':null)||policy.permissionForRoute(element.getAttribute('data-page')||(element.getAttribute('onclick')||'').match(/showPage\(\s*['"]([^'"]+)['"]/)?.[1]);}
+ };
  // Simulate a pre-existing delegated navigation listener. Parent capture must
  // stop this before it can navigate, including clicks on child labels/icons.
  nav.addEventListener('click',event=>{const item=event.target.closest('.nav-item');if(item&&['companies','products','invoices'].includes(item.dataset.page)){calls.legacy++;context.showPage(item.dataset.page);}});
@@ -60,11 +73,12 @@ function setup(){
   for(const element of ancestry){if(type==='click')element.onclick?.call(element,event);if(event.immediate)return event;for(const listener of element.events[type]||[])if(!listener.capture){listener.callback.call(element,event);if(event.immediate)break;}if(event.stopped)return event;}
   return event;
  }
- vm.runInNewContext(controller,context);
+ vm.runInNewContext(search?searchController:controller,context);
  const flush=()=>{let turns=0;while(frames.length){assert(++turns<50,'layout work settles');frames.shift()();}};
  const notifyRoot=(run=true)=>{for(const observer of observers)if(observer.targets.some(entry=>entry.target===root))observer.callback([]);if(run)flush();};
  const submenu=destination=>document.getElementById('actions-'+({companies:'nav_companies',products:'nav_products',invoices:'nav_invoices'})[destination]);
  return {context,calls,location,root,drawer,nav,groups,items,pages,document,submenu,dispatch,notifyRoot,frames,flush,notifyResize(){resize.forEach(callback=>callback());viewportResize?.();},
+  permissions(next,notify=true){account.permissions=next;if(notify){for(const callback of events['wf-account-access-change']||[])callback();flush();}},
   key(target,key){const event=dispatch(target,'keydown',{key});if(!event.defaultPrevented&&['Enter',' '].includes(key)&&target.tagName==='BUTTON')dispatch(target,'click',{detail:0});return event;},
   expander:destination=>items[destination].parentElement.querySelector('.wf-destination-toggle')};
 }
@@ -110,4 +124,59 @@ test('rail expansion and language refresh retain explicit actions without premat
  for(const [locale,label]of Object.entries(labels)){f.root.lang=locale;f.notifyRoot();assert.equal(f.submenu('invoices').children[0].textContent,label);assert(!f.submenu('invoices').hidden);assert.equal(f.items.invoices.getAttribute('aria-expanded'),'true');}
  f.groups[0].querySelector('.wf-group-toggle').click();assert(f.submenu('invoices').hidden);f.groups[0].querySelector('.wf-group-toggle').click();assert(!f.submenu('invoices').hidden);
  assert.deepEqual(f.calls.routes,[]);f.submenu('invoices').children[1].click();assert.equal(f.calls.routes.at(-1),'select-invoice-type');assert.equal(f.calls.actions.at(-1).source,f.items['select-invoice-type']);
+});
+
+test('read-only submenu actions retain capability metadata and keyboard focus skips denied actions',()=>{
+ const f=setup({permissions:['products.view','customers.view']}),submenu=f.submenu('products');
+ f.items.products.click();
+ assert.equal(submenu.children[0].getAttribute('data-page'),'products');
+ assert.equal(submenu.children[0].getAttribute('data-wf-permission'),'products.view');
+ assert.equal(submenu.children[1].getAttribute('data-page'),'add-product');
+ assert.equal(submenu.children[1].getAttribute('data-wf-permission'),'products.edit');
+ assert.deepEqual(submenu.children.map(button=>button.hidden),[false,true,true]);
+ assert(f.groups[1].hidden);assert(f.groups[2].hidden);assert(f.items.dashboard.hidden);assert(f.items.invoices.parentElement.hidden);
+ f.key(f.items.products,'ArrowUp');assert.equal(f.document.activeElement,submenu.children[0]);
+ f.key(submenu.children[0],'ArrowDown');assert.equal(f.document.activeElement,submenu.children[0]);
+ submenu.children[1].onclick({});submenu.children[2].onclick({});assert.deepEqual(f.calls.routes,[]);
+ submenu.children[0].click();assert.deepEqual(f.calls.routes,['products']);
+ f.permissions(['customers.view'],false);submenu.children[0].onclick({});assert.deepEqual(f.calls.routes,['products'],'a cached action cannot bypass immediate revocation');
+ f.permissions(['customers.view']);assert(f.items.products.parentElement.hidden);assert(submenu.hidden);
+});
+
+test('grant changes restore allowed submenus and access-hidden sources or ancestors stay excluded',()=>{
+ const f=setup({permissions:['products.view']}),submenu=f.submenu('products');
+ f.items.products.click();assert(submenu.children[1].hidden);
+ f.permissions(['products.view','products.edit']);assert(!submenu.children[1].hidden);assert(!f.groups[1].hidden);
+ submenu.children[1].click();assert.equal(f.calls.routes.at(-1),'add-product');
+ f.items['add-product'].setAttribute('data-wf-access-hidden','');f.permissions(['products.view','products.edit']);
+ assert(submenu.children[1].hidden);assert(f.groups[1].hidden);
+ const before=f.calls.routes.length;submenu.children[1].onclick({});assert.equal(f.calls.routes.length,before);
+ f.items.products.parentElement.setAttribute('data-wf-access-hidden','');f.permissions(['products.view','products.edit']);
+ assert(f.groups.every(group=>group.hidden));assert(submenu.hidden);
+ f.expander('products').onclick();assert(submenu.hidden);assert.equal(f.calls.routes.length,before);
+ f.items.products.parentElement.removeAttribute('data-wf-access-hidden');f.items['add-product'].removeAttribute('data-wf-access-hidden');
+ f.permissions(['products.view','products.edit']);assert(!f.groups[0].hidden);assert(!f.groups[1].hidden);
+});
+
+test('rail pagination counts only permitted destinations and keeps empty groups hidden',()=>{
+ const f=setup({permissions:['customers.view','products.view']});
+ f.nav.clientHeight=80;f.nav.scrollHeight=600;f.root.classList.add('wf-sidebar-collapsed');f.notifyRoot();
+ assert.equal(f.document.getElementById('wfSidebarPage').textContent,'1 / 2');
+ assert(!f.items.companies.hidden);assert(f.items.products.hidden);assert(f.groups[1].hidden);assert(f.groups[2].hidden);
+ f.document.getElementById('wfSidebarNext').click();
+ assert.equal(f.document.getElementById('wfSidebarPage').textContent,'2 / 2');
+ assert(!f.items.products.hidden);assert(f.items.companies.hidden);
+ for(const [route,item]of Object.entries(f.items))if(route!=='products')assert(item.hidden,route);
+ f.permissions(['products.view']);assert.equal(f.document.getElementById('wfSidebarPage').textContent,'1 / 1');assert(!f.items.products.hidden);
+});
+
+test('drawer search exposes allowed destinations only and rechecks stale result activation',()=>{
+ const f=setup({permissions:['customers.view','products.view','search.view'],search:true}),toggle=f.document.getElementById('wfSidebarSearchToggle'),results=f.document.getElementById('wfSearchResults'),dialog=f.document.getElementById('wfSearchDialog');
+ toggle.click();assert(!dialog.hidden);
+ assert.deepEqual(results.children.map(button=>button.textContent),['Clients','Products']);
+ const productResult=results.children.find(button=>button.getAttribute('data-page')==='products');
+ assert.equal(productResult.getAttribute('data-wf-permission'),'products.view');
+ f.permissions(['customers.view','search.view'],false);productResult.onclick();assert.deepEqual(f.calls.routes,[]);assert(!dialog.hidden);
+ f.permissions(['customers.view','search.view']);assert.deepEqual(results.children.map(button=>button.textContent),['Clients']);
+ f.permissions(['customers.view']);assert(dialog.hidden);toggle.onclick();assert(dialog.hidden);
 });

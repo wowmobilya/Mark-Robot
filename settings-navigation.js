@@ -96,6 +96,7 @@
    robot: ['الصوت والتعبيرات وتتبع الحركة', 'Voice, expressions and movement tracking', 'Ses, ifadeler ve hareket takibi', 'Voix, expressions et suivi des mouvements', 'Голос, эмоции и отслеживание движения'],
    language: ['لغة واجهة البرنامج', 'Interface language', 'Arayüz dili', 'Langue de l’interface', 'Язык интерфейса'],
    data: ['النسخ الاحتياطي والاستعادة', 'Backup and restore', 'Yedekleme ve geri yükleme', 'Sauvegarde et restauration', 'Резервное копирование'],
+   accounts: ['حسابات الموظفين وكلمات المرور والصلاحيات', 'Employee accounts, passwords and permissions', 'Çalışan hesapları, parolalar ve izinler', 'Comptes, mots de passe et autorisations', 'Учётные записи, пароли и права'],
    about: ['الإصدار ومعلومات البرنامج', 'Version and app information', 'Sürüm ve uygulama bilgileri', 'Version et informations', 'Версия и сведения'],
  };
  tabs.removeAttribute('role');

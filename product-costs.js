@@ -131,8 +131,10 @@
   function copy(tag, className, key, values) { const node = make(tag, className, text(key, values)); labels.set(node, {key, values}); return node; }
   function button(key, className, action, symbol) {
     const node = make('button', className); node.type = 'button';
+    const permission = key === 'addProduct' ? 'products.edit' : ['save','useRates','addMaterial','chooseLibrary','remove','applyLibrary','unlinkLibrary'].includes(key) ? 'costs.edit' : null;
+    if (permission) node.dataset.wfPermission = permission;
     if (symbol) { const icon = make('span', 'wf-cost-icon'); icon.innerHTML = ops.icon(symbol); node.append(icon); }
-    node.append(copy('span', '', key)); node.addEventListener('click', action); return node;
+    node.append(copy('span', '', key)); node.addEventListener('click', event => {if(permission && root.WFAccountAccess && !root.WFAccountAccess.allow(permission)) return; return action(event);}); return node;
   }
   const products = () => Array.isArray(ops.state().products) ? ops.state().products : [];
   const product = () => products().find(item => String(item.id) === selectedId);
@@ -329,7 +331,7 @@
       card.append(header, fields, total); rowHost.append(card);
       if (row.catalogId) {
         const linked = make('div','wf-cost-library-link');
-        const label = make('button','wf-cost-library-name'); label.type = 'button'; label.addEventListener('click',() => root.WFMaterialLibrary?.open(row.catalogId));
+        const label = make('button','wf-cost-library-name'); label.type = 'button'; label.dataset.wfPermission = 'materials.view'; label.addEventListener('click',() => root.WFMaterialLibrary?.open(row.catalogId));
         const status = make('p','wf-cost-library-status'); status.setAttribute('role','status');
         const actions = make('div','wf-ops-row');
         const apply = button('applyLibrary','btn btn-s wf-cost-library-apply',() => {
@@ -407,6 +409,7 @@
     cleanLabels();
   }
   async function save() {
+    if (root.WFAccountAccess && !root.WFAccountAccess.allow('costs.edit')) return false;
     const item = product(), model = item && modelFor(item); if (!model || model.saving || !dirty(model)) return false;
     const id = String(item.id);
     try {core.calculateCosting(model.data);} catch (error) {model.error = error; refreshComputed(); return false;}
@@ -436,10 +439,12 @@
   root.addEventListener('wf-material-library-change',() => {if (mounted) refreshComputed();});
   root.WFCosting = Object.freeze({
     open(productId) {
+      if (root.WFAccountAccess && !root.WFAccountAccess.allow('costs.view')) return false;
       if (productId !== undefined && products().some(item => String(item.id) === String(productId))) {selectedId = String(productId); selectorOpen = false;}
       return ops.open('product-costs');
     },
     addCatalogMaterial(catalogId, productId = selectedId) {
+      if (root.WFAccountAccess && !root.WFAccountAccess.allow('costs.edit')) return false;
       const item = products().find(entry => String(entry.id) === String(productId));
       if (!item) {ops.notify(text('missingProduct'),'er'); return false;}
       const model = modelFor(item); if (model.saving) return false;

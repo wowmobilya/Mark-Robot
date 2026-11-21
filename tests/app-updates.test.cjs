@@ -199,8 +199,8 @@ test('cashbox module emits its acknowledgment after committed clearing, never af
   const vm=require('node:vm'),fs=require('node:fs');
   function cashFixture(){
     const notices=[];let finish,fail;
-    const field=value=>({value,options:[],add(option){this.options.push(option);if(!this.value)this.value=option.value;},replaceChildren(...options){this.options=options;this.value=options[0]?.value||'';},closest:()=>({hidden:false})});
-    const fields={currency:field('USD'),type:field('expense'),amount:field('15'),target:field('TRY'),received:field(''),note:field('draft')},button={disabled:false},status={},output={},list={replaceChildren(){},append(){}};
+    const field=value=>({value,options:[],add(option){this.options.push(option);if(!this.value)this.value=option.value;},replaceChildren(...options){this.options=options;this.value=options[0]?.value||'';},closest:()=>({hidden:false,dataset:{}})});
+    const fields={currency:field('USD'),type:field('expense'),amount:field('15'),target:field('TRY'),received:field(''),note:field('draft')},button={disabled:false,dataset:{}},status={},output={},list={replaceChildren(){},append(){}};
     const form={elements:fields,querySelector:()=>button,dispatchEvent:event=>notices.push({type:event.type,bubbles:event.bubbles,amount:fields.amount.value,note:fields.note.value})};
     const box={querySelector:selector=>({'form':form,'[role=status]':status,'output':output,'ol':list})[selector],querySelectorAll:()=>[]};
     const page={querySelector:selector=>selector==='header'?{after(){}}:null,classList:{contains:()=>false}};

@@ -23,7 +23,7 @@
   const button=(text,callback,className='btn btn-s')=>{const node=make('button',className,text);node.type='button';node.addEventListener('click',callback);return node;};
   const normalized=value=>String(value??'').normalize('NFKD').replace(/\p{M}/gu,'').toLowerCase().replace(/[٠-٩]/g,digit=>String(digit.charCodeAt(0)-1632)).replace(/[۰-۹]/g,digit=>String(digit.charCodeAt(0)-1776)).trim();
   const pending=row=>row.status==='requested'||row.status==='awaiting_confirmation';
-  const actor=()=>{const name=state().settings?.authPerson;return typeof name==='string'&&name.trim()?{name,source:'settings.authPerson'}:null;};
+  const actor=()=>{const account=root.WFAccountAccess?.actor();if(account)return{name:account.name,source:'account:'+account.id};const name=state().settings?.authPerson;return typeof name==='string'&&name.trim()?{name,source:'settings.authPerson'}:null;};
   function formatTime(value){try{return new Intl.DateTimeFormat(locale(),{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch(_){return String(value||t('unknown'));}}
   function getEntries(options={}){
     const current=state().settings?.[core.field];
@@ -49,6 +49,7 @@
     }catch(cause){errors.set(String(invoiceId),errorKey(cause));refresh();throw cause;}
   }
   async function recordRequested(job,options={}){
+    if(root.WFAccountAccess&&!root.WFAccountAccess.allow('labels.print'))throw Object.assign(new Error('ACCESS_DENIED'),{code:'ACCESS_DENIED'});
     const invoiceId=String(job?.invoiceId??'');
     let id;
     try{
@@ -60,6 +61,7 @@
     }catch(cause){if(id)active.delete(id);errors.set(invoiceId,errorKey(cause));refresh();throw cause;}
   }
   async function recordOutcome(id,type,message){
+    if(root.WFAccountAccess&&!(['printed','cancelled'].includes(type)&&root.WFAccountAccess.can('history.edit'))&&!root.WFAccountAccess.allow('labels.print'))throw Object.assign(new Error('ACCESS_DENIED'),{code:'ACCESS_DENIED'});
     active.delete(id);
     const row=getEntries().find(entry=>entry.id===id);
     return commit({type:'event',id,event:{type,at:new Date().toISOString(),operator:actor(),message}},row?.invoiceId??'');
@@ -67,6 +69,7 @@
   function recordDialogClosed(id){return recordOutcome(id,'dialog_closed');}
   function recordFailed(id,message){return recordOutcome(id,'failed',String(message||'').slice(0,500));}
   async function confirm(id,outcome,view){
+    if(root.WFAccountAccess&&!root.WFAccountAccess.can('history.edit')&&!root.WFAccountAccess.allow('labels.print'))return false;
     if(busy.has(id))return;
     busy.add(id);render(view,true);
     try{await recordOutcome(id,outcome);view.noticeKey='saved';}
@@ -139,6 +142,7 @@
     const actions=make('div','wf-label-history-confirm-actions');
     for(const outcome of ['printed','cancelled']){
       const control=button(t(outcome==='printed'?'confirmPrinted':'confirmCancelled'),()=>confirm(record.id,outcome,view),outcome==='printed'?'btn btn-p':'btn btn-s');
+      control.dataset.wfPermission=root.WFAccountAccess?.can('history.edit')?'history.edit':'labels.print';
       control.dataset.wfReprintConfirm=outcome;control.dataset.wfReprintId=record.id;control.disabled=busy.has(record.id);actions.append(control);
     }
     return actions;
@@ -192,6 +196,7 @@
     page.body.replaceChildren(filters,pageHost);render(view,true);return page;
   }
   function open(invoiceId){
+    if(root.WFAccountAccess&&!root.WFAccountAccess.allow('history.view'))return false;
     registerPage();const view=views.get(pageHost);view.invoiceId=invoiceId==null?null:String(invoiceId);view.query='';view.status='all';view.search.value='';view.filter.value='all';view.limit=20;render(view,true);return ops.open('print-history');
   }
   const api={mount,recordRequested,recordDialogClosed,recordFailed,getEntries,getSummary,registerPage,open};

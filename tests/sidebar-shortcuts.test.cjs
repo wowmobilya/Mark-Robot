@@ -1,14 +1,18 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'../ui-navigation.js'),'utf8');
+const policy=require('../accounts-policy.js');
 const start=source.indexOf('/* Register shortcuts to existing tools'),end=source.indexOf('/* Keep dashboard controls steady',start);
 assert(start>=0&&end>start);const controller=source.slice(start,end);
 
-function fixture({deferred=false}={}){
+function fixture({deferred=false,permissions}={}){
  const nodes=[],observers=[],events={},calls=[];
  class Element{
   constructor(id=''){this.id=id;this.children=[];this.attrs={};this.dataset={};this.disabled=false;this.visible=true;this.textContent='';nodes.push(this);}
   append(...children){this.children.push(...children);for(const child of children)child.parentNode=this;}
   setAttribute(key,value){this.attrs[key]=String(value);}getAttribute(key){return this.attrs[key]??null;}
+  removeAttribute(key){delete this.attrs[key];}
+  get parentElement(){return this.parentNode;}
+  closest(selector){for(let current=this;current;current=current.parentNode)if(selector==='[data-wf-access-hidden]'&&current.getAttribute('data-wf-access-hidden')!==null||selector==='[data-wf-permission]'&&(current.dataset.wfPermission||current.getAttribute('data-wf-permission')))return current;return null;}
   matches(selector){return selector===':disabled'&&(this.disabled||this.ancestorDisabled);}
   getClientRects(){return this.visible?[{}]:[];}
   focus(options){calls.push(['focus',this.id,options]);}
@@ -21,7 +25,9 @@ function fixture({deferred=false}={}){
  const controls={},document={documentElement:root,createElement:()=>new Element(),getElementById:id=>nodes.find(node=>node.id===id)||null,
   querySelector:selector=>selector==='.page.active'?{id:'page-'+current}:selector==='#page-companies [onclick="wfOpenStatement()"]'?statement:null,
   addEventListener(type,callback){(events[type]??=[]).push(callback);}};
- const window={showPage(page){current=page;calls.push(['route',page]);},closeSidebar(){calls.push(['close-sidebar']);}};
+ const window={showPage(page){current=page;calls.push(['route',page]);},closeSidebar(){calls.push(['close-sidebar']);},addEventListener(type,callback){(events[type]??=[]).push(callback);}};
+ const account={role:'custom',permissions};
+ if(permissions)window.WFAccountAccess={can:key=>policy.can(account,key),canRoute:route=>policy.canRoute(account,route),requiredForElement:element=>element.dataset.wfPermission||({wfProductLabelsOpen:'products.print',statement:'payments.view',wfNotificationsButton:'reports.view'})[element.id]||policy.permissionForRoute(element.dataset.page)};
  function mount(){
   for(const [key,id]of [['cards','wfProductLabelsOpen'],['statement','statement'],['notifications','wfNotificationsButton']]){
    const button=new Element(id);button.onclick=()=>{calls.push(['original',key]);if(key==='notifications')window.showPage('notifications');};controls[key]=button;
@@ -33,6 +39,7 @@ function fixture({deferred=false}={}){
  const run=()=>vm.runInContext(controller,context);run();
  const link=id=>document.getElementById(id);
  return {root,nav,settings,operations,calls,controls,observers,run,mount,link,
+  permissions(next,notify=true){account.permissions=next;if(notify)for(const callback of events['wf-account-access-change']||[])callback();},
   ready(){for(const callback of events.DOMContentLoaded||[])callback();},
   notify(target){for(const observer of [...observers])if(observer.target===target)observer.callback([]);},
   get current(){return current;}};
@@ -83,4 +90,21 @@ test('all new captions and accessible names follow the five supported languages'
   });
  }
  assert.deepEqual(f.calls,[]);
+});
+
+test('shortcut capabilities and their original controls are rechecked before forwarding',()=>{
+ const f=fixture({permissions:['products.view']}),link=f.link('wfShowroomCardsNav');
+ assert.equal(link.dataset.wfPermission,'products.print');assert(link.hidden);assert(link.disabled);link.onclick();assert.deepEqual(f.calls,[]);
+ f.permissions(['products.view','products.print']);assert(!link.hidden);assert(!link.disabled);
+ f.permissions(['products.view'],false);link.onclick();assert.deepEqual(f.calls,[],'revocation blocks a previously visible shortcut before refresh');
+ f.permissions(['products.view','products.print']);f.controls.cards.setAttribute('data-wf-access-hidden','');link.onclick();assert.deepEqual(f.calls,[]);f.notify(f.controls.cards);assert(link.hidden);
+ f.controls.cards.removeAttribute('data-wf-access-hidden');f.notify(f.controls.cards);link.click();assert.equal(f.calls.filter(call=>call[0]==='original').length,1);
+});
+
+test('a permitted statement opens without routing through an unauthorized customers page',()=>{
+ const f=fixture({permissions:['payments.view']}),link=f.link('wfAccountStatementNav');
+ assert.equal(link.dataset.wfPermission,'payments.view');assert(!link.hidden);assert(!link.disabled);
+ link.click();assert.equal(f.current,'dashboard');assert.deepEqual(f.calls.filter(call=>call[0]==='route'),[]);
+ assert.deepEqual(f.calls.filter(call=>call[0]==='original'),[['original','statement']]);
+ f.link('wfNotificationsNav').onclick();f.link('wfShowroomCardsNav').onclick();assert.equal(f.calls.filter(call=>call[0]==='original').length,1);
 });

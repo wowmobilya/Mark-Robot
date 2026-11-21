@@ -29,25 +29,36 @@
  const nav=document.getElementById('wf-nav-main'),root=document.documentElement;
  if(!nav)return;
  const definitions=[
-  {id:'wfShowroomCardsNav',group:'.wf-ops-nav',target:'wfProductLabelsOpen',parent:'products',controls:'wfProductLabels',
+  {id:'wfShowroomCardsNav',group:'.wf-ops-nav',target:'wfProductLabelsOpen',parent:'products',permission:'products.print',controls:'wfProductLabels',
    labels:{ar:'بطاقات المعرض',en:'Showroom cards',tr:'Mağaza etiketleri',fr:'Fiches d’exposition',ru:'Карточки для выставки'},
    icon:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M6 9h3m-3 4h3m6-5h3m-3 4h3m-3 4h3"/>'},
-  {id:'wfAccountStatementNav',group:'.wf-nav-settings',selector:'#page-companies [onclick="wfOpenStatement()"]',parent:'companies',controls:'wfsa',dialog:true,
+  {id:'wfAccountStatementNav',group:'.wf-nav-settings',selector:'#page-companies [onclick="wfOpenStatement()"]',parent:'companies',permission:'payments.view',controls:'wfsa',dialog:true,
    labels:{ar:'كشف الحساب',en:'Account statement',tr:'Hesap ekstresi',fr:'Relevé de compte',ru:'Выписка по счёту'},
    icon:'<path d="M6 3h14v15H6Zm-3 3v15h14M9 7h8M9 11h8m-8 3h5"/>'},
-  {id:'wfNotificationsNav',group:'.wf-nav-settings',target:'wfNotificationsButton',page:'notifications',controls:'page-notifications',
+  {id:'wfNotificationsNav',group:'.wf-nav-settings',target:'wfNotificationsButton',page:'notifications',permission:'reports.view',controls:'page-notifications',
    labels:{ar:'الإشعارات',en:'Notifications',tr:'Bildirimler',fr:'Notifications',ru:'Уведомления'},
    icon:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>'}
  ];
  const entries=[];
  const source=entry=>entry.target?document.getElementById(entry.target):document.querySelector(entry.selector);
- const enabled=control=>!!control&&!control.disabled&&!control.matches(':disabled')&&control.getAttribute('aria-disabled')!=='true'&&control.getAttribute('aria-busy')!=='true';
+ function permitted(control){
+  if(!control||control.closest?.('[data-wf-access-hidden]'))return false;
+  const access=window.WFAccountAccess;if(!access)return true;
+  const permission=access.requiredForElement?.(control)||control.dataset.wfPermission;
+  if(permission&&!access.can(permission))return false;
+  const inherited=control.parentElement?.closest('[data-wf-permission]')?.getAttribute('data-wf-permission');
+  if(inherited&&!access.can(inherited))return false;
+  const route=control.dataset.page;
+  return !route||access.canRoute(route);
+ }
+ const enabled=control=>permitted(control)&&!control.disabled&&!control.matches(':disabled')&&control.getAttribute('aria-disabled')!=='true'&&control.getAttribute('aria-busy')!=='true';
  for(const definition of definitions){
   const group=nav.querySelector(definition.group);
   if(!group||document.getElementById(definition.id))continue;
   const link=document.createElement('button'),symbol=document.createElement('span'),caption=document.createElement('span');
   link.type='button';link.className='nav-item';link.id=definition.id;
   if(definition.page)link.dataset.page=definition.page;
+  link.dataset.wfPermission=definition.permission;
   link.setAttribute('aria-controls',definition.controls);
   if(definition.dialog)link.setAttribute('aria-haspopup','dialog');
   symbol.className='nav-icon';symbol.setAttribute('aria-hidden','true');
@@ -55,13 +66,13 @@
   link.append(symbol,caption);group.append(link);
   const entry={...definition,link,caption};entries.push(entry);
   link.onclick=()=>{
-   if(!enabled(source(entry)))return;
+   if(!permitted(link)||!enabled(source(entry)))return;
    // Keep the original page and its focus return target available for tools
    // such as the statement dialog and the showroom-card workspace.
-   if(entry.parent&&document.querySelector('.page.active')?.id!=='page-'+entry.parent)window.showPage(entry.parent);
+   if(entry.parent&&(!window.WFAccountAccess||window.WFAccountAccess.canRoute(entry.parent))&&document.querySelector('.page.active')?.id!=='page-'+entry.parent)window.showPage(entry.parent);
    window.closeSidebar?.();
    const control=source(entry);
-   if(!enabled(control))return;
+   if(!permitted(link)||!enabled(control))return;
    if(control.getClientRects().length)control.focus({preventScroll:true});
    control.click();
   };
@@ -71,20 +82,22 @@
  function refresh(){
   const lang=root.lang||'ar';
   for(const entry of entries){
-   const label=entry.labels[lang]||entry.labels.en,control=source(entry),disabled=!enabled(control);
+   const label=entry.labels[lang]||entry.labels.en,control=source(entry),denied=!permitted(entry.link)||(control&&!permitted(control)),disabled=!!denied||!enabled(control);
    if(entry.caption.textContent!==label)entry.caption.textContent=label;
    if(entry.link.title!==label)entry.link.title=label;
    if(entry.link.getAttribute('aria-label')!==label)entry.link.setAttribute('aria-label',label);
    if(entry.link.disabled!==disabled)entry.link.disabled=disabled;
+   if(entry.link.hidden!==!!denied)entry.link.hidden=!!denied;
    if(control&&!observed.has(control)){
     observed.add(control);
-    new MutationObserver(refresh).observe(control,{attributes:true,attributeFilter:['disabled','aria-disabled','aria-busy']});
+    new MutationObserver(refresh).observe(control,{attributes:true,attributeFilter:['disabled','aria-disabled','aria-busy','data-wf-access-hidden','data-wf-permission','data-page']});
    }
   }
  }
  // Deferred feature scripts finish before DOMContentLoaded. Observe only the
  // three original controls after that, never the catalog or document subtree.
  document.addEventListener('DOMContentLoaded',refresh,{once:true});
+ window.addEventListener?.('wf-account-access-change',refresh);
  new MutationObserver(refresh).observe(root,{attributes:true,attributeFilter:['lang']});
  refresh();
 })();
@@ -260,9 +273,33 @@
   const items = [...nav.querySelectorAll('.nav-item')];
   let activePage = 0;
   let matchingItems = [];
+  function destinationFor(item){
+    const handler=item.getAttribute('onclick')||'';
+    return item.dataset.page||handler.match(/showPage\(\s*['"]([^'"]+)['"]/)?.[1]||(/openSettingsPage\(/.test(handler)?'settings':'');
+  }
+  function permissionFor(item){
+    return window.WFAccountAccess?.requiredForElement?.(item)||item.dataset.wfPermission||item.closest('[data-wf-permission]')?.getAttribute('data-wf-permission');
+  }
+  function permitted(item){
+    if(!item||item.closest('[data-wf-access-hidden]'))return false;
+    const access=window.WFAccountAccess;if(!access)return true;
+    const permission=permissionFor(item);
+    if(permission&&!access.can(permission))return false;
+    const inherited=item.parentElement?.closest('[data-wf-permission]')?.getAttribute('data-wf-permission');
+    if(inherited&&!access.can(inherited))return false;
+    const route=destinationFor(item);
+    return !route||access.canRoute(route);
+  }
+  function copyAccess(source,button){
+    for(const [attribute,value]of [['data-page',destinationFor(source)],['data-wf-permission',permissionFor(source)]]){
+      if(value){if(button.getAttribute(attribute)!==value)button.setAttribute(attribute,value);}
+      else if(button.getAttribute(attribute)!==null)button.removeAttribute(attribute);
+    }
+  }
   function filter() {
     const query = '';
     matchingItems = items.filter(item => {
+      if(!permitted(item))return false;
       const caption = item.querySelector('[data-i18n], [data-wf-ui]')?.textContent || item.textContent;
       return normalize(caption).includes(query);
     });
@@ -376,8 +413,9 @@
       const label=key===section?document.createElement('span'):source.querySelector('[data-i18n],[data-wf-ui]').cloneNode(true);
       button.type='button';
       button.append(label);
+      copyAccess(source,button);
       const navigate=navigationActions.get(source);
-      button.onclick=event=>navigate?.call(source,event);
+      button.onclick=event=>{if(permitted(source)&&!source.disabled)navigate?.call(source,event);};
       if(key===section)entry.openLabel=label;
       entry.actions.push({button,source});
       submenu.append(button);
@@ -386,6 +424,7 @@
     parent.onclick=expander.onclick=()=>toggleSubmenu(entry);
   }
   function toggleSubmenu(entry,force){
+    if(!permitted(entry.parent))return;
     const open=force??(entry.submenu.hidden||isRail());
     if(isRail())window.wfToggleDesktopSidebar();
     expanded=entry.parent.closest('.wf-nav-group');expandedSubmenu=open?entry:null;layout();
@@ -405,10 +444,11 @@
       event.preventDefault();event.stopPropagation();toggleSubmenu(entry,false);entry.parent.focus();return;
     }
     if(!inside&&(event.key===openKey||event.key==='ArrowDown'||event.key==='ArrowUp')){
-      event.preventDefault();toggleSubmenu(entry,true);entry.actions[event.key==='ArrowUp'?entry.actions.length-1:0]?.button.focus();return;
+      event.preventDefault();toggleSubmenu(entry,true);
+      if(!entry.submenu.hidden){const actions=entry.actions.filter(action=>permitted(action.source));actions[event.key==='ArrowUp'?actions.length-1:0]?.button.focus();}return;
     }
     if(inside&&['ArrowDown','ArrowUp','Home','End'].includes(event.key)){
-      const buttons=entry.actions.map(action=>action.button),index=buttons.indexOf(event.target.closest('button'));
+      const buttons=entry.actions.filter(action=>permitted(action.source)).map(action=>action.button),index=buttons.indexOf(event.target.closest('button'));
       const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(index+(event.key==='ArrowUp'?-1:1)+buttons.length)%buttons.length;
       event.preventDefault();buttons[next]?.focus();
     }
@@ -421,15 +461,23 @@
     const viewport=(window.visualViewport?.height||innerHeight)+'px';
     if(drawer.style.getPropertyValue('--drawer-viewport')!==viewport)drawer.style.setProperty('--drawer-viewport',viewport);
     const rail=isRail();
+    const permittedItems=items.filter(permitted);
+    if(expanded&&!permittedItems.some(item=>item.closest('.wf-nav-group')===expanded))expanded=permittedItems[0]?.closest('.wf-nav-group')||null;
     if(drawer.classList.contains('wf-icon-rail')!==rail)drawer.classList.toggle('wf-icon-rail',rail);
     submenus.forEach(entry=>{
-      const {parent,submenu,expander}=entry,open=!rail&&entry===expandedSubmenu&&parent.closest('.wf-nav-group')===expanded;
+      const {parent,submenu,expander}=entry,open=permittedItems.includes(parent)&&!rail&&entry===expandedSubmenu&&parent.closest('.wf-nav-group')===expanded;
       if(submenu.hidden!==!open)submenu.hidden=!open;
       if(parent.getAttribute('aria-expanded')!==String(open))parent.setAttribute('aria-expanded',String(open));
       if(expander.getAttribute('aria-expanded')!==String(open))expander.setAttribute('aria-expanded',String(open));
       const viewLabel=openLabels[entry.section][root.lang]||openLabels[entry.section].en;
       if(entry.openLabel.textContent!==viewLabel)entry.openLabel.textContent=viewLabel;
-      for(const {button,source}of entry.actions){if(source.classList.contains('active')){if(button.getAttribute('aria-current')!=='page')button.setAttribute('aria-current','page');}else if(button.getAttribute('aria-current')!==null)button.removeAttribute('aria-current');}
+      for(const {button,source}of entry.actions){
+        copyAccess(source,button);
+        const denied=!permittedItems.includes(source);
+        if(button.hidden!==denied)button.hidden=denied;
+        if(button.disabled!==(denied||source.disabled))button.disabled=denied||source.disabled;
+        if(!denied&&source.classList.contains('active')){if(button.getAttribute('aria-current')!=='page')button.setAttribute('aria-current','page');}else if(button.getAttribute('aria-current')!==null)button.removeAttribute('aria-current');
+      }
       const action=({ar:['إظهار الإجراءات','طيّ الإجراءات'],en:['Expand actions','Collapse actions'],tr:['İşlemleri aç','İşlemleri daralt'],fr:['Afficher les actions','Masquer les actions'],ru:['Развернуть действия','Свернуть действия']}[root.lang]||['Expand actions','Collapse actions'])[Number(open)];
       const label=action+': '+(parent.children[1]?.textContent.trim()||'');
       if(expander.getAttribute('aria-label')!==label)expander.setAttribute('aria-label',label);
@@ -439,14 +487,17 @@
     if(!pager.hidden)pager.hidden=true;
     if(nav.classList.contains('wf-nav-paged'))nav.classList.remove('wf-nav-paged');
     groups.forEach((group,i)=>{
-      if(group.hidden)group.hidden=false;
+      const denied=!permittedItems.some(item=>item.closest('.wf-nav-group')===group);
+      if(group.hidden!==denied)group.hidden=denied;
       if(headings[i].getAttribute('aria-expanded')!==String(group===expanded))headings[i].setAttribute('aria-expanded',String(group===expanded));
-      group.querySelectorAll('.nav-item').forEach(item=>{if(item.hidden!==(group!==expanded))item.hidden=group!==expanded;});
+      group.querySelectorAll('.nav-item').forEach(item=>{const hidden=group!==expanded||!permittedItems.includes(item);if(item.hidden!==hidden)item.hidden=hidden;});
     });
     submenus.forEach(({parent,row,expander})=>{if(row.hidden!==parent.hidden)row.hidden=parent.hidden;if(expander.hidden)expander.hidden=false;});
   }
   new ResizeObserver(scheduleLayout).observe(nav);
   new MutationObserver(()=>{if(layoutRootState()!==lastLayoutRoot)scheduleLayout();}).observe(root,{attributes:true,attributeFilter:['class','lang']});
+  new MutationObserver(scheduleLayout).observe(nav,{subtree:true,attributes:true,attributeFilter:['data-wf-access-hidden','data-wf-permission','data-page','onclick']});
+  window.addEventListener?.('wf-account-access-change',scheduleLayout);
   window.visualViewport?.addEventListener('resize',scheduleLayout);
   let lastDestination='';
   function followDestination(){
@@ -495,7 +546,7 @@
   function renderResults(){
     const query=terms(search.value.trim());
     const words=query.split(/\s+/);
-    const matches=items.map(item=>{
+    const matches=items.filter(permitted).map(item=>{
       const caption=item.children[1].textContent.trim();
       const name=terms(caption);
       const score=name===query?3:name.startsWith(query)?2:1;
@@ -509,7 +560,8 @@
       icon.setAttribute('aria-hidden','true');
       icon.innerHTML=item.children[0].innerHTML;
       result.append(icon,document.createTextNode(caption));
-      result.onclick=()=>{closeSearch(false);expanded=item.closest('.wf-nav-group');layout();item.onclick.call(item);if(submenus.some(entry=>entry.parent===item))item.focus();};
+      copyAccess(item,result);
+      result.onclick=()=>{if(!permitted(item)||item.disabled)return;closeSearch(false);expanded=item.closest('.wf-nav-group');layout();item.onclick.call(item);if(submenus.some(entry=>entry.parent===item))item.focus();};
       results.append(result);
     }
     if(!matches.length)results.textContent=empty.textContent;
@@ -524,6 +576,7 @@
     if(focus)toggle.focus({preventScroll:true});
   }
   toggle.onclick=()=>{
+    if(!permitted(toggle))return;
     if(!dialog.hidden){closeSearch();return;}
     if(isRail())window.wfToggleDesktopSidebar();
     scrollPosition=nav.scrollTop;
@@ -548,6 +601,7 @@
   });
   new MutationObserver(()=>{if(!dialog.hidden&&(drawer.inert||drawer.classList.contains('wf-icon-rail')))closeSearch(false);}).observe(drawer,{attributes:true,attributeFilter:['inert','class']});
   search.oninput=renderResults;
+  window.addEventListener?.('wf-account-access-change',()=>{if(!permitted(toggle))closeSearch(false);else if(!dialog.hidden)renderResults();});
   search.onkeydown=e=>{if(e.key==='Enter')results.querySelector('button')?.click();if(e.key==='ArrowDown'){e.preventDefault();results.querySelector('button')?.focus();}};
   results.addEventListener('keydown',event=>{
     const current=event.target.closest('button');
@@ -595,11 +649,12 @@
     for(const action of actions){
       const button=document.createElement('button');
       button.type='button';button.className='stat-card wf-sales-action';
+      button.dataset.page=action.page;
       const icon=document.createElement('span');icon.className='stat-icon wf-sales-action-icon';icon.setAttribute('aria-hidden','true');
       icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icons[action.page]+'</svg>';
       const label=document.createElement('span');label.className='wf-sales-action-label';
       button.append(icon,label);
-      button.addEventListener('click',()=>window.showPage(action.page));
+      button.addEventListener('click',()=>{if(!window.WFAccountAccess||window.WFAccountAccess.canRoute(action.page))window.showPage(action.page);});
       action.button=button;action.text=label;
       metrics.append(button);
     }

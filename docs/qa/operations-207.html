@@ -156,6 +156,8 @@
         ])
       ];
       invoices.push(invoice('qa-bulk','QA-BULK','QA Bulk',[[products[0],80]]));
+      // Missing-photo fixture verifies the visual label selector without catalog substitution.
+      invoices.push(invoice('qa-no-photo','QA-NO-PHOTO','QA · No saved photo',[[{...products[2],image:null},1]]));
       invoices.push({...invoice('qa-last-year','QA-LAST-YEAR','QA Private client',[[products[1],24]]),regDate:'2025-07-01',delivered:false});
       // Synthetic past print-dialog close, intentionally awaiting a human outcome.
       // This fixture does not invoke a printer or alter any production record.

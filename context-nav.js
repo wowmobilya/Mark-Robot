@@ -6,7 +6,8 @@
  if(!entries.length)return;
  const compactDock=matchMedia('(max-width:1024px)');
  const dock=document.createElement('nav');dock.id='wfContextNav';dock.hidden=true;
- const home=document.createElement('button');home.type='button';home.className='wf-context-home';home.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3 10 9-7 9 7v11h-6v-7H9v7H3Z"/></svg>';home.onclick=()=>window.showPage('dashboard');dock.append(home);document.body.append(dock);
+ const home=document.createElement('button');home.type='button';home.className='wf-context-home';home.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3 10 9-7 9 7v11h-6v-7H9v7H3Z"/></svg>';home.onclick=()=>{const page=homeRoute();if(page)window.showPage(page);};dock.append(home);document.body.append(dock);
+ function homeRoute(){const access=window.WFAccountAccess,page=access?.initialRoute?access.initialRoute('dashboard'):'dashboard';return page&&(!access||access.canRoute(page))?page:null;}
  let current=null,queued=false;
  function sync(){queued=false;const next=compactDock.matches?null:(entries.find(item=>item.section.classList.contains('active'))||null);
   if(current!==next){if(current)current.anchor.after(current.bar);current=next;if(current)dock.append(current.bar);}
@@ -16,6 +17,8 @@
   if(dock.getAttribute('aria-label')!==labels[0])dock.setAttribute('aria-label',labels[0]);
   if(home.getAttribute('aria-label')!==labels[1])home.setAttribute('aria-label',labels[1]);
   if(home.title!==labels[1])home.title=labels[1];
+  const homePage=homeRoute();if(home.hidden!==!homePage)home.hidden=!homePage;if(home.disabled!==!homePage)home.disabled=!homePage;
+  if(homePage){if(home.getAttribute('data-page')!==homePage)home.setAttribute('data-page',homePage);}else if(home.hasAttribute('data-page'))home.removeAttribute('data-page');
   if(!current)return;
   const state=typeof S==='object'?S:{};
   current.bar.querySelectorAll('.co-stat-pill').forEach(pill=>{const value=pill.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];const selected=value===(state[current.key]||'all');if(pill.classList.contains('active')!==selected)pill.classList.toggle('active',selected);if(pill.getAttribute('aria-pressed')!==String(selected))pill.setAttribute('aria-pressed',String(selected));});
@@ -27,6 +30,7 @@
  }
  new MutationObserver(schedule).observe(root,{attributes:true,attributeFilter:['lang','dir']});
  compactDock.addEventListener('change',schedule);
+ window.addEventListener?.('wf-account-access-change',schedule);
  sync();
 })();
 
@@ -121,7 +125,7 @@
   const route=(page,label=page,icon=page)=>({kind:'route',page,label,icon});
   const control=(selector,label,icon,scope='page')=>({kind:'control',selector,label,icon,scope});
   const back=()=>({kind:'function',name:'goBack',label:'back',icon:'back'});
-  const home=()=>route('dashboard','home','home');
+  const home=()=>{const access=window.WFAccountAccess,page=access?.initialRoute?access.initialRoute('dashboard'):'dashboard';return page&&(!access||access.canRoute(page))?route(page,'home','home'):null;};
   const clients=()=>route('companies','companies','users');
   const products=()=>route('products','products','package');
   const invoices=()=>route('invoices','invoices','invoice');
@@ -153,6 +157,25 @@
   const dockedSources=new Map();
   let dockedPage=null,stagePage=null;
 
+  function targetPermitted(element){
+    if(!element||element.closest('[data-wf-access-hidden]'))return false;
+    const access=window.WFAccountAccess;if(!access)return true;
+    const permission=access.requiredForElement?.(element)||element.getAttribute('data-wf-permission')||element.dataset?.wfPermission;
+    if(permission&&!access.can(permission))return false;
+    const owner=element.closest('[data-wf-permission]'),inherited=owner?.getAttribute('data-wf-permission');
+    return !inherited||access.can(inherited);
+  }
+  function actionPermitted(action,page=currentPage){
+    if(!action)return false;
+    const access=window.WFAccountAccess;
+    if(action.kind==='route')return !access||access.canRoute(action.page);
+    if(action.kind==='settings')return !access||access.can('settings.view');
+    if(action.kind!=='control'&&action.kind!=='focus')return true;
+    const host=action.scope==='document'?document:page;
+    const targets=host?Array.from(host.querySelectorAll(action.selector)):[];
+    return !targets.length||targets.some(targetPermitted);
+  }
+
   function isVisible(element){
     if(!element || element.hidden || !element.getClientRects().length || element.closest('[hidden],[inert]'))return false;
     for(let parent=element;parent&&parent!==document.body;parent=parent.parentElement){
@@ -164,11 +187,11 @@
   function targetFor(action,page=currentPage){
     const host=action?.scope==='document'?document:page;
     return action?.selector&&host?Array.from(host.querySelectorAll(action.selector)).find(element=>
-      isVisible(element)||dockedSources.get(element)?.selector===action.selector&&sourceVisible(element,page))||null:null;
+      targetPermitted(element)&&(isVisible(element)||dockedSources.get(element)?.selector===action.selector&&sourceVisible(element,page)))||null:null;
   }
   function sourceVisible(element,page){
     const source=dockedSources.get(element);
-    if(!source||source.page!==page||page!==currentPage||!page.classList.contains('active')||
+    if(!targetPermitted(element)||!source||source.page!==page||page!==currentPage||!page.classList.contains('active')||
       !compact.matches||!isVisible(nav)||!page.contains(element)||!element.matches('button')||
       element.hidden||element.closest('[hidden],[inert]'))return false;
     // Ignore only our own display:none. An inactive form stage, app-authored
@@ -197,7 +220,7 @@
     const enabled=key!=='settings'&&compact.matches&&isVisible(nav);
     function add(selector,label){
       for(const element of page.querySelectorAll(selector)){
-        if(!element.matches('button')||(!isVisible(element)&&!sourceVisible(element,page)))continue;
+        if(!targetPermitted(element)||!element.matches('button')||(!isVisible(element)&&!sourceVisible(element,page)))continue;
         next.set(element,{page,selector,label});
       }
     }
@@ -276,6 +299,7 @@
     return list[key]||{active:2,items:[back(),null,home(),null,{kind:'function',name:'wfToggleDesktopSidebar',label:'menu',icon:'menu'}]};
   }
   function caption(action){
+    if(!action)return '';
     if(action.text)return action.text;
     if(action.label==='home'&&root.classList.contains('wf-home-scroll-top'))return t('top');
     return t(action.label)+(action.suffix?' '+action.suffix:'');
@@ -286,11 +310,11 @@
   }
   function available(action,resolvedTarget){
     if(!action)return false;
-    if(action.kind==='settings')return window.WFSettingsActions?.canRun(action.name)===true;
-    if(action.kind==='route')return !!document.getElementById('page-'+action.page);
+    if(action.kind==='settings')return actionPermitted(action)&&window.WFSettingsActions?.canRun(action.name)===true;
+    if(action.kind==='route')return actionPermitted(action)&&!!document.getElementById('page-'+action.page);
     if(action.kind==='function')return typeof window[action.name]==='function';
     const target=resolvedTarget===undefined?targetFor(action):resolvedTarget;
-    return !!target&&!target.disabled&&!target.matches(':disabled')&&target.getAttribute('aria-disabled')!=='true'&&target.getAttribute('aria-busy')!=='true';
+    return targetPermitted(target)&&!target.disabled&&!target.matches(':disabled')&&target.getAttribute('aria-disabled')!=='true'&&target.getAttribute('aria-busy')!=='true';
   }
   function normalizeCurrent(){
     ariaQueued=false;
@@ -347,7 +371,7 @@
     if(!available(action,target))return;
     if(action.kind==='settings')window.WFSettingsActions.run(action.name);
     else if(action.kind==='route'){
-      if(action.page===currentKey || action.page==='dashboard'&&scrollAmount()>90)scrollToTop();
+      if(action.page===currentKey || action.label==='home'&&scrollAmount()>90)scrollToTop();
       else window.showPage(action.page);
     }else if(action.kind==='function')window[action.name]();
     else{
@@ -394,7 +418,7 @@
         const original=dialog.querySelector('footer button[onclick="saveSettings()"]');
         // Mobile keeps the real footer hidden behind this dock. Its logical
         // hidden state still distinguishes Save sections from Close sections.
-        if(original&&!original.closest('footer')?.hidden&&!original.disabled&&original.getAttribute('aria-busy')!=='true')original.click();
+        if(targetPermitted(original)&&!original.closest('footer')?.hidden&&!original.disabled&&original.getAttribute('aria-busy')!=='true')original.click();
       }
       return;
     }
@@ -413,11 +437,12 @@
     if(page!==currentPage){
       activeObserver.disconnect();currentPage=page;
       activeObserver.observe(page,{subtree:true,childList:true,attributes:true,
-        attributeFilter:['style','class','hidden','inert','disabled','aria-busy','aria-disabled','aria-pressed']});
+        attributeFilter:['style','class','hidden','inert','disabled','aria-busy','aria-disabled','aria-pressed','data-wf-access-hidden','data-wf-permission','data-page','onclick']});
     }
     currentKey=page.id.slice(5);
     const config=configuration(page);
-    slots=config.items;activeIndex=config.active;
+    config.items=config.items.map(action=>actionPermitted(action,page)?action:null);
+    slots=config.items;activeIndex=slots[config.active]?config.active:slots[2]?2:Math.max(0,slots.findIndex(Boolean));
     const settings=currentKey==='settings'&&(!window.WFSettingsActions||window.WFSettingsActions.getState().open);
     const taskMode=settings?'settings':'context';
     if(nav.dataset.taskMode!==taskMode)nav.dataset.taskMode=taskMode;
@@ -427,10 +452,14 @@
     syncContextStage(page);
     syncDockedSources(page,config);
     const visual=[currentKey,root.lang,root.dir,activeIndex,root.classList.contains('wf-home-scroll-top'),
-      ...slots.map(action=>action&&[action.kind,action.label,action.text,action.icon,action.selector,action.suffix].join(':'))].join('|');
+      ...slots.map(action=>action&&[action.kind,action.page,action.label,action.text,action.icon,action.selector,action.suffix].join(':'))].join('|');
     buttons.forEach((button,i)=>{
       const action=slots[i];if(button.hidden!==!action)button.hidden=!action;
-      if(!action)return;
+      if(action?.kind==='route'){if(button.getAttribute('data-page')!==action.page)button.setAttribute('data-page',action.page);}else if(button.hasAttribute('data-page'))button.removeAttribute('data-page');
+      // A slot can change from a denied route to an allowed source control.
+      // Its previous destination's marker must not hide the new authorized action.
+      if(action&&button.hasAttribute('data-wf-access-hidden'))button.removeAttribute('data-wf-access-hidden');
+      if(!action){if(!button.disabled)button.disabled=true;return;}
       const label=button.querySelector('.bnav-label:not(.settings-save-label)'),icon=button.querySelector('.bnav-icon');
       if(label){if(label.hasAttribute('data-i18n'))label.removeAttribute('data-i18n');if(label.textContent!==caption(action))label.textContent=caption(action);}
       if(i===2&&icon){
@@ -497,6 +526,9 @@
   if(cart)new MutationObserver(schedule).observe(cart,{attributes:true,attributeFilter:['class','style','disabled']});
   window.addEventListener('wf-cart-state',schedule);
   window.addEventListener('wf-settings-actions-change',schedule);
+  window.addEventListener('wf-account-access-change',schedule);
+  window.addEventListener('pageshow',schedule);
+  document.addEventListener?.('visibilitychange',()=>{if(document.visibilityState==='visible')schedule();});
   const compact=matchMedia('(max-width:1024px)');compact.addEventListener('change',schedule);
   sync();
 })();

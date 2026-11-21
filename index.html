@@ -1,10 +1,10 @@
 <!DOCTYPE html> 
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-wf-account-state="checking">
 <head>
 <!-- WOW V22: read-only statement model and scoped UI; no database migration. -->
 <link rel="stylesheet" href="./account-statement.css?v=25">
 <script src="./account-statement-core.js?v=25"></script>
-<script src="./account-statement.js?v=26"></script>
+<script src="./account-statement.js?v=27"></script>
 <script id="wf-bg-pair-bootstrap-v3">
 (function(){
   try{
@@ -6432,11 +6432,18 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=34">
-     <script src="cart-page.js?v=1" defer></script>
+     <link rel="stylesheet" href="accounts-access.css?v=1">
+<link rel="stylesheet" href="accounts-settings.css?v=1">
+<script src="accounts-policy.js?v=1" defer></script>
+<script src="accounts-data-policy.js?v=1" defer></script>
+<script src="accounts-core.js?v=1" defer></script>
+<script src="accounts-local-provider.js?v=1" defer></script>
+<script src="accounts-access.js?v=1" defer></script>
+<script src="cart-page.js?v=1" defer></script>
 <script src="operations-workspace.js?v=7" defer></script>
-<script src="ui-navigation.js?v=32" defer></script>
+<script src="ui-navigation.js?v=33" defer></script>
 <script src="bottomnav-fit.js?v=2" defer></script>
-<script src="context-nav.js?v=13" defer></script>
+<script src="context-nav.js?v=14" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=3" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
@@ -6449,7 +6456,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="reference-voice.js?v=5" defer></script>
 <script src="robot-settings.js?v=12" defer></script>
 <script src="smart-card-settings.js?v=2" defer></script>
-<script src="settings-navigation.js?v=20" defer></script>
+<script src="accounts-settings.js?v=1" defer></script>
+<script src="settings-navigation.js?v=21" defer></script>
 <script src="branding-settings.js?v=4" defer></script>
 <script src="company-identity.js?v=5" defer></script>
 <script src="color-picker.js?v=1" defer></script>
@@ -6457,34 +6465,34 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="annual-sales.js?v=2" defer></script>
 <script src="currency-bank-catalog.js?v=1" defer></script>
 <script src="currency-sources.js?v=3" defer></script>
-<script src="rate-refresh.js?v=8" defer></script>
-<script src="settings-actions.js?v=1" defer></script>
+<script src="rate-refresh.js?v=9" defer></script>
+<script src="settings-actions.js?v=2" defer></script>
 <script src="product-workspace.js?v=3" defer></script>
 <script src="vendor/JsBarcode.code128.min.js?v=3.11.5" defer></script>
 <script src="product-label-core.js?v=2" defer></script>
-<script src="product-labels.js?v=3" defer></script>
+<script src="product-labels.js?v=4" defer></script>
 <script src="package-label-core.js?v=6" defer></script>
 <script src="product-cost-core.js?v=2" defer></script>
 <script src="material-library-core.js?v=2" defer></script>
-<script src="product-costs.js?v=2" defer></script>
-<script src="material-library.js?v=2" defer></script>
+<script src="product-costs.js?v=3" defer></script>
+<script src="material-library.js?v=3" defer></script>
 <script src="cost-analysis-core.js?v=1" defer></script>
-<script src="cost-analysis.js?v=1" defer></script>
+<script src="cost-analysis.js?v=2" defer></script>
 <script src="manufacturing-core.js?v=1" defer></script>
-<script src="manufacturing.js?v=1" defer></script>
+<script src="manufacturing.js?v=2" defer></script>
 <script src="invoice-archive-core.js?v=1" defer></script>
-<script src="invoice-archive.js?v=1" defer></script>
+<script src="invoice-archive.js?v=2" defer></script>
 <script src="label-reprint-history-core.js?v=1" defer></script>
-<script src="label-reprint-history.js?v=1" defer></script>
-<script src="package-labels.js?v=7" defer></script>
+<script src="label-reprint-history.js?v=2" defer></script>
+<script src="package-labels.js?v=8" defer></script>
 <script src="daily-tasks-core.js?v=1" defer></script>
-<script src="daily-tasks.js?v=1" defer></script>
+<script src="daily-tasks.js?v=2" defer></script>
 <script src="purchase-planner-core.js?v=2" defer></script>
-<script src="purchase-planner.js?v=2" defer></script>
+<script src="purchase-planner.js?v=3" defer></script>
 <script src="procurement-followup-core.js?v=1" defer></script>
-<script src="procurement-followup.js?v=1" defer></script>
-<script src="review-center.js?v=1" defer></script>
-<script src="global-search.js?v=1" defer></script>
+<script src="procurement-followup.js?v=2" defer></script>
+<script src="review-center.js?v=2" defer></script>
+<script src="global-search.js?v=2" defer></script>
 <script src="business-workspace.js?v=1" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
 <script src="arabic-report-speech.js?v=3" defer></script>
@@ -6505,7 +6513,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="barcode-workspace.js?v=1" defer></script>
 <script src="touch-keyboard.js?v=2" defer></script>
 <script src="developer-profile.js?v=2" defer></script>
-<script src="app-updates.js?v=3" defer data-release="207"></script>
+<script src="app-updates.js?v=3" defer data-release="209"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
@@ -6552,7 +6560,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="cost-analysis.css?v=2">
 <link rel="stylesheet" href="manufacturing.css?v=2">
 <link rel="stylesheet" href="invoice-archive.css?v=2">
-<link rel="stylesheet" href="package-labels.css?v=4">
+<link rel="stylesheet" href="package-labels.css?v=5">
 <link rel="stylesheet" href="label-reprint-history.css?v=1">
 <link rel="stylesheet" href="invoice-preview.css?v=1">
 <link rel="stylesheet" href="daily-tasks.css?v=1">
@@ -9897,7 +9905,7 @@ async function wfReadRaw(store,method,id){
       return await new Promise((resolve,reject)=>{
         const tx=connection.transaction(store,'readonly');
         const request=id===undefined?tx.objectStore(store)[method]():tx.objectStore(store)[method](id);
-        request.onsuccess=()=>resolve(request.result);
+        request.onsuccess=()=>{try{resolve(window.WFAccountAccess?(method==='getAllKeys'?window.WFAccountAccess.projectKeys(store,request.result):window.WFAccountAccess.projectRead(store,request.result)):request.result);}catch(error){reject(error);}};
         request.onerror=()=>reject(request.error);
         tx.onabort=()=>reject(tx.error||new Error('Database read aborted'));
       });
@@ -9925,15 +9933,18 @@ function wfNewRecordId(){
   return globalThis.crypto?.randomUUID?.() || Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
 }
 async function wfWriteBatch(operations){
+  if(window.WFAccountAccess)operations=await window.WFAccountAccess.prepareWrites(operations);
   if(window.WF_RESTORE_WRITE_LOCK)throw new Error('Restore in progress');
   if(!operations.length)return [];
   const mediaRows=new Map();
   const prepared=operations.map(op=>({...op,value:op.type==='delete'?undefined:
     (op.store===WF_MEDIA_STORE?op.value:wfDehydrateClone(op.value,mediaRows,undefined,true))}));
-  const stores=[...new Set(prepared.map(op=>op.store).concat(mediaRows.size?[WF_MEDIA_STORE]:[]))];
+  const costSource=operations.some(op=>window.WFAccountAccess?.needsInvoiceCosts(op));
+  const stores=[...new Set(prepared.map(op=>op.store).concat(mediaRows.size?[WF_MEDIA_STORE]:[],costSource?['products']:[]))];
   for(let attempt=0;attempt<2;attempt++){
     if(!db)await initDB();
     if(window.WF_RESTORE_WRITE_LOCK)throw new Error('Restore in progress');
+    await window.WFAccountAccess?.assertCurrentSession();
     const connection=db;
     try{return await new Promise((resolve,reject)=>{
     let tx,failed;
@@ -9942,7 +9953,8 @@ async function wfWriteBatch(operations){
       tx=connection.transaction(stores,'readwrite');
       tx.oncomplete=()=>{
         for(const id of mediaRows.keys())WF_MEDIA_PERSISTED.add(id);
-        resolve(results);
+        try{resolve(results.map((value,index)=>value&&typeof value==='object'&&window.WFAccountAccess?window.WFAccountAccess.projectRead(operations[index].store,value):value));}catch(error){reject(error);}
+        try{window.WFAccountAccess?.recordCommit(operations);}catch(_){}
         // Drive backup is scheduled only after the IndexedDB transaction is fully committed.
         try{if(typeof wfDriveOnDatabaseCommit==='function')wfDriveOnDatabaseCommit(stores);}catch(_){ }
       };
@@ -9963,20 +9975,26 @@ async function wfWriteBatch(operations){
         // Preserve their latest section in this transaction, including an explicit
         // null or its absence after a restore. Intentional section changes use merge.
         const sections=op.type==='delete'?[]:op.store==='settings'&&op.value?.id==='main'?['materialLibrary','labelReprintHistory','dailyTasks','procurementOrders']:op.store==='invoices'&&op.value?.id!=null?['manufacturingTicket']:[];
-        if(sections.length){
+        if(sections.length||(window.WFAccountAccess?.hasAccounts()&&op.type!=='delete'&&['products','companies','payments','settings'].includes(op.store))){
           const read=os.get(op.value.id);
           read.onerror=()=>{failed=read.error;};
           read.onsuccess=()=>{try{
             const latest=read.result;
             if(op.requireExisting&&!latest)throw new Error('MISSING_INVOICE');
-            const next=op.store==='settings'?{...(latest||{}),...op.value}:{...op.value};
+            let next=op.store==='settings'?{...(latest||{}),...op.value}:{...op.value};
             if(latest)for(const section of sections){
               if(Object.prototype.hasOwnProperty.call(latest,section))next[section]=latest[section];
               else delete next[section];
             }
-            const put=os.put(next);
-            put.onsuccess=()=>{results[i]=op.returnRecord?next:put.result;};
-            put.onerror=()=>{failed=put.error;};
+            if(window.WFAccountAccess)next=window.WFAccountAccess.finalizeWrite(op,latest??null,next);
+            const persist=()=>{const put=os.put(next);put.onsuccess=()=>{results[i]=op.returnRecord?next:put.result;};put.onerror=()=>{failed=put.error;};};
+            if(window.WFAccountAccess?.needsInvoiceCosts(op)){
+              // Read costing privately in this transaction. The staff-facing result
+              // is projected after commit; new invoices retain accurate cost history.
+              const products=tx.objectStore('products').getAll();
+              products.onerror=()=>{failed=products.error;};
+              products.onsuccess=()=>{try{next=window.WFAccountAccess.captureInvoiceCosts(latest??null,next,products.result||[]);persist();}catch(error){failed=error;tx.abort();}};
+            }else persist();
           }catch(err){failed=err;tx.abort();}};
           return;
         }
@@ -10060,6 +10078,7 @@ async function wfHydrateDBValue(value){
   return wfHydrateInPlace(value);
 }
 async function wfPutMediaRows(mediaRows){
+  window.WFAccountAccess?.assert('data.edit');
   if(!mediaRows||!mediaRows.size)return;
   await new Promise((res,rej)=>{
     const tx=db.transaction(WF_MEDIA_STORE,'readwrite');
@@ -10294,6 +10313,7 @@ async function wfUpdateDataPanel(){
 }
 
 function wfBuildBackup(){
+  window.WFAccountAccess?.assert('data.export');
   return {
     format:'WOW_FURNITURE_BACKUP',version:WF_BACKUP_VERSION,
     exportedAt:new Date().toISOString(),
@@ -10417,6 +10437,7 @@ function wfValidateBackup(b){
 }
 
 function wfReplaceStoresFromBackup(b){
+  window.WFAccountAccess?.assert('data.edit');
   if(!wfValidateBackup(b))return Promise.reject(new Error('Invalid backup data'));
   const mediaRows=new Map();
   const prepare=row=>wfDehydrateClone(row,mediaRows,undefined,true);
@@ -10895,11 +10916,13 @@ async function wfDriveCleanupToSingleFile(keepId){
 function wfDriveHashText(str){let h1=0x811c9dc5,h2=0x9e3779b9;for(let i=0;i<str.length;i++){const c=str.charCodeAt(i);h1^=c;h1=Math.imul(h1,0x01000193);h2^=(c+(i&255));h2=Math.imul(h2,0x85ebca6b);}return `${str.length.toString(36)}-${(h1>>>0).toString(16)}-${(h2>>>0).toString(16)}`;}
 function wfDriveBuildCloudPayload(){const payload=wfBuildBackup();payload.cloud={provider:'Google Drive',space:'My Drive',folder:WF_DRIVE_FOLDER_NAME,createdAt:new Date().toISOString(),origin:location.origin||'',singleFile:true,frequency:wfDriveGetFrequency()};const signatureSource=JSON.stringify({version:payload.version,data:payload.data,preferences:payload.preferences});const hash=wfDriveHashText(signatureSource);payload.cloud.contentHash=hash;const json=JSON.stringify(payload);return {payload,json,hash};}
 function wfDriveMarkDirty(reason='data'){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.can('data.export'))return;
   WF_DRIVE_STATE.dirty=true;if(!wfDriveIsLinked()||!wfDriveAutoEnabled()||!wfDriveBackupDue()||!wfDriveHasLiveToken())return;
   clearTimeout(WF_DRIVE_STATE.debounceTimer);WF_DRIVE_STATE.debounceTimer=setTimeout(()=>wfDriveBackupNow({interactive:false,force:true,reason}).catch(()=>{}),WF_DRIVE_DEBOUNCE_MS);
 }
 function wfDriveOnDatabaseCommit(stores){wfDriveMarkDirty(Array.isArray(stores)?stores.join(','):'db');}
 async function wfDriveBackupNow(opts={}){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.can('data.export'))return false;
   const interactive=!!opts.interactive,force=!!opts.force,T=wfDriveTexts();
   if(wfDriveWritesBlocked()){if(interactive&&!WF_DRIVE_STATE.connectBusy&&!WF_RESTORE_PENDING.busy&&!WF_RESTORE_PENDING.complete)await wfDriveRestoreLatest();return false;}
   if(WF_DRIVE_STATE.inFlight)return WF_DRIVE_STATE.inFlight;
@@ -13642,6 +13665,7 @@ function wfIsTouchTablet(){
 ============================================================ */
 let _isPopState=false;
 function showPage(id,pushHistory=true){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.canRoute(id)){window.WFAccountAccess.allow('unknown.route');return false;}
   wfCancelPendingRenders();
   const root=document.documentElement;
   root.classList.toggle('wf-section-mode',id!=='dashboard');
@@ -15057,6 +15081,8 @@ function updateCoFormFields(tp) {
 }
 
 async function saveCo(){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('customers.edit'))return;
+
   const isRetail=S.clientType==='internal_retail';const isInternal=S.clientType==='internal_retail'||S.clientType==='internal_wholesale';
   const nameEl=document.getElementById('coName');const buyerEl=document.getElementById('buyerName');
   if(isRetail){if(!buyerEl.value.trim()){showToast(t('fill_req'),'er');return;}}
@@ -15257,6 +15283,8 @@ function setCoTab(filter){
   else renderCo();
 }
 function editCo(id){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('customers.edit'))return;
+
   const c=S.companies.find(x=>x.id===id);if(!c)return;
   S.editCoId=id;
    S._editCoReturnToCompanies=true;
@@ -15274,6 +15302,8 @@ function editCo(id){
   },80);
 }
 async function deleteCo(id){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('customers.delete'))return;
+
   const co=S.companies.find(c=>c.id===id);if(!co)return;
   openDM(co.name||co.buyerName||'—',async()=>{
     await dbDel('companies',id);S.companies=S.companies.filter(c=>c.id!==id);
@@ -15498,6 +15528,8 @@ showToast(delMsgs[S.lang]||delMsgs.en,'in');
 
    
 async function savePr(){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('products.edit'))return;
+
   const name=document.getElementById('prName').value.trim();
   if(!name){showToast(t('fill_req'),'er');document.getElementById('prName').focus();return false;}
   const priceA=parseFloat(document.getElementById('prPriceA').value);
@@ -16125,6 +16157,8 @@ function renderPr(){
   }).join('');
 }
 function editPr(id){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('products.edit'))return;
+
   const p = S.products.find(x => x.id === id);
   if (!p) return;
 
@@ -16257,6 +16291,8 @@ function editPr(id){
 
 
 async function deletePr(id){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('products.delete'))return;
+
   const pr=S.products.find(p=>p.id===id);if(!pr)return;
   openDM(pr.name||'—',async()=>{
     await dbDel('products',id);S.products=S.products.filter(p=>p.id!==id);
@@ -16890,6 +16926,8 @@ function updateSummary(){
    SAVE INVOICE
 ============================================================ */
 async function saveInvoice(){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.edit'))return;
+
   if(!S.invItems.length){showToast(t('no_items'),'er');return;}
   const selectedCoId=document.getElementById('invCoSel').value;
   const co=S.companies.find(c=>String(c.id)===selectedCoId);
@@ -17502,6 +17540,8 @@ function updateReceiptTypeLabels() {
 }
 
 function openPaymentMgmt(invId) {
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('payments.view'))return;
+
   S.currentPayInvId = invId;
   const inv = S.invoices.find(i => i.id === invId);
   if (!inv) return;
@@ -17662,6 +17702,8 @@ function renderPayHistory(invId) {
 }
 
 async function addPaymentToInv() {
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('payments.edit'))return;
+
   const invId = S.currentPayInvId;
   if (!invId) return;
   const inv = S.invoices.find(i => i.id === invId);
@@ -17756,6 +17798,8 @@ async function addPaymentToInv() {
 }
 
 async function deletePayment(payId, invId) {
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('payments.delete'))return;
+
   openDM('Payment #' + payId.slice(-4), async () => {
     const remainingPayments = S.payments.filter(p => p.id !== payId);
     const inv = S.invoices.find(i => i.id === invId);
@@ -17783,6 +17827,8 @@ async function deletePayment(payId, invId) {
    EDIT / DELETE INVOICE
 ============================================================ */
 function editInv(id){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.edit'))return;
+
   const inv=S.invoices.find(i=>i.id===id);if(!inv)return;
   S.editInvId=id;S.invItems=JSON.parse(JSON.stringify(inv.items||[]));S.invTier=inv.tier||'A';
   S.invCurrency=inv.currency||'USD';S.kdvEnabled=inv.kdvEnabled||false;
@@ -17829,6 +17875,8 @@ function editInv(id){
 
    
 async function deleteInv(id){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.delete'))return;
+
   const inv=S.invoices.find(i=>i.id===id);if(!inv)return;
   openDM(inv.invNo||'—',async()=>{
     const invPayments=S.payments.filter(p=>p.invoiceId===id);
@@ -17846,6 +17894,8 @@ async function deleteInv(id){
    PREVIEW & PDF
 ============================================================ */
 function previewInvoice(showModal=true){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.view'))return;
+
   if(!S.invItems.length){showToast(t('no_items'),'er');return;}
   const coId=document.getElementById('invCoSel').value;
   const co=S.companies.find(c=>String(c.id)===coId);
@@ -17897,6 +17947,8 @@ function previewInvoice(showModal=true){
 }
 
 function previewSaved(id,showModal=true){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.view'))return;
+
   const inv=S.invoices.find(i=>i.id===id);if(!inv)return;
   const invPayments=S.payments.filter(p=>p.invoiceId===id);
   const previewInv={...inv,payments:invPayments,items:JSON.parse(JSON.stringify(inv.items||[])),printOpts:{...WF_DEFAULT_PRINT_OPTS,...(inv.printOpts||{})}};
@@ -18533,10 +18585,14 @@ async function shareInvoicePdfFile(channel) {
   }finally{_wfShareInProgress=false;}
 }
 async function downloadPDF() {
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return;
+
   try{wfRefreshCurrentPreview();showToast(wfPdfMessage('preparing'),'in');const file=await createInvoicePdfFile();triggerPdfFileDownload(file);return file;}
   catch(err){wfReportPdfError(err);return null;}
 }
 async function printInvoice() {
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.print'))return;
+
   let set;
   try{
     wfRefreshCurrentPreview();
@@ -18549,8 +18605,12 @@ async function printInvoice() {
     setTimeout(()=>printed.dispose(),60000);
   }catch(err){wfReportPdfError(err);}finally{set?.dispose();}
 }
-async function shareWA(){return shareInvoicePdfFile('whatsapp');}
-async function shareEmail(){return shareInvoicePdfFile('email');}
+async function shareWA(){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return;
+return shareInvoicePdfFile('whatsapp');}
+async function shareEmail(){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return;
+return shareInvoicePdfFile('email');}
 
 
 /* ============================================================
@@ -18558,6 +18618,8 @@ async function shareEmail(){return shareInvoicePdfFile('email');}
 ============================================================ */
 // دالة لفتح صفحة الإعدادات
 function openSettingsPage() {
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('settings.view'))return;
+
   loadSettingsToForm();
   showPage('settings');
   switchTab('company'); // فتح تبويب الشركة افتراضياً
@@ -18605,6 +18667,8 @@ function loadSettingsToForm(){
 }
 
 async function saveSettings(){
+  if(globalThis.WFAccountAccess&&!globalThis.WFAccountAccess.allow('settings.edit'))return;
+
   if(typeof WFCompanyIdentity!=='undefined')return WFCompanyIdentity.save();
   const gv=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   
@@ -18714,6 +18778,7 @@ function resetSettingsLogo() {
 
 
 function switchTab(tab){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('settings.view'))return false;
   // إضافة about للمصفوفة
   const tabs=['company','bank','invoice','currency','data','language','appearance','about'];
   tabs.forEach(t=>{
@@ -20893,10 +20958,13 @@ window.addEventListener('pagehide',()=>{
 ============================================================ */
 async function init(){
   loadTheme();
+  if(!window.WFAccountAccess)throw new Error('IDENTITY_MODULES');
+  await window.WFAccountAccess.beforeInit();
   await initDB();
   // load settings
   const stRow=await dbGet('settings','main');
   if(stRow)Object.assign(S.settings,stRow);
+  S.settings=window.WFAccountAccess.projectRead('settings',{id:'main',...S.settings})||{};
   S.settings.logo=wfCompanyLogo(S.settings.logo);
   const nextNoRow=await dbGet('settings','nextInvNo');
   if(nextNoRow)S.nextInvNo=nextNoRow.value||5001;
@@ -20933,7 +21001,7 @@ startGreetingRotation();
     navTxt.innerHTML=`<span>${wfEsc(parts[0])}</span> ${wfEsc(parts.slice(1).join(' '))}`;
   }
   // handle hash routing
-  const hash=window.location.hash.replace('#','');
+  const hash=window.WFAccountAccess.initialRoute(window.location.hash.replace('#',''));
 const validPages=['dashboard','companies','products','cart','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management','reports','exchange','settings','quick-barcode','notifications','package-labels','product-costs','invoice-archive','manufacturing','material-library','cost-analysis','print-history','review-center','daily-tasks','global-search','purchase-planner','purchase-followup'];
   if(hash&&validPages.includes(hash)){
     if(hash==='settings')loadSettingsToForm();
@@ -20954,9 +21022,9 @@ const validPages=['dashboard','companies','products','cart','invoices','add-comp
     const el=document.getElementById('greetingTime');if(el)el.textContent=`${hh}:${mm}`;
   },60000);
   wfInstallPersistentStorageHooks();
-  wfScheduleStorageMaintenance();
+  if(window.WFAccountAccess.can('data.edit'))wfScheduleStorageMaintenance();
   wfRefreshStorageTelemetry();
-  try{wfDriveInitOnboarding();wfDriveInitAutoBackup();}catch(err){console.warn('Drive auto-backup init skipped:',err);}
+  try{if(window.WFAccountAccess.can('data.export')){wfDriveInitOnboarding();wfDriveInitAutoBackup();}}catch(err){console.warn('Drive auto-backup init skipped:',err);}
 initBottomNav();
 
 }
@@ -22773,14 +22841,15 @@ function qblCartSave() {
       tier:      i.tier,
       qty:       i.qty,
     }));
-    localStorage.setItem('wf_qbl_cart', JSON.stringify(toSave));
+    localStorage.setItem(window.WFAccountAccess?.cartKey()||'wf_qbl_cart', JSON.stringify(toSave));
     try{if(typeof wfDriveMarkDirty==='function')wfDriveMarkDirty('cart');}catch(_){}
   } catch(e) {}
 }
 
 function qblCartLoad() {
   try {
-    const raw = localStorage.getItem('wf_qbl_cart');
+    if(window.WFAccountAccess&&!window.WFAccountAccess.can('invoices.edit'))return false;
+    const raw = localStorage.getItem(window.WFAccountAccess?.cartKey()||'wf_qbl_cart');
     const saved = raw ? JSON.parse(raw) : [];
     if (!wfValidateCartEntries(saved)) return false;
     if (!Array.isArray(S.products)) return false;
@@ -26923,6 +26992,8 @@ function wfReportExcelError(error){
   showToast(wfExcelText('failed')+(/NO_INVOICE/.test(message)?wfExcelText('empty'):/IMAGE_|QR_|TOO_TALL|OVERFLOW|CANVAS|RASTER|EMPTY_PAGE/.test(message)?wfPdfMessage(message.startsWith('IMAGE_')?'image':/QR_/.test(message)?'qr':/TOO_TALL|OVERFLOW/.test(message)?'long':'unsupported'):message),'er');
 }
 async function downloadExcel(){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return;
+
   if(_wfExcelBusy)return null;
   try{_wfExcelBusy=true;wfRefreshCurrentPreview();showToast(wfExcelText('preparing'),'in');const file=await createInvoiceExcelFile();triggerExcelFileDownload(file);return file;}
   catch(err){wfReportExcelError(err);return null;}finally{_wfExcelBusy=false;}
@@ -26948,6 +27019,8 @@ function wfShowExcelShareReady(file,title){
   box.append(header,name,bar);overlay.append(box);document.body.append(overlay);bar.firstElementChild.focus();
 }
 async function shareExcel(){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return;
+
   if(_wfExcelBusy)return false;
   let file,title;
   try{
@@ -27455,6 +27528,8 @@ function ensurePreview(){
   return null;
 }
 window.openUnifiedShareModal=function(e){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return false;
+
   try{e&&e.preventDefault&&e.preventDefault();e&&e.stopPropagation&&e.stopPropagation()}catch(_){ }
   const ov=q('wfUnifiedShareOverlay');if(ov&&ov.classList.contains('open'))return true;
   const inv=ensurePreview();if(!inv){if(typeof showToast==='function')showToast(t('noInvoice'),'er');return false}
@@ -27499,7 +27574,9 @@ window.closeShareMenu=function(){return window.closeUnifiedShareModal()};
 window.shareExcel=function(e){return window.openUnifiedShareModal(e)};
 window.shareWA=function(e){return window.openUnifiedShareModal(e)};
 window.shareEmail=function(e){return window.openUnifiedShareModal(e)};
-window.wfShareSavedInvoice=function(id,e){try{e&&e.preventDefault&&e.preventDefault();e&&e.stopPropagation&&e.stopPropagation()}catch(_){ }const inv=(typeof S!=='undefined'&&Array.isArray(S.invoices))?S.invoices.find(i=>i.id===id):null;if(!inv)return false;previewSaved(id,false);return window.openUnifiedShareModal(e)};
+window.wfShareSavedInvoice=function(id,e){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return false;
+try{e&&e.preventDefault&&e.preventDefault();e&&e.stopPropagation&&e.stopPropagation()}catch(_){ }const inv=(typeof S!=='undefined'&&Array.isArray(S.invoices))?S.invoices.find(i=>i.id===id):null;if(!inv)return false;previewSaved(id,false);return window.openUnifiedShareModal(e)};
 window.shareSavedExcel=function(id,e){return window.wfShareSavedInvoice(id,e)};
 window.WF_SHARE_DIAGNOSTICS=function(){return {version:'V10-XLSX-ONLY',invoice:typeof _lastPreviewInv!=='undefined'&&_lastPreviewInv?_lastPreviewInv.invNo:null,pdfReady:!!WF10.pdf,excelCandidates:WF10.excelCandidates.map((c,i)=>({xlsx:true,shareable:exactCanShare(c.file),selected:i===WF10.excelIndex,name:c.file&&c.file.name,type:c.file&&c.file.type,size:c.file&&c.file.size})),navigatorShare:!!navigator.share,navigatorCanShare:typeof navigator.canShare==='function',htmlFallback:false,csvFallback:false}};
 })();
@@ -27692,6 +27769,8 @@ async function wf11PreparePdf(token){
 }
 
 window.openUnifiedShareModal=function(e){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return false;
+
   try{e?.preventDefault?.();e?.stopPropagation?.()}catch(_){ }
   const inv=wf11EnsurePreview();if(!inv){if(typeof showToast==='function')showToast(wf11Text('noInvoice'),'er');return false}
   WF11.token++;WF11.pdf=null;WF11.busyExcel=false;WF11.busyPdf=false;const token=WF11.token;
@@ -27704,6 +27783,8 @@ window.shareWA=function(e){return window.openUnifiedShareModal(e)};
 window.shareEmail=function(e){return window.openUnifiedShareModal(e)};
 window.shareExcel=function(e){return window.openUnifiedShareModal(e)};
 window.wfShareSavedInvoice=function(id,e){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return false;
+
   try{e?.preventDefault?.();e?.stopPropagation?.()}catch(_){ }
   const inv=(typeof S!=='undefined'&&Array.isArray(S.invoices))?S.invoices.find(i=>i.id===id):null;if(!inv)return false;
   previewSaved(id,false);return window.openUnifiedShareModal(e);
@@ -27917,6 +27998,8 @@ async function preparePdfs(token){
 }
 
 window.openUnifiedShareModal=function(e){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return false;
+
   try{e?.preventDefault?.();e?.stopPropagation?.()}catch(_){ }
   const inv=invoice();if(!inv){if(typeof showToast==='function')showToast(copy(uiLang()).noInvoice,'er');return false;}
   WF13.token++;WF13.pdfOriginal=null;WF13.pdfReview=null;WF13.busyPdf=false;WF13.busyExcel=false;const token=WF13.token;
@@ -27928,10 +28011,14 @@ window.closeShareMenu=function(){return window.closeUnifiedShareModal()};
 window.shareWA=function(e){return window.openUnifiedShareModal(e)};
 window.shareEmail=function(e){return window.openUnifiedShareModal(e)};
 window.shareExcel=function(e){return window.openUnifiedShareModal(e)};
-window.wfShareSavedInvoice=function(id,e){try{e?.preventDefault?.();e?.stopPropagation?.()}catch(_){ }const inv=(typeof S!=='undefined'&&Array.isArray(S.invoices))?S.invoices.find(i=>i.id===id):null;if(!inv)return false;previewSaved(id,false);return window.openUnifiedShareModal(e)};
+window.wfShareSavedInvoice=function(id,e){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return false;
+try{e?.preventDefault?.();e?.stopPropagation?.()}catch(_){ }const inv=(typeof S!=='undefined'&&Array.isArray(S.invoices))?S.invoices.find(i=>i.id===id):null;if(!inv)return false;previewSaved(id,false);return window.openUnifiedShareModal(e)};
 window.shareSavedExcel=function(id,e){return window.wfShareSavedInvoice(id,e)};
 
 window.wf13ExportAction=async function(kind){
+  if(window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return false;
+
   const inv=invoice(),L=invoiceLang(inv),T=copy(uiLang());if(!inv)return false;
   if(kind==='pdf-original'||kind==='pdf-review'){
     if(WF13.busyPdf)return false;const file=kind==='pdf-review'?WF13.pdfReview:WF13.pdfOriginal;if(!file||!navigator.share)return false;WF13.busyPdf=true;
@@ -28028,7 +28115,7 @@ function bgEnsureRow(){
 }
 const BG_DISCONNECT_PENDING_KEY='wf_bg_disconnect_pending_v21';
 function bgDisconnectPending(){return bgLSGet(BG_DISCONNECT_PENDING_KEY,'0')==='1'}
-function bgRecoveryBlocked(){return typeof wfDriveWritesBlocked==='function'&&wfDriveWritesBlocked()}
+function bgRecoveryBlocked(){return !!(window.WFAccountAccess&&!window.WFAccountAccess.can('data.export'))||(typeof wfDriveWritesBlocked==='function'&&wfDriveWritesBlocked())}
 function bgUpdateUI(){
   const row=bgEnsureRow();if(!row)return;const T=bgText(),paired=bgPaired(),active=paired&&BG_STATE.status!=='error'&&!bgRecoveryBlocked()&&!bgDisconnectPending(),pairing=BG_STATE.status==='pairing';
   const title=document.getElementById('wfBgTitle'),sub=document.getElementById('wfBgSub'),btn=document.getElementById('wfBgEnableBtn'),badge=document.getElementById('wfBgBadge');
@@ -28172,7 +28259,7 @@ function bgQueueMirror(){
     try{const ok=await wfDriveBackupNow({interactive:false,force:false,reason:'background-mirror'});if(ok)bgHeartbeat()}catch(_){}
   },6000);
 }
-function bgHeartbeat(){if(bgDisconnectPending())return bgDisconnectServer();return bgPaired()?bgSendConfirmed('/api/bridge/schedule',bgServerState()):Promise.resolve(false)}
+function bgHeartbeat(){if(window.WFAccountAccess&&!window.WFAccountAccess.can('data.export'))return Promise.resolve(false);if(bgDisconnectPending())return bgDisconnectServer();return bgPaired()?bgSendConfirmed('/api/bridge/schedule',bgServerState()):Promise.resolve(false)}
 async function bgDisconnectServer(){
   if(bgPaired()){
     bgLSSet(BG_DISCONNECT_PENDING_KEY,'1');

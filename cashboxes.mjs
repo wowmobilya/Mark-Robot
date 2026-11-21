@@ -136,6 +136,8 @@ export function mount() {
   box.innerHTML='<form><div class="cashbox-overview"><label><span data-cashbox-copy="cashbox"></span><select name="currency"></select></label><output aria-live="polite"></output></div><label><span data-cashbox-copy="type"></span><select name="type"></select></label><label><span data-cashbox-copy="amount"></span><input name="amount" type="number" min=".01" step=".01" required inputmode="decimal"></label><label hidden><span data-cashbox-copy="target"></span><select name="target"></select></label><label hidden><span data-cashbox-copy="received"></span><input name="received" type="number" min=".01" step=".01" inputmode="decimal"></label><label><span data-cashbox-copy="note"></span><input name="note" maxlength="180" dir="auto"></label><button class="btn btn-p" type="submit" data-cashbox-copy="save"></button></form><p role="status"></p><h3 data-cashbox-copy="history"></h3><ol></ol>';
   page.querySelector('header').after(box);
   const form=box.querySelector('form'), fields=form.elements, status=box.querySelector('[role=status]');
+  form.querySelector('button').dataset.wfPermission='payments.edit';
+  for(const input of [fields.type,fields.amount,fields.target,fields.received,fields.note])input.closest('label').dataset.wfPermission='payments.edit';
   const language=()=>localeKey(document.documentElement.lang);
   const text=key=>cashboxText(key,language());
   for (const key of currencies) fields.currency.add(new Option(text(key)+' · '+key,key));
@@ -208,6 +210,7 @@ export function mount() {
   fields.currency.onchange=fields.type.onchange=render;
   form.onsubmit=async event=>{
     event.preventDefault();
+    if(globalThis.WFAccountAccess&&!globalThis.WFAccountAccess.allow('payments.edit'))return;
     if (saving) return;
     saving=true;
     const button=form.querySelector('button');

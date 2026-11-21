@@ -66,6 +66,7 @@
       ru:{selectionTitle:'Этикетки для печати',allLabels:'Все этикетки',lostLabels:'Утерянные этикетки',selectionSearch:'Товар, цвет или номер этикетки / упаковки',selectedLabels:'выбрано',clearLabels:'Снять выбор',selectionEmpty:'Выберите утерянные этикетки для просмотра и печати.',selectionNoMatches:'Подходящих этикеток нет.',packet:'Упаковка',unit:'Единица',originalLabels:'Всего в счёте',reprintSelected:'Повторить выбранные',selectionReset:'Данные счёта изменились; выберите утерянные этикетки заново.',selectionHint:'Выберите каждую утерянную этикетку по исходному номеру. Количество товаров и упаковок в счёте не изменяется.',auditError:'Не удалось сохранить запись повторной печати. Окно печати не открывалось; повторите попытку.'}
     };
     for(const [locale,values] of Object.entries(selectionWords))Object.assign(words[locale],values);
+    for(const [locale,noPhoto] of Object.entries({ar:'بلا صورة',tr:'Fotoğraf yok',en:'No photo',fr:'Sans photo',ru:'Нет фото'}))words[locale].noPhoto=noPhoto;
     const t = key => words[ops.locale()][key] || words.en[key] || key;
     const make = ops.make;
     let selectedId = '', query = '', filter = 'all', limit = 30, revision = 0, sheetIndex = 0;
@@ -131,6 +132,7 @@
     const actions = make('div','wf-ops-row');
     const retry = button('retry','btn btn-s',()=>prepare(true),'restore');
     const viewInvoice = button('openInvoice','btn btn-s',()=>{if(selectedId) window.previewSaved?.(selectedRecord?.id??selectedId);},'invoice');
+    viewInvoice.dataset.wfPermission='invoices.view';
     const printRecovery=button('printRecovery','btn btn-s',recoverPrint,'check');printRecovery.hidden=true;
     const printRecoveryHint=textNode('p','wf-ops-muted','printRecoveryHint');printRecoveryHint.hidden=true;
     actions.append(retry,viewInvoice,printRecovery);
@@ -191,6 +193,18 @@
       for(const control of filters.children) control.setAttribute('aria-pressed',String(control.dataset.filter===filter));
     }
     function normalize(value) { return String(value||'').normalize('NFKD').replace(/\p{M}/gu,'').replace(/[أإآٱ]/g,'ا').replace(/[٠-٩۰-۹]/g,value=>String('٠١٢٣٤٥٦٧٨٩'.includes(value)?'٠١٢٣٤٥٦٧٨٩'.indexOf(value):'۰۱۲۳۴۵۶۷۸۹'.indexOf(value))).toLowerCase().trim(); }
+    function labelThumbnail(label) {
+      const thumbnail=make('span','wf-package-label-thumbnail');thumbnail.setAttribute('aria-hidden','true');
+      const fallback=make('span','wf-package-label-no-photo');
+      fallback.append(make('span','wf-package-label-photo-icon','▧'),make('span','',t('noPhoto')));thumbnail.append(fallback);
+      const source=core.safeImageSource(label.image);
+      if(source){
+        const image=make('img','');image.alt='';image.width=160;image.height=96;image.loading='lazy';image.decoding='async';image.draggable=false;
+        image.addEventListener('error',()=>{image.remove();fallback.hidden=false;},{once:true});
+        fallback.hidden=true;image.src=source;thumbnail.append(image);
+      }
+      return thumbnail;
+    }
     function renderLabelChoices() {
       if(!fullBatch||selectionMode!=='selected'){labelOptions.hidden=true;moreLabels.hidden=true;return;}
       labelOptions.hidden=false;
@@ -216,7 +230,9 @@
           option.setAttribute('role','checkbox');
           const detail=t('packet')+' '+label.currentPacket+'/'+label.totalPackets+' · '+t('unit')+' '+label.unitIndex+'/'+label.qty;
           option.setAttribute('aria-label',label.name+' · '+label.color+' · #'+label.sequenceNumber+' · '+detail);
-          option.append(make('strong','wf-package-label-number','#'+label.sequenceNumber),make('span','wf-package-label-detail',detail));
+          const details=make('span','wf-package-label-detail');
+          details.append(make('strong','wf-package-label-packet',t('packet')+' '+label.currentPacket+'/'+label.totalPackets),make('span','wf-package-label-unit',t('unit')+' '+label.unitIndex+'/'+label.qty));
+          option.append(make('strong','wf-package-label-number','#'+label.sequenceNumber),labelThumbnail(label),make('span','wf-package-label-name',label.name),details);
           const check=make('span','wf-package-label-check','✓');check.setAttribute('aria-hidden','true');option.append(check);
           option.addEventListener('click',()=>toggleLabel(label.labelId));grid.append(option);labelControls.set(label.labelId,option);
         }
@@ -487,6 +503,7 @@
       });
     }
     async function print() {
+      if(window.WFAccountAccess&&!window.WFAccountAccess.allow('labels.print'))return;
       if(!ready||busy||activePrint||paperPicker.isOpen()||!batch?.labelCount||errorKey)return;
       if(!sourceIsCurrent(selectedSignature)){errorKey='changed';ready=false;renderMeta();return;}
       const token=revision,signature=selectedSignature,capturedBatch=batch,capturedBarcodes=new Map(barcodeImages);

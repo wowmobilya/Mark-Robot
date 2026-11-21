@@ -1,5 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../context-nav.js'),'utf8');
+const accountPolicy=require('../accounts-policy.js');
 const controller=source.slice(source.indexOf('/* One curved dock,')).replace(/  sync\(\);\n\}\)\(\);\s*$/, '  globalThis.navTest={configuration,sync};\n  sync();\n})();');
 class El {
  constructor(id='',classes=''){this.id=id;this.children=[];this.attrs={};this.events={};this.dataset={};this.style={};this.selectors=new Map;this.classes=new Set(classes.split(' ').filter(Boolean));this.classList={contains:n=>this.classes.has(n),add:n=>this.classes.add(n),remove:n=>this.classes.delete(n),toggle:(n,on)=>on?this.classes.add(n):this.classes.delete(n)};this.visible=true;this.hidden=false;this.disabled=false;this.clicks=0;this.scrollTop=0;this.textContent='';}
@@ -348,4 +349,84 @@ test('native operations sections reuse guarded print/save controls and focus the
  a.original.costSave.disabled=true;a.sync();a.click(4);assert.equal(a.original.costSave.clicks,1);
  a.activate('invoice-archive');a.click(4);assert.equal(a.original.archiveSearch.focused,true);
  assert.equal(a.buttons[3].getAttribute('aria-current'),'page');
+});
+
+function connectAccount(a,permissions,inferred=new Map()){
+ const account={role:'custom',status:'active',permissions};
+ a.ctx.window.WFAccountAccess={
+  can:key=>accountPolicy.can(account,key),canRoute:page=>accountPolicy.canRoute(account,page),
+  initialRoute:page=>accountPolicy.canRoute(account,page)?page:accountPolicy.safeHome(account),
+  requiredForElement:element=>element.getAttribute('data-wf-permission')||inferred.get(element)||null
+ };
+ a.emit('wf-account-access-change');return account;
+}
+
+test('restricted navigation hides financial destinations and Home leads to the account safe page',()=>{
+ const a=setup({mobile:true});connectAccount(a,['manufacturing.view','history.view']);a.activate('print-history');
+ assert(a.buttons[1].hidden,'the financial invoice list is not a workshop destination');
+ assert.equal(a.buttons[2].hidden,false);assert.equal(a.buttons[2].getAttribute('data-page'),'manufacturing');
+ assert.equal(a.buttons[3].getAttribute('data-page'),'print-history');
+ a.click(1);assert.deepEqual(a.calls.routes,[]);
+ a.ctx.window.scrollY=200;a.click(2);assert.equal(a.ctx.window.scrollY,0);assert.deepEqual(a.calls.routes,[]);
+ a.click(2);assert.deepEqual(a.calls.routes,['manufacturing']);
+ assert(!a.calls.routes.includes('dashboard'));
+});
+
+test('an inferred denied source is never promoted and granting it restores the original mobile action',()=>{
+ const a=setup({mobile:true}),inferred=new Map([[a.original.movement,'payments.edit']]);
+ const account=connectAccount(a,['payments.view'],inferred);a.activate('cashboxes');
+ assert(a.buttons[4].hidden);assert(a.buttons[4].disabled);
+ assert(!a.original.movement.hasAttribute('data-wf-shared-dock-source'));
+ a.click(4);assert.equal(a.original.movement.clicks,0);
+ account.permissions.push('payments.edit');a.emit('wf-account-access-change');
+ assert.equal(a.buttons[4].hidden,false);assert.equal(a.buttons[4].disabled,false);
+ assert(a.original.movement.hasAttribute('data-wf-shared-dock-source'));
+ a.click(4);assert.equal(a.original.movement.clicks,1);
+ account.permissions=['payments.view'];a.click(4);
+ assert.equal(a.original.movement.clicks,1,'activation rechecks permission before the account-change repaint');
+ a.emit('wf-account-access-change');assert(a.buttons[4].hidden);assert(!a.original.movement.hasAttribute('data-wf-shared-dock-source'));
+});
+
+test('permission-hidden originals and ancestors cannot be revived by shared-dock display exceptions',()=>{
+ const a=setup({mobile:true});a.original.addProduct.setAttribute('data-wf-permission','products.edit');
+ connectAccount(a,['products.view','products.edit']);a.activate('products');
+ assert(a.original.addProduct.hasAttribute('data-wf-shared-dock-source'));
+ a.original.addProduct.setAttribute('data-wf-access-hidden','');a.click(1);
+ assert.equal(a.original.addProduct.clicks,0);a.sync();
+ assert(a.buttons[1].hidden);assert(!a.original.addProduct.hasAttribute('data-wf-shared-dock-source'));
+ a.original.addProduct.removeAttribute('data-wf-access-hidden');a.sync();a.click(1);assert.equal(a.original.addProduct.clicks,1);
+ const protectedParent=new El;protectedParent.setAttribute('data-wf-access-hidden','');a.ids['page-products'].append(protectedParent);protectedParent.append(a.original.addProduct);
+ a.click(1);assert.equal(a.original.addProduct.clicks,1);a.sync();assert(a.buttons[1].hidden);
+});
+
+test('stale route slots fail closed on permission revocation and access change removes the old Home target',()=>{
+ const a=setup({mobile:true}),account=connectAccount(a,['products.view']);a.activate('products');
+ assert.equal(a.buttons[0].hidden,false);assert.equal(a.buttons[2].getAttribute('data-page'),'products');
+ account.permissions=[];a.click(0);a.click(2);assert.deepEqual(a.calls.routes,[]);
+ a.emit('wf-account-access-change');
+ assert(a.buttons[0].hidden);assert(a.buttons[2].hidden);assert.equal(a.buttons[2].getAttribute('data-page'),null);
+ assert.equal(a.buttons[0].getAttribute('aria-current'),null);
+});
+
+test('changing a dock slot to an authorized control clears the previous route restriction',()=>{
+ const a=setup({mobile:true}),account=connectAccount(a,['products.view','customers.view','payments.view','invoices.view','invoices.edit'],new Map([[a.original.statement,'payments.view']]));
+ a.activate('products');assert.equal(a.buttons[3].getAttribute('data-page'),'quick-barcode');
+ account.permissions=account.permissions.filter(key=>key!=='invoices.edit');a.buttons[3].setAttribute('data-wf-access-hidden','');
+ a.activate('companies');assert.equal(a.buttons[3].hidden,false);assert(!a.buttons[3].hasAttribute('data-page'));assert(!a.buttons[3].hasAttribute('data-wf-access-hidden'));
+ a.click(3);assert.equal(a.original.statement.clicks,1);
+});
+
+test('the original desktop filter Home button also resolves and rechecks the permitted home',()=>{
+ const root=new El,body=new El,section=new El('page-companies','active'),bar=new El('coStatsBar'),queue=[],listeners=new Map(),routes=[];
+ root.lang='en';section.append(bar);body.append(section);
+ const ids={'page-companies':section,coStatsBar:bar},account={role:'custom',status:'active',permissions:['customers.view']};
+ const access={canRoute:page=>accountPolicy.canRoute(account,page),initialRoute:page=>accountPolicy.canRoute(account,page)?page:accountPolicy.safeHome(account)};
+ const win={WFAccountAccess:access,showPage:page=>routes.push(page),addEventListener:(type,listener)=>listeners.set(type,listener)};
+ const doc={documentElement:root,body,getElementById:id=>ids[id],createComment:()=>new El,createElement:()=>new El};
+ vm.runInNewContext(source,{document:doc,window:win,requestAnimationFrame:fn=>queue.push(fn),matchMedia:()=>({matches:false,addEventListener(){}}),MutationObserver:class{observe(){}}});
+ const dock=body.children.find(node=>node.id==='wfContextNav'),home=dock.children[0];
+ assert.equal(home.getAttribute('data-page'),'companies');home.click();assert.deepEqual(routes,['companies']);
+ account.permissions=[];home.click();assert.deepEqual(routes,['companies']);
+ listeners.get('wf-account-access-change')();while(queue.length)queue.shift()();
+ assert(home.hidden);assert(home.disabled);assert.equal(home.getAttribute('data-page'),null);
 });

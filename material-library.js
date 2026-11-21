@@ -80,8 +80,10 @@
   function copy(tag, className, key, values) { const node = make(tag,className,text(key,values)); labels.set(node,{key,values}); return node; }
   function button(key, className, action, symbol) {
     const node = make('button',className); node.type = 'button';
+    const permission = {add:'materials.edit',save:'materials.edit',useRates:'materials.edit',use:'costs.edit',returnCost:'costs.view'}[key];
+    if (permission) node.dataset.wfPermission = permission;
     if (symbol) {const icon = make('span','wf-mat-icon'); icon.innerHTML = ops.icon(symbol); node.append(icon);}
-    node.append(copy('span','',key)); node.addEventListener('click',action); return node;
+    node.append(copy('span','',key)); node.addEventListener('click',event => {if(permission && root.WFAccountAccess && !root.WFAccountAccess.allow(permission)) return; return action(event);}); return node;
   }
   function money(value, currency = 'USD') {
     try {const amount = cost.amount(value); return amount === null ? '—' : new Intl.NumberFormat(ops.locale(),{style:'currency',currency:cost.currencies.includes(currency) ? currency : 'USD',currencyDisplay:'code',maximumFractionDigits:4}).format(amount);}
@@ -121,6 +123,7 @@
     let value = base, suffix = 1; while (used.has(value)) value = base + '-' + (++suffix); return value;
   }
   function add() {
+    if (root.WFAccountAccess && !root.WFAccountAccess.allow('materials.edit')) return false;
     const current = model();
     if (!current?.creating || dirty(current)) {
       const id = nextId(), row = {id,name:'',unit:'',category:'',currency:'USD',unitPrice:'',rates:cost.normalizeRates(ops.state())};
@@ -237,12 +240,13 @@
     const used = current.creating ? [] : core.usage(products(),current.data.id);
     if (!used.length) usageHost.append(copy('p','wf-ops-muted','noUsage'));
     for (const product of used) {
-      const action = make('button','btn btn-s wf-mat-usage-item'); action.type = 'button'; action.append(make('span','',String(product.name || '—')),copy('span','wf-ops-muted','viewCost'));
+      const action = make('button','btn btn-s wf-mat-usage-item'); action.type = 'button'; action.dataset.wfPermission = 'costs.view'; action.append(make('span','',String(product.name || '—')),copy('span','wf-ops-muted','viewCost'));
       action.addEventListener('click',() => root.WFCosting?.open(product.id)); usageHost.append(action);
     }
     cleanupLabels();
   }
   async function save() {
+    if (root.WFAccountAccess && !root.WFAccountAccess.allow('materials.edit')) return false;
     const current = model(); if (!current || catalogSaving || !dirty(current)) return false;
     try {core.prepareMaterial(current.data);} catch (error) {current.error = error; refreshComputed(); return false;}
     const id = current.data.id; ++readSequence; catalogSaving = true; current.saving = true; current.error = null; refreshComputed();
@@ -261,6 +265,7 @@
     ops.notify(text('saved'),'ok'); return true;
   }
   function useSelected() {
+    if (root.WFAccountAccess && !root.WFAccountAccess.allow('costs.edit')) return false;
     const current = model(), row = selected(), productId = selectionProductId;
     if (!row || !current || current.creating || dirty(current) || catalogSaving || !productId) return;
     if (root.WFCosting?.addCatalogMaterial(row.id,productId)) {selectionProductId = null; root.WFCosting.open(productId);}
@@ -314,6 +319,7 @@
   surface = ops.register({id:'material-library',title:titles('title'),subtitle:titles('subtitle'),icon:'material',parent:'products',onEnter:enter,onLanguage:translate});
   root.WFMaterialLibrary = Object.freeze({
     open(materialId) {
+      if (root.WFAccountAccess && !root.WFAccountAccess.allow('materials.view')) return false;
       selectionProductId = null;
       if (materialId !== undefined && rows().some(row => String(row.id) === String(materialId))) {selectedId = String(materialId); pickerOpen = false;}
       return ops.open('material-library');
@@ -321,6 +327,7 @@
     refresh,
     list() {return cost.clone(rows());},
     chooseForProduct(productId) {
+      if (root.WFAccountAccess && (!root.WFAccountAccess.allow('materials.view') || !root.WFAccountAccess.allow('costs.edit'))) return false;
       if (!products().some(product => String(product.id) === String(productId))) {ops.notify(text('missingProduct'),'er'); return false;}
       selectionProductId = String(productId); return ops.open('material-library');
     }

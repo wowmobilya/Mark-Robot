@@ -661,11 +661,46 @@ test('paper, orientation, language and all-label mode preserve a selected origin
   }finally{app.dispose();}
 });
 
+test('lost-label thumbnails use the invoice photo, retain their DOM on selection, and isolate late image failures',async()=>{
+  const app=fixture();app.state.invoices[0].items[0].image='/saved-blue-table.png';
+  app.state.products=[{id:'p1',name:'Current catalog name',image:'/new-catalog-photo.png'}];
+  try{
+    await app.context.prepare(true);app.context.changeSelectionMode('selected');await tick();
+    const label=app.read('fullBatch.labels[0]'),card=app.read('labelControls.get(fullBatch.labels[0].labelId)');
+    const photo=descendants(card).find(node=>node.tagName==='img'),fallback=descendants(card).find(node=>node.className==='wf-package-label-no-photo');
+    assert.equal(photo.src,'https://wow.example/saved-blue-table.png');assert.equal(photo.src,label.image);
+    assert.equal(photo.alt,'');assert.equal(photo.loading,'lazy');assert.equal(fallback.hidden,true);
+    assert.equal(card.getAttribute('role'),'checkbox');assert.match(card.getAttribute('aria-label'),/W400.*#1.*packet 1\/1.*unit 1\/1/);
+    const preloads=app.calls.images.filter(image=>image.kind==='preload').length;
+    card.dispatch('click');await tick();assert.equal(app.read('selectedLabelIds.has(fullBatch.labels[0].labelId)'),true);
+    assert.equal(app.read('labelControls.get(fullBatch.labels[0].labelId)'),card);
+    assert.equal(descendants(card).find(node=>node.tagName==='img'),photo);assert.equal(app.calls.images.filter(image=>image.kind==='preload').length,preloads);
+    photo.dispatch('error');assert.equal(photo.removed,true);assert.equal(fallback.hidden,false);
+    assert.equal(app.read('ready'),true);assert.equal(app.ui.printButton.disabled,false);assert.equal(card.getAttribute('aria-checked'),'true');
+    app.context.chooseInvoice('i2');await app.context.prepare(true);await tick();
+    const current=app.read('labelControls.get(fullBatch.labels[0].labelId)'),currentFallback=descendants(current).find(node=>node.className==='wf-package-label-no-photo');
+    photo.dispatch('error');assert.equal(currentFallback.hidden,true);assert.equal(app.read('selectedLabelIds.size'),0);
+  }finally{app.dispose();}
+});
+
+test('a saved missing label photo stays explicit instead of borrowing the current catalog image',async()=>{
+  const app=fixture();app.state.invoices[0].archived=true;app.state.invoices[0].items[0].image=null;
+  app.state.products=[{id:'p1',image:'/unrelated-new-photo.png'}];
+  try{
+    await app.context.prepare(true);app.context.changeSelectionMode('selected');await tick();
+    const card=app.read('labelControls.get(fullBatch.labels[0].labelId)'),nodes=descendants(card);
+    assert.equal(nodes.some(node=>node.tagName==='img'),false);
+    const fallback=nodes.find(node=>node.className==='wf-package-label-no-photo');assert.equal(fallback.hidden,false);assert(nodes.some(node=>node.textContent==='noPhoto'));
+    card.dispatch('click');await tick();assert.equal(app.read('batch.labelCount'),1);assert.equal(app.read('batch.labels[0].sequenceNumber'),1);
+  }finally{app.dispose();}
+});
+
 test('large label lists are bounded and search keeps hidden selections while matching an exact original number in Arabic digits',async()=>{
   const app=fixture();app.state.invoices[0].items[0].qty=2000;
   try{
     await app.context.prepare(true);app.context.changeSelectionMode('selected');await tick();
     assert.equal(app.read('labelControls.size'),80);assert.equal(app.ui.moreLabels.hidden,false);
+    assert.equal(descendants(app.ui.labelOptions).filter(node=>node.tagName==='img').length,80,'only the bounded visible choices create thumbnail nodes');
     const id=app.read('fullBatch.labels[199].labelId');app.context.toggleLabel(id);await tick();
     vm.runInContext("labelQuery='#٢٠٠';",app.context);app.context.renderLabelChoices();
     assert.equal(app.read('labelControls.size'),1);assert.equal(app.read('labelControls.has(fullBatch.labels[199].labelId)'),true);

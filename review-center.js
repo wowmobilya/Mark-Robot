@@ -79,9 +79,11 @@
  let shell,list,status,total,more,refreshButton,rows=[],counts=null,filter='all',limit=30,revision=0,historyError=false;
  const fixed=(tag,cls,key)=>{const node=make(tag,cls,text(key));bound.push([node,key]);return node;};
  const format=value=>new Intl.NumberFormat(ops.locale()||'en').format(value);
- function button(key,action,primary=false,persistent=false){const node=make('button','btn '+(primary?'btn-p':'btn-s'));node.type='button';node.append(persistent?fixed('span','',key):make('span','',text(key)));node.addEventListener('click',action);return node;}
+ function button(key,action,primary=false,persistent=false){const node=make('button','btn '+(primary?'btn-p':'btn-s'));node.type='button';const permission={history:'history.view',reviewRequest:'history.view',labels:'labels.view',openInvoice:'invoices.view'}[key];if(permission)node.dataset.wfPermission=permission;node.append(persistent?fixed('span','',key):make('span','',text(key)));node.addEventListener('click',action);return node;}
  function currentInvoice(id){return (ops.state().invoices||[]).find(row=>row?.id!=null&&String(row.id)===String(id));}
  function action(row,kind){
+  const permission={history:'history.view',preview:'invoices.view',labels:'labels.view'}[kind];
+  if(permission&&root.WFAccountAccess&&!root.WFAccountAccess.allow(permission))return false;
   root.WFTouchKeyboard?.close?.('navigation',false);
   if(kind==='history'){root.WFLabelReprintHistory?.open(row?.invoiceId);return;}
   const invoice=currentInvoice(row.invoiceId);if(!invoice){ops.notify?.(text('missing'),'in');refresh();return;}
@@ -145,5 +147,5 @@
  more=button('more',()=>{limit+=30;render();},false,true);more.hidden=true;
  shell.body.append(overview,fixed('p','wf-ops-muted','note'),status,total,list,more);
  root.addEventListener('wf-label-reprint-history-change',()=>{if(shell.page.classList.contains('active'))refresh();});
- root.WFReviewCenter=Object.freeze({open:()=>ops.open(route),refresh});
+ root.WFReviewCenter=Object.freeze({open:()=>{if(root.WFAccountAccess&&!root.WFAccountAccess.allow('review.view'))return false;return ops.open(route);},refresh});
 })(typeof window==='object'?window:globalThis);

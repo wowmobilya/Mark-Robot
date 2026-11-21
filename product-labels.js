@@ -729,6 +729,7 @@
     if(restoreFocus && opener?.isConnected)opener.focus({preventScroll:true});
   }
   async function printSelected() {
+    if(window.WFAccountAccess&&!window.WFAccountAccess.allow('products.print'))return;
     if(preparing || activePrint || !selected.size)return;
     printFailure=null;errorBox.hidden=true;preparing=true;workspace.setAttribute('aria-busy','true');updateControls();
     status.hidden=false;status.textContent=t('preparing');registerGuard();

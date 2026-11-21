@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="light" data-wf-account-state="checking">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WOW · QA 209 · حسابات تجريبية</title>
+  <link rel="stylesheet" href="../../modern-ui.css?v=209">
+  <link rel="stylesheet" href="../../ui-identity.css?v=209">
+  <link rel="stylesheet" href="../../settings-unified.css?v=209">
+  <link rel="stylesheet" href="../../accounts-access.css?v=209">
+  <link rel="stylesheet" href="../../accounts-settings.css?v=209">
+  <style>
+    /* Generated using AppDeploy UI skill */
+    /* Synthetic QA shell; colors and typography are inherited from WOW. */
+    :root {--brand-primary:var(--ui-accent);--green:#38a169;--red:#e53e3e;--nav-h:0px;--side-w:0px}
+    * {box-sizing:border-box}
+    body {margin:0;font:16px/1.6 'Segoe UI','Cairo','Tajawal',system-ui,sans-serif;background:var(--bg);color:var(--text)}
+    button,input,select,textarea {font:inherit}
+    button {cursor:pointer}
+    [hidden],.page:not(.active) {display:none!important}
+    .qa-tools,.qa-main,.qa-routes {max-inline-size:1150px;margin-inline:auto;padding:16px}
+    .qa-tools {display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-block-end:1px solid var(--border)}
+    .qa-brand {display:flex;align-items:center;gap:10px;flex:1 1 240px}
+    #navLogo img {display:block;inline-size:48px;block-size:48px;object-fit:contain}
+    #navTitle {font-weight:800;color:var(--text);font-size:17px}
+    .qa-tools p {margin:0;color:var(--text2);font-size:12px}
+    .qa-links {display:flex;flex-wrap:wrap;gap:12px}
+    .qa-links a {color:var(--brand-primary);font-size:13px}
+    .qa-routes {display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .qa-routes .wf-account-session {inline-size:auto;margin:0;margin-inline-start:auto}
+    .qa-routes .wf-account-session span {display:block}
+    .btn,.tab-btn,.qa-controls select {min-block-size:44px;border:1px solid var(--border);border-radius:11px;background:var(--input);color:var(--text);padding:10px 14px}
+    .btn {display:inline-flex;align-items:center;justify-content:center;gap:7px}
+    .btn-s {background:var(--ui-soft);color:var(--text2)}
+    .btn-p {background:var(--ui-accent)!important;border-color:var(--ui-accent)!important;color:var(--card)!important}
+    .fi {min-block-size:44px;border:1px solid var(--border);border-radius:11px;background:var(--input);color:var(--text);padding:10px 12px}
+    .wf-settings-workspace>.tabs {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px}
+    .tab-btn {display:flex;align-items:center;gap:12px;text-align:start;min-block-size:88px;background:var(--card);font-weight:700}
+    #wfSettingsDialog {position:fixed;inset:0;inline-size:100%;max-inline-size:none;block-size:100dvh;max-block-size:none;margin:0;padding:0;border:0;background:var(--bg);color:var(--text);overflow:hidden}
+    #wfSettingsDialog[open] {display:flex;flex-direction:column}
+    #wfSettingsDialog::backdrop {background:var(--bg)}
+    #wfSettingsDialog > header {display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border-block-end:1px solid var(--border)}
+    #wfSettingsDialog > header h2 {flex:1;margin:0;font-size:20px;line-height:1.5}
+    #wfSettingsDialog > header button {inline-size:44px;block-size:44px;border:1px solid var(--border);border-radius:12px;background:var(--input);color:var(--text);font-size:24px}
+    .qa-controls {display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 16px;border-block-end:1px solid var(--border);background:var(--card)}
+    .qa-controls label {display:flex;align-items:center;gap:6px;color:var(--text2);font-size:12px}
+    .qa-controls select {min-block-size:40px;padding:7px 9px;font-size:13px}
+    .qa-controls small {margin-inline-start:auto;color:var(--text2);font-size:11px}
+    #wfSettingsDialog>.wf-settings-content {flex:1;min-block-size:0;min-inline-size:0;overflow:auto;padding:clamp(12px,2.5vw,24px)}
+    #stab-accounts {max-inline-size:1040px;margin-inline:auto}
+    #qaFeedback {margin:0 0 14px;color:var(--text2);font-size:13px}
+    #qaFeedback:empty {display:none}
+    .qa-demo-card,.qa-fixture-note {padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--card)}
+    .qa-demo-card h2 {margin:0 0 10px;font-size:21px}
+    .qa-demo-card p {margin:6px 0;color:var(--text2)}
+    .qa-demo-card .btn {margin-block-start:14px}
+    .qa-fixture-note {margin-block-start:18px;background:var(--input);font-size:12px}
+    .qa-fixture-note strong {display:block;color:var(--text);margin-block-end:5px}
+    .qa-fixture-note p {margin:0 0 8px!important;font-size:11px!important;line-height:1.7!important}
+    .qa-fixture-note dl {margin:0;display:grid;gap:6px}
+    .qa-fixture-note dl>div {display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+    .qa-fixture-note dt {min-inline-size:65px;color:var(--text2)}
+    .qa-fixture-note dd {margin:0;color:var(--text);overflow-wrap:anywhere}
+    .qa-fixture-note a {color:var(--brand-primary)}
+    @media(max-width:480px){.qa-controls{gap:7px;padding:9px 12px}.qa-controls small{inline-size:100%;margin:0}.qa-controls label{flex:1}.qa-controls select{min-inline-size:0;max-inline-size:100%}.qa-tools,.qa-main,.qa-routes{padding:12px}.qa-routes .btn{flex:1 1 110px}}
+    @media print{body>*{display:none!important}}
+  </style>
+</head>
+<body>
+  <header class="qa-tools">
+    <div class="qa-brand"><span id="navLogo"><img src="../../assets/wow-furniture-logo.svg" alt=""></span><div><div id="navTitle">WOW FURNITURE · QA 209</div><p>حسابات اصطناعية للاختبار فقط · لا تصل إلى بيانات البرنامج أو هويات الموظفين الحقيقية.</p></div></div>
+    <nav class="qa-links"><a id="qaSeededLink" href="accounts-209.html">نموذج الدخول التجريبي</a><a href="accounts-209.html?demo=owner">معاينة المالك التجريبي</a><a href="accounts-209.html?demo=carpentry">معاينة موظف النجارة</a><a href="accounts-209.html?demo=sales">معاينة المبيعات</a><a id="qaEmptyLink" href="accounts-209.html?empty=1">بدء بلا حساب مالك</a></nav>
+  </header>
+  <nav id="sidebar" class="qa-routes" aria-label="أقسام الاختبار">
+    <button type="button" class="btn btn-s" data-page="settings" onclick="showPage('settings')">الإعدادات</button>
+    <button type="button" class="btn btn-s" data-page="manufacturing" onclick="showPage('manufacturing')">التصنيع</button>
+    <button type="button" class="btn btn-s" data-page="daily-tasks" onclick="showPage('daily-tasks')">المهام</button>
+    <button type="button" class="btn btn-s" data-page="invoices" onclick="showPage('invoices')">الفواتير</button>
+    <button type="button" class="btn btn-s" data-page="reports" onclick="showPage('reports')">التقارير المالية</button>
+  </nav>
+  <main id="mainContent" class="qa-main">
+    <p id="qaFeedback" role="status" aria-live="polite"></p>
+    <section id="page-settings" class="page active">
+      <div class="wf-settings-workspace">
+        <div class="tabs"></div>
+        <dialog id="wfSettingsDialog" aria-labelledby="qaAccountsTitle">
+          <header><h2 id="qaAccountsTitle">الحسابات والصلاحيات</h2><button id="qaCloseAccounts" type="button" aria-label="إغلاق">×</button></header>
+          <div class="qa-controls">
+            <label>اللغة<select id="qaAccountsLanguage"><option value="ar">العربية</option><option value="en">English</option><option value="tr">Türkçe</option><option value="fr">Français</option><option value="ru">Русский</option></select></label>
+            <label>المظهر<select id="qaAccountsTheme"><option value="light">فاتح</option><option value="dark">داكن</option></select></label>
+            <small>بيانات اصطناعية · تُصفّر عند إعادة التحميل</small>
+          </div>
+          <div class="wf-settings-content"></div>
+        </dialog>
+      </div>
+    </section>
+    <section id="page-dashboard" class="page"><div class="qa-demo-card"><h2>مساحة اختبار الحسابات</h2><p>جميع الأسماء والسجلات في هذه الصفحة اصطناعية.</p><button class="btn btn-p" onclick="showPage('settings')" type="button">الإعدادات</button></div></section>
+    <section id="page-manufacturing" class="page"><div class="qa-demo-card"><h2>بطاقة تصنيع تجريبية · QA-WOOD-01</h2><p>طاولة اختبار · 120 × 60 × 45 سم · قطعتان.</p><p>لا تحتوي هذه البطاقة على أسعار أو بيانات عملاء حقيقية.</p><button id="qaManufacturingAction" class="btn btn-p" data-wf-permission="manufacturing.edit" type="button">تسجيل تقدم تجريبي</button><button class="btn btn-s" data-wf-permission="manufacturing.print" type="button">معاينة صلاحية الطباعة</button></div></section>
+    <section id="page-daily-tasks" class="page"><div class="qa-demo-card"><h2>مهمة تجريبية · فحص القطع</h2><p>هذه مهمة اصطناعية لإظهار القسم المسموح للموظف.</p></div></section>
+    <section id="page-invoices" class="page"><div class="qa-demo-card"><h2>فاتورة اصطناعية · QA-209-01</h2><p>عميل تجريبي · بند تجريبي · 100 USD.</p><button class="btn btn-s" data-wf-permission="invoices.print" type="button">معاينة صلاحية الطباعة</button></div></section>
+    <section id="page-reports" class="page"><div class="qa-demo-card"><h2>تقرير مالي اصطناعي</h2><p>إجمالي الاختبار: 100 USD. لا توجد بيانات فعلية هنا.</p></div></section>
+  </main>
+  <template id="qaCredentialsTemplate">
+    <aside class="qa-fixture-note">
+      <strong>حسابات تجريبية فقط · Synthetic accounts only</strong>
+      <p>تُحفظ في ذاكرة هذه الصفحة فقط. إعادة التحميل تعيد بيانات البداية، ولا تُنشئ حسابات في البرنامج الحقيقي.</p>
+      <dl><div><dt>مالك / Owner</dt><dd><bdi>qa.owner</bdi> · <bdi>DemoOwner2026!</bdi></dd></div><div><dt>نجارة / Wood</dt><dd><bdi>qa.wood</bdi> · <bdi>DemoWorker2026!</bdi></dd></div></dl>
+      <p style="margin-block-start:10px!important"><a href="accounts-209.html?demo=owner">معاينة المالك التجريبي</a> · <a href="accounts-209.html?demo=carpentry">معاينة النجارة</a> · <a href="accounts-209.html?empty=1">إنشاء المالك من البداية</a></p>
+    </aside>
+  </template>
+  <script src="../../accounts-policy.js?v=209"></script>
+  <script src="../../accounts-data-policy.js?v=209"></script>
+  <script src="../../accounts-core.js?v=209"></script>
+  <script src="../../accounts-local-provider.js?v=209"></script>
+  <script>
+    (() => {
+      'use strict';
+      const query=new URLSearchParams(location.search),empty=query.get('empty')==='1';
+      const locale=['ar','en','tr','fr','ru'].includes(query.get('lang'))?query.get('lang'):'ar';
+      document.documentElement.lang=locale;document.documentElement.dir=locale==='ar'?'rtl':'ltr';
+      document.documentElement.dataset.theme=query.get('theme')==='dark'?'dark':'light';
+      document.getElementById('qaAccountsLanguage').value=locale;
+      document.getElementById('qaAccountsTheme').value=document.documentElement.dataset.theme;
+      const preferences=new Map();
+      Object.defineProperty(window,'localStorage',{configurable:true,value:{
+        getItem:key=>preferences.get(String(key))??null,setItem:(key,value)=>preferences.set(String(key),String(value)),removeItem:key=>preferences.delete(String(key))
+      }});
+      // Isolate fixture account notifications from any real app tab on this origin.
+      Object.defineProperty(window,'BroadcastChannel',{configurable:true,value:class {postMessage(){}close(){}}});
+      let memory=null;
+      const clone=value=>value==null?null:structuredClone(value);
+      const readSeed=async()=>clone(memory);
+      const commit=async(expected,next)=>{
+        if((memory?.revision??0)!==expected){const error=new Error('CONFLICT');error.code='CONFLICT';throw error;}
+        if(!next||next.revision!==expected+1)throw new Error('QA_INVALID_REVISION');
+        memory=clone(next);
+      };
+      const seedPromise=(async()=>{
+        if(empty)return;
+        const service=WFAccountsCore.createService({read:readSeed,commit,crypto:window.crypto,policy:WFAccountPolicy});
+        await service.refresh();
+        await service.bootstrapOwner({name:'مالك تجريبي · QA Owner',username:'qa.owner',password:'DemoOwner2026!'});
+        await service.createAccount({name:'موظف نجارة تجريبي · QA Wood',username:'qa.wood',password:'DemoWorker2026!',role:'carpentry',permissions:WFAccountPolicy.presets('carpentry'),department:'النجارة',note:'سجل اصطناعي للاختبار',expiresAt:null});
+        await service.createAccount({name:'موظفة مبيعات تجريبية · QA Sales',username:'qa.sales',password:'DemoWorker2026!',role:'sales',permissions:WFAccountPolicy.presets('sales'),department:'المبيعات',note:'لا يمثل موظفًا حقيقيًا',expiresAt:null});
+        const saved=await service.createAccount({name:'فني تركيب تجريبي · QA Assembly',username:'qa.assembly',password:'DemoWorker2026!',role:'assembly',permissions:WFAccountPolicy.presets('assembly'),department:'التجميع والتركيب',note:'مثال حساب موقوف',expiresAt:null});
+        const assembly=saved.accounts.find(account=>account.username==='qa.assembly');
+        await service.setStatus(assembly.id,'suspended','حالة تجريبية لاختبار إعادة التفعيل');
+        await service.signOut();
+      })();
+      // Load the real provider module, then replace only its factory here.
+      // Neither this adapter nor the fixture seeder opens IndexedDB.
+      window.WFAccountsLocalProvider={create:()=>({read:async()=>{await seedPromise;return clone(memory);},commit,close(){}})};
+      const demo=!empty&&['owner','carpentry','sales'].includes(query.get('demo'))?query.get('demo'):null;
+      window.QA_ACCOUNTS_FIXTURE={synthetic:true,empty,demo,seedPromise};
+      window.WFAppUpdates={guards:new Map(),registerGuard(key,guard){this.guards.set(key,guard);},markClean(){}};
+      window.showToast=(message,kind)=>{const target=document.getElementById('qaFeedback');target.textContent=message;target.dataset.kind=kind||'';};
+      window.S={lang:locale,settings:{companyName:'QA WOW · Synthetic'},companies:[],products:[],invoices:[],payments:[]};
+      const dialog=document.getElementById('wfSettingsDialog');
+      window.showPage=id=>{
+        if(window.WFAccountAccess&&!WFAccountAccess.canRoute(id)){showToast('هذا القسم غير مسموح لهذا الحساب التجريبي.','er');return false;}
+        const target=document.getElementById('page-'+id);if(!target)return false;
+        document.querySelectorAll('.page').forEach(page=>page.classList.toggle('active',page===target));
+        if(id!=='settings'&&dialog.open)dialog.close();
+        history.replaceState({page:id},'','#'+id);
+        if(id==='settings')document.getElementById('wf-settings-tab-accounts')?.click();
+        return true;
+      };
+      window.switchTab=key=>{
+        document.querySelectorAll('.wf-settings-content>[id^="stab-"]').forEach(panel=>panel.style.display=panel.id==='stab-'+key?'block':'none');
+        document.querySelectorAll('.tab-btn').forEach(tab=>tab.classList.toggle('active',tab.id==='wf-settings-tab-'+key));
+        if(key==='accounts'&&!dialog.open)dialog.showModal();
+      };
+      document.getElementById('qaCloseAccounts').addEventListener('click',()=>{
+        if(window.WFAccounts?.hasUnsavedChanges()&&!confirm('توجد تعديلات غير محفوظة. إغلاق الاختبار؟'))return;
+        dialog.close();
+      });
+      dialog.addEventListener('cancel',event=>{if(window.WFAccounts?.hasUnsavedChanges())event.preventDefault();});
+      document.getElementById('qaAccountsLanguage').addEventListener('change',event=>{
+        document.documentElement.lang=event.target.value;document.documentElement.dir=event.target.value==='ar'?'rtl':'ltr';S.lang=event.target.value;
+      });
+      document.getElementById('qaAccountsTheme').addEventListener('change',event=>document.documentElement.dataset.theme=event.target.value);
+      document.getElementById('qaManufacturingAction').addEventListener('click',async()=>{
+        try{await WFAccountAccess.service.assertPermission('manufacturing.edit');await WFAccountAccess.service.recordActivity({action:'manufacturing.edit',targetType:'invoices',targetId:'qa-ticket-209',details:{fixture:true}});showToast('سُجّل تقدم اصطناعي في سجل هذا الحساب.','ok');}
+        catch(_){showToast('تعذّر الإجراء أو لا توجد صلاحية.','er');}
+      });
+      function addFixtureNotice(){
+        const host=document.querySelector('#wfAccountLock .wf-account-login');
+        if(host&&!host.querySelector('.qa-fixture-note'))host.append(document.getElementById('qaCredentialsTemplate').content.cloneNode(true));
+      }
+      new MutationObserver(addFixtureNotice).observe(document.body,{childList:true,subtree:true});
+    })();
+  </script>
+  <script src="../../accounts-access.js?v=209"></script>
+  <script src="../../accounts-settings.js?v=209"></script>
+  <script>
+    (async()=>{
+      try{
+        await WFAccountAccess.ready;
+        const fixture=window.QA_ACCOUNTS_FIXTURE;
+        if(fixture?.synthetic===true&&!fixture.empty&&fixture.demo){
+          // This authenticates only the already-seeded, public fake account in
+          // the memory provider above. The production runtime is unchanged.
+          const demos={
+            owner:{username:'qa.owner',password:'DemoOwner2026!'},
+            carpentry:{username:'qa.wood',password:'DemoWorker2026!'},
+            sales:{username:'qa.sales',password:'DemoWorker2026!'}
+          };
+          await WFAccountAccess.service.signIn(demos[fixture.demo]);
+          document.documentElement.dataset.qaAccountDemo=fixture.demo;
+        }
+        await WFAccountAccess.beforeInit();
+        const requested=location.hash.slice(1)||'settings';
+        const route=WFAccountAccess.initialRoute(requested)||'manufacturing';
+        showPage(route);WFAccountAccess.syncControls();
+        document.documentElement.dataset.qaAccountsReady='true';
+      }catch(error){showToast('تعذّر تجهيز حسابات الاختبار: '+(error.code||error.message),'er');}
+    })();
+  </script>
+</body>
+</html>

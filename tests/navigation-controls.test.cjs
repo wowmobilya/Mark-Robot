@@ -60,7 +60,7 @@ test('drawer pagination fits translated rows at measured heights and preserves e
    get clientHeight(){return pager.hidden?170:122},scrollHeight:236,
    classList:{add(){},remove(){}}
  };
- const context=vm.createContext({nav,pager,items,groups,search:{value:''},normalize:s=>s,
+ const context=vm.createContext({nav,pager,items,groups,search:{value:''},normalize:s=>s,permitted:()=>true,
    activePage:0,matchingItems:[],empty:{},previous:{setAttribute(){}},next:{setAttribute(){}},
    pageNumber:{},document:{documentElement:{lang:'en'}},getComputedStyle:()=>({paddingTop:'0',paddingBottom:'0',rowGap:'3'})});
  vm.runInContext(filter+';filter()',context);

@@ -68,7 +68,7 @@
   const make=(tag,className,value)=>{const node=document.createElement(tag);if(className)node.className=className;if(value!==undefined)node.textContent=String(value);return node;};
   const labels=new Map(),ui={inputs:{},filterInputs:{}};
   const labelled=(tag,className,key)=>{const node=make(tag,className,t(key));labels.set(node,key);return node;};
-  function button(key,action,kind=key,className='btn btn-s'){const node=labelled('button',className,key);node.type='button';node.dataset.wfTaskAction=kind;node.addEventListener('click',action);return node;}
+  function button(key,action,kind=key,className='btn btn-s'){const node=labelled('button',className,key);node.type='button';node.dataset.wfTaskAction=kind;const permission=['delete','confirmDelete'].includes(kind)?'tasks.delete':['add','edit','save','complete','reopen','reload'].includes(kind)?'tasks.edit':null;if(permission)node.dataset.wfPermission=permission;node.addEventListener('click',event=>{if(permission&&root.WFAccountAccess&&!root.WFAccountAccess.allow(permission))return;return action(event);});return node;}
   let editing=null,busy=false,readSequence=0,message='',pendingDelete=null,referenceChoices=new Map(),visible=30,unique=0;
   const filters={query:'',status:'open',due:'all',priority:'all'};
   const state=()=>ops.state()||{};
@@ -93,6 +93,7 @@
   }
   function errorMessage(cause){return ({TASK_CHANGED:'conflict',MISSING_TASK:'conflict',INVALID_TASKS:'readError',INVALID_TITLE:'required',INVALID_DATE:'invalidDate',TASK_CAPACITY:'capacity'})[cause?.message]||'saveError';}
   async function commit(intent){
+    if(root.WFAccountAccess&&!root.WFAccountAccess.allow(intent.type==='delete'?'tasks.delete':'tasks.edit'))return false;
     if(busy)return false;busy=true;message='saving';render();
     try{await core.commit(intent,{writeBatch:operations=>root.wfWriteBatch(operations),publish});message=intent.type==='delete'?'removed':'saved';return true;}
     catch(cause){if(['TASK_CHANGED','MISSING_TASK'].includes(cause?.message))await readLatest();message=errorMessage(cause);return false;}
@@ -103,6 +104,7 @@
     ui.inputs.referenceKind.value=editing.data.reference?.kind||'';ui.inputs.referenceSearch.value='';referenceOptions();
   }
   async function begin(id){
+    if(root.WFAccountAccess&&!root.WFAccountAccess.allow('tasks.edit'))return false;
     if(busy)return;busy=true;render();const loaded=await readLatest();busy=false;
     if(!loaded){render();return;}
     const row=id?getEntries().find(item=>item.id===id):null;
@@ -112,6 +114,7 @@
     message='';pendingDelete=null;assignFields();render();ui.inputs.title.focus?.({preventScroll:true});
   }
   async function save(){
+    if(root.WFAccountAccess&&!root.WFAccountAccess.allow('tasks.edit'))return false;
     if(!editing||busy)return;
     if(!editing.data.title.trim()){message='required';render();ui.inputs.title.focus?.();return;}
     const captured=editing,at=new Date().toISOString();
