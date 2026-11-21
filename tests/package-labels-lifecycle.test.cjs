@@ -59,6 +59,7 @@ function fixture(options={}) {
   const guards=new Map(),timers=new Map();let context, timerId=0, mode=options.printMode||'async';
   const fields=['printButton','detail','preview','empty','stage','invoiceTitle','customerName','counts','summary','identity','issueList','issues','counter','previous','next','status','retry','viewInvoice','change','list','more','filters','chooser','search','printRecovery','printRecoveryHint','profileSelect','badge','stockText','geometryNote','stockSizeNote','scaleNote','preferenceHint','printerHint'];
   const ui=Object.fromEntries(fields.map(name=>[name,element()]));ui.printRecovery.hidden=true;ui.printRecoveryHint.hidden=true;
+  ui.orientationGroup=element();ui.orientationButtons=Object.fromEntries(['portrait','landscape','square'].map(key=>[key,element()]));
   const document=Object.assign(new Events(),{body:element(),baseURI:'https://wow.example/app/',visibilityState:'visible',hidden:false,activeElement:null});
   const animationFrame=callback=>{calls.renderTurns++;queueMicrotask(()=>callback(0));return calls.renderTurns;};
   function image(src,kind) {
@@ -441,7 +442,7 @@ test('80 by 100 mm thermal stock is remembered and printed as roll pages without
   }finally{app.dispose();}
 });
 
-for(const [width,height] of [[70,100],[100,100],[100,200]]){
+for(const [width,height] of [[70,100],[100,100],[100,200],[100,50],[50,100],[80,500],[500,80],[100,80],[100,70],[200,100]]){
   test(`${width} by ${height} mm thermal stock keeps its own dimensions, caption and remembered print job`,async()=>{
     const id=`thermal${width}x${height}`,app=fixture(),preferences=new Map();
     app.state.invoices[0].items[0].qty=9;
@@ -451,7 +452,7 @@ for(const [width,height] of [[70,100],[100,100],[100,200]]){
       assert.equal(app.context.changeProfile(id),true);await tick();
       assert.equal(app.read('ready'),true);assert.equal(app.read('batch.pageCount'),9);
       assert.equal(app.ui.badge.textContent,`thermal ${width} × ${height}`);
-      assert(app.ui.profileSelect.children[0].textContent.endsWith(width===height?'square':'portrait'));
+      assert(app.ui.profileSelect.children[0].textContent.endsWith(width===height?'square':width>height?'landscape':'portrait'));
       assert.equal(app.ui.stockSizeNote.textContent,'sizeRoll');
       assert.equal(preferences.get('wf_package_label_profile_v1'),id);
       assert(Math.abs(parseFloat(app.read('previewFrame.style.width'))-width*96/25.4)<0.01);
@@ -466,3 +467,42 @@ for(const [width,height] of [[70,100],[100,100],[100,200]]){
     }finally{app.dispose();}
   });
 }
+
+for(const [id,pages,stockKey,badge] of [['tw2004Landscape',3,'stockLarge','TANEX TW-2004'],['tw2008Landscape',2,'stock','TANEX TW-2008']]){
+  test(`${id} preserves its Tanex stock identity and prints landscape A4 with the original sheet count`,async()=>{
+    const app=fixture();app.state.invoices[0].items[0].qty=9;
+    app.ui.profileSelect.append(Object.assign(element(),{value:id}));
+    try{
+      assert.equal(app.context.changeProfile(id),true);await tick();
+      assert.equal(app.ui.badge.textContent,badge);assert.equal(app.ui.stockText.textContent,stockKey);
+      assert(app.ui.profileSelect.children[0].textContent.endsWith('landscape'));
+      assert.equal(app.read('ready'),true);assert.equal(app.read('batch.pageCount'),pages);
+      assert(Math.abs(parseFloat(app.read('previewFrame.style.width'))-297*96/25.4)<0.01);
+      assert(Math.abs(parseFloat(app.read('previewFrame.style.height'))-210*96/25.4)<0.01);
+      await app.context.print();const frame=app.read('activePrint.frame');
+      assert.equal(frame.style.width,'297mm');assert.equal(frame.style.height,'210mm');
+      assert.equal(frame.contentDocument.querySelectorAll('.page').length,pages);
+      assert.equal(frame.contentDocument.querySelectorAll('.barcode').length,9);
+      assert.equal(app.context.changeProfile('thermal100x50'),false);
+    }finally{app.dispose();}
+  });
+}
+
+test('quick orientation controls preserve the selected stock and cannot replace an active native print job',async()=>{
+  const app=fixture();app.state.invoices[0].items[0].qty=9;
+  try{
+    assert.equal(app.context.changeOrientation('landscape'),true);await tick();
+    assert.equal(app.read('profileId'),'tw2008Landscape');assert.equal(app.read('batch.pageCount'),2);
+    assert.equal(app.ui.orientationButtons.landscape.getAttribute('aria-pressed'),'true');
+    assert.equal(app.ui.orientationButtons.portrait.hidden,false);assert.equal(app.ui.orientationButtons.square.hidden,true);
+    await app.context.print();assert.equal(app.ui.orientationButtons.portrait.disabled,true);
+    assert.equal(app.context.changeOrientation('portrait'),false);assert.equal(app.read('profileId'),'tw2008Landscape');
+    assert.equal(app.read('activePrint.frame.style.width'),'297mm');
+    app.finish();await tick();assert.equal(app.context.changeOrientation('portrait'),true);await tick();
+    assert.equal(app.read('profileId'),'tw2008');
+    app.context.changeProfile('thermal100x100');await tick();
+    assert.equal(app.ui.orientationButtons.square.hidden,false);assert.equal(app.ui.orientationButtons.square.getAttribute('aria-pressed'),'true');
+    assert.equal(app.ui.orientationButtons.portrait.hidden,true);assert.equal(app.ui.orientationButtons.landscape.hidden,true);
+    assert.equal(app.context.changeOrientation('landscape'),false);assert.equal(app.read('profileId'),'thermal100x100');
+  }finally{app.dispose();}
+});

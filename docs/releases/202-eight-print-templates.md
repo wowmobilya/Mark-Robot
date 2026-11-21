@@ -47,3 +47,12 @@ The complete Node suite passed **874 tests with zero failures**. JavaScript
 syntax and CRLF-aware whitespace checks also passed. Live verification is
 recorded after this exact tested revision is deployed. Physical printer feeding, alignment and barcode scanning have not been
 tested on the user's hardware.
+
+
+## Subsequent requested expansion
+
+Published as `6a96d498bbd03dd3cf60f035fa30a8b9160ed2ae`; Pages deployment
+completed successfully. Browser measurements confirmed all eight page sizes,
+complete nine-label fixture counts and image readiness. The user then requested
+100 × 50, 80 × 500 and both orientations for every stock. Final integrated
+verification continues in [release 203](203-smart-orientations.md).

@@ -98,7 +98,14 @@ const rollProfiles = [
   {id:'thermal80x100', name:'Thermal 80 × 100', width:80, height:100, angle:90, scale:1, printedWidth:66.2, printedHeight:97},
   {id:'thermal70x100', name:'Thermal 70 × 100', width:70, height:100, angle:90, scale:1, printedWidth:66.2, printedHeight:97},
   {id:'thermal100x100', name:'Thermal 100 × 100', width:100, height:100, angle:0, scale:1, printedWidth:97, printedHeight:66.2},
-  {id:'thermal100x200', name:'Thermal 100 × 200', width:100, height:200, angle:90, scale:97/66.2, printedWidth:97, printedHeight:142.129909}
+  {id:'thermal100x200', name:'Thermal 100 × 200', width:100, height:200, angle:90, scale:97/66.2, printedWidth:97, printedHeight:142.129909},
+  {id:'thermal100x80', name:'Thermal 100 × 80', width:100, height:80, angle:0, scale:1, printedWidth:97, printedHeight:66.2},
+  {id:'thermal100x70', name:'Thermal 100 × 70', width:100, height:70, angle:0, scale:1, printedWidth:97, printedHeight:66.2},
+  {id:'thermal200x100', name:'Thermal 200 × 100', width:200, height:100, angle:0, scale:97/66.2, printedWidth:142.129909, printedHeight:97},
+  {id:'thermal100x50', name:'Thermal 100 × 50', width:100, height:50, angle:0, scale:47/66.2, printedWidth:68.8670695, printedHeight:47},
+  {id:'thermal50x100', name:'Thermal 50 × 100', width:50, height:100, angle:90, scale:47/66.2, printedWidth:47, printedHeight:68.8670695},
+  {id:'thermal80x500', name:'Thermal 80 × 500', width:80, height:500, angle:90, scale:77/66.2, printedWidth:77, printedHeight:112.8247734},
+  {id:'thermal500x80', name:'Thermal 500 × 80', width:500, height:80, angle:0, scale:77/66.2, printedWidth:112.8247734, printedHeight:77}
 ];
 for (const {id,name,width,height,angle,scale,printedWidth,printedHeight,labelsPerRoll} of rollProfiles) {
   test(`${id} has one die per page and keeps the artwork inside its safe inset`, () => {
@@ -170,3 +177,45 @@ test('the 70 and 80 mm rolls contain the original 97 mm layout box after rotatio
     close((profile.pageHeightMM - core.geometry.cardWidthMM * profile.artworkScale) / 2, 1.5);
   }
 });
+
+test('the 50 mm stocks clip untransformed layout overflow on the short page axis', () => {
+  for (const id of ['thermal50x100','thermal100x50']) {
+    assert.match(core.renderDocument(batchFor(id)), /\.labels-grid\s*\{[^}]*overflow:\s*hidden/);
+  }
+});
+
+for (const sourceId of ['tw2004','tw2008']) {
+  test(`${sourceId} landscape rotates the entire calibrated grid and keeps its source pagination`, () => {
+    const portrait = batchFor(sourceId), landscape = batchFor(sourceId+'Landscape');
+    const p = core.profiles[landscape.profileId], original = core.profiles[sourceId];
+    assert.equal(p.sourceProfileId, sourceId);
+    assert.equal(p.sheetRotationDeg, -90);
+    assert.equal(p.artworkRotationDeg, sourceId === 'tw2004' ? 0 : -90);
+    assert.deepEqual([p.pageWidthMM,p.pageHeightMM,p.columns,p.rows], [297,210,original.rows,original.columns]);
+    assert.deepEqual([p.stockWidthMM,p.stockHeightMM], [original.stockHeightMM,original.stockWidthMM]);
+    assert.deepEqual(landscape.pages, portrait.pages);
+    for (const pageSet of [portrait.pages, [portrait.pages.at(-1)]]) {
+      const rotated = core.renderDocument({...landscape,pages:pageSet});
+      const native = core.renderDocument({...portrait,pages:pageSet});
+      assert.match(rotated, /@page\s*\{\s*size:\s*297mm 210mm/);
+      assert.match(rotated, /\.page\s*\{[^}]*width: 297mm;[^}]*height: 210mm;[^}]*overflow: hidden;/);
+      assert.match(rotated, /\.sheet-layout\s*\{[^}]*width: 210mm;[^}]*height: 297mm;[^}]*padding-top:/);
+      assert.match(rotated, /\.sheet-layout\s*\{[^}]*position: absolute;[^}]*top: 210mm;[^}]*left: 0;[^}]*transform-origin: 0 0;[^}]*transform: matrix\(0, -1, 1, 0, 0, 0\)/);
+      assert.match(rotated, /@media print\s*\{\s*\.sheet-layout\s*\{\s*display: flex/);
+      assert.match(rotated, /\.page:last-child\s*\{[^}]*break-after: auto/);
+      const sourcePageRule = native.match(/\.page\s*\{\s*position: relative;[^}]+\}/)[0];
+      assert(rotated.includes(sourcePageRule.replace('.page', '.sheet-layout')));
+      assert.deepEqual(rotated.match(/\.labels-grid\s*\{[^}]+\}/g), native.match(/\.labels-grid\s*\{[^}]+\}/g));
+      const bodyOf = html => html.slice(html.indexOf('<body>')).split('<div class="page">').slice(1);
+      const originalPages = bodyOf(native);
+      const rotatedPages = bodyOf(rotated);
+      assert.equal(rotatedPages.length, pageSet.length);
+      rotatedPages.forEach((page, i) => {
+        assert(page.startsWith('<div class="sheet-layout"><div class="labels-grid">'));
+        assert.equal(page, '<div class="sheet-layout">' + originalPages[i].replace(/<\/div>(?=(?:<\/body><\/html>)?$)/, '</div></div>'));
+      });
+    }
+    const corners = [[0,0],[210,0],[210,297],[0,297]];
+    assert.deepEqual(corners.map(([x,y]) => [y,p.pageHeightMM-x]), [[0,210],[0,0],[297,0],[297,210]]);
+  });
+}

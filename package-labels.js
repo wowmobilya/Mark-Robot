@@ -42,6 +42,14 @@
     for(const [locale,values] of Object.entries(rollWords))Object.assign(words[locale],values);
     const orientations={ar:['عمودي','أفقي','طابق مقاس الورق في إعدادات الطابعة مع القالب المختار.','يتطلب هذا الاتجاه طابعة تقبل ورقًا بعرض 150 مم.'],tr:['Dikey','Yatay','Yazıcıdaki kâğıt ölçüsünü seçilen şablonla eşleştirin.','Bu yön, 150 mm genişliğinde kâğıt kabul eden bir yazıcı gerektirir.'],en:['Portrait','Landscape','Match the printer’s paper size to the selected template.','This orientation requires a printer that accepts 150 mm wide media.'],fr:['Portrait','Paysage','Réglez le format du papier de l’imprimante sur le gabarit choisi.','Cette orientation exige une imprimante acceptant du papier de 150 mm de large.'],ru:['Портрет','Альбом','Установите в принтере размер бумаги, соответствующий шаблону.','Для этой ориентации нужен принтер, принимающий бумагу шириной 150 мм.']};
     for(const [locale,values] of Object.entries(orientations))Object.assign(words[locale],{portrait:values[0],landscape:values[1],printerSize:values[2],widePrinter:values[3]});
+    const paperWords={
+      ar:{orientation:'اتجاه الطباعة',scaleSheet:'A4 {orientation} · المقاس الفعلي 100% · دون ملاءمة للصفحة',widePrinter:'يتطلب هذا الاتجاه طابعة تقبل ورقًا بعرض {width} مم.',longPrinter:'يتطلب هذا القالب طابعة وإعداد ورق يدعمان طول {height} مم.'},
+      tr:{orientation:'Baskı yönü',scaleSheet:'A4 {orientation} · Gerçek boyut %100 · Sayfaya sığdırma yok',widePrinter:'Bu yön, {width} mm genişliğinde kâğıt kabul eden bir yazıcı gerektirir.',longPrinter:'Bu şablon, {height} mm uzunluğu destekleyen bir yazıcı ve kâğıt ayarı gerektirir.'},
+      en:{orientation:'Print orientation',scaleSheet:'A4 {orientation} · Actual size 100% · No fit to page',widePrinter:'This orientation requires a printer that accepts {width} mm wide media.',longPrinter:'This template requires a printer and paper setting supporting a {height} mm label length.'},
+      fr:{orientation:'Orientation d’impression',scaleSheet:'A4 {orientation} · Taille réelle 100% · Sans ajustement à la page',widePrinter:'Cette orientation exige une imprimante acceptant du papier de {width} mm de large.',longPrinter:'Ce gabarit exige une imprimante et un réglage du papier acceptant une longueur de {height} mm.'},
+      ru:{orientation:'Ориентация печати',scaleSheet:'A4 {orientation} · Масштаб 100% · Без подгонки',widePrinter:'Для этой ориентации нужен принтер, принимающий бумагу шириной {width} мм.',longPrinter:'Для этого шаблона принтер и настройки бумаги должны поддерживать длину этикетки {height} мм.'}
+    };
+    for(const [locale,values] of Object.entries(paperWords))Object.assign(words[locale],values);
     const t = key => words[ops.locale()][key] || words.en[key] || key;
     const make = ops.make;
     let selectedId = '', query = '', filter = 'all', limit = 30, revision = 0, sheetIndex = 0;
@@ -70,13 +78,21 @@
     const profileText = make('div','wf-package-profile-copy');
     const profileLabel=textNode('label','','profile');profileLabel.htmlFor='wfPackageProfile';
     const profileSelect=make('select','fi');profileSelect.id='wfPackageProfile';profileSelect.dir='ltr';
-    for(const id of Object.keys(core.profiles)){
+    const profileOrder=[];
+    for(const id of Object.keys(core.profiles))for(const paired of [id,...Object.values(helpers.orientationChoices(core,id))])if(!profileOrder.includes(paired))profileOrder.push(paired);
+    for(const id of profileOrder){
       const paper=core.profiles?.[id];if(!paper)continue;
       const option=make('option');option.value=id;profileSelect.append(option);
     }
     profileSelect.value=profileId;profileSelect.addEventListener('change',()=>changeProfile(profileSelect.value));
+    const orientationGroup=make('div','wf-package-orientations');orientationGroup.setAttribute('role','group');
+    const orientationButtons={};
+    for(const direction of ['portrait','landscape','square']){
+      const control=button(direction,'btn btn-s',()=>changeOrientation(direction));control.dataset.wfOrientation=direction;
+      orientationButtons[direction]=control;orientationGroup.append(control);
+    }
     const stockText=make('p'),preferenceHint=make('p','wf-package-preference'),printerHint=make('p','wf-package-preference');preferenceHint.setAttribute('role','status');
-    profileText.append(profileLabel,profileSelect,stockText,preferenceHint,printerHint);
+    profileText.append(profileLabel,profileSelect,orientationGroup,stockText,preferenceHint,printerHint);
     profile.append(badge,profileText);
     const layout = make('div','wf-package-layout');
     const chooser = make('details','wf-package-chooser wf-ops-card'); chooser.open = true;
@@ -148,23 +164,33 @@
     }
     function normalize(value) { return String(value||'').normalize('NFKD').replace(/\p{M}/gu,'').replace(/[أإآٱ]/g,'ا').toLowerCase().trim(); }
     function renderProfile() {
-      const paper=core.profiles[profileId],large=profileId==='tw2004',roll=paper?.mediaType==='roll';
+      const paper=core.profiles[profileId],stock=core.profiles[paper.sourceProfileId]||paper,large=stock.id==='tw2004',roll=paper.mediaType==='roll';
       const brand=profileId.startsWith('thermal')?t('thermal'):'Zebra';
-      const size=paper.stockWidthMM+' × '+paper.stockHeightMM,copy=key=>t(key).replace('{size}',size).replace('{brand}',brand);
+      const direction=paper.pageWidthMM===paper.pageHeightMM?'square':paper.pageWidthMM>paper.pageHeightMM?'landscape':'portrait';
+      const size=paper.stockWidthMM+' × '+paper.stockHeightMM,copy=key=>t(key).replace('{size}',size).replace('{brand}',brand).replace('{orientation}',t(direction));
       badge.textContent=roll?brand+' '+size:large?'TANEX TW-2004':'TANEX TW-2008';
       for(const option of profileSelect.children){
-        const item=core.profiles[option.value],isRoll=item.mediaType==='roll';
+        const item=core.profiles[option.value],product=core.profiles[item.sourceProfileId]||item,isRoll=item.mediaType==='roll';
         const name=isRoll?(item.id.startsWith('thermal')?t('thermal'):'Zebra'):item.name;
-        option.textContent=name+' · '+(item.stockWidthMM||item.cardWidthMM)+' × '+(item.stockHeightMM||item.cardHeightMM)+' mm · '+(isRoll?t('rollOption')+' '+t(item.pageWidthMM===item.pageHeightMM?'square':item.pageWidthMM>item.pageHeightMM?'landscape':'portrait'):(item.columns*item.rows)+' / A4');
+        const orientation=t(item.pageWidthMM===item.pageHeightMM?'square':item.pageWidthMM>item.pageHeightMM?'landscape':'portrait');
+        option.textContent=name+' · '+(product.stockWidthMM||product.cardWidthMM)+' × '+(product.stockHeightMM||product.cardHeightMM)+' mm · '+(isRoll?t('rollOption')+' '+orientation:(item.columns*item.rows)+' / A4 · '+orientation);
       }
       profileSelect.value=profileId;profileSelect.disabled=Boolean(activePrint);
+      const choices=helpers.orientationChoices(core,profileId);orientationGroup.setAttribute('aria-label',t('orientation'));
+      for(const [orientation,control] of Object.entries(orientationButtons)){
+        control.hidden=!choices[orientation];control.disabled=Boolean(activePrint);control.setAttribute('aria-pressed',String(choices[orientation]===profileId));
+      }
       stockText.textContent=copy(roll?'stockRoll':large?'stockLarge':'stock');
       geometryNote.textContent=t(roll?'geometryRoll':large?'geometryLarge':'geometry');
       stockSizeNote.textContent=copy(roll?'sizeRoll':large?'sizeLarge':'stockSize');
       if(roll&&paper.labelsPerRoll)stockSizeNote.textContent+=' · '+t('rollCapacity').replace('{count}',paper.labelsPerRoll);
-      scaleNote.textContent=copy(roll?'rollScale':'scale');
-      printerHint.hidden=!roll;printerHint.textContent=roll?t(profileId==='zebra150x100'?'widePrinter':'printerSize'):'';
+      scaleNote.textContent=copy(roll?'rollScale':'scaleSheet');
+      printerHint.hidden=!roll;printerHint.textContent=roll?(paper.pageWidthMM>100?t('widePrinter').replace('{width}',paper.pageWidthMM):paper.pageHeightMM>300?t('longPrinter').replace('{height}',paper.pageHeightMM):t('printerSize')):'';
       preferenceHint.textContent=t(preferenceSaved?'remembered':'preferenceError');
+    }
+    function changeOrientation(direction){
+      const choices=helpers.orientationChoices(core,profileId);
+      return Object.prototype.hasOwnProperty.call(choices,direction)?changeProfile(choices[direction]):false;
     }
     function changeProfile(next) {
       if(activePrint||!Object.prototype.hasOwnProperty.call(core.profiles||{},next)){renderProfile();return false;}
@@ -189,6 +215,7 @@
     function updateControls() {
       const locked=Boolean(busy||activePrint);
       profileSelect.disabled=Boolean(activePrint);
+      for(const control of Object.values(orientationButtons))control.disabled=Boolean(activePrint);
       printButton.disabled=!ready||locked||Boolean(errorKey);
       printButton.setAttribute('aria-busy',String(locked));
       page.page?.setAttribute('aria-busy',String(locked));
@@ -438,6 +465,17 @@
     if(!own(core.profiles||{},id)||!storage?.setItem)return false;
     try{storage.setItem('wf_package_label_profile_v1',id);return true;}catch(_){return false;}
   }
+  function orientationChoices(core,id){
+    const profiles=core?.profiles||{};if(!own(profiles,id))return {};
+    const paper=profiles[id],stockId=paper.sourceProfileId||id,result={};
+    for(const item of Object.values(profiles)){
+      const same=paper.mediaType==='roll'?item.mediaType==='roll'&&item.id.startsWith('zebra')===paper.id.startsWith('zebra')&&
+        (item.pageWidthMM===paper.pageWidthMM&&item.pageHeightMM===paper.pageHeightMM||item.pageWidthMM===paper.pageHeightMM&&item.pageHeightMM===paper.pageWidthMM):
+        (item.sourceProfileId||item.id)===stockId;
+      if(same)result[item.pageWidthMM===item.pageHeightMM?'square':item.pageWidthMM>item.pageHeightMM?'landscape':'portrait']=item.id;
+    }
+    return result;
+  }
   function captureIdentity(invoice,companyLogo,now=new Date().toISOString()){
     const result={...invoice};
     if(!own(result,'packageLabelSnapshot'))result.packageLabelSnapshot={version:1,companyLogo:companyLogo||'',customerLogo:invoice.companyLogo??null,capturedAt:now};
@@ -477,5 +515,5 @@
     });
     return withTimeout(loaded.then(async item=>{if(typeof item.decode==='function'){try{await item.decode();}catch(_){throw new Error('IMAGE_LOAD');}}}),timeout,'IMAGE_TIMEOUT');
   }
-  return {captureIdentity,resolveInvoiceSource,barcodeBits,waitForImage,withTimeout,readProfilePreference,writeProfilePreference};
+  return {captureIdentity,resolveInvoiceSource,barcodeBits,waitForImage,withTimeout,readProfilePreference,writeProfilePreference,orientationChoices};
 });

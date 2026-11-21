@@ -1,11 +1,11 @@
 importScripts('./install-identity.js?v=2');
-const CACHE_NAME = 'wow-furniture-v202-eight-print-templates';
+const CACHE_NAME = 'wow-furniture-v203-smart-orientations';
 const urlsToCache = [
-  './operations-workspace.js?v=2',
+  './operations-workspace.js?v=3',
   './operations-workspace.css?v=2',
-  './package-label-core.js?v=4',
-  './package-labels.js?v=4',
-  './package-labels.css?v=1',
+  './package-label-core.js?v=5',
+  './package-labels.js?v=5',
+  './package-labels.css?v=2',
   './product-cost-core.js?v=1',
   './product-costs.js?v=1',
   './product-costs.css?v=1',

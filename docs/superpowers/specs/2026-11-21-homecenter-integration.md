@@ -98,3 +98,15 @@ Provide each size as a separate remembered choice with one label per page.
 uniformly enlarges it to fit the available width. Do not infer a brand or roll
 capacity. The complete requested set contains eight print profiles, including
 the two Tanex A4 sheets. Keep width and height distinct in all selectors.
+
+## Full orientation support and native identity
+
+The user added 100 × 50 mm and 80 × 500 mm (literal 500 mm), and requested both
+portrait and landscape for all rectangular stocks. Provide 17 physical profiles
+across nine stock families, with one square 100 × 100 option. Landscape Tanex
+rotates the entire calibrated A4 canvas 90 degrees counterclockwise, preserving
+all original cut positions, margins and content. The original portrait outputs
+remain unchanged. Use paired options and quick orientation controls with native
+WOW colors, typography and navigation. Remember orientation with the paper
+choice, regenerate the current invoice automatically, and lock both selectors
+during native printing. Show actual width/length requirements for unusual media.

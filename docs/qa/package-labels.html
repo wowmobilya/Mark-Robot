@@ -7,16 +7,16 @@
 *{box-sizing:border-box}body{margin:0;background:#eef2f5;color:#163143;font:16px Arial,sans-serif}header{padding:20px;max-width:1100px;margin:auto}h1{font-size:23px}p{line-height:1.8}label,select,button{font:inherit}select,button{padding:12px;border:1px solid #b5c4cc;border-radius:10px;background:white;color:inherit}button{cursor:pointer}output{display:block;padding:14px 0;font-weight:bold}#paper{width:794px;max-width:calc(100vw - 24px);height:2246px;display:block;margin:0 auto 24px;border:0;background:white}.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.note{font-size:14px;color:#45606c}.data{font-family:monospace;direction:ltr;text-align:left}
 </style>
 <script src="../../vendor/JsBarcode.code128.min.js?v=3.11.5" defer></script>
-<script src="../../package-label-core.js?v=4" defer></script>
-<script src="../../package-labels.js?v=4" defer></script>
+<script src="../../package-label-core.js?v=5" defer></script>
+<script src="../../package-labels.js?v=5" defer></script>
 </head>
 <body>
 <header>
 <h1>ورقة فحص قوالب الطباعة · WOW</h1>
 <p>بيانات تجريبية لفحص المقاس وتوزيع الملصقات. لا تقرأ هذه الصفحة الفواتير أو تحفظ بيانات في البرنامج.</p>
-<div class="controls"><label for="stock">قالب الورق</label><select id="stock"><option value="tw2004">Tanex TW-2004 · 4 / A4</option><option value="tw2008">Tanex TW-2008 · 8 / A4</option><option value="zebra100x150">Zebra · 100 × 150 mm</option><option value="zebra150x100">Zebra · 150 × 100 mm</option><option value="thermal80x100">رول حراري · 80 × 100 mm</option><option value="thermal70x100">رول حراري · 70 × 100 mm</option><option value="thermal100x100">رول حراري · 100 × 100 mm</option><option value="thermal100x200">رول حراري · 100 × 200 mm</option></select><button id="print" type="button" disabled>طباعة ورقة الفحص</button><a href="../../#package-labels">فتح قسم إتيكيت الطرود</a></div>
+<div class="controls"><label for="stock">قالب الورق</label><select id="stock"></select><button id="print" type="button" disabled>طباعة ورقة الفحص</button><a href="../../#package-labels">فتح قسم إتيكيت الطرود</a></div>
 <output id="result" aria-live="polite">جارٍ تجهيز ورقة الفحص…</output>
-<p class="note">الطباعة: مقاس الورق المختار، حجم فعلي 100%، دون ملاءمة للصفحة أو ترويسات المتصفح. جرّب ورقة فحص للتحقق من محاذاة طابعتك. يتطلب اتجاه 150 × 100 مم طابعة تقبل ورقًا بعرض 150 مم.</p>
+<p class="note">الطباعة: مقاس الورق المختار، حجم فعلي 100%، دون ملاءمة للصفحة أو ترويسات المتصفح. جرّب ورقة فحص للتحقق من محاذاة طابعتك. تأكد من أن الطابعة تدعم عرض الرول وطوله المحددين، بما فيهما المقاسات التي تبلغ 500 مم.</p>
 <p class="data" id="metrics"></p>
 </header>
 <iframe id="paper" title="معاينة قوالب الطباعة"></iframe>
@@ -24,8 +24,13 @@
 window.addEventListener('DOMContentLoaded',()=>{
  const core=window.WFPackageLabelCore,helpers=window.WFPackageLabelHelpers;
  const stock=document.getElementById('stock'),frame=document.getElementById('paper'),button=document.getElementById('print'),result=document.getElementById('result');
+ for(const paper of Object.values(core.profiles)){
+  const option=document.createElement('option');option.value=paper.id;
+  option.textContent=paper.name+' · '+paper.pageWidthMM+' × '+paper.pageHeightMM+' mm · '+(paper.mediaType==='roll'?'رول':(paper.columns*paper.rows)+' / A4');stock.append(option);
+ }
+ stock.value=core.defaultProfileId;
  const logo=new URL('../../assets/wow-furniture-logo.png',location.href).href;
- const invoice={id:'qa-only',invNo:'QA-202',companyLogo:logo,items:[{productId:'qa-a',name:'W400',type:'coffee_table',color:'Oak-Black',qty:2,packets:2,image:logo},{productId:'qa-b',name:'W900',type:'side_table',color:'White',qty:5,packets:1,image:logo}]};
+ const invoice={id:'qa-only',invNo:'QA-203',companyLogo:logo,items:[{productId:'qa-a',name:'W400',type:'coffee_table',color:'Oak-Black',qty:2,packets:2,image:logo},{productId:'qa-b',name:'W900',type:'side_table',color:'White',qty:5,packets:1,image:logo}]};
  const model=core.normalizeInvoice(invoice,{companyLogo:logo});let generation=0;
  async function render(){
   const token=++generation;button.disabled=true;

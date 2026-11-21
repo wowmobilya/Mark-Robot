@@ -131,14 +131,20 @@
     // The original app owns closing its invoice preview and mobile drawer first.
     if(document.querySelector('.modal-ov.open')||document.getElementById('sidebar')?.classList.contains('open'))return false;
     const from = current();
-    const target = event?.state?.page || root.location.hash.slice(1) || 'dashboard';
-    if (!registry.has(from) && !registry.has(target)) return false;
-    if (!document.getElementById('page-' + target)) return false;
-    root.closeSidebar?.(); root.showPage(target, false); return true;
+    const hash = root.location.hash.slice(1);
+    const target = [hash, event?.state?.page, hash ? '' : 'dashboard'].find(id =>
+      typeof id === 'string' && id && document.getElementById('page-' + id));
+    if (!target || (!registry.has(from) && !registry.has(target))) return false;
+    event?.stopImmediatePropagation();
+    if (from !== target) root.showPage(target, false);
+    return true;
   }
-  root.addEventListener('popstate', event => {
-    if (handleHistory(event)) event.stopImmediatePropagation();
-  }, true);
+  // The inline router also delegates here before its hierarchical Back fallback.
+  root.addEventListener('popstate', handleHistory, true);
+  root.addEventListener('hashchange', () => {
+    const from = current(), target = root.location.hash.slice(1);
+    if (from !== target && from !== 'notifications' && target !== 'notifications') handleHistory();
+  });
   new root.MutationObserver(() => translate()).observe(document.documentElement, {attributes:true, attributeFilter:['lang']});
   root.WFOperations = {
     register, open, state, locale, make, icon, handleHistory,

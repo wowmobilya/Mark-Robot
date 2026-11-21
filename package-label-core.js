@@ -48,7 +48,20 @@
     if (labelsPerRoll !== undefined) profile.labelsPerRoll = labelsPerRoll;
     return Object.freeze(profile);
   }
-  const profiles = Object.freeze({
+  function landscapeSheet(portrait) {
+    return Object.freeze({
+      ...portrait, id:portrait.id+'Landscape', sourceProfileId:portrait.id, sheetRotationDeg:-90,
+      pageWidthMM:portrait.pageHeightMM, pageHeightMM:portrait.pageWidthMM,
+      stockWidthMM:portrait.stockHeightMM, stockHeightMM:portrait.stockWidthMM,
+      cardWidthMM:portrait.cardHeightMM, cardHeightMM:portrait.cardWidthMM,
+      columns:portrait.rows, rows:portrait.columns,
+      marginTopMM:portrait.marginRightMM, marginRightMM:portrait.marginBottomMM,
+      marginBottomMM:portrait.marginLeftMM, marginLeftMM:portrait.marginTopMM,
+      gapColumnMM:portrait.gapRowMM, gapRowMM:portrait.gapColumnMM,
+      artworkRotationDeg:portrait.artworkRotationDeg - 90
+    });
+  }
+  const sheets = Object.freeze({
     tw2004:Object.freeze({
       id:'tw2004', name:'Tanex TW-2004',
       pageWidthMM:210, pageHeightMM:297,
@@ -60,13 +73,25 @@
     tw2008:Object.freeze({
       ...geometry, id:'tw2008', name:'Tanex TW-2008',
       stockWidthMM:99.1, stockHeightMM:67.7, insetMM:0, artworkRotationDeg:0, artworkScale:1
-    }),
+    })
+  });
+  const profiles = Object.freeze({
+    ...sheets,
+    tw2004Landscape:landscapeSheet(sheets.tw2004),
+    tw2008Landscape:landscapeSheet(sheets.tw2008),
     zebra100x150:rollProfile('Zebra', 100, 150, 250),
     zebra150x100:rollProfile('Zebra', 150, 100, 250),
     thermal80x100:rollProfile('Thermal', 80, 100),
     thermal70x100:rollProfile('Thermal', 70, 100),
     thermal100x100:rollProfile('Thermal', 100, 100),
-    thermal100x200:rollProfile('Thermal', 100, 200)
+    thermal100x200:rollProfile('Thermal', 100, 200),
+    thermal100x80:rollProfile('Thermal', 100, 80),
+    thermal100x70:rollProfile('Thermal', 100, 70),
+    thermal200x100:rollProfile('Thermal', 200, 100),
+    thermal100x50:rollProfile('Thermal', 100, 50),
+    thermal50x100:rollProfile('Thermal', 50, 100),
+    thermal80x500:rollProfile('Thermal', 80, 500),
+    thermal500x80:rollProfile('Thermal', 500, 80)
   });
   const maxLabels = 2000;
   const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -253,7 +278,9 @@
   }
 
   function renderDocument(batch, options = {}) {
-    const source = record(batch), settings = profileFor(source.profileId), config = record(options);
+    const source = record(batch), paper = profileFor(source.profileId), config = record(options);
+    const rotatedSheet = Boolean(paper.sourceProfileId);
+    const settings = rotatedSheet ? profiles[paper.sourceProfileId] : paper;
     const pages = Array.isArray(source.pages) ? source.pages : [];
     const availableWidthMM = settings.pageWidthMM - settings.marginLeftMM - settings.marginRightMM;
     const availableHeightMM = settings.pageHeightMM - settings.marginTopMM - settings.marginBottomMM;
@@ -263,7 +290,8 @@
     // A single transform scales all the original artwork around its center.
     // On narrow stock the unrotated layout box extends beyond the page. Clip
     // its overflow at the grid edge so it cannot widen the print viewport.
-    const containOverflow = settings.cardWidthMM < geometry.cardWidthMM ? '\n        overflow: hidden;' : '';
+    const clipStock = settings.cardWidthMM < geometry.cardWidthMM || settings.cardHeightMM < geometry.cardHeightMM;
+    const containOverflow = clipStock ? '\n        overflow: hidden;' : '';
     const fittedArtworkCSS = settings.fitArtwork ? `
       .labels-grid {
         position: absolute;
@@ -278,6 +306,32 @@
         transform: rotate(${settings.artworkRotationDeg}deg) scale(${settings.artworkScale});
         transform-origin: center;
       }` : '';
+    // In physical coordinates this quarter turn maps (x, y) to (y, 210 - x).
+    // Explicit matrix coefficients preserve that mapping for the RTL document.
+    const rotatedSheetCSS = rotatedSheet ? `
+      .page {
+        position: relative;
+        width: ${paper.pageWidthMM}mm;
+        height: ${paper.pageHeightMM}mm;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      .sheet-layout {
+        position: absolute;
+        top: ${paper.pageHeightMM}mm;
+        left: 0;
+        transform-origin: 0 0;
+        transform: matrix(0, -1, 1, 0, 0, 0);
+      }
+      @media print {
+        .sheet-layout {
+          display: flex;
+          align-items: flex-start;
+          justify-content: flex-start;
+        }
+      }` : '';
 
     // Original template: no application CSS, script, CDN or external font load.
     // Only @page sizing and page breaks are hardened; all physical positions,
@@ -289,20 +343,20 @@
     <title>طباعة الاتاكيت</title>
     <style>
       @page {
-        size: ${settings.pageWidthMM}mm ${settings.pageHeightMM}mm;
+        size: ${paper.pageWidthMM}mm ${paper.pageHeightMM}mm;
         margin: 0;
       }
       @media print {
         body, html {
           margin: 0; padding: 0;
-          width: ${settings.pageWidthMM}mm;
-          height: ${settings.pageHeightMM}mm;
+          width: ${paper.pageWidthMM}mm;
+          height: ${paper.pageHeightMM}mm;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
         .page {
-          width: ${settings.pageWidthMM}mm;
-          height: ${settings.pageHeightMM}mm;
+          width: ${paper.pageWidthMM}mm;
+          height: ${paper.pageHeightMM}mm;
           margin: 0;
           padding: 0;
           box-sizing: border-box;
@@ -328,7 +382,7 @@
         margin: 0;
         background: #fff;
       }
-      .page {
+      ${rotatedSheet ? '.sheet-layout' : '.page'} {
         position: relative;
         width: ${settings.pageWidthMM}mm;
         height: ${settings.pageHeightMM}mm;
@@ -401,14 +455,14 @@
         object-fit: contain;
         border: none;
         display: block;
-      }${fittedArtworkCSS}
+      }${fittedArtworkCSS}${rotatedSheetCSS}
     </style>
   </head>
   <body>
   `;
 
     pages.forEach(modelsPage => {
-      html += `<div class="page"><div class="labels-grid">`;
+      html += `<div class="page">${rotatedSheet ? '<div class="sheet-layout">' : ''}<div class="labels-grid">`;
       modelsPage.forEach(item => {
         const name = escapeHTML(item.name), image = safeImageSource(item.image);
         const color = string(item.color);
@@ -492,7 +546,7 @@
       for (let index = modelsPage.length; index < settings.columns * settings.rows; index++) {
         html += `<div class="label-card" style="background:#f3faf6;"></div>`;
       }
-      html += `</div></div>`;
+      html += `</div>${rotatedSheet ? '</div>' : ''}</div>`;
     });
     return html + `</body></html>`;
   }

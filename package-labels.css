@@ -3,6 +3,10 @@
   .wf-package-profile-copy { display:grid; gap:7px; flex:1 1 270px; min-inline-size:0; }
   .wf-package-profile-copy label { font-size:16px; font-weight:750; }
   .wf-package-profile-copy select { inline-size:100%; min-block-size:46px; box-sizing:border-box; }
+  .wf-package-orientations { display:flex; gap:6px; padding:4px; border:1px solid var(--border); border-radius:12px; background:var(--input); inline-size:fit-content; max-inline-size:100%; }
+  .wf-package-orientations .btn { min-block-size:44px; padding:8px 18px; border-radius:8px; font-size:14px; background:transparent; border-color:transparent; color:var(--text2); }
+  .wf-package-orientations .btn[aria-pressed="true"] { color:var(--brand-primary); background:var(--card); border-color:var(--brand-primary); }
+  .wf-package-orientations .btn[hidden] { display:none!important; }
   .wf-package-profile .wf-package-preference { font-size:13px; }
   .wf-package-profile strong { font-size:16px; }
   .wf-package-profile p { margin:3px 0 0; color:var(--text2); font-size:14px; line-height:1.6; }

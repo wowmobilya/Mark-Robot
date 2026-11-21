@@ -81,3 +81,14 @@ test('paper choice defaults to four labels, remembers a valid device preference,
   assert.equal(helpers.readProfilePreference(blocked,core),'tw2004');
   assert.equal(helpers.writeProfilePreference(blocked,'tw2008',core),false);
 });
+
+test('orientation shortcuts pair every stock without crossing Tanex products or duplicating the square',()=>{
+  const core=require('../package-label-core.js');
+  const pairs=[['tw2004','tw2004Landscape'],['tw2008','tw2008Landscape'],['zebra100x150','zebra150x100'],['thermal80x100','thermal100x80'],['thermal70x100','thermal100x70'],['thermal100x200','thermal200x100'],['thermal50x100','thermal100x50'],['thermal80x500','thermal500x80']];
+  for(const [portrait,landscape] of pairs){
+    assert.deepEqual(helpers.orientationChoices(core,portrait),{portrait,landscape});
+    assert.deepEqual(helpers.orientationChoices(core,landscape),{portrait,landscape});
+  }
+  assert.deepEqual(helpers.orientationChoices(core,'thermal100x100'),{square:'thermal100x100'});
+  assert.deepEqual(helpers.orientationChoices(core,'constructor'),{});
+});
