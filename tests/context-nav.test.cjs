@@ -19,7 +19,7 @@ class El {
  click(){this.clicks++;this.onclick?.();for(const fn of this.events.click||[])fn({target:this});}
  focus(){this.focused=true;}scrollIntoView(){this.scrolled=true;}scrollTo(){this.scrollTop=0;}
 }
-const pages=['dashboard','companies','products','cart','invoices','select-client-type','add-company','add-product','select-invoice-type','create-invoice','payment-management','reports','exchange','cashboxes','quick-barcode','settings'];
+const pages=['dashboard','companies','products','cart','invoices','select-client-type','add-company','add-product','select-invoice-type','create-invoice','payment-management','reports','exchange','cashboxes','quick-barcode','settings','package-labels','product-costs','invoice-archive'];
 function setup({mobile=false}={}){
  const root=new El,body=new El,main=new El('mainContent'),nav=new El('bottomNav'),ids={mainContent:main,bottomNav:nav},queue=[],observers=[],calls={routes:[],back:0,menu:0,moves:[]};root.lang='ar';root.dir='rtl';root.append(body);body.append(main,nav);
  for(const p of pages){const el=new El('page-'+p,'page');ids[el.id]=el;main.append(el);}ids['page-dashboard'].classes.add('active');
@@ -29,6 +29,7 @@ function setup({mobile=false}={}){
   ['clientSave','add-company','#coSaveBtn','coSaveBtn'],['clientReset','add-company','#coResetBtn','coResetBtn'],['productSave','add-product','[onclick="savePr()"]'],['productReset','add-product','#prResetBtnWrap','prResetBtnWrap'],['changeType','add-product','#changePrTypeBtn','changePrTypeBtn'],['types','add-product','#prTypeStepCards','prTypeStepCards'],
   ['addClient','companies','[onclick="showPage(\'select-client-type\')"]'],['addProduct','products','[onclick="showPage(\'add-product\')"]'],['addInvoice','invoices','[onclick="showPage(\'select-invoice-type\')"]'],
   ['invoiceSave','create-invoice','[onclick="saveInvoice()"]'],['preview','create-invoice','[onclick="previewInvoice()"]'],['payment','payment-management','[onclick="addPaymentToInv()"]'],['movement','cashboxes','.cashboxes form button[type="submit"]'],['statement','companies','[onclick="wfOpenStatement()"]'],['refresh','exchange','.curr-refresh'],['calculator','exchange','.curr-item[onclick="openCurrCalc(\'usd-try\')"]'],
+  ['packagePrint','package-labels','#wfPackagePrint','wfPackagePrint'],['costSave','product-costs','#wfCostSave','wfCostSave'],['costSearch','product-costs','#wfCostProductSearch','wfCostProductSearch'],['archiveSearch','invoice-archive','#wfArchiveSearch','wfArchiveSearch'],
   ['scan','quick-barcode','#qblScanMode','qblScanMode'],['browse','quick-barcode','#qblBrowseMode','qblBrowseMode'],['search','quick-barcode','.qbl-search-trigger'],['cancel','quick-barcode','#qblCancelTierBtn','qblCancelTierBtn'],['changeTier','quick-barcode','[onclick="qblChangeTier()"]'],['addCart','quick-barcode','[onclick="qblAddToInvoice()"]'],['cartInvoice','cart','#wfCartCreateInvoice','wfCartCreateInvoice']
  ])original[name]=target(page,sel,id);
  for(const [page,id] of [['companies','coSearch'],['products','prSearch'],['invoices','invSearch']])target(page,'.wf-search-toggle[aria-controls="'+id+'"]');
@@ -241,7 +242,7 @@ test('a separate active modal blocks shared settings actions without forwarding 
  a.setModals([s.dialog]);a.click(2);assert.deepEqual(s.runs,['primary']);
 });
 test('all actual sections have five scoped controls, correct primary actions, and no actions on entry',()=>{
- const a=setup(),expected={dashboard:2,companies:0,products:0,cart:3,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2};
+ const a=setup(),expected={dashboard:2,companies:0,products:0,cart:3,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2,'package-labels':4,'product-costs':4,'invoice-archive':3};
  for(const page of pages){a.activate(page);const config=a.ctx.navTest.configuration(a.ids['page-'+page]);assert.equal(config.items.length,5,page);assert.equal(config.active,expected[page],page);assert.equal(a.nav.dataset.section,page);assert.equal(a.buttons.filter(b=>b.classList.contains('bnav-active')).length,1);for(const item of config.items){assert(item.icon&&item.label,page);if(item.kind==='route')assert(a.ids['page-'+item.page],item.page);}}
  assert.equal(a.calls.routes.length,0);assert.equal(a.calls.back,0);assert.equal(Object.values(a.original).reduce((n,b)=>n+b.clicks,0),0);
 });
@@ -316,4 +317,17 @@ test('original desktop filter controls and counts return to their pages on mobil
  ids['page-companies'].classList.add('active');const doc={documentElement:root,body,getElementById:id=>ids[id],createComment:()=>new El,createElement:()=>new El};vm.runInNewContext(source,{document:doc,S,window:{showPage:p=>page=p},requestAnimationFrame:fn=>queue.push(fn),matchMedia:()=>media,MutationObserver:class{constructor(fn){observers.push(fn);}observe(){}}});
  const flush=()=>{while(queue.length)queue.shift()();},sync=()=>{observers.forEach(fn=>fn());flush();};const dock=body.children.find(x=>x.id==='wfContextNav'),bar=ids.coStatsBar,pill=bar.children[1];assert.equal(bar.parentElement,dock);assert.equal(pill.getAttribute('role'),'button');let prevented=false;pill.events.keydown[0]({key:' ',preventDefault:()=>prevented=true});flush();assert(prevented);assert.equal(S.coTabFilter,'external');assert.equal(pill.getAttribute('aria-pressed'),'true');
  media.matches=true;media.change();flush();assert(dock.hidden);assert.equal(bar.parentElement,ids['page-companies']);assert(!root.classList.contains('wf-context-nav-open'));media.matches=false;ids['page-companies'].classList.remove('active');ids['page-products'].classList.add('active');root.lang='tr';sync();assert.equal(ids.prStatsBar.parentElement,dock);assert.equal(dock.getAttribute('aria-label'),'Bölüm filtreleri');dock.children[0].click();assert.equal(page,'dashboard');
+});
+
+test('native operations sections reuse guarded print/save controls and focus their own search fields',()=>{
+ const a=setup({mobile:true});
+ a.activate('package-labels');a.click(4);assert.equal(a.original.packagePrint.clicks,1);
+ a.original.packagePrint.setAttribute('aria-busy','true');a.sync();assert(a.buttons[4].disabled);
+ a.click(4);assert.equal(a.original.packagePrint.clicks,1);
+ a.click(3);assert.equal(a.calls.routes.at(-1),'invoice-archive');
+ a.activate('product-costs');a.click(4);assert.equal(a.original.costSave.clicks,1);
+ a.click(3);assert.equal(a.original.costSearch.focused,true);
+ a.original.costSave.disabled=true;a.sync();a.click(4);assert.equal(a.original.costSave.clicks,1);
+ a.activate('invoice-archive');a.click(4);assert.equal(a.original.archiveSearch.focused,true);
+ assert.equal(a.buttons[3].getAttribute('aria-current'),'page');
 });

@@ -1,0 +1,109 @@
+/* Product costing is an internal screen; it contributes no invoice/label print content. */
+@media screen {
+  #page-product-costs { min-inline-size:0; }
+  #page-product-costs .wf-cost-overview { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+  #page-product-costs .wf-cost-stat { display:flex; flex-direction:column; justify-content:space-between; gap:8px; padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--card); color:var(--text2); font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+  #page-product-costs .wf-cost-stat strong { color:var(--text); font-size:26px; line-height:1.2; font-variant-numeric:tabular-nums; }
+  #page-product-costs .wf-cost-layout { display:grid; grid-template-columns:minmax(240px,300px) minmax(0,1fr); gap:18px; align-items:start; }
+  #page-product-costs :is(.wf-cost-detail,.wf-cost-editor,.wf-cost-form,.wf-cost-material-list) { display:grid; gap:16px; min-inline-size:0; }
+  #page-product-costs .wf-cost-form { padding:0; margin:0; border:0; }
+  #page-product-costs .wf-cost-form:disabled { opacity:.7; }
+  #page-product-costs .fi { display:block; inline-size:100%; min-inline-size:0; min-block-size:46px; border:1px solid var(--border); border-radius:11px; padding:10px 12px; background:var(--input); color:var(--text); font:inherit; font-size:16px; line-height:1.5; box-sizing:border-box; }
+  #page-product-costs select.fi { cursor:pointer; }
+  #page-product-costs .wf-cost-picker { display:grid; gap:14px; }
+  #page-product-costs .wf-cost-picker h2 { margin:0; }
+  #page-product-costs .wf-cost-filters { display:flex; flex-wrap:wrap; gap:6px; }
+  #page-product-costs .wf-cost-filter { flex:1 1 auto; border:1px solid var(--border); border-radius:10px; padding:7px 9px; background:var(--input); color:var(--text2); font-size:12px; font-weight:650; line-height:1.5; }
+  #page-product-costs .wf-cost-filter[aria-pressed="true"] { color:var(--gold2); border-color:var(--gold); background:var(--gold-light); }
+  #page-product-costs .wf-cost-list-count { margin:0; }
+  #page-product-costs .wf-cost-product-list { display:grid; gap:7px; min-inline-size:0; }
+  #page-product-costs .wf-cost-product { inline-size:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; text-align:start; border:1px solid var(--border); background:transparent; color:var(--text); border-radius:12px; padding:12px; min-inline-size:0; cursor:pointer; }
+  #page-product-costs .wf-cost-product[aria-pressed="true"] { border-color:var(--gold); background:var(--gold-light); }
+  #page-product-costs .wf-cost-product-text { display:grid; gap:5px; min-inline-size:0; }
+  #page-product-costs .wf-cost-product strong { font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+  #page-product-costs .wf-cost-product-value { font-size:12px; color:var(--text2); font-variant-numeric:tabular-nums; }
+  #page-product-costs .wf-cost-product-arrow { font-size:24px; color:var(--gold2); flex:none; }
+  #page-product-costs .wf-cost-draft-tag { color:var(--gold2); font-size:11px; }
+  #page-product-costs .wf-cost-change { display:none; }
+  #page-product-costs .wf-cost-empty { min-block-size:320px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; }
+  #page-product-costs .wf-cost-empty-icon { inline-size:72px; block-size:72px; display:grid; place-items:center; background:var(--gold-light); border:1px solid var(--gold); color:var(--gold2); border-radius:22px; }
+  #page-product-costs .wf-cost-empty-icon svg { inline-size:34px; block-size:34px; }
+  #page-product-costs .wf-cost-empty h2 { max-inline-size:30ch; }
+  #page-product-costs .wf-cost-empty p { max-inline-size:50ch; }
+  #page-product-costs .wf-cost-identity { display:grid; gap:8px; }
+  #page-product-costs .wf-cost-identity h2 { font-size:25px; overflow-wrap:anywhere; }
+  #page-product-costs .wf-cost-identity p { margin:0; }
+  #page-product-costs .wf-cost-eyebrow { font-size:12px; font-weight:750; color:var(--gold2); line-height:1.5; }
+  #page-product-costs .wf-cost-currency { display:grid; grid-template-columns:minmax(100px,160px) minmax(0,1fr); gap:16px; align-items:end; }
+  #page-product-costs .wf-cost-currency > .btn { justify-self:start; }
+  #page-product-costs .wf-cost-rate-hint { grid-column:1 / -1; margin:0; }
+  #page-product-costs .wf-cost-rates { display:grid; gap:8px; padding:8px 0; min-inline-size:0; }
+  #page-product-costs .wf-cost-rate-value { font-size:13px; line-height:1.7; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+  #page-product-costs .wf-cost-field { display:grid; gap:7px; min-inline-size:0; }
+  #page-product-costs .wf-cost-field > label { color:var(--text2); font-size:13px; font-weight:650; line-height:1.5; overflow-wrap:anywhere; }
+  #page-product-costs .wf-cost-section-heading { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-block-end:16px; min-inline-size:0; }
+  #page-product-costs .wf-cost-section-heading h2 { margin:0; }
+  #page-product-costs .wf-cost-material-row { display:grid; gap:12px; padding:14px; border:1px solid var(--border); border-radius:14px; background:var(--input); min-inline-size:0; }
+  #page-product-costs .wf-cost-material-heading { display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  #page-product-costs .wf-cost-material-heading h3 { font-size:14px; color:var(--text); line-height:1.5; margin:0; }
+  #page-product-costs .wf-cost-remove { min-block-size:38px; font-size:12px; padding:6px 8px; box-shadow:none; }
+  #page-product-costs .wf-cost-remove .wf-cost-icon { color:var(--red); }
+  #page-product-costs .wf-cost-material-fields { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:12px; }
+  #page-product-costs .wf-cost-material-name { grid-column:1 / -1; }
+  #page-product-costs .wf-cost-material-row .fi { background:var(--card); }
+  #page-product-costs .wf-cost-row-total { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:13px; line-height:1.5; border-block-start:1px solid var(--border); padding-block-start:10px; color:var(--text2); }
+  #page-product-costs .wf-cost-row-amount { font-weight:750; color:var(--text); font-variant-numeric:tabular-nums; }
+  #page-product-costs .wf-cost-extras { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  #page-product-costs .wf-cost-totals { display:grid; gap:8px; }
+  #page-product-costs .wf-cost-total-row { display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; padding:8px 0; font-size:14px; line-height:1.5; color:var(--text2); }
+  #page-product-costs .wf-cost-total-row bdi { color:var(--text); font-weight:700; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  #page-product-costs .wf-cost-total-primary { padding:16px; margin-block:4px; border:1px solid var(--gold); border-radius:12px; background:var(--gold-light); color:var(--gold2); font-weight:700; }
+  #page-product-costs .wf-cost-total-primary bdi { font-size:24px; color:var(--gold2); }
+  #page-product-costs .wf-cost-summary > p, #page-product-costs .wf-cost-comparison > p { margin-block-start:14px; }
+  #page-product-costs .wf-cost-tiers { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  #page-product-costs .wf-cost-tier { border:1px solid var(--border); background:var(--input); border-radius:12px; padding:14px; min-inline-size:0; display:grid; gap:10px; }
+  #page-product-costs .wf-cost-tier h3 { font-size:13px; color:var(--text2); margin:0; }
+  #page-product-costs .wf-cost-selling-price { font-size:18px; font-weight:750; color:var(--text); font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  #page-product-costs .wf-cost-tier-row { display:grid; gap:3px; font-size:12px; line-height:1.6; color:var(--text2); }
+  #page-product-costs .wf-cost-tier-row bdi { font-size:15px; font-weight:700; color:var(--green); font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  #page-product-costs .wf-cost-tier[data-loss="true"] .wf-cost-tier-row bdi { color:var(--red); }
+  #page-product-costs .wf-cost-footer { display:grid; gap:12px; }
+  #page-product-costs .wf-cost-footer > .btn { justify-self:start; }
+  #page-product-costs .wf-cost-footer > p { margin:0; }
+  #page-product-costs .wf-cost-message { margin:0; }
+  #page-product-costs .wf-cost-message[data-kind="draft"] { color:var(--gold2); border:1px solid var(--gold); }
+  #page-product-costs .wf-cost-discard-prompt { display:flex; gap:10px; flex-wrap:wrap; padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--input); }
+  #page-product-costs .wf-cost-discard-prompt p { flex-basis:100%; margin:0; }
+  #page-product-costs .wf-cost-icon { display:inline-flex; flex:none; }
+  #page-product-costs .wf-cost-icon svg { inline-size:18px; block-size:18px; }
+  @media (max-width:1050px) {
+    #page-product-costs .wf-cost-layout { grid-template-columns:minmax(200px,240px) minmax(0,1fr); gap:12px; }
+    #page-product-costs .wf-cost-tiers { grid-template-columns:1fr; }
+    #page-product-costs .wf-cost-tier { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+    #page-product-costs .wf-cost-tier h3, #page-product-costs .wf-cost-selling-price { grid-column:1 / -1; }
+    #page-product-costs .wf-cost-material-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    #page-product-costs .wf-cost-material-fields > :nth-child(2) { grid-column:1 / -1; }
+  }
+  @media (max-width:780px) {
+    #page-product-costs .wf-cost-layout { grid-template-columns:minmax(0,1fr); }
+    #page-product-costs .wf-cost-change { display:inline-flex; justify-self:start; }
+    #page-product-costs[data-cost-selected="true"][data-cost-picker="false"] .wf-cost-picker { display:none; }
+    #page-product-costs .wf-cost-tiers { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    #page-product-costs .wf-cost-tier { display:grid; grid-template-columns:1fr; }
+  }
+  @media (max-width:520px) {
+    #page-product-costs .wf-cost-overview { gap:7px; }
+    #page-product-costs .wf-cost-stat { padding:10px; font-size:11px; border-radius:12px; }
+    #page-product-costs .wf-cost-stat strong { font-size:23px; }
+    #page-product-costs .wf-cost-currency { grid-template-columns:minmax(0,1fr); gap:12px; }
+    #page-product-costs .wf-cost-identity h2 { font-size:22px; }
+    #page-product-costs .wf-cost-extras { grid-template-columns:minmax(0,1fr); }
+    #page-product-costs .wf-cost-tiers { grid-template-columns:minmax(0,1fr); }
+    #page-product-costs .wf-cost-tier { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    #page-product-costs .wf-cost-material-row { padding:11px; }
+    #page-product-costs .wf-cost-material-fields { gap:10px; }
+    #page-product-costs .wf-cost-section-heading > .btn { inline-size:100%; }
+    #page-product-costs .wf-cost-total-primary { padding:12px; }
+  }
+}
+@media print { #page-product-costs { display:none !important; } }

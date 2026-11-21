@@ -6433,9 +6433,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=34">
      <script src="cart-page.js?v=1" defer></script>
+<script src="operations-workspace.js?v=1" defer></script>
 <script src="ui-navigation.js?v=31" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
-<script src="context-nav.js?v=9" defer></script>
+<script src="context-nav.js?v=10" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=3" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
@@ -6462,6 +6463,12 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="vendor/JsBarcode.code128.min.js?v=3.11.5" defer></script>
 <script src="product-label-core.js?v=2" defer></script>
 <script src="product-labels.js?v=3" defer></script>
+<script src="package-label-core.js?v=1" defer></script>
+<script src="product-cost-core.js?v=1" defer></script>
+<script src="product-costs.js?v=1" defer></script>
+<script src="invoice-archive-core.js?v=1" defer></script>
+<script src="invoice-archive.js?v=1" defer></script>
+<script src="package-labels.js?v=1" defer></script>
 <script src="business-workspace.js?v=1" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
 <script src="arabic-report-speech.js?v=3" defer></script>
@@ -6481,7 +6488,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="barcode-workspace.js?v=1" defer></script>
 <script src="touch-keyboard.js?v=2" defer></script>
 <script src="developer-profile.js?v=2" defer></script>
-<script src="app-updates.js?v=2" defer data-release="198"></script>
+<script src="app-updates.js?v=2" defer data-release="199"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
@@ -6522,6 +6529,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="touch-keyboard.css?v=1">
 <link rel="stylesheet" href="notifications-workspace.css?v=1">
 <link rel="stylesheet" href="unified-workspaces.css?v=1">
+<link rel="stylesheet" href="operations-workspace.css?v=1">
+<link rel="stylesheet" href="product-costs.css?v=1">
+<link rel="stylesheet" href="invoice-archive.css?v=1">
+<link rel="stylesheet" href="package-labels.css?v=1">
 </head>
 <body>
 
@@ -13620,6 +13631,9 @@ const PARENT_MAP = {
    
   'products':      'dashboard',
   'invoices':      'dashboard',
+  'package-labels': 'invoices',
+  'product-costs': 'products',
+  'invoice-archive': 'invoices',
   'add-product':   'dashboard',
   'quick-barcode': 'dashboard',
      'settings':      'dashboard', // 👈 تمت إضافتها هنا
@@ -15755,7 +15769,7 @@ function renderPr(){
 
 
     return `
-    <div class="pr-card-new" onclick="togglePrCard(event, this)">
+    <div class="pr-card-new" data-product-id="${wfRecordAttribute(p.id)}" onclick="togglePrCard(event, this)">
 
       <!-- المحتوى — يختفي عند الفتح -->
       <div class="pr-card-new-content">
@@ -16733,6 +16747,12 @@ async function saveInvoice(){
     printLang:S.printLang,printOpts:{...S.printOpts},
     payments,
   };
+  // Capture cost and print identity at this explicit invoice save.
+  if(window.WFCosting)Object.assign(inv,window.WFCosting.captureInvoiceCosts(inv));
+  if(window.WFPackageLabels)Object.assign(inv,window.WFPackageLabels.captureIdentity(inv));
+  if(existingInv&&existingInv.companyId!==coId&&inv.packageLabelSnapshot){
+    inv.packageLabelSnapshot={...inv.packageLabelSnapshot,customerLogo:inv.companyLogo,capturedAt:new Date().toISOString()};
+  }
   const operations=[{store:'invoices',value:inv}];
   const settings={...S.settings};
   if(!S.editInvId){
@@ -16766,6 +16786,7 @@ async function saveInvoice(){
    INVOICES LIST RENDER
 ============================================================ */
 function setInvTab(filter){
+  if(filter==='archived'&&window.WFInvoiceArchive){window.WFInvoiceArchive.open();return;}
   S.invTabFilter=filter;
   document.querySelectorAll('#invStatsBar .co-stat-pill').forEach(pill=>{
     const pf=pill.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
@@ -16774,6 +16795,7 @@ function setInvTab(filter){
   renderInvList();
 }
 
+function wfRecordAttribute(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderInvList(){
   wfCancelPendingRender('inv');
   const container=document.getElementById('invListContainer');
@@ -16815,16 +16837,16 @@ function renderInvList(){
 
   const list=[...S.invoices].reverse().filter(inv=>{
     const isArchived = inv.archived || false;
+    const matchSearch = !search || String(inv.invNo ?? '').toLowerCase().includes(search) ||
+      String(inv.companyName ?? '').toLowerCase().includes(search);
 
     // تبويب الأرشيف: يعرض فقط المؤرشفة
-    if(S.invTabFilter==='archived') return isArchived && (
-      inv.invNo.toLowerCase().includes(search)||(inv.companyName||'').toLowerCase().includes(search)
-    ) && (!S.invClientFilter||inv.companyId===S.invClientFilter);
+    if(S.invTabFilter==='archived') return isArchived && matchSearch &&
+      (!S.invClientFilter||inv.companyId===S.invClientFilter);
 
     // ✅ إذا كان هناك فلتر عميل → اعرض كل فواتيره بما فيها الأرشيف
     if(S.invClientFilter){
       const matchClient = inv.companyId === S.invClientFilter;
-      const matchSearch = inv.invNo.toLowerCase().includes(search)||(inv.companyName||'').toLowerCase().includes(search);
       const matchTab    = S.invTabFilter==='all'||(inv.companyType||'external')===S.invTabFilter;
       return matchClient && matchSearch && matchTab;
     }
@@ -16833,7 +16855,6 @@ function renderInvList(){
     if(isArchived) return false;
 
     const matchTab   = S.invTabFilter==='all'||(inv.companyType||'external')===S.invTabFilter;
-    const matchSearch= inv.invNo.toLowerCase().includes(search)||(inv.companyName||'').toLowerCase().includes(search);
     return matchTab&&matchSearch;
   });
 
@@ -16909,7 +16930,7 @@ function renderInvList(){
     const fallbackIcon=typeDefaultIcons[inv.companyType||'external']||'📄';
 
        return `
-    <div class="inv-card" style="animation-delay:${Math.min(idx,8)*0.05}s${inv.archived?' opacity:.85;':''}"
+    <div class="inv-card" data-invoice-id="${wfRecordAttribute(inv.id)}" style="animation-delay:${Math.min(idx,8)*0.05}s${inv.archived?' opacity:.85;':''}"
          onclick="toggleInvCard(event, this)">
 
           <!-- زر رجوع — يظهر فقط مع الأزرار -->
@@ -17006,7 +17027,7 @@ function renderInvList(){
   ${inv.archived ? `
     <button class="btn" 
       style="background:var(--card);color:var(--text2);border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.06);"
-      onclick="unarchiveInv('${inv.id}')">
+      onclick="window.WFInvoiceArchive?WFInvoiceArchive.restore('${inv.id}'):unarchiveInv('${inv.id}')">
       🔄 ${uiTxt.unarchive||wfUiText("إلغاء الأرشيف")}
     </button>
   ` : `
@@ -20705,7 +20726,7 @@ startGreetingRotation();
   }
   // handle hash routing
   const hash=window.location.hash.replace('#','');
-const validPages=['dashboard','companies','products','cart','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management','reports','exchange','settings','quick-barcode','notifications'];
+const validPages=['dashboard','companies','products','cart','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management','reports','exchange','settings','quick-barcode','notifications','package-labels','product-costs','invoice-archive'];
   if(hash&&validPages.includes(hash)){
     if(hash==='settings')loadSettingsToForm();
     showPage(hash,false);history.replaceState({page:hash},'','#'+hash);
@@ -20850,7 +20871,7 @@ const DELIVER_MODAL_TEXTS = {
     ar: {
       title:    'إلغاء الأرشفة',
       subtitle: 'هل تريد إعادة هذه الفاتورة إلى القائمة النشطة؟',
-      info:     'سيتم إلغاء التسليم وإعادة الفاتورة إلى الفواتير النشطة.',
+      info:     'ستعود الفاتورة إلى الفواتير النشطة مع الاحتفاظ بالدفعات وحالة التسليم.',
       infoIcon: '🔄',
       cancel:   'إلغاء',
       confirm:  '🔄 إلغاء الأرشفة',
@@ -20859,7 +20880,7 @@ const DELIVER_MODAL_TEXTS = {
     tr: {
       title:    'Arşivi Kaldır',
       subtitle: 'Bu faturayı aktif listeye geri döndürmek istiyor musunuz?',
-      info:     'Teslimat iptal edilecek ve fatura aktif faturalara geri dönecek.',
+      info:     'Fatura, ödemeleri ve teslimat durumu korunarak etkin faturalara geri dönecek.',
       infoIcon: '🔄',
       cancel:   'İptal',
       confirm:  '🔄 Arşivi Kaldır',
@@ -20868,7 +20889,7 @@ const DELIVER_MODAL_TEXTS = {
     en: {
       title:    'Unarchive Invoice',
       subtitle: 'Do you want to move this invoice back to the active list?',
-      info:     'Delivery status will be reset and the invoice will return to active invoices.',
+      info:     'The invoice will return to active invoices with its payments and delivery status intact.',
       infoIcon: '🔄',
       cancel:   'Cancel',
       confirm:  '🔄 Unarchive',
@@ -20878,7 +20899,7 @@ const DELIVER_MODAL_TEXTS = {
   fr: {
       title:    "Désarchiver la facture",
       subtitle: "Remettre cette facture dans la liste active ?",
-      info:     "Le statut de livraison sera réinitialisé et la facture redeviendra active.",
+      info:     "La facture rejoindra les factures actives avec ses paiements et son statut de livraison.",
       infoIcon: "🔄",
       cancel:   "Annuler",
       confirm:  "🔄 Désarchiver",
@@ -20887,7 +20908,7 @@ const DELIVER_MODAL_TEXTS = {
   ru: {
       title:    "Вернуть счёт из архива",
       subtitle: "Вернуть этот счёт в активный список?",
-      info:     "Статус доставки будет сброшен, счёт вернётся в активные.",
+      info:     "Счёт вернётся в список активных. Платежи и статус доставки сохранятся.",
       infoIcon: "🔄",
       cancel:   "Отмена",
       confirm:  "🔄 Вернуть из архива",
@@ -20897,7 +20918,8 @@ const DELIVER_MODAL_TEXTS = {
 };
 
 function openDeliverModal(invId, mode = 'deliver') {
-  const inv = S.invoices.find(i => i.id === invId);
+  if (mode === 'unarchive' && window.WFInvoiceArchive?.restore) return window.WFInvoiceArchive.restore(invId);
+  const inv = S.invoices.find(i => i.id === invId) || S.invoices.find(i => String(i.id) === String(invId));
   if (!inv) return;
 
   _deliverModalMode     = mode;
@@ -20960,20 +20982,23 @@ function openDeliverModal(invId, mode = 'deliver') {
 
   // ── حفظ الـ callback
   _deliverModalCallback = async () => {
-    const savedInv={...inv};
-    if (mode === 'deliver') {
-      savedInv.delivered  = true;
-      savedInv.deliveredAt = new Date().toISOString();
-      savedInv.archived   = true;
-      savedInv.archivedAt = new Date().toISOString();
-    } else {
-      savedInv.delivered   = false;
-      savedInv.deliveredAt = null;
-      savedInv.archived    = false;
-      savedInv.archivedAt  = null;
-    }
-    await dbPut('invoices', savedInv);
-    const idx = S.invoices.findIndex(i => i.id === invId);
+    const intent = {
+      id:inv.id, action:isDeliver ? 'archive' : 'restore', capturedAt:new Date().toISOString(),
+      issuerLogo:isDeliver ? wfCompanyLogo(S.settings.logo) : null
+    };
+    // The transaction supplies the current invoice and deduplicates the issuer logo before merging.
+    const [stored] = await wfWriteBatch([{
+      store:'invoices', type:'merge', id:inv.id, value:intent,
+      merge(latest, prepared) {
+        const next = window.WFInvoiceArchiveCore.mergeTransition(latest, prepared, {
+          captureCosts:window.WFCosting?.captureInvoiceCosts
+        });
+        if (!isDeliver || next.delivered) return next;
+        return {...next, delivered:true, deliveredAt:prepared.capturedAt};
+      }
+    }]);
+    const savedInv = await wfHydrateDBValue(stored);
+    const idx = S.invoices.findIndex(i => i.id === savedInv.id);
     if (idx >= 0) S.invoices[idx] = savedInv;
     showToast(texts.toast, 'ok');
     renderInvList();

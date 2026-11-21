@@ -1,0 +1,31 @@
+/* Native operations pages share the same WOW header and theme tokens. */
+@media screen {
+  .wf-ops-page { min-inline-size:0; }
+  .wf-ops-body { display:grid; gap:18px; min-inline-size:0; padding-block-end:16px; }
+  .wf-ops-page :is(input, select, textarea, button) { font-family:inherit; }
+  .wf-ops-page :is(input, select, textarea) { min-inline-size:0; max-inline-size:100%; font-size:16px; }
+  .wf-ops-page :is(input, select, textarea):focus-visible,
+  .wf-ops-page button:focus-visible { outline:3px solid var(--brand-primary, var(--gold)); outline-offset:3px; }
+  .wf-ops-page :is(button, .btn) { min-block-size:44px; white-space:normal; overflow-wrap:anywhere; }
+  .wf-ops-page .btn { gap:8px; align-items:center; justify-content:center; }
+  .wf-ops-page .btn svg { flex:none; inline-size:20px; block-size:20px; }
+  .wf-ops-card { padding:20px; border:1px solid var(--border); border-radius:20px; background:var(--card); color:var(--text); min-inline-size:0; box-shadow:0 5px 18px rgb(20 46 60 / 3%); }
+  .wf-ops-card > :first-child { margin-block-start:0; }
+  .wf-ops-card > :last-child { margin-block-end:0; }
+  .wf-ops-card h2 { font-size:18px; font-weight:750; line-height:1.5; }
+  .wf-ops-card p { font-size:14px; line-height:1.8; color:var(--text2); }
+  .wf-ops-muted { color:var(--text2); font-size:14px; line-height:1.7; }
+  .wf-ops-status { border-radius:12px; padding:12px 14px; background:var(--input); font-size:14px; line-height:1.8; overflow-wrap:anywhere; }
+  .wf-ops-status[data-kind="error"] { border:1px solid var(--red); color:var(--red); }
+  .wf-ops-status[data-kind="success"] { color:var(--green); }
+  .wf-ops-row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; min-inline-size:0; }
+  .wf-ops-empty { padding:32px 18px; text-align:center; color:var(--text2); font-size:16px; line-height:1.8; }
+  .wf-ops-nav .nav-icon svg { inline-size:20px; block-size:20px; }
+  .wf-ops-actions:empty { display:none; }
+  .wf-ops-page [hidden] { display:none !important; }
+  @media (max-width:600px) {
+    .wf-ops-body { gap:12px; }
+    .wf-ops-card { padding:14px; border-radius:16px; }
+    .wf-ops-page .wf-ops-actions .btn { flex:1 1 auto; padding-inline:12px; font-size:14px; }
+  }
+}

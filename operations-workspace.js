@@ -1,0 +1,165 @@
+/* Native WOW destinations for package labels, product costs and the archive.
+   The shell owns navigation only. Each feature owns its data and page body. */
+(function (root) {
+  'use strict';
+  const document = root.document;
+  if (!document || root.WFOperations || typeof root.showPage !== 'function') return;
+  const main = document.getElementById('mainContent');
+  const nav = document.getElementById('wf-nav-main');
+  if (!main || !nav) return;
+  const locales = ['ar', 'tr', 'en', 'fr', 'ru'];
+  const names = {
+    'package-labels': {ar:'إتيكيت الطرود',tr:'Koli etiketleri',en:'Package labels',fr:'Étiquettes de colis',ru:'Этикетки упаковок'},
+    'product-costs': {ar:'كلفة المنتجات',tr:'Ürün maliyetleri',en:'Product costs',fr:'Coût des produits',ru:'Себестоимость товаров'},
+    'invoice-archive': {ar:'أرشيف الفواتير',tr:'Fatura arşivi',en:'Invoice archive',fr:'Archives des factures',ru:'Архив счетов'}
+  };
+  const groupNames = {ar:'التصنيع والمتابعة',tr:'Üretim ve takip',en:'Production and records',fr:'Production et suivi',ru:'Производство и учёт'};
+  const backNames = {ar:'رجوع',tr:'Geri',en:'Back',fr:'Retour',ru:'Назад'};
+  const icons = {
+    package:'<path d="m3 7 9-4 9 4v10l-9 4-9-4Zm0 0 9 5 9-5M12 12v9M7.5 5l9 4"/>',
+    label:'<path d="M3 3h8l10 10-8 8L3 11Z"/><circle cx="7" cy="7" r="1"/>',
+    cost:'<rect x="5" y="2" width="14" height="20" rx="3"/><path d="M8 6h8M8 11h1m4 0h3m-8 4h1m4 0h3m-8 4h1m4 0h3"/>',
+    archive:'<rect x="3" y="3" width="18" height="4" rx="1"/><path d="M5 7v14h14V7M9 11h6"/>',
+    print:'<path d="M7 8V3h10v5M7 17H3V9h18v8h-4M7 14h10v7H7Z"/><path d="M17 11h1"/>',
+    search:'<circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    save:'<path d="M5 3h12l4 4v14H3V3Zm2 0v6h10V3M7 21v-8h10v8"/>',
+    restore:'<path d="M3 10a9 9 0 1 1 1 8M3 4v6h6M12 7v5l3 2"/>',
+    eye:'<path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+    check:'<path d="m5 12 4 4L19 6"/>',
+    close:'<path d="m6 6 12 12M18 6 6 18"/>',
+    invoice:'<path d="M14 3H5a1 1 0 0 0-1 1v16h16V9Zm0 0v6h6M8 13h8m-8 4h6"/>',
+    menu:'<path d="M4 6h16M4 12h16M4 18h16"/>'
+  };
+  const state = () => typeof S === 'object' ? S : {};
+  const locale = () => locales.includes(document.documentElement.lang) ? document.documentElement.lang : locales.includes(state().lang) ? state().lang : 'ar';
+  const make = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const icon = name => '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + (icons[name] || icons.package) + '</svg>';
+  const current = () => document.querySelector('.page.active')?.id.slice(5) || 'dashboard';
+  const registry = new Map(), links = new Map();
+  const group = make('div', 'wf-nav-group wf-ops-nav');
+  group.setAttribute('role', 'group'); group.setAttribute('aria-labelledby', 'wfOperationsNavTitle');
+  const groupTitle = make('div', 'side-sec'); groupTitle.id = 'wfOperationsNavTitle';
+  group.append(groupTitle);
+  for (const [id, title] of Object.entries(names)) {
+    const link = make('button', 'nav-item'); link.type = 'button'; link.dataset.page = id;
+    const symbol = make('span', 'nav-icon'); symbol.innerHTML = icon(id === 'product-costs' ? 'cost' : id === 'invoice-archive' ? 'archive' : 'label');
+    const caption = make('span'); link.append(symbol, caption);
+    // The shared sidebar search invokes the original item's onclick handler.
+    link.onclick = () => open(id);
+    links.set(id, {link, caption, title}); group.append(link);
+  }
+  // Appended after the existing navigation items so legacy numeric indices stay valid.
+  nav.append(group);
+
+  function translate() {
+    const lang = locale(); groupTitle.textContent = groupNames[lang];
+    const toggle = group.querySelector('.wf-group-toggle');
+    if (toggle) { const label = toggle.querySelector('span'); if (label) label.textContent = groupNames[lang]; }
+    for (const {link, caption, title} of links.values()) {
+      caption.textContent = title[lang]; link.title = title[lang]; link.setAttribute('aria-label', title[lang]);
+    }
+    for (const label of document.querySelectorAll('[data-wf-ops-label]')) {
+      const value = names[label.dataset.wfOpsLabel]?.[lang];
+      if (value) label.textContent = value;
+    }
+    for (const entry of registry.values()) {
+      entry.page.lang = lang; entry.page.dir = lang === 'ar' ? 'rtl' : 'ltr';
+      entry.title.textContent = entry.definition.title?.[lang] || names[entry.id][lang];
+      entry.subtitle.textContent = entry.definition.subtitle?.[lang] || '';
+      entry.subtitle.hidden = !entry.subtitle.textContent;
+      entry.back.textContent = backNames[lang]; entry.back.setAttribute('aria-label', backNames[lang]);
+      entry.definition.onLanguage?.();
+    }
+  }
+  function sync() {
+    const id = current();
+    for (const [key, {link}] of links) {
+      link.classList.toggle('active', key === id);
+      if (key === id) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+    }
+  }
+  function register(definition) {
+    const id = definition.id;
+    if (!Object.hasOwn(names, id)) throw new Error('Unknown operations page');
+    if (registry.has(id)) return registry.get(id);
+    const page = make('section', 'page wf-ops-page'); page.id = 'page-' + id;
+    const header = make('header', 'sct-sticky-header wf-heading-row');
+    const back = make('button', 'sct-back-btn'); back.type = 'button';
+    back.addEventListener('click', () => root.showPage(definition.parent || 'dashboard'));
+    const heading = make('div', 'sct-sticky-title wf-centered-heading');
+    const title = make('h1'); title.id = 'wfOpsTitle-' + id; title.tabIndex = -1;
+    page.setAttribute('aria-labelledby', title.id);
+    const subtitle = make('p'); heading.append(title, subtitle);
+    const menu = make('button', 'wf-section-menu'); menu.type = 'button'; menu.innerHTML = icon('menu');
+    menu.setAttribute('aria-controls','sidebar'); menu.setAttribute('aria-expanded','false');
+    menu.addEventListener('click', () => root.wfToggleDesktopSidebar?.());
+    const actions = make('div', 'wf-heading-actions wf-ops-actions');
+    header.append(back, heading, menu, actions);
+    const body = make('div', 'wf-ops-body'); page.append(header, body); main.append(page);
+    const entry = {id, definition, page, header, actions, body, title, subtitle, back};
+    registry.set(id, entry);
+    const lang = locale(); page.lang = lang; page.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    title.textContent = definition.title?.[lang] || names[id][lang];
+    subtitle.textContent = definition.subtitle?.[lang] || ''; subtitle.hidden = !subtitle.textContent;
+    back.textContent = backNames[lang];
+    return entry;
+  }
+  function open(id) {
+    if (!registry.has(id)) return false;
+    root.showPage(id); return true;
+  }
+  const originalShowPage = root.showPage;
+  root.showPage = function (id, pushHistory = true) {
+    const result = originalShowPage.apply(this, arguments);
+    sync();
+    const entry = registry.get(id);
+    if (entry && current() === id) entry.definition.onEnter?.();
+    return result;
+  };
+  function handleHistory(event) {
+    const from = current();
+    const target = event?.state?.page || root.location.hash.slice(1) || 'dashboard';
+    if (!registry.has(from) && !registry.has(target)) return false;
+    if (!document.getElementById('page-' + target)) return false;
+    root.closeSidebar?.(); root.showPage(target, false); return true;
+  }
+  root.addEventListener('popstate', event => {
+    if (handleHistory(event)) event.stopImmediatePropagation();
+  }, true);
+  new root.MutationObserver(() => translate()).observe(document.documentElement, {attributes:true, attributeFilter:['lang']});
+  root.WFOperations = {
+    register, open, state, locale, make, icon, handleHistory,
+    refresh() { registry.get(current())?.definition.onEnter?.(); },
+    notify(message, type = 'ok') { root.showToast?.(message, type); },
+    label(id) { return names[id]?.[locale()] || ''; }
+  };
+  function enhanceProducts() {
+    for (const card of document.querySelectorAll('#prGrid .pr-card-new[data-product-id]')) {
+      const actions = card.querySelector('.pr-card-new-actions');
+      if (!actions || actions.querySelector('[data-wf-cost-action]')) continue;
+      const action = make('button', 'btn btn-s'); action.type='button'; action.dataset.wfCostAction='';
+      const symbol=make('span','wf-ops-icon'); symbol.innerHTML=icon('cost');
+      const caption=make('span','',names['product-costs'][locale()]); caption.dataset.wfOpsLabel='product-costs';
+      action.append(symbol,caption);
+      action.addEventListener('click',event=>{event.stopPropagation();root.WFCosting?.open(card.dataset.productId);});
+      actions.append(action);
+    }
+  }
+  const products=document.getElementById('prGrid');
+  if(products)new root.MutationObserver(enhanceProducts).observe(products,{childList:true});
+  const productToolbar=document.querySelector('#page-products .co-toolbar-row');
+  if(productToolbar){
+    const action=make('button','btn btn-s');action.type='button';action.id='wfProductCostsOpen';
+    const symbol=make('span','wf-ops-icon');symbol.innerHTML=icon('cost');
+    const caption=make('span','',names['product-costs'][locale()]);caption.dataset.wfOpsLabel='product-costs';
+    action.append(symbol,caption);action.addEventListener('click',()=>root.WFCosting?.open());productToolbar.append(action);
+  }
+  enhanceProducts();
+  translate();
+})(typeof window === 'object' ? window : globalThis);
