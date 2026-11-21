@@ -1,0 +1,373 @@
+{
+  "release": 205,
+  "before": {
+    "header": {
+      "height": 141.125,
+      "width": 1072.78125,
+      "x": 0,
+      "y": 0
+    },
+    "page": "page-package-labels",
+    "paperToolbar": {
+      "height": 247.1875,
+      "width": 1001.90625,
+      "x": 35.4375,
+      "y": 168.375
+    },
+    "release": "204"
+  },
+  "after": {
+    "header": {
+      "height": 77.125,
+      "width": 1072.78125,
+      "x": 0,
+      "y": 0
+    },
+    "page": "page-package-labels",
+    "paperToolbar": {
+      "height": 70.5,
+      "width": 1001.90625,
+      "x": 35.4375,
+      "y": 92.109375
+    },
+    "release": "205"
+  },
+  "layoutMeasurements": [
+    {
+      "kind": "native",
+      "requestedWidth": 320,
+      "minCaptionGap": null,
+      "overlaps": [],
+      "page": "page-package-labels",
+      "release": "205",
+      "scrollWidth": 314,
+      "viewport": 314
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 320,
+      "minCaptionGap": null,
+      "overlaps": [],
+      "page": "page-product-costs",
+      "release": "205",
+      "scrollWidth": 314,
+      "viewport": 314
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 320,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-invoice-archive",
+      "release": "205",
+      "scrollWidth": 314,
+      "viewport": 314
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 320,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-manufacturing",
+      "release": "205",
+      "scrollWidth": 314,
+      "viewport": 314
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 320,
+      "minCaptionGap": null,
+      "overlaps": [],
+      "page": "page-material-library",
+      "release": "205",
+      "scrollWidth": 314,
+      "viewport": 314
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 320,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-cost-analysis",
+      "release": "205",
+      "scrollWidth": 314,
+      "viewport": 314
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 390,
+      "minCaptionGap": null,
+      "overlaps": [],
+      "page": "page-package-labels",
+      "release": "205",
+      "scrollWidth": 384,
+      "viewport": 384
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 390,
+      "minCaptionGap": null,
+      "overlaps": [],
+      "page": "page-product-costs",
+      "release": "205",
+      "scrollWidth": 384,
+      "viewport": 384
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 390,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-invoice-archive",
+      "release": "205",
+      "scrollWidth": 384,
+      "viewport": 384
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 390,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-manufacturing",
+      "release": "205",
+      "scrollWidth": 384,
+      "viewport": 384
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 390,
+      "minCaptionGap": null,
+      "overlaps": [],
+      "page": "page-material-library",
+      "release": "205",
+      "scrollWidth": 384,
+      "viewport": 384
+    },
+    {
+      "kind": "native",
+      "requestedWidth": 390,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-cost-analysis",
+      "release": "205",
+      "scrollWidth": 384,
+      "viewport": 384
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 320,
+      "minCaptionGap": null,
+      "overlaps": [],
+      "page": "page-package-labels",
+      "scrollWidth": 303,
+      "viewport": 303
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 320,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-product-costs",
+      "scrollWidth": 303,
+      "viewport": 303
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 320,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-manufacturing",
+      "scrollWidth": 303,
+      "viewport": 303
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 320,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-material-library",
+      "scrollWidth": 303,
+      "viewport": 303
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 320,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-cost-analysis",
+      "scrollWidth": 303,
+      "viewport": 303
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 390,
+      "minCaptionGap": null,
+      "overlaps": [],
+      "page": "page-package-labels",
+      "scrollWidth": 373,
+      "viewport": 373
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 390,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-product-costs",
+      "scrollWidth": 373,
+      "viewport": 373
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 390,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-manufacturing",
+      "scrollWidth": 373,
+      "viewport": 373
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 390,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-material-library",
+      "scrollWidth": 373,
+      "viewport": 373
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 390,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-cost-analysis",
+      "scrollWidth": 373,
+      "viewport": 373
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 320,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-invoice-archive",
+      "scrollWidth": 303,
+      "viewport": 303
+    },
+    {
+      "kind": "synthetic",
+      "requestedWidth": 390,
+      "minCaptionGap": 5,
+      "overlaps": [],
+      "page": "page-invoice-archive",
+      "scrollWidth": 373,
+      "viewport": 373
+    }
+  ],
+  "modalMeasurements": [
+    {
+      "requestedWidth": 390,
+      "dialogHeight": 848,
+      "families": 9,
+      "minButtonHeight": 44,
+      "orientations": [
+        "portrait",
+        "landscape"
+      ],
+      "outsidePanel": [],
+      "panel": {
+        "height": 712.8125,
+        "width": 360,
+        "x": 16,
+        "y": 67.59375
+      },
+      "scrollWidth": 384,
+      "viewport": 384
+    },
+    {
+      "requestedWidth": 320,
+      "dialogHeight": 848,
+      "families": 9,
+      "minButtonHeight": 44,
+      "orientations": [
+        "portrait",
+        "landscape"
+      ],
+      "outsidePanel": [],
+      "panel": {
+        "height": 756.734375,
+        "width": 290,
+        "x": 16,
+        "y": 45.625
+      },
+      "scrollWidth": 314,
+      "viewport": 314
+    },
+    {
+      "kind": "synthetic",
+      "locale": "fr",
+      "requestedWidth": 320,
+      "dialogHeight": 848,
+      "families": 9,
+      "minButtonHeight": 44,
+      "orientations": [
+        "portrait",
+        "landscape"
+      ],
+      "outsidePanel": [],
+      "panel": {
+        "height": 815.484375,
+        "width": 279,
+        "x": 12,
+        "y": 16.25
+      },
+      "scrollWidth": 303,
+      "viewport": 303
+    },
+    {
+      "kind": "synthetic",
+      "locale": "ru",
+      "requestedWidth": 320,
+      "dialogHeight": 848,
+      "families": 9,
+      "minButtonHeight": 44,
+      "orientations": [
+        "portrait",
+        "landscape"
+      ],
+      "outsidePanel": [],
+      "panel": {
+        "height": 750.734375,
+        "width": 279,
+        "x": 12,
+        "y": 48.625
+      },
+      "scrollWidth": 303,
+      "viewport": 303
+    }
+  ],
+  "preference": {
+    "cancelKept": "tw2004",
+    "rememberedAfterReload": "thermal50x100",
+    "restoredDefault": "tw2004"
+  },
+  "history": {
+    "back": {
+      "dialog": false,
+      "page": "page-product-costs"
+    },
+    "forward": {
+      "dialog": false,
+      "page": "page-package-labels"
+    }
+  },
+  "rollPreview": {
+    "preview": {
+      "height": "377.953px",
+      "width": "566.929px"
+    },
+    "printEnabled": true,
+    "profile": "zebra150x100",
+    "summary": "QA-204-01\nتغيير الفاتورة\n\nQA · Studio A\n\n5\nملصق\n5\nصفحة رول\n\nالاسم والصورة واللون وعدد الطرود من بيانات الفاتورة المحفوظة.\n\nشعار الشركة الحالي؛ تثبت هويته عند حفظ الفاتورة أو أرشفتها.\n\nالمعاينة جاهزة للطباعة وفق قالب الورق المختار.\n\nإعادة التجهيز\nفتح الفاتورة"
+  },
+  "syntheticFixturesUsed": true,
+  "physicalPrinterTested": false
+}
