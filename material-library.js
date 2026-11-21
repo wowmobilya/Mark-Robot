@@ -149,13 +149,17 @@
   function renderList() {
     if (!mounted) return;
     const saved = rows(), currentRows = saved.concat([...drafts.entries()].filter(([key,value]) => value.creating && !saved.some(row => String(row.id) === key)).map(([,value]) => value.data));
-    const linked = saved.filter(row => core.usage(products(),row.id).length).length;
+    // Rebuild from current records for this render. Every material lookup below
+    // shares one BOM traversal without caching across edits or backup restores.
+    const usageIndex = core.buildUsageIndex(products());
+    const linkedCount = row => usageIndex.get(String(row.id).trim())?.length || 0;
+    const linked = saved.filter(row => linkedCount(row) > 0).length;
     const priced = saved.filter(row => {try{return cost.amount(row.unitPrice) !== null;}catch(_){return false;}}).length;
     overview.replaceChildren(...[['library',saved.length],['known',priced],['linked',linked]].map(([key,value]) => {
       const card = make('div','wf-mat-stat'); card.append(copy('span','',key),make('strong','',new Intl.NumberFormat(ops.locale()).format(value))); return card;
     }));
     const query = search.value.trim().toLocaleLowerCase();
-    const found = currentRows.filter(row => (!query || [row.name,row.unit,row.category].join(' ').toLocaleLowerCase().includes(query)) && (filter !== 'linked' || core.usage(products(),row.id).length > 0) && (filter !== 'unknown' || cost.missing(row.unitPrice)));
+    const found = currentRows.filter(row => (!query || [row.name,row.unit,row.category].join(' ').toLocaleLowerCase().includes(query)) && (filter !== 'linked' || linkedCount(row) > 0) && (filter !== 'unknown' || cost.missing(row.unitPrice)));
     list.replaceChildren();
     for (const row of found.slice(0,visible)) {
       const control = make('button','wf-mat-item'); control.type = 'button'; control.setAttribute('aria-pressed',String(String(row.id) === selectedId));

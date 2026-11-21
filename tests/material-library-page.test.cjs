@@ -36,14 +36,14 @@ class Element {
   focus() {}
 }
 
-function fixture(initial = {}) {
+function fixture(initial = {}, libraryCore = core) {
   const state = {settings:{},products:[],invoices:[],usdTry:50,usdEur:0.8,...structuredClone(initial)};
   const tables = {settings:new Map([['main',structuredClone(state.settings)]]),products:new Map(state.products.map(row => [row.id,structuredClone(row)]))};
   const pages = new Map(), guards = new Map(), events = new Map(), toasts = [];
   let locale = 'en', active, fail = false, count = 0;
   const make = (...args) => new Element(...args);
   const root = {
-    document:{createDocumentFragment:() => make('fragment')},WFCostCore:costs,WFMaterialLibraryCore:core,console,
+    document:{createDocumentFragment:() => make('fragment')},WFCostCore:costs,WFMaterialLibraryCore:libraryCore,console,
     WFAppUpdates:{registerGuard:(name,callback) => guards.set(name,callback)},WFTouchKeyboard:{close(){}},
     Event:class {constructor(type) {this.type = type;}},wfNewRecordId:() => 'stable-id',
     addEventListener:(name,handler) => {const listeners = events.get(name) || []; listeners.push(handler); events.set(name,listeners);},
@@ -124,4 +124,32 @@ test('a conflicting saved material is reread without replacing typed inputs and 
   assert.equal(f.id('wfMaterialUnitPrice').value,20); assert(!f.guard('material-library'));
   f.id('wfMaterialUnitPrice').fire('input','25'); await f.id('wfMaterialSave').click();
   assert.equal(core.listMaterials(f.state.settings)[0].unitPrice,25); assert(!f.guard('material-library'));
+});
+
+test('linked-material filter and overview refresh from current product data with no duplicate product counts', async () => {
+  const materials = ['0','wood','metal'].map(id => core.prepareMaterial({id,name:id,unit:'kg',currency:'USD',unitPrice:10},'saved'));
+  const scans = {indexed:0,legacy:0}, tracked = {...core,
+    buildUsageIndex(products) {scans.indexed++; return core.buildUsageIndex(products);},
+    usage(products,id) {scans.legacy++; return core.usage(products,id);}
+  };
+  const f = fixture({settings:{materialLibrary:{version:1,materials}},products:[
+    {id:'p1',name:'One',costing:{materials:[{catalogId:0},{catalogId:'0'},{catalogId:'wood'}]}},
+    {id:'p2',name:'Two',costing:{materials:[{catalogId:'wood'},{catalogId:'wood'}]}}
+  ]},tracked);
+  f.root.WFMaterialLibrary.open(); await f.root.WFMaterialLibrary.refresh();
+  f.button('material-library','Used in products').click();
+  const displayed = () => f.pages.get('material-library').page.querySelectorAll('.wf-mat-item').map(row => row.querySelector('strong').textContent);
+  assert.deepEqual(displayed(),['0','wood']);
+  assert.equal(f.pages.get('material-library').page.querySelectorAll('.wf-mat-stat')[2].querySelector('strong').textContent,'2');
+  const before = {...scans}; f.id('wfMaterialSearch').fire('input','');
+  assert.equal(scans.indexed - before.indexed,1,'one usage index supplies both filter and overview');
+  assert.equal(scans.legacy - before.legacy,0,'the list no longer rescans products per material');
+  f.root.WFMaterialLibrary.open('wood');
+  assert.equal(f.pages.get('material-library').page.querySelectorAll('.wf-mat-usage-item').length,2);
+  f.state.products = [{id:'p3',name:'Three',costing:{materials:[{catalogId:'metal'}]}}];
+  await f.root.WFMaterialLibrary.refresh();
+  assert.deepEqual(displayed(),['metal']);
+  assert.equal(f.pages.get('material-library').page.querySelectorAll('.wf-mat-stat')[2].querySelector('strong').textContent,'1');
+  assert.equal(f.pages.get('material-library').page.querySelectorAll('.wf-mat-usage-item').length,0);
+  assert.equal(f.writes(),0);
 });

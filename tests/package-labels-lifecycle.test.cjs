@@ -51,15 +51,20 @@ function element() {
     remove(){this.removed=true;this.isConnected=false;},focus(){},querySelector(){return null;},querySelectorAll(){return[];}
   });
 }
+function descendants(node) { return node.children.flatMap(child=>[child,...descendants(child)]); }
+function pickerParts(app) {
+  const picker=app.ui.paperPicker,all=descendants(picker.dialog);
+  return {picker,byId:id=>all.find(node=>node.id===id),
+    family:id=>all.find(node=>node.dataset.paperFamily===id),direction:name=>all.find(node=>node.dataset.wfOrientation===name)};
+}
 function fixture(options={}) {
   const first={id:'i1',invNo:'A1',companyName:'First customer',companyLogo:png,items:[{productId:'p1',name:'W400',type:'coffee_table',color:'Oak',qty:1,packets:1,image:png}]};
   const second={id:'i2',invNo:'A2',companyName:'Second customer',companyLogo:png,items:[{productId:'p2',name:'W900',type:'side_table',color:'Black',qty:2,packets:2,image:png}]};
   const state={invoices:[first,second],products:[],settings:{logo:png}};
   const calls={prints:0,frames:[],images:[],renderTurns:0,navigation:[],brand:0};
   const guards=new Map(),timers=new Map();let context, timerId=0, mode=options.printMode||'async';
-  const fields=['printButton','detail','preview','empty','stage','invoiceTitle','customerName','counts','summary','identity','issueList','issues','counter','previous','next','status','retry','viewInvoice','change','list','more','filters','chooser','search','printRecovery','printRecoveryHint','profileSelect','badge','stockText','geometryNote','stockSizeNote','scaleNote','preferenceHint','printerHint'];
+  const fields=['printButton','detail','preview','empty','stage','invoiceTitle','customerName','counts','summary','identity','issueList','issues','counter','previous','next','status','retry','viewInvoice','change','list','more','filters','chooser','search','printRecovery','printRecoveryHint','mediaIcon','badge','stockText','geometryNote','stockSizeNote','scaleNote','preferenceHint','printerHint'];
   const ui=Object.fromEntries(fields.map(name=>[name,element()]));ui.printRecovery.hidden=true;ui.printRecoveryHint.hidden=true;
-  ui.orientationGroup=element();ui.orientationButtons=Object.fromEntries(['portrait','landscape','square'].map(key=>[key,element()]));
   const document=Object.assign(new Events(),{body:element(),baseURI:'https://wow.example/app/',visibilityState:'visible',hidden:false,activeElement:null});
   const animationFrame=callback=>{calls.renderTurns++;queueMicrotask(()=>callback(0));return calls.renderTurns;};
   function image(src,kind) {
@@ -101,7 +106,14 @@ function fixture(options={}) {
   document.createElement=tag=>{
     if(tag==='iframe')return frameElement();
     if(tag==='canvas')return {width:0,height:0,getContext:()=>({fillRect(){},fillStyle:''}),toDataURL:()=>png};
-    return element();
+    const node=element();node.tagName=tag;
+    node.focus=()=>{document.activeElement=node;};
+    if(tag==='dialog'){
+      node.showModal=()=>{node.open=true;node.setAttribute('open','');};
+      node.close=()=>{node.open=false;node.removeAttribute('open');node.dispatch('close');};
+    }
+    node.querySelectorAll=selector=>descendants(node).filter(item=>item.tagName===selector);
+    return node;
   };
   const window=Object.assign(new Events(),{
     document,requestAnimationFrame:animationFrame,matchMedia:()=>({matches:false}),JsBarcode:vendor.window.JsBarcode,
@@ -115,6 +127,10 @@ function fixture(options={}) {
     make:(tag,className,value)=>{const node=document.createElement(tag);node.className=className||'';if(value!==undefined)node.textContent=value;return node;},
     setTimeout(callback,delay){const id=++timerId;timers.set(id,{callback,delay});return id;},clearTimeout:id=>timers.delete(id),
     ...ui};
+  ui.paperPicker=helpers.createPaperPicker({document,make:sandbox.make,core,t:key=>context.t(key),getLocale:()=>context.ops.locale(),
+    getApplied:()=>vm.runInContext('profileId',context),isLocked:()=>Boolean(vm.runInContext('activePrint',context)),
+    onOpenChange:()=>context.updateControls(),onApply:id=>context.changeProfile(id)});
+  sandbox.paperPicker=ui.paperPicker;
   context=vm.createContext(sandbox);vm.runInContext(controllerCode,context);vm.runInContext("selectedId='i1';profileId='tw2008';",context);
   const read=expression=>vm.runInContext(expression,context);
   return {context,ui,state,window,document,calls,guards,timers,read,
@@ -363,7 +379,7 @@ test('paper selection automatically rebuilds the same invoice into four or eight
     assert.equal(app.context.changeProfile('tw2004'),true);await tick();
     assert.equal(app.read('batch.profileId'),'tw2004');assert.equal(app.read('batch.pageCount'),3);
     assert.equal(JSON.stringify(app.read('batch.labels')),labels);
-    assert.equal(app.read('ready'),true);assert.equal(app.ui.profileSelect.value,'tw2004');
+    assert.equal(app.read('ready'),true);assert.equal(app.ui.paperPicker.trigger.dataset.profileId,'tw2004');
     assert.equal(preferences.get('wf_package_label_profile_v1'),'tw2004');
     assert.equal(app.context.changeProfile('tw2008'),true);await tick();
     assert.equal(app.read('batch.pageCount'),2);assert.equal(app.read('ready'),true);
@@ -376,11 +392,11 @@ test('an open print job locks paper choice and retains every original sheet',asy
   try{
     await app.context.prepare(true);await app.context.print();
     const job=app.read('activePrint');
-    assert.equal(app.ui.profileSelect.disabled,true);
+    assert.equal(app.ui.paperPicker.trigger.disabled,true);
     assert.equal(app.context.changeProfile('tw2004'),false);
     assert.equal(app.read('profileId'),'tw2008');assert.equal(app.read('batch.pageCount'),2);
     assert.equal(app.read('activePrint'),job);assert.equal(app.calls.prints,1);
-    app.finish();await tick();assert.equal(app.ui.profileSelect.disabled,false);
+    app.finish();await tick();assert.equal(app.ui.paperPicker.trigger.disabled,false);
   }finally{app.dispose();}
 });
 
@@ -447,12 +463,11 @@ for(const [width,height] of [[70,100],[100,100],[100,200],[100,50],[50,100],[80,
     const id=`thermal${width}x${height}`,app=fixture(),preferences=new Map();
     app.state.invoices[0].items[0].qty=9;
     app.window.localStorage={setItem:(key,value)=>preferences.set(key,value)};
-    app.ui.profileSelect.append(Object.assign(element(),{value:id}));
     try{
       assert.equal(app.context.changeProfile(id),true);await tick();
       assert.equal(app.read('ready'),true);assert.equal(app.read('batch.pageCount'),9);
-      assert.equal(app.ui.badge.textContent,`thermal ${width} × ${height}`);
-      assert(app.ui.profileSelect.children[0].textContent.endsWith(width===height?'square':width>height?'landscape':'portrait'));
+      assert.equal(app.ui.badge.textContent,'thermal');assert(app.ui.stockText.textContent.includes(`${width} × ${height} mm`));
+      assert(app.ui.stockText.textContent.endsWith(width===height?'square':width>height?'landscape':'portrait'));
       assert.equal(app.ui.stockSizeNote.textContent,'sizeRoll');
       assert.equal(preferences.get('wf_package_label_profile_v1'),id);
       assert(Math.abs(parseFloat(app.read('previewFrame.style.width'))-width*96/25.4)<0.01);
@@ -468,14 +483,13 @@ for(const [width,height] of [[70,100],[100,100],[100,200],[100,50],[50,100],[80,
   });
 }
 
-for(const [id,pages,stockKey,badge] of [['tw2004Landscape',3,'stockLarge','TANEX TW-2004'],['tw2008Landscape',2,'stock','TANEX TW-2008']]){
+for(const [id,pages,badge] of [['tw2004Landscape',3,'TANEX TW-2004'],['tw2008Landscape',2,'TANEX TW-2008']]){
   test(`${id} preserves its Tanex stock identity and prints landscape A4 with the original sheet count`,async()=>{
     const app=fixture();app.state.invoices[0].items[0].qty=9;
-    app.ui.profileSelect.append(Object.assign(element(),{value:id}));
     try{
       assert.equal(app.context.changeProfile(id),true);await tick();
-      assert.equal(app.ui.badge.textContent,badge);assert.equal(app.ui.stockText.textContent,stockKey);
-      assert(app.ui.profileSelect.children[0].textContent.endsWith('landscape'));
+      assert.equal(app.ui.badge.textContent,badge);assert(app.ui.stockText.textContent.includes(id==='tw2004Landscape'?'4 / A4':'8 / A4'));
+      assert(app.ui.stockText.textContent.endsWith('landscape'));
       assert.equal(app.read('ready'),true);assert.equal(app.read('batch.pageCount'),pages);
       assert(Math.abs(parseFloat(app.read('previewFrame.style.width'))-297*96/25.4)<0.01);
       assert(Math.abs(parseFloat(app.read('previewFrame.style.height'))-210*96/25.4)<0.01);
@@ -488,21 +502,112 @@ for(const [id,pages,stockKey,badge] of [['tw2004Landscape',3,'stockLarge','TANEX
   });
 }
 
-test('quick orientation controls preserve the selected stock and cannot replace an active native print job',async()=>{
-  const app=fixture();app.state.invoices[0].items[0].qty=9;
+test('picker draft leaves the prepared invoice unchanged until Apply, and native printing locks it',async()=>{
+  const app=fixture(),writes=[];app.state.invoices[0].items[0].qty=9;
+  app.window.localStorage={setItem:(key,value)=>writes.push(value)};
   try{
-    assert.equal(app.context.changeOrientation('landscape'),true);await tick();
+    await app.context.prepare(true);
+    const {picker,byId,direction}=pickerParts(app),batch=app.read('batch'),frames=app.calls.frames.length;
+    picker.trigger.dispatch('click');assert.equal(picker.isOpen(),true);
+    direction('landscape').dispatch('click');
+    assert.equal(picker.dialog.dataset.profileId,'tw2008Landscape');assert.equal(app.read('batch'),batch);
+    assert.equal(app.ui.printButton.disabled,true);await app.context.print();assert.equal(app.calls.prints,0);
+    assert.equal(app.calls.frames.length,frames);assert.deepEqual(writes,[]);
+    byId('wfPackageProfileApply').dispatch('click');await tick();
+    assert.equal(picker.isOpen(),false);assert.deepEqual(writes,['tw2008Landscape']);
     assert.equal(app.read('profileId'),'tw2008Landscape');assert.equal(app.read('batch.pageCount'),2);
-    assert.equal(app.ui.orientationButtons.landscape.getAttribute('aria-pressed'),'true');
-    assert.equal(app.ui.orientationButtons.portrait.hidden,false);assert.equal(app.ui.orientationButtons.square.hidden,true);
-    await app.context.print();assert.equal(app.ui.orientationButtons.portrait.disabled,true);
-    assert.equal(app.context.changeOrientation('portrait'),false);assert.equal(app.read('profileId'),'tw2008Landscape');
-    assert.equal(app.read('activePrint.frame.style.width'),'297mm');
-    app.finish();await tick();assert.equal(app.context.changeOrientation('portrait'),true);await tick();
-    assert.equal(app.read('profileId'),'tw2008');
-    app.context.changeProfile('thermal100x100');await tick();
-    assert.equal(app.ui.orientationButtons.square.hidden,false);assert.equal(app.ui.orientationButtons.square.getAttribute('aria-pressed'),'true');
-    assert.equal(app.ui.orientationButtons.portrait.hidden,true);assert.equal(app.ui.orientationButtons.landscape.hidden,true);
-    assert.equal(app.context.changeOrientation('landscape'),false);assert.equal(app.read('profileId'),'thermal100x100');
+    assert.equal(app.calls.frames.length,frames+1,'Apply generates one sheet preview');
+    await app.context.print();assert.equal(picker.trigger.disabled,true);
+    assert.equal(picker.open(),false);assert.equal(app.read('activePrint.frame.style.width'),'297mm');
+    app.finish();await tick();assert.equal(picker.open(),true);
+    direction('portrait').dispatch('click');byId('wfPackageProfileApply').dispatch('click');await tick();
+    assert.equal(app.read('profileId'),'tw2008');assert.deepEqual(writes,['tw2008Landscape','tw2008']);
   }finally{app.dispose();}
+});
+
+test('nine media families reach every supported profile and draw only the selected stock grid',()=>{
+  const app=fixture(),{picker,byId,direction}=pickerParts(app);
+  try{
+    picker.open();
+    const families=descendants(picker.dialog).filter(node=>node.dataset.paperFamily),ids=new Set();
+    assert.equal(families.length,9);
+    for(const family of families){
+      family.dispatch('click');
+      for(const key of ['portrait','landscape','square']){
+        const control=direction(key);if(control.hidden)continue;
+        control.dispatch('click');
+        const id=picker.dialog.dataset.profileId,paper=core.profiles[id],diagram=byId('wfPackageProfileDiagram');
+        ids.add(id);assert.equal(control.getAttribute('aria-pressed'),'true');
+        assert.equal(family.getAttribute('aria-pressed'),'true');
+        assert.equal(diagram.children.length,paper.columns*paper.rows);
+        assert.equal(diagram.dataset.media,paper.mediaType||'sheet');
+        assert(Math.abs(parseFloat(diagram.style.width)/parseFloat(diagram.style.height)-paper.pageWidthMM/paper.pageHeightMM)<1e-9);
+      }
+    }
+    assert.deepEqual([...ids].sort(),Object.keys(core.profiles).sort());
+    assert.equal(app.calls.frames.length,0);
+    assert.equal(picker.trigger.dataset.profileId,'tw2008');
+  }finally{app.dispose();}
+});
+
+test('closing by Cancel, Escape, backdrop or route discards the draft and keeps the existing ready preview',async()=>{
+  const app=fixture(),{picker,byId,family,direction}=pickerParts(app),writes=[];
+  try{
+    app.window.localStorage={setItem:(key,id)=>writes.push(id)};
+    await app.context.prepare(true);
+    const batch=app.read('batch'),frames=app.calls.frames.length;
+    for(const method of ['cancel','escape','nativeCancel','backdrop','route']){
+      assert.equal(picker.open(),true);
+      family('thermal80x500').dispatch('click');
+      assert.equal(picker.dialog.dataset.profileId,'thermal80x500','a family starts in its displayed orientation');
+      direction('landscape').dispatch('click');
+      family('thermal80x500').dispatch('click');
+      assert.equal(picker.dialog.dataset.profileId,'thermal500x80');
+      if(method==='cancel')byId('wfPackageProfileCancel').dispatch('click');
+      else if(method==='escape')picker.dialog.dispatch('keydown',{key:'Escape',preventDefault(){},stopPropagation(){}});
+      else if(method==='nativeCancel')picker.dialog.dispatch('cancel',{preventDefault(){}});
+      else if(method==='backdrop')picker.dialog.dispatch('click');
+      else picker.close(false);
+      assert.equal(picker.isOpen(),false);assert.equal(picker.trigger.dataset.profileId,'tw2008');
+      assert.equal(app.read('batch'),batch);assert.equal(app.calls.frames.length,frames);
+      assert.equal(app.ui.printButton.disabled,false);
+      if(method!=='route')assert.equal(app.document.activeElement,picker.trigger);
+      assert.deepEqual(writes,[]);
+    }
+  }finally{app.dispose();}
+});
+
+test('modal keeps keyboard focus, relocalizes the live draft, and restores fallback background state',()=>{
+  const app=fixture(),{picker,byId,family,direction}=pickerParts(app);
+  try{
+    picker.dialog.showModal=undefined;picker.dialog.close=undefined;
+    const shell=element(),alreadyInert=element();alreadyInert.inert=true;
+    app.document.body.append(shell,alreadyInert,picker.dialog);
+    picker.open();assert.equal(shell.inert,true);assert.equal(alreadyInert.inert,true);
+    assert.equal(picker.trigger.getAttribute('aria-expanded'),'true');
+    const first=family('tw2004'),last=byId('wfPackageProfileApply');
+    const tab=shiftKey=>picker.dialog.dispatch('keydown',{key:'Tab',shiftKey,preventDefault(){}});
+    tab(true);assert.equal(app.document.activeElement,last);
+    tab(false);assert.equal(app.document.activeElement,first);
+    tab(true);assert.equal(app.document.activeElement,last);
+    family('thermal100x100').dispatch('click');
+    assert.equal(direction('square').hidden,false);assert.equal(direction('portrait').hidden,true);assert.equal(direction('landscape').hidden,true);
+    app.context.t=key=>'AR '+key;app.context.ops.locale=()=>'ar';picker.refresh();
+    assert.equal(picker.dialog.dataset.profileId,'thermal100x100');assert.equal(picker.dialog.dir,'rtl');
+    assert.equal(byId('wfPackageProfileApply').textContent,'AR applyPaper');
+    picker.close();assert.equal(shell.inert,false);assert.equal(alreadyInert.inert,true);
+    assert.equal(app.document.activeElement,picker.trigger);assert.equal(picker.trigger.getAttribute('aria-expanded'),'false');
+  }finally{app.dispose();}
+});
+
+test('the actual picker captions cover Arabic, Turkish, English, French and Russian',()=>{
+  const declarations=mount.body.body.filter(node=>node.type==='VariableDeclaration');
+  const words=declarations.find(node=>node.declarations.some(declaration=>declaration.id.name==='pickerWords'));
+  const local=vm.runInNewContext(source.slice(words.start,words.end)+';pickerWords');
+  const keys=['oneLabel','pickerTitle','changePaper','sheetPaper','rollPaper','cancelPaper','applyPaper','paperPreview'];
+  assert.deepEqual(Object.keys(local).sort(),['ar','en','fr','ru','tr']);
+  for(const language of Object.keys(local)){
+    for(const key of keys)assert(local[language][key]?.trim(),language+' '+key);
+    if(language!=='en')assert.notEqual(local[language].pickerTitle,local.en.pickerTitle);
+  }
 });

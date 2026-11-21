@@ -1,0 +1,13 @@
+{
+  "release": 205,
+  "nodeTests": {
+    "passed": 961,
+    "failed": 0,
+    "command": "node --test tests/*.test.cjs"
+  },
+  "featureAssetsCached": 20,
+  "physicalPrintCoreUnchangedFromRelease": 203,
+  "paperFamilies": 9,
+  "printProfiles": 17,
+  "physicalPrinterTested": false
+}

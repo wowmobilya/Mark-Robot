@@ -125,6 +125,22 @@
   function usage(products, materialId) {
     return (Array.isArray(products) ? products : []).filter(product => (Array.isArray(product?.costing?.materials) ? product.costing.materials : []).some(row => id(row?.catalogId) === id(materialId)));
   }
+  function buildUsageIndex(products) {
+    const index = new Map();
+    for (const product of Array.isArray(products) ? products : []) {
+      const rows = product?.costing?.materials;
+      if (!Array.isArray(rows)) continue;
+      const linked = new Set();
+      for (const row of rows) {
+        const materialId = id(row?.catalogId);
+        if (!materialId || linked.has(materialId)) continue;
+        linked.add(materialId);
+        if (!index.has(materialId)) index.set(materialId, []);
+        index.get(materialId).push(product);
+      }
+    }
+    return index;
+  }
   return Object.freeze({listMaterials, prepareMaterial, convertMaterialCurrency, rebaseMaterialRates,
-    quotedPrice, createLinkedRow, applyLinkedPrice, linkedStatus, mergeMaterial, preserveLibrary, persistMaterial, usage});
+    quotedPrice, createLinkedRow, applyLinkedPrice, linkedStatus, mergeMaterial, preserveLibrary, persistMaterial, usage, buildUsageIndex});
 });

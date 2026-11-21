@@ -149,3 +149,34 @@ test('refreshing a linked product cannot rewrite historical invoice snapshots', 
   assert.deepEqual(costing.captureInvoiceCosts(invoice, [newProduct], 'new'), before);
   assert.notEqual(newProduct.costing.unitCostUSD, oldProduct.costing.unitCostUSD);
 });
+
+test('usage index matches existing linked-product results with canonical IDs and repeated BOM links', () => {
+  const products = [
+    {id:1,costing:{materials:[{catalogId:0},{catalogId:'0'},{catalogId:'wood'},{catalogId:' wood '},{name:'Manual'}]}},
+    {id:'2',costing:{materials:[{catalogId:'wood'},{catalogId:7},null]}},
+    {id:'3',costing:{materials:{invalid:true}}},
+    {id:'4'}
+  ], before = structuredClone(products);
+  const index = fn('buildUsageIndex')(products);
+  for (const materialId of [0,'0','wood',' wood ',7,'7','missing']) {
+    assert.deepEqual(index.get(String(materialId).trim()) || [], core.usage(products,materialId));
+  }
+  assert.equal(index.get('0').length,1);
+  assert.equal(index.get('wood').length,2);
+  assert.equal(index.get('wood')[0],products[0]);
+  assert.equal(index.has(''),false,'unlinked rows do not create a catalog entry');
+  assert.deepEqual(products,before);
+});
+
+test('usage indexing reads each BOM link once independent of catalog size and does not retain stale product results', () => {
+  let visits = 0;
+  const products = Array.from({length:8},(_,id) => ({id,costing:{materials:Array.from({length:12},(_,i) => ({get catalogId() {visits++; return String(i % 4);}}))}}));
+  const index = fn('buildUsageIndex')(products);
+  assert.equal(visits,8 * 12);
+  for (let i = 0; i < 1000; i++) assert.equal((index.get(String(i % 4)) || []).length,8);
+  assert.equal(visits,8 * 12,'catalog lookups do not rescan product materials');
+  products[0] = {id:0,costing:{materials:[{catalogId:'new'}]}};
+  const refreshed = core.buildUsageIndex(products);
+  assert.equal(refreshed.get('0').length,7);
+  assert.equal(refreshed.get('new')[0],products[0]);
+});

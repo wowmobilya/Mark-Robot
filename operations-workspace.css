@@ -1,32 +1,117 @@
-/* Native operations pages share the same WOW header and theme tokens. */
+/* Generated using AppDeploy UI skill */
 @media screen {
-  .wf-ops-page { min-inline-size:0; }
-  .wf-ops-body { display:grid; gap:18px; min-inline-size:0; padding-block-end:16px; }
+  .wf-ops-page {
+    --ops-accent: var(--brand-primary, var(--gold));
+    --ops-emphasis: color-mix(in srgb, var(--gold2) 52%, var(--text));
+    --ops-panel: var(--card);
+    --ops-wash: color-mix(in srgb, var(--ops-accent) 7%, var(--card));
+    --ops-line: color-mix(in srgb, var(--ops-accent) 14%, var(--border));
+    --ops-pad: clamp(12px, 1.3vw, 18px);
+    --ops-gap: clamp(10px, 1.1vw, 15px);
+    --ops-radius: 14px;
+    --workspace-gap: var(--ops-gap);
+    --wf-workspace-chrome: linear-gradient(110deg, var(--ops-panel) 34%, var(--ops-wash));
+    --wf-workspace-chrome-shadow: none;
+    min-inline-size: 0;
+    container: wf-operations / inline-size;
+  }
+  .wf-ops-body { display:grid; grid-template-columns:minmax(0,1fr); align-content:start; gap:var(--ops-gap); min-inline-size:0; padding-block-end:12px; }
   .wf-ops-page :is(input, select, textarea, button) { font-family:inherit; }
-  .wf-ops-page :is(input, select, textarea) { min-inline-size:0; max-inline-size:100%; min-block-size:46px; padding:11px 13px; border:1px solid var(--border); border-radius:12px; background:var(--input); color:var(--text); box-sizing:border-box; font-size:16px; line-height:1.5; }
-  .wf-ops-page label { color:var(--text); }
-  .wf-ops-page :is(input, select, textarea):focus-visible,
-  .wf-ops-page button:focus-visible { outline:3px solid var(--brand-primary, var(--gold)); outline-offset:3px; }
-  .wf-ops-page :is(button, .btn) { min-block-size:44px; white-space:normal; overflow-wrap:anywhere; }
-  .wf-ops-page .btn { gap:8px; align-items:center; justify-content:center; }
-  .wf-ops-page .btn svg { flex:none; inline-size:20px; block-size:20px; }
-  .wf-ops-card { padding:20px; border:1px solid var(--border); border-radius:20px; background:var(--card); color:var(--text); min-inline-size:0; box-shadow:0 5px 18px rgb(20 46 60 / 3%); }
+  .wf-ops-body :is(input,select,textarea) {
+    display:block; position:static; float:none; transform:none; box-sizing:border-box;
+    inline-size:100%; min-inline-size:0; max-inline-size:100%; min-block-size:44px; margin:0;
+    padding:8px 11px; border:1px solid var(--ops-line); border-radius:9px;
+    background:var(--input); color:var(--text); font-size:16px; line-height:1.5;
+  }
+  .wf-ops-body select { cursor:pointer; }
+  /* A translated caption gets its own auto-height track above its control. */
+  .wf-ops-body :is(.wf-cost-field,.wf-mat-field,.wf-analysis-field,.wf-archive-field,.wf-mfg-field) {
+    display:grid; grid-template-columns:minmax(0,1fr); align-content:start; gap:5px; min-inline-size:0; margin:0;
+  }
+  .wf-ops-body :is(.wf-cost-field,.wf-mat-field,.wf-analysis-field,.wf-archive-field,.wf-mfg-field,.wf-package-profile-copy) > :is(label,span:first-child) {
+    display:block; position:static; float:none; transform:none; margin:0;
+    color:var(--text2); font-size:13px; font-weight:650; line-height:1.45; white-space:normal; overflow-wrap:anywhere;
+  }
+  html body #mainContent .wf-ops-page :is(button,input,select,textarea,summary):focus-visible { outline:2px solid var(--ops-emphasis) !important; outline-offset:2px !important; }
+  .wf-ops-page :is(button,.btn) { min-block-size:44px; max-inline-size:100%; white-space:normal; overflow-wrap:anywhere; }
+  .wf-ops-page .btn { gap:7px; align-items:center; justify-content:center; }
+  .wf-ops-page .btn svg { flex:none; inline-size:18px; block-size:18px; }
+  .wf-ops-card {
+    min-inline-size:0; padding:var(--ops-pad); border:1px solid var(--ops-line); border-radius:var(--ops-radius);
+    background:var(--ops-panel); color:var(--text); box-shadow:none;
+  }
   .wf-ops-card > :first-child { margin-block-start:0; }
   .wf-ops-card > :last-child { margin-block-end:0; }
-  .wf-ops-card h2 { font-size:18px; font-weight:750; line-height:1.5; }
-  .wf-ops-card p { font-size:14px; line-height:1.8; color:var(--text2); }
-  .wf-ops-muted { color:var(--text2); font-size:14px; line-height:1.7; }
-  .wf-ops-status { border-radius:12px; padding:12px 14px; background:var(--input); font-size:14px; line-height:1.8; overflow-wrap:anywhere; }
+  .wf-ops-card h2 { font-size:18px; font-weight:750; line-height:1.4; }
+  .wf-ops-card p, .wf-ops-muted { color:var(--text2); font-size:14px; line-height:1.6; }
+  .wf-ops-status { border-radius:9px; padding:9px 12px; background:var(--ops-wash); font-size:14px; line-height:1.6; overflow-wrap:anywhere; }
   .wf-ops-status[data-kind="error"] { border:1px solid var(--red); color:var(--red); }
   .wf-ops-status[data-kind="success"] { color:var(--green); }
-  .wf-ops-row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; min-inline-size:0; }
-  .wf-ops-empty { padding:32px 18px; text-align:center; color:var(--text2); font-size:16px; line-height:1.8; }
+  .wf-ops-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; min-inline-size:0; }
+  .wf-ops-empty { padding:16px var(--ops-pad); text-align:start; color:var(--text2); font-size:14px; line-height:1.6; }
   .wf-ops-nav .nav-icon svg { inline-size:20px; block-size:20px; }
-  .wf-ops-actions:empty { display:none; }
-  .wf-ops-page [hidden] { display:none !important; }
-  @media (max-width:600px) {
-    .wf-ops-body { gap:12px; }
-    .wf-ops-card { padding:14px; border-radius:16px; }
-    .wf-ops-page .wf-ops-actions .btn { flex:1 1 auto; padding-inline:12px; font-size:14px; }
+  .wf-ops-page .wf-ops-actions:not(:has(> :not([hidden]))), .wf-ops-page [hidden] { display:none !important; }
+
+  /* Counts share a single horizontal strip across the catalog, archive and report. */
+  .wf-ops-body :is(.wf-cost-overview,.wf-mat-overview,.wf-archive-metrics,.wf-analysis-filters) {
+    display:grid; margin:0; border:1px solid var(--ops-line); border-radius:var(--ops-radius);
+    background:linear-gradient(105deg,var(--ops-panel),var(--ops-wash)); min-inline-size:0;
+  }
+  .wf-ops-body :is(.wf-cost-stat,.wf-mat-stat,.wf-archive-metric,.wf-analysis-filter) {
+    min-inline-size:0; padding:10px var(--ops-pad); overflow-wrap:anywhere; border:0;
+    border-inline-start:1px solid var(--ops-line); background:transparent; color:var(--text2);
+  }
+  .wf-ops-body :is(.wf-cost-stat,.wf-mat-stat,.wf-archive-metric,.wf-analysis-filter):first-child { border-inline-start:0; }
+  .wf-ops-body :is(.wf-cost-stat,.wf-mat-stat,.wf-analysis-filter) { display:flex; flex-direction:column; align-items:start; justify-content:space-between; gap:3px; font-size:13px; line-height:1.4; }
+  .wf-ops-body :is(.wf-cost-stat,.wf-mat-stat,.wf-analysis-filter) strong { color:var(--text); font-size:clamp(20px,1.9vw,25px); font-weight:750; line-height:1.18; font-variant-numeric:tabular-nums; }
+
+  /* Product and material directories share the same master/detail interaction. */
+  .wf-ops-body :is(.wf-cost-layout,.wf-mat-layout) { display:grid; grid-template-columns:clamp(208px,25%,282px) minmax(0,1fr); gap:var(--ops-gap); align-items:start; }
+  .wf-ops-body :is(.wf-cost-picker,.wf-mat-picker) { display:grid; gap:10px; align-content:start; }
+  .wf-ops-body :is(.wf-cost-picker,.wf-mat-picker) h2 { margin:0; }
+  .wf-ops-body :is(.wf-cost-filters,.wf-mat-filters) { display:flex; flex-wrap:wrap; gap:3px; padding:3px; background:var(--input); border:1px solid var(--ops-line); border-radius:10px; }
+  .wf-ops-body :is(.wf-cost-filter,.wf-mat-filter) { flex:1 1 auto; min-inline-size:0; padding:5px 7px; border:1px solid transparent; border-radius:7px; background:transparent; color:var(--text2); font:inherit; font-size:12px; font-weight:650; cursor:pointer; }
+  .wf-ops-body :is(.wf-cost-filter,.wf-mat-filter)[aria-pressed="true"] { border-color:var(--ops-line); background:var(--ops-panel); color:var(--ops-emphasis); }
+  .wf-ops-body :is(.wf-cost-product-list,.wf-mat-list) { display:grid; gap:0; min-inline-size:0; }
+  .wf-ops-body :is(.wf-cost-product,.wf-mat-item) {
+    display:flex; align-items:center; justify-content:space-between; gap:8px; inline-size:100%; min-inline-size:0;
+    padding:8px 9px; border:0; border-block-end:1px solid var(--ops-line); border-inline-start:3px solid transparent;
+    border-radius:0; background:transparent; color:var(--text); text-align:start; cursor:pointer;
+  }
+  .wf-ops-body :is(.wf-cost-product,.wf-mat-item)[aria-pressed="true"] { border-inline-start-color:var(--ops-accent); background:var(--ops-wash); }
+  .wf-ops-body :is(.wf-cost-empty,.wf-mat-empty) {
+    display:grid; grid-template-columns:auto minmax(0,1fr); gap:3px 12px; align-content:start; justify-items:start;
+    text-align:start; border-inline-start:3px solid var(--ops-accent); background:linear-gradient(120deg,var(--ops-wash),var(--ops-panel) 70%);
+  }
+  .wf-ops-body :is(.wf-cost-empty,.wf-mat-empty) > :not(:first-child) { grid-column:2; margin:0; overflow-wrap:anywhere; }
+  .wf-ops-body :is(.wf-cost-empty,.wf-mat-empty) .btn { margin-block-start:7px; }
+  .wf-ops-body :is(.wf-cost-empty-icon,.wf-mat-empty-icon) { grid-row:1 / span 2; display:grid; place-items:center; inline-size:40px; block-size:40px; border:1px solid var(--ops-line); border-radius:10px; background:var(--ops-panel); color:var(--ops-emphasis); }
+  .wf-ops-body :is(.wf-cost-empty-icon,.wf-mat-empty-icon) svg { inline-size:21px; block-size:21px; }
+
+  /* Preserve native Back, notification, speech and drawer slots on small screens. */
+  html.wf-section-mode body #mainContent .page.wf-ops-page:not(#page-dashboard) > .sct-sticky-header.wf-heading-row {
+    padding-block:calc(7px + env(safe-area-inset-top, 0px)) 7px !important; row-gap:5px !important;
+  }
+  @container wf-operations (min-width:760px) {
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page.wf-ops-page:not(#page-dashboard) > .wf-heading-row.wf-notifications-slot:has(> .wf-ops-actions > :not([hidden])):not(:has([data-wf-shared-dock-source="back"])) {
+      grid-template-columns:44px minmax(0,1fr) fit-content(40%) 44px 44px !important;
+    }
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page.wf-ops-page:not(#page-dashboard) > .wf-heading-row.wf-notifications-slot:has(> .wf-ops-actions > :not([hidden])):not(:has([data-wf-shared-dock-source="back"])) > .wf-centered-heading { grid-column:2 !important; }
+    html.wf-section-mode:not(.wf-speech-toolbar-active) body #mainContent .page.wf-ops-page:not(#page-dashboard) > .wf-heading-row.wf-notifications-slot:not(:has([data-wf-shared-dock-source="back"])) > .wf-ops-actions:has(> :not([hidden])) { grid-column:3; grid-row:1; }
+  }
+  @container wf-operations (max-width:650px) {
+    .wf-ops-body :is(.wf-cost-layout,.wf-mat-layout) { grid-template-columns:minmax(0,1fr); }
+    .wf-ops-page .wf-ops-actions .btn { flex:1 1 auto; padding-inline:10px; font-size:14px; }
+  }
+  @media (hover:hover) {
+    .wf-ops-body :is(.wf-cost-product,.wf-mat-item,.wf-cost-filter,.wf-mat-filter):hover { background:var(--ops-wash); color:var(--ops-emphasis); }
+  }
+  @media (forced-colors:active) {
+    .wf-ops-body :is(.wf-cost-filter,.wf-mat-filter,.wf-analysis-filter,.wf-cost-product,.wf-mat-item,.wf-mfg-choice)[aria-pressed="true"] {
+      outline:2px solid Highlight; outline-offset:-3px;
+    }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .wf-ops-page :is(button,input,select,textarea) { transition:none; }
   }
 }

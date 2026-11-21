@@ -98,6 +98,20 @@ function fixture(legacyFirst = false) {
 }
 for(const legacyFirst of [false,true]) {
   const order=legacyFirst?'inline listener first':'capture listeners first';
+  test('paper picker cancels on Back and page departure without consuming or adding history with '+order,()=>{
+    const f=fixture(legacyFirst);let dialogOpen=false,applied='tw2004';
+    f.root.WFPackageLabels={closeProfilePicker(){dialogOpen=false;},handleHistory(){dialogOpen=false;return false;}};
+    f.open('product-costs');f.open('package-labels');dialogOpen=true;
+    const entries=f.entries.map(entry=>entry.hash);
+    assert(f.history.go(-1));
+    assert.equal(dialogOpen,false);assert.equal(applied,'tw2004');
+    assert.deepEqual(f.route(),['product-costs','#product-costs']);
+    assert.deepEqual(f.entries.map(entry=>entry.hash),entries);
+    assert(f.history.go(1));assert.deepEqual(f.route(),['package-labels','#package-labels']);
+    assert.equal(dialogOpen,false);
+    dialogOpen=true;f.open('invoice-archive');assert.equal(dialogOpen,false);
+    assert.deepEqual(f.route(),['invoice-archive','#invoice-archive']);
+  });
   test('native Back and Forward preserve the operation route, URL and every history entry with '+order, () => {
     const f=fixture(legacyFirst);
     for(const name of ['package-labels','product-costs','invoice-archive']) f.open(name);

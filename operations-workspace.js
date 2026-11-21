@@ -127,6 +127,7 @@
   }
   const originalShowPage = root.showPage;
   root.showPage = function (id, pushHistory = true) {
+    if(id!=='package-labels')root.WFPackageLabels?.closeProfilePicker?.();
     const result = originalShowPage.apply(this, arguments);
     sync();
     const entry = registry.get(id);
@@ -134,6 +135,7 @@
     return result;
   };
   function handleHistory(event) {
+    if(root.WFPackageLabels?.handleHistory?.(event))return true;
     // The original app owns closing its invoice preview and mobile drawer first.
     if(document.querySelector('.modal-ov.open')||document.getElementById('sidebar')?.classList.contains('open'))return false;
     const from = current();

@@ -93,6 +93,7 @@ native destinations, followed by an independent manufacturing review:
 - [x] Integrate six native routes, contextual navigation, five locales and offline assets.
 - [x] Protect manufacturing/library sections from old full-record writers and async media publication races.
 - [x] Fix conflict-reload deletion/payment race and provide explicit orphan-note recovery.
-- [ ] Final full test gate, publish release 204, verify real browser/mobile controls.
+- [x] Final full test gate (952/952), publish release 204 and verify its workflows in a real browser.
+- [ ] Finish the user-requested release205 visual refinement and modal paper picker; verify all six pages on mobile.
 
 The original calibrated package-label files are unchanged by release 204.

@@ -50,6 +50,14 @@
       ru:{orientation:'Ориентация печати',scaleSheet:'A4 {orientation} · Масштаб 100% · Без подгонки',widePrinter:'Для этой ориентации нужен принтер, принимающий бумагу шириной {width} мм.',longPrinter:'Для этого шаблона принтер и настройки бумаги должны поддерживать длину этикетки {height} мм.'}
     };
     for(const [locale,values] of Object.entries(paperWords))Object.assign(words[locale],values);
+    const pickerWords={
+      ar:{oneLabel:'إتيكيت واحد / صفحة',pickerTitle:'اختيار ورق الطباعة',changePaper:'تغيير الورق',sheetPaper:'أوراق A4',rollPaper:'لفائف حرارية',cancelPaper:'إلغاء',applyPaper:'تطبيق',paperPreview:'معاينة الورق'},
+      tr:{oneLabel:'1 etiket / sayfa',pickerTitle:'Baskı kâğıdını seç',changePaper:'Kâğıdı değiştir',sheetPaper:'A4 yaprak',rollPaper:'Termal rulo',cancelPaper:'Vazgeç',applyPaper:'Uygula',paperPreview:'Kâğıt önizlemesi'},
+      en:{oneLabel:'1 label / page',pickerTitle:'Choose print media',changePaper:'Change paper',sheetPaper:'A4 sheets',rollPaper:'Thermal rolls',cancelPaper:'Cancel',applyPaper:'Apply',paperPreview:'Media preview'},
+      fr:{oneLabel:'1 étiquette / page',pickerTitle:'Choisir le support',changePaper:'Changer de support',sheetPaper:'Feuilles A4',rollPaper:'Rouleaux thermiques',cancelPaper:'Annuler',applyPaper:'Appliquer',paperPreview:'Aperçu du support'},
+      ru:{oneLabel:'1 этикетка / стр.',pickerTitle:'Выбор носителя',changePaper:'Сменить носитель',sheetPaper:'Листы A4',rollPaper:'Терморулоны',cancelPaper:'Отмена',applyPaper:'Применить',paperPreview:'Вид носителя'}
+    };
+    for(const [locale,values] of Object.entries(pickerWords))Object.assign(words[locale],values);
     const t = key => words[ops.locale()][key] || words.en[key] || key;
     const make = ops.make;
     let selectedId = '', query = '', filter = 'all', limit = 30, revision = 0, sheetIndex = 0;
@@ -74,26 +82,16 @@
     const printButton = button('print','btn btn-p',print,'print'); printButton.id = 'wfPackagePrint'; printButton.disabled = true;
     page.actions.append(printButton);
     const profile = make('div','wf-package-profile');
-    const badge = make('span','wf-package-stock'); badge.dir = 'ltr';
-    const profileText = make('div','wf-package-profile-copy');
-    const profileLabel=textNode('label','','profile');profileLabel.htmlFor='wfPackageProfile';
-    const profileSelect=make('select','fi');profileSelect.id='wfPackageProfile';profileSelect.dir='ltr';
-    const profileOrder=[];
-    for(const id of Object.keys(core.profiles))for(const paired of [id,...Object.values(helpers.orientationChoices(core,id))])if(!profileOrder.includes(paired))profileOrder.push(paired);
-    for(const id of profileOrder){
-      const paper=core.profiles?.[id];if(!paper)continue;
-      const option=make('option');option.value=id;profileSelect.append(option);
-    }
-    profileSelect.value=profileId;profileSelect.addEventListener('change',()=>changeProfile(profileSelect.value));
-    const orientationGroup=make('div','wf-package-orientations');orientationGroup.setAttribute('role','group');
-    const orientationButtons={};
-    for(const direction of ['portrait','landscape','square']){
-      const control=button(direction,'btn btn-s',()=>changeOrientation(direction));control.dataset.wfOrientation=direction;
-      orientationButtons[direction]=control;orientationGroup.append(control);
-    }
-    const stockText=make('p'),preferenceHint=make('p','wf-package-preference'),printerHint=make('p','wf-package-preference');preferenceHint.setAttribute('role','status');
-    profileText.append(profileLabel,profileSelect,orientationGroup,stockText,preferenceHint,printerHint);
-    profile.append(badge,profileText);
+    const mediaIcon=make('span','wf-package-stock-icon');mediaIcon.setAttribute('aria-hidden','true');
+    const profileText=make('div','wf-package-profile-copy');
+    const badge=make('strong','wf-package-stock'),stockText=make('p');
+    const preferenceHint=make('p','wf-package-preference'),printerHint=make('p','wf-package-preference');
+    preferenceHint.setAttribute('role','status');
+    const paperPicker=helpers.createPaperPicker({document,make,t,core,getLocale:ops.locale,getApplied:()=>profileId,
+      isLocked:()=>Boolean(activePrint),onApply:changeProfile,onOpenChange:updateControls});
+    profileText.append(badge,stockText,preferenceHint);
+    profile.append(mediaIcon,profileText,paperPicker.trigger);
+    document.body.append(paperPicker.dialog);
     const layout = make('div','wf-package-layout');
     const chooser = make('details','wf-package-chooser wf-ops-card'); chooser.open = true;
     chooser.append(textNode('summary','wf-package-chooser-title','choose'));
@@ -136,7 +134,7 @@
     paging.append(previous,counter,next); previewHeading.append(paging);
     const stage = make('div','wf-package-stage'); stage.id = 'wfPackagePreview';
     const geometryNote = make('p','wf-ops-muted'),stockSizeNote=make('p','wf-ops-muted'),scaleNote=make('p','wf-package-scale-note');
-    preview.append(previewHeading,stage,geometryNote,stockSizeNote,scaleNote);
+    preview.append(previewHeading,stage,geometryNote,stockSizeNote,scaleNote,printerHint);
     content.append(empty,detail,preview); layout.append(chooser,content); page.body.append(profile,layout);
 
     function renderList() {
@@ -168,29 +166,16 @@
       const brand=profileId.startsWith('thermal')?t('thermal'):'Zebra';
       const direction=paper.pageWidthMM===paper.pageHeightMM?'square':paper.pageWidthMM>paper.pageHeightMM?'landscape':'portrait';
       const size=paper.stockWidthMM+' × '+paper.stockHeightMM,copy=key=>t(key).replace('{size}',size).replace('{brand}',brand).replace('{orientation}',t(direction));
-      badge.textContent=roll?brand+' '+size:large?'TANEX TW-2004':'TANEX TW-2008';
-      for(const option of profileSelect.children){
-        const item=core.profiles[option.value],product=core.profiles[item.sourceProfileId]||item,isRoll=item.mediaType==='roll';
-        const name=isRoll?(item.id.startsWith('thermal')?t('thermal'):'Zebra'):item.name;
-        const orientation=t(item.pageWidthMM===item.pageHeightMM?'square':item.pageWidthMM>item.pageHeightMM?'landscape':'portrait');
-        option.textContent=name+' · '+(product.stockWidthMM||product.cardWidthMM)+' × '+(product.stockHeightMM||product.cardHeightMM)+' mm · '+(isRoll?t('rollOption')+' '+orientation:(item.columns*item.rows)+' / A4 · '+orientation);
-      }
-      profileSelect.value=profileId;profileSelect.disabled=Boolean(activePrint);
-      const choices=helpers.orientationChoices(core,profileId);orientationGroup.setAttribute('aria-label',t('orientation'));
-      for(const [orientation,control] of Object.entries(orientationButtons)){
-        control.hidden=!choices[orientation];control.disabled=Boolean(activePrint);control.setAttribute('aria-pressed',String(choices[orientation]===profileId));
-      }
-      stockText.textContent=copy(roll?'stockRoll':large?'stockLarge':'stock');
+      mediaIcon.textContent=roll?'🧾':'📄';
+      badge.textContent=roll?brand:(large?'TANEX TW-2004':'TANEX TW-2008');
+      stockText.textContent=helpers.mediaSummary(core,profileId,t);
+      paperPicker.refresh();
       geometryNote.textContent=t(roll?'geometryRoll':large?'geometryLarge':'geometry');
       stockSizeNote.textContent=copy(roll?'sizeRoll':large?'sizeLarge':'stockSize');
       if(roll&&paper.labelsPerRoll)stockSizeNote.textContent+=' · '+t('rollCapacity').replace('{count}',paper.labelsPerRoll);
       scaleNote.textContent=copy(roll?'rollScale':'scaleSheet');
       printerHint.hidden=!roll;printerHint.textContent=roll?(paper.pageWidthMM>100?t('widePrinter').replace('{width}',paper.pageWidthMM):paper.pageHeightMM>300?t('longPrinter').replace('{height}',paper.pageHeightMM):t('printerSize')):'';
-      preferenceHint.textContent=t(preferenceSaved?'remembered':'preferenceError');
-    }
-    function changeOrientation(direction){
-      const choices=helpers.orientationChoices(core,profileId);
-      return Object.prototype.hasOwnProperty.call(choices,direction)?changeProfile(choices[direction]):false;
+      preferenceHint.hidden=preferenceSaved;preferenceHint.textContent=preferenceSaved?'':t('preferenceError');
     }
     function changeProfile(next) {
       if(activePrint||!Object.prototype.hasOwnProperty.call(core.profiles||{},next)){renderProfile();return false;}
@@ -210,13 +195,12 @@
       renderProfile();renderList(); renderMeta();
     }
     function registerGuard() {
-      window.WFAppUpdates?.registerGuard?.('package-label-print',()=>Boolean(busy||activePrint));
+      window.WFAppUpdates?.registerGuard?.('package-label-print',()=>Boolean(busy||activePrint||paperPicker.isOpen()));
     }
     function updateControls() {
       const locked=Boolean(busy||activePrint);
-      profileSelect.disabled=Boolean(activePrint);
-      for(const control of Object.values(orientationButtons))control.disabled=Boolean(activePrint);
-      printButton.disabled=!ready||locked||Boolean(errorKey);
+      paperPicker.trigger.disabled=Boolean(activePrint);
+      printButton.disabled=!ready||locked||paperPicker.isOpen()||Boolean(errorKey);
       printButton.setAttribute('aria-busy',String(locked));
       page.page?.setAttribute('aria-busy',String(locked));
       retry.disabled=locked;change.disabled=Boolean(activePrint);viewInvoice.disabled=Boolean(activePrint);
@@ -369,7 +353,7 @@
       if(activePrint&&!activePrint.media?.matches)activePrint.cleanup(true);
     }
     async function print() {
-      if(!ready||busy||activePrint||!batch||errorKey)return;
+      if(!ready||busy||activePrint||paperPicker.isOpen()||!batch||errorKey)return;
       if(!sourceIsCurrent(selectedSignature)){errorKey='changed';ready=false;renderMeta();return;}
       const token=revision,signature=selectedSignature,capturedBatch=batch,capturedBarcodes=new Map(barcodeImages);
       const frame=document.createElement('iframe');frame.className='wf-package-print-frame';frame.title=t('print');frame.setAttribute('aria-hidden','true');
@@ -440,7 +424,8 @@
       ops.open('package-labels');
       if(selectedId&&window.matchMedia('(max-width:800px)').matches)chooser.open=false;
     }
-    window.WFPackageLabels={open,print,refresh:()=>prepare(true),captureIdentity:captureInvoiceIdentity,enhance};
+    window.WFPackageLabels={open,print,closeProfilePicker:()=>paperPicker.close(false),
+      handleHistory:()=>{paperPicker.close(false);return false;},refresh:()=>prepare(true),captureIdentity:captureInvoiceIdentity,enhance};
     const invList=document.getElementById('invListContainer');
     if(invList)new window.MutationObserver(enhance).observe(invList,{childList:true});
     const toolbar=document.querySelector('#page-invoices .wf-heading-actions')||document.querySelector('#page-invoices .co-toolbar-row');
@@ -475,6 +460,151 @@
       if(same)result[item.pageWidthMM===item.pageHeightMM?'square':item.pageWidthMM>item.pageHeightMM?'landscape':'portrait']=item.id;
     }
     return result;
+  }
+  function orientation(paper) {
+    if(paper.pageWidthMM===paper.pageHeightMM)return 'square';
+    return paper.pageWidthMM>paper.pageHeightMM?'landscape':'portrait';
+  }
+  function dimensions(width,height) { return '\u2066'+width+' × '+height+' mm\u2069'; }
+  function mediaSummary(core,id,t,includeOrientation=true) {
+    const paper=core.profiles[id],stock=core.profiles[paper.sourceProfileId]||paper;
+    const count=paper.mediaType==='roll'?t('oneLabel'):(paper.columns*paper.rows)+' / A4';
+    const size=paper.mediaType==='roll'?paper:stock;
+    const parts=[dimensions(size.stockWidthMM,size.stockHeightMM),count];
+    if(includeOrientation)parts.push(t(orientation(paper)));
+    return parts.join(' · ');
+  }
+  function createPaperPicker({document,make,t,core,getLocale,getApplied,isLocked,onApply,onOpenChange}) {
+    const trigger=make('button','btn btn-s wf-package-picker-trigger');
+    trigger.type='button';trigger.id='wfPackageProfileTrigger';
+    trigger.setAttribute('aria-haspopup','dialog');trigger.setAttribute('aria-controls','wfPackageProfileDialog');
+    const dialog=make('dialog','wf-package-paper-dialog');dialog.id='wfPackageProfileDialog';
+    dialog.setAttribute('aria-labelledby','wfPackageProfileTitle');dialog.setAttribute('aria-modal','true');
+    const panel=make('section','wf-package-picker-panel'),head=make('header','wf-package-picker-head');
+    const title=make('h2');title.id='wfPackageProfileTitle';title.tabIndex=-1;head.append(title);
+    const body=make('div','wf-package-picker-body'),catalog=make('div','wf-package-picker-catalog');
+    const preview=make('section','wf-package-picker-preview'),previewHeading=make('h3');
+    previewHeading.id='wfPackageMediaPreviewLabel';preview.setAttribute('aria-labelledby',previewHeading.id);
+    const diagramBox=make('div','wf-package-diagram-box'),diagram=make('div','wf-package-media-diagram');
+    diagram.id='wfPackageProfileDiagram';diagramBox.setAttribute('aria-hidden','true');diagramBox.append(diagram);
+    const info=make('div','wf-package-preview-info'),name=make('strong'),summary=make('p'),hint=make('p','wf-package-printer-hint');
+    summary.setAttribute('aria-live','polite');summary.setAttribute('aria-atomic','true');
+    const controls=make('div','wf-package-picker-orientations');controls.setAttribute('role','group');
+    const foot=make('footer','wf-package-picker-foot');
+    const cancel=make('button','btn btn-s'),apply=make('button','btn btn-p');
+    cancel.id='wfPackageProfileCancel';apply.id='wfPackageProfileApply';
+    cancel.type=apply.type='button';foot.append(cancel,apply);
+    info.append(name,summary,controls,hint);preview.append(previewHeading,diagramBox,info);
+    body.append(catalog,preview);panel.append(head,body,foot);dialog.append(panel);
+    const groups={},families=[],seen=new Set(),directions={};
+    for(const kind of ['sheetPaper','rollPaper']){
+      const section=make('section','wf-package-paper-section'),heading=make('h3'),grid=make('div','wf-package-family-grid');
+      heading.id='wfPackageGroup'+kind;grid.setAttribute('role','group');grid.setAttribute('aria-labelledby',heading.id);
+      section.append(heading,grid);catalog.append(section);groups[kind]={heading,grid};
+    }
+    let draft='',opened=false;
+    const fallbackInert=[];
+    for(const paper of Object.values(core.profiles)){
+      if(seen.has(paper.id))continue;
+      const choices=orientationChoices(core,paper.id);
+      for(const id of Object.values(choices))seen.add(id);
+      const roll=paper.mediaType==='roll';
+      const button=make('button','wf-package-family');button.type='button';button.dataset.paperFamily=paper.id;
+      const icon=make('span','wf-package-family-icon',roll?'🧾':'📄');icon.setAttribute('aria-hidden','true');
+      const copy=make('span','wf-package-family-copy'),label=make('strong'),caption=make('small');
+      copy.append(label,caption);button.append(icon,copy);
+      groups[roll?'rollPaper':'sheetPaper'].grid.append(button);
+      families.push({paper,choices,button,label,caption});
+      button.addEventListener('click',()=>{
+        if(!opened||Object.values(choices).includes(draft))return;
+        draft=paper.id;draw();
+      });
+    }
+    for(const direction of ['portrait','landscape','square']){
+      const control=make('button','wf-package-orientation');control.type='button';control.dataset.wfOrientation=direction;
+      control.addEventListener('click',()=>{
+        const next=orientationChoices(core,draft)[direction];
+        if(next){draft=next;draw();}
+      });
+      directions[direction]=control;controls.append(control);
+    }
+    function draw(){
+      const paper=core.profiles[draft],stock=core.profiles[paper.sourceProfileId]||paper;
+      const roll=paper.mediaType==='roll',choices=orientationChoices(core,draft);
+      dialog.dataset.profileId=draft;dialog.lang=getLocale();dialog.dir=dialog.lang==='ar'?'rtl':'ltr';
+      title.textContent=t('pickerTitle');previewHeading.textContent=t('paperPreview');
+      cancel.textContent=t('cancelPaper');apply.textContent=t('applyPaper');
+      apply.disabled=isLocked();controls.setAttribute('aria-label',t('orientation'));
+      for(const [key,group] of Object.entries(groups))group.heading.textContent=t(key);
+      for(const item of families){
+        const family=item.paper,isRoll=family.mediaType==='roll';
+        item.button.setAttribute('aria-pressed',String(Object.values(item.choices).includes(draft)));
+        const size=dimensions(family.stockWidthMM,family.stockHeightMM);
+        item.label.textContent=isRoll?size:family.name;
+        item.caption.textContent=isRoll?(family.id.startsWith('zebra')?'Zebra':t('thermal')):size+' · '+family.columns*family.rows+' / A4';
+      }
+      for(const [key,control] of Object.entries(directions)){
+        control.textContent=t(key);control.hidden=!choices[key];
+        control.setAttribute('aria-pressed',String(choices[key]===draft));
+      }
+      name.textContent=roll?(paper.id.startsWith('zebra')?'Zebra':t('thermal')):stock.name;
+      summary.textContent=mediaSummary(core,draft,t,false);
+      const wide=roll&&paper.pageWidthMM>100,long=roll&&paper.pageHeightMM>300;
+      hint.hidden=!wide&&!long;
+      hint.textContent=wide?t('widePrinter').replace('{width}',paper.pageWidthMM):long?t('longPrinter').replace('{height}',paper.pageHeightMM):'';
+      const scale=100/Math.max(paper.pageWidthMM,paper.pageHeightMM);
+      diagram.style.width=paper.pageWidthMM*scale+'px';diagram.style.height=paper.pageHeightMM*scale+'px';
+      diagram.style.gridTemplateColumns='repeat('+paper.columns+', minmax(0,1fr))';
+      diagram.style.gridTemplateRows='repeat('+paper.rows+', minmax(0,1fr))';
+      diagram.dataset.media=roll?'roll':'sheet';
+      diagram.replaceChildren(...Array.from({length:paper.columns*paper.rows},()=>make('span')));
+    }
+    function refresh(){
+      trigger.dataset.profileId=getApplied();trigger.textContent=t('changePaper');
+      trigger.setAttribute('aria-expanded',String(opened));
+      if(opened)draw();
+    }
+    function close(restoreFocus=true){
+      if(!opened)return false;
+      opened=false;draft='';
+      if(typeof dialog.close==='function'&&dialog.open)dialog.close();
+      else dialog.removeAttribute('open');
+      for(const sibling of fallbackInert.splice(0))sibling.inert=false;
+      delete dialog.dataset.fallback;
+      delete dialog.dataset.profileId;refresh();onOpenChange();
+      if(restoreFocus&&trigger.isConnected&&!trigger.disabled)trigger.focus({preventScroll:true});
+      return true;
+    }
+    function open(){
+      if(opened||isLocked())return false;
+      draft=getApplied();opened=true;refresh();
+      if(typeof dialog.showModal==='function')dialog.showModal();
+      else{
+        dialog.setAttribute('open','');dialog.dataset.fallback='true';
+        for(const sibling of document.body.children){
+          if(sibling!==dialog&&!sibling.inert){sibling.inert=true;fallbackInert.push(sibling);}
+        }
+      }
+      onOpenChange();title.focus({preventScroll:true});return true;
+    }
+    trigger.addEventListener('click',open);
+    cancel.addEventListener('click',()=>close());
+    apply.addEventListener('click',()=>{
+      if(!opened||isLocked())return;
+      const selected=draft;close();onApply(selected);
+    });
+    dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
+    dialog.addEventListener('close',()=>{if(!dialog.open)close();});
+    dialog.addEventListener('click',event=>{if(event.target===dialog)close();});
+    dialog.addEventListener('keydown',event=>{
+      if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close();return;}
+      if(event.key!=='Tab'||!opened)return;
+      const buttons=Array.from(dialog.querySelectorAll('button')).filter(node=>!node.hidden&&!node.disabled);
+      const first=buttons[0],last=buttons[buttons.length-1],focused=document.activeElement;
+      if(event.shiftKey&&(focused===first||focused===title)){event.preventDefault();last?.focus();}
+      else if(!event.shiftKey&&focused===last){event.preventDefault();first?.focus();}
+    });
+    return {trigger,dialog,refresh,open,close,isOpen:()=>opened};
   }
   function captureIdentity(invoice,companyLogo,now=new Date().toISOString()){
     const result={...invoice};
@@ -515,5 +645,5 @@
     });
     return withTimeout(loaded.then(async item=>{if(typeof item.decode==='function'){try{await item.decode();}catch(_){throw new Error('IMAGE_LOAD');}}}),timeout,'IMAGE_TIMEOUT');
   }
-  return {captureIdentity,resolveInvoiceSource,barcodeBits,waitForImage,withTimeout,readProfilePreference,writeProfilePreference,orientationChoices};
+  return {captureIdentity,resolveInvoiceSource,barcodeBits,waitForImage,withTimeout,readProfilePreference,writeProfilePreference,orientationChoices,createPaperPicker,mediaSummary};
 });
