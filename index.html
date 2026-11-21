@@ -21084,7 +21084,7 @@ const validPages=['dashboard','companies','products','cart','invoices','add-comp
   wfInstallPersistentStorageHooks();
   if(window.WFAccountAccess.can('data.edit'))wfScheduleStorageMaintenance();
   wfRefreshStorageTelemetry();
-  try{if(window.WFAccountAccess.can('data.export')){wfDriveInitOnboarding();wfDriveInitAutoBackup();}}catch(err){console.warn('Drive auto-backup init skipped:',err);}
+  try{if(!window.WFCloudClient?.isRemoteMode()&&window.WFAccountAccess.can('data.export')){wfDriveInitOnboarding();wfDriveInitAutoBackup();}}catch(err){console.warn('Drive auto-backup init skipped:',err);}
 initBottomNav();
   WF_CLOUD_BOOT_READY=true;
   if(WF_CLOUD_REFRESH_STORES.size)wfApplyCloudChanges();

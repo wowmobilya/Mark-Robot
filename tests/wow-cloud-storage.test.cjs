@@ -101,6 +101,27 @@ test('remote database selection refuses unauthenticated access before opening an
   vm.runInContext("let db,WF_DB_OPENING;const DB_NAME='WowFurnitureDB',DB_VER=8,WF_DB_STORES=['settings'];\n"+extract('wfBusinessDBName')+'\n'+extract('initDB'),context);
   await assert.rejects(context.initDB(),/AUTH_REQUIRED/);assert.deepEqual(opened,[]);
 });
+test('remote owner startup skips legacy Drive recovery while local owner keeps onboarding',async()=>{
+  for(const remote of [true,false]){
+    const opened=[];let autoBackup=0;
+    const context=vm.createContext({console,URLSearchParams,Date,S:{settings:{}},
+      location:{hash:'#dashboard',search:remote?'?wf-cloud=owner&workspace=fixture':''},history:{replaceState(){}},
+      localStorage:{getItem:()=>null},document:{querySelectorAll:()=>[],querySelector:()=>null,getElementById:()=>null},
+      WFCloudClient:{isRemoteMode:()=>remote},WFAccountAccess:{beforeInit:async()=>{},projectRead:(_store,value)=>value,initialRoute:value=>value,can:()=>true},
+      WFCurrencySources:{initialRates:()=>({})},WF_CLOUD_REFRESH_STORES:new Set(),WF_CLOUD_BOOT_READY:false,
+      dbGet:async()=>null,dbGetAll:async()=>[],wfCompanyLogo:()=>null,setTimeout(){},setInterval(){},
+      WF_DRIVE_SETUP_KEY:'setup',wfDriveLSGet:()=>'',wfDriveLSSet(){},wfRecoveryGet:()=>null,wfRecoverySet(){},
+      wfRecoveryFrame(source){opened.push(source);return false;},wfDriveInitAutoBackup(){autoBackup++;}
+    });
+    for(const name of ['loadTheme','initDB','wfInitializeCloudSync','applyTr','updateRateUI','updateDash','updateInvNumDisplay','updateQblTexts','startGreetingRotation','showPage','fetchRate','wfInstallPersistentStorageHooks','wfScheduleStorageMaintenance','wfRefreshStorageTelemetry','initBottomNav'])context[name]=()=>{};
+    context.window=context;
+    vm.runInContext(extract('wfRecoveryHasData')+'\n'+extract('wfDriveInitOnboarding')+'\n'+extract('init'),context);
+    await context.init();
+    assert.deepEqual(opened,remote?[]:['welcome'],'only local startup offers the legacy Drive recovery dialog');
+    assert.equal(autoBackup,remote?0:1,'remote projections must not start local Drive backup scheduling');
+    assert.equal(context.WF_CLOUD_BOOT_READY,true,'the application completes startup in either mode');
+  }
+});
 test('a verified remote session opens only its scoped cache and creates cloud metadata stores',async()=>{
   const opened=[],names=new Set(),created=[],connection={version:8,objectStoreNames:{contains:name=>names.has(name)},
     createObjectStore(name,options){names.add(name);created.push({name,...options});},close(){}};
