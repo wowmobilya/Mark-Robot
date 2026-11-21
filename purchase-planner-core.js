@@ -180,17 +180,29 @@
     if(!Number.isSafeInteger(revision)||revision<0||revision===Number.MAX_SAFE_INTEGER)fail('ORDER_HISTORY_INVALID');
     return{...base,id:'main',procurementOrders:{...section,version:1,orders:listOrders(base),draft:clone(intent.draft),draftRevision:revision+1}};
   }
-  function publishSection(state,section){
+  function publishSection(state,section,before){
     const current=state.settings?.procurementOrders;
     const validRows=rows=>Array.isArray(rows)&&rows.every(row=>row&&row.version===1&&text(row.id)&&Array.isArray(row.lines));
+    if(current!==before&&(!current||current.version!==1||!validRows(current.orders)))return current;
     if(current?.version===1&&validRows(current.orders)&&validRows(section.orders)){
       const orders=new Map([...(section.orders||[]),...(current.orders||[])].map(row=>[row.id,row]));
       section={...section,orders:[...orders.values()]};
       if((current.draftRevision||0)>(section.draftRevision||0)){section.draft=current.draft;section.draftRevision=current.draftRevision;}
     }
+    // Receipt writes share this protected section with the planner. An older
+    // draft/order can finish loading its images after a new receipt publishes.
+    const revision=value=>value?.version===1&&Number.isSafeInteger(value.revision)&&value.revision>=0?value.revision:null;
+    const visible=current?.followup,incoming=section.followup;
+    const changed=visible!==before?.followup,visibleRevision=revision(visible),incomingRevision=revision(incoming);
+    if(current&&changed&&(visibleRevision===null||incomingRevision===null||visibleRevision>=incomingRevision)){
+      section={...section};
+      if(Object.prototype.hasOwnProperty.call(current,'followup'))section.followup=visible;
+      else delete section.followup;
+    }
     state.settings={...(state.settings||{}),procurementOrders:section};return section;
   }
   async function persistDraft(draft,{state,writeBatch,hydrate,expectedRevision}){
+    const before=state.settings?.procurementOrders;
     const prepared=prepareDraft(draft);
     const [stored]=await writeBatch([{store:'settings',type:'merge',id:'main',value:{draft:prepared,expectedRevision},merge:mergeDraft}]);
     const saved=hydrate?await hydrate(stored):stored;
@@ -198,15 +210,16 @@
     // The receipt belongs to this write, even when hydration finishes after a
     // newer writer has already published another draft into application state.
     const committed=Object.freeze({...saved.procurementOrders,draft:freeze(clone(saved.procurementOrders.draft))});
-    publishSection(state,saved.procurementOrders);
+    publishSection(state,saved.procurementOrders,before);
     return committed;
   }
   async function persistOrder(order,{state,writeBatch,hydrate}){
+    const before=state.settings?.procurementOrders;
     const [stored]=await writeBatch([{store:'settings',type:'merge',id:'main',value:{order},merge:mergeOrder}]);
     const saved=hydrate?await hydrate(stored):stored,section=saved?.procurementOrders;
     if(!section?.orders?.some(row=>row.id===order.id))fail('ORDER_SAVE_FAILED');
     // Publish only this owned section; settings saved concurrently remain intact.
-    publishSection(state,section);
+    publishSection(state,section,before);
     return section.orders.find(row=>row.id===order.id);
   }
   const printWords={

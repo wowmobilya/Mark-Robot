@@ -1,0 +1,48 @@
+@media screen {
+  #page-purchase-followup .wf-ops-body { min-inline-size:0; }
+  .wf-followup-panel { display:grid; gap:12px; overflow-wrap:anywhere; }
+  .wf-followup-panel :is(h2,h3,p,dl,dd), .wf-followup-diagnostics p { margin:0; }
+  .wf-followup-title:focus { outline:none; }
+  .wf-followup-status { justify-self:start; width:fit-content; padding:3px 9px; border:1px solid var(--ops-line); border-radius:12px; background:var(--ops-wash); color:var(--ops-emphasis); font-size:12px; line-height:1.45; }
+  .wf-followup-overdue { font-weight:700; color:var(--red); }
+  .wf-followup-filters,.wf-followup-field,.wf-followup-results,.wf-followup-quantity { display:grid; gap:7px; min-inline-size:0; }
+  .wf-followup-field,.wf-followup-quantity,.wf-followup-panel small { color:var(--text2); font-size:13px; }
+  .wf-followup-results { gap:0; }
+  .wf-followup-card { display:flex; align-items:center; justify-content:space-between; gap:12px; inline-size:100%; padding:12px 4px; text-align:start; border:0; border-block-end:1px solid var(--ops-line); background:transparent; color:var(--text); cursor:pointer; }
+  .wf-followup-card:hover { background:var(--ops-wash); }
+  .wf-followup-card-name,.wf-followup-card-meta { display:grid; gap:4px; min-inline-size:0; }
+  .wf-followup-card-meta { justify-items:end; text-align:end; }
+  .wf-followup-card-name strong { font-size:15px; }
+  .wf-followup-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(118px,100%),1fr)); gap:1px; overflow:hidden; border:1px solid var(--ops-line); border-radius:10px; background:var(--ops-line); }
+  .wf-followup-metric { display:flex; flex-direction:column; justify-content:space-between; gap:5px; min-inline-size:0; margin:0; padding:10px; background:var(--ops-wash); }
+  .wf-followup-metric dt { color:var(--text2); line-height:1.45; font-size:12px; }
+  .wf-followup-metric dd { color:var(--text); font-size:20px; font-weight:750; font-variant-numeric:tabular-nums; }
+  .wf-followup-actions,.wf-followup-pager,.wf-followup-head { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+  .wf-followup-actions .btn,.wf-followup-head .btn,.wf-followup-pager .btn,.wf-followup-event>.btn { min-block-size:44px; min-inline-size:0; padding:8px 12px; font-size:13px; white-space:normal; }
+  .wf-followup-actions .btn { flex:1 1 125px; }
+  .wf-followup-pager { justify-content:space-between; margin-block-start:8px; font-variant-numeric:tabular-nums; font-size:13px; }
+  .wf-followup-basis,.wf-followup-diagnostics { color:var(--text2); line-height:1.6; }
+  .wf-followup-line,.wf-followup-event,.wf-followup-quantity { display:grid; gap:7px; padding-block:10px; border-block-start:1px solid var(--ops-line); min-inline-size:0; }
+  .wf-followup-line h3,.wf-followup-event h3 { font-size:15px; }
+  .wf-followup-line .wf-followup-metric { padding:7px; }
+  .wf-followup-line .wf-followup-metric dd { font-size:15px; }
+  .wf-followup-event { grid-template-columns:minmax(0,1fr); justify-items:start; }
+  .wf-followup-event time { color:var(--text2); font-size:13px; }
+  .wf-followup-diagnostics { padding:8px var(--ops-pad); border:1px solid var(--ops-line); border-radius:10px; font-size:13px; overflow-wrap:anywhere; }
+  .wf-followup-diagnostics summary,.wf-followup-event-lines summary,.wf-followup-overview-allocation summary { cursor:pointer; min-block-size:44px; align-content:center; }
+  .wf-followup-overview-allocation .wf-followup-basis { margin-block-start:8px; }
+  .wf-followup-event-lines { max-inline-size:100%; }
+  .wf-followup-editor { border-inline-start:3px solid var(--brand-primary); }
+  .wf-followup-quantity input { max-inline-size:11rem; }
+  .wf-purchase-history-row>.wf-followup-planner-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  @media (min-width:640px) {
+    .wf-followup-filters { grid-template-columns:minmax(0,2fr) minmax(0,1fr); }
+    .wf-followup-actions .btn { flex:0 1 auto; }
+  }
+  @media (max-width:420px) {
+    .wf-followup-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .wf-followup-metrics>.wf-followup-metric:last-child:nth-child(odd) { grid-column:1 / -1; }
+    .wf-followup-metric dt { font-size:13px; }
+    .wf-purchase-history-row:has(.wf-followup-planner-actions) { flex-wrap:wrap; }
+  }
+}

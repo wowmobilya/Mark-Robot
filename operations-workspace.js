@@ -19,7 +19,8 @@
     'review-center': {ar:'مركز المتابعة',tr:'Kontrol merkezi',en:'Review center',fr:'Centre de suivi',ru:'Центр проверки'},
     'daily-tasks': {ar:'المهام اليومية',tr:'Günlük görevler',en:'Daily tasks',fr:'Tâches quotidiennes',ru:'Ежедневные задачи'},
     'global-search': {ar:'البحث الشامل',tr:'Genel arama',en:'Global search',fr:'Recherche globale',ru:'Общий поиск'},
-    'purchase-planner': {ar:'مساعد الشراء وإعادة الطلب',tr:'Satın alma ve yeniden sipariş',en:'Purchase and reorder planner',fr:'Achats et réapprovisionnement',ru:'Планирование закупок'}
+    'purchase-planner': {ar:'مساعد الشراء وإعادة الطلب',tr:'Satın alma ve yeniden sipariş',en:'Purchase and reorder planner',fr:'Achats et réapprovisionnement',ru:'Планирование закупок'},
+    'purchase-followup': {ar:'متابعة طلبات الموردين',tr:'Tedarikçi sipariş takibi',en:'Supplier order follow-up',fr:'Suivi des commandes fournisseurs',ru:'Контроль заказов поставщикам'}
   };
   const groupNames = {ar:'الأدوات والمتابعة',tr:'Araçlar ve takip',en:'Tools and follow-up',fr:'Outils et suivi',ru:'Инструменты и контроль'};
   const backNames = {ar:'رجوع',tr:'Geri',en:'Back',fr:'Retour',ru:'Назад'};
@@ -61,7 +62,7 @@
   group.append(groupTitle);
   for (const [id, title] of Object.entries(names)) {
     const link = make('button', 'nav-item'); link.type = 'button'; link.dataset.page = id;
-    const symbol = make('span', 'nav-icon'); symbol.innerHTML = icon({'package-labels':'label','product-costs':'cost','invoice-archive':'archive','manufacturing':'factory','material-library':'material','cost-analysis':'chart','print-history':'print','review-center':'review','daily-tasks':'calendar','global-search':'search','purchase-planner':'package'}[id]);
+    const symbol = make('span', 'nav-icon'); symbol.innerHTML = icon({'package-labels':'label','product-costs':'cost','invoice-archive':'archive','manufacturing':'factory','material-library':'material','cost-analysis':'chart','print-history':'print','review-center':'review','daily-tasks':'calendar','global-search':'search','purchase-planner':'package','purchase-followup':'review'}[id]);
     const caption = make('span'); link.append(symbol, caption);
     // The shared sidebar search invokes the original item's onclick handler.
     link.onclick = () => open(id);

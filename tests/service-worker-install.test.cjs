@@ -36,7 +36,7 @@ test('offline installation bounds network work and activates only after the requ
   const stored=f.stores.get(f.context.qa.CACHE_NAME);
   assert(stored.has(url('./index.html')));assert(stored.has(url('./')));
   assert.equal(f.calls.filter(value=>value===url('./')||value===url('./index.html')).length,1,'fetch the HTML once for both cache aliases');
-  for(const asset of ['purchase-planner.js?v=1','invoice-preview.css?v=1','label-reprint-history.js?v=1'])assert(stored.has(url('./'+asset)));
+  for(const asset of ['purchase-planner.js?v=2','invoice-preview.css?v=1','label-reprint-history.js?v=1'])assert(stored.has(url('./'+asset)));
 });
 test('updates reuse exactly versioned prior assets and fetch fresh unversioned configuration and HTML',async()=>{
   const f=fixture({seed:true});await f.install();
@@ -57,7 +57,7 @@ test('an update downloads new versions and retains installed speech compatibilit
   const f=fixture({seed:['./index.html','./speech-controls.js?v=4',unchanged,...aliases]});
   await f.install();
   assert(f.calls.includes(url('./speech-controls.js?v=5')),'changed code must be downloaded');
-  assert(f.calls.includes(url('./purchase-planner.js?v=1')),'new modules must be downloaded');
+  assert(f.calls.includes(url('./purchase-planner.js?v=2')),'new modules must be downloaded');
   assert.equal(f.calls.includes(url(unchanged)),false,'only exact unchanged URLs may be reused');
   assert.equal(f.calls.includes(url('./speech-controls.js?v=4')),false);
   await f.activate();
@@ -67,7 +67,7 @@ test('an update downloads new versions and retains installed speech compatibilit
   assert.equal(current.has(url('./speech-controls.js?v=4')),false);
 });
 test('failed HTML, CSS or JavaScript installation leaves every previous-cache entry intact',async()=>{
-  for(const asset of ['./index.html','./invoice-preview.css?v=1','./purchase-planner.js?v=1']){
+  for(const asset of ['./index.html','./invoice-preview.css?v=1','./purchase-planner.js?v=2']){
     const f=fixture({seed:['./index.html','./speech-controls.js?v=4','./reference-voice.js?v=1'],fail:value=>value===url(asset)});
     const previous=f.stores.get('wow-furniture-v205-test'),before=[...previous].map(([key,value])=>[key,value.tag]);
     await assert.rejects(f.install());

@@ -327,3 +327,44 @@ test('settings hydration publishes newer committed sections when visible state d
   await f.run("wfPublishCommittedSettings({id:'main',...Object.fromEntries(sections.map(key=>[key,{revision:2}]))},beforeSettings)");
   for(const field of fields)assert.equal(f.run('S.settings['+JSON.stringify(field)+'].revision'),2);
 });
+
+function procurementFixture(){
+  const planner=require('../purchase-planner-core.js'),followupCore=require('../procurement-followup-core.js');
+  const make=id=>planner.prepareOrder({id,createdAt:'2026-11-17T08:00:00Z',currency:'USD',supplier:{name:'Factory'},lines:[{productId:'p1',name:'Table',color:'Oak',dimensions:'80x40',quantity:5}]});
+  const initial={id:'main',companyName:'Before',procurementOrders:{version:1,orders:[make('a'),make('b')],draftRevision:0}};
+  const invoice={id:'i1',delivered:true,deliveredAt:'2026-11-20T10:00:00Z',items:[{productId:'p1',qty:1,color:'Oak',dimensions:'80x40'}]},product={id:'p1',stock:20};
+  const f=fixture({settings:[initial],invoices:[invoice],products:[product]});f.putState({settings:initial,invoices:[invoice],products:[product]});
+  Object.assign(f.context,{followupCore,plannerCore:planner});
+  const receipt=(orderId,id,expectedRevision=0)=>({orderId,expectedRevision,event:{id,type:'receipt',at:'2026-11-18T10:00:00Z',lines:[{key:planner.modelKey('p1','Oak','80x40'),quantity:1}]}});
+  return{...f,receipt,initial,invoice,product};
+}
+
+test('real receipt transactions serialize across orders, reject a stale same-order edit and preserve invoice/stock data',async()=>{
+  const f=procurementFixture();Object.assign(f.context,{first:f.receipt('a','r1'),second:f.receipt('b','r2'),stale:f.receipt('a','r3')});
+  const results=await f.run(`Promise.allSettled([first,second,stale].map(intent=>followupCore.persistChange(intent,{state:S,writeBatch:wfWriteBatch,hydrate:wfHydrateDBValue})))`);
+  assert.deepEqual(Array.from(results,r=>r.status),['fulfilled','fulfilled','rejected']);assert.match(results[2].reason.message,/FOLLOWUP_CHANGED/);
+  const saved=f.tables.settings.get('main');assert.equal(saved.procurementOrders.followup.revision,2);
+  assert.deepEqual(saved.procurementOrders.followup.records.map(row=>row.events[0].id),['r1','r2']);
+  assert.equal(f.run('followupCore.getLedger(S.settings).revision'),2);
+  assert.deepEqual(f.tables.invoices.get('i1'),f.invoice);assert.deepEqual(f.tables.products.get('p1'),f.product);assert.equal(f.tables.payments.size,0);
+});
+
+test('a deployed release206 tab cannot erase new receipts through later ordinary settings saves',async()=>{
+  const f=procurementFixture();f.context.first=f.receipt('a','r1');
+  await f.run('followupCore.persistChange(first,{state:S,writeBatch:wfWriteBatch,hydrate:wfHydrateDBValue})');
+  f.run('var modernWriter=wfWriteBatch');
+  f.run(fs.readFileSync(path.join(__dirname,'fixtures/wf-write-batch-206.js'),'utf8'));
+  await f.run(`(async()=>{const before={...S.settings};const [saved]=await wfWriteBatch([{store:'settings',value:{id:'main',companyName:'Old tab first save'},returnRecord:true}]);await wfPublishCommittedSettings(saved,before)})()`);
+  f.context.second=f.receipt('a','r2',1);
+  await f.run('followupCore.persistChange(second,{state:{settings:{}},writeBatch:modernWriter,hydrate:wfHydrateDBValue})');
+  assert.equal(f.run('S.settings.procurementOrders.followup.revision'),1,'old tab retains a stale ledger in memory');
+  await f.run("wfWriteBatch([{store:'settings',value:{...S.settings,companyName:'Old tab second save'}}])");
+  const saved=f.tables.settings.get('main');assert.equal(saved.companyName,'Old tab second save');
+  assert.deepEqual(saved.procurementOrders.followup.records[0].events.map(e=>e.id),['r1','r2']);assert.equal(saved.procurementOrders.followup.revision,2);
+});
+
+test('failed receipt commits leave both durable and visible history unchanged and do not schedule backup',async()=>{
+  const f=procurementFixture();f.context.first=f.receipt('a','r1');f.context.backups=0;f.run('wfDriveOnDatabaseCommit=()=>{backups++}');f.failNext(Error('disk full after staging receipt'));
+  await assert.rejects(f.run('followupCore.persistChange(first,{state:S,writeBatch:wfWriteBatch,hydrate:wfHydrateDBValue})'),/disk full/);
+  assert.deepEqual(f.tables.settings.get('main'),f.initial);assert.deepEqual(structuredClone(f.run('S.settings')),f.initial);assert.equal(f.run('backups'),0);
+});

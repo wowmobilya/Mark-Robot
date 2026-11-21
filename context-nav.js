@@ -54,6 +54,8 @@
     productCosts:['الكلفة','Product costs','Maliyetler','Coûts','Себестоимость'],
     invoiceArchive:['الأرشيف','Archive','Arşiv','Archives','Архив'],
     printHistory:['سجل الطباعة','Print history','Baskı geçmişi','Historique','История печати'],
+    purchasePlanner:['طلب المورد','Supplier order','Tedarikçi siparişi','Commande fournisseur','Заказ поставщику'],
+    purchaseFollowup:['متابعة التوريد','Order follow-up','Tedarik takibi','Suivi des commandes','Отслеживание поставок'],
     printTicket:['طباعة البطاقة','Print ticket','Fişi yazdır','Imprimer la fiche','Печать задания'],
     printLabels:['طباعة','Print labels','Yazdır','Imprimer','Печать'],
     reports:['التقارير','Reports','Raporlar','Rapports','Отчёты'],
@@ -144,6 +146,7 @@
     cashboxes:['.cashboxes form button[type="submit"]'],
     cart:['#wfCartCreateInvoice'],
     'review-center':['#wfReviewRefresh'],
+    'purchase-followup':['#wfProcurementFollowupRefresh'],
     exchange:['.curr-refresh'],
     'quick-barcode':['#qblBrowseMode','#qblScanMode','.qbl-search-trigger','#qblCancelTierBtn','[onclick="qblChangeTier()"]','[onclick="qblAddToInvoice()"]']
   };
@@ -240,6 +243,8 @@
       'product-costs':{active:4,items:[back(),products(),home(),{kind:'focus',selector:'#wfCostProductSearch',label:'search',icon:'search'},save('#wfCostSave')]},
       'invoice-archive':{active:3,items:[back(),invoices(),home(),route('invoice-archive','invoiceArchive','archive'),{kind:'focus',selector:'#wfArchiveSearch',label:'search',icon:'search'}]},
       'print-history':{active:3,items:[back(),invoices(),home(),route('print-history','printHistory','print'),{kind:'focus',selector:'#wfReprintHistorySearch',label:'search',icon:'search'}]},
+      'purchase-planner':{active:4,items:[back(),products(),home(),route('purchase-followup','purchaseFollowup','archive'),{kind:'focus',selector:'#wfPurchaseSearch',label:'search',icon:'search'}]},
+      'purchase-followup':{active:4,items:[back(),route('purchase-planner','purchasePlanner','cart'),home(),control('#wfProcurementFollowupRefresh','refresh','refresh'),{kind:'focus',selector:'#wfProcurementFollowupSearch',label:'search',icon:'search'}]},
       'review-center':{active:4,items:[back(),invoices(),home(),route('print-history','printHistory','print'),control('#wfReviewRefresh','refresh','refresh')]},
       'global-search':{active:4,items:[back(),clients(),home(),products(),{kind:'focus',selector:'#wfGlobalSearchInput',label:'search',icon:'search'}]},
       'manufacturing':{active:4,items:[back(),invoices(),home(),{kind:'focus',selector:'#wfMfgSearch',label:'search',icon:'search'},control('#wfMfgPrint','printTicket','print')]},

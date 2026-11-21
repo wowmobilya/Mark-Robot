@@ -146,6 +146,42 @@ test('history activity counts matching models only from the order date, with no 
   assert.equal(order.lines[0].quantity,4);assert.equal(data.invoices[1].delivered,undefined);
 });
 
+test('late planner image hydration cannot erase a newly published receipt ledger or an explicit restore removal',async()=>{
+  for(const kind of ['draft','order'])for(const replacement of [{version:1,revision:2,records:[{orderId:'a',revision:2,events:[{id:'r1'},{id:'r2'}]}]},undefined]){
+    const oldLedger={version:1,revision:1,records:[{orderId:'a',revision:1,events:[{id:'r1'}]}]};
+    const data=state();let latest={id:'main',procurementOrders:{version:1,orders:[],draftRevision:0,followup:oldLedger}};
+    data.settings.procurementOrders=structuredClone(latest.procurementOrders);
+    const dependencies={state:data,expectedRevision:0,writeBatch:async([op])=>{latest=op.merge(latest,op.value);return[structuredClone(latest)];},hydrate:async value=>{
+      const newer={...data.settings.procurementOrders};if(replacement===undefined)delete newer.followup;else newer.followup=structuredClone(replacement);
+      data.settings.procurementOrders=newer;return value;
+    }};
+    const result=kind==='draft'?await core.persistDraft(orderDraft(),dependencies):await core.persistOrder(core.prepareOrder(orderDraft()),dependencies);
+    assert.deepEqual(data.settings.procurementOrders.followup,replacement,kind);
+    assert.equal(Object.hasOwn(data.settings.procurementOrders,'followup'),replacement!==undefined);
+    if(kind==='draft'){assert.equal(result.draftRevision,1);assert.equal(data.settings.procurementOrders.draftRevision,1);}
+    else assert.equal(data.settings.procurementOrders.orders[0].id,result.id);
+  }
+});
+
+test('planner publication accepts an authoritative restored ledger when no receipt changed during its save',async()=>{
+  const data=state();data.settings.procurementOrders={version:1,orders:[],followup:{version:1,revision:9,records:[]}};
+  let latest={id:'main',procurementOrders:{version:1,orders:[]}};
+  await core.persistDraft(orderDraft(),{state:data,expectedRevision:0,writeBatch:async([op])=>{latest=op.merge(latest,op.value);return[structuredClone(latest)];}});
+  assert.equal(Object.hasOwn(data.settings.procurementOrders,'followup'),false);
+});
+
+test('concurrent restore of the whole planner section is not undone by late planner hydration',async()=>{
+  for(const replacement of [undefined,null,{version:8,orders:[]}]){
+    const data=state(),a=core.prepareOrder(orderDraft());let latest={id:'main',procurementOrders:{version:1,orders:[a],followup:{version:1,revision:0,records:[]}}};
+    data.settings.procurementOrders=structuredClone(latest.procurementOrders);
+    await core.persistOrder(core.prepareOrder(orderDraft({id:'b'})),{state:data,writeBatch:async([op])=>{latest=op.merge(latest,op.value);return[structuredClone(latest)];},hydrate:async value=>{
+      data.settings={companyName:'Restored'};if(replacement!==undefined)data.settings.procurementOrders=replacement;return value;
+    }});
+    assert.equal(data.settings.companyName,'Restored');assert.deepEqual(data.settings.procurementOrders,replacement);
+    assert.equal(Object.hasOwn(data.settings,'procurementOrders'),replacement!==undefined);
+  }
+});
+
 test('corrupt history sections are rejected instead of silently replaced',()=>{
   for(const section of [{version:99,orders:[]},{version:1,orders:{}},{version:1,orders:[{id:'bad'}]}])assert.throws(()=>core.mergeOrder({procurementOrders:section},{order:core.prepareOrder(orderDraft())}),/ORDER_HISTORY_INVALID/);
 });

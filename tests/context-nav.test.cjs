@@ -19,7 +19,7 @@ class El {
  click(){this.clicks++;this.onclick?.();for(const fn of this.events.click||[])fn({target:this});}
  focus(){this.focused=true;}scrollIntoView(){this.scrolled=true;}scrollTo(){this.scrollTop=0;}
 }
-const pages=['dashboard','companies','products','cart','invoices','select-client-type','add-company','add-product','select-invoice-type','create-invoice','payment-management','reports','exchange','cashboxes','quick-barcode','settings','package-labels','product-costs','invoice-archive','manufacturing','material-library','cost-analysis','print-history','review-center','global-search'];
+const pages=['dashboard','companies','products','cart','invoices','select-client-type','add-company','add-product','select-invoice-type','create-invoice','payment-management','reports','exchange','cashboxes','quick-barcode','settings','package-labels','product-costs','invoice-archive','manufacturing','material-library','cost-analysis','print-history','review-center','global-search','purchase-planner','purchase-followup'];
 function setup({mobile=false}={}){
  const root=new El,body=new El,main=new El('mainContent'),nav=new El('bottomNav'),ids={mainContent:main,bottomNav:nav},queue=[],observers=[],calls={routes:[],back:0,menu:0,moves:[]};root.lang='ar';root.dir='rtl';root.append(body);body.append(main,nav);
  for(const p of pages){const el=new El('page-'+p,'page');ids[el.id]=el;main.append(el);}ids['page-dashboard'].classes.add('active');
@@ -31,6 +31,7 @@ function setup({mobile=false}={}){
   ['invoiceSave','create-invoice','[onclick="saveInvoice()"]'],['preview','create-invoice','[onclick="previewInvoice()"]'],['payment','payment-management','[onclick="addPaymentToInv()"]'],['movement','cashboxes','.cashboxes form button[type="submit"]'],['statement','companies','[onclick="wfOpenStatement()"]'],['refresh','exchange','.curr-refresh'],['calculator','exchange','.curr-item[onclick="openCurrCalc(\'usd-try\')"]'],
   ['packagePrint','package-labels','#wfPackagePrint','wfPackagePrint'],['costSave','product-costs','#wfCostSave','wfCostSave'],['costSearch','product-costs','#wfCostProductSearch','wfCostProductSearch'],['archiveSearch','invoice-archive','#wfArchiveSearch','wfArchiveSearch'],
   ['historySearch','print-history','#wfReprintHistorySearch','wfReprintHistorySearch'],['reviewRefresh','review-center','#wfReviewRefresh','wfReviewRefresh'],['globalSearch','global-search','#wfGlobalSearchInput','wfGlobalSearchInput'],
+  ['purchaseSearch','purchase-planner','#wfPurchaseSearch','wfPurchaseSearch'],['followupSearch','purchase-followup','#wfProcurementFollowupSearch','wfProcurementFollowupSearch'],['followupRefresh','purchase-followup','#wfProcurementFollowupRefresh','wfProcurementFollowupRefresh'],
   ['scan','quick-barcode','#qblScanMode','qblScanMode'],['browse','quick-barcode','#qblBrowseMode','qblBrowseMode'],['search','quick-barcode','.qbl-search-trigger'],['cancel','quick-barcode','#qblCancelTierBtn','qblCancelTierBtn'],['changeTier','quick-barcode','[onclick="qblChangeTier()"]'],['addCart','quick-barcode','[onclick="qblAddToInvoice()"]'],['cartInvoice','cart','#wfCartCreateInvoice','wfCartCreateInvoice']
  ])original[name]=target(page,sel,id);
  for(const [page,id] of [['companies','coSearch'],['products','prSearch'],['invoices','invSearch']])target(page,'.wf-search-toggle[aria-controls="'+id+'"]');
@@ -62,6 +63,15 @@ function recordWrites(element,writes){
  element.dataset=new Proxy(element.dataset,{set(target,name,value){writes.push([element.id,'data '+name,value]);target[name]=value;return true;},deleteProperty(target,name){writes.push([element.id,'delete data '+name]);delete target[name];return true;}});
  element.children.forEach(child=>recordWrites(child,writes));
 }
+
+test('supplier pages share mobile routes and search without bypassing the busy refresh guard',()=>{
+ const a=setup({mobile:true});a.activate('purchase-planner');a.click(3);assert.equal(a.calls.routes.at(-1),'purchase-followup');a.click(4);assert.equal(a.original.purchaseSearch.focused,true);
+ a.activate('purchase-followup');a.click(1);assert.equal(a.calls.routes.at(-1),'purchase-planner');a.click(4);assert.equal(a.original.followupSearch.focused,true);
+ assert(a.original.followupRefresh.hasAttribute('data-wf-shared-dock-source'));a.click(3);assert.equal(a.original.followupRefresh.clicks,1);
+ a.original.followupRefresh.disabled=true;a.click(3);assert.equal(a.original.followupRefresh.clicks,1);a.sync();assert(a.buttons[3].disabled);
+ a.original.followupRefresh.disabled=false;a.sync();a.click(3);assert.equal(a.original.followupRefresh.clicks,2);
+ a.setCompact(false);assert(!a.original.followupRefresh.hasAttribute('data-wf-shared-dock-source'));assert.equal(a.original.followupRefresh.getClientRects().length,1);
+});
 
 test('settled dock refreshes do not mutate controls, including disabled busy actions',()=>{
  const a=setup({mobile:true});a.activate('add-company');a.original.clientSave.setAttribute('aria-busy','true');a.sync();
@@ -243,7 +253,7 @@ test('a separate active modal blocks shared settings actions without forwarding 
  a.setModals([s.dialog]);a.click(2);assert.deepEqual(s.runs,['primary']);
 });
 test('all actual sections have five scoped controls, correct primary actions, and no actions on entry',()=>{
- const a=setup(),expected={dashboard:2,companies:0,products:0,cart:3,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2,'package-labels':4,'product-costs':4,'invoice-archive':3,'manufacturing':4,'material-library':4,'cost-analysis':3,'print-history':3,'review-center':4,'global-search':4};
+ const a=setup(),expected={dashboard:2,companies:0,products:0,cart:3,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2,'package-labels':4,'product-costs':4,'invoice-archive':3,'manufacturing':4,'material-library':4,'cost-analysis':3,'print-history':3,'review-center':4,'global-search':4,'purchase-planner':4,'purchase-followup':4};
  for(const page of pages){a.activate(page);const config=a.ctx.navTest.configuration(a.ids['page-'+page]);assert.equal(config.items.length,5,page);assert.equal(config.active,expected[page],page);assert.equal(a.nav.dataset.section,page);assert.equal(a.buttons.filter(b=>b.classList.contains('bnav-active')).length,1);for(const item of config.items){assert(item.icon&&item.label,page);if(item.kind==='route')assert(a.ids['page-'+item.page],item.page);}}
  assert.equal(a.calls.routes.length,0);assert.equal(a.calls.back,0);assert.equal(Object.values(a.original).reduce((n,b)=>n+b.clicks,0),0);
 });

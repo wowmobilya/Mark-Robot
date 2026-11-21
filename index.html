@@ -6433,10 +6433,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=34">
      <script src="cart-page.js?v=1" defer></script>
-<script src="operations-workspace.js?v=6" defer></script>
+<script src="operations-workspace.js?v=7" defer></script>
 <script src="ui-navigation.js?v=32" defer></script>
 <script src="bottomnav-fit.js?v=2" defer></script>
-<script src="context-nav.js?v=12" defer></script>
+<script src="context-nav.js?v=13" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=3" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
@@ -6479,8 +6479,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="package-labels.js?v=7" defer></script>
 <script src="daily-tasks-core.js?v=1" defer></script>
 <script src="daily-tasks.js?v=1" defer></script>
-<script src="purchase-planner-core.js?v=1" defer></script>
-<script src="purchase-planner.js?v=1" defer></script>
+<script src="purchase-planner-core.js?v=2" defer></script>
+<script src="purchase-planner.js?v=2" defer></script>
+<script src="procurement-followup-core.js?v=1" defer></script>
+<script src="procurement-followup.js?v=1" defer></script>
 <script src="review-center.js?v=1" defer></script>
 <script src="global-search.js?v=1" defer></script>
 <script src="business-workspace.js?v=1" defer></script>
@@ -6503,7 +6505,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="barcode-workspace.js?v=1" defer></script>
 <script src="touch-keyboard.js?v=2" defer></script>
 <script src="developer-profile.js?v=2" defer></script>
-<script src="app-updates.js?v=3" defer data-release="206"></script>
+<script src="app-updates.js?v=3" defer data-release="207"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
@@ -6555,6 +6557,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="invoice-preview.css?v=1">
 <link rel="stylesheet" href="daily-tasks.css?v=1">
 <link rel="stylesheet" href="purchase-planner.css?v=1">
+<link rel="stylesheet" href="procurement-followup.css?v=1">
 <link rel="stylesheet" href="review-center.css?v=1">
 <link rel="stylesheet" href="global-search.css?v=1">
 </head>
@@ -13769,6 +13772,7 @@ const PARENT_MAP = {
   'daily-tasks': 'dashboard',
   'global-search': 'dashboard',
   'purchase-planner': 'products',
+  'purchase-followup': 'purchase-planner',
   'product-costs': 'products',
   'invoice-archive': 'invoices',
   'manufacturing': 'invoices',
@@ -20930,7 +20934,7 @@ startGreetingRotation();
   }
   // handle hash routing
   const hash=window.location.hash.replace('#','');
-const validPages=['dashboard','companies','products','cart','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management','reports','exchange','settings','quick-barcode','notifications','package-labels','product-costs','invoice-archive','manufacturing','material-library','cost-analysis','print-history','review-center','daily-tasks','global-search','purchase-planner'];
+const validPages=['dashboard','companies','products','cart','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management','reports','exchange','settings','quick-barcode','notifications','package-labels','product-costs','invoice-archive','manufacturing','material-library','cost-analysis','print-history','review-center','daily-tasks','global-search','purchase-planner','purchase-followup'];
   if(hash&&validPages.includes(hash)){
     if(hash==='settings')loadSettingsToForm();
     showPage(hash,false);history.replaceState({page:hash},'','#'+hash);
