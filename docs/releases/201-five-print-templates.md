@@ -40,5 +40,7 @@ so another selection cannot replace a document already being printed.
 
 ## Deployment and browser verification
 
-Pending deployment of this exact tested revision. Physical printer feeding,
-alignment and barcode scanning have not been tested on the user's hardware.
+Published as `108931816244e6d8e2a5460e26b4bea05f3872e9`. The user subsequently
+requested three additional thermal sizes. The combined browser review continues
+in [release 202](202-eight-print-templates.md). Physical printer feeding, alignment
+and barcode scanning have not been tested on the user's hardware.

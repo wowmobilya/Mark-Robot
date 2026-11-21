@@ -440,3 +440,29 @@ test('80 by 100 mm thermal stock is remembered and printed as roll pages without
     assert.equal(app.read('batch.pageCount'),3);assert.equal(app.ui.printerHint.hidden,true);
   }finally{app.dispose();}
 });
+
+for(const [width,height] of [[70,100],[100,100],[100,200]]){
+  test(`${width} by ${height} mm thermal stock keeps its own dimensions, caption and remembered print job`,async()=>{
+    const id=`thermal${width}x${height}`,app=fixture(),preferences=new Map();
+    app.state.invoices[0].items[0].qty=9;
+    app.window.localStorage={setItem:(key,value)=>preferences.set(key,value)};
+    app.ui.profileSelect.append(Object.assign(element(),{value:id}));
+    try{
+      assert.equal(app.context.changeProfile(id),true);await tick();
+      assert.equal(app.read('ready'),true);assert.equal(app.read('batch.pageCount'),9);
+      assert.equal(app.ui.badge.textContent,`thermal ${width} × ${height}`);
+      assert(app.ui.profileSelect.children[0].textContent.endsWith(width===height?'square':'portrait'));
+      assert.equal(app.ui.stockSizeNote.textContent,'sizeRoll');
+      assert.equal(preferences.get('wf_package_label_profile_v1'),id);
+      assert(Math.abs(parseFloat(app.read('previewFrame.style.width'))-width*96/25.4)<0.01);
+      assert(Math.abs(parseFloat(app.read('previewFrame.style.height'))-height*96/25.4)<0.01);
+      await app.context.print();const frame=app.read('activePrint.frame');
+      assert.equal(frame.style.width,`${width}mm`);assert.equal(frame.style.height,`${height}mm`);
+      assert.equal(frame.contentDocument.querySelectorAll('.page').length,9);
+      assert.equal(frame.contentDocument.querySelectorAll('.barcode').length,9);
+      assert.equal(app.context.changeProfile('tw2004'),false);
+      app.finish();await tick();assert.equal(app.context.changeProfile('tw2004'),true);await tick();
+      assert.equal(app.read('batch.pageCount'),3);
+    }finally{app.dispose();}
+  });
+}

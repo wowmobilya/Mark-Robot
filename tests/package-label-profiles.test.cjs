@@ -95,7 +95,10 @@ test('four-up print and single-sheet preview uniformly enlarge the complete orig
 const rollProfiles = [
   {id:'zebra100x150', name:'Zebra 100 × 150', width:100, height:150, angle:90, scale:97/66.2, printedWidth:97, printedHeight:142.129909, labelsPerRoll:250},
   {id:'zebra150x100', name:'Zebra 150 × 100', width:150, height:100, angle:0, scale:97/66.2, printedWidth:142.129909, printedHeight:97, labelsPerRoll:250},
-  {id:'thermal80x100', name:'Thermal 80 × 100', width:80, height:100, angle:90, scale:1, printedWidth:66.2, printedHeight:97}
+  {id:'thermal80x100', name:'Thermal 80 × 100', width:80, height:100, angle:90, scale:1, printedWidth:66.2, printedHeight:97},
+  {id:'thermal70x100', name:'Thermal 70 × 100', width:70, height:100, angle:90, scale:1, printedWidth:66.2, printedHeight:97},
+  {id:'thermal100x100', name:'Thermal 100 × 100', width:100, height:100, angle:0, scale:1, printedWidth:97, printedHeight:66.2},
+  {id:'thermal100x200', name:'Thermal 100 × 200', width:100, height:200, angle:90, scale:97/66.2, printedWidth:97, printedHeight:142.129909}
 ];
 for (const {id,name,width,height,angle,scale,printedWidth,printedHeight,labelsPerRoll} of rollProfiles) {
   test(`${id} has one die per page and keeps the artwork inside its safe inset`, () => {
@@ -133,6 +136,7 @@ for (const {id,name,width,height,angle,scale,printedWidth,printedHeight,labelsPe
     assert.doesNotMatch(html, /210mm|297mm/);
     assert(html.includes(`grid-template-columns: repeat(1, ${width}mm);`));
     assert(html.includes(`grid-template-rows: repeat(1, ${height}mm);`));
+    assert.match(html, /\.label-card\s*\{\s*place-self:\s*center;/);
     assert(html.includes(`transform: rotate(${angle}deg) scale(${core.profiles[id].artworkScale});`));
     assert.match(html, /\.page:last-child\s*{[^}]*break-after: auto/);
     const pages = html.split('<div class="page">').slice(1);
@@ -157,10 +161,12 @@ for (const {id,name,width,height,angle,scale,printedWidth,printedHeight,labelsPe
   });
 }
 
-test('the narrow roll contains the original 97 mm layout box within its 80 mm page after rotation', () => {
-  const html = core.renderDocument(batchFor('thermal80x100'));
-  assert.match(html, /\.labels-grid\s*\{[^}]*overflow:\s*hidden/);
-  const profile = core.profiles.thermal80x100;
-  close((profile.pageWidthMM - core.geometry.cardHeightMM * profile.artworkScale) / 2, 6.9);
-  close((profile.pageHeightMM - core.geometry.cardWidthMM * profile.artworkScale) / 2, 1.5);
+test('the 70 and 80 mm rolls contain the original 97 mm layout box after rotation', () => {
+  for (const [profileId,sideClearance] of [['thermal70x100',1.9], ['thermal80x100',6.9]]) {
+    const html = core.renderDocument(batchFor(profileId));
+    assert.match(html, /\.labels-grid\s*\{[^}]*overflow:\s*hidden/);
+    const profile = core.profiles[profileId];
+    close((profile.pageWidthMM - core.geometry.cardHeightMM * profile.artworkScale) / 2, sideClearance);
+    close((profile.pageHeightMM - core.geometry.cardWidthMM * profile.artworkScale) / 2, 1.5);
+  }
 });

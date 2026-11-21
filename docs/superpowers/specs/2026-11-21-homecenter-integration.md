@@ -89,3 +89,12 @@ and preserve its content and proportions. The resulting artwork is 66.2 × 97 mm
 with 6.9 mm side clearance and 1.5 mm top/bottom clearance. Do not infer a brand,
 printer model or roll capacity. Remember this selection like the other four
 profiles, and regenerate preview/pagination automatically.
+
+## Additional thermal stocks: 70 × 100, 100 × 100, 100 × 200 mm
+
+Provide each size as a separate remembered choice with one label per page.
+70 × 100 retains the original artwork at 100%, rotated 90 degrees; the
+100 × 100 square keeps it upright and centered at 100%; 100 × 200 rotates and
+uniformly enlarges it to fit the available width. Do not infer a brand or roll
+capacity. The complete requested set contains eight print profiles, including
+the two Tanex A4 sheets. Keep width and height distinct in all selectors.

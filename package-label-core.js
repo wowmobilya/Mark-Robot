@@ -31,7 +31,7 @@
     const artworkHeightMM = portrait ? geometry.cardWidthMM : geometry.cardHeightMM;
     return {
       cardWidthMM:stockWidthMM, cardHeightMM:stockHeightMM,
-      stockWidthMM, stockHeightMM, insetMM, artworkRotationDeg:portrait ? 90 : 0,
+      stockWidthMM, stockHeightMM, insetMM, fitArtwork:true, artworkRotationDeg:portrait ? 90 : 0,
       artworkScale:Math.min(
         (stockWidthMM - 2 * insetMM) / artworkWidthMM,
         (stockHeightMM - 2 * insetMM) / artworkHeightMM
@@ -63,7 +63,10 @@
     }),
     zebra100x150:rollProfile('Zebra', 100, 150, 250),
     zebra150x100:rollProfile('Zebra', 150, 100, 250),
-    thermal80x100:rollProfile('Thermal', 80, 100)
+    thermal80x100:rollProfile('Thermal', 80, 100),
+    thermal70x100:rollProfile('Thermal', 70, 100),
+    thermal100x100:rollProfile('Thermal', 100, 100),
+    thermal100x200:rollProfile('Thermal', 100, 200)
   });
   const maxLabels = 2000;
   const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -261,7 +264,7 @@
     // On narrow stock the unrotated layout box extends beyond the page. Clip
     // its overflow at the grid edge so it cannot widen the print viewport.
     const containOverflow = settings.cardWidthMM < geometry.cardWidthMM ? '\n        overflow: hidden;' : '';
-    const fittedArtworkCSS = settings.artworkScale !== 1 || settings.artworkRotationDeg !== 0 ? `
+    const fittedArtworkCSS = settings.fitArtwork ? `
       .labels-grid {
         position: absolute;
         top: ${settings.marginTopMM}mm;

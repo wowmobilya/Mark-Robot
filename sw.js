@@ -1,10 +1,10 @@
 importScripts('./install-identity.js?v=2');
-const CACHE_NAME = 'wow-furniture-v201-thermal-80x100';
+const CACHE_NAME = 'wow-furniture-v202-eight-print-templates';
 const urlsToCache = [
   './operations-workspace.js?v=2',
   './operations-workspace.css?v=2',
-  './package-label-core.js?v=3',
-  './package-labels.js?v=3',
+  './package-label-core.js?v=4',
+  './package-labels.js?v=4',
   './package-labels.css?v=1',
   './product-cost-core.js?v=1',
   './product-costs.js?v=1',
