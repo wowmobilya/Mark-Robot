@@ -148,15 +148,16 @@ test('owner cannot suspend, delete, demote or add an expiry to their own owner a
   assert.equal(h.stored().accounts[0].expiresAt, null);
 });
 
-test('account expiry, thirty minute inactivity and eight hour maximum end sessions without automatic renewal', async () => {
-  const h = harness(seed([account(), account('staff', {role: 'sales', permissions: ['products.view'], expiresAt: new Date(START + 60000).toISOString()})]));
+test('staff account expiry, thirty minute inactivity and eight hour maximum end sessions without automatic renewal', async () => {
+  const h = harness(seed([account(), account('staff', {role: 'sales', permissions: ['products.view'], expiresAt: new Date(START + 60000).toISOString()}),
+    account('worker', {role: 'sales', permissions: ['products.view']})]));
   const staff = h.service(); await staff.signIn({username: 'staff', password: PASSWORD});
   h.advance(60000); await rejects(staff.assertPermission('products.view'), 'AUTH_REQUIRED');
   await rejects(staff.signIn({username: 'staff', password: PASSWORD}), 'LOGIN_FAILED');
-  const idle = h.service(); await idle.signIn({username: 'owner', password: PASSWORD});
+  const idle = h.service(); await idle.signIn({username: 'worker', password: PASSWORD});
   h.advance(30 * 60 * 1000); assert.equal(idle.getSnapshot().currentAccount, null);
   assert.equal(idle.touch(), false); await rejects(idle.assertPermission('products.view'), 'AUTH_REQUIRED');
-  const active = h.service(); await active.signIn({username: 'owner', password: PASSWORD});
+  const active = h.service(); await active.signIn({username: 'worker', password: PASSWORD});
   for (let step = 0; step < 23; step++) {h.advance(20 * 60 * 1000); assert.equal(active.touch(), true);}
   h.advance(20 * 60 * 1000); await rejects(active.assertPermission('products.view'), 'AUTH_REQUIRED');
 });

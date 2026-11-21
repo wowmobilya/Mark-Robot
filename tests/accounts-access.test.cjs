@@ -14,7 +14,7 @@ function row(id,role='owner',permissions=policy.presets(role)){
 }
 function identity(rows=[row('owner'),row('worker','carpentry')]){return {schemaVersion:1,revision:1,accounts:rows,audit:[]};}
 function extract(name){let start=html.indexOf('function '+name+'(');assert(start>=0,name+' must exist');if(html.slice(start-6,start)==='async ')start-=6;return html.slice(start,acorn.parseExpressionAt(html,start,{ecmaVersion:'latest'}).end);}
-function runtime({initial=identity(),readFailure=false,missingPolicy=false}={}){
+function runtime({initial=identity(),readFailure=false,missingPolicy=false,tabStorage=new Map(),storageBlocked=false}={}){
   let saved=copy(initial),clock=Date.parse('2026-11-21T10:00:00.000Z'),reloads=0,readHold=null;
   const channels=[],frames=[],intervals=[],toasts=[],events=new Map(),reloadEvents=[],emittedEvents=[],observers=[];
   let frameRuns=0;
@@ -75,7 +75,11 @@ function runtime({initial=identity(),readFailure=false,missingPolicy=false}={}){
     requestAnimationFrame:callback=>frames.push(callback),setInterval:callback=>intervals.push(callback),
     Event:class{constructor(type){this.type=type;}},dispatchEvent(event){emittedEvents.push({type:event.type,canPrint:context.WFAccountAccess?.can('manufacturing.print')||false});events.get(event.type)?.(event);return true;},
     addEventListener(type,callback){events.set(type,callback);},location:{reload(){reloads++;reloadEvents.push(copy(saved?.audit||[]));}},confirm:()=>true,
-    localStorage:{setItem(){}},showToast:(...args)=>toasts.push(args)};
+    localStorage:{setItem(){}},sessionStorage:{
+      getItem(key){if(storageBlocked)throw Error('Storage blocked');return tabStorage.get(key)??null;},
+      setItem(key,value){if(storageBlocked)throw Error('Storage blocked');tabStorage.set(key,String(value));},
+      removeItem(key){if(storageBlocked)throw Error('Storage blocked');tabStorage.delete(key);}
+    },showToast:(...args)=>toasts.push(args)};
   context.window=context;vm.createContext(context);vm.runInContext(accessSource,context);
   const access=context.WFAccountAccess;
   return {context,access,document,channels,intervals,events,toasts,adapter,saved:()=>copy(saved),reloads:()=>reloads,reloadEvents,emittedEvents,frameRuns:()=>frameRuns,pendingFrames:()=>frames.length,
@@ -136,6 +140,42 @@ test('synchronous printing/navigation guards see idle expiry before the periodic
   assert.equal(h.access.can('manufacturing.print'),false);assert.equal(h.access.canRoute('manufacturing'),false);
   assert.throws(()=>h.access.assert('manufacturing.print'),/ACCESS_DENIED/);
   assert.equal(h.access.service.getSnapshot().currentAccount,null);
+});
+
+test('verified owner keeps full application access during inactivity and same-tab reload',async()=>{
+  const tabStorage=new Map(),h=runtime({tabStorage});await h.signed('owner');
+  h.advance(9*60*60*1000);await h.access.refresh();
+  assert.equal(h.access.can('accounts.edit'),true);assert.equal(h.access.can('data.export'),true);
+  assert.equal(h.reloads(),0);assert.equal(h.document.documentElement.dataset.wfAccountState,'ready');
+  assert(tabStorage.size>0,'verified owner needs a tab-local continuation');
+  assert(!JSON.stringify([...tabStorage]).includes(PASSWORD),'the password must never be remembered');
+  const reloaded=runtime({initial:h.saved(),tabStorage});await reloaded.access.ready;
+  assert.equal(reloaded.access.service.getSnapshot().currentAccount?.role,'owner');
+  await reloaded.access.beforeInit();
+  assert.equal(reloaded.access.can('accounts.edit'),true);assert.equal(reloaded.access.initialRoute('settings'),'settings');
+  assert.equal(reloaded.document.documentElement.dataset.wfAccountState,'ready');
+});
+
+test('owner continuation stays in its tab and worker switching cannot inherit it',async()=>{
+  const tabStorage=new Map(),h=runtime({tabStorage});await h.signed('owner');
+  const independent=runtime({initial:h.saved()});await independent.access.ready;
+  assert.equal(independent.access.can('accounts.edit'),false);
+  assert.equal(independent.access.service.getSnapshot().currentAccount,null);
+  await h.access.requestLock();assert.equal(tabStorage.size,0);
+  const worker=runtime({initial:h.saved(),tabStorage});await worker.signed();
+  assert.equal(worker.access.can('accounts.edit'),false);assert.equal(worker.access.can('manufacturing.print'),true);
+  assert.equal(tabStorage.size,0);
+  const workerReload=runtime({initial:worker.saved(),tabStorage});await workerReload.access.ready;
+  assert.equal(workerReload.access.service.getSnapshot().currentAccount,null);
+  assert.equal(workerReload.access.can('accounts.edit'),false);assert.equal(workerReload.access.can('manufacturing.print'),false);
+});
+
+test('blocked browser session storage keeps verified access in memory without reopening on reload',async()=>{
+  const h=runtime({storageBlocked:true});await h.signed('owner');
+  assert.equal(h.access.can('accounts.edit'),true);
+  const reloaded=runtime({initial:h.saved(),storageBlocked:true});await reloaded.access.ready;
+  assert.equal(reloaded.access.service.getSnapshot().currentAccount,null);
+  assert.equal(reloaded.access.can('accounts.edit'),false);
 });
 
 test('cross-tab suspension locks rendered work and invalidates an already prepared merge',async()=>{

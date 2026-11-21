@@ -15,6 +15,7 @@
   const LOCK_MS = 15 * 60 * 1000;
   const MAX_FAILURES = 5;
   const AUDIT_LIMIT = 500;
+  const OWNER_RESUME_LIMIT = 8;
   const ROLES = new Set(['owner', 'manager', 'sales', 'carpentry', 'assembly', 'warehouse', 'custom']);
   const STATUSES = new Set(['active', 'suspended', 'revoked', 'deleted']);
   const PROFILE_FIELDS = new Set(['name', 'username', 'role', 'permissions', 'department', 'note', 'expiresAt']);
@@ -58,6 +59,11 @@
       typeof value.salt === 'string' && /^[0-9a-f]{32}$/.test(value.salt) &&
       typeof value.hash === 'string' && /^[0-9a-f]{64}$/.test(value.hash);
   }
+  function resumeEnvelopeValid(value) {
+    return plain(value) && value.schemaVersion === 1 && typeof value.accountId === 'string' &&
+      value.accountId.length > 0 && value.accountId.length <= 128 && Number.isSafeInteger(value.sessionVersion) &&
+      value.sessionVersion >= 1 && typeof value.capability === 'string' && /^[0-9a-f]{64}$/.test(value.capability);
+  }
   function validateState(value) {
     if (value == null) return null;
     if (!plain(value) || value.schemaVersion !== SCHEMA_VERSION || !Number.isSafeInteger(value.revision) || value.revision < 0 ||
@@ -69,6 +75,9 @@
         !Array.isArray(account.permissions) || !account.permissions.every(key => typeof key === 'string') ||
         !Number.isSafeInteger(account.sessionVersion) || account.sessionVersion < 1 || !credentialValid(account.credential) ||
         !Number.isSafeInteger(account.failedAttempts) || account.failedAttempts < 0 || account.failedAttempts > MAX_FAILURES) fail('IDENTITY_STATE_INVALID');
+      if (own(account, 'ownerResumeHashes') && (!Array.isArray(account.ownerResumeHashes) ||
+        account.ownerResumeHashes.length > OWNER_RESUME_LIMIT || new Set(account.ownerResumeHashes).size !== account.ownerResumeHashes.length ||
+        !account.ownerResumeHashes.every(hash => typeof hash === 'string' && /^[0-9a-f]{64}$/.test(hash)))) fail('IDENTITY_STATE_INVALID');
       try {
         if (normalizeUsername(account.username) !== account.username || usernames.has(account.username) ||
           normalizeExpiry(account.expiresAt) !== account.expiresAt || normalizeExpiry(account.lockedUntil) !== account.lockedUntil) fail('IDENTITY_STATE_INVALID');
@@ -99,11 +108,12 @@
     return safe;
   }
 
-  function createService({read, commit, crypto = root.crypto, now = Date.now, policy = root.WFAccountPolicy} = {}) {
+  function createService({read, commit, crypto = root.crypto, now = Date.now, policy = root.WFAccountPolicy, sessionStore} = {}) {
     if (typeof read !== 'function' || typeof commit !== 'function') fail('INVALID_ADAPTER');
     if (!crypto?.subtle || typeof crypto.getRandomValues !== 'function') fail('CRYPTO_UNAVAILABLE');
     if (typeof policy?.normalizePermissions !== 'function' || typeof policy?.can !== 'function') fail('POLICY_UNAVAILABLE');
     let state = null, configured = false, session = null, queue = Promise.resolve(), generation = 0, pendingExpiry = null;
+    let resumeStore = null, continuation = null, continuationHash = null, resumeAttempted = false, retiredContinuations = [];
     const listeners = new Set();
     function timestamp() {
       const value = now(), number = value instanceof Date ? value.getTime() : Number(value);
@@ -115,15 +125,52 @@
     const hexBytes = hex => Uint8Array.from(hex.match(/../g), byte => parseInt(byte, 16));
     function randomHex(bytes) {return bytesHex(crypto.getRandomValues(new Uint8Array(bytes)));}
     function id(prefix) {return prefix + '_' + randomHex(16);}
+    const capabilityHash = async capability => bytesHex(new Uint8Array(await crypto.subtle.digest('SHA-256', hexBytes(capability))));
+    function clearResumeStore() {
+      try {resumeStore?.clear();} catch (_) {resumeStore = null;}
+    }
+    function retireContinuation() {
+      if (continuation) retiredContinuations.push({envelope: continuation, hash: continuationHash});
+      continuation = null; continuationHash = null; resumeAttempted = true; clearResumeStore();
+    }
+    async function removeRetiredContinuations(next, retired) {
+      for (const item of retired) {
+        const account = next.accounts.find(row => row.id === item.envelope.accountId);
+        if (!account?.ownerResumeHashes?.length) continue;
+        try {item.hash = item.hash || await capabilityHash(item.envelope.capability);} catch (_) {continue;}
+        account.ownerResumeHashes = account.ownerResumeHashes.filter(hash => hash !== item.hash);
+      }
+    }
+    async function prepareContinuation(account, expectedGeneration) {
+      if (!resumeStore || account.role !== 'owner') return null;
+      // Reauthentication replaces this tab's previous capability before the
+      // bound is applied, so it cannot evict an unrelated owner's tab.
+      await removeRetiredContinuations({accounts: [account]}, retiredContinuations.slice());
+      let capability, hash;
+      try {capability = randomHex(32); hash = await capabilityHash(capability);}
+      catch (_) {clearResumeStore(); resumeStore = null; return null;}
+      checkGeneration(expectedGeneration);
+      account.ownerResumeHashes = [...(account.ownerResumeHashes || []), hash].slice(-OWNER_RESUME_LIMIT);
+      return {envelope: {schemaVersion: 1, accountId: account.id, sessionVersion: account.sessionVersion, capability}, hash};
+    }
+    function rememberContinuation(prepared, expectedGeneration) {
+      if (!prepared || expectedGeneration !== generation || !session || !resumeStore) return;
+      continuation = clone(prepared.envelope); continuationHash = prepared.hash;
+      try {resumeStore.write(clone(continuation));}
+      catch (_) {retireContinuation(); resumeStore = null;}
+    }
     function active(account, at = timestamp()) {
       return !!account && account.status === 'active' && (account.expiresAt == null || Date.parse(account.expiresAt) > at);
     }
-    function lock() {if (session) generation++; session = null;}
+    function lock() {if (session) generation++; session = null; retireContinuation();}
     function liveAccount() {
       if (!session) return null;
       const account = state?.accounts.find(row => row.id === session.accountId), at = timestamp();
-      const timedOut = at < session.startedAt || at < session.lastActiveAt || at - session.startedAt >= SESSION_MS ||
-        at - session.lastActiveAt >= IDLE_MS || (account?.expiresAt != null && Date.parse(account.expiresAt) <= at);
+      // Employee sessions expire on inactivity and length. A verified owner
+      // remains signed in; status, version, clock and account expiry still apply.
+      const timedOut = at < session.startedAt || at < session.lastActiveAt ||
+        (account?.role !== 'owner' && (at - session.startedAt >= SESSION_MS || at - session.lastActiveAt >= IDLE_MS)) ||
+        (account?.expiresAt != null && Date.parse(account.expiresAt) <= at);
       if (!active(account, at) || account.sessionVersion !== session.sessionVersion || timedOut) {
         if (timedOut && account) pendingExpiry = {accountId: account.id};
         lock(); return null;
@@ -167,6 +214,7 @@
     }
     async function persist(next, onSuccess, retryAuditConflict = false) {
       const expected = state?.revision || 0;
+      const retired = retiredContinuations.slice(); await removeRetiredContinuations(next, retired);
       next.schemaVersion = SCHEMA_VERSION; next.revision = expected + 1;
       validateState(next);
       try {await commit(expected, clone(next));}
@@ -181,14 +229,37 @@
         fail(conflict ? 'CONFLICT' : 'STORAGE_ERROR');
       }
       state = clone(next); configured = configured || !!state.accounts.length;
-      onSuccess?.(); return emit();
+      retiredContinuations = retiredContinuations.filter(item => !retired.includes(item));
+      onSuccess?.();
+      // A failed sessionStorage write must leave only the in-memory login.
+      // Remove its newly committed hash before reporting authentication success.
+      if (retiredContinuations.length) return persist(nextState());
+      return emit();
+    }
+    async function restoreOwnerContinuation() {
+      if (resumeAttempted) return;
+      resumeAttempted = true;
+      if (!continuation || !resumeStore) return;
+      const candidate = clone(continuation), expected = generation;
+      let hash;
+      try {hash = await capabilityHash(candidate.capability);}
+      catch (_) {retireContinuation(); return;}
+      if (expected !== generation) return;
+      // Authorization may change in another tab while WebCrypto is working.
+      await load(); if (expected !== generation) return;
+      const account = state?.accounts.find(row => row.id === candidate.accountId);
+      if (!active(account) || account.role !== 'owner' || account.sessionVersion !== candidate.sessionVersion ||
+        !account.ownerResumeHashes?.includes(hash)) {retireContinuation(); return;}
+      continuationHash = hash; startSession(account, expected);
     }
     async function refreshInternal() {
       await load();
+      await restoreOwnerContinuation();
       if (pendingExpiry && state) {
         const account = state.accounts.find(row => row.id === pendingExpiry.accountId); pendingExpiry = null;
         if (account) {const next = nextState(); audit(next, 'session_expired', account); return persist(next);}
       }
+      if (state && retiredContinuations.length) return persist(nextState());
       return emit();
     }
     function requireCurrent() {
@@ -246,7 +317,7 @@
       if (expectedGeneration !== generation) return;
       const at = timestamp(); session = {accountId: account.id, sessionVersion: account.sessionVersion, startedAt: at, lastActiveAt: at};
     }
-    function cancelAuthentication() {generation++; session = null; pendingExpiry = null; emit(); return generation;}
+    function cancelAuthentication() {generation++; session = null; pendingExpiry = null; retireContinuation(); emit(); return generation;}
     function checkGeneration(expected) {if (expected !== generation) fail('AUTH_REQUIRED');}
 
     function bootstrapOwner(input) {
@@ -257,8 +328,9 @@
         const credential = await hashPassword(input?.password); checkGeneration(request);
         const at = iso(), account = {...fields, id: id('account'), status: 'active', createdAt: at, updatedAt: at,
           lastLoginAt: at, deletedAt: null, sessionVersion: 1, failedAttempts: 0, lockedUntil: null, credential};
+        const prepared = await prepareContinuation(account, request); checkGeneration(request);
         const next = nextState(); next.accounts.push(account); audit(next, 'owner_created', account);
-        const snapshot = await persist(next, () => startSession(account, request)); checkGeneration(request); return snapshot;
+        const snapshot = await persist(next, () => {startSession(account, request); rememberContinuation(prepared, request);}); checkGeneration(request); return snapshot;
       });
     }
     function signIn({username, password} = {}) {
@@ -283,8 +355,9 @@
         }
         const next = nextState(), target = targetAccount(next, account.id);
         target.failedAttempts = 0; target.lockedUntil = null; target.lastLoginAt = new Date(at).toISOString();
+        const prepared = await prepareContinuation(target, request); checkGeneration(request);
         audit(next, 'login_success', target);
-        const snapshot = await persist(next, () => startSession(target, request)); checkGeneration(request); return snapshot;
+        const snapshot = await persist(next, () => {startSession(target, request); rememberContinuation(prepared, request);}); checkGeneration(request); return snapshot;
       });
     }
     function signOut() {
@@ -292,8 +365,8 @@
       return enqueue(async () => {
         await load();
         const actor = previous && state?.accounts.find(row => row.id === previous.accountId);
-        if (!actor) return emit();
-        const next = nextState(); audit(next, 'logout', actor); return persist(next);
+        if (!state || (!actor && !retiredContinuations.length)) return emit();
+        const next = nextState(); if (actor) audit(next, 'logout', actor); return persist(next);
       });
     }
     function createAccount(input) {
@@ -321,7 +394,7 @@
         if (!changes.length) return emit();
         if (target.id === actor.id && (fields.role !== 'owner' || (fields.expiresAt !== target.expiresAt && fields.expiresAt != null))) fail('SELF_PROTECTION');
         const invalidates = changes.some(key => ['role', 'permissions', 'expiresAt'].includes(key));
-        Object.assign(target, fields, {updatedAt: iso()}); if (invalidates) target.sessionVersion++;
+        Object.assign(target, fields, {updatedAt: iso()}); if (invalidates) {target.sessionVersion++; delete target.ownerResumeHashes;}
         ownerInvariant(next); audit(next, 'account_updated', actor, target, {changes}); return persist(next);
       });
     }
@@ -332,7 +405,7 @@
         if (target.status === status) return emit();
         if (target.status === 'deleted') fail('INVALID_STATUS');
         if (target.id === actor.id && status !== 'active') fail('SELF_PROTECTION');
-        target.status = status; target.updatedAt = iso(); target.sessionVersion++;
+        target.status = status; target.updatedAt = iso(); target.sessionVersion++; delete target.ownerResumeHashes;
         if (status === 'deleted') target.deletedAt = target.updatedAt;
         if (status === 'active') {target.failedAttempts = 0; target.lockedUntil = null;}
         ownerInvariant(next);
@@ -344,7 +417,7 @@
       return enqueue(async () => {
         const actor = await requireOwner(), next = nextState(), target = targetAccount(next, accountId);
         if (target.status !== 'deleted') fail('INVALID_STATUS');
-        target.status = 'suspended'; target.updatedAt = iso(); target.deletedAt = null; target.sessionVersion++;
+        target.status = 'suspended'; target.updatedAt = iso(); target.deletedAt = null; target.sessionVersion++; delete target.ownerResumeHashes;
         target.failedAttempts = 0; target.lockedUntil = null; audit(next, 'account_restored', actor, target); return persist(next);
       });
     }
@@ -354,7 +427,7 @@
         if (target.id === actor.id) fail('CURRENT_PASSWORD_REQUIRED');
         if (target.status === 'deleted') fail('INVALID_STATUS');
         const request = generation, credential = await hashPassword(password); checkGeneration(request); requireCurrent();
-        target.credential = credential; target.updatedAt = iso(); target.sessionVersion++; target.failedAttempts = 0; target.lockedUntil = null;
+        target.credential = credential; target.updatedAt = iso(); target.sessionVersion++; delete target.ownerResumeHashes; target.failedAttempts = 0; target.lockedUntil = null;
         audit(next, 'password_reset', actor, target); return persist(next);
       });
     }
@@ -366,17 +439,21 @@
         if (!matches) {const denied = nextState(); audit(denied, 'login_failed', actor, actor, {outcome: 'failure'}); await persist(denied); fail('LOGIN_FAILED');}
         const credential = await hashPassword(newPassword); checkGeneration(request); requireCurrent();
         const next = nextState(), target = targetAccount(next, actor.id);
-        target.credential = credential; target.updatedAt = iso(); target.sessionVersion++; target.failedAttempts = 0; target.lockedUntil = null;
+        target.credential = credential; target.updatedAt = iso(); target.sessionVersion++; delete target.ownerResumeHashes; target.failedAttempts = 0; target.lockedUntil = null;
+        const prepared = await prepareContinuation(target, request); checkGeneration(request); requireCurrent();
         audit(next, 'password_changed', actor, target);
         return persist(next, () => {
-          if (session && generation === request) {session.sessionVersion = target.sessionVersion; session.lastActiveAt = timestamp();}
+          if (session && generation === request) {
+            session.sessionVersion = target.sessionVersion; session.lastActiveAt = timestamp();
+            continuation = null; continuationHash = null; clearResumeStore(); rememberContinuation(prepared, request);
+          }
         });
       });
     }
     function revokeSessions(accountId) {
       return enqueue(async () => {
         const actor = await requireOwner(), next = nextState(), target = targetAccount(next, accountId);
-        target.sessionVersion++; target.updatedAt = iso(); audit(next, 'sessions_revoked', actor, target); return persist(next);
+        target.sessionVersion++; delete target.ownerResumeHashes; target.updatedAt = iso(); audit(next, 'sessions_revoked', actor, target); return persist(next);
       });
     }
     function assertPermission(key) {
@@ -439,6 +516,16 @@
       if (typeof listener !== 'function') fail('INVALID_LISTENER');
       listeners.add(listener); return () => listeners.delete(listener);
     }
+    // The adapter is optional and synchronous (normally tab-scoped sessionStorage).
+    // Its capability is never accepted as a role flag or included in public state.
+    try {
+      if (sessionStore && ['read', 'write', 'clear'].every(method => typeof sessionStore[method] === 'function')) {
+        resumeStore = sessionStore;
+        const value = resumeStore.read();
+        if (resumeEnvelopeValid(value)) continuation = clone(value);
+        else clearResumeStore();
+      }
+    } catch (_) {clearResumeStore(); resumeStore = null;}
     return Object.freeze({refresh: () => enqueue(refreshInternal), bootstrapOwner, signIn, signOut, createAccount, updateAccount,
       setStatus, setPassword, changePassword, revokeSessions, restoreAccount, assertPermission, recordActivity, getSnapshot, touch, subscribe});
   }

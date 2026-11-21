@@ -1,5 +1,5 @@
 importScripts('./install-identity.js?v=2');
-const CACHE_NAME = 'wow-furniture-v209-local-accounts';
+const CACHE_NAME = 'wow-furniture-v210-owner-sessions';
 const urlsToCache = [
   './invoice-preview.js?v=1',
   './invoice-preview.css?v=1',
@@ -73,10 +73,10 @@ const urlsToCache = [
   './index.html',
   './accounts-policy.js?v=1',
   './accounts-data-policy.js?v=1',
-  './accounts-core.js?v=1',
+  './accounts-core.js?v=2',
   './accounts-local-provider.js?v=1',
-  './accounts-access.js?v=1',
-  './accounts-settings.js?v=1',
+  './accounts-access.js?v=2',
+  './accounts-settings.js?v=2',
   './accounts-access.css?v=1',
   './accounts-settings.css?v=1',
 

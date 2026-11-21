@@ -13,12 +13,13 @@
     show:['إظهار','Show','Göster','Afficher','Показать'],hide:['إخفاء','Hide','Gizle','Masquer','Скрыть'],
     entering:['جارٍ التحقق…','Checking…','Kontrol ediliyor…','Vérification…','Проверка…'],
     local:['حسابات هذا الجهاز. الربط عن بُعد غير مفعّل بعد.','Accounts on this device. Remote access is not connected yet.','Bu cihazdaki hesaplar. Uzaktan erişim henüz bağlı değil.','Comptes de cet appareil. L’accès distant n’est pas encore connecté.','Учётные записи на этом устройстве. Удалённый доступ ещё не подключён.'],
-    session:['تقفل الجلسة بعد 30 دقيقة دون استخدام، وعند إعادة تحميل البرنامج.','The session locks after 30 idle minutes and when the app reloads.','Oturum 30 dakika kullanılmadığında ve uygulama yeniden yüklendiğinde kilitlenir.','La session se verrouille après 30 minutes d’inactivité et au rechargement.','Сеанс блокируется после 30 минут бездействия и при перезагрузке.'],
+    session:['جلسة الأدمن تبقى مفتوحة أثناء الخمول وتحديث الصفحة في هذه النافذة. حساب العامل يُقفل بعد 30 دقيقة دون استخدام وعند تحديث الصفحة.','The owner stays signed in during inactivity and page reloads in this tab. Employee accounts lock after 30 idle minutes and on reload.','Sahip bu sekmede işlem yapmadığında ve sayfa yenilendiğinde oturumunu korur. Çalışan hesapları 30 dakika kullanılmadığında ve sayfa yenilendiğinde kilitlenir.','Le propriétaire reste connecté dans cet onglet pendant l’inactivité et au rechargement. Les comptes employés se verrouillent après 30 minutes d’inactivité et au rechargement.','Владелец остаётся в системе при бездействии и перезагрузке этой вкладки. Учётные записи сотрудников блокируются после 30 минут бездействия и при перезагрузке.'],
     failed:['اسم الدخول أو كلمة المرور غير صحيحين، أو الحساب غير متاح.','The username or password is incorrect, or the account is unavailable.','Kullanıcı adı veya parola yanlış ya da hesap kullanılamıyor.','Identifiant ou mot de passe incorrect, ou compte indisponible.','Неверное имя или пароль, либо учётная запись недоступна.'],
     storage:['تعذّر قراءة حسابات الجهاز. أعد المحاولة؛ لم تُفتح البيانات.','Device accounts could not be read. Retry; business data remains locked.','Cihaz hesapları okunamadı. Yeniden deneyin; veriler kilitli kalır.','Impossible de lire les comptes. Réessayez ; les données restent verrouillées.','Не удалось прочитать учётные записи. Данные остаются заблокированы.'],
     retry:['إعادة المحاولة','Retry','Yeniden dene','Réessayer','Повторить'],
     denied:['هذا الإجراء غير متاح لصلاحيات حسابك.','Your account does not have permission for this action.','Hesabınız bu işlem için yetkili değil.','Votre compte n’autorise pas cette action.','У вашей учётной записи нет прав на это действие.'],
     lock:['قفل وتبديل الحساب','Lock and switch account','Kilitle ve hesap değiştir','Verrouiller et changer de compte','Заблокировать и сменить пользователя'],
+    switch:['تبديل الحساب','Switch account','Hesap değiştir','Changer de compte','Сменить пользователя'],
     lockConfirm:['سيُقفل البرنامج وتُغلق النماذج المفتوحة. احفظ تعديلاتك أولًا. هل تريد المتابعة؟','The app will lock and close open forms. Save your changes first. Continue?','Uygulama kilitlenecek ve açık formlar kapanacak. Önce değişikliklerinizi kaydedin. Devam edilsin mi?','L’application se verrouillera et fermera les formulaires. Enregistrez vos modifications. Continuer ?','Приложение заблокируется, открытые формы закроются. Сначала сохраните изменения. Продолжить?'],
     noAccess:['لم تُحدد أقسام متاحة لهذا الحساب. اطلب من المالك تعديل صلاحياته.','No sections are assigned to this account. Ask the owner to update its permissions.','Bu hesaba bölüm atanmadı. İşletme sahibinden izinleri güncellemesini isteyin.','Aucune rubrique n’est autorisée. Demandez au propriétaire de modifier les droits.','Для этой учётной записи не разрешено ни одного раздела. Обратитесь к владельцу.'],
     language:['اللغة','Language','Dil','Langue','Язык'],
@@ -28,6 +29,7 @@
   const text=key=>words[key][locales.indexOf(locale())];
   const make=(tag,cls,caption)=>{const el=doc.createElement(tag);if(cls)el.className=cls;if(caption!==undefined)el.textContent=caption;return el;};
   const lockIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg>';
+  const ownerIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6zM8 12l3 3 5-6"/></svg>';
   let service,ready,booted=false,checking=true,refreshing=null,reloading=false,loginBusy=false,loginResolve,loginWait;
   let explicitLockPending=false,resumeChecking=false;
   let lockSurface,loginForm,username,password,submit,status,showPassword,loginTitle,loginIntro,localNote,sessionNote,langSelect,sessionButton;
@@ -50,6 +52,11 @@
     }
   }
   function translateLock(){
+    if(sessionButton){
+      const account=snapshot().currentAccount,action=text(account?.role==='owner'?'switch':'lock');
+      sessionButton.querySelector('strong').textContent=account?.name||'';sessionButton.querySelector('small').textContent=action;sessionButton.title=action;
+      if(sessionButton.dataset.wfSessionRole!==account?.role){sessionButton.dataset.wfSessionRole=account?.role||'';sessionButton.children[0].innerHTML=account?.role==='owner'?ownerIcon:lockIcon;}
+    }
     if(!lockSurface)return;
     lockSurface.dir=locale()==='ar'?'rtl':'ltr';lockSurface.lang=locale();
     loginTitle.textContent=text('title');loginIntro.textContent=text('intro');
@@ -59,7 +66,6 @@
     showPassword.setAttribute('aria-label',text(password.type==='password'?'show':'hide')+' '+text('password'));
     localNote.textContent=text('local');sessionNote.textContent=text('session');
     langSelect.setAttribute('aria-label',text('language'));langSelect.value=locale();
-    if(sessionButton){const account=snapshot().currentAccount;sessionButton.querySelector('strong').textContent=account?.name||'';sessionButton.querySelector('small').textContent=text('lock');sessionButton.title=text('lock');}
   }
   function buildLock(){
     if(lockSurface)return;
@@ -152,7 +158,6 @@
     const sidebar=doc.getElementById('sidebar');if(!sidebar)return;
     if(!sessionButton){sessionButton=make('button','wf-account-session');sessionButton.type='button';sessionButton.id='wfAccountSession';const symbol=make('span');symbol.innerHTML=lockIcon;const caption=make('span');caption.append(make('strong'),make('small'));sessionButton.append(symbol,caption);sidebar.append(sessionButton);sessionButton.addEventListener('click',requestLock);}
     sessionButton.hidden=!snapshot().currentAccount;translateLock();
-    if(!lockSurface){sessionButton.querySelector('strong').textContent=snapshot().currentAccount?.name||'';sessionButton.querySelector('small').textContent=text('lock');}
   }
   const functionPermissions={
     saveCo:'customers.edit',editCo:'customers.edit',deleteCo:'customers.delete',useCoInInvoice:'invoices.edit',
@@ -306,7 +311,15 @@
     if(!policy||!dataPolicy||!root.WFAccountsCore||!root.WFAccountsLocalProvider)throw new Error('IDENTITY_MODULES');
     const provider=root.WFAccountsLocalProvider.create();
     try{if(root.BroadcastChannel)channel=new root.BroadcastChannel('wow-local-accounts-v1');}catch(_){}
-    service=root.WFAccountsCore.createService({read:provider.read,commit:async(revision,state)=>{await provider.commit(revision,state);channel?.postMessage({revision:state.revision});},crypto:root.crypto,policy});
+    // Only a verified owner receives a continuation capability. Keep it in this
+    // tab, outside business data/backups; workers never inherit it on reload.
+    const ownerSessionKey='wf_owner_session_v1';
+    const sessionStore={
+      read(){const value=root.sessionStorage?.getItem(ownerSessionKey);return value?JSON.parse(value):null;},
+      write(value){root.sessionStorage.setItem(ownerSessionKey,JSON.stringify(value));},
+      clear(){root.sessionStorage?.removeItem(ownerSessionKey);}
+    };
+    service=root.WFAccountsCore.createService({read:provider.read,commit:async(revision,state)=>{await provider.commit(revision,state);channel?.postMessage({revision:state.revision});},crypto:root.crypto,policy,sessionStore});
     service.subscribe(onSnapshot);
     ready=service.refresh().then(state=>{checking=false;lastSnapshot=service.getSnapshot();if(!lastSnapshot.configured)setLocked(false);scheduleControls();return state;});
   }catch(error){ready=Promise.reject(error);}

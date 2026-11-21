@@ -36,7 +36,7 @@ test('offline installation bounds network work and activates only after the requ
   const stored=f.stores.get(f.context.qa.CACHE_NAME);
   assert(stored.has(url('./index.html')));assert(stored.has(url('./')));
   assert.equal(f.calls.filter(value=>value===url('./')||value===url('./index.html')).length,1,'fetch the HTML once for both cache aliases');
-  for(const asset of ['purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=1','accounts-settings.css?v=1'])assert(stored.has(url('./'+asset)));
+  for(const asset of ['purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=2','accounts-settings.css?v=1'])assert(stored.has(url('./'+asset)));
 });
 test('updates reuse exactly versioned prior assets and fetch fresh unversioned configuration and HTML',async()=>{
   const f=fixture({seed:true});await f.install();
@@ -54,10 +54,11 @@ test('a required script failure retains the old worker, while optional audio fai
 test('an update downloads new versions and retains installed speech compatibility imports after activation',async()=>{
   const aliases=[1,2,4].map(version=>'./reference-voice.js?v='+version);
   const unchanged='./vendor/JsBarcode.code128.min.js?v=3.11.5';
-  const f=fixture({seed:['./index.html','./speech-controls.js?v=4',unchanged,...aliases]});
+  const f=fixture({seed:['./index.html','./speech-controls.js?v=4','./accounts-core.js?v=1','./accounts-access.js?v=1',unchanged,...aliases]});
   await f.install();
   assert(f.calls.includes(url('./speech-controls.js?v=5')),'changed code must be downloaded');
   assert(f.calls.includes(url('./purchase-planner.js?v=3')),'new modules must be downloaded');
+  for(const asset of ['accounts-core.js','accounts-access.js'])assert(f.calls.includes(url('./'+asset+'?v=2')),'owner-session fixes must replace the previous account code');
   assert.equal(f.calls.includes(url(unchanged)),false,'only exact unchanged URLs may be reused');
   assert.equal(f.calls.includes(url('./speech-controls.js?v=4')),false);
   await f.activate();
