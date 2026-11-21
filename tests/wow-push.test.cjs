@@ -120,8 +120,8 @@ test('closed-window pushes save the authorized full body, replace repeated tags 
   assert.equal((await store.read()).entries.length, 1); assert.equal(w.shown.length, 2); assert.equal(w.shown[0].tag, w.shown[1].tag);
   assert.equal(w.shown[0].body, event.body); assert.equal(w.shown[1].silent, true); assert.equal(w.shown[0].renotify, false);
   await w.run('notificationclick', {notification:{...w.shown[0],close(){}}});
-  assert.deepEqual(w.opened, ['https://wow.test/app/?wf-cloud=employee&workspace=workspace#notifications']); assert.equal((await store.read()).selected, event.eventId);
-  const messages = [], tab = {url:'https://wow.test/app/?wf-cloud=employee&workspace=workspace#invoices', async focus(){},postMessage(value){messages.push(value);}};
+  assert.deepEqual(w.opened, ['https://wow.test/app/?wf-cloud=owner&workspace=workspace#notifications']); assert.equal((await store.read()).selected, event.eventId);
+  const messages = [], tab = {url:'https://wow.test/app/?wf-cloud=owner&workspace=workspace#invoices', async focus(){},postMessage(value){messages.push(value);}};
   const withTab = worker(store, [tab]); await withTab.run('notificationclick', {notification:{...w.shown[0],close(){}}});
   assert.deepEqual(messages, [{type:'wf-push-open',deviceId:binding.deviceId,eventId:event.eventId}]); assert.equal(withTab.opened.length, 0);
 });
@@ -157,6 +157,7 @@ test('verified worker devices receive generic chat and typed gallery targets and
   const params={roomId:room,messageId:'9223372036854775807'},notice={kind:'chat',title:'Yeni mesaj',body:'Sohbeti açın.',route:'chat',params:{...params,url:'https://other.invalid'},eventId:'chat-1'};
   await deliver(notice);await w.run('notificationclick',{notification:{...w.shown.at(-1),close(){}}});
   assert.equal(new URL(w.opened.at(-1)).hash,'#chat');assert.equal(new URL(w.opened.at(-1)).searchParams.get('wf-notice'),'chat-1');
+  assert.equal(new URL(w.opened.at(-1)).searchParams.get('wf-cloud'),'employee');
   assert(await f.api.openEntry('chat-1'));assert.deepEqual(opened.pop(),{route:'chat',params});
   for(const id of [7,'7']){
     const eventId='gallery-'+typeof id;await deliver({kind:'stock.updated',route:'gallery',params:{productId:id},eventId});

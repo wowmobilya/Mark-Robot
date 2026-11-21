@@ -12,18 +12,37 @@ function publicPart(jwk) {
   return {crv:'P-256',kty:'EC',x:jwk.x,y:jwk.y};
 }
 const unpack=value=>Uint8Array.from(atob(value.replaceAll('-','+').replaceAll('_','/')),c=>c.charCodeAt(0));
-export function createOfflineGrantActions({rpc,origins=[],endpoint,signingKey,permissionKeys=[],now=Date.now}) {
-  let signer;
+export function createOfflineGrantActions({rpc,origins=[],endpoint,signingKey,loadSigningKey,permissionKeys=[],now=Date.now}) {
+  const supplied=signingKey!==undefined&&signingKey!==null&&signingKey!=='';
+  let signer,loading;
   async function getSigner(){
-    if(!signer)signer=(async()=>{
-      try {
-        const raw=typeof signingKey==='string'?JSON.parse(signingKey):signingKey,publicKey=publicPart(raw);
-        check(word.test(raw.d||''));
-        const key=await crypto.subtle.importKey('jwk',raw,policy,false,['sign']);
-        return {key,publicKey,kid:await sha(JSON.stringify(publicKey))};
-      }catch{throw failure('OFFLINE_GRANT_UNCONFIGURED',503);}
-    })();
-    return signer;
+    // Hits never extend the deadline. A failed refresh cannot reuse an old key.
+    const age=signer?now()-signer.loadedAt:Infinity;
+    if(age>=0&&age<60000)return signer;
+    if(!loading){
+      signer=undefined;
+      loading=(async()=>{
+        try {
+          const source=supplied?signingKey:await loadSigningKey?.();
+          const raw=typeof source==='string'?JSON.parse(source):source,publicKey=publicPart(raw);
+          check(word.test(raw.d||''));
+          const key=await crypto.subtle.importKey('jwk',raw,policy,false,['sign']);
+          return {key,publicKey,kid:await sha(JSON.stringify(publicKey)),loadedAt:now()};
+        }catch{throw failure('OFFLINE_GRANT_UNCONFIGURED',503);}
+      })();
+    }
+    const pending=loading;
+    try{
+      const value=await pending;
+      if(loading===pending){signer=value;loading=undefined;}
+      return value;
+    }catch(error){if(loading===pending)loading=undefined;throw error;}
+  }
+  async function owner(actor){
+    const identity=await rpc('session.snapshot',{userId:actor.userId,sessionId:actor.sessionId}),a=identity?.identity?.currentAccount;
+    check(a?.role==='owner'&&a.status==='active'&&a.id===actor.userId&&uuid.test(a.id)&&uuid.test(identity.workspaceId)&&
+      Number.isSafeInteger(a.sessionVersion)&&a.sessionVersion>0&&(!a.expiresAt||Date.parse(a.expiresAt)>now()),'ACCESS_DENIED',403);
+    return {identity,a};
   }
   return {'offline.ownerGrant':async({actor,body,request})=>{
     const origin=request?.headers?.get('origin');
@@ -33,22 +52,22 @@ export function createOfflineGrantActions({rpc,origins=[],endpoint,signingKey,pe
     const time=Math.floor(now()/1000);
     check(localId.test(localOwner||'')&&(localFence==='initial'||uuid.test(localFence||''))&&Number.isSafeInteger(localEpoch)&&localEpoch>0&&Number.isSafeInteger(at)&&Math.abs(at-time)<=300);
     check(deviceJwk&&!('d' in deviceJwk)&&typeof deviceProof==='string'&&/^[A-Za-z0-9_-]{86}$/.test(deviceProof));
-    const identity=await rpc('session.snapshot',{userId:actor.userId,sessionId:actor.sessionId}),a=identity?.identity?.currentAccount;
-    check(a?.role==='owner'&&a.status==='active'&&a.id===actor.userId&&uuid.test(a.id)&&uuid.test(identity.workspaceId)&&
-      Number.isSafeInteger(a.sessionVersion)&&a.sessionVersion>0,'ACCESS_DENIED',403);
+    await owner(actor);
     const device=publicPart(deviceJwk),deviceId=await sha(JSON.stringify(device)),proof=JSON.stringify(['mark-robot-offline-device-v1',origin,endpoint,localOwner,localEpoch,localFence,deviceId,at]);
     let valid=false;try{
       const key=await crypto.subtle.importKey('jwk',device,policy,false,['verify']);
       valid=await crypto.subtle.verify(signature,key,unpack(deviceProof),te.encode(proof));
     }catch{}
     check(valid,'ACCESS_DENIED',403);
-    const expires=a.expiresAt?Math.floor(Date.parse(a.expiresAt)/1000):Infinity;
-    const exp=Math.min(time+86400,expires);check(exp>time,'ACCESS_DENIED',403);
     const {key,publicKey,kid}=await getSigner();
+    // Vault may require a network round trip; revocation while loading must win.
+    const {identity,a}=await owner(actor),issuedAt=Math.floor(now()/1000);
+    const expires=a.expiresAt?Math.floor(Date.parse(a.expiresAt)/1000):Infinity;
+    const exp=Math.min(issuedAt+86400,expires);check(exp>issuedAt,'ACCESS_DENIED',403);
     const header=json({alg:'ES256',typ:'mark-robot-offline+jwt',kid});
     const claims={v:1,iss:endpoint,aud:origin,sub:a.id,workspace:identity.workspaceId,serverEpoch:a.sessionVersion,
       role:'owner',permissionHash:await sha(JSON.stringify([...new Set(permissionKeys)].sort())),cloudExpiresAt:a.expiresAt||null,
-      localOwner,localEpoch,localFence,device:deviceId,iat:time,exp,purpose:'module-saved-copies'};
+      localOwner,localEpoch,localFence,device:deviceId,iat:issuedAt,exp,purpose:'module-saved-copies'};
     const input=header+'.'+json(claims);
     return {publicKey,grant:input+'.'+encode(await crypto.subtle.sign(signature,key,te.encode(input)))};
   }};

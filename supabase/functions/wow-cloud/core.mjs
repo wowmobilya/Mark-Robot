@@ -171,10 +171,10 @@ export function createHandler(deps) {
   // core/public action, and ordinary modules run after Auth verifies the bearer.
   const moduleActions=new Map(Object.entries(deps.moduleActions||{}));
   for(const [action,handler] of moduleActions)requireValue(typeof action==='string'&&/^[a-z][a-zA-Z0-9.]{2,79}$/.test(action)&&!ACTIONS.has(action)&&typeof handler==='function','SERVER_CONFIGURATION',503);
-  // These four customer email endpoints perform their own one-time Auth proof.
-  // The explicit names prevent an extension from making arbitrary modules public.
+  // Only these named proof endpoints may run before bearer authentication.
+  // Ordinary module registration cannot make arbitrary actions public.
   const publicActions=new Map(Object.entries(deps.publicActions||{}));
-  for(const [action,handler] of publicActions)requireValue(/^auth\.customer(?:Options|Register|Recover|Verify)$/.test(action)&&!moduleActions.has(action)&&typeof handler==='function','SERVER_CONFIGURATION',503);
+  for(const [action,handler] of publicActions)requireValue((/^auth\.customer(?:Options|Register|Recover|Verify)$/.test(action)||action==='auth.activateOwner')&&!moduleActions.has(action)&&typeof handler==='function','SERVER_CONFIGURATION',503);
   const knownAction=action=>ACTIONS.has(action)||moduleActions.has(action)||publicActions.has(action);
   const snapshot=(actor,expectedSessionVersion) => rpc('session.snapshot',{...actor,expectedSessionVersion});
   async function verifyToken(token) {
@@ -261,7 +261,7 @@ export function createHandler(deps) {
   }
   async function run(body,request) {
     const {action}=body;requireValue(knownAction(action),'UNKNOWN_ACTION',400);
-    if(publicActions.has(action))return {ok:true,...await publicActions.get(action)({body,request})};
+    if(publicActions.has(action))return {ok:true,...await publicActions.get(action)({body,request,verifyToken,authenticate:session=>authenticatedResult(session,true)})};
     if(action==='auth.enrollOwner') {
       requireValue(typeof body.setupToken==='string' && body.setupToken.length>=32 && body.setupToken.length<=256,'SETUP_PROOF_REQUIRED',403);
       const profile=normalizeProfile({...body,role:'owner',expiresAt:null},policy),pass=password(body.password),claimHash=await sha256(body.setupToken);

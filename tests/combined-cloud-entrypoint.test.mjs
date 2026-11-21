@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,webcrypto,createHash} from 'node:crypto';
+import {createRequire} from 'node:module';
 import {createProviderTestDatabase} from '../supabase/testing/provider-fixtures.mjs';
+const Grant=createRequire(import.meta.url)('../modules/platform/offline/grant.js');
 
 test('the complete repeatable release installs and the production Edge entrypoint dispatches scoped modules and readiness',async(t)=>{
  const release=JSON.parse(await readFile(new URL('../supabase/release.json',import.meta.url),'utf8'));
@@ -22,7 +24,11 @@ test('the complete repeatable release installs and the production Edge entrypoin
  await db.query("insert into public.wow_accounts(id,workspace_id,login_email,username,name,role,permissions) values($1,$2,'release@example.test','release','Release','owner','{}')",[uid,w]);
  await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[sid,uid]);
  await db.query('insert into public.wow_sessions(session_id,account_id,session_version) values($1,$2,1)',[sid,uid]);
+ const signer=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
+ const signingJwk=await webcrypto.subtle.exportKey('jwk',signer.privateKey),publicJwk={crv:signingJwk.crv,kty:signingJwk.kty,x:signingJwk.x,y:signingJwk.y};
+ await db.query('insert into vault.secrets(name,secret) values($1,$2)',['wow_offline_owner_signing_jwk',JSON.stringify(signingJwk)]);
  const originalFetch=globalThis.fetch,originalDeno=globalThis.Deno;let serve,calls=0;
+ const ownerProofs=new Set();
  t.after(()=>{globalThis.fetch=originalFetch;if(originalDeno===undefined)delete globalThis.Deno;else globalThis.Deno=originalDeno;});
  const base='https://'+release.projectRef+'.supabase.co';
  const env={SUPABASE_URL:base,SUPABASE_SERVICE_ROLE_KEY:'local-fixture-service',WOW_ALLOWED_ORIGINS:release.productionOrigin};
@@ -31,10 +37,25 @@ test('the complete repeatable release installs and the production Edge entrypoin
  globalThis.fetch=async(url,options)=>{
   calls++;assert.equal(new URL(url).origin,base,'provider fixtures never make an external request');
   const path=new URL(url).pathname;
-  if(path==='/auth/v1/user')return Response.json({id:uid});
+  if(path==='/auth/v1/user')return Response.json({id:uid,email:'release@example.test',is_anonymous:false});
+  if(path==='/auth/v1/admin/generate_link'){
+   const body=JSON.parse(options.body);assert.deepEqual(body,{type:'magiclink',email:'release@example.test'});
+   assert.equal(options.redirect,'error');const hashed_token=createHash('sha256').update(randomUUID()).digest('hex');ownerProofs.add(hashed_token);
+   return Response.json({id:uid,email:'release@example.test',verification_type:'magiclink',hashed_token});
+  }
+  if(path==='/auth/v1/verify'){
+   const body=JSON.parse(options.body);assert.equal(body.type,'email');assert.equal(options.redirect,'error');
+   if(!ownerProofs.delete(body.token_hash))return Response.json({message:'Invalid one-time proof'},{status:403});
+   const ownerSid=randomUUID();await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[ownerSid,uid]);
+   return Response.json({access_token:'header.'+Buffer.from(JSON.stringify({session_id:ownerSid})).toString('base64url')+'.signature',refresh_token:randomUUID(),expires_in:3600});
+  }
   const fn=path.split('/').at(-1);
   try{
    if(fn==='wow_operations_health')return Response.json((await db.query('select public.wow_operations_health() v')).rows[0].v);
+   if(fn==='wow_offline_owner_signing_key'){
+    assert.deepEqual(JSON.parse(options.body),{});assert.equal(options.headers.authorization,'Bearer local-fixture-service');
+    return Response.json((await db.query('select public.wow_offline_owner_signing_key() v')).rows[0].v);
+   }
    assert(allowed.has(fn),'unexpected provider route '+path);
    const body=JSON.parse(options.body);
    return Response.json((await db.query('select public.'+fn+'($1,$2::jsonb) v',[body.p_action,JSON.stringify(body.p_data)])).rows[0].v);
@@ -46,7 +67,7 @@ test('the complete repeatable release installs and the production Edge entrypoin
  const jwt='header.'+Buffer.from(JSON.stringify({session_id:sid})).toString('base64url')+'.signature';
  const call=(action,body={},authenticated=true)=>serve(new Request(base+'/functions/v1/wow-cloud',{method:'POST',headers:{'content-type':'application/json',origin:release.productionOrigin,...(authenticated?{authorization:'Bearer '+jwt}:{})},body:JSON.stringify({action,...body})}));
  assert.equal((await serve(new Request(base+'/functions/v1/wow-cloud/health'))).status,503,'a project without a heartbeat is not ready');
- for(const action of ['gallery.snapshot','chat.rooms','files.list','finance.list','payroll.list','metals.list','assistant.status','operations.snapshot','offline.ownerGrant','customerAuth.snapshot','gallery.share.status','communications.status']){
+ for(const action of ['gallery.snapshot','chat.rooms','files.list','finance.list','payroll.list','metals.list','assistant.status','operations.snapshot','offline.ownerGrant','customerAuth.snapshot','gallery.share.status','communications.status','auth.ownerActivationLink']){
   const count=calls;assert.equal((await call(action,{},false)).status,401,action);assert.equal(calls,count,'unauthenticated input never reaches provider services');
  }
  for(const [action,body] of [['gallery.snapshot',{}],['chat.init',{}],['files.list',{}],['finance.list',{tab:'boxes'}],['payroll.list',{tab:'resources'}],['metals.list',{tab:'holdings'}],['assistant.status',{}],['operations.check',{}],['customerAuth.snapshot',{}],['gallery.share.status',{}],['communications.status',{}]]){
@@ -55,6 +76,11 @@ test('the complete repeatable release installs and the production Edge entrypoin
  }
  const options=await call('auth.customerOptions',{workspaceId:w},false);
  assert.equal(options.status,200);assert.deepEqual(await options.json(),{ok:true,registrationEnabled:false,recoveryEnabled:false});
+ const ownerLinkResponse=await call('auth.ownerActivationLink'),ownerLink=await ownerLinkResponse.json();assert.equal(ownerLinkResponse.status,200);
+ const ownerProof=JSON.parse(Buffer.from(new URL(ownerLink.url).hash.slice('#wf-owner-activate='.length),'base64url').toString());
+ const ownerActivationResponse=await call('auth.activateOwner',ownerProof,false),ownerActivation=await ownerActivationResponse.json();
+ assert.equal(ownerActivationResponse.status,200);assert.equal(ownerActivation.identity.currentAccount.id,uid);assert.equal(ownerActivation.workspaceId,w);
+ assert.equal((await call('auth.activateOwner',ownerProof,false)).status,401,'a consumed activation proof cannot open another session');
  const publicResponse=await serve(new Request(base+'/functions/v1/wow-cloud/public-share/'+randomUUID()+'/metadata'));
  assert.equal(publicResponse.status,503,'public publication stays disabled without the verified same-origin route');
  assert.equal((await serve(new Request(base+'/functions/v1/wow-cloud/mail-webhook'))).status,405);
@@ -63,5 +89,15 @@ test('the complete repeatable release installs and the production Edge entrypoin
  const health=await serve(new Request(base+'/functions/v1/wow-cloud/health'));assert.equal(health.status,200);
  assert.deepEqual(Object.keys(await health.json()).sort(),['checkedAt','ok','service'],'readiness has no workspace or credential data');
  const count=calls;assert.equal((await call('wow_storage_maintenance',{p_action:'claim'})).status,400);assert.equal(calls,count,'private maintenance RPCs are not app actions');
+ const devicePair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']);
+ const device={privateKey:devicePair.privateKey,publicJwk:await webcrypto.subtle.exportKey('jwk',devicePair.publicKey)};
+ const grantConfig={origin:release.productionOrigin,endpoint:base+'/functions/v1/wow-cloud',permissionKeys:globalThis.WFAccountPolicy.permissionKeys,
+  pin:createHash('sha256').update(JSON.stringify(publicJwk)).digest('base64url')};
+ const who={localOwner:'account_'+'a'.repeat(32),localEpoch:1};
+ const proof=await Grant.enrollment(device,grantConfig,who,webcrypto,Date.now);
+ const grantResponse=await call('offline.ownerGrant',proof),envelope=await grantResponse.json();
+ assert.equal(grantResponse.status,200);assert(!JSON.stringify(envelope).includes(signingJwk.d),'private signer material never leaves Edge');
+ await Grant.verify(envelope,grantConfig,device,{...who,user:uid,workspace:w,serverEpoch:1},webcrypto,Date.now);
+ const afterGrant=calls;assert.equal((await call('wow_offline_owner_signing_key')).status,400);assert.equal(calls,afterGrant,'private signer lookup is not an app action');
  assert.equal((await serve(new Request(base+'/functions/v1/wow-cloud/health',{method:'POST'}))).status,405);
 });

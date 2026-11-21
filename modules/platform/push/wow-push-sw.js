@@ -51,7 +51,7 @@
   }
   function destination(binding) {
     const url = new URL(base.href);
-    if (binding?.mode === 'remote') { url.searchParams.set('wf-cloud', 'employee'); url.searchParams.set('workspace', binding.workspaceId); }
+    if (binding?.mode === 'remote') { url.searchParams.set('wf-cloud', binding.financial === true ? 'owner' : 'employee'); url.searchParams.set('workspace', binding.workspaceId); }
     if (binding?.destination && binding.destination.route!=='notifications') url.searchParams.set('wf-notice',binding.eventId);
     url.hash = binding ? binding.destination?.route || 'notifications' : 'dashboard';
     return url;

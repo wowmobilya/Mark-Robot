@@ -1,6 +1,40 @@
 <!DOCTYPE html> 
 <html lang="ar" dir="rtl" data-wf-account-state="checking">
 <head>
+<meta charset="UTF-8">
+<script id="wf-owner-activation-bootstrap">
+// One-use owner proof: scrub before any existing or third-party script executes.
+const wfTakeOwnerActivation=(()=>{
+  let proof=null,fragment=location.hash||'';
+  const take=()=>{const value=proof;proof=null;return value;};
+  const prefix='#wf-owner-activate=';
+  if(!fragment.startsWith(prefix))return take;
+  proof={invalid:true};
+  const url=new URL(location.href),query=new URLSearchParams(url.search);
+  url.hash='';url.searchParams.set('wf-cloud','owner');url.searchParams.delete('wf-accounts');
+  const clean=url.pathname+url.search;
+  try{history.replaceState(null,'',clean);}
+  catch(_){
+    fragment='';proof=null;
+    // Abort the original parsing document if history cannot remove the proof.
+    try{document.open();document.close();}catch(_){try{window.stop();}catch(_){}}
+    try{location.replace(clean);}catch(_){}
+    return take;
+  }
+  try{
+    const encoded=fragment.slice(prefix.length);
+    if(encoded.length>2048||!encoded||!/^[A-Za-z0-9_-]+$/.test(encoded)||encoded.length%4===1||
+      query.getAll('wf-cloud').length!==1||query.get('wf-cloud')!=='owner'||query.getAll('workspace').length!==1)return take;
+    const value=JSON.parse(atob(encoded.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-encoded.length%4)%4)));
+    const uuid=v=>typeof v==='string'&&/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
+    if(!value||Array.isArray(value)||Object.keys(value).length!==3||
+      !Object.prototype.hasOwnProperty.call(value,'tokenHash')||!Object.prototype.hasOwnProperty.call(value,'workspaceId')||!Object.prototype.hasOwnProperty.call(value,'userId')||
+      typeof value.tokenHash!=='string'||!/^[A-Za-z0-9_-]{32,512}$/.test(value.tokenHash)||!uuid(value.workspaceId)||!uuid(value.userId)||query.get('workspace')!==value.workspaceId)return take;
+    proof=Object.freeze({tokenHash:value.tokenHash,workspaceId:value.workspaceId,userId:value.userId});
+  }catch(_){}finally{fragment='';}
+  return take;
+})();
+</script>
 <script src="./modules/customer-auth/workspace.js?v=1"></script>
 <link rel="stylesheet" href="./modules/customer-auth/styles.css?v=1">
 <!-- WOW V22: read-only statement model and scoped UI; no database migration. -->
@@ -34,7 +68,6 @@
 })();
 </script>
 <meta name="google" content="notranslate">
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="ui-icons.js?v=49" defer></script>
 <title>Mark Robot</title>
@@ -6440,10 +6473,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="accounts-data-policy.js?v=1" defer></script>
 <script src="accounts-core.js?v=3" defer></script>
 <script src="accounts-local-provider.js?v=1" defer></script>
-<script src="modules/platform/cloud/wow-cloud-config.js?v=1" defer></script>
-<script src="modules/platform/cloud/wow-cloud-client.js?v=1" defer></script>
+<script src="modules/platform/cloud/wow-cloud-config.js?v=2" defer></script>
+<script src="modules/platform/cloud/wow-cloud-client.js?v=2" defer></script>
 <script src="modules/platform/cloud/wow-cloud-sync.js?v=1" defer></script>
-<script src="accounts-access.js?v=4" defer></script>
+<script src="accounts-access.js?v=5" defer></script>
 <script src="cart-page.js?v=1" defer></script>
 <script src="operations-workspace.js?v=8" defer></script>
 <script src="ui-navigation.js?v=33" defer></script>

@@ -17,6 +17,7 @@ import {createCustomerAuthActions,createCustomerAuthProvider} from './modules/cu
 import {createPublicShareActions,createPublicShareAPI} from './modules/public-share.mjs';
 import {createCommunications} from './modules/communications.mjs';
 import {createMailProvider} from './modules/mail-provider.mjs';
+import {createOwnerActivationActions} from './modules/owner-activation.mjs';
 
 // These are Supabase's built-in server variables. They are never emitted in a
 // response, logged, placed in app configuration, or copied to the repository.
@@ -34,6 +35,7 @@ const customerAuth=createCustomerAuthActions({
   provider:createCustomerAuthProvider({url:Deno.env.get('SUPABASE_URL'),serviceKey:secretKeys.default||Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}),
   auth:remote.auth,origins,enabled:Deno.env.get('WOW_CUSTOMER_AUTH_ENABLED')==='true'
 });
+const ownerActivation=createOwnerActivationActions({...remote,origins,productionOrigin:Deno.env.get('WOW_PUBLIC_APP_ORIGIN')||origins[0]});
 const publicShareOptions={...remote,projectUrl:Deno.env.get('SUPABASE_URL'),publicOrigin:Deno.env.get('WOW_PUBLIC_APP_ORIGIN'),allowedOrigins:origins};
 const publicShare=createPublicShareAPI(publicShareOptions);
 const communications=createCommunications({moduleRpc:remote.moduleRpc,workerRpc:remote.communicationsRpc,
@@ -44,14 +46,14 @@ const maintenance=async()=>{
   if(results.some(result=>result.status==='rejected'))throw new Error('MAINTENANCE_DEFERRED');
 };
 const moduleActions={...createGalleryActions(remote),...createChatActions(remote),...createFilesActions(remote),
-  ...customerAuth.actions,...createPublicShareActions(publicShareOptions),...communications.actions,
+  ...customerAuth.actions,...ownerActivation.actions,...createPublicShareActions(publicShareOptions),...communications.actions,
   ...createFinanceActions({...remote,quoteProvider:createQuoteProvider({goldApiKey:Deno.env.get('GOLDAPI_KEY')})}),
   ...createOperationsActions({...remote,configuration:{aiConfigured:assistantProvider.configured===true}}),
   ...createAssistantActions({moduleRpc:remote.moduleRpc,provider:assistantProvider}),
   ...createOfflineGrantActions({rpc:remote.rpc,origins,permissionKeys:policy.permissionKeys,
     endpoint:(Deno.env.get('SUPABASE_URL')||'').replace(/\/$/,'')+'/functions/v1/wow-cloud',
-    signingKey:Deno.env.get('WOW_OFFLINE_OWNER_SIGNING_JWK')})};
-const app=createHandler({...remote,origins,moduleActions,publicActions:customerAuth.publicActions,policy,dataPolicy:globals.WFAccountDataPolicy,costCore:globals.WFCostCore});
+    signingKey:Deno.env.get('WOW_OFFLINE_OWNER_SIGNING_JWK'),loadSigningKey:remote.offlineSigningKey})};
+const app=createHandler({...remote,origins,moduleActions,publicActions:{...customerAuth.publicActions,...ownerActivation.publicActions},policy,dataPolicy:globals.WFAccountDataPolicy,costCore:globals.WFCostCore});
 let worker: ((req:Request)=>Promise<Response>)|undefined;
 Deno.serve(async(req:Request)=>{
   if(new URL(req.url).pathname.startsWith('/functions/v1/wow-cloud/public-share/'))return publicShare(req);

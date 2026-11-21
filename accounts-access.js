@@ -3,7 +3,7 @@
   'use strict';
   const doc=root.document,policy=root.WFAccountPolicy,dataPolicy=root.WFAccountDataPolicy;
   if(!doc||root.WFAccountAccess)return;
-  const remoteMode=!!root.WFCloudClient?.isRemoteMode?.()||/(?:^|[?&])wf-cloud=employee(?:&|$)/.test(root.location?.search||'');
+  const remoteMode=!!root.WFCloudClient?.isRemoteMode?.()||/(?:^|[?&])wf-cloud=(?:employee|owner)(?:&|$)/.test(root.location?.search||'');
   const locales=['ar','en','tr','fr','ru'];
   const words={
     title:['تسجيل الدخول','Sign in','Giriş yap','Connexion','Вход'],

@@ -38,7 +38,7 @@ async function main() {
     try{
     const name = new URL(req.url, 'http://localhost').pathname.slice(1);
     if (!name) { res.setHeader('content-type',htmlType); res.end(fixtureHTML); return; }
-    if (name === 'sw.js') { res.setHeader('content-type',scriptType); res.end("importScripts('./modules/platform/push/wow-push-sw.js?v=2'); self.addEventListener('activate', e => e.waitUntil(clients.claim()));"); return; }
+    if (name === 'sw.js') { res.setHeader('content-type',scriptType); res.end("importScripts('./modules/platform/push/wow-push-sw.js?v=3'); self.addEventListener('activate', e => e.waitUntil(clients.claim()));"); return; }
     if (!files.has(name)) { res.writeHead(404).end(); return; }
     res.setHeader('content-type', name.endsWith('.js') ? scriptType : name.endsWith('.css') ? 'text/css; charset=utf-8' : 'image/png');
     res.end(await fs.readFile(path.join(dir, name)));

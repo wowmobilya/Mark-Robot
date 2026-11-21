@@ -22,12 +22,12 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
   // bearer header. A real user token overrides Authorization only when needed.
   const base=url.replace(/\/$/,''),serviceHeaders={apikey:serviceKey,
     ...(!serviceKey.startsWith('sb_secret_')?{authorization:'Bearer '+serviceKey}:{})};
-  async function call(path,{method='POST',body,token,headers={},binary=false,allowDuplicate=false,removeObject=false,kind='service'}={}) {
+  async function call(path,{method='POST',body,token,headers={},binary=false,allowDuplicate=false,removeObject=false,redirect,kind='service'}={}) {
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
     try {
       const response=await fetcher(base+path,{method,headers:{...serviceHeaders,...(token?{authorization:'Bearer '+token}:{}),
         ...(body!==undefined&&!binary?{'content-type':'application/json'}:{}),...headers},body:body===undefined?undefined:binary?body:JSON.stringify(body),
-        ...(removeObject?{redirect:'error'}:{}),signal:controller.signal});
+        ...(redirect?{redirect}:removeObject?{redirect:'error'}:{}),signal:controller.signal});
       let data;try{data=await response.json();}catch(_){data={};}
       if(!response.ok) {
         if(removeObject&&response.status===404&&[data?.code,data?.error].includes('NoSuchKey'))return [];
@@ -48,6 +48,8 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     async getUser(token){const data=await call('/auth/v1/user',{method:'GET',token,kind:'auth'});return data.user||data;},
     signIn:(email,password)=>call('/auth/v1/token?grant_type=password',{body:{email,password},kind:'auth'}),
     refresh:refreshToken=>call('/auth/v1/token?grant_type=refresh_token',{body:{refresh_token:refreshToken},kind:'auth'}),
+    generateLink:email=>call('/auth/v1/admin/generate_link',{body:{type:'magiclink',email},redirect:'error'}),
+    verifyOtp:tokenHash=>call('/auth/v1/verify',{body:{token_hash:tokenHash,type:'email'},kind:'auth',redirect:'error'}),
     signOut:token=>call('/auth/v1/logout?scope=local',{token,kind:'auth'}),
     async createUser(input){const data=await call('/auth/v1/admin/users',{body:input,kind:'auth-admin'});return data.user||data;},
     deleteUser:id=>call('/auth/v1/admin/users/'+encodeURIComponent(id),{method:'DELETE',kind:'auth-admin'}),
@@ -60,6 +62,8 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     maintenanceRpc:(action,data)=>call('/rest/v1/rpc/wow_storage_maintenance',{body:{p_action:action,p_data:data},kind:'rpc'}),
     communicationsRpc:(action,data)=>call('/rest/v1/rpc/wow_communications_worker',{body:{p_action:action,p_data:data},kind:'rpc'}),
     health:()=>call('/rest/v1/rpc/wow_operations_health',{body:{},kind:'rpc'}),
+    // Fixed service-only credential lookup; never part of module/app dispatch.
+    offlineSigningKey:()=>call('/rest/v1/rpc/wow_offline_owner_signing_key',{body:{},kind:'rpc'}),
     moduleRpc:(name,action,data)=>{
       if(!MODULE_RPCS.has(name))throw failure('SERVER_CONFIGURATION',503);
       return call('/rest/v1/rpc/'+name,{body:{p_action:action,p_data:data},kind:'rpc'});

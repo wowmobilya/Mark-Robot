@@ -17,7 +17,8 @@
     "modules/maintenance.sql",
     "modules/customer-auth.sql",
     "modules/public-share.sql",
-    "modules/communications.sql"
+    "modules/communications.sql",
+    "modules/offline-owner.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",

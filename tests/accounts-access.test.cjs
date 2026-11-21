@@ -14,7 +14,7 @@ function row(id,role='owner',permissions=policy.presets(role)){
 }
 function identity(rows=[row('owner'),row('worker','carpentry')]){return {schemaVersion:1,revision:1,accounts:rows,audit:[]};}
 function extract(name){let start=html.indexOf('function '+name+'(');assert(start>=0,name+' must exist');if(html.slice(start-6,start)==='async ')start-=6;return html.slice(start,acorn.parseExpressionAt(html,start,{ecmaVersion:'latest'}).end);}
-function runtime({initial=identity(),readFailure=false,missingPolicy=false,tabStorage=new Map(),storageBlocked=false}={}){
+function runtime({initial=identity(),readFailure=false,missingPolicy=false,tabStorage=new Map(),storageBlocked=false,search=''}={}){
   let saved=copy(initial),clock=Date.parse('2026-11-21T10:00:00.000Z'),reloads=0,readHold=null;
   const channels=[],frames=[],intervals=[],toasts=[],events=new Map(),reloadEvents=[],emittedEvents=[],observers=[];
   let frameRuns=0;
@@ -74,7 +74,7 @@ function runtime({initial=identity(),readFailure=false,missingPolicy=false,tabSt
     MutationObserver,BroadcastChannel:class{constructor(){channels.push(this);}postMessage(){}},
     requestAnimationFrame:callback=>frames.push(callback),setInterval:callback=>intervals.push(callback),
     Event:class{constructor(type){this.type=type;}},dispatchEvent(event){emittedEvents.push({type:event.type,canPrint:context.WFAccountAccess?.can('manufacturing.print')||false});events.get(event.type)?.(event);return true;},
-    addEventListener(type,callback){events.set(type,callback);},location:{reload(){reloads++;reloadEvents.push(copy(saved?.audit||[]));}},confirm:()=>true,
+    addEventListener(type,callback){events.set(type,callback);},location:{search,reload(){reloads++;reloadEvents.push(copy(saved?.audit||[]));}},confirm:()=>true,
     localStorage:{setItem(){}},sessionStorage:{
       getItem(key){if(storageBlocked)throw Error('Storage blocked');return tabStorage.get(key)??null;},
       setItem(key,value){if(storageBlocked)throw Error('Storage blocked');tabStorage.set(key,String(value));},
@@ -121,6 +121,18 @@ test('identity initialization failures leave every synchronous guard closed',asy
     assert.throws(()=>h.access.projectRead('settings',{id:'main',bank:'private'}),/ACCESS_DENIED/);
     assert.equal(h.document.documentElement.dataset.wfAccountState,'locked');
   }
+});
+test('owner and employee links never fall back to local bootstrap when the cloud client cannot load',async()=>{
+ for(const mode of ['owner','employee']){
+  const tabStorage=new Map([['wf_owner_session_v1','inherited-owner-continuation']]);
+  const h=runtime({initial:null,search:'?wf-cloud='+mode+'&workspace=11111111-1111-4111-8111-111111111111',tabStorage});
+  await assert.rejects(h.access.ready,{code:'CLOUD_UNCONFIGURED'});await h.settle();
+  assert.equal(h.access.isRemote(),true);assert.equal(h.access.hasAccounts(),true);
+  assert.equal(h.access.can('settings.edit'),false);assert.equal(h.access.canRoute('dashboard'),false);
+  assert.equal(h.document.documentElement.dataset.wfAccountState,'locked');
+  assert.equal(h.channels.length,0,'a remote entry must not create the local owner service');
+  assert.equal(tabStorage.has('wf_owner_session_v1'),false);
+ }
 });
 
 test('startup redirects staff to an allowed route and direct calls cannot read financial fields',async()=>{
