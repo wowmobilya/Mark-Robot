@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=3');
 importScripts('./modules/platform/push/wow-push-sw.js?v=2');
-const CACHE_NAME = 'wow-furniture-v211-cloud';
+const CACHE_NAME = 'wow-furniture-v212-cloud';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -170,6 +170,7 @@ const urlsToCache = [
   './google-drive-config.js',
   './manifest.json',
   './manifest.json?v=6',
+  './manifest.json?v=7',
   './install-identity.js?v=3',
   './app-identity.js?v=4',
   './app-identity.css?v=2',
@@ -213,12 +214,18 @@ const urlsToCache = [
   './assets/robot-identity/fr.mp3?v=2',
   './assets/robot-identity/ru.mp3?v=2',
   './assets/wow-furniture-logo.svg',
+  './assets/mark-robot-logo.svg',
   './assets/wow-furniture-logo.png',
   './app-icon-maskable-512.png?v=198',
+  './app-icon-maskable-512.png?v=212',
   './apple-touch-icon.png?v=198',
+  './apple-touch-icon.png?v=212',
   './favicon-32.png?v=198',
+  './favicon-32.png?v=212',
   './app-icon-192.png?v=198',
   './app-icon-512.png?v=198',
+  './app-icon-192.png?v=212',
+  './app-icon-512.png?v=212',
   './app-icon-192.png',
   './app-icon-512.png',
   './account-statement-core.js?v=25',

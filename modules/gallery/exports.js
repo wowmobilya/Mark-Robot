@@ -194,7 +194,7 @@
       }
     }
     if(!active())throw new Error('AUTH_REQUIRED');
-    linkDownload(new Blob([root.wfExcelZip(files)],{type:'application/zip'}),'WOW-Gallery.zip');
+    linkDownload(new Blob([root.wfExcelZip(files)],{type:'application/zip'}),'Mark-Robot-Products.zip');
   }
   return Object.freeze({safeName,dimsText,makeDocument,linkDownload,pdfBlob,exportDocument,downloadProducts});
 });

@@ -30,7 +30,7 @@ for(const name of ['accounts-policy.js','accounts-data-policy.js','product-cost-
  if(clientPolicy!==serverPolicy)throw Error('Client and server business policy differ: '+name);
 }
 const manifest=JSON.parse(await readFile(path.join(root,'manifest.json'),'utf8'));
-if(!manifest.name.includes('مارك ربوت')||manifest.id!=='/'||manifest.scope!=='/')throw Error('Unexpected app identity/scope');
+if(manifest.name!=='Mark Robot'||manifest.short_name!=='Mark Robot'||manifest.id!=='/'||manifest.scope!=='/')throw Error('Unexpected app identity/scope');
 const config=await readFile(path.join(root,'modules/platform/cloud/wow-cloud-config.js'),'utf8');
 if(!config.includes('sldthbnigivpsqixccah')||config.includes('oxsrajzowlxydzgipquy'))throw Error('Wrong backend target');
 console.log(JSON.stringify({result:'RELEASE_SOURCE_VERIFIED',assetFiles:references.size,parsedScripts:scripts,referencedBytes:bytes,

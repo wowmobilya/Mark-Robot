@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mark Robot">
+ <rect width="512" height="512" rx="92" fill="#153847"/>
+ <path d="M256 112v30M241 105a15 15 0 1 0 30 0 15 15 0 0 0-30 0" stroke="#d7b67a" stroke-width="12" fill="#d7b67a" stroke-linecap="round"/>
+ <rect x="119" y="151" width="274" height="206" rx="74" fill="#f4f7f7"/>
+ <rect x="151" y="185" width="210" height="131" rx="45" fill="#254c59"/>
+ <circle cx="208" cy="244" r="16" fill="#e4c68d"/><circle cx="304" cy="244" r="16" fill="#e4c68d"/>
+ <path d="M222 287q34 20 68 0" fill="none" stroke="#e4c68d" stroke-width="9" stroke-linecap="round"/>
+ <path d="M119 225H99v58h20m274-58h20v58h-20" fill="#d7b67a"/>
+ <text x="256" y="416" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-weight="700" font-size="37" letter-spacing="2">MARK ROBOT</text>
+</svg>

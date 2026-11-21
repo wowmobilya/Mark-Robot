@@ -1,9 +1,9 @@
 /* Application identity is independent from the company identity on documents. */
 (() => {
   'use strict';
-  const DEFAULT_NAME = 'مارك ربوت';
-  const DEFAULT_LOGO = './assets/wow-furniture-logo.svg';
-  const DEFAULT_ICON = './app-icon-512.png?v=198';
+  const DEFAULT_NAME = 'Mark Robot';
+  const DEFAULT_LOGO = './assets/mark-robot-logo.svg';
+  const DEFAULT_ICON = './app-icon-512.png?v=212';
   const MAX_IMAGE_LENGTH = 2100000;
   const locales = ['ar', 'en', 'tr', 'fr', 'ru'];
   const modes = ['default', 'app', 'custom'];
@@ -18,7 +18,7 @@
     const legacyDefault = /^(?:infinity|إنفنتي|انفنتي)$/i.test(savedName);
     // Resolve the retired stock identity on read, including its uploaded
     // artwork. Unrelated custom identities and stored company data stay intact.
-    const defaultAlias = /^(?:wow furniture|galeri)$/i.test(savedName);
+    const defaultAlias = /^(?:wow furniture|galeri|مارك ربوت|mark robot)$/i.test(savedName);
     const name = legacyDefault || defaultAlias ? DEFAULT_NAME : savedName;
     const logo = legacyDefault ? '' : cleanImage(raw.logo) || '';
     const installIcon = legacyDefault ? '' : cleanImage(raw.installIcon) || '';
@@ -76,10 +76,10 @@
     appLogo: ['شعار التطبيق', 'App logo', 'Uygulama logosu', 'Logo de l’application', 'Логотип приложения'],
     appPreview: ['معاينة داخل البرنامج', 'In-app preview', 'Uygulama önizlemesi', 'Aperçu dans l’application', 'Предпросмотр приложения'],
     uploadLogo: ['اختيار شعار', 'Choose a logo', 'Logo seçin', 'Choisir un logo', 'Выберите логотип'],
-    resetLogo: ['استعادة شعار WOW FURNITURE', 'Restore WOW FURNITURE logo', 'WOW FURNITURE logosunu geri yükle', 'Rétablir le logo WOW FURNITURE', 'Вернуть логотип WOW FURNITURE'],
+    resetLogo: ['استعادة شعار Mark Robot', 'Restore Mark Robot logo', 'Mark Robot logosunu geri yükle', 'Rétablir le logo Mark Robot', 'Вернуть логотип Mark Robot'],
     imageHint: ['PNG أو JPG أو WebP، حتى 5 ميغابايت. تظهر الصورة كاملة دون قص.', 'PNG, JPG or WebP, up to 5 MB. The whole image is preserved without cropping.', 'PNG, JPG veya WebP, en fazla 5 MB. Görsel kırpılmadan bütünüyle korunur.', 'PNG, JPG ou WebP, 5 Mo maximum. L’image entière est conservée sans recadrage.', 'PNG, JPG или WebP, до 5 МБ. Изображение сохраняется целиком без обрезки.'],
     installIcon: ['أيقونة التثبيت', 'Installation icon', 'Yükleme simgesi', 'Icône d’installation', 'Значок установки'],
-    defaultIcon: ['أيقونة WOW FURNITURE', 'WOW FURNITURE icon', 'WOW FURNITURE simgesi', 'Icône WOW FURNITURE', 'Значок WOW FURNITURE'],
+    defaultIcon: ['أيقونة Mark Robot', 'Mark Robot icon', 'Mark Robot simgesi', 'Icône Mark Robot', 'Значок Mark Robot'],
     appIcon: ['استخدام شعار التطبيق', 'Use the app logo', 'Uygulama logosunu kullan', 'Utiliser le logo de l’application', 'Использовать логотип приложения'],
     customIcon: ['أيقونة خاصة', 'Custom icon', 'Özel simge', 'Icône personnalisée', 'Свой значок'],
     uploadIcon: ['اختيار صورة للأيقونة', 'Choose an icon image', 'Simge görseli seçin', 'Choisir une image pour l’icône', 'Выберите изображение значка'],

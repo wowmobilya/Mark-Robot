@@ -14,8 +14,8 @@ function fixture(options = {}) {
 
 test('defaults are WOW FURNITURE and independent from the existing company identity without seeding storage', () => {
   const a = fixture(), before = structuredClone(a.state);
-  assert.equal(DEFAULT_NAME, 'مارك ربوت');
-  assert.equal(DEFAULT_LOGO, './assets/wow-furniture-logo.svg');
+  assert.equal(DEFAULT_NAME, 'Mark Robot');
+  assert.equal(DEFAULT_LOGO, './assets/mark-robot-logo.svg');
   assert.equal(a.manager.current().name, DEFAULT_NAME);
   assert.deepEqual(sources(a.manager.current()), { logo: DEFAULT_LOGO, icon: DEFAULT_ICON });
   assert.equal(a.written.length, 0);
