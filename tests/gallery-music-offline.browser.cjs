@@ -10,7 +10,7 @@ const {createHash}=require('node:crypto');
 const acorn=require('acorn');
 const {chromium}=require('playwright');
 const base=path.resolve(__dirname,'..'),track='/assets/gallery/wow-ambient-v1.mp3';
-const html=`<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1">
+const html=`<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="data:,"><link rel="stylesheet" href="/modules/gallery/styles.css?v=2">
 <style>:root{--brand-primary:#23556d;--text:#122d39;--text2:#54666c;--card:#fff;--border:#cad8dc}body{font:16px sans-serif;margin:20px}.page:not(.active){display:none}</style>
 </head><body><section class="page active"><main class="wfg-workspace"></main></section>
@@ -73,7 +73,8 @@ async function main(){
       if(url.pathname===track)trackRequests++;
       const worker=url.pathname==='/sw.js';
       response.writeHead(200,{
-        'Content-Type':allowed.type,'Content-Length':allowed.body.length,'X-Content-Type-Options':'nosniff',
+        'Content-Type':/^(?:text\/|application\/(?:javascript|json)$|image\/svg\+xml$)/.test(allowed.type)?allowed.type+'; charset=utf-8':allowed.type,
+        'Content-Length':allowed.body.length,'X-Content-Type-Options':'nosniff',
         // Public cache policy is intentional. CDP disables/clears the HTTP cache so CacheStorage is the only warm source.
         'Cache-Control':worker||allowed.type==='text/html'?'no-cache':'public, max-age=31536000, immutable',
         'Content-Security-Policy':"default-src 'none'; script-src 'self'"+(worker?'':" 'unsafe-inline'")+"; worker-src 'self'; connect-src 'self'; media-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'none'"

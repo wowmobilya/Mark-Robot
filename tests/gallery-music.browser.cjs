@@ -5,7 +5,7 @@ const {readFile}=require('node:fs/promises');
 const path=require('node:path'),assert=require('node:assert/strict');
 const base=path.resolve(__dirname,'..'),origin='https://gallery-music-fixture.invalid';
 const deferred=()=>{let resolve;const promise=new Promise(yes=>{resolve=yes;});return {promise,resolve};};
-const html=`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+const html=`<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>:root{--brand-primary:#23556d;--ui-accent:#23556d;--text:#122d39;--text2:#54666c;--card:#fff;--border:#cad8dc;--on-primary:#fff;--bg:#f0f5f6}*{box-sizing:border-box}body{margin:12px;font:16px Arial,sans-serif;background:var(--bg)}.page:not(.active){display:none}</style>
 <link rel="stylesheet" href="modules/gallery/styles.css?v=2"></head><body><section id="route" class="page active"><main class="wfg-workspace"></main></section>
 <script>
@@ -33,9 +33,9 @@ document.querySelector('audio').muted=true;
       await page.route('**/*',async route=>{
         const url=new URL(route.request().url());
         if(url.origin!==origin)return route.abort();
-        if(url.pathname==='/subdir/')return route.fulfill({contentType:'text/html',body:html});
-        if(url.pathname==='/subdir/modules/gallery/music.js')return route.fulfill({contentType:'text/javascript',body:await readFile(path.join(base,'modules/gallery/music.js'))});
-        if(url.pathname==='/subdir/modules/gallery/styles.css')return route.fulfill({contentType:'text/css',body:await readFile(path.join(base,'modules/gallery/styles.css'))});
+        if(url.pathname==='/subdir/')return route.fulfill({contentType:'text/html; charset=utf-8',body:html});
+        if(url.pathname==='/subdir/modules/gallery/music.js')return route.fulfill({contentType:'text/javascript; charset=utf-8',body:await readFile(path.join(base,'modules/gallery/music.js'))});
+        if(url.pathname==='/subdir/modules/gallery/styles.css')return route.fulfill({contentType:'text/css; charset=utf-8',body:await readFile(path.join(base,'modules/gallery/styles.css'))});
         if(url.pathname==='/subdir/assets/gallery/wow-ambient-v1.mp3'){
           mediaRequests++;if(hold){held.resolve();await release.promise;}
           try{await route.fulfill({contentType:'audio/mpeg',headers:{'Cache-Control':'no-store'},body:asset});}
