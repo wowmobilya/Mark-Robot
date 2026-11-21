@@ -63,4 +63,19 @@ the user's printer.
 
 ## Live browser verification
 
-Pending deployment of the tested revision.
+Published as `3b9ad32aa578ade8e89cc5530aa75566e4746f75`; the live app serves release 203.
+
+- All 17 choices appeared in the real page, with paired direction buttons.
+- Switching 100 × 50 to portrait selected 50 × 100; reloading retained that choice.
+- Two Back and two Forward traversals kept both the URL and visible page correct.
+- All 17 rendered print documents retained nine test labels, all images loaded,
+  and every label's artwork stayed inside its physical page. A4 pages grouped
+  4/4/1 or 8/1 labels; all roll pages contained one label. Browser CSS measurements
+  matched the requested dimensions within 0.005 mm of subpixel rounding.
+- The three native pages had no horizontal document overflow in 320 and 390 px
+  iframe viewports; their Back icons remained visible.
+
+Evidence: [print geometry and history](../qa/evidence/wow-203-label-measurements.json),
+[mobile widths](../qa/evidence/wow-203-mobile-measurements.json), and
+[the native label page](../qa/evidence/wow-203-label-workspace.jpg).
+Physical printer feeding, die registration and scanner decoding remain untested.

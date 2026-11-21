@@ -6433,10 +6433,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=34">
      <script src="cart-page.js?v=1" defer></script>
-<script src="operations-workspace.js?v=3" defer></script>
+<script src="operations-workspace.js?v=4" defer></script>
 <script src="ui-navigation.js?v=31" defer></script>
 <script src="bottomnav-fit.js?v=1" defer></script>
-<script src="context-nav.js?v=10" defer></script>
+<script src="context-nav.js?v=11" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
      <script src="ui-logo.js?v=3" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
@@ -6464,8 +6464,14 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="product-label-core.js?v=2" defer></script>
 <script src="product-labels.js?v=3" defer></script>
 <script src="package-label-core.js?v=5" defer></script>
-<script src="product-cost-core.js?v=1" defer></script>
-<script src="product-costs.js?v=1" defer></script>
+<script src="product-cost-core.js?v=2" defer></script>
+<script src="material-library-core.js?v=1" defer></script>
+<script src="product-costs.js?v=2" defer></script>
+<script src="material-library.js?v=1" defer></script>
+<script src="cost-analysis-core.js?v=1" defer></script>
+<script src="cost-analysis.js?v=1" defer></script>
+<script src="manufacturing-core.js?v=1" defer></script>
+<script src="manufacturing.js?v=1" defer></script>
 <script src="invoice-archive-core.js?v=1" defer></script>
 <script src="invoice-archive.js?v=1" defer></script>
 <script src="package-labels.js?v=5" defer></script>
@@ -6488,7 +6494,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="barcode-workspace.js?v=1" defer></script>
 <script src="touch-keyboard.js?v=2" defer></script>
 <script src="developer-profile.js?v=2" defer></script>
-<script src="app-updates.js?v=2" defer data-release="203"></script>
+<script src="app-updates.js?v=2" defer data-release="204"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
@@ -6530,7 +6536,10 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="notifications-workspace.css?v=1">
 <link rel="stylesheet" href="unified-workspaces.css?v=1">
 <link rel="stylesheet" href="operations-workspace.css?v=2">
-<link rel="stylesheet" href="product-costs.css?v=1">
+<link rel="stylesheet" href="product-costs.css?v=2">
+<link rel="stylesheet" href="material-library.css?v=1">
+<link rel="stylesheet" href="cost-analysis.css?v=1">
+<link rel="stylesheet" href="manufacturing.css?v=1">
 <link rel="stylesheet" href="invoice-archive.css?v=1">
 <link rel="stylesheet" href="package-labels.css?v=2">
 </head>
@@ -9932,8 +9941,29 @@ async function wfWriteBatch(operations){
           read.onsuccess=()=>{try{const next=op.merge(read.result,op.value);const put=os.put(next);put.onsuccess=()=>{results[i]=next;};put.onerror=()=>{failed=put.error;};}catch(err){failed=err;tx.abort();}};
           return;
         }
+        // Older full-row writers do not own the new independent workspaces.
+        // Preserve their latest section in this transaction, including an explicit
+        // null or its absence after a restore. Intentional section changes use merge.
+        const section=op.type!=='delete'&&(op.store==='settings'&&op.value?.id==='main'?'materialLibrary':op.store==='invoices'&&op.value?.id!=null?'manufacturingTicket':'');
+        if(section){
+          const read=os.get(op.value.id);
+          read.onerror=()=>{failed=read.error;};
+          read.onsuccess=()=>{try{
+            const latest=read.result;
+            if(op.requireExisting&&!latest)throw new Error('MISSING_INVOICE');
+            const next=op.store==='settings'?{...(latest||{}),...op.value}:{...op.value};
+            if(latest){
+              if(Object.prototype.hasOwnProperty.call(latest,section))next[section]=latest[section];
+              else delete next[section];
+            }
+            const put=os.put(next);
+            put.onsuccess=()=>{results[i]=op.returnRecord?next:put.result;};
+            put.onerror=()=>{failed=put.error;};
+          }catch(err){failed=err;tx.abort();}};
+          return;
+        }
         const r=op.type==='delete'?os.delete(op.id):os.put(op.value);
-        r.onsuccess=()=>{results[i]=r.result;};
+        r.onsuccess=()=>{results[i]=op.returnRecord&&op.type!=='delete'?op.value:r.result;};
         r.onerror=()=>{failed=r.error;};
       });
       if(mediaRows.size){
@@ -9952,6 +9982,29 @@ async function wfWriteBatch(operations){
       throw err;
     }
   }
+}
+async function wfPublishCommittedSettings(committed,previous){
+  const saved=await wfHydrateDBValue(committed),current=S.settings||{};
+  const ownsLibrary=value=>Object.prototype.hasOwnProperty.call(value||{},'materialLibrary');
+  if(ownsLibrary(current)!==ownsLibrary(previous)||current.materialLibrary!==previous?.materialLibrary){
+    if(ownsLibrary(current))saved.materialLibrary=current.materialLibrary;
+    else delete saved.materialLibrary;
+  }
+  S.settings=saved;
+  return saved;
+}
+async function wfPublishCommittedInvoice(committed,previous){
+  const id=committed.id,visible=()=>S.invoices.find(invoice=>invoice.id===id);
+  let saved=await wfHydrateDBValue(committed);
+  // Media loading can yield to another committed payment, workflow update or delete.
+  // Re-read that record before publishing rather than resurrecting a stale snapshot.
+  while(previous!==visible()){
+    previous=visible();saved=await dbGet('invoices',id);
+  }
+  const index=S.invoices.findIndex(invoice=>invoice.id===id);
+  if(saved){if(index>=0)S.invoices[index]=saved;else S.invoices.push(saved);}
+  else if(index>=0)S.invoices.splice(index,1);
+  return saved;
 }
 const dbPutRaw=async(s,o)=>(await wfWriteBatch([{store:s,value:o}]))[0];
 const dbGetAllKeysRaw=async s=>(await wfReadRaw(s,'getAllKeys'))||[];
@@ -13635,6 +13688,9 @@ const PARENT_MAP = {
   'package-labels': 'invoices',
   'product-costs': 'products',
   'invoice-archive': 'invoices',
+  'manufacturing': 'invoices',
+  'material-library': 'products',
+  'cost-analysis': 'products',
   'add-product':   'dashboard',
   'quick-barcode': 'dashboard',
      'settings':      'dashboard', // 👈 تمت إضافتها هنا
@@ -16754,20 +16810,18 @@ async function saveInvoice(){
   if(existingInv&&existingInv.companyId!==coId&&inv.packageLabelSnapshot){
     inv.packageLabelSnapshot={...inv.packageLabelSnapshot,customerLogo:inv.companyLogo,capturedAt:new Date().toISOString()};
   }
-  const operations=[{store:'invoices',value:inv}];
+  const operations=[{store:'invoices',value:inv,requireExisting:!!S.editInvId,returnRecord:true}];
   const settings={...S.settings};
   if(!S.editInvId){
     const counter=S.invType==='internal_retail'?'nextNoRet':S.invType==='internal_wholesale'?'nextNoWhl':'nextNoExt';
     const fallback=counter==='nextNoRet'?3000:counter==='nextNoWhl'?1000:5000;
     settings[counter]=(Number(settings[counter])||fallback)+1;
-    operations.push({store:'settings',value:{id:'main',...settings}});
+    operations.push({store:'settings',value:{id:'main',...settings},returnRecord:true});
   }
   payments.forEach(p=>operations.push({store:'payments',value:p}));
-  await wfWriteBatch(operations);
-
-  if(!S.editInvId)S.settings=settings;
-  const idx=S.invoices.findIndex(i=>i.id===invId);
-  if(idx>=0)S.invoices[idx]=inv;else S.invoices.push(inv);
+  const committed=await wfWriteBatch(operations);
+  if(!S.editInvId)await wfPublishCommittedSettings(committed[1],settings);
+  await wfPublishCommittedInvoice(committed[0],existingInv||undefined);
   for(const p of payments){
     const pi=S.payments.findIndex(x=>x.id===p.id);
     if(pi>=0)S.payments[pi]=p;else S.payments.push(p);
@@ -17541,13 +17595,12 @@ async function addPaymentToInv() {
   const totalPaid = (inv.depositUSD || 0) + invPayments.reduce((s, p) => s + wfStatementPaymentUSD(p,inv), 0);
   const updatedInv = {...inv, payments:invPayments, totalPaidUSD:totalPaid,
     remainingUSD:Math.max(0, (inv.grandTotal || 0) - totalPaid)};
-  await wfWriteBatch([
+  const committed=await wfWriteBatch([
     {store:'payments',value:payment},
-    {store:'invoices',value:updatedInv},
+    {store:'invoices',value:updatedInv,requireExisting:true,returnRecord:true},
   ]);
+  await wfPublishCommittedInvoice(committed[1],inv);
   S.payments.push(payment);
-  const invIndex = S.invoices.findIndex(i => i.id === invId);
-  if(invIndex>=0)S.invoices[invIndex]=updatedInv;
 
   document.getElementById('pmNewAmt').value = '';
   document.getElementById('pmNewNote').value = '';
@@ -17574,14 +17627,11 @@ async function deletePayment(payId, invId) {
       const totalPaid = (inv.depositUSD || 0) + invPayments.reduce((s, p) => s + wfStatementPaymentUSD(p,inv), 0);
       updatedInv = {...inv, payments:invPayments, totalPaidUSD:totalPaid,
         remainingUSD:Math.max(0, (inv.grandTotal || 0) - totalPaid)};
-      operations.push({store:'invoices',value:updatedInv});
+      operations.push({store:'invoices',value:updatedInv,requireExisting:true,returnRecord:true});
     }
-    await wfWriteBatch(operations);
+    const committed=await wfWriteBatch(operations);
+    if(updatedInv)await wfPublishCommittedInvoice(committed[1],inv);
     S.payments = remainingPayments;
-    if(updatedInv){
-      const invIndex=S.invoices.findIndex(i=>i.id===invId);
-      if(invIndex>=0)S.invoices[invIndex]=updatedInv;
-    }
     showToast(t('deleted'), 'in');
     renderPayHistory(invId);
     renderInvList();
@@ -18452,8 +18502,8 @@ async function saveSettings(){
   settings.manualUsdEur=manEur||null;
   
   // حفظ الإعدادات في قاعدة البيانات
-  await wfWriteBatch([{store:'settings',value:{id:'main',...settings}}]);
-  S.settings=settings;
+  const [committedSettings]=await wfWriteBatch([{store:'settings',value:{id:'main',...settings},returnRecord:true}]);
+  await wfPublishCommittedSettings(committedSettings,settings);
   wfPendingSettingsLogo=undefined;
   if(manTry) S.usdTry=manTry;
   if(manEur) S.usdEur=manEur;
@@ -20727,7 +20777,7 @@ startGreetingRotation();
   }
   // handle hash routing
   const hash=window.location.hash.replace('#','');
-const validPages=['dashboard','companies','products','cart','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management','reports','exchange','settings','quick-barcode','notifications','package-labels','product-costs','invoice-archive'];
+const validPages=['dashboard','companies','products','cart','invoices','add-company','add-product','create-invoice','select-client-type','select-invoice-type','payment-management','reports','exchange','settings','quick-barcode','notifications','package-labels','product-costs','invoice-archive','manufacturing','material-library','cost-analysis'];
   if(hash&&validPages.includes(hash)){
     if(hash==='settings')loadSettingsToForm();
     showPage(hash,false);history.replaceState({page:hash},'','#'+hash);

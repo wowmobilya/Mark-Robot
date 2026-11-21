@@ -17,7 +17,12 @@
       const existing = ['string','number'].includes(typeof row.id) ? String(row.id).trim() : '';
       const id = existing && !seen.has(existing) ? existing : allocateMaterialId(seen, createId);
       seen.add(id);
-      return {id, name:row.name ?? '', unit:row.unit ?? '', quantity:row.quantity ?? '', unitPrice:row.unitPrice ?? ''};
+      const normalized = {id, name:row.name ?? '', unit:row.unit ?? '', quantity:row.quantity ?? '', unitPrice:row.unitPrice ?? ''};
+      if (['string','number'].includes(typeof row.catalogId) && String(row.catalogId).trim()) {
+        normalized.catalogId = String(row.catalogId).trim();
+        normalized.catalogUpdatedAt = typeof row.catalogUpdatedAt === 'string' ? row.catalogUpdatedAt : null;
+      }
+      return normalized;
     });
   }
   async function persistProductCosting({state, productId, draft, writeBatch, hydrate, now}) {
@@ -60,6 +65,17 @@
     materials:['المواد والخامات','Malzemeler','Materials','Matières et composants','Материалы и комплектующие'],
     material:['المادة {number}','Malzeme {number}','Material {number}','Matière {number}','Материал {number}'],
     addMaterial:['إضافة مادة','Malzeme ekle','Add material','Ajouter une matière','Добавить материал'],
+    chooseLibrary:['اختيار من مكتبة المواد','Malzeme kütüphanesinden seç','Choose from material library','Choisir dans la bibliothèque','Выбрать из библиотеки материалов'],
+    libraryLinked:['مرتبطة بالمكتبة: {name}','Kütüphane bağlantısı: {name}','Linked to library: {name}','Liée à la bibliothèque : {name}','Связь с библиотекой: {name}'],
+    libraryCurrent:['السعر مطابق للسعر المحفوظ في المكتبة.','Fiyat kütüphanedeki kayıtlı fiyatla aynı.','The price matches the saved library price.','Le prix correspond au prix enregistré dans la bibliothèque.','Цена соответствует сохранённой цене в библиотеке.'],
+    libraryChanged:['السعر الحالي في المكتبة: {price}. يمكنك تطبيقه على هذه المسوّدة.','Güncel kütüphane fiyatı: {price}. Bu taslağa uygulayabilirsiniz.','Current library price: {price}. You can apply it to this draft.','Prix actuel dans la bibliothèque : {price}. Vous pouvez l’appliquer à ce brouillon.','Текущая цена в библиотеке: {price}. Можно применить её к этому черновику.'],
+    libraryUnknown:['سعر المكتبة غير مدخل؛ تبقى كلفة هذا الصف كما هي.','Kütüphane fiyatı girilmedi; bu satırın maliyeti korunur.','The library price is not entered; this row keeps its current cost.','Le prix de la bibliothèque n’est pas renseigné ; ce coût reste inchangé.','Цена в библиотеке не указана; текущая стоимость строки сохраняется.'],
+    libraryMissing:['المادة المرتبطة غير موجودة في المكتبة. بقيت تفاصيل الكلفة محفوظة.','Bağlı malzeme kütüphanede bulunamadı. Kayıtlı maliyet ayrıntıları korunur.','The linked material is not in the library. The saved cost details are preserved.','La matière liée est absente de la bibliothèque. Les détails du coût sont conservés.','Связанный материал отсутствует в библиотеке. Сохранённые данные затрат остаются.'],
+    libraryUnitChanged:['وحدة المكتبة مختلفة. اختر المادة مجدداً وراجع الكمية قبل استبدال هذا الصف.','Kütüphane birimi farklı. Satırı değiştirmeden önce malzemeyi yeniden seçip miktarı kontrol edin.','The library unit differs. Select the material again and review the quantity before replacing this row.','L’unité de la bibliothèque diffère. Sélectionnez à nouveau la matière et vérifiez la quantité avant de remplacer cette ligne.','Единица в библиотеке отличается. Выберите материал заново и проверьте количество перед заменой строки.'],
+    applyLibrary:['تطبيق سعر المكتبة الحالي','Güncel kütüphane fiyatını uygula','Apply current library price','Appliquer le prix actuel','Применить текущую цену библиотеки'],
+    unlinkLibrary:['فصل الرابط والإبقاء على القيم','Bağlantıyı kaldır, değerleri koru','Unlink and keep values','Dissocier en conservant les valeurs','Отвязать с сохранением значений'],
+    libraryAdded:['أُضيفت المادة إلى المسوّدة. راجع الكمية ثم احفظ الكلفة.','Malzeme taslağa eklendi. Miktarı kontrol edip maliyeti kaydedin.','Material added to the draft. Review the quantity, then save the cost.','Matière ajoutée au brouillon. Vérifiez la quantité, puis enregistrez le coût.','Материал добавлен в черновик. Проверьте количество и сохраните себестоимость.'],
+    libraryApplied:['طُبّق السعر على المسوّدة. احفظ الكلفة لاعتماده.','Fiyat taslağa uygulandı. Onaylamak için maliyeti kaydedin.','Price applied to the draft. Save the cost to commit it.','Prix appliqué au brouillon. Enregistrez le coût pour le confirmer.','Цена применена к черновику. Сохраните себестоимость для подтверждения.'],
     name:['اسم المادة','Malzeme adı','Material name','Nom de la matière','Название материала'],
     unit:['وحدة القياس','Ölçü birimi','Unit','Unité','Единица измерения'],
     unitPlaceholder:['متر، قطعة، كغ…','metre, adet, kg…','meter, piece, kg…','mètre, pièce, kg…','метр, штука, кг…'],
@@ -144,7 +160,7 @@
   const money = (value, code = 'USD') => value === null || value === undefined ? '—' : new Intl.NumberFormat(ops.locale(), {style:'currency', currency:code, currencyDisplay:'code', maximumFractionDigits:2}).format(value);
   const percent = value => value === null ? '—' : new Intl.NumberFormat(ops.locale(), {style:'percent', maximumFractionDigits:1}).format(value);
   function errorText(error) {
-    return text(({MATERIAL_INCOMPLETE:'incomplete', INVALID_AMOUNT:'invalidAmount', INVALID_RATE:'invalidRate', INVALID_CURRENCY:'invalidRate', MISSING_PRODUCT:'missingProduct'})[error?.code] || 'saveError');
+    return text(({MATERIAL_INCOMPLETE:'incomplete', INVALID_AMOUNT:'invalidAmount', INVALID_RATE:'invalidRate', INVALID_CURRENCY:'invalidRate', MISSING_PRODUCT:'missingProduct', MATERIAL_LINK_MISMATCH:'libraryMissing', MATERIAL_PRICE_UNKNOWN:'libraryUnknown', MATERIAL_UNIT_CHANGED:'libraryUnitChanged'})[error?.code] || 'saveError');
   }
   function cleanLabels() { for (const node of labels.keys()) if (!node.isConnected) labels.delete(node); }
   function localizedRefresh() {
@@ -273,7 +289,10 @@
       model.data.materials.push({id:uid(), name:'', unit:'', quantity:'', unitPrice:''}); model.error = null; model.note = null;
       renderMaterialRows(); refreshComputed(); rowHost.lastElementChild?.querySelector('input')?.focus({preventScroll:true});
     }, 'plus'); add.id = 'wfCostAddMaterial';
-    materials.append(sectionHeading('materials', add)); rowHost = make('div', 'wf-cost-material-list'); materials.append(rowHost);
+    const materialActions = make('div','wf-ops-row wf-cost-material-actions');
+    const chooseLibrary = button('chooseLibrary','btn btn-s',() => root.WFMaterialLibrary?.chooseForProduct(selectedId),'material'); chooseLibrary.id = 'wfCostChooseLibrary';
+    materialActions.append(chooseLibrary,add);
+    materials.append(sectionHeading('materials', materialActions)); rowHost = make('div', 'wf-cost-material-list'); materials.append(rowHost);
     const extras = make('section', 'wf-ops-card wf-cost-extras');
     extras.append(field('labor', 'wfCostLabor', data.labor, true, value => {model.data.labor = value;}), field('overhead', 'wfCostOverhead', data.overhead, true, value => {model.data.overhead = value;}));
     formFieldset.append(currencyCard, materials, extras);
@@ -305,9 +324,27 @@
       const name = field('name', prefix + '-name', row.name, false, value => {row.name = value;}); name.classList.add('wf-cost-material-name');
       fields.append(name, field('unit', prefix + '-unit', row.unit, false, value => {row.unit = value;}, 'unitPlaceholder'),
         field('quantity', prefix + '-quantity', row.quantity, true, value => {row.quantity = value;}),
-        field('unitPrice', prefix + '-price', row.unitPrice, true, value => {row.unitPrice = value;}));
+        field('unitPrice', prefix + '-price', row.unitPrice, true, value => {if (row.catalogId && String(row.unitPrice ?? '') !== value) row.catalogUpdatedAt = null; row.unitPrice = value;}));
       const total = make('div', 'wf-cost-row-total'); total.append(copy('span', '', 'rowTotal'), make('bdi', 'wf-cost-row-amount', '—'));
       card.append(header, fields, total); rowHost.append(card);
+      if (row.catalogId) {
+        const linked = make('div','wf-cost-library-link');
+        const label = make('button','wf-cost-library-name'); label.type = 'button'; label.addEventListener('click',() => root.WFMaterialLibrary?.open(row.catalogId));
+        const status = make('p','wf-cost-library-status'); status.setAttribute('role','status');
+        const actions = make('div','wf-ops-row');
+        const apply = button('applyLibrary','btn btn-s wf-cost-library-apply',() => {
+          try {
+            const materialCore = root.WFMaterialLibraryCore, material = materialCore?.listMaterials(ops.state().settings).find(entry => String(entry.id) === String(row.catalogId));
+            const applied = materialCore.applyLinkedPrice(model.data,row.id,material).materials.find(entry => entry.id === row.id);
+            // Keep the enclosing draft object alive: labor/overhead controls
+            // already hold that object while their touch-keyboard session runs.
+            row.unitPrice = applied.unitPrice; row.catalogUpdatedAt = applied.catalogUpdatedAt;
+            model.error = null; model.note = 'libraryApplied'; renderMaterialRows(); refreshComputed();
+          } catch (error) {model.error = error; model.note = null; refreshComputed();}
+        },'restore');
+        const unlink = button('unlinkLibrary','btn btn-s',() => {delete row.catalogId; delete row.catalogUpdatedAt; model.error = null; model.note = null; renderMaterialRows(); refreshComputed();});
+        actions.append(apply,unlink); linked.append(label,status,actions); card.append(linked);
+      }
     }
     if (!model.data.materials.length) rowHost.append(copy('p', 'wf-ops-muted', 'noMaterials'));
     cleanLabels();
@@ -328,6 +365,16 @@
       const row = model.data.materials.find(entry => entry.id === card.dataset.rowId); let value = null;
       try {const qty = core.amount(row.quantity), price = core.amount(row.unitPrice); if (qty !== null && price !== null && Number.isFinite(qty * price)) value = qty * price;} catch (_) {}
       card.querySelector('.wf-cost-row-amount').textContent = money(value, code);
+      const link = card.querySelector('.wf-cost-library-link');
+      if (link && root.WFMaterialLibraryCore) {
+        const materialCore = root.WFMaterialLibraryCore, material = materialCore.listMaterials(ops.state().settings).find(entry => String(entry.id) === String(row.catalogId));
+        const status = materialCore.linkedStatus(row,model.data,material);
+        link.dataset.status = status.status;
+        link.querySelector('.wf-cost-library-name').textContent = text('libraryLinked',{name:material?.name || row.name});
+        const key = {current:'libraryCurrent',changed:'libraryChanged',unknown:'libraryUnknown',missing:'libraryMissing',unitChanged:'libraryUnitChanged',invalid:'invalidRate'}[status.status] || 'libraryMissing';
+        link.querySelector('.wf-cost-library-status').textContent = text(key,{price:money(status.price,code)});
+        link.querySelector('.wf-cost-library-apply').disabled = model.saving || status.status !== 'changed';
+      }
     }
     comparisons.replaceChildren(...['A', 'B', 'C'].map(tier => {
       let price = null, comparison;
@@ -386,10 +433,21 @@
     renderCatalog(); renderEditor(); syncSelection(); localizedRefresh();
   }
   surface = ops.register({id:'product-costs', title:titles('title'), subtitle:titles('subtitle'), icon:'cost', parent:'products', onEnter:enter, onLanguage:localizedRefresh});
+  root.addEventListener('wf-material-library-change',() => {if (mounted) refreshComputed();});
   root.WFCosting = Object.freeze({
     open(productId) {
       if (productId !== undefined && products().some(item => String(item.id) === String(productId))) {selectedId = String(productId); selectorOpen = false;}
       return ops.open('product-costs');
+    },
+    addCatalogMaterial(catalogId, productId = selectedId) {
+      const item = products().find(entry => String(entry.id) === String(productId));
+      if (!item) {ops.notify(text('missingProduct'),'er'); return false;}
+      const model = modelFor(item); if (model.saving) return false;
+      try {
+        const materialCore = root.WFMaterialLibraryCore, material = materialCore?.listMaterials(ops.state().settings).find(entry => String(entry.id) === String(catalogId));
+        if (!material) {const error = new Error('MATERIAL_LINK_MISMATCH'); error.code = 'MATERIAL_LINK_MISMATCH'; throw error;}
+        model.data.materials.push(materialCore.createLinkedRow(material,model.data,uid())); model.error = null; model.note = 'libraryAdded'; return true;
+      } catch (error) {ops.notify(errorText(error),'er'); return false;}
     },
     captureInvoiceCosts(invoice, capturedAt) {return core.captureInvoiceCosts(invoice, products(), capturedAt);},
     invoiceSummary:core.invoiceSummary

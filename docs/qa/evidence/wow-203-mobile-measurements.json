@@ -1,0 +1,50 @@
+[
+  {
+    "section": "package-labels",
+    "viewport": 320,
+    "active": "page-package-labels",
+    "backIcons": 1,
+    "clientWidth": 314,
+    "scrollWidth": 314
+  },
+  {
+    "section": "package-labels",
+    "viewport": 390,
+    "active": "page-package-labels",
+    "backIcons": 1,
+    "clientWidth": 384,
+    "scrollWidth": 384
+  },
+  {
+    "section": "product-costs",
+    "viewport": 320,
+    "active": "page-product-costs",
+    "backIcons": 1,
+    "clientWidth": 314,
+    "scrollWidth": 314
+  },
+  {
+    "section": "product-costs",
+    "viewport": 390,
+    "active": "page-product-costs",
+    "backIcons": 1,
+    "clientWidth": 384,
+    "scrollWidth": 384
+  },
+  {
+    "section": "invoice-archive",
+    "viewport": 320,
+    "active": "page-invoice-archive",
+    "backIcons": 1,
+    "clientWidth": 314,
+    "scrollWidth": 314
+  },
+  {
+    "section": "invoice-archive",
+    "viewport": 390,
+    "active": "page-invoice-archive",
+    "backIcons": 1,
+    "clientWidth": 384,
+    "scrollWidth": 384
+  }
+]

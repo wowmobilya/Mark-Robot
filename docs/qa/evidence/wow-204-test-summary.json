@@ -1,0 +1,11 @@
+{
+  "release": 204,
+  "nodeTests": {
+    "passed": 952,
+    "failed": 0,
+    "command": "node --test tests/*.test.cjs"
+  },
+  "featureAssetsCached": 20,
+  "packageLabelFilesUnchangedFromRelease": 203,
+  "physicalPrinterTested": false
+}

@@ -1,4 +1,4 @@
-/* Native WOW destinations for package labels, product costs and the archive.
+/* Native WOW destinations for printing, production, costing and records.
    The shell owns navigation only. Each feature owns its data and page body. */
 (function (root) {
   'use strict';
@@ -11,7 +11,10 @@
   const names = {
     'package-labels': {ar:'إتيكيت الطرود',tr:'Koli etiketleri',en:'Package labels',fr:'Étiquettes de colis',ru:'Этикетки упаковок'},
     'product-costs': {ar:'كلفة المنتجات',tr:'Ürün maliyetleri',en:'Product costs',fr:'Coût des produits',ru:'Себестоимость товаров'},
-    'invoice-archive': {ar:'أرشيف الفواتير',tr:'Fatura arşivi',en:'Invoice archive',fr:'Archives des factures',ru:'Архив счетов'}
+    'invoice-archive': {ar:'أرشيف الفواتير',tr:'Fatura arşivi',en:'Invoice archive',fr:'Archives des factures',ru:'Архив счетов'},
+    'manufacturing': {ar:'بطاقات التصنيع',tr:'Üretim fişleri',en:'Manufacturing tickets',fr:'Fiches de fabrication',ru:'Производственные задания'},
+    'material-library': {ar:'مكتبة المواد والخامات',tr:'Malzeme kütüphanesi',en:'Material library',fr:'Bibliothèque des matières',ru:'Библиотека материалов'},
+    'cost-analysis': {ar:'تحليل الكلفة والربح',tr:'Maliyet ve kâr analizi',en:'Cost and profit analysis',fr:'Analyse des coûts et des bénéfices',ru:'Анализ себестоимости и прибыли'}
   };
   const groupNames = {ar:'التصنيع والمتابعة',tr:'Üretim ve takip',en:'Production and records',fr:'Production et suivi',ru:'Производство и учёт'};
   const backNames = {ar:'رجوع',tr:'Geri',en:'Back',fr:'Retour',ru:'Назад'};
@@ -20,6 +23,9 @@
     label:'<path d="M3 3h8l10 10-8 8L3 11Z"/><circle cx="7" cy="7" r="1"/>',
     cost:'<rect x="5" y="2" width="14" height="20" rx="3"/><path d="M8 6h8M8 11h1m4 0h3m-8 4h1m4 0h3m-8 4h1m4 0h3"/>',
     archive:'<rect x="3" y="3" width="18" height="4" rx="1"/><path d="M5 7v14h14V7M9 11h6"/>',
+    factory:'<path d="M3 21V10l6 3V8l6 3V3h5l1 18Zm4-4h1m4 0h1m4 0h1"/>',
+    material:'<path d="m3 7 9-4 9 4-9 4Zm0 5 9 4 9-4M3 17l9 4 9-4"/>',
+    chart:'<path d="M4 3v18h17M8 17v-4m5 4V9m5 8V5"/>',
     print:'<path d="M7 8V3h10v5M7 17H3V9h18v8h-4M7 14h10v7H7Z"/><path d="M17 11h1"/>',
     search:'<circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/>',
     plus:'<path d="M12 5v14M5 12h14"/>',
@@ -48,7 +54,7 @@
   group.append(groupTitle);
   for (const [id, title] of Object.entries(names)) {
     const link = make('button', 'nav-item'); link.type = 'button'; link.dataset.page = id;
-    const symbol = make('span', 'nav-icon'); symbol.innerHTML = icon(id === 'product-costs' ? 'cost' : id === 'invoice-archive' ? 'archive' : 'label');
+    const symbol = make('span', 'nav-icon'); symbol.innerHTML = icon({'package-labels':'label','product-costs':'cost','invoice-archive':'archive','manufacturing':'factory','material-library':'material','cost-analysis':'chart'}[id]);
     const caption = make('span'); link.append(symbol, caption);
     // The shared sidebar search invokes the original item's onclick handler.
     link.onclick = () => open(id);

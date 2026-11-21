@@ -5,7 +5,7 @@ test('existing company and banking fields round-trip through the real save and l
  const elements=Object.fromEntries(names.map((name,i)=>['st'+name,{value:'test-'+i}]));
  for(const [id,value] of Object.entries({stPrefixExt:'a',stNextNoExt:'5000',stPrefixRet:'b',stNextNoRet:'3000',stPrefixWhl:'c',stNextNoWhl:'1000',stKdvRate:'20',stManualUsdTry:'40',stManualUsdEur:'0.9'}))elements[id]={value};
  let writes;
- const context={S:{settings:{keepUnrelated:'yes'}},wfPendingSettingsLogo:undefined,document:{getElementById:id=>elements[id]||null},wfWriteBatch:async batch=>{writes=batch},updateRateUI(){},updateKdvDisplay(){},goBack(){},showToast(){},t:key=>key};
+ const context={S:{settings:{keepUnrelated:'yes'}},wfPendingSettingsLogo:undefined,document:{getElementById:id=>elements[id]||null},wfWriteBatch:async batch=>{writes=batch;return batch.map(op=>op.value)},wfPublishCommittedSettings:async value=>{context.S.settings=value},updateRateUI(){},updateKdvDisplay(){},goBack(){},showToast(){},t:key=>key};
  vm.createContext(context);
  const load=html.slice(html.indexOf('function loadSettingsToForm(){'),html.indexOf('function handleSettingsLogo('));
  vm.runInContext(load,context);await context.saveSettings();

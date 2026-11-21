@@ -53,7 +53,12 @@
       const quantity = amount(row.quantity, prefix + '.quantity', false), unitPrice = amount(row.unitPrice, prefix + '.unitPrice', false);
       const total = finite(quantity * unitPrice, prefix);
       materialTotal = finite(materialTotal + total, 'materials'); entered = true;
-      materials.push({id:typeof row.id === 'string' ? row.id : String(index), name:row.name.trim(), unit:typeof row.unit === 'string' ? row.unit.trim() : '', quantity, unitPrice, total});
+      const savedRow = {id:typeof row.id === 'string' ? row.id : String(index), name:row.name.trim(), unit:typeof row.unit === 'string' ? row.unit.trim() : '', quantity, unitPrice, total};
+      if (['string','number'].includes(typeof row.catalogId) && String(row.catalogId).trim()) {
+        savedRow.catalogId = String(row.catalogId).trim();
+        savedRow.catalogUpdatedAt = typeof row.catalogUpdatedAt === 'string' ? row.catalogUpdatedAt : null;
+      }
+      materials.push(savedRow);
     }
     const labor = amount(source.labor, 'labor'), overhead = amount(source.overhead, 'overhead');
     entered = entered || labor !== null || overhead !== null;

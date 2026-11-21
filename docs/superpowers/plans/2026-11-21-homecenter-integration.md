@@ -65,13 +65,13 @@ Interface: `WFOperations.register/open/state/locale/notify/make/icon/refresh`, `
 - [x] Integrate local barcode generation, stable preview, readiness and print validation.
 - [x] Hook invoice cost/issuer snapshot capture and existing delivery archiving.
 - [x] Add remembered template selection and automatic regrouping of the same invoice.
-- [ ] Test history, print behavior and mobile/desktop layouts with fixture data.
+- [x] Test history, print behavior and mobile/desktop layouts with fixture data.
 
 ## Task 5: Review and release
 
 - [x] Run current relevant suite and project checks; resolve actual failures.
 - [x] Independently review the combined diff and original print comparison.
-- [ ] Update offline cache and asset versions, release notes, push and verify deployment.
+- [x] Update offline cache and asset versions, release notes, push and verify deployment.
 
 ## Execution ledger
 
@@ -80,3 +80,19 @@ Interface: `WFOperations.register/open/state/locale/notify/make/icon/refresh`, `
 - Print agent owns print core; costing agent owns costing modules; controller owns shell/integration.
 - Ruling: dedicated page requirement supersedes any earlier suggestion of embedded forms or popup editors.
 - Ruling: retain source paper geometry; explicitly select A4 with zero page margins to avoid printer-default scaling.
+
+## Authorized extension: release 204
+
+The user requested implementing useful capabilities found in the uploaded program
+that WOW did not yet have. Three independent agents implemented the following
+native destinations, followed by an independent manufacturing review:
+
+- [x] Manufacturing tickets from saved invoices, per-line workflow/history and A4 workshop printing.
+- [x] Reusable material library, explicit linked BOM price application and separate drafts.
+- [x] Read-only unit cost/profit analysis by saved A/B/C tier and confirmed exchange rate.
+- [x] Integrate six native routes, contextual navigation, five locales and offline assets.
+- [x] Protect manufacturing/library sections from old full-record writers and async media publication races.
+- [x] Fix conflict-reload deletion/payment race and provide explicit orphan-note recovery.
+- [ ] Final full test gate, publish release 204, verify real browser/mobile controls.
+
+The original calibrated package-label files are unchanged by release 204.

@@ -136,7 +136,8 @@ test('archive transitions use the real storage media transaction and preserve ex
 });
 
 test('the actual invoice save hook snapshots missing costs while retaining USD totals and historical nulls', async () => {
-  const f=fixture({invoices:[{id:'i',invNo:'A42'}]});
+  const ticket={version:1,lines:[{id:'line',status:'completed',item:{image:'wfmedia:workshop'}}]};
+  const f=fixture({invoices:[{id:'i',invNo:'A42',manufacturingTicket:ticket}],media:[{id:'workshop',data:imageB,kind:'image'}]});
   f.putState({
     editInvId:'i',invCurrency:'TRY',invType:'external',invTier:'A',invPayMethod:'cash',kdvEnabled:true,printLang:'en',printOpts:{},
     settings:{kdvRate:20},currentInvPayments:[],
@@ -165,4 +166,90 @@ test('the actual invoice save hook snapshots missing costs while retaining USD t
   assert.equal(saved.items[0].costSnapshot.unitCostUSD,10);
   assert.equal(saved.items[1].costSnapshot,null);
   assert.equal(saved.items[2].costSnapshot.unitCostUSD,25);
+  assert.deepEqual(saved.manufacturingTicket,ticket,'editing from an older tab retains the latest workshop status');
+  assert.equal(f.run('S.invoices[0].manufacturingTicket.lines[0].item.image'),imageB,'the committed ticket is hydrated before publication');
+});
+
+test('legacy full-row saves preserve independently owned sections and keep the ordinary put return contract',async()=>{
+  for(const [store,id,section] of [['settings','main','materialLibrary'],['invoices','i','manufacturingTicket']]){
+    for(const value of [undefined,null,{version:1,updatedAt:'latest'},{version:7,extension:'future'}]){
+      const latest={id,other:'latest'};if(value!==undefined)latest[section]=value;
+      const f=fixture({[store]:[latest]});
+      f.context.operation={store,value:{id,other:'submitted',[section]:{version:1,updatedAt:'stale'}}};
+      assert.equal(await f.run('wfWriteBatch([operation]).then(rows=>rows[0])'),id);
+      const saved=f.tables[store].get(id);
+      assert.equal(saved.other,'submitted');
+      assert.deepEqual(saved[section],value);
+      assert.equal(Object.hasOwn(saved,section),value!==undefined,'absence after a restore also wins over a stale tab');
+      f.context.operation.returnRecord=true;
+      const returned=await f.run('wfWriteBatch([operation]).then(rows=>rows[0])');
+      assert.equal(returned.id,id);
+      assert.deepEqual(structuredClone(returned),f.tables[store].get(id));
+    }
+  }
+});
+
+test('explicit section merges can update protected data and a missing invoice aborts the entire payment batch',async()=>{
+  const f=fixture({settings:[{id:'main',materialLibrary:{version:1,materials:[]}}]});
+  await f.run("wfWriteBatch([{store:'settings',type:'merge',id:'main',value:{id:'m'},merge:(latest,material)=>({...latest,materialLibrary:{version:1,materials:[material]}})}])");
+  assert.deepEqual(f.tables.settings.get('main').materialLibrary.materials,[{id:'m'}]);
+  await assert.rejects(f.run("wfWriteBatch([{store:'payments',value:{id:'p',invoiceId:'gone',amountUSD:10}},{store:'invoices',value:{id:'gone'},requireExisting:true,returnRecord:true}])"),/MISSING_INVOICE/);
+  assert.equal(f.tables.payments.size,0);assert.equal(f.tables.invoices.size,0);
+});
+
+test('actual payment add and delete handlers publish the latest manufacturing ticket with its media',async()=>{
+  const stored={id:'i',companyName:'Buyer',companyId:'c',currency:'USD',grandTotal:100,depositUSD:0,payments:[],manufacturingTicket:{version:1,lines:[{id:'l',status:'in_progress',item:{image:'wfmedia:workshop'}}]}};
+  const f=fixture({invoices:[stored],media:[{id:'workshop',data:imageB,kind:'image'}]});
+  f.putState({invoices:[{...stored,manufacturingTicket:null}],currentPayInvId:'i',lang:'en'});
+  const fields=Object.fromEntries(Object.entries({pmNewAmt:'20',pmNewNote:'Deposit',pmNewDate:'2026-11-21',pmCurrConvAlert:'',pmSmartNotePreview:''}).map(([id,value])=>[id,{value,style:{}}]));
+  Object.assign(f.context,{document:{getElementById:id=>fields[id]},PM_STATE:{currency:'USD',invCurrency:'USD',receiptType:'cash'},RECEIPT_TYPE_LABELS:{en:{cash:'Cash'}},symOf:()=>'$ ',wfNewRecordId:()=>'pay',t:key=>key,wfStatementLabel:key=>key});
+  for(const name of ['showToast','renderPayHistory','renderInvList','updateDash'])f.context[name]=()=>{};
+  f.context.wfStatementInvoicePayments=invoice=>invoice.payments||[];
+  f.context.wfStatementPaymentUSD=(payment,invoice)=>f.context.WOWStatementCore.paymentValue(payment,invoice).amountUSD;
+  f.context.openDM=(_,callback)=>{f.context.pendingDelete=callback();};
+  f.run(slice('async function addPaymentToInv()','function editInv(id)'));
+  await f.run('addPaymentToInv()');
+  assert.equal(f.tables.payments.get('pay').amountUSD,20);
+  assert.equal(f.run('S.invoices[0].totalPaidUSD'),20);
+  assert.equal(f.run('S.invoices[0].manufacturingTicket.lines[0].status'),'in_progress');
+  assert.equal(f.run('S.invoices[0].manufacturingTicket.lines[0].item.image'),imageB);
+  const newer=structuredClone(f.tables.invoices.get('i'));newer.manufacturingTicket.lines[0].status='completed';f.tables.invoices.set('i',newer);
+  await f.run("deletePayment('pay','i');pendingDelete");
+  assert.equal(f.tables.payments.size,0);
+  assert.equal(f.run('S.invoices[0].totalPaidUSD'),0);
+  assert.equal(f.run('S.invoices[0].manufacturingTicket.lines[0].status'),'completed');
+  assert.equal(f.run('S.invoices[0].manufacturingTicket.lines[0].item.image'),imageB);
+});
+
+test('committed invoice publication respects newer visible edits and deletion while images load',async()=>{
+  for(const replacement of [{id:'i',manufacturingTicket:{version:1,status:'newer'}},undefined]){
+    const f=fixture({invoices:[{id:'i'}]});f.putState({invoices:[{id:'i',old:true}]});
+    let finish;f.context.hydrationBarrier=new Promise(resolve=>{finish=resolve});
+    f.run('wfHydrateDBValue=async row=>{await hydrationBarrier;return row};');
+    f.context.replacement=replacement;
+    f.context.dbGet=async()=>replacement;
+    const pending=f.run("wfPublishCommittedInvoice({id:'i',manufacturingTicket:{status:'older'}},S.invoices[0])");
+    f.run('S.invoices=replacement?[replacement]:[]');finish();await pending;
+    assert.deepEqual(structuredClone(f.run('S.invoices')),replacement?[replacement]:[]);
+  }
+});
+
+test('settings publication retains material changes made before or during media hydration and honors explicit removal',async()=>{
+  for(const replacement of [{version:1,materials:[{id:'new'}]},null,undefined]){
+    const f=fixture();f.putState({settings:{materialLibrary:{version:1,materials:[]},companyName:'Before'}});
+    f.run('var beforeSettings={...S.settings}');
+    let finish;f.context.hydrationBarrier=new Promise(resolve=>{finish=resolve});
+    f.run('wfHydrateDBValue=async row=>{await hydrationBarrier;return row};');
+    f.context.replacement=replacement;
+    const pending=f.run("wfPublishCommittedSettings({id:'main',companyName:'Saved',materialLibrary:{version:1,materials:[{id:'old'}]}},beforeSettings)");
+    f.run('if(replacement===undefined)delete S.settings.materialLibrary;else S.settings.materialLibrary=replacement');
+    finish();await pending;
+    assert.equal(f.run('S.settings.companyName'),'Saved');
+    assert.deepEqual(structuredClone(f.run('S.settings.materialLibrary')),replacement);
+    assert.equal(f.run("Object.hasOwn(S.settings,'materialLibrary')"),replacement!==undefined);
+  }
+  const f=fixture();f.putState({settings:{materialLibrary:{version:1,materials:[]}}});
+  f.run('var beforeSettings={...S.settings};S.settings.materialLibrary={version:1,materials:[{id:"before-hydration"}]}');
+  await f.run('wfPublishCommittedSettings({id:"main",materialLibrary:{version:1,materials:[]}},beforeSettings)');
+  assert.equal(f.run('S.settings.materialLibrary.materials[0].id'),'before-hydration');
 });

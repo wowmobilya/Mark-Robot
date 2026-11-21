@@ -19,7 +19,7 @@ class El {
  click(){this.clicks++;this.onclick?.();for(const fn of this.events.click||[])fn({target:this});}
  focus(){this.focused=true;}scrollIntoView(){this.scrolled=true;}scrollTo(){this.scrollTop=0;}
 }
-const pages=['dashboard','companies','products','cart','invoices','select-client-type','add-company','add-product','select-invoice-type','create-invoice','payment-management','reports','exchange','cashboxes','quick-barcode','settings','package-labels','product-costs','invoice-archive'];
+const pages=['dashboard','companies','products','cart','invoices','select-client-type','add-company','add-product','select-invoice-type','create-invoice','payment-management','reports','exchange','cashboxes','quick-barcode','settings','package-labels','product-costs','invoice-archive','manufacturing','material-library','cost-analysis'];
 function setup({mobile=false}={}){
  const root=new El,body=new El,main=new El('mainContent'),nav=new El('bottomNav'),ids={mainContent:main,bottomNav:nav},queue=[],observers=[],calls={routes:[],back:0,menu:0,moves:[]};root.lang='ar';root.dir='rtl';root.append(body);body.append(main,nav);
  for(const p of pages){const el=new El('page-'+p,'page');ids[el.id]=el;main.append(el);}ids['page-dashboard'].classes.add('active');
@@ -242,7 +242,7 @@ test('a separate active modal blocks shared settings actions without forwarding 
  a.setModals([s.dialog]);a.click(2);assert.deepEqual(s.runs,['primary']);
 });
 test('all actual sections have five scoped controls, correct primary actions, and no actions on entry',()=>{
- const a=setup(),expected={dashboard:2,companies:0,products:0,cart:3,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2,'package-labels':4,'product-costs':4,'invoice-archive':3};
+ const a=setup(),expected={dashboard:2,companies:0,products:0,cart:3,invoices:0,'select-client-type':0,'add-company':4,'add-product':3,'select-invoice-type':0,'create-invoice':4,'payment-management':4,reports:3,exchange:4,cashboxes:4,'quick-barcode':4,settings:2,'package-labels':4,'product-costs':4,'invoice-archive':3,'manufacturing':4,'material-library':4,'cost-analysis':3};
  for(const page of pages){a.activate(page);const config=a.ctx.navTest.configuration(a.ids['page-'+page]);assert.equal(config.items.length,5,page);assert.equal(config.active,expected[page],page);assert.equal(a.nav.dataset.section,page);assert.equal(a.buttons.filter(b=>b.classList.contains('bnav-active')).length,1);for(const item of config.items){assert(item.icon&&item.label,page);if(item.kind==='route')assert(a.ids['page-'+item.page],item.page);}}
  assert.equal(a.calls.routes.length,0);assert.equal(a.calls.back,0);assert.equal(Object.values(a.original).reduce((n,b)=>n+b.clicks,0),0);
 });

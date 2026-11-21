@@ -1,0 +1,528 @@
+{
+  "release": 203,
+  "profiles": [
+    {
+      "id": "tw2004",
+      "allArtInside": true,
+      "artworkMM": [
+        92.816,
+        135.998
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        110.149,
+        11.498
+      ],
+      "labels": 9,
+      "pageMM": [
+        209.996,
+        296.999
+      ],
+      "pages": 3,
+      "perPage": [
+        4,
+        4,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "tw2008",
+      "allArtInside": true,
+      "artworkMM": [
+        96.999,
+        66.2
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        108.599,
+        11.497
+      ],
+      "labels": 9,
+      "pageMM": [
+        209.996,
+        296.999
+      ],
+      "pages": 2,
+      "perPage": [
+        8,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "tw2004Landscape",
+      "allArtInside": true,
+      "artworkMM": [
+        135.998,
+        92.816
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        11.498,
+        7.032
+      ],
+      "labels": 9,
+      "pageMM": [
+        296.999,
+        209.996
+      ],
+      "pages": 3,
+      "perPage": [
+        4,
+        4,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "tw2008Landscape",
+      "allArtInside": true,
+      "artworkMM": [
+        66.2,
+        96.999
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        11.497,
+        4.399
+      ],
+      "labels": 9,
+      "pageMM": [
+        296.999,
+        209.996
+      ],
+      "pages": 2,
+      "perPage": [
+        8,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "zebra100x150",
+      "allArtInside": true,
+      "artworkMM": [
+        96.999,
+        142.128
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        1.5,
+        3.935
+      ],
+      "labels": 9,
+      "pageMM": [
+        99.996,
+        149.998
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "zebra150x100",
+      "allArtInside": true,
+      "artworkMM": [
+        142.128,
+        96.999
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        3.935,
+        1.496
+      ],
+      "labels": 9,
+      "pageMM": [
+        149.998,
+        99.996
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal80x100",
+      "allArtInside": true,
+      "artworkMM": [
+        66.2,
+        96.999
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        6.9,
+        1.497
+      ],
+      "labels": 9,
+      "pageMM": [
+        79.999,
+        99.996
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal70x100",
+      "allArtInside": true,
+      "artworkMM": [
+        66.2,
+        96.999
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        1.898,
+        1.497
+      ],
+      "labels": 9,
+      "pageMM": [
+        69.999,
+        99.996
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal100x100",
+      "allArtInside": true,
+      "artworkMM": [
+        96.999,
+        66.2
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        1.501,
+        16.896
+      ],
+      "labels": 9,
+      "pageMM": [
+        99.996,
+        99.996
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal100x200",
+      "allArtInside": true,
+      "artworkMM": [
+        96.999,
+        142.128
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        1.5,
+        28.934
+      ],
+      "labels": 9,
+      "pageMM": [
+        99.996,
+        199.996
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal100x80",
+      "allArtInside": true,
+      "artworkMM": [
+        96.999,
+        66.2
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        1.501,
+        6.9
+      ],
+      "labels": 9,
+      "pageMM": [
+        99.996,
+        79.999
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal100x70",
+      "allArtInside": true,
+      "artworkMM": [
+        96.999,
+        66.2
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        1.501,
+        1.898
+      ],
+      "labels": 9,
+      "pageMM": [
+        99.996,
+        69.999
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal200x100",
+      "allArtInside": true,
+      "artworkMM": [
+        142.128,
+        96.999
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        28.934,
+        1.496
+      ],
+      "labels": 9,
+      "pageMM": [
+        199.996,
+        99.996
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal100x50",
+      "allArtInside": true,
+      "artworkMM": [
+        68.866,
+        47
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        15.567,
+        1.501
+      ],
+      "labels": 9,
+      "pageMM": [
+        99.996,
+        49.998
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal50x100",
+      "allArtInside": true,
+      "artworkMM": [
+        47,
+        68.866
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        1.497,
+        15.563
+      ],
+      "labels": 9,
+      "pageMM": [
+        49.998,
+        99.996
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal80x500",
+      "allArtInside": true,
+      "artworkMM": [
+        76.999,
+        112.823
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        1.5,
+        193.584
+      ],
+      "labels": 9,
+      "pageMM": [
+        79.999,
+        499.996
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    },
+    {
+      "id": "thermal500x80",
+      "allArtInside": true,
+      "artworkMM": [
+        112.823,
+        76.999
+      ],
+      "imagesReady": true,
+      "insetMM": [
+        193.589,
+        1.5
+      ],
+      "labels": 9,
+      "pageMM": [
+        499.996,
+        79.999
+      ],
+      "pages": 9,
+      "perPage": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "printReady": true
+    }
+  ],
+  "navigation": [
+    {
+      "action": "back",
+      "url": "https://galeri.wowfurniture.com.tr/#product-costs",
+      "active": "page-product-costs"
+    },
+    {
+      "action": "back",
+      "url": "https://galeri.wowfurniture.com.tr/#package-labels",
+      "active": "page-package-labels"
+    },
+    {
+      "action": "forward",
+      "url": "https://galeri.wowfurniture.com.tr/#product-costs",
+      "active": "page-product-costs"
+    },
+    {
+      "action": "forward",
+      "url": "https://galeri.wowfurniture.com.tr/#invoice-archive",
+      "active": "page-invoice-archive"
+    }
+  ]
+}
