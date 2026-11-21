@@ -2,6 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const acorn=require('acorn'),{webcrypto}=require('node:crypto');
 const core=require('../accounts-core.js'),policy=require('../accounts-policy.js'),dataPolicy=require('../accounts-data-policy.js'),costCore=require('../product-cost-core.js');
+const cloudAPI=require('../modules/platform/cloud/wow-cloud-client.js');
 const accessSource=fs.readFileSync(path.join(__dirname,'../accounts-access.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const PASSWORD='Correct horse-2026';
@@ -14,7 +15,7 @@ function row(id,role='owner',permissions=policy.presets(role)){
 }
 function identity(rows=[row('owner'),row('worker','carpentry')]){return {schemaVersion:1,revision:1,accounts:rows,audit:[]};}
 function extract(name){let start=html.indexOf('function '+name+'(');assert(start>=0,name+' must exist');if(html.slice(start-6,start)==='async ')start-=6;return html.slice(start,acorn.parseExpressionAt(html,start,{ecmaVersion:'latest'}).end);}
-function runtime({initial=identity(),readFailure=false,missingPolicy=false,tabStorage=new Map(),storageBlocked=false,search=''}={}){
+function runtime({initial=identity(),readFailure=false,missingPolicy=false,tabStorage=new Map(),storageBlocked=false,search='',cloud=null}={}){
   let saved=copy(initial),clock=Date.parse('2026-11-21T10:00:00.000Z'),reloads=0,readHold=null;
   const channels=[],frames=[],intervals=[],toasts=[],events=new Map(),reloadEvents=[],emittedEvents=[],observers=[];
   let frameRuns=0;
@@ -80,6 +81,7 @@ function runtime({initial=identity(),readFailure=false,missingPolicy=false,tabSt
       setItem(key,value){if(storageBlocked)throw Error('Storage blocked');tabStorage.set(key,String(value));},
       removeItem(key){if(storageBlocked)throw Error('Storage blocked');tabStorage.delete(key);}
     },showToast:(...args)=>toasts.push(args)};
+  if(cloud)context.WFCloudClient={isRemoteMode:()=>true,getClient:()=>cloud};
   context.window=context;vm.createContext(context);vm.runInContext(accessSource,context);
   const access=context.WFAccountAccess;
   return {context,access,document,channels,intervals,events,toasts,adapter,saved:()=>copy(saved),reloads:()=>reloads,reloadEvents,emittedEvents,frameRuns:()=>frameRuns,pendingFrames:()=>frames.length,
@@ -87,6 +89,20 @@ function runtime({initial=identity(),readFailure=false,missingPolicy=false,tabSt
     holdReads(){let release;readHold=new Promise(resolve=>{release=resolve;});return()=>{readHold=null;release();};},
     async admin(){const service=core.createService({...adapter,crypto:webcrypto,policy,now:()=>clock});await service.signIn({username:'owner',password:PASSWORD});return service;},
     async settle(){let drained=0;for(let i=0;i<4;i++){while(frames.length){assert(++drained<=50,'permission controls must not create an animation-frame loop');frameRuns++;frames.shift()();}await flush();}assert.equal(frames.length,0,'permission controls must settle');}};
+}
+function remoteService(role='owner'){
+  let error=null,barrier=null;const calls=[];
+  const account=row('remote-'+role,role);delete account.credential;
+  const state={configured:true,revision:1,currentAccount:account,accounts:[account],audit:[]};
+  const client=cloudAPI.create({mode:'remote',config:{enabled:true,endpoint:'https://test.supabase.co/functions/v1/wow-cloud',publishableKey:'public-test-key'},
+    fetch:async(_url,options)=>{
+      const request=JSON.parse(options.body);calls.push(request.action);if(barrier)await barrier;
+      if(error?.code==='NETWORK')throw new TypeError('Network unavailable');
+      const status=error?.status||200,body=error?{ok:false,error}:{ok:true,workspaceId:'workspace-1',identity:state,
+        ...(request.action==='auth.signIn'?{session:{access_token:'fixture-access',refresh_token:'fixture-refresh',expires_at:Math.floor(Date.now()/1000)+3600}}:{})};
+      return {ok:status>=200&&status<300,status,json:async()=>copy(body)};
+    }});
+  return {client,calls,fail:value=>{error=value;},hold(){let release;barrier=new Promise(resolve=>{release=resolve;});return()=>{barrier=null;release();};}};
 }
 function businessDatabase(initial){
   const saved=new Map(Object.entries(initial).map(([store,rows])=>[store,new Map(rows.map(row=>[row.id,copy(row)]))]));
@@ -144,6 +160,68 @@ test('startup redirects staff to an allowed route and direct calls cannot read f
   assert.equal(view.total,undefined);assert.equal(view.items[0].price,undefined);assert.equal(view.items[0].costSnapshot,undefined);
   assert.equal(view.items[0].name,'Table');assert.equal(raw.total,9000);
   assert.equal(h.access.cartKey(),'wf_qbl_cart_account_worker');
+});
+
+test('a verified remote owner arriving after startup unlocks the waiting application without a password form submission',async()=>{
+  const remote=remoteService(),h=runtime({cloud:remote.client,search:'?wf-cloud=owner'});await h.access.ready;
+  let initialized=false;const startup=h.access.beforeInit().then(()=>{initialized=true;});await h.settle();
+  assert.equal(initialized,false);assert.equal(h.document.documentElement.dataset.wfAccountState,'locked');
+  await remote.client.signIn({username:'owner',password:PASSWORD});await h.settle();
+  assert.equal(initialized,true,'verified background authentication must release beforeInit');await startup;
+  assert.equal(h.document.documentElement.dataset.wfAccountState,'ready');assert.equal(h.access.can('accounts.edit'),true);assert.equal(h.reloads(),0);
+});
+
+test('background employee snapshots do not replace the explicit employee login flow',async()=>{
+  const remote=remoteService('sales'),h=runtime({cloud:remote.client,search:'?wf-cloud=employee'});await h.access.ready;
+  let initialized=false;const startup=h.access.beforeInit().then(()=>{initialized=true;});await h.settle();
+  await remote.client.signIn({username:'worker',password:PASSWORD});await h.settle();
+  assert.equal(initialized,false);assert.equal(h.document.documentElement.dataset.wfAccountState,'locked');
+  h.document.getElementById('wfAccountLoginUsername').value='worker';h.document.getElementById('wfAccountLoginPassword').value=PASSWORD;
+  await h.document.getElementById('wfAccountLoginForm').listeners.submit[0]({preventDefault(){}});await startup;
+  assert.equal(h.document.documentElement.dataset.wfAccountState,'ready');assert.equal(h.access.can('accounts.edit'),false);
+});
+
+test('a live owner restoration can finish application startup when its follow-up refresh temporarily loses the network',async()=>{
+  const remote=remoteService();await remote.client.signIn({username:'owner',password:PASSWORD});remote.fail({code:'NETWORK'});
+  const h=runtime({cloud:remote.client,search:'?wf-cloud=owner'});await h.access.beforeInit();await h.settle();
+  assert.equal(h.document.documentElement.dataset.wfAccountState,'ready');assert.equal(h.access.can('accounts.edit'),true);assert.equal(h.reloads(),0);
+});
+
+test('transient owner refresh failures keep open drafts and retry on online or focus',async()=>{
+  for(const error of [{code:'NETWORK'},{code:'SERVICE_UNAVAILABLE',status:503}]){
+    const remote=remoteService(),h=runtime({cloud:remote.client,search:'?wf-cloud=owner'});await h.signed('owner');
+    const draft=h.document.createElement('textarea');draft.value='Unsaved invoice notes';h.document.getElementById('mainContent').append(draft);
+    remote.fail(error);h.intervals[0]();await h.settle();
+    assert.equal(h.reloads(),0,error.code+' must not discard the current owner workspace');
+    assert.equal(h.document.documentElement.dataset.wfAccountState,'ready');assert.equal(draft.value,'Unsaved invoice notes');assert.equal(h.access.can('accounts.edit'),true);
+    for(const event of ['online','focus']){
+      remote.fail(null);const before=remote.calls.length;h.events.get(event)?.({});await h.settle();
+      assert(remote.calls.length>before,event+' must retry the owner connection');assert.equal(h.reloads(),0);
+    }
+  }
+});
+
+test('transient owner resume failure releases its verification gate while preserving the same workspace',async()=>{
+  for(const error of [{code:'NETWORK'},{code:'SERVICE_UNAVAILABLE',status:503}]){
+    const remote=remoteService(),h=runtime({cloud:remote.client,search:'?wf-cloud=owner'});await h.signed('owner');
+    const release=remote.hold();remote.fail(error);
+    h.events.get('pageshow')({persisted:true});assert.equal(h.access.can('invoices.print'),false);
+    release();await h.settle();assert.equal(h.reloads(),0);assert.equal(h.document.documentElement.dataset.wfAccountState,'ready');assert.equal(h.access.can('invoices.print'),true);
+  }
+});
+
+test('owner revocation and storage failures still lock instead of being mistaken for a transient connection',async()=>{
+  for(const error of [{code:'SESSION_REVOKED',status:401},{code:'ACCOUNT_UNAVAILABLE',status:403},{code:'STORAGE_ERROR',status:503},{code:'IDENTITY_STATE_INVALID',status:500}]){
+    const remote=remoteService(),h=runtime({cloud:remote.client,search:'?wf-cloud=owner'});await h.signed('owner');remote.fail(error);
+    h.events.get('pageshow')({persisted:true});await h.settle();
+    assert.equal(h.reloads(),1,error.code);assert.equal(h.document.documentElement.dataset.wfAccountState,'locked');assert.equal(h.access.can('accounts.edit'),false,error.code);
+    assert.throws(()=>h.access.projectRead('invoices',[{id:'invoice-1'}]),/ACCESS_DENIED/,error.code);
+  }
+});
+
+test('remote employee refresh failures retain the existing fail-closed lock behavior',async()=>{
+  const remote=remoteService('sales'),h=runtime({cloud:remote.client,search:'?wf-cloud=employee'});await h.signed('worker');remote.fail({code:'NETWORK'});
+  h.intervals[0]();await h.settle();assert.equal(h.reloads(),1);assert.equal(h.document.documentElement.dataset.wfAccountState,'locked');assert.equal(h.access.can('invoices.edit'),false);
 });
 
 test('synchronous printing/navigation guards see idle expiry before the periodic refresh',async()=>{

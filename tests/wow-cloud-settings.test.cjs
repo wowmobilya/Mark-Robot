@@ -1,8 +1,9 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const createUI=require('../modules/platform/cloud/wow-cloud-settings.js');
-function fixture(){
-  const pending=[],calls=[],observers=[];let doc,subscriber,fail;
+const createAccountsUI=require('../accounts-settings.js'),policy=require('../accounts-policy.js');
+function fixture({mode='local',accounts=false}={}){
+  const pending=[],calls=[],observers=[],subscribers=new Set();let doc,fail;
   class Event{constructor(type,options={}){this.type=type;Object.assign(this,options);}preventDefault(){}}
   class Element{
     constructor(tag='div'){this.tagName=tag.toUpperCase();this.children=[];this.parentElement=null;this.dataset={};this.attrs={};this.listeners={};this.style={};this._text='';this._classes=new Set();this.value='';this.disabled=false;this.hidden=false;this.required=false;this.customValidity='';this.classList={contains:key=>this._classes.has(key),add:(...keys)=>keys.forEach(key=>this._classes.add(key)),toggle:(key,on)=>{on?this._classes.add(key):this._classes.delete(key);}};}
@@ -17,19 +18,21 @@ function fixture(){
     matches(selector){return selector.split(',').some(part=>{part=part.trim();return part[0]==='.'?this._classes.has(part.slice(1)):part[0]==='#'?this.id===part.slice(1):part[0]==='['?this.getAttribute(part.slice(1,-1))!=null:this.tagName===part.toUpperCase();});}
     querySelectorAll(selector){return this.children.flatMap(child=>[...(child.matches(selector)?[child]:[]),...child.querySelectorAll(selector)]);}querySelector(selector){return this.querySelectorAll(selector)[0]||null;}
     addEventListener(type,callback){(this.listeners[type]??=[]).push(callback);}dispatchEvent(event){event.target??=this;for(const callback of this.listeners[event.type]||[]){const result=callback(event);if(result?.then)pending.push(result);}}
-    click(){if(!this.disabled)this.dispatchEvent(new Event('click'));}focus(){doc.activeElement=this;}select(){}setCustomValidity(value){this.customValidity=value;}
+    click(){if(!this.disabled){const tab=this.getAttribute('onclick')?.match(/^switchTab\('([^']+)'\)$/);if(tab)root.switchTab(tab[1]);this.dispatchEvent(new Event('click'));}}focus(){doc.activeElement=this;}select(){}setCustomValidity(value){this.customValidity=value;}
     reportValidity(){if(this.tagName==='FORM')return this.querySelectorAll('input').every(input=>input.reportValidity());return this.disabled||!this.customValidity&&(!this.required||!!this.value)&&(!this.minLength||this.value.length>=this.minLength);}
   }
   doc=new Element('document');doc.documentElement=new Element('html');doc.documentElement.lang='en';doc.append(doc.documentElement);doc.createElement=tag=>new Element(tag);doc.getElementById=id=>doc.querySelector('#'+id);
   const page=new Element('section');page.id='page-settings';page.className='active';doc.documentElement.append(page);
   const workspace=new Element();workspace.className='wf-settings-workspace';page.append(workspace);const tabs=new Element();tabs.className='tabs';const content=new Element();content.className='wf-settings-content';workspace.append(tabs,content);
-  const root=new Element('window');root.document=doc;root.CustomEvent=Event;root.MutationObserver=class{constructor(fn){observers.push(fn);}observe(){}};root.switchTab=()=>{};root.showPage=()=>{};root.location={href:'https://wow.example/#settings'};root.navigator={clipboard:{writeText:async value=>calls.push({copy:value})}};
-  let state={mode:'local',authenticated:false,workspaceId:null,currentAccount:null,connection:'idle',role:null};
-  const client={getSnapshot:()=>structuredClone(state),subscribe:fn=>{subscriber=fn;},isConfigured:()=>true,isRemote:()=>false,isLinkedOwner:()=>!!state.workspaceId,getConfig:()=>({dashboardUrl:'https://supabase.com/dashboard/project/example'}),entryUrl:()=>`https://wow.example/?wf-cloud=employee&workspace=${state.workspaceId}#dashboard`,
-    async signIn(input){calls.push({action:'signIn',input:structuredClone(input)});if(fail)throw fail;state={...state,authenticated:true,workspaceId:'space-1',currentAccount:{id:'owner',name:'Owner'},role:'owner',connection:'online'};subscriber(state);},
-    async enrollOwner(input){calls.push({action:'enrollOwner',input:structuredClone(input)});return this.signIn(input);},async refresh(){return state;},async signOut(){state={...state,authenticated:false,currentAccount:null};subscriber(state);}};
-  root.WFCloudClient={getClient:()=>client};root.WFAppUpdates={registerGuard(){}};root.wfInitializeCloudSync=async()=>{calls.push({action:'initializeSync'});};
-  const api=createUI(root);doc.dispatchEvent(new Event('DOMContentLoaded'));root.switchTab('cloud');
+  const root=new Element('window');root.document=doc;root.CustomEvent=Event;root.MutationObserver=class{constructor(fn){observers.push(fn);}observe(){}};root.switchTab=()=>{};root.showPage=()=>{};root.location={href:mode==='remote'?'https://wow.example/?wf-cloud=owner&workspace=space-1#settings':'https://wow.example/#settings'};root.navigator={clipboard:{writeText:async value=>calls.push({copy:value})}};
+  let state={configured:true,revision:1,accounts:[],audit:[],mode,authenticated:false,workspaceId:null,currentAccount:null,connection:'idle',role:null};
+  const publish=()=>{for(const subscriber of subscribers)subscriber(structuredClone(state));};
+  const client={getSnapshot:()=>structuredClone(state),subscribe:fn=>{subscribers.add(fn);return()=>subscribers.delete(fn);},isConfigured:()=>true,isRemote:()=>mode==='remote',isLinkedOwner:()=>mode==='local'&&!!state.workspaceId,getConfig:()=>({dashboardUrl:'https://supabase.com/dashboard/project/example'}),entryUrl:()=>`https://wow.example/?wf-cloud=employee&workspace=${state.workspaceId}#dashboard`,
+    async signIn(input){calls.push({action:'signIn',input:structuredClone(input)});if(fail)throw fail;const account={id:'owner',name:'Owner',username:'owner',role:'owner',status:'active',sessionVersion:1,permissions:policy.presets('owner')};state={...state,authenticated:true,workspaceId:'space-1',currentAccount:account,accounts:[account],role:'owner',connection:'online'};publish();},
+    async enrollOwner(input){calls.push({action:'enrollOwner',input:structuredClone(input)});return this.signIn(input);},async refresh(){return state;},async signOut(){state={...state,authenticated:false,currentAccount:null};publish();}};
+  root.WFCloudClient={getClient:()=>client,isRemoteMode:()=>mode==='remote'};root.WFAppUpdates={registerGuard(){}};root.wfInitializeCloudSync=async()=>{calls.push({action:'initializeSync'});};
+  root.WFAccountPolicy=policy;root.WFAccountAccess={ready:Promise.resolve(),service:client};
+  const api=createUI(root);if(accounts)createAccountsUI(root);doc.dispatchEvent(new Event('DOMContentLoaded'));root.switchTab('cloud');
   const settle=async()=>{for(let i=0;i<6;i++){await Promise.resolve();if(pending.length)await Promise.all(pending.splice(0));}};
   const input=(key,value)=>{const field=doc.getElementById('wfCloud-'+key);assert(field,key);field.value=value;field.dispatchEvent(new Event('input'));return field;};
   return {root,doc,api,calls,client,settle,input,panel:doc.getElementById('stab-cloud'),fail:value=>{fail=value;},button:caption=>doc.getElementById('stab-cloud').querySelectorAll('button').find(button=>button.textContent===caption),language:value=>{doc.documentElement.lang=value;for(const observe of observers)observe();}};
@@ -49,9 +52,22 @@ test('owner enrollment submits explicit setup proof and clears it after failure'
   assert(h.panel.textContent.includes('Could not reach WOW'));assert(!h.panel.textContent.includes('Account verified'));
 });
 
-test('remote account administration is an explicit same-tab workspace link',async()=>{
+test('a locally linked owner keeps the explicit same-tab remote account administration link',async()=>{
   const h=fixture();await h.client.signIn({});await h.settle();const link=h.panel.querySelectorAll('a').find(link=>link.textContent==='Manage cloud accounts');assert(link);
   const url=new URL(link.href);assert.equal(url.searchParams.get('wf-cloud'),'employee');assert.equal(url.searchParams.get('wf-accounts'),'cloud');assert.equal(url.searchParams.get('workspace'),'space-1');assert.equal(link.target,undefined);
+});
+
+test('a remote owner opens the existing accounts editor without entering the employee route',async()=>{
+  const h=fixture({mode:'remote',accounts:true});await h.client.signIn({});await h.settle();const location=h.root.location.href;
+  const action=h.panel.querySelectorAll('button,a').find(node=>node.textContent==='Manage cloud accounts');assert(action);action.click();await h.settle();
+  const accounts=h.doc.getElementById('stab-accounts');assert.equal(accounts.style.display,'block');assert(accounts.textContent.includes('Owner'));
+  assert.equal(h.panel.style.display,'none');assert.equal(h.root.location.href,location);assert.equal(h.client.getSnapshot().authenticated,true);assert.equal(h.client.getSnapshot().currentAccount.id,'owner');
+});
+
+test('returning to local device accounts explicitly opts out of automatic owner continuation',async()=>{
+  const h=fixture({mode:'remote'});await h.client.signIn({});await h.settle();
+  const local=h.panel.querySelectorAll('a').find(anchor=>anchor.textContent==='Return to device workspace');assert(local);
+  const url=new URL(local.href);assert.equal(url.searchParams.get('wf-cloud'),'local');assert.equal(url.searchParams.has('workspace'),false);assert.equal(url.searchParams.has('wf-accounts'),false);
 });
 
 test('changing settings language preserves entered credentials until submission',()=>{

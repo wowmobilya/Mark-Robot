@@ -5,6 +5,10 @@ import {createRequire} from 'node:module';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const require=createRequire(import.meta.url),acorn=require('acorn');
 const html=await readFile(path.join(root,'index.html'),'utf8'),sw=await readFile(path.join(root,'sw.js'),'utf8');
+// A stale page identity reuses the previous release's automatic reload guard.
+const pageRelease=/<script\b[^>]*src="app-updates\.js[^\"]*"[^>]*data-release="(\d+)"/.exec(html)?.[1];
+const workerRelease=/\bconst CACHE_NAME\s*=\s*'wow-furniture-v(\d+)-[^']+'/.exec(sw)?.[1];
+if(!pageRelease||!workerRelease||pageRelease!==workerRelease)throw Error('App/worker release identity mismatch');
 const references=new Set([...html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"]+)"/g)].map(m=>m[1].replace(/^\.\//,'')).filter(s=>!/^https?:|^data:|^#/.test(s)));
 // This optional presentation asset is created by the music controller at runtime.
 references.add('assets/gallery/wow-ambient-v1.mp3');
@@ -33,5 +37,5 @@ const manifest=JSON.parse(await readFile(path.join(root,'manifest.json'),'utf8')
 if(manifest.name!=='Mark Robot'||manifest.short_name!=='Mark Robot'||manifest.id!=='/'||manifest.scope!=='/')throw Error('Unexpected app identity/scope');
 const config=await readFile(path.join(root,'modules/platform/cloud/wow-cloud-config.js'),'utf8');
 if(!config.includes('sldthbnigivpsqixccah')||config.includes('oxsrajzowlxydzgipquy'))throw Error('Wrong backend target');
-console.log(JSON.stringify({result:'RELEASE_SOURCE_VERIFIED',assetFiles:references.size,parsedScripts:scripts,referencedBytes:bytes,
+console.log(JSON.stringify({result:'RELEASE_SOURCE_VERIFIED',release:pageRelease,assetFiles:references.size,parsedScripts:scripts,referencedBytes:bytes,
  deployment:'Not inferred by this source check',browser:'Not executed by this source check'},null,2));
