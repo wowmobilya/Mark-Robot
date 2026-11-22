@@ -70,7 +70,7 @@ jobs:
         if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
         timeout-minutes: 2
         # Synthetic browser fixtures with local assets; no live account or credentials.
-        run: node --test tests/touch-keyboard.browser.cjs tests/dashboard-startup.browser.cjs tests/owner-recovery.browser.cjs
+        run: node --test tests/touch-keyboard.browser.cjs tests/dashboard-startup.browser.cjs tests/owner-recovery.browser.cjs tests/company-join.browser.cjs tests/chat-layout.browser.cjs
       - name: Verify synthetic closed-app push with a native service worker
         if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
         timeout-minutes: 2

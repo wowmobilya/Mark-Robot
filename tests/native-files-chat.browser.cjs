@@ -29,6 +29,7 @@ test('phone chat records and reviews media, attaches native files, and reads new
    window.chatMount=(params={roomId})=>WFChat.mount({container:document.querySelector('#chat'),api,lang:'en',params});
    window.m=chatMount();window.fm=WFFiles.mount({container:document.querySelector('#files'),api,lang:'en'});
   });
+  await page.locator('.wf-chat-attachments > summary').click();
   await page.getByRole('button',{name:'My files',exact:true}).click();
   await page.getByRole('dialog').getByRole('button',{name:/Quote.pdf/}).click();
   await page.locator('.wf-chat-send-tools').getByRole('button',{name:'Send',exact:true}).click();
@@ -38,9 +39,12 @@ test('phone chat records and reviews media, attaches native files, and reads new
   await page.getByLabel('Layout',{exact:true}).selectOption('dense');assert.equal(await page.locator('.wf-files-entries.dense').count(),1);
   await page.evaluate(()=>{m.dispose();allowed=false;m=chatMount();});
   await page.locator('.wf-chat-send-tools').getByRole('button',{name:'Send',exact:true}).waitFor();
+  await page.locator('.wf-chat-attachments > summary').click();
   assert.equal(await page.getByRole('button',{name:'My files',exact:true}).count(),0);
+  await page.locator('.wf-chat-attachments > summary').click();
   const tools=page.locator('.wf-chat-send-tools'),info=page.locator('.wf-chat-draft-info');
   for(const [button,tag] of [['Voice note','audio'],['Record video','video']]){
+    if(tag==='video')await page.locator('.wf-chat-attachments > summary').click();
     await tools.getByRole('button',{name:button,exact:true}).click();
     await page.waitForFunction(()=>captureStreams.at(-1)?.getAudioTracks()[0]?.readyState==='live');
     if(tag==='video')await info.locator('video').waitFor();

@@ -6,7 +6,7 @@ const source=readFileSync(path.join(__dirname,'../modules/platform/registry.js')
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
 
-function fixture({language='en',connection='idle',linkedOwner=false,configured=true,localRole='owner',offlineGrant=false}={}){
+function fixture({language='en',connection='idle',linkedOwner=false,configured=true,localRole='owner',offlineGrant=false,published=false,section='communications'}={}){
   class Element{
     constructor(tag='div'){this.tagName=tag.toUpperCase();this.children=[];this.dataset={};this.attributes=new Map();this.listeners=new Map();this.ownText='';this.disabled=false;
       this.classList={add(){},toggle(){}};}
@@ -20,7 +20,7 @@ function fixture({language='en',connection='idle',linkedOwner=false,configured=t
     async fire(name){if(this.disabled)return;for(const handler of this.listeners.get(name)||[])await handler({target:this});}
   }
   const account=(id,role='owner')=>({id,role,status:'active',sessionVersion:1,permissions:['communications.view','settings.view']});
-  let local={configured:true,currentAccount:account('local-owner',localRole)},route='communications',refreshAction=async()=>{};
+  let local={configured:true,currentAccount:account('local-owner',localRole)},route=section,refreshAction=async()=>{};
   let state={mode:'local',authenticated:false,linkedOwner,connection,workspaceId:'workspace',userId:null,currentAccount:null,authGeneration:0};
   const subscriptions=new Set(),events=new Map(),definitions=new Map(),mounts=[],calls={refresh:0,settings:0};
   const surface={body:new Element(),page:new Element(),actions:new Element()};
@@ -32,6 +32,11 @@ function fixture({language='en',connection='idle',linkedOwner=false,configured=t
     WFCloudSettings:{open(){calls.settings++;}},
     WFOperations:{locale:()=>language,icon:()=>'',register:def=>{definitions.set(def.id,def);return surface;},notify(){}},
     addEventListener(name,fn){if(!events.has(name))events.set(name,[]);events.get(name).push(fn);}};
+  if(published){
+    root.WOW_CLOUD_CONFIG={productionOrigin:'https://markrobot.wowfurniture.com.tr'};
+    root.location={origin:root.WOW_CLOUD_CONFIG.productionOrigin,assign(url){calls.destination=url;}};
+    root.WFCloud.entryUrl=()=>root.location.origin+'/?wf-cloud=employee&workspace=00000000-0000-4000-8000-000000000001#dashboard';
+  }
   if(offlineGrant){
     // The grant verifier supplies this authorized saved-copy projection; its
     // signature/device checks are exercised in offline-platform-grant.test.mjs.
@@ -40,8 +45,8 @@ function fixture({language='en',connection='idle',linkedOwner=false,configured=t
     root.WFModuleStore={create:()=>({})};
     root.WFOfflineOwnerGrant={retirement:()=>'initial',create:()=>({active:()=>projection,update:async()=>{},recheck(){},retire(){}})};
   }
-  vm.runInNewContext(source,{window:root,queueMicrotask,Date});
-  root.WFModules.register({id:'communications',permission:'communications.view',title:{en:'Customer communications'},mount({container}){
+  vm.runInNewContext(source,{window:root,queueMicrotask,Date,URL});
+  root.WFModules.register({id:section,permission:policy.permissionForRoute(section),title:{en:'Customer communications'},mount({container}){
     const record={disposed:false};mounts.push(record);container.append(Object.assign(new Element('p'),{textContent:'Private correspondence'}));
     return {dispose(){record.disposed=true;}};
   }});
@@ -131,4 +136,17 @@ for(const connection of ['checking','offline','error'])test('a valid saved-copy 
   assert.equal(f.calls.settings,0);assert.equal(f.mounts.length,0);
   f.verify();held?.resolve();if(click)await click;await settle();
   assert.equal(f.mounts.length,1);assert(f.surface.body.textContent.includes('Private correspondence'));
+});
+
+test('published chat leads local workers directly to company login and returns to chat',async()=>{
+  const f=fixture({published:true,localRole:'custom',section:'chat'});await settle();
+  assert.equal(f.root.WFAccountAccess.can('settings.view'),false);
+  assert.equal(f.buttons()[0]?.textContent,'Sign in to your company');
+  await f.buttons()[0].fire('click');
+  const destination=new URL(f.calls.destination);
+  assert.equal(destination.origin,f.root.location.origin);
+  assert.equal(destination.searchParams.get('wf-cloud'),'employee');
+  assert.equal(destination.searchParams.get('workspace'),'00000000-0000-4000-8000-000000000001');
+  assert.equal(destination.hash,'#chat');
+  assert.equal(f.calls.settings,0);assert.equal(f.mounts.length,0);
 });
