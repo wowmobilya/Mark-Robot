@@ -71,7 +71,7 @@
     resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
   }
   let brandList=null;
-  function clear(){brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  function clear(){window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -105,6 +105,7 @@
   }
   function submit(form,index,fn){const b=el('button',t(index));b.type='submit';form.append(b);form.onsubmit=async e=>{e.preventDefault();if(b.disabled)return;b.disabled=true;try{await fn();}catch(reason){fail(reason);}finally{b.disabled=false;}};}
   function login(){
+    window.WFPlatformShell?.reset();
     headerActions.hidden=true;headerActions.replaceChildren();
     scanner?.dispose();content.replaceChildren();const form=el('form'),email=field(form,1,'text'),pass=field(form,2,'password');
     form.className='platform-login';
@@ -533,6 +534,9 @@
     const pages=el('nav');companies.append(pages);
     if(offset)btn(pages,11,async()=>{offset=Math.max(0,offset-50);await list();});
     if(offset+50<state.total)btn(pages,12,async()=>{offset+=50;await list();});
+    // Responsive chrome and local-only company filters reuse the authorized list,
+    // without altering the authenticated data source or modifying server state.
+    window.WFPlatformShell?.mount({state,companies,menu,links,preferences:preferred});
   }
   let invite=new URLSearchParams(location.hash.slice(1)).get('invite');
   if(invite)history.replaceState(null,'',location.pathname+location.search);
