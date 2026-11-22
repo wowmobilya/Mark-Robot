@@ -970,3 +970,45 @@ html[data-theme=dark] .platform-pricing-card .platform-plan-label[data-saved=tru
  .platform-pricing-card .platform-plan-features{grid-template-columns:minmax(0,1fr)}
  .platform-pricing-card .platform-plan-feature{font-size:.76rem}
 }
+
+
+/* Turkish WhatsApp sales activation: messaging is separate from admin plan editing. */
+.platform-pricing-card .platform-plan-actions{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:.46rem;
+ align-items:stretch;min-inline-size:0;max-inline-size:100%;width:100%;margin-top:auto;
+}
+.platform-pricing-card .platform-plan-actions .platform-plan-activate{
+ display:inline-flex;align-items:center;justify-content:center;gap:.47rem;
+ min-inline-size:0;min-block-size:46px;width:100%;max-width:100%;
+ padding:.55rem .72rem;border:1px solid #148357;border-radius:12px;
+ color:white;background:#16845b;text-decoration:none;line-height:1.4;
+ text-align:center;font-size:.85rem;font-weight:800;overflow-wrap:anywhere;
+ transition:background .16s ease,transform .16s ease,box-shadow .16s ease;
+}
+.platform-pricing-card .platform-plan-activate::before{
+ content:"";display:block;flex:0 0 20px;inline-size:20px;block-size:20px;
+ background:currentColor;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M21%2011.5A8.4%208.4%200%200%201%2012.5%2020a9%209%200%200%201-4-.9L3%2021l1.9-5.5A9%209%200%200%201%204%2011.5%208.5%208.5%200%200%201%2012.5%203%208.4%208.4%200%200%201%2021%2011.5Z%22%2F%3E%3Cpath%20d%3D%22M9%209c1%203%203%205%206%206l1.4-1.4%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat;
+}
+.platform-pricing-card .platform-plan-activate:hover{
+ background:#106c49;box-shadow:0 5px 15px rgb(11 85 59 / .18);
+}
+.platform-pricing-card .platform-plan-activate:focus-visible{
+ outline:3px solid var(--text);outline-offset:3px;
+}
+.platform-pricing-card .platform-plan-actions .platform-plan-edit{
+ min-block-size:44px;min-inline-size:0;width:100%;
+ margin:0;border-color:var(--border);background:var(--ui-soft);
+ color:var(--ui-accent);border-radius:12px;font-weight:750;
+}
+.platform-pricing-card .platform-plan-actions .platform-plan-edit:hover{
+ background:var(--input);border-color:var(--ui-accent);
+}
+@media(max-width:620px){
+ .platform-pricing-card .platform-plan-actions{grid-column:1/-1;}
+}
+@media(max-width:350px){
+ .platform-pricing-card .platform-plan-actions{grid-template-columns:minmax(0,1fr);}
+}
+@media(prefers-reduced-motion:reduce){
+ .platform-pricing-card .platform-plan-activate{transition:none;}
+}
