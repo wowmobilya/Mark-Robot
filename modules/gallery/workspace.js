@@ -3,6 +3,13 @@
   const core=root.WFGalleryCore,exportsApi=root.WFGalleryExports,registry=root.WFModules,doc=root.document;
   if(!core||!exportsApi||!registry||!doc||root.WFGallery)return;
   const statuses=['pending','manufacturing','ready','delivered','cancelled'];
+  const personalWords={
+    ar:{ordersIntro:'تابع الطلبات وحالة تنفيذها في مكان واحد.',stockIntro:'يعرض هذا القسم رصيد طلباتك ومبيعاتك، دون تغيير مخزون موديلات WOW الأساسية.',noOrdersTitle:'لا توجد طلبات مسجلة بعد',noOrders:'ستظهر الطلبات هنا عند إنشائها أو ربطها بهذا الحساب. يمكنك استعراض موديلات WOW.',noStockTitle:'لا يوجد مخزون شخصي مسجل بعد',noStock:'سيظهر رصيد المنتجات عندما تُسجّل طلبات مرتبطة بهذا الحساب.',noMatchesTitle:'لا توجد عناصر مطابقة',noMatches:'غيّر البحث أو فلتر الحالة، أو اعرض العناصر المخفية.',browse:'استعراض موديلات WOW'},
+    tr:{ordersIntro:'Siparişleri ve üretim durumlarını tek yerde izleyin.',stockIntro:'Bu stok hesabınızın sipariş ve satışlarına dayanır; WOW ana ürün stokunu değiştirmez.',noOrdersTitle:'Henüz kayıtlı sipariş yok',noOrders:'Siparişler oluşturulunca veya bu hesaba bağlanınca görünür. WOW modellerine göz atabilirsiniz.',noStockTitle:'Henüz kişisel stok yok',noStock:'Bu hesaba siparişler bağlandığında stok burada görünür.',noMatchesTitle:'Eşleşen öğe bulunamadı',noMatches:'Aramayı veya durum filtresini değiştirin ya da gizli ürünleri gösterin.',browse:'WOW modellerine göz at'},
+    en:{ordersIntro:'Track your orders and their progress in one place.',stockIntro:'This balance comes from your orders and sales; it does not change WOW master product stock.',noOrdersTitle:'No orders recorded yet',noOrders:'Orders appear here after creation or linking to this account. You can browse WOW models.',noStockTitle:'No personal stock recorded yet',noStock:'Product balances appear when orders are recorded for this account.',noMatchesTitle:'No matching items',noMatches:'Change the search or status filter, or show hidden items.',browse:'Browse WOW models'},
+    fr:{ordersIntro:'Suivez vos commandes et leur avancement au même endroit.',stockIntro:'Le solde provient de vos commandes et ventes ; le stock principal WOW reste inchangé.',noOrdersTitle:'Aucune commande enregistrée',noOrders:'Les commandes apparaîtront après leur création ou leur liaison au compte. Consultez les modèles WOW.',noStockTitle:'Aucun stock personnel enregistré',noStock:'Le solde apparaîtra dès que des commandes seront liées à ce compte.',noMatchesTitle:'Aucun résultat',noMatches:'Modifiez la recherche ou le statut, ou affichez les éléments masqués.',browse:'Voir les modèles WOW'},
+    ru:{ordersIntro:'Следите за заказами и их выполнением в одном месте.',stockIntro:'Остаток основан на заказах и продажах; основной склад WOW не изменяется.',noOrdersTitle:'Заказов пока нет',noOrders:'Заказы появятся после создания или привязки к аккаунту. Вы можете просмотреть модели WOW.',noStockTitle:'Личных остатков пока нет',noStock:'Остатки появятся после регистрации заказов этого аккаунта.',noMatchesTitle:'Совпадений нет',noMatches:'Измените поиск или фильтр либо покажите скрытые позиции.',browse:'Каталог моделей WOW'}
+  };
   const routes={gallery:['gallery','gallery.view','images'],'gallery-orders':['orders','orders.view','clipboard-list'],
     'my-orders':['mine','myorders.view','package-open'],'gallery-studio':['studio','gallery.edit','sliders-horizontal']};
   const error=code=>Object.assign(new Error(code),{code});
@@ -37,8 +44,8 @@
     let products=[],orders=[],settings=core.presentation(),profile={version:0},cart=new Map(),cartNote='',sharePanel=null;
     const selected=new Set(),draft=new Map(),dialogs=new Set(),objectUrls=new Set(),imageCache=new Map(),pending=new Map();
     const abort=new AbortController(),main=el('div','wfg-workspace'),status=el('p','wfg-status'),body=el('div','wfg-body');
-    status.setAttribute('aria-live','polite');status.setAttribute('role','status');main.append(status,body);container.replaceChildren(main);
-    const text=key=>core.t(key,language),can=key=>api.can(key);
+    status.setAttribute('aria-live','polite');status.setAttribute('role','status');main.classList.add('wfg-route-'+route);main.append(status,body);container.replaceChildren(main);
+    const text=key=>core.t(key,language),can=key=>api.can(key),personalText=key=>(personalWords[language]||personalWords.en)[key]||key;
     const alive=()=>!disposed&&core.scopeKey(api.getSession())===scope;
     const assertActive=()=>{if(!alive())throw error('AUTH_REQUIRED');};
     const music=route==='gallery-studio'?root.WFGalleryMusic?.mount({container:main,api,lang,permission:routes[route][1]}):null;
@@ -178,6 +185,17 @@
       else if(route==='gallery-studio')studio();
       else if(route==='gallery-orders')adminOrders();
       else personal();
+    }
+    function emptyCard(title,message,actionLabel,handler){
+      const section=el('section','wfg-personal-empty');section.setAttribute('role','status');
+      section.append(el('h3','',title),el('p','',message));
+      if(actionLabel&&handler)section.append(button(actionLabel,handler,'wfg-primary'));
+      return section;
+    }
+    function personalIntro(){
+      const section=el('section','wfg-personal-intro'),ordersTab=tab==='orders';
+      section.append(el('h2','',text(ordersTab?'orderList':'personalStock')),el('p','',personalText(ordersTab?'ordersIntro':'stockIntro')));
+      return section;
     }
     function tabs(entries){
       const bar=el('div','wfg-tabs');bar.setAttribute('role','group');
@@ -390,7 +408,11 @@
       const area=el('div');
       const draw=()=>{area.replaceChildren();const filtered=orders.filter(order=>(!statusFilter||order.status===statusFilter)&&matches(order.number,order.customer,order.note,...order.items.map(item=>item.name)));
         const grid=el('div','wfg-order-grid');for(const order of filtered.slice(0,limit))grid.append(orderCard(order,section));
-        if(!filtered.length)grid.append(el('p','wfg-empty',text('empty')));area.append(grid);pageEnd(area,filtered.length,draw);
+        if(!filtered.length)grid.append(section==='myorders'
+          ?emptyCard(orders.length?personalText('noMatchesTitle'):personalText('noOrdersTitle'),orders.length?personalText('noMatches'):personalText('noOrders'),
+              !orders.length&&can('gallery.view')?personalText('browse'):'',()=>api.open('gallery'))
+          :el('p','wfg-empty',text('empty')));
+        area.append(grid);pageEnd(area,filtered.length,draw);
       };
       body.append(findControls(draw,{statusesFilter:true}),area);draw();
     }
@@ -419,7 +441,7 @@
       form.onsubmit=e=>e.preventDefault();
     }
     function personal(){
-      body.append(tabs([['orders','orderList'],['inventory','personalStock']]));
+      body.append(tabs([['orders','orderList'],['inventory','personalStock']]),personalIntro());
       if(tab==='orders'){renderOrders('myorders');return;}
       const tools=group();
       if(can('myorders.edit'))tools.append(button(text('printSettings'),printSettings));
@@ -427,8 +449,10 @@
       const hide=toggle(text('showHidden'),showHidden),area=el('div');
       function draw(){area.replaceChildren();const entries=orders.flatMap(order=>order.items.map(item=>({order,item}))).filter(({order,item})=>
         (!item.hidden||showHidden)&&(!statusFilter||order.status===statusFilter)&&matches(item.name,item.collection,order.number));
-        const summary=el('div','wfg-stats'),purchased=entries.reduce((n,x)=>n+(x.order.status==='cancelled'?0:x.item.quantity),0),sold=entries.reduce((n,x)=>n+x.item.sold,0);
-        summary.append(cell(text('purchased'),purchased),cell(text('sold'),sold),cell(text('remaining'),purchased-sold));area.append(summary);
+        const summary=el('div','wfg-stats'),purchased=entries.reduce((n,x)=>n+(x.order.status==='cancelled'?0:x.item.quantity),0),
+          sold=entries.reduce((n,x)=>n+(x.order.status==='cancelled'?0:x.item.sold),0);
+        summary.append(cell(text('purchased'),purchased),cell(text('sold'),sold),cell(text('remaining'),Math.max(0,purchased-sold)));
+        if(entries.length)area.append(summary);
         const grid=el('div','wfg-order-grid');for(const {order,item} of entries.slice(0,limit)){
           const card=el('article','card wfg-order');const top=el('div','wfg-holding-head');if(item.hasImage)top.append(photo({productId:item.productId,orderId:order.id},''));
           const desc=el('div');desc.append(el('small','',order.number+' · '+text(order.status)),el('h3','',item.name));if(order.deliveredAt)desc.append(el('small','',showDate(order.deliveredAt)));top.append(desc);
@@ -438,10 +462,14 @@
           if(can('myorders.edit')){const sell=button(text('sale'),()=>saleForm(order,item),'wfg-primary');sell.disabled=!['ready','delivered'].includes(order.status)||item.sold>=item.quantity;actions.append(sell,button(text('edit'),()=>linePreferences(order,item)));}
           if(can('myorders.print')||can('myorders.export'))actions.append(button(text('printOne'),()=>showDoc(exportsApi.makeDocument([order],{lang:language,personal:true,profile,only:{orderId:order.id,productId:item.productId}}),'myorders')));
           card.append(actions);grid.append(card);
-        }if(!entries.length)grid.append(el('p','wfg-empty',text('empty')));area.append(grid);pageEnd(area,entries.length,draw);
+        }if(!entries.length)grid.append(emptyCard(orders.length?personalText('noMatchesTitle'):personalText('noStockTitle'),
+          orders.length?personalText('noMatches'):personalText('noStock'),
+          !orders.length&&can('gallery.view')?personalText('browse'):'',()=>api.open('gallery')));
+        area.append(grid);pageEnd(area,entries.length,draw);
       }
-      hide.node.onchange=()=>{showHidden=hide.node.checked;draw();};tools.append(hide.wrap);
-      body.append(tools,findControls(draw,{statusesFilter:true}),area);draw();
+      hide.node.onchange=()=>{showHidden=hide.node.checked;draw();};
+      const filters=findControls(draw,{statusesFilter:true});filters.append(hide.wrap);
+      if(tools.childElementCount)body.append(tools);body.append(filters,area);draw();
     }
     function saleForm(order,item){
       const modal=dialog(text('sale')+' · '+item.name),form=el('form','wfg-form'),count=numeric(1,1,item.quantity-item.sold),
