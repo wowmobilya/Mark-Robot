@@ -70,8 +70,8 @@
     });
     resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
   }
-  let brandList=null;
-  function clear(){window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  let brandList=null,subscriptionClocks=null;
+  function clear(){subscriptionClocks?.dispose();subscriptionClocks=null;window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -513,7 +513,7 @@
   window.addEventListener('hashchange',()=>showDestination?.());
   async function list(){
     const ticket=++generation,state=await request('company.list',{offset});if(ticket!==generation)return;
-    scanner?.dispose();scanner=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
+    scanner?.dispose();scanner=null;subscriptionClocks?.dispose();subscriptionClocks=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
     const labels=destinations[lang.value],settingsText=settingsWords[lang.value],homepage=homeWords[lang.value];
     const ids=['home','companies','plans','support','calls','settings'],titles=[homepage.heading,labels[0],labels[1],labels[2],labels[5],settingsText[0]],panels={},links={};
     nav.className='platform-account-bar';menu.className='platform-section-menu';menu.setAttribute('aria-label',labels[3]);
@@ -682,6 +682,7 @@
           entry.target.querySelector('.platform-company-refresh')?.click();
         }
       },{rootMargin:'100px 0px'}):null;
+    const clockCards=[];
     for(const company of state.companies){
       const row=el('article'),active=company.status==='active',link=el('button',t(16));
       row.className='platform-company-card platform-company-card-v2';link.className='platform-company-launch';
@@ -739,7 +740,9 @@
       health.append(healthTitle,linkState,refresh);
       summaryLine.append(health,live);
       actions.append(link);
-      companyFoldBody.append(summaryLine,actions);row.append(hero,pills,companyFold);
+      const subscriptionHost=el('div');subscriptionHost.className='platform-company-subscription';
+      clockCards.push({id:company.id,host:subscriptionHost});
+      companyFoldBody.append(summaryLine,actions);row.append(hero,pills,subscriptionHost,companyFold);
       const details=el('details'),summary=el('summary',companyMenu[lang.value]),tools=el('div');
       details.className='platform-company-tools';tools.className='platform-company-actions-grid';details.open=expandedCompany===company.id;
       details.ontoggle=()=>{
@@ -786,6 +789,7 @@
     if(offset+50<state.total)btn(pages,12,async()=>{offset+=50;await list();});
     // Responsive chrome and local-only company filters reuse the authorized list,
     // without altering the authenticated data source or modifying server state.
+    subscriptionClocks=window.WFPlatformSubscriptionClocks?.mount({cards:clockCards,request,language:lang.value})||null;
     window.WFPlatformShell?.mount({state,companies,menu,links,preferences:preferred});
     window.WFPlatformAnalytics?.mount({host:panels.home,state,request,language:lang.value});
   }
