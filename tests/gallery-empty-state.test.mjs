@@ -68,6 +68,10 @@ test('gallery music remains available within its management section',async()=>{
     await settle(()=>f.requests.length>0);
     assert.equal(f.musicMounts(),1);
     assert.equal(f.requests[0].payload.manage,true);
+    await settle(()=>descendants(f.container).some(e=>e.tagName==='BUTTON'&&e.textContent==='Products'));
+    const nativeProducts=descendants(f.container).find(e=>e.tagName==='BUTTON'&&e.textContent==='Products');
+    await nativeProducts.fire('click');
+    assert.deepEqual(f.opened,['main:products'],'Gallery management must open WOW primary products, not an unregistered module');
   }finally{handle.dispose();}
 });
 
