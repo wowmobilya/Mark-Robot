@@ -6,13 +6,15 @@
   const locales=['ar','en','tr','fr','ru'];
   const words={
     platform:['لوحة إدارة الشركات','Company administration','Şirket yönetimi','Gestion des entreprises','Управление компаниями'],
-    title:['السحابة والوصول عن بُعد','Cloud and remote access','Bulut ve uzaktan erişim','Cloud et accès distant','Облако и удалённый доступ'],
+    title:["الشركة والمزامنة", "Company and sync", "Şirket ve eşitleme", "Société et synchronisation", "Компания и синхронизация"],
     intro:['حسابات WOW ومزامنة العمل مع الحفاظ على مساحة جهازك.','WOW accounts and work sync, with your device workspace preserved.','Cihaz çalışma alanınızı koruyarak WOW hesapları ve iş eşitlemesi.','Comptes WOW et synchronisation, avec conservation de votre espace local.','Учётные записи WOW и синхронизация с сохранением локального пространства.'],
     localScope:['مساحة جهاز المالك','Owner device workspace','Sahibin cihaz çalışma alanı','Espace local du propriétaire','Локальное пространство владельца'],
-    remoteScope:['مساحة الحساب السحابية','Cloud account workspace','Bulut hesabı çalışma alanı','Espace du compte cloud','Пространство облачной учётной записи'],
-    scopeHint:['حسابات هذا الجهاز وحسابات السحابة منفصلة. أنشئ حسابات الموظفين عن بُعد من إدارة حسابات السحابة.','Device accounts and cloud accounts are separate. Create remote employees in Cloud accounts.','Cihaz hesapları ile bulut hesapları ayrıdır. Uzak çalışanları Bulut hesapları bölümünde oluşturun.','Les comptes locaux et cloud sont distincts. Créez les employés distants dans Comptes cloud.','Локальные и облачные учётные записи разделены. Создавайте удалённых сотрудников в разделе облачных учётных записей.'],
-    ownerPair:['ربط حساب المالك','Connect owner account','Sahip hesabını bağla','Connecter le compte propriétaire','Подключить учётную запись владельца'],
-    signIn:['تسجيل الدخول والربط','Sign in and connect','Giriş yap ve bağlan','Se connecter et associer','Войти и подключить'],
+    remoteScope:["مساحة الشركة", "Company workspace", "Şirket çalışma alanı", "Espace de la société", "Рабочее пространство компании"],
+    scopeHint:["افتح مساحة شركتك بحسابك المعتمد أو برابط دعوة الشركة.", "Open your company with an approved account or a company invitation.", "Şirketinizi onaylı hesap veya şirket davetiyle açın.", "Ouvrez votre société avec un compte approuvé ou une invitation.", "Откройте компанию через одобренную учётную запись или приглашение."],
+    companySignIn:["الدخول إلى الشركة", "Company sign-in", "Şirkete giriş", "Connexion à la société", "Вход в компанию"],
+    join:["الانضمام إلى شركة", "Join a company", "Şirkete katıl", "Rejoindre une société", "Присоединиться к компании"],
+    ownerPair:["حساب المالك", "Owner account", "Sahip hesabı", "Compte propriétaire", "Учётная запись владельца"],
+    signIn:["تسجيل الدخول", "Sign in", "Giriş yap", "Connexion", "Войти"],
     enroll:['إعداد مالك WOW','Set up WOW owner','WOW sahibini oluştur','Configurer le propriétaire WOW','Настроить владельца WOW'],
     enrollHint:['استخدم رمز الإعداد الخاص بك لمرة واحدة، واختر اسم الدخول وكلمة المرور. لا تُنقل كلمات مرور الحسابات المحلية.','Use your private one-time setup code and choose a username and password. Local account passwords are not transferred.','Özel, tek kullanımlık kurulum kodunuzla kullanıcı adı ve parola seçin. Yerel hesap parolaları aktarılmaz.','Utilisez votre code privé à usage unique et choisissez un identifiant et un mot de passe. Les mots de passe locaux ne sont pas transférés.','Введите личный одноразовый код настройки и выберите имя пользователя и пароль. Локальные пароли не переносятся.'],
     setupToken:['رمز إعداد المالك','Owner setup code','Sahip kurulum kodu','Code de configuration propriétaire','Код настройки владельца'],
@@ -33,7 +35,7 @@
     dashboard:['لوحة تحكم Supabase','Supabase dashboard','Supabase kontrol paneli','Tableau de bord Supabase','Панель управления Supabase'],
     connection:['الاتصال','Connection','Bağlantı','Connexion','Подключение'],workspace:['مساحة العمل','Workspace','Çalışma alanı','Espace de travail','Рабочее пространство'],
     account:['الحساب السحابي','Cloud account','Bulut hesabı','Compte cloud','Облачная учётная запись'],
-    idle:['جاهز للربط','Ready to connect','Bağlanmaya hazır','Prêt à connecter','Готово к подключению'],
+    idle:["جاهز لتسجيل الدخول", "Ready for sign-in", "Girişe hazır", "Prêt pour la connexion", "Можно войти"],
     online:['متصل ومتحقق منه','Connected and verified','Bağlı ve doğrulandı','Connecté et vérifié','Подключение проверено'],
     syncing:['جارٍ مزامنة التغييرات…','Syncing changes…','Değişiklikler eşitleniyor…','Synchronisation en cours…','Синхронизация изменений…'],
     syncError:['المزامنة تحتاج إلى مراجعة','Sync needs attention','Eşitleme kontrol gerektiriyor','Synchronisation à vérifier','Синхронизация требует проверки'],
@@ -44,13 +46,13 @@
     syncFailed:['تعذّر إكمال المزامنة. تبقى التغييرات المحلية محفوظة بانتظار إعادة المحاولة.','Sync could not complete. Local changes remain saved for retry.','Eşitleme tamamlanamadı. Yerel değişiklikler yeniden denemek için kayıtlı tutulur.','La synchronisation a échoué. Les modifications locales restent enregistrées pour réessayer.','Не удалось завершить синхронизацию. Локальные изменения сохранены для повторной попытки.'],
     offline:['لا يوجد اتصال بالخادم','Server unreachable','Sunucuya erişilemiyor','Serveur inaccessible','Сервер недоступен'],
     checking:['جارٍ التحقق…','Verifying…','Doğrulanıyor…','Vérification…','Проверка…'],
-    signedOut:['غير مسجل في السحابة','Signed out of cloud','Bulut oturumu kapalı','Déconnecté du cloud','Вход в облако не выполнен'],
+    signedOut:["لم يتم تسجيل الدخول", "Signed out", "Oturum kapalı", "Déconnecté", "Вход не выполнен"],
     unconfigured:['الربط السحابي غير مهيأ','Cloud not configured','Bulut yapılandırılmadı','Cloud non configuré','Облако не настроено'],
     pending:['تغييرات بانتظار المزامنة','Pending changes','Bekleyen değişiklikler','Modifications en attente','Ожидающие изменения'],
     conflicts:['اختلافات محفوظة للمراجعة','Saved conflicts to review','İncelenecek kayıtlı çakışmalar','Conflits conservés à examiner','Сохранённые конфликты'],
     lastSync:['آخر مزامنة مكتملة','Last completed sync','Son tamamlanan eşitleme','Dernière synchronisation terminée','Последняя завершённая синхронизация'],
     never:['لم تكتمل مزامنة بعد','No completed sync yet','Henüz eşitleme tamamlanmadı','Aucune synchronisation terminée','Синхронизация ещё не завершена'],
-    connected:['تم التحقق من الحساب وربط مساحة WOW.','Account verified and WOW workspace connected.','Hesap doğrulandı ve WOW çalışma alanı bağlandı.','Compte vérifié et espace WOW connecté.','Учётная запись проверена, пространство WOW подключено.'],
+    connected:["تم التحقق من حساب الشركة.", "Company account verified.", "Şirket hesabı doğrulandı.", "Compte de société vérifié.", "Учётная запись компании подтверждена."],
     savedOffline:['بيانات الجهاز محفوظة؛ ستُرسل التغييرات المعلقة بعد عودة الاتصال والتحقق من الحساب.','Device data is saved. Pending changes send after connectivity and account verification return.','Cihaz verileri kayıtlıdır. Bekleyen değişiklikler bağlantı ve hesap doğrulaması geri geldiğinde gönderilir.','Les données locales sont enregistrées. Les modifications seront envoyées après reconnexion et vérification.','Локальные данные сохранены. Изменения отправятся после восстановления связи и проверки учётной записи.'],
     syncUnavailable:['محرك المزامنة غير جاهز. أعد تحميل البرنامج.','Sync is not ready. Reload the app.','Eşitleme hazır değil. Uygulamayı yenileyin.','La synchronisation n’est pas prête. Rechargez l’application.','Синхронизация не готова. Обновите приложение.'],
     networkError:['تعذّر الاتصال بخادم WOW. تحقق من الإنترنت وأعد المحاولة.','Could not reach WOW. Check the connection and retry.','WOW sunucusuna ulaşılamadı. Bağlantıyı kontrol edip tekrar deneyin.','WOW est inaccessible. Vérifiez la connexion et réessayez.','Сервер WOW недоступен. Проверьте подключение и повторите попытку.'],
@@ -172,6 +174,13 @@
     for(const input of Object.values(fields))input.disabled=busy;
     if(saveButton)saveButton.disabled=busy||!client.isConfigured();if(cancelButton)cancelButton.disabled=busy;
     actions.replaceChildren();
+    const published=!!root.WOW_CLOUD_CONFIG?.productionOrigin&&root.location?.origin===root.WOW_CLOUD_CONFIG.productionOrigin;
+    if(published&&!state.authenticated&&client.isConfigured()){
+      const entry=new URL(client.entryUrl()),join=new URL(entry.href);
+      join.searchParams.set('join','1');join.hash='';
+      actions.append(linkButton('companySignIn',entry.href),linkButton('join',join.href));
+      if(!client.isRemote())form.hidden=true;
+    }
     if(state.authenticated){
       actions.append(button('sync',()=>perform(async()=>{await root.wfInitializeCloudSync?.();if(!root.WFCloudSyncEngine?.syncNow)throw Object.assign(Error('SYNC_UNAVAILABLE'),{code:'SYNC_UNAVAILABLE'});await root.WFCloudSyncEngine.syncNow();})),button('refresh',()=>perform(()=>client.refresh())),button('signOut',()=>perform(()=>client.signOut())));
       if(state.role==='owner'){
@@ -180,8 +189,8 @@
         else{const url=new URL(client.entryUrl());url.searchParams.set('wf-accounts','cloud');url.hash='settings';actions.prepend(linkButton('manage',url.href));}
       }
     }
-    if(client.isRemote()){const url=new URL(root.location.href);url.searchParams.set('wf-cloud','local');url.searchParams.delete('workspace');url.searchParams.delete('wf-accounts');url.hash='settings';actions.append(linkButton('local',url.href));}
-    const dashboard=client.getConfig().dashboardUrl;if(/^https:\/\/supabase\.com\/dashboard\/project\//.test(dashboard)){const anchor=linkButton('dashboard',dashboard);anchor.target='_blank';anchor.rel='noopener noreferrer';actions.append(anchor);}
+    if(client.isRemote()&&!published){const url=new URL(root.location.href);url.searchParams.set('wf-cloud','local');url.searchParams.delete('workspace');url.searchParams.delete('wf-accounts');url.hash='settings';actions.append(linkButton('local',url.href));}
+    const dashboard=client.getConfig().dashboardUrl;if(!published&&/^https:\/\/supabase\.com\/dashboard\/project\//.test(dashboard)){const anchor=linkButton('dashboard',dashboard);anchor.target='_blank';anchor.rel='noopener noreferrer';actions.append(anchor);}
     for(const control of actions.querySelectorAll('button'))control.disabled=busy;
     details.replaceChildren();
     if(engineError&&syncNeedsAttention){

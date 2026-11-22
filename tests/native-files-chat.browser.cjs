@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),path=require('node:path');
 const {chromium}=require('playwright');
-test('phone chat attaches an existing authorized file by reference; gallery file view switches to compact',async()=>{
+test('phone chat records and reviews media, attaches native files, and reads new support messages on demand',async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required']});
  try{
   const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true});
