@@ -15,8 +15,9 @@ $$;
 -- Count linked staff phones from verified installation bindings, excluding the owner.
 -- Push subscriptions alone are not a trustworthy tally of installed phones.
 create or replace function wow_limits.devices_used(wid uuid) returns bigint language sql stable set search_path='' as $$
- select count(*) from public.wow_account_installations i join public.wow_accounts a on a.id=i.account_id
- where a.workspace_id=wid and a.role<>'owner' and a.deleted_at is null;
+ select greatest(count(*) - case when coalesce(bool_or(a.role='owner'),false) then 1 else 0 end,0)
+ from public.wow_account_installations i join public.wow_accounts a on a.id=i.account_id
+ where a.workspace_id=wid and a.deleted_at is null;
 $$;
 -- Only media-connected durations count; unanswered calls consume no time.
 -- This is the current UTC month and uses the last server-authorized expiry.
