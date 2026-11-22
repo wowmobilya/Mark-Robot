@@ -34,7 +34,8 @@
     "modules/group-call-push.sql",
     "modules/account-installations.sql",
     "modules/missed-call-push.sql",
-    "modules/company-directory-index.sql"
+    "modules/company-directory-index.sql",
+    "modules/platform-brand.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",

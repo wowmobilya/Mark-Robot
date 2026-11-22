@@ -63,6 +63,7 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
   return {
     rpc:(action,data)=>call('/rest/v1/rpc/wow_service',{body:{p_action:action,p_data:data},kind:'rpc'}),
     deviceSession:(action,data)=>call('/rest/v1/rpc/wow_device_session',{body:{p_action:action,p_data:data},kind:'rpc'}),
+    brandRpc:(actor,action,data)=>call('/rest/v1/rpc/wow_platform_brand',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
     manageDevices:(actor,action,data)=>call('/rest/v1/rpc/wow_manage_devices',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
     pushRpc:(action,data)=>call('/rest/v1/rpc/wow_push_worker',{body:{p_action:action,p_data:data},kind:'rpc'}),
     statementWorker:(action,data)=>call('/rest/v1/rpc/wow_statement_worker',{body:{p_action:action,p_data:data},kind:'rpc'}),

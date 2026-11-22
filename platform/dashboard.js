@@ -70,7 +70,8 @@
     });
     resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
   }
-  function clear(){authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  let brandList=null;
+  function clear(){brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -438,6 +439,7 @@
         invitation.append(qr);
       }).catch(()=>{}); // The selectable setup URL and code are already available.
     }
+    brandList?.dispose();brandList=window.WFPlatformBrand?.create({request,config,language:lang.value});
     for(const company of state.companies){
       const row=el('article'),active=company.status==='active',link=el('a',t(16));
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',company.id);
@@ -450,6 +452,7 @@
         if(details.open)expandedCompany=company.id;else if(expandedCompany===company.id)expandedCompany=null;
       };
       details.append(summary,tools);row.append(details);
+      brandList?.attach(row,details,company);
       const accounts=el('a',sale(12)),accountsUrl=new URL(url);
       accountsUrl.searchParams.set('wf-accounts','cloud');accountsUrl.hash='settings';accounts.href=accountsUrl.href;tools.append(accounts);
       const editArea=el('section');editArea.className='platform-inline-editor';

@@ -111,6 +111,8 @@ const urlsToCache = [
   './platform/index.html',
   './platform/install.js?v=2',
   './platform/support.js?v=2',
+  './platform/company-brand.css?v=1',
+  './platform/company-brand.js?v=1',
   './platform/preferences.js?v=1',
   './platform/relay.js?v=1',
   './support-settings.js?v=1',
