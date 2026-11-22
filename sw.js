@@ -108,7 +108,7 @@ const urlsToCache = [
   './wow-dialog.js?v=1',
   './wow-dialog.css?v=1',
   './platform/index.html',
-  './platform/install.js?v=1',
+  './platform/install.js?v=2',
   './platform/support.js?v=2',
   './platform/relay.js?v=1',
   './support-settings.js?v=1',

@@ -4,7 +4,7 @@ const fs=require('node:fs'),http=require('node:http'),path=require('node:path');
 const {chromium}=require('playwright');
 const base=path.resolve(__dirname,'..');
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.webmanifest':'application/manifest+json','.png':'image/png'};
-test('direct admin install is separate from WOW and offline launch exposes only reconnect and return',async()=>{
+test('direct admin install is separate from WOW and offline launch keeps reconnect inside the admin app',async()=>{
   const server=http.createServer((req,res)=>{
     const url=new URL(req.url,'http://localhost');
     const pathname=decodeURIComponent(url.pathname.replace(/\/$/,'/index.html'));
@@ -25,7 +25,7 @@ test('direct admin install is separate from WOW and offline launch exposes only 
     for(const key of ['id','start_url','scope'])assert.equal(new URL(config[key],manifest.url).href,admin);
     const check=await cdp.send('Page.getInstallabilityErrors');assert.deepEqual(check.installabilityErrors,[]);
     for(const icon of config.icons){const image=await page.request.get(new URL(icon.src,manifest.url).href);assert.equal(image.status(),200);assert.equal((await image.body()).readUInt32BE(16),Number(icon.sizes.split('x')[0]));}
-    await page.selectOption('#lang','en');assert.equal(await page.locator('#backToWow').getAttribute('href'),'../');
+    await page.selectOption('#lang','en');assert.equal(await page.locator('#backToWow').count(),0);
     await page.locator('#installPlatform').click();if(await page.locator('#installHint').isVisible())assert.match(await page.locator('#installHint').innerText(),/Home Screen/);
     const standalone=await chromium.launchPersistentContext('',{executablePath:process.env.CHROMIUM_PATH||undefined,headless:true,args:['--app='+admin]});
     try{
@@ -33,12 +33,12 @@ test('direct admin install is separate from WOW and offline launch exposes only 
       await app.waitForFunction(()=>matchMedia('(display-mode: standalone)').matches&&document.querySelector('#installPlatform')?.hidden);
       assert.equal(await app.locator('#installPlatform').isVisible(),false);
       assert.equal(await app.locator('input[type=password]').isVisible(),true);
-      assert.equal(new URL(await app.locator('#backToWow').getAttribute('href'),admin).href,origin+'/');
+      assert.equal(await app.locator('#backToWow').count(),0);
     }finally{await standalone.close();}
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     assert.deepEqual(await page.evaluate(()=>caches.keys()),[]);
     await context.setOffline(true);await page.reload();assert.match(await page.locator('main').innerText(),/internet/i);assert.equal(await page.locator('input').count(),0);
-    assert.equal(await page.locator('a[href="../"]').getAttribute('href'),'../');
+    assert.equal(await page.locator('a[href="../"]').count(),0);
     await assert.rejects(()=>page.goto(admin+'?setup=test',{timeout:5000}));
 
   }finally{await context.close();await new Promise(resolve=>server.close(resolve));}
