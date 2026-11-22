@@ -24,6 +24,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
           case 'auth.signIn':response={session:{access_token:'local-fixture',expires_at:Math.floor(Date.now()/1000)+300}};break;
           case 'platform.support.list':response={cases:[],unreadCases:0};break;
           case 'platform.company.list':response={total:created?1:0,companies:created?[{id:wid,name:companyName,accounts:0,status:companyStatus}]:[]};break;
+          case 'platform.company.subscriptionSummaries':
+            response={checkedAt:new Date().toISOString(),subscriptions:body.workspaceIds.map(id=>({
+              workspaceId:id,planId:assigned?.id||null,planName:assigned?.name||null,expiresAt,hasSubscription:!!assigned}))};break;
+          case 'platform.company.inspect':
+            assert.equal(body.workspaceId,wid);
+            response={readOnly:true,capturedAt:new Date().toISOString(),workspace:{id:wid,name:companyName,status:companyStatus},
+              section:body.section,offset:body.offset,total:0,items:[],
+              summary:{recordsByType:{},accounts:0,registeredDevices:linked.length,unclosedSessions:0,galleryOrders:0,files:0}};break;
           case 'platform.company.create':assert.match(body.setupToken,/^[0-9a-f]{64}$/);created=true;response={workspaceId:wid};break;
           case 'platform.company.devices':
             assert.equal(body.workspaceId,wid);response={devices:linked,total:linked.length};break;
@@ -69,7 +77,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
       if(f==='vendor/zxing-browser.min.js')qrDownloads++;
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/analytics.js','platform/admin-audio.js','platform/pricing-cards.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/analytics.js','platform/admin-audio.js','platform/pricing-cards.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js','platform/company-inspect.css','platform/company-inspect.js','platform/subscription-clocks.js','platform/developer-entry.js','developer-profile.js','developer-profile.css'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
     await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');
@@ -93,7 +101,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       assert(metrics.header.right<=width+1,JSON.stringify(metrics));
     }
     await page.setViewportSize({width:390,height:844});
-    await page.locator('#lang').selectOption('en');
+    await page.locator('#lang').selectOption('en',{force:true});
     const founderInput=page.getByLabel('Founder username');await founderInput.tap();
     assert.equal(await founderInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);
     await founderInput.pressSequentially('fixture');
@@ -105,9 +113,9 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       await page.waitForFunction(expected=>document.querySelector('#status').textContent.includes(expected),expected);
     }
     assert.equal(await page.locator('.wf-founder-check').count(),0);
-    await page.locator('#lang').selectOption('ar');assert.match(await page.locator('#status').innerText(),/صلاحية مؤسس/);
+    await page.locator('#lang').selectOption('ar',{force:true});assert.match(await page.locator('#status').innerText(),/صلاحية مؤسس/);
     assert.equal(events.includes('platform.support.list'),false);
-    await page.locator('#lang').selectOption('en');rejection='ok';
+    await page.locator('#lang').selectOption('en',{force:true});rejection='ok';
     await page.getByLabel('Founder username').fill('fixture');await page.getByLabel('Password',{exact:true}).fill(randomUUID());
     await page.getByRole('button',{name:'Sign in'}).click();
     await page.getByText('No support messages.',{exact:true}).waitFor();
@@ -131,8 +139,8 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.notEqual(await page.locator('html').getAttribute('data-theme'),themeBefore);
     await page.locator('#platformThemeToggle').click();
     assert.equal(await page.locator('html').getAttribute('data-theme'),themeBefore);
-    const settingsLink=menu.getByRole('link',{name:'Settings'});
-    await settingsLink.click();
+    const settingsLink=menu.getByRole('link',{name:'Settings',includeHidden:true});
+    await sideButton.click();await drawer.getByRole('link',{name:'Settings'}).first().click();
     const settingsPage=page.locator('#platform-page-settings');
     await settingsPage.getByRole('heading',{name:'Founder account'}).waitFor();
     assert.equal(await settingsLink.getAttribute('aria-current'),'page');
@@ -148,9 +156,9 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(await settingsPage.getByRole('heading',{name:'Settings',exact:true}).isVisible(),true);
     await page.locator('.platform-header-actions').getByRole('link',{name:'Support inbox'}).click();
     await page.locator('#platform-page-support').waitFor();
-    await page.locator('.platform-header-actions').getByRole('link',{name:'Back to dashboard'}).click();
+    await menu.getByRole('link',{name:'Home'}).click();
     await page.locator('#platform-page-home').waitFor();
-    await settingsLink.click();
+    await sideButton.click();await drawer.getByRole('link',{name:'Settings'}).first().click();
     for(const [code,title] of [['ar','الإعدادات'],['tr','Ayarlar'],['fr','Réglages'],['ru','Настройки'],['en','Settings']]){
       await page.locator('#lang').selectOption(code);
       await settingsPage.getByRole('heading',{name:title,exact:true}).waitFor();
@@ -159,14 +167,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     }
     for(const width of [320,360,375,390,430,768,820,1024,1180,1280,1440]){
       await page.setViewportSize({width,height:844});
-      await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash==='#home');
+      await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash==='#companies');
       const metrics=await menu.evaluate(element=>({position:getComputedStyle(element).position,bottom:element.getBoundingClientRect().bottom,
-        links:[...element.querySelectorAll('a')].map(a=>({height:a.getBoundingClientRect().height,width:a.getBoundingClientRect().width,path:a.hash})),
+        links:[...element.querySelectorAll('a')].filter(a=>a.getClientRects().length).map(a=>({height:a.getBoundingClientRect().height,width:a.getBoundingClientRect().width,path:a.hash})), 
         overflow:document.documentElement.scrollWidth>innerWidth}));
       assert(!metrics.overflow);
       assert(metrics.links.every(link=>link.height>=44&&link.width>=44));
-      if(width<=1024){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[0].path,'#home');assert.equal(metrics.links[3].path,'#support');}
-      else if(width>1024){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[0].path,'#home');}
+      if(width<=1024){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links.length,5);assert.equal(metrics.links[2].path,'#home');}
+      else if(width>1024){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[2].path,'#home');}
     }
     // iPhone/iPad/Android/tablet/desktop breakpoints and orientation changes.
     await page.setViewportSize({width:863,height:388});
@@ -216,6 +224,9 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(await page.locator('[data-metric=paused] .platform-analytics-value').textContent(),'0');
     assert.equal(await page.locator('[data-metric=accounts] .platform-analytics-value').textContent(),'0');
     await page.waitForFunction(()=>Number.parseFloat(document.querySelector('.platform-analytics-donut').style.getPropertyValue('--platform-active-share'))===100);
+    const companyFold=page.locator('.platform-company-fold');
+    assert.equal(await companyFold.getAttribute('open'),null,'company is folded by default');
+    await companyFold.locator('summary').first().click();
     await page.locator('.platform-company-link-pill[data-link-state=pending]').waitFor();
     assert.match(await page.locator('.platform-company-link-pill').innerText(),/Awaiting owner activation/);
     assert.equal(await page.locator('.platform-company-connectivity>small').isVisible(),true);
@@ -242,7 +253,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       await page.setViewportSize(size);
       const box=await page.locator('.platform-company-card-v2').evaluate(card=>{
         const r=card.getBoundingClientRect();
-        const buttons=[...card.querySelectorAll('.platform-company-primary-actions a,.platform-company-refresh,.platform-company-tools summary')].map(x=>{
+        const buttons=[...card.querySelectorAll('.platform-company-primary-actions button,.platform-company-refresh,.platform-company-tools summary')].map(x=>{
           const box=x.getBoundingClientRect();return {width:box.width,height:box.height,right:box.right,left:box.left};
         });
         return {left:r.left,right:r.right,overflow:document.documentElement.scrollWidth>innerWidth,buttons};
@@ -253,10 +264,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.setViewportSize({width:390,height:844});
     assert.equal(await page.getByText('No support messages.',{exact:true}).isVisible(),false);
     assert.equal(await page.getByRole('img',{name:'Verified platform administrator'}).count(),1);
-    assert.equal(await page.getByText('Open company program').getAttribute('target'),null);
+    assert.equal(await page.getByRole('button',{name:'Open company program'}).count(),1);
+    await page.getByRole('button',{name:'Open company program'}).click();
+    assert.equal(await page.locator('.wf-inspect').getAttribute('aria-modal'),'true');
+    await page.locator('.wf-inspect-back').click();
     await page.getByText('Manage company',{exact:true}).click();
-    const adminUrl=new URL(await page.getByRole('link',{name:'Manage company accounts'}).getAttribute('href'));
-    assert.equal(adminUrl.searchParams.get('workspace'),wid);assert.equal(adminUrl.searchParams.get('wf-accounts'),'cloud');
+    await page.getByRole('button',{name:'Manage company accounts'}).click();
+    await page.locator('.wf-inspect-nav-item[data-section=accounts][aria-current=page]').waitFor();
+    await page.locator('.wf-inspect-back').click();
     await page.getByRole('button',{name:'Linked devices'}).click();
     const ownerDevice=page.locator('.platform-linked-device').filter({hasText:'Fixture owner'});
     await ownerDevice.getByRole('button',{name:'Block device'}).click();await ownerDevice.getByRole('form').getByRole('button',{name:'Block device'}).click();
@@ -378,7 +393,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.waitForFunction(form=>!form.isConnected,oldForm);await assignment.getByRole('combobox').selectOption('');assert.equal(await assignment.getByLabel('Subscription expiry').inputValue(),'');
     await assignment.getByRole('button',{name:'Save'}).click();await userUsage.nth(1).getByText('Unlimited',{exact:true}).waitFor();
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-    await page.locator('#lang').selectOption('ar');
+    await page.locator('#lang').selectOption('ar',{force:true});
     await company.getByRole('button',{name:'الاشتراك والاستخدام'}).click();
     await page.locator('.platform-usage-value bdi').first().waitFor();
     for(const width of [320,390,1024]){
@@ -395,7 +410,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       for(const row of metrics.values){assert.equal(row.length,3);for(const value of row)assert(value.caption&&value.width>=42&&value.left>=0&&value.right<=width);assert(row[0].left>row[1].left&&row[1].left>row[2].left);}
       assert(metrics.controls.every(height=>height>=44));assert(metrics.checkboxLabel>=44,'checkbox has a >=44px labelled touch target');
     }
-    await page.goto(scope+'/platform/');await page.locator('#lang').selectOption('en');
+    await page.goto(scope+'/platform/');await page.locator('#lang').selectOption('en',{force:true});
     await page.getByText('Company owner invitation').click();
     await page.getByLabel('Owner invitation link').fill('https://outside.invalid/platform/');await page.getByRole('button',{name:'Open invitation'}).click();
     await page.getByText('Check the WOW invitation link and setup code.').waitFor();assert.equal(new URL(page.url()).origin,scope);
@@ -449,7 +464,7 @@ test('trusted founder device rotates, revalidates founder access and forgets log
       if(trusted)await page.getByRole('checkbox').check();
       await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.locator('.wf-founder-check').waitFor();
     };
-    const open=async()=>{await page.goto(endpoint+'/platform/');await page.locator('#lang').selectOption('en');};
+    const open=async()=>{await page.goto(endpoint+'/platform/');await page.locator('#lang').selectOption('en',{force:true});};
     await open();await signin(false);await open();await page.getByLabel('Founder username').waitFor();assert(!events.includes('auth.refresh'));
     await signin(true);const first=refresh;
     const stored=await page.evaluate(()=>Object.values(localStorage).join());assert(stored.includes(first)&&!stored.includes('not-a-real-password')&&!stored.includes('access-'));
@@ -457,12 +472,15 @@ test('trusted founder device rotates, revalidates founder access and forgets log
     await page.evaluate(()=>dispatchEvent(new Event('offline')));assert.equal(await page.locator('.wf-founder-check').count(),0);
     await page.evaluate(()=>dispatchEvent(new Event('online')));await page.locator('.wf-founder-check').waitFor();
     const peer=await context.newPage();await peer.goto(endpoint+'/platform/');await peer.locator('.wf-founder-check').waitFor();
-    await page.locator('#lang').selectOption('en');await page.getByRole('button',{name:'Sign out'}).click();
+    await page.locator('#lang').selectOption('en',{force:true});
+    page.once('dialog',dialog=>dialog.accept());
+    await page.locator('#platformMenuButton').click();
+    await page.locator('#platformSideDrawer .platform-drawer-signout').click();
     await peer.locator('.platform-login').waitFor();assert(events.includes('auth.signOut'));await peer.close();
     await signin(true);permitted=false;await page.reload();await page.locator('.platform-login').waitFor();await page.waitForFunction(()=>!Object.keys(localStorage).some(k=>k.startsWith('wow.platform.remember')));
     assert.equal(await page.locator('.wf-founder-check').count(),0);permitted=true;
-    await page.locator('#lang').selectOption('en');await signin(true);revoked=true;await page.reload();await page.waitForFunction(()=>!Object.keys(localStorage).some(k=>k.startsWith('wow.platform.remember')));assert.equal(await page.locator('.wf-founder-check').count(),0);
-    revoked=false;await open();await signin(true);await page.getByRole('link',{name:'Settings',exact:true}).click();
+    await page.locator('#lang').selectOption('en',{force:true});await signin(true);revoked=true;await page.reload();await page.waitForFunction(()=>!Object.keys(localStorage).some(k=>k.startsWith('wow.platform.remember')));assert.equal(await page.locator('.wf-founder-check').count(),0);
+    revoked=false;await open();await signin(true);await page.evaluate(()=>{location.hash='settings'});
     const secret=page.locator('.platform-password-settings'),nextSecret=randomUUID();
     await secret.locator('summary').click();await secret.getByLabel('Current password').fill(randomUUID());
     await secret.getByLabel('New password (12–128 characters)',{exact:true}).fill(nextSecret);await secret.getByLabel('Confirm new password').fill(randomUUID());
