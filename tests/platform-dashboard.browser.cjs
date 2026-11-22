@@ -266,7 +266,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(events.includes('platform.company.releaseDevice'),false);
     await ownerDevice.getByRole('button',{name:'Release device'}).click();await ownerDevice.getByRole('button',{name:'Confirm release'}).click();
     await ownerDevice.waitFor({state:'detached'});await page.locator('.platform-linked-device').getByText('Fixture employee').waitFor();
-    const company=page.locator('article'),editor=page.locator('.platform-inline-editor form');
+    const company=page.locator('.platform-company-card-v2'),editor=page.locator('.platform-inline-editor form');
     await company.getByRole('button',{name:'Rename'}).click();const companyInput=editor.getByLabel('Company name');await companyInput.tap();assert.equal(await companyInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);await companyInput.fill('Edited');
     await editor.getByRole('button',{name:'Save'}).click();await company.getByText('Edited').waitFor();
     await company.getByRole('button',{name:'Suspend'}).click();await page.keyboard.press('Escape');
