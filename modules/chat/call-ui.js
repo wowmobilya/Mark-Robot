@@ -181,7 +181,7 @@
    if(manager)await manager.selectRoom(room).catch(()=>{});
   }
   if(manager){
-   const tick=()=>{if(doc.visibilityState==='visible')manager.poll().catch(()=>{});if(lastState?.call)render();};
+   const tick=()=>{if(doc.visibilityState==='visible'||lastState?.call?.status==='active')manager.poll().catch(()=>{});if(lastState?.call)render();};
    ticking=root.setInterval(tick,3500);manager.poll().catch(()=>{});
   }
   render();
