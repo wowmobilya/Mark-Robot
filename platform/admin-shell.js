@@ -127,7 +127,8 @@
     developer.setAttribute('aria-label',developerText.join(' · '));
     developer.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2.5"/><path d="m9 9-2 2.5L9 14m6-5 2 2.5-2 2.5M8 22h8m-4-3v3"/></svg>';
     const developerCopy=create('span','platform-drawer-developer-copy');
-    developerCopy.append(create('strong','',developerText[0]),create('small','',developerText[1]));
+    // Same label/name hierarchy as the original #wfDevCredit in the company sidebar.
+    developerCopy.append(create('small','',developerText[0]),create('b','',developerText[1]));
     developer.append(developerCopy);
     developer.addEventListener('click',()=>{close();window.WFPlatformDeveloper?.open();});
     const signout=create('button','platform-drawer-signout',
