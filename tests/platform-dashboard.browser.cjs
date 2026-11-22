@@ -229,6 +229,22 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.locator('.platform-overview-status select').selectOption('all');
     assert.equal(await page.locator('.platform-company-card').isVisible(),true);
     await finder.fill('');
+    // iPhone SE through desktop: company cards and their actions must stay on-screen.
+    for(const size of [{width:320,height:640},{width:360,height:780},{width:390,height:844},
+       {width:430,height:932},{width:768,height:1024},{width:1024,height:768},
+       {width:1366,height:768},{width:1920,height:1080},{width:863,height:388}]){
+      await page.setViewportSize(size);
+      const box=await page.locator('.platform-company-card-v2').evaluate(card=>{
+        const r=card.getBoundingClientRect();
+        const buttons=[...card.querySelectorAll('.platform-company-primary-actions a,.platform-company-refresh,.platform-company-tools summary')].map(x=>{
+          const box=x.getBoundingClientRect();return {width:box.width,height:box.height,right:box.right,left:box.left};
+        });
+        return {left:r.left,right:r.right,overflow:document.documentElement.scrollWidth>innerWidth,buttons};
+      });
+      assert(!box.overflow&&box.left>=-1&&box.right<=size.width+1,JSON.stringify({size,box}));
+      assert(box.buttons.every(btn=>btn.height>=40&&btn.left>=-1&&btn.right<=size.width+1),JSON.stringify({size,box}));
+    }
+    await page.setViewportSize({width:390,height:844});
     assert.equal(await page.getByText('No support messages.',{exact:true}).isVisible(),false);
     assert.equal(await page.getByRole('img',{name:'Verified platform administrator'}).count(),1);
     assert.equal(await page.getByText('Open company program').getAttribute('target'),null);
@@ -269,6 +285,21 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(await page.getByLabel('Currency').inputValue(),'USD');
     assert.equal(await page.getByLabel('Duration in days').inputValue(),'30');
     assert.equal(events.filter(item=>item==='platform.plans.save').length,0,'template does not silently save or charge');
+    for(const size of [{width:320,height:700},{width:375,height:812},{width:430,height:932},
+      {width:820,height:1180},{width:1024,height:768},{width:1366,height:768},{width:1920,height:1080}]){
+      await page.setViewportSize(size);
+      const metrics=await pricing.evaluate(element=>({
+        overflow:document.documentElement.scrollWidth>innerWidth,
+        cards:[...element.querySelectorAll('.platform-pricing-card')].map(card=>{
+          const rect=card.getBoundingClientRect(),btn=card.querySelector('button').getBoundingClientRect();
+          return {left:rect.left,right:rect.right,buttonHeight:btn.height,buttonLeft:btn.left,buttonRight:btn.right};
+        })
+      }));
+      assert(!metrics.overflow,JSON.stringify({size,metrics}));
+      assert(metrics.cards.every(c=>c.left>=-1&&c.right<=size.width+1&&c.buttonHeight>=44&&c.buttonLeft>=-1&&c.buttonRight<=size.width+1),
+        JSON.stringify({size,metrics}));
+    }
+    await page.setViewportSize({width:390,height:844});
     await page.locator('.platform-plan-editor > select').selectOption('');
     await page.getByLabel('Plan',{exact:true}).last().fill('Test plan');await page.getByLabel('Active user limit').fill('5');
     await page.getByLabel('File storage limit').fill('1.5');await page.getByLabel('Storage unit').selectOption('GB');
