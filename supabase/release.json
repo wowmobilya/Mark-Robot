@@ -1,5 +1,5 @@
 {
-  "version": 211,
+  "version": 219,
   "name": "مارك ربوت",
   "projectRef": "sldthbnigivpsqixccah",
   "productionOrigin": "https://markrobot.wowfurniture.com.tr",
@@ -9,6 +9,7 @@
     "wow-schema.sql",
     "modules/files.sql",
     "modules/chat.sql",
+    "modules/voice-calls.sql",
     "modules/finance.sql",
     "modules/gallery.sql",
     "modules/assistant.sql",
@@ -28,6 +29,7 @@
     "two-device-offline-reconciliation",
     "closed-app-web-push",
     "verified-smtp-delivery",
-    "owner-origin-data-handover"
+    "owner-origin-data-handover",
+    "real-two-device-voice-calling-with-tls-turn-and-customer-opt-in"
   ]
 }
