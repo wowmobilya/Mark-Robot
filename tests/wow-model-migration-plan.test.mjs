@@ -56,11 +56,12 @@ test('a verified explicit mapped primary ID takes precedence, but a conflict is 
  const {legacy,primary}=fixture();
  const r=buildModelTransferPlan({legacy,primary,mapping:{products:[{sourceId:2,targetId:'wow-existing-514'}]}});
  const linked=r.decisions.find(x=>x.source.id===2);
- assert.equal(linked.decision,'link-existing');
+ assert.equal(linked.decision,'hold');
  assert.equal(linked.destination.id,'wow-existing-514');
- assert.equal(r.decisions.find(x=>x.source.id===1).decision,'link-existing');
- // Each duplicate source-to-target assignment is unsafe to commit; planner output
- // is always preview-only, including the explicitly mapped rows.
+ assert(linked.conflicts.includes('MULTIPLE_LEGACY_IDS_ONE_PRIMARY'));
+ const originallyMatched=r.decisions.find(x=>x.source.id===1);
+ assert.equal(originallyMatched.decision,'hold');
+ assert(originallyMatched.conflicts.includes('MULTIPLE_LEGACY_IDS_ONE_PRIMARY'));
  assert.equal(r.applyReady,false);
 });
 test('typed IDs, count mismatch, negative inventory and unmapped targets fail closed',()=>{
