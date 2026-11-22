@@ -580,6 +580,7 @@ async function mount({container,api,lang,route,params}){
  return {updateLanguage(next){currentLang=next;if(visible()){paint();renderPending();}},hasUnsavedChanges:()=>dirty,
   dispose(){disposed=true;generation++;ctrl.abort();receiptOff?.();closeDialog();selected.clear();deferred.clear();draftFileIds=new WeakMap();shell.remove();}};
 }
+if(root.WFFinanceEntry){root.WFFinanceEntry.provide(mount);return;}
 for(const [route,icon] of Object.entries({finance:'wallet',payroll:'users',metals:'coins'}))registry.register({id:route,
  title:objTitle(route),permission:route+'.view',icon,mount});
 function objTitle(key){return Object.fromEntries(C.languages.map(lang=>[lang,C.t(lang,key)]));}
