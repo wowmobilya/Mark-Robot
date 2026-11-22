@@ -524,7 +524,7 @@
         qr.classList.add('platform-setup-qr');qr.setAttribute('shape-rendering','crispEdges');
         qr.style.background='white';qr.setAttribute('role','img');qr.setAttribute('aria-label',setupLabels[lang.value][1]);
         invitation.append(qr);
-        window.WFPlatformInviteShare?.attach(invitation,{svg:qr,url:url.href,name:company.name});
+        window.WFPlatformInviteShare?.attach(invitation,{svg:qr,url:url.href,name:state.companies.find(item=>item.id===setup.workspace)?.name||'WOW'});
       }).catch(()=>{}); // The selectable setup URL and code are already available.
     }
     brandList?.dispose();brandList=window.WFPlatformBrand?.create({request,config,language:lang.value});
