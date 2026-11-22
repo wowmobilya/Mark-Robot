@@ -190,37 +190,37 @@ grant execute on function public.wow_voice_service(text,jsonb) to service_role;
 create or replace function public.wow_call_realtime_allowed()
 returns boolean language plpgsql stable security definer set search_path='' as $$
 declare
- user_id uuid:=(select auth.uid()); token jsonb:=(select auth.jwt());
- session_id uuid; current_topic text:=realtime.topic(); room_id uuid; call_id uuid;
+ principal_id uuid:=(select auth.uid()); token jsonb:=(select auth.jwt());
+ principal_session uuid; current_topic text:=realtime.topic(); target_room uuid; target_call uuid;
 begin
- if user_id is null or token->>'session_id' is null or
+ if principal_id is null or token->>'session_id' is null or
    (current_topic !~ '^wow-call-room:[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$'
     and current_topic !~ '^wow-call:[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
    then return false;end if;
- session_id:=(token->>'session_id')::uuid;
+ principal_session:=(token->>'session_id')::uuid;
  if not exists(select from public.wow_accounts a
   join public.wow_workspaces w on w.id=a.workspace_id and w.status='active'
-  join public.wow_sessions s on s.account_id=a.id and s.session_id=session_id and s.closed_at is null and s.session_version=a.session_version
-  join auth.sessions z on z.id=session_id and z.user_id=a.id and (z.not_after is null or z.not_after>now())
-  where a.id=user_id and a.status='active' and a.deleted_at is null
+  join public.wow_sessions s on s.account_id=a.id and s.session_id=principal_session and s.closed_at is null and s.session_version=a.session_version
+  join auth.sessions z on z.id=principal_session and z.user_id=a.id and (z.not_after is null or z.not_after>now())
+  where a.id=principal_id and a.status='active' and a.deleted_at is null
    and (a.expires_at is null or a.expires_at>now())
    and (a.role='owner' or ('chat.view'=any(a.permissions) and 'chat.edit'=any(a.permissions))))
    then return false;end if;
  if left(current_topic,14)='wow-call-room:' then
-   room_id:=substring(current_topic from 15)::uuid;
+   target_room:=substring(current_topic from 15)::uuid;
    return exists(select from wow_collab.rooms r
-     join wow_collab.members m on m.room_id=r.id and m.account_id=user_id and m.state='active'
-     join public.wow_accounts a on a.id=user_id and a.workspace_id=r.workspace_id
-     where r.id=room_id and r.active and wow_collab.room_allowed(user_id,a.role,r));
+     join wow_collab.members m on m.room_id=r.id and m.account_id=principal_id and m.state='active'
+     join public.wow_accounts a on a.id=principal_id and a.workspace_id=r.workspace_id
+     where r.id=target_room and r.active and wow_collab.room_allowed(principal_id,a.role,r));
  end if;
- call_id:=substring(current_topic from 10)::uuid;
+ target_call:=substring(current_topic from 10)::uuid;
  return exists(select from wow_voice.calls c
-   join wow_voice.participants p on p.call_id=c.id and p.account_id=user_id and p.status='joined'
+   join wow_voice.participants p on p.call_id=c.id and p.account_id=principal_id and p.status='joined'
    join wow_collab.rooms r on r.id=c.room_id and r.active
-   join wow_collab.members m on m.room_id=r.id and m.account_id=user_id and m.state='active'
-   join public.wow_accounts a on a.id=user_id and a.workspace_id=c.workspace_id
-   where c.id=call_id and c.status='active' and c.expires_at>now()
-    and wow_collab.room_allowed(user_id,a.role,r));
+   join wow_collab.members m on m.room_id=r.id and m.account_id=principal_id and m.state='active'
+   join public.wow_accounts a on a.id=principal_id and a.workspace_id=c.workspace_id
+   where c.id=target_call and c.status='active' and c.expires_at>now()
+    and wow_collab.room_allowed(principal_id,a.role,r));
 exception when invalid_text_representation then return false;
 end $$;
 revoke all on function public.wow_call_realtime_allowed() from public,anon;
