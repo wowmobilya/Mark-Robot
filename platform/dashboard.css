@@ -916,3 +916,7 @@ html[data-theme=dark] .platform-pricing-card .platform-plan-label[data-saved=tru
  .platform-pricing-card .platform-plan-price{font-size:1.5rem}}
 @media(prefers-reduced-motion:reduce){.platform-pricing-card,.platform-pricing-card .wf-plan-art svg,
  .platform-pricing-card .wf-tier-dot,.platform-pricing-card .wf-tier-spark{animation:none;transition:none}}
+
+
+/* Touch target regression: refresh must remain at least 44 px on small phones. */
+.platform-company-refresh{inline-size:44px!important;block-size:44px!important;min-inline-size:44px!important;min-block-size:44px!important;min-width:44px!important;min-height:44px!important}
