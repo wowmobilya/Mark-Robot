@@ -42,6 +42,14 @@
     ru:['Телефоны работников (без владельца)','Облачное хранилище','минут аудио / месяц','минут видео / месяц',
         '+10 $ / месяц за телефон','+20 $ / месяц удвоить звонки и хранилище','Действующие лимиты компании']
   };
+  const whatsappNumber='905386263700'; // Turkish mobile +90 538 626 37 00, digits-only WhatsApp format.
+  const activationCopy={
+    ar:{button:'تفعيل عبر واتساب',message:(name,amount,days)=>`مرحبًا، أريد طلب تفعيل اشتراك ${name} في WOW Furniture بسعر ${amount} لمدة ${days} يومًا. الرجاء توضيح خطوات التفعيل.`},
+    en:{button:'Activate via WhatsApp',message:(name,amount,days)=>`Hello, I'd like to request activation of the WOW Furniture ${name} plan for ${amount}, duration ${days} days. Please share the activation steps.`},
+    tr:{button:'WhatsApp ile etkinleştir',message:(name,amount,days)=>`Merhaba, WOW Furniture ${name} paketini ${days} gün için ${amount} fiyatla etkinleştirmek istiyorum. Aktivasyon adımlarını paylaşır mısınız?`},
+    fr:{button:'Activer via WhatsApp',message:(name,amount,days)=>`Bonjour, je souhaite demander l'activation de l'abonnement WOW Furniture ${name}, pour ${days} jours au prix de ${amount}. Merci de m'indiquer les étapes.`},
+    ru:{button:'Активировать через WhatsApp',message:(name,amount,days)=>`Здравствуйте! Хочу запросить подключение тарифа WOW Furniture «${name}» на ${days} дней за ${amount}. Сообщите, пожалуйста, порядок активации.`}
+  };
   const make=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
   function visual(key){
     const markup={
@@ -94,7 +102,20 @@
         li.append(symbol,make('span','',copy));featureList.append(li);
       }
       const note=make('small','platform-plan-benefits-note',benefits[6]);
-      card.append(visualNode,eyebrow,name,price,duration,monthly,featureList,note,label,button);
+      // WhatsApp is an inquiry channel only; saving and assigning plans remain authenticated admin actions.
+      const lang=document.documentElement.lang in activationCopy?document.documentElement.lang:'ar';
+      const whats=activationCopy[lang];
+      const formattedAmount=new Intl.NumberFormat(lang,{style:'currency',currency,maximumFractionDigits:2}).format(amount);
+      const activationText=whats.message(plan?.name||w[item.key],formattedAmount,Number(plan?.durationDays??item.days));
+      const whatsappUrl=new URL('https://wa.me/'+whatsappNumber);
+      whatsappUrl.searchParams.set('text',activationText);
+      const activate=make('a','platform-plan-activate',whats.button);
+      activate.href=whatsappUrl.toString();
+      activate.target='_blank';activate.rel='noopener noreferrer';
+      activate.setAttribute('aria-label',whats.button+' · '+(plan?.name||w[item.key]));
+      const actions=make('div','platform-plan-actions');
+      actions.append(activate,button);
+      card.append(visualNode,eyebrow,name,price,duration,monthly,featureList,note,label,actions);
       grid.append(card);
     }
     const panel=make('section','platform-pricing-dashboard');
