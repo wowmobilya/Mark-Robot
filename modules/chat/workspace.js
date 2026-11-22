@@ -60,6 +60,9 @@
     status.setAttribute('role','status');indicators.setAttribute('role','status');feedBox.setAttribute('role','log');feedBox.setAttribute('aria-live','off');
     draft.maxLength=8000;draft.rows=2;app.append(side,main);side.append(sideTools,roomList);main.append(head,browse,selection,feedBox,paging,indicators,composer,status);composer.append(draftInfo,draft,mentions,sendTools);container.append(app);
     const picker=el('input');picker.type='file';picker.hidden=true;composer.append(picker);
+    // Calls never start automatically: only a user tap requests the microphone.
+    // Owner/customer/staff identity and chat membership remain server-authoritative.
+    const voice=root.WFVoiceCalls?.mount?.({container:app,request:req,getSession:()=>api.getSession?.(),lang:()=>language});
     const roomName=r=>r?.kind==='team'&&!r.name?t('team'):(r?.name||t('direct'));
     const roomNow=id=>alive&&room?.id===id;
     function closeDialogs(){for(const d of container.querySelectorAll('dialog[open]'))d.close();}
@@ -130,6 +133,7 @@
     }
     function drawRoomHead(){
       if(!room)return;head.replaceChildren();head.append(act(t('back'),()=>{leaveRoom();},'wf-chat-back'));const titleBox=el('div',null,'wf-chat-room-title');addAvatar(titleBox,room);titleBox.append(el('h3',roomName(room)));head.append(titleBox);
+      if(room.kind==='direct'&&edit()&&voice)head.append(voice.callButton(room));
       head.append(act(t('members'),membersDialog),act(t('settings'),settingsDialog));browse.replaceChildren();
       const search=input(query,160);search.type='search';search.placeholder=t('search');search.setAttribute('aria-label',t('search'));
       search.oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>applyFilter(filter,search.value),240);};
@@ -421,13 +425,13 @@
     picker.onchange=()=>{attach(picker.files?.[0]);picker.value='';};
     async function poll(){
       if(polling||!alive||root.document.hidden||!me)return;polling=true;
-      try{await refreshRooms();await loadFeed();pendingStatus();}
+      try{await refreshRooms();await loadFeed();await voice?.poll?.();pendingStatus();}
       catch(e){actionStatus(e);}finally{polling=false;}
     }
     async function init(){
       try{const r=await req('init');if(!alive)return;me=r.me;}
       catch(e){if(!['NETWORK','OFFLINE_NOT_CACHED'].includes(e?.code))throw e;me=api.getSession?.()?.currentAccount;if(!me)throw e;}
-      await refreshRooms();if(!alive)return;
+      await refreshRooms();if(!alive)return;await voice?.poll?.();
       if(params.roomId&&H.validRoom(params.roomId)){
         await openRoom(params.roomId);
         const target=params.messageId;
@@ -456,8 +460,8 @@
       if(marker!==lastConnection){lastConnection=marker;if(alive&&me)poll();}});
     const clock=setInterval(poll,4400);root.addEventListener('online',resume);root.document.addEventListener('visibilitychange',resume);
     return {dispose(){alive=false;unsubscribe?.();offReceipts?.();generation++;clearInterval(clock);clearTimer();stopRecord();root.removeEventListener('online',resume);root.document.removeEventListener('visibilitychange',resume);
-      retrySends.clear();durable.clear();drafts.clear();thumbs.clear();members=[];rooms=[];feed=null;me=null;selected.clear();ui.dispose();app.remove();},
-      updateLanguage(value){language=value;lastFeed='';roomsView='';sideHeader();drawRooms();if(room){drawRoomHead();drawMessages();drawPaging();drawComposer();}else leaveRoom(false);},
+      voice?.dispose?.();retrySends.clear();durable.clear();drafts.clear();thumbs.clear();members=[];rooms=[];feed=null;me=null;selected.clear();ui.dispose();app.remove();},
+      updateLanguage(value){language=value;voice?.updateLanguage?.();lastFeed='';roomsView='';sideHeader();drawRooms();if(room){drawRoomHead();drawMessages();drawPaging();drawComposer();}else leaveRoom(false);},
       hasUnsavedChanges:()=>!!(recording||attached||sending||written)};
   }
   const definition={id:'chat',title,permission:'chat.view',icon:'message-circle',mount,openRoom:id=>H.validRoom(id)&&root.WFModules?.open('chat',{roomId:id})};
