@@ -11,7 +11,7 @@
   const uuid = value => typeof value === 'string' && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
   const finance = new Set(['proforma','payment','expense','receipt']);
   const routes = {
-    chat:['chat','chat.view'], 'order.created':['gallery-orders','orders.view'], 'order.updated':['my-orders','myorders.view'],
+    chat:['chat','chat.view'], call:['chat','chat.view'], 'order.created':['gallery-orders','orders.view'], 'order.updated':['my-orders','myorders.view'],
     'stock.updated':['gallery','gallery.view'], operations:['server-admin','server.view']
   };
   // Only these module identifiers and typed parameters can cross a notification click.
@@ -23,6 +23,11 @@
     if (entry.kind === 'chat') {
       if (!uuid(params.roomId) || typeof params.messageId !== 'string' || !/^[1-9]\d{0,18}$/.test(params.messageId) || BigInt(params.messageId)>9223372036854775807n) return null;
       safe = {roomId:params.roomId,messageId:params.messageId};
+    } else if (entry.kind === 'call') {
+      // The call is not accepted in a service worker. Only a validated room
+      // deep link crosses into the live authenticated chat UI.
+      if (!uuid(params.roomId) || !uuid(params.callId)) return null;
+      safe = {roomId:params.roomId,callId:params.callId};
     } else if (entry.kind === 'stock.updated') {
       const id = params.productId;
       if (!Number.isSafeInteger(id) && !(typeof id === 'string' && id.trim() && id.length <= 180 && !/[\u0000-\u001f\u007f]/.test(id))) return null;
