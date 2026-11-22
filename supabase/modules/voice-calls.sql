@@ -187,7 +187,12 @@ grant execute on function public.wow_voice_service(text,jsonb) to service_role;
 -- RLS authorization for private Broadcast and Presence.
 -- These policies authorize the LIVE JWT user/session, never a client-supplied ID
 -- or mutable user_metadata. They do not open any other Realtime topic.
-create or replace function public.wow_call_realtime_allowed()
+create schema if not exists private_voice;
+revoke all on schema private_voice from public,anon,authenticated;
+grant usage on schema private_voice to authenticated;
+-- A private non-API helper is callable only by Realtime RLS; its own body
+-- verifies Auth and WOW session, account role, room, and active call.
+create or replace function private_voice.allowed()
 returns boolean language plpgsql stable security definer set search_path='' as $$
 declare
  principal_id uuid:=(select auth.uid()); token jsonb:=(select auth.jwt());
@@ -223,19 +228,19 @@ begin
     and wow_collab.room_allowed(principal_id,a.role,r));
 exception when invalid_text_representation then return false;
 end $$;
-revoke all on function public.wow_call_realtime_allowed() from public,anon;
-grant execute on function public.wow_call_realtime_allowed() to authenticated;
+revoke all on function private_voice.allowed() from public,anon,authenticated;
+grant execute on function private_voice.allowed() to authenticated;
 do $wow_policies$
 begin
  if not exists(select from pg_policies where schemaname='realtime' and tablename='messages'
    and policyname='wow call Realtime receive') then
    create policy "wow call Realtime receive" on realtime.messages for select to authenticated
-     using (extension in ('broadcast','presence') and (select public.wow_call_realtime_allowed()));
+     using (extension in ('broadcast','presence') and (select private_voice.allowed()));
  end if;
  if not exists(select from pg_policies where schemaname='realtime' and tablename='messages'
    and policyname='wow call Realtime send') then
    create policy "wow call Realtime send" on realtime.messages for insert to authenticated
-     with check (extension in ('broadcast','presence') and (select public.wow_call_realtime_allowed()));
+     with check (extension in ('broadcast','presence') and (select private_voice.allowed()));
  end if;
 end $wow_policies$;
 commit;
