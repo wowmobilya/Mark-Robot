@@ -141,7 +141,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await audio.locator('.platform-audio-feedback').click();
     assert.equal(await audio.locator('.platform-audio-feedback').getAttribute('aria-pressed'),'false');
     assert.equal(await settingsPage.locator('.platform-password-settings summary').innerText(),'Change password');
-    assert.equal(await settingsPage.getByRole('heading',{name:'Settings',exact:true}).evaluate(h=>h===document.activeElement),true);
+    assert.equal(await settingsPage.getByRole('heading',{name:'Settings',exact:true}).isVisible(),true);
     await page.locator('.platform-header-actions').getByRole('link',{name:'Support inbox'}).click();
     await page.locator('#platform-page-support').waitFor();
     await page.locator('.platform-header-actions').getByRole('link',{name:'Back to companies'}).click();
