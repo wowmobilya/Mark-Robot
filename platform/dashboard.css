@@ -249,7 +249,9 @@ main>header .platform-header-link:hover,main>header .platform-header-link:focus-
 .platform-create-form input{inline-size:100%;min-inline-size:0;background:var(--card)}
 .platform-create-form button[type=submit]{min-height:44px;white-space:nowrap}
 .platform-company-card{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.65rem .75rem;margin-block:.65rem;padding:clamp(.85rem,2.3vw,1.2rem)!important;border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--card);box-shadow:0 2px 10px rgb(29 45 67 / .035)}
-.platform-company-card>.platform-company-name{grid-column:1/-1;margin:0;min-inline-size:0;font-size:1.08rem;font-weight:800;line-height:1.4;color:var(--text);overflow-wrap:anywhere}
+.platform-company-card>.platform-brand-title{grid-column:1/-1;min-inline-size:0;display:flex;align-items:center;gap:.7rem;margin:0}
+.platform-company-card .platform-company-name{margin:0;min-inline-size:0;font-size:1.08rem;font-weight:800;line-height:1.4;color:var(--text);overflow-wrap:anywhere}
+.platform-company-card .platform-brand-avatar{inline-size:42px;block-size:42px;flex-basis:42px;border-radius:12px}
 .platform-company-status,.platform-company-account-count{display:inline-flex;align-items:center;justify-self:start;min-height:29px;max-inline-size:100%;padding:.25rem .7rem;border:1px solid var(--border);border-radius:999px;background:var(--ui-soft);color:var(--text2);font-size:.78rem;font-weight:700;line-height:1.4}
 .platform-company-status::before{content:"";inline-size:7px;block-size:7px;flex-shrink:0;margin-inline-end:.4rem;border-radius:50%;background:currentColor}
 .platform-company-status[data-state="active"]{color:#16754e;background:#e8f6ee;border-color:#b7e2c9}
