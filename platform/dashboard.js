@@ -489,10 +489,11 @@
       const invitation=el('section');invitation.className='platform-invite-card';invitation.append(link,el('p',t(14)),el('output',setup.code));companies.append(invitation);
       window.WFOwnerInvite?.loadQrTools().then(({BrowserQRCodeSvgWriter})=>{
         if(!invitation.isConnected||generation!==ticket)return;
-        const qr=new BrowserQRCodeSvgWriter().write(url.href,660,660,new Map([[0,'M']]));
+        const qr=new BrowserQRCodeSvgWriter().write(url.href,660,660,new Map([[0,'H']]));
         qr.classList.add('platform-setup-qr');qr.setAttribute('shape-rendering','crispEdges');
         qr.style.background='white';qr.setAttribute('role','img');qr.setAttribute('aria-label',setupLabels[lang.value][1]);
         invitation.append(qr);
+        window.WFPlatformInviteShare?.attach(invitation,{svg:qr,url:url.href,name:company.name});
       }).catch(()=>{}); // The selectable setup URL and code are already available.
     }
     brandList?.dispose();brandList=window.WFPlatformBrand?.create({request,config,language:lang.value});
