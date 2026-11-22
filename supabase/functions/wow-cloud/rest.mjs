@@ -67,6 +67,9 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     maintenanceRpc:(action,data)=>call('/rest/v1/rpc/wow_storage_maintenance',{body:{p_action:action,p_data:data},kind:'rpc'}),
     communicationsRpc:(action,data)=>call('/rest/v1/rpc/wow_communications_worker',{body:{p_action:action,p_data:data},kind:'rpc'}),
     health:()=>call('/rest/v1/rpc/wow_operations_health',{body:{},kind:'rpc'}),
+    relayEnabled:()=>call('/rest/v1/rpc/wow_relay_enabled',{body:{},kind:'rpc'}),
+    platformRelay:(actor,enabled,acceptPricing)=>call('/rest/v1/rpc/wow_platform_relay',{kind:'rpc',body:{
+      p_user:actor.userId,p_session:actor.sessionId,p_enabled:enabled,p_accept_pricing:acceptPricing}}),
     // Fixed service-only credential lookup; never part of module/app dispatch.
     founderActivation:(actor,action,data)=>call('/rest/v1/rpc/wow_founder_activation',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
     consumeOwnerRecovery:(id,owner,email)=>call('/rest/v1/rpc/wow_owner_recovery_consume',{body:{p_request:id,p_owner:owner,p_email:email},kind:'rpc'}),

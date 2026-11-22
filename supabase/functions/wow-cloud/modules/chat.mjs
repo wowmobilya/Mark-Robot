@@ -36,7 +36,7 @@ async function managedRelay(voiceTurn,fetchImpl){
     });
   }catch{return [];}
 }
-export function createChatActions({moduleRpc,storage,voiceTurn={},fetchImpl=fetch}){
+export function createChatActions({moduleRpc,storage,voiceTurn={},fetchImpl=fetch,relayEnabled=async()=>false}){
   const {rpc,sign,upload,collect}=privateActions('chat',moduleRpc,storage);
   const room=b=>({roomId:uuid(b.roomId)});
   const message=b=>({...room(b),messageId:id(b.messageId)});
@@ -120,7 +120,7 @@ export function createChatActions({moduleRpc,storage,voiceTurn={},fetchImpl=fetc
       const credential=btoa(String.fromCharCode(...bytes));
       iceServers.push({urls,username,credential});
     }
-    if(managed)iceServers.push(...await managedRelay(voiceTurn,fetchImpl));
+    if(managed&&await relayEnabled().catch(()=>false)===true)iceServers.push(...await managedRelay(voiceTurn,fetchImpl));
     return {iceServers,relayReady:iceServers.length>1,expiresIn:iceServers.length>1?relayLifetime:0};
   };
   return {...Object.fromEntries(Object.entries(handlers).map(([action,run])=>['chat.'+action,({actor,body})=>run(actor,body)])),...voiceActions};

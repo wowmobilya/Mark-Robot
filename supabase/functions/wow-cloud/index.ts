@@ -1,4 +1,5 @@
 import {createSupportActions} from './modules/platform-support.mjs';
+import {createRelayActions} from './modules/platform-relay.mjs';
 import {createCompanyJoin} from './modules/company-join.mjs';
 import {createFounderActivation} from './modules/founder-activation.mjs';
 import {createOrderSms} from './modules/order-sms.mjs';
@@ -65,7 +66,9 @@ const maintenance=async()=>{
 const voiceTurn={url:Deno.env.get('WOW_TURN_URL'),urls:Deno.env.get('WOW_TURN_URLS'),secret:Deno.env.get('WOW_TURN_SHARED_SECRET'),
   cloudflareKeyId:Deno.env.get('WOW_CF_TURN_KEY_ID'),cloudflareToken:Deno.env.get('WOW_CF_TURN_API_TOKEN')};
 const relay=turnConfiguration(voiceTurn);
-const moduleActions={...companyJoin.actions,...founderActivation.actions,...orderSms.actions,...statements.actions,...createPlatformActions(remote),...createSupportActions(remote),...createGalleryActions(remote),...createChatActions({...remote,voiceTurn}),...createFilesActions(remote),
+const relayActions=createRelayActions({...remote,managed:relay.managed,accountId:Deno.env.get('WOW_CF_ACCOUNT_ID'),
+  analyticsToken:Deno.env.get('WOW_CF_ANALYTICS_TOKEN')});
+const moduleActions={...relayActions,...companyJoin.actions,...founderActivation.actions,...orderSms.actions,...statements.actions,...createPlatformActions(remote),...createSupportActions(remote),...createGalleryActions(remote),...createChatActions({...remote,voiceTurn}),...createFilesActions(remote),
   ...customerAuth.actions,...ownerActivation.actions,...createPublicShareActions(publicShareOptions),...communications.actions,
   ...createFinanceActions({...remote,quoteProvider:createQuoteProvider({goldApiKey:Deno.env.get('GOLDAPI_KEY')})}),
   ...createOperationsActions({...remote,configuration:{aiConfigured:assistantProvider.configured===true}}),
@@ -84,8 +87,9 @@ Deno.serve(async(req:Request)=>{
     try{
       const state=await remote.health();
       if(state?.ok!==true)throw new Error('UNAVAILABLE');
-      return Response.json({ok:true,service:'mark-robot',checkedAt:state.checkedAt,turnConfigured:relay.configured,orderSmsConfigured:orderSms.configured,statementChannels:statements.configured},{headers:{'Cache-Control':'no-store'}});
-    }catch(_){return Response.json({ok:false,service:'mark-robot'},{status:503,headers:{'Cache-Control':'no-store'}});}
+      const turnConfigured=!!(relay.secret&&relay.urls.length)||(relay.managed&&await remote.relayEnabled().catch(()=>false)===true);
+      return Response.json({ok:true,service:'mark-robot',checkedAt:state.checkedAt,turnConfigured,orderSmsConfigured:orderSms.configured,statementChannels:statements.configured},{headers:{'Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}});
+    }catch(_){return Response.json({ok:false,service:'mark-robot'},{status:503,headers:{'Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}});}
   }
   if(new URL(req.url).pathname.endsWith('/push-worker')){
     if(!worker){

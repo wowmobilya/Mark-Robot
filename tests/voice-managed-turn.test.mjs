@@ -18,18 +18,22 @@ test('only an active joined caller receives transient Cloudflare relay credentia
     return Response.json({iceServers:[{urls:['stun:stun.cloudflare.com:3478']},
       {urls:[...relayUrls,'turn:turn.cloudflare.com:53?transport=udp'],username:'session-user',credential:'session-secret'}]});
   };
-  const ice=createChatActions({moduleRpc,storage:{},voiceTurn,fetchImpl})['chat.call.ice'];
+  const relayEnabled=async()=>true;
+  const ice=createChatActions({moduleRpc,storage:{},voiceTurn,fetchImpl,relayEnabled})['chat.call.ice'];
   assert.equal(turnConfiguration(voiceTurn).configured,true);
   await assert.rejects(ice({actor,body}));
   assert.equal(requests,0);
   invited=false;
+  const off=createChatActions({moduleRpc,storage:{},voiceTurn,fetchImpl})['chat.call.ice'];
+  assert.equal((await off({actor,body})).relayReady,false);
+  assert.equal(requests,0);
   const result=await ice({actor,body});
   assert.equal(requests,1);
   assert.equal(result.relayReady,true);
   assert.deepEqual(result.iceServers[1],{urls:relayUrls,username:'session-user',credential:'session-secret'});
   assert.ok(!JSON.stringify(result).includes(voiceTurn.cloudflareToken));
   for(const fetchImpl of [async()=>new Response(null,{status:403}),async()=>{throw Error('timeout');},async()=>Response.json({})]){
-    const fallback=await createChatActions({moduleRpc,storage:{},voiceTurn,fetchImpl})['chat.call.ice']({actor,body});
+    const fallback=await createChatActions({moduleRpc,storage:{},voiceTurn,fetchImpl,relayEnabled})['chat.call.ice']({actor,body});
     assert.equal(fallback.relayReady,false);
     assert.equal(fallback.iceServers.length,1);
     assert.equal(fallback.expiresIn,0);

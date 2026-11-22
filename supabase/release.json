@@ -29,7 +29,8 @@
     "modules/order-sms.sql",
     "modules/tenant-seats.sql",
     "modules/platform-support.sql",
-    "modules/platform-support-push.sql"
+    "modules/platform-support-push.sql",
+    "modules/platform-relay.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",
