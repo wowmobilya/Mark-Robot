@@ -562,7 +562,7 @@
     showDestination=()=>{
       const id=pageFromUrl(),changed=id!==lastPage;
       if(changed&&lastPage==='settings'){const details=panels.settings.querySelector('.platform-password-settings');if(details)details.open=false;}
-      home.hidden=id==='home';inbox.hidden=id==='support';
+      home.hidden=id==='home';inbox.hidden=false;
       for(const key of ids){
         panels[key].hidden=key!==id;
         if(key===id)links[key].setAttribute('aria-current','page');else links[key].removeAttribute('aria-current');
