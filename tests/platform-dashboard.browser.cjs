@@ -65,7 +65,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
       if(f==='vendor/zxing-browser.min.js')qrDownloads++;
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/analytics.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
     await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');
@@ -168,6 +168,15 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.setViewportSize({width:390,height:844});
     await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByText('No companies yet.').waitFor();
+    const stats=page.locator('.platform-analytics');
+    await stats.getByRole('heading',{name:'Platform pulse'}).waitFor();
+    assert.equal(await stats.locator('[data-metric=companies] .platform-analytics-value').textContent(),'0');
+    assert.equal(await stats.locator('[data-metric=active] .platform-analytics-value').textContent(),'0');
+    assert.equal(await stats.locator('.platform-analytics-traffic-value').textContent(),'Unavailable');
+    assert.equal(events.filter(x=>x==='platform.relay.get').length,0,'no eager traffic polling');
+    await stats.getByRole('button',{name:'Read usage'}).click();
+    await stats.getByText('1.25 GB').waitFor();
+    assert.equal(await stats.locator('.platform-analytics-track').getAttribute('aria-valuenow'),'1.25');
     await menu.getByRole('link',{name:'Calls'}).click();
     const relay=page.locator('.platform-relay'),enable=relay.getByRole('button',{name:'Enable relay'});
     await relay.getByText('Cloudflare relay setup is incomplete.').waitFor();
@@ -187,6 +196,11 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.deepEqual(relayWrites,[true,false]);await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByLabel('Company name').fill('Test');await page.getByRole('button',{name:'Create company'}).click();
     const link=await page.getByText('Owner setup link').getAttribute('href');assert.equal(new URL(link).searchParams.get('setup'),wid);
+    assert.equal(await page.locator('[data-metric=companies] .platform-analytics-value').textContent(),'1');
+    assert.equal(await page.locator('[data-metric=active] .platform-analytics-value').textContent(),'1');
+    assert.equal(await page.locator('[data-metric=paused] .platform-analytics-value').textContent(),'0');
+    assert.equal(await page.locator('[data-metric=accounts] .platform-analytics-value').textContent(),'0');
+    await page.waitForFunction(()=>Number.parseFloat(document.querySelector('.platform-analytics-donut').style.getPropertyValue('--platform-active-share'))===100);
     await page.locator('.platform-company-link-pill[data-link-state=pending]').waitFor();
     assert.match(await page.locator('.platform-company-link-pill').innerText(),/Awaiting owner activation/);
     assert.equal(await page.locator('.platform-company-connectivity>small').isVisible(),true);
@@ -315,7 +329,7 @@ test('trusted founder device rotates, revalidates founder access and forgets log
         return route.fulfill({json:{ok:true,cases:[],unreadCases:0}});
       }
       if(file==='platform/'||file==='platform/index.html')return route.fulfill({path:path.join(__dirname,'../platform/index.html')});
-      if(['platform/dashboard.js','platform/dashboard.css','platform/admin-shell.js','platform/preferences.js','platform/support.js','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
+      if(['platform/dashboard.js','platform/dashboard.css','platform/admin-shell.js','platform/analytics.js','platform/qr-invite.js','platform/preferences.js','platform/support.js','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
       return route.abort();
     });
     const signin=async trusted=>{
