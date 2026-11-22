@@ -62,7 +62,8 @@ const maintenance=async()=>{
   const results=await Promise.allSettled([storageMaintenance(),communications.process(),statements.process()]);
   if(results.some(result=>result.status==='rejected'))throw new Error('MAINTENANCE_DEFERRED');
 };
-const voiceTurn={url:Deno.env.get('WOW_TURN_URL'),urls:Deno.env.get('WOW_TURN_URLS'),secret:Deno.env.get('WOW_TURN_SHARED_SECRET')};
+const voiceTurn={url:Deno.env.get('WOW_TURN_URL'),urls:Deno.env.get('WOW_TURN_URLS'),secret:Deno.env.get('WOW_TURN_SHARED_SECRET'),
+  cloudflareKeyId:Deno.env.get('WOW_CF_TURN_KEY_ID'),cloudflareToken:Deno.env.get('WOW_CF_TURN_API_TOKEN')};
 const relay=turnConfiguration(voiceTurn);
 const moduleActions={...companyJoin.actions,...founderActivation.actions,...orderSms.actions,...statements.actions,...createPlatformActions(remote),...createSupportActions(remote),...createGalleryActions(remote),...createChatActions({...remote,voiceTurn}),...createFilesActions(remote),
   ...customerAuth.actions,...ownerActivation.actions,...createPublicShareActions(publicShareOptions),...communications.actions,
@@ -83,7 +84,7 @@ Deno.serve(async(req:Request)=>{
     try{
       const state=await remote.health();
       if(state?.ok!==true)throw new Error('UNAVAILABLE');
-      return Response.json({ok:true,service:'mark-robot',checkedAt:state.checkedAt,turnConfigured:!!relay.secret&&relay.urls.length>0,orderSmsConfigured:orderSms.configured,statementChannels:statements.configured},{headers:{'Cache-Control':'no-store'}});
+      return Response.json({ok:true,service:'mark-robot',checkedAt:state.checkedAt,turnConfigured:relay.configured,orderSmsConfigured:orderSms.configured,statementChannels:statements.configured},{headers:{'Cache-Control':'no-store'}});
     }catch(_){return Response.json({ok:false,service:'mark-robot'},{status:503,headers:{'Cache-Control':'no-store'}});}
   }
   if(new URL(req.url).pathname.endsWith('/push-worker')){

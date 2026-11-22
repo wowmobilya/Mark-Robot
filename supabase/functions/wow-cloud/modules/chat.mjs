@@ -10,9 +10,33 @@ export function turnConfiguration(voiceTurn={}){
     const urls=String(urlText).split(',').map(s=>s.trim()).filter(s=>
       /^turns?:[A-Za-z0-9.-]+(?::[0-9]{2,5})?(?:\?transport=(?:udp|tcp))?$/.test(s)).slice(0,4);
     const secret=voiceTurn.secret;
-    return {urls,secret:typeof secret==='string'&&secret.length>=32&&secret.length<=512?secret:null};
+    const sharedSecret=typeof secret==='string'&&secret.length>=32&&secret.length<=512?secret:null;
+    const {cloudflareKeyId,cloudflareToken}=voiceTurn;
+    const managed=typeof cloudflareKeyId==='string'&&/^[a-f0-9]{32}$/i.test(cloudflareKeyId)&&
+      typeof cloudflareToken==='string'&&/^[A-Za-z0-9._~-]{32,512}$/.test(cloudflareToken);
+    return {urls,secret:sharedSecret,managed,configured:managed||!!(urls.length&&sharedSecret)};
 }
-export function createChatActions({moduleRpc,storage,voiceTurn={}}){
+const relayLifetime=7200;
+async function managedRelay(voiceTurn,fetchImpl){
+  // Only the joined participant receives the ephemeral credentials. Never return a provider error body.
+  const endpoint='https://rtc.live.cloudflare.com/v1/turn/keys/'+voiceTurn.cloudflareKeyId+'/credentials/generate-ice-servers';
+  try{
+    const response=await fetchImpl(endpoint,{method:'POST',redirect:'error',signal:AbortSignal.timeout(4000),
+      headers:{Authorization:'Bearer '+voiceTurn.cloudflareToken,'Content-Type':'application/json'},
+      body:JSON.stringify({ttl:relayLifetime})});
+    if(!response.ok)return [];
+    const {iceServers}=await response.json();
+    if(!Array.isArray(iceServers))return [];
+    return iceServers.slice(0,8).flatMap(server=>{
+      const {username,credential}=server||{};
+      if(!username||!credential||typeof username!=='string'||typeof credential!=='string')return [];
+      const values=Array.isArray(server.urls)?server.urls:[server.urls];
+      const urls=values.filter(url=>typeof url==='string'&&/^turns?:turn\.cloudflare\.com:(3478|443|80|5349)\?transport=(udp|tcp)$/.test(url));
+      return urls.length?[{urls,username,credential}]:[];
+    });
+  }catch{return [];}
+}
+export function createChatActions({moduleRpc,storage,voiceTurn={},fetchImpl=fetch}){
   const {rpc,sign,upload,collect}=privateActions('chat',moduleRpc,storage);
   const room=b=>({roomId:uuid(b.roomId)});
   const message=b=>({...room(b),messageId:id(b.messageId)});
@@ -88,15 +112,16 @@ export function createChatActions({moduleRpc,storage,voiceTurn={}}){
     if(snapshot.status!=='active'||!snapshot.participants?.some(p=>p.id===actor.userId&&p.status==='joined'))
       demand(false,'VOICE_CALL_UNAVAILABLE');
     const iceServers=[{urls:['stun:stun.cloudflare.com:3478','stun:stun.l.google.com:19302']}];
-    const {urls,secret}=turnConfiguration(voiceTurn);
+    const {urls,secret,managed}=turnConfiguration(voiceTurn);
     if(urls.length && secret){
-      const expiry=Math.floor(Date.now()/1000)+7200,username=expiry+':'+uuid(actor.userId);
+      const expiry=Math.floor(Date.now()/1000)+relayLifetime,username=expiry+':'+uuid(actor.userId);
       const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-1'},false,['sign']);
       const bytes=new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(username)));
       const credential=btoa(String.fromCharCode(...bytes));
       iceServers.push({urls,username,credential});
     }
-    return {iceServers,relayReady:iceServers.length>1,expiresIn:iceServers.length>1?7200:0};
+    if(managed)iceServers.push(...await managedRelay(voiceTurn,fetchImpl));
+    return {iceServers,relayReady:iceServers.length>1,expiresIn:iceServers.length>1?relayLifetime:0};
   };
   return {...Object.fromEntries(Object.entries(handlers).map(([action,run])=>['chat.'+action,({actor,body})=>run(actor,body)])),...voiceActions};
 }
