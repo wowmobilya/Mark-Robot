@@ -16,7 +16,8 @@
   if(!valid(me))throw fail('CALLS_AUTH_REQUIRED');
   let notified=valid(invitation?.roomId)&&valid(invitation?.callId)?invitation:null;
   const request=(name,data={})=>api.request('chat.call.'+name,data);
-  const emit=()=>{if(alive)onState({call,muted,localStream:local,peers:[...peers.keys()],busy});};
+  const connected=()=>[...peers.values()].some(peer=>peer.pc.connectionState==='connected');
+  const emit=()=>{if(alive)onState({call,muted,localStream:local,peers:[...peers.keys()],connected:connected(),busy});};
   const message=err=>{if(alive)onError(err?.code||err?.name||'CALL_FAILED');};
   const channelFor=(topic,onBroadcast,onPres)=>root.WFCallRealtime.create({
     topic,credentials:()=>api.realtimeCredentials(),onBroadcast,onPresence:onPres||(()=>{}),
@@ -105,6 +106,7 @@
     }else if(pc.connectionState==='failed'&&!peer.retry){
      peer.retry=true;try{pc.restartIce?.();}catch(_){}
     }else if(pc.connectionState==='closed'){onRemote(peerId,null);}
+    if(pc.connectionState!=='connected')emit();
    };
    pc.onnegotiationneeded=async()=>{
     try{
@@ -297,7 +299,7 @@
   }
   emit();
   return Object.freeze({selectRoom:joinRoom,start,accept,decline,finish,poll,micToggle,cameraToggle,switchMode,stop,
-   getState:()=>({call,muted,localStream:local,peers:[...peers.keys()],busy})});
+   getState:()=>({call,muted,localStream:local,peers:[...peers.keys()],connected:connected(),busy})});
  }
  root.WFCallManager=Object.freeze({create});
  if(typeof module==='object'&&module.exports)module.exports={create};

@@ -21,6 +21,10 @@
   switchVideo:['التحويل إلى فيديو','Switch to video','Videoya geç','Passer en vidéo','Переключить на видео'],
   switchAudio:['صوت فقط','Audio only','Sadece ses','Audio seul','Только аудио'],
   local:['أنت','You','Sen','Vous','Вы'],
+  minimize:['تصغير المكالمة','Minimize call','Aramayı küçült','Réduire l’appel','Свернуть звонок'],
+  restore:['فتح شاشة المكالمة','Return to call','Aramaya dön','Revenir à l’appel','Вернуться к звонку'],
+  joined:['انضمّ','Joined','Katıldı','En ligne','В звонке'],
+  participants:['المشاركون','Participants','Katılımcılar','Participants','Участники'],
   history:['سجل المكالمات','Call history','Arama geçmişi','Historique des appels','История звонков'],
   missed:['مكالمة فائتة','Missed call','Cevapsız','Appel manqué','Пропущен'],
   declined:['مكالمة مرفوضة','Declined call','Reddedildi','Appel refusé','Отклонён'],
@@ -39,20 +43,37 @@
  };
  function mount({container,historyContainer,api,invitation,lang=()=>root.document?.documentElement.lang||'ar'}){
   const doc=container.ownerDocument||root.document;
-  const layout=doc.createElement('section'),panel=doc.createElement('div'),head=doc.createElement('header');
+  const layout=doc.createElement('section'),panel=doc.createElement('dialog'),head=doc.createElement('header');
+  const avatar=doc.createElement('div'),kindLabel=doc.createElement('small'),stage=doc.createElement('div'),problem=doc.createElement('p');
   const title=doc.createElement('strong'),info=doc.createElement('span'),videos=doc.createElement('div'),actions=doc.createElement('div');
   const note=doc.createElement('p'),history=doc.createElement('section'),historyTitle=doc.createElement('button'),historyList=doc.createElement('div');
   const selfCard=doc.createElement('div'),selfVideo=doc.createElement('video'),selfLabel=doc.createElement('small');
   const remote=new Map();
   layout.className='wf-calling';panel.className='wf-calling-panel';head.className='wf-calling-header';
   videos.className='wf-calling-videos';actions.className='wf-calling-actions';note.className='wf-calling-notice';
-  selfCard.className='wf-calling-tile';selfVideo.autoplay=true;selfVideo.muted=true;selfVideo.playsInline=true;
+  selfCard.className='wf-calling-tile wf-call-preview';selfVideo.autoplay=true;selfVideo.muted=true;selfVideo.playsInline=true;
   selfLabel.className='wf-calling-label';selfCard.append(selfVideo,selfLabel);
-  note.setAttribute('role','status');panel.append(head,videos,actions);head.append(title,info);
+  panel.setAttribute('aria-labelledby','wf-call-person');title.id='wf-call-person';
+  let minimized=false,presentedId=null;
+  const collapse=doc.createElement('button'),bar=doc.createElement('section'),restore=doc.createElement('button'),compactMic=doc.createElement('button'),compactEnd=doc.createElement('button');
+  collapse.type=restore.type=compactMic.type=compactEnd.type='button';collapse.className='wf-call-collapse';bar.className='wf-call-restore';bar.hidden=true;
+  bar.append(restore,compactMic,compactEnd);
+  collapse.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 9 7 7 7-7"/></svg>';
+  collapse.onclick=()=>{minimized=true;render();restore.focus({preventScroll:true});};
+  restore.onclick=()=>{minimized=false;render();collapse.focus({preventScroll:true});};
+  compactMic.onclick=()=>manager?.micToggle();
+  compactEnd.onclick=()=>{const c=lastState?.call;if(!c)return;
+   const invited=c.participants?.some(p=>p.id===api.getSession?.()?.userId&&p.status==='invited');
+   Promise.resolve(invited?manager.decline():manager.finish(c.callerId===api.getSession?.()?.userId)).catch(()=>{error=t('failed');render();});};
+  panel.addEventListener('cancel',event=>{event.preventDefault();collapse.click();});
+  avatar.className='wf-call-avatar';avatar.setAttribute('aria-hidden','true');stage.className='wf-call-stage';
+  problem.className='wf-calling-notice';problem.setAttribute('role','status');
+  stage.append(avatar,videos,selfCard);head.append(collapse,kindLabel,title,info);panel.append(head,stage,problem,actions);
+  note.setAttribute('role','status');
   history.className='wf-calling-history';historyTitle.className='wf-calling-history-title';
   historyTitle.type='button';historyList.className='wf-calling-history-list';
   historyTitle.setAttribute('aria-expanded','false');historyList.hidden=true;history.append(historyTitle,historyList);
-  layout.append(panel,note,history);container.append(layout);
+  layout.append(panel,note,history);container.append(layout);doc.body.append(bar);
   let manager=null,lastState=null,historyRows=[],language='ar',error='',shownRoom=null,presence=[];
   const locale=()=>{const v=typeof lang==='function'?lang():lang;return locales.includes(v)?v:'ar';};
   const t=key=>text[key][locales.indexOf(locale())];let ticking=null;
@@ -63,6 +84,18 @@
     catch(_){error=t('failed');render();}};return b;
   };
   const timestamp=value=>new Date(value||Date.now()).toLocaleString(locale(),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  const glyphs={
+   handset:'<path d="M20 17v3a1 1 0 0 1-1 1A18 18 0 0 1 3 5a1 1 0 0 1 1-1h3l2 5-2 2a13 13 0 0 0 6 6l2-2z"/>',
+   hangup:'<path d="M3 16v-3a2 2 0 0 1 1-2c5-4 11-4 16 0a2 2 0 0 1 1 2v3h-5v-3a13 13 0 0 0-8 0v3z"/>',
+   mic:'<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2m-7 9v3m-4 0h8"/>',
+   camera:'<rect x="2" y="5" width="14" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3"/>',
+   play:'<path d="m7 4 13 8-13 8z"/>'
+  };
+  const control=(key,action,glyph,cls='',off=false)=>{
+   const b=button(key,action,cls);b.dataset.callControl=glyph;b.setAttribute('aria-label',t(key));
+   b.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round" stroke-linecap="round">'+glyphs[glyph]+(off?'<path d="m3 3 18 18"/>':'')+'</svg>';
+   const label=doc.createElement('span');label.textContent=t(key);b.append(label);return b;
+  };
   const duration=seconds=>String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
   // In-chat call events: separate visual chips, not synthetic text messages.
   // Existing message IDs, message pagination and chat tables remain unchanged.
@@ -99,52 +132,80 @@
   historyTitle.addEventListener('click',()=>{
    historyList.hidden=!historyList.hidden;historyTitle.setAttribute('aria-expanded',String(!historyList.hidden));
   });
-  function updateRemote(uid,stream){
-   if(!stream){const old=remote.get(uid);if(old){old.video.pause?.();old.video.srcObject=null;old.card.remove();remote.delete(uid);}render();return;}
+  function remoteUnit(uid){
    let unit=remote.get(uid);
    if(!unit){
-    const card=doc.createElement('div'),video=doc.createElement('video'),label=doc.createElement('small');
+    const card=doc.createElement('div'),video=doc.createElement('video'),label=doc.createElement('small'),initial=doc.createElement('span');
     card.className='wf-calling-tile';video.autoplay=true;video.playsInline=true;label.className='wf-calling-label';
-    card.append(video,label);unit={card,video,label};remote.set(uid,unit);
+    initial.className='wf-call-initial';initial.setAttribute('aria-hidden','true');card.append(initial,video,label);unit={card,video,label,initial};remote.set(uid,unit);
    }
+   return unit;
+  }
+  function updateRemote(uid,stream){
+   if(!stream){const old=remote.get(uid);if(old){old.video.pause?.();old.video.srcObject=null;old.card.remove();remote.delete(uid);}render();return;}
+   const unit=remoteUnit(uid);
    if(unit.video.srcObject!==stream){unit.video.srcObject=stream;
     Promise.resolve(unit.video.play()).catch(()=>{unit.playBlocked=true;render();});}
-   unit.label.textContent=lastState?.call?.participants?.find(x=>x.id===uid)?.name||uid.slice(0,8);render();
+   render();
   }
   function render(){
    language=locale();displayHistory();const state=lastState;const c=state?.call;
    for(const start of container.querySelectorAll('[data-call-start]'))start.disabled=!enabled||!!c||!!state?.busy||!api.can?.('chat.edit');
-   note.textContent=error;note.hidden=!error;panel.hidden=!c;layout.classList.toggle('wf-calling-active',!!c||!!error);if(!c){for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
+   note.textContent=error;note.hidden=!error||!!c;panel.hidden=!c;layout.classList.toggle('wf-calling-active',!!c||!!error);
+   if(!c){if(panel.open)panel.close();bar.hidden=true;presentedId=null;minimized=false;selfVideo.srcObject=null;for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
+   if(presentedId!==c.id){presentedId=c.id;minimized=false;}
    const invited=c.participants?.some(p=>p.id===api.getSession?.()?.userId&&p.status==='invited');
    const kind=t(c.kind==='video'?'video':'audio');
    const caller=invited&&c.participants?.find(p=>p.id===c.callerId)?.name;
-   title.textContent=invited?[caller,t('inbound'),kind].filter(Boolean).join(' · '):kind;
+   const others=(c.participants||[]).filter(p=>p.id!==api.getSession?.()?.userId);
+   const roomName=shownRoom?.id===c.roomId&&shownRoom.name;
+   const group=others.length>1||(shownRoom?.id===c.roomId&&shownRoom.kind==='group');
+   panel.classList.toggle('wf-group-call',group);
+   title.textContent=caller||roomName||others.map(p=>p.name).filter(Boolean).join(' · ')||kind;
+   avatar.textContent=Array.from(title.textContent.trim())[0]||'';
+   kindLabel.textContent=(invited?t('inbound')+' · '+kind:kind)+(group?' · '+t('participants')+' '+(c.participants||[]).filter(p=>p.status==='joined').length+'/'+c.participants.length:'');
    info.textContent=invited||c.status==='ringing'?t('ringing'):t('connecting');
-   if(!invited&&c.status==='active'&&c.startedAt)info.textContent=t('connected')+' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(c.startedAt))/1000)));
+   if(state.connected)info.textContent=t('connected')+(c.startedAt?' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(c.startedAt))/1000))):'');
 
    if(state.localStream){
     if(selfVideo.srcObject!==state.localStream)selfVideo.srcObject=state.localStream;selfLabel.textContent=t('local');
     selfCard.hidden=!state.localStream.getVideoTracks().some(track=>track.enabled&&track.readyState==='live');
-    if(!selfCard.hidden && selfCard.parentNode!==videos)videos.prepend(selfCard);
-   }
-   for(const item of remote.values()){const track=item.video.srcObject?.getVideoTracks?.()[0];
-    item.video.hidden=!(track&&track.readyState==='live'&&track.enabled);if(item.card.parentNode!==videos)videos.append(item.card);}
+   }else{selfCard.hidden=true;selfVideo.srcObject=null;}
+   const groupStage=group&&!invited&&c.status==='active';
+   if(groupStage){for(const p of others)if(['joined','invited'].includes(p.status))remoteUnit(p.id);}
+   for(const [uid,item] of remote){const track=item.video.srcObject?.getVideoTracks?.()[0],member=others.find(p=>p.id===uid);
+    const name=member?.name||t('participants');item.video.hidden=!(track&&track.readyState==='live'&&track.enabled);
+    item.initial.textContent=Array.from(name.trim())[0]||'';item.initial.hidden=!item.video.hidden;
+    item.label.textContent=name+(groupStage&&member?.status==='invited'?' · '+t('ringing'):'');
+    item.card.hidden=groupStage?!member||!['joined','invited'].includes(member.status):item.video.hidden;
+    if(item.card.parentNode!==videos)videos.append(item.card);}
+   avatar.hidden=[...remote.values()].some(item=>!item.card.hidden);
+   const focused=doc.activeElement?.dataset?.callControl;
    actions.replaceChildren();
    const myId=api.getSession?.()?.userId;
    if(invited){
-    actions.append(button('answer',()=>manager.accept(),'wf-calling-accept'),button('reject',()=>manager.decline(),'wf-calling-danger'));
+    const accept=control('answer',()=>manager.accept(),'handset','wf-calling-accept');accept.disabled=!!state.busy;
+    actions.append(control('reject',()=>manager.decline(),'hangup','wf-calling-danger'),accept);
    }else{
     if(c.status==='active'){
-     actions.append(button(state.muted?'unmic':'mic',()=>manager.micToggle()));
-     actions.append(button(state.localStream?.getVideoTracks().some(tr=>tr.enabled)?'nocamera':'camera',()=>manager.cameraToggle()));
-     actions.append(button('switchAudio',()=>manager.switchMode('audio')),button('switchVideo',()=>manager.switchMode('video')));
+     actions.append(control(state.muted?'unmic':'mic',()=>manager.micToggle(),'mic','',!!state.muted));
+     if(c.kind==='video'){
+      const cameraOn=state.localStream?.getVideoTracks().some(tr=>tr.enabled&&tr.readyState==='live');
+      actions.append(control(cameraOn?'nocamera':'camera',()=>manager.cameraToggle(),'camera','',!cameraOn));
+     }
     }
-    actions.append(button('end',()=>manager.finish(c.callerId===myId),'wf-calling-danger'));
+    actions.append(control('end',()=>manager.finish(c.callerId===myId),'hangup','wf-calling-danger'));
    }
    for(const item of remote.values())if(item.playBlocked){
-    actions.append(button('play',async()=>{await item.video.play();item.playBlocked=false;render();}));
+    actions.append(control('play',async()=>{await item.video.play();item.playBlocked=false;render();},'play'));
    }
-   note.textContent=error;note.hidden=!error;panel.dir=language==='ar'?'rtl':'ltr';
+   problem.textContent=error;problem.hidden=!error;panel.dir=language==='ar'?'rtl':'ltr';
+   collapse.setAttribute('aria-label',t('minimize'));collapse.title=t('minimize');
+   bar.hidden=!minimized;bar.dir=panel.dir;restore.textContent=t('restore')+' · '+title.textContent;
+   compactMic.hidden=invited||c.status!=='active';compactMic.textContent=t(state.muted?'unmic':'mic');compactEnd.textContent=t(invited?'reject':'end');
+   if(minimized&&panel.open)panel.close();
+   if(!minimized&&!panel.open&&panel.isConnected){if(panel.showModal)panel.showModal();else panel.setAttribute('open','');}
+   if(focused)actions.querySelector('[data-call-control="'+focused+'"]')?.focus({preventScroll:true});
   }
   let enabled=!!root.isSecureContext&&!!root.RTCPeerConnection&&!!root.navigator?.mediaDevices?.getUserMedia;
   try{
@@ -191,7 +252,7 @@
    if(manager)await manager.selectRoom(room).catch(()=>{});
   }
   if(manager){
-   const tick=()=>{if(doc.visibilityState==='visible'||lastState?.call?.status==='active')manager.poll().catch(()=>{});if(lastState?.call?.startedAt&&lastState.localStream)info.textContent=t('connected')+' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(lastState.call.startedAt))/1000)));};
+   const tick=()=>{if(doc.visibilityState==='visible'||lastState?.call?.status==='active')manager.poll().catch(()=>{});};
    ticking=root.setInterval(tick,3500);manager.poll().catch(()=>{});
   }
   render();
@@ -201,7 +262,7 @@
   }
   return Object.freeze({controls,startPrivate,selectRoom,renderHistoryInFeed:feedHistory,refresh:()=>manager?.poll(),
    hasActiveCall:()=>!!lastState?.call,updateLanguage:render,
-   dispose(){unsubscribeAlerts?.();if(ticking)root.clearInterval(ticking);manager?.stop();historyContainer?.querySelector?.('[data-wf-call-history]')?.remove();layout.remove();}});
+   dispose(){unsubscribeAlerts?.();if(ticking)root.clearInterval(ticking);manager?.stop();bar.remove();historyContainer?.querySelector?.('[data-wf-call-history]')?.remove();layout.remove();}});
  }
  root.WFChatCallUI=Object.freeze({mount});
 })(globalThis);
