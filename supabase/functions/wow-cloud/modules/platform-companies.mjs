@@ -1,6 +1,6 @@
 import {sha256,failure} from '../core.mjs';
 
-export function createPlatformActions({platformRpc,requirePlatformFounder}){
+export function createPlatformActions({platformRpc,requirePlatformFounder,manageDevices}){
   const handlers={'platform.identity':async({actor})=>{
     try{await requirePlatformFounder(actor);return {verifiedFounder:true};}
     catch(error){if(error?.code==='ACCESS_DENIED')return {verifiedFounder:false};throw error;}
@@ -15,6 +15,12 @@ export function createPlatformActions({platformRpc,requirePlatformFounder}){
       }
       return platformRpc(actor,action,data);
     };
+  }
+  for(const scope of ['accounts','company'])for(const name of ['devices','deviceStatus','releaseDevice']){
+    const action=scope+'.'+name;
+    handlers[(scope==='company'?'platform.':'')+action]=async({actor,body})=>manageDevices(actor,action,{
+      workspaceId:body.workspaceId,accountId:body.accountId,offset:body.offset,expectedBoundAt:body.expectedBoundAt,confirmed:body.confirmed,blocked:body.blocked
+    });
   }
   return handlers;
 }

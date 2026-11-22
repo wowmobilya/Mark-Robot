@@ -255,11 +255,17 @@
       if(mode==='local'&&next.currentAccount.role==='owner')link={workspaceId,userId:next.currentAccount.id};
       rememberOwner();return emit();
     }
-    function terminalAuth(error){return error?.status===401||['AUTH_REQUIRED','SESSION_REVOKED','SESSION_EXPIRED','ACCOUNT_UNAVAILABLE','ACCOUNT_REVOKED','ACCOUNT_SUSPENDED','ACCOUNT_DELETED'].includes(error?.code);}
+    function terminalAuth(error){return error?.status===401||['DEVICE_ALREADY_BOUND','DEVICE_BLOCKED','AUTH_REQUIRED','SESSION_REVOKED','SESSION_EXPIRED','ACCOUNT_UNAVAILABLE','ACCOUNT_REVOKED','ACCOUNT_SUSPENDED','ACCOUNT_DELETED'].includes(error?.code);}
     function temporary(error){return error?.code==='NETWORK'||[408,425,429].includes(error?.status)||error?.status>=500;}
     async function transport(action,payload={},token,{quiet=false}={}){
       if(!configured||typeof fetcher!=='function')throw failure('CLOUD_UNCONFIGURED');
       const sentGeneration=generation;
+      const installation=options.installation||root.WFInstallation;
+      if(['auth.signIn','auth.enrollOwner','auth.refresh','auth.activateOwner'].includes(action)&&installation){
+        const proof=await installation.proof();
+        if(!proof)throw failure('DEVICE_PROOF_REQUIRED',403);
+        checkGeneration(sentGeneration);payload={...payload,installationProof:proof};
+      }
       const headers={'Content-Type':'application/json',apikey:config.publishableKey};if(token)headers.Authorization='Bearer '+token;
       const controller=typeof root.AbortController==='function'?new root.AbortController():null;
       const timeout=controller?setTimeout(()=>controller.abort(),15000):null;

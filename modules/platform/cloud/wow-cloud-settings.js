@@ -5,6 +5,8 @@
   const client=root.WFCloudClient?.getClient?.();if(!workspace||!client||root.WFCloudSettings)return root.WFCloudSettings||null;
   const locales=['ar','en','tr','fr','ru'];
   const words={
+    deviceLock:['هذا الحساب مرتبط بجهاز آخر أو أوقف المسؤول جهازه. تواصل مع مسؤول الشركة.','This account is linked to another device or its device is blocked. Contact your company administrator.','Hesap başka bir cihaza bağlı veya cihaz engelli. Şirket yöneticinize başvurun.','Ce compte est associé à un autre appareil ou son appareil est bloqué. Contactez votre administrateur.','Аккаунт привязан к другому устройству или его устройство заблокировано. Обратитесь к администратору.'],
+    deviceStorage:['حدّث التطبيق واسمح بالتخزين على هذا الجهاز، ثم أعد المحاولة.','Update WOW and allow device storage, then try again.','WOW’u güncelleyin ve cihaz depolamasına izin verip tekrar deneyin.','Mettez WOW à jour et autorisez le stockage sur cet appareil, puis réessayez.','Обновите WOW и разрешите хранение данных на этом устройстве, затем повторите попытку.'],
     platform:['لوحة إدارة الشركات','Company administration','Şirket yönetimi','Gestion des entreprises','Управление компаниями'],
     title:["الشركة والمزامنة", "Company and sync", "Şirket ve eşitleme", "Société et synchronisation", "Компания и синхронизация"],
     intro:['حسابات WOW ومزامنة العمل مع الحفاظ على مساحة جهازك.','WOW accounts and work sync, with your device workspace preserved.','Cihaz çalışma alanınızı koruyarak WOW hesapları ve iş eşitlemesi.','Comptes WOW et synchronisation, avec conservation de votre espace local.','Учётные записи WOW и синхронизация с сохранением локального пространства.'],
@@ -92,6 +94,7 @@
   function clearSecrets(){for(const key of ['password','confirmPassword','setupToken'])if(fields[key])fields[key].value='';}
   function showNotice(key,failed=false){noticeText=key;error=failed;updateStatus();notify();}
   function errorText(value){const code=typeof value==='string'?value:value?.code;
+    if(code==='DEVICE_PROOF_REQUIRED')return 'deviceStorage';if(['DEVICE_ALREADY_BOUND','DEVICE_BLOCKED'].includes(code))return 'deviceLock';
     if(code==='NETWORK')return 'networkError';if(code==='SYNC_BATCH_TOO_LARGE')return 'batchLimit';if(code==='MEDIA_TOO_LARGE')return 'mediaLimit';
     if(['UNSUPPORTED_MEDIA','UNSUPPORTED_SYNC_VALUE'].includes(code))return 'unsupportedMedia';if(code==='SYNC_UNAVAILABLE')return 'syncUnavailable';
     if(code==='WORKSPACE_RELINK_REQUIRED')return 'scopeMismatch';if(code==='CONFLICT'||code==='REMOTE_CHANGE')return 'syncConflict';

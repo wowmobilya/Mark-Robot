@@ -40,7 +40,7 @@ function application(db,workspaceId){
   };
   const storage={async put(path,bytes,mime){objects.set(path,{bytes,mime});},async remove(path){objects.delete(path);},
     async sign(path,ttl){assert(objects.has(path));signed.push({path,ttl});return origin+signPath+path+'?ttl='+ttl;}};
-  const sql=new Map(['wow_service','wow_gallery_service','wow_chat_service','wow_files_service'].map(name=>[name,'select public.'+name+'($1,$2::jsonb) result']));
+  const sql=new Map(['wow_service','wow_device_session','wow_gallery_service','wow_chat_service','wow_files_service'].map(name=>[name,'select public.'+name+'($1,$2::jsonb) result']));
   const remote=createRestDependencies({url:origin,serviceKey:'fixture',fetch:async(url,options)=>{
     const query=sql.get(new URL(url).pathname.split('/').at(-1));assert(query);
     const {p_action,p_data}=JSON.parse(options.body);
@@ -49,7 +49,7 @@ function application(db,workspaceId){
   }});
   const deps={...remote,auth,storage,policy};
   const handler=createHandler({...deps,moduleActions:{...createGalleryActions(deps),...createChatActions(deps),...createFilesActions(deps)}});
-  const client=()=>cloud.create({mode:'remote',config:{enabled:true,projectUrl:origin,workspaceId,endpoint:origin+'/functions/v1/wow-cloud',publishableKey:'fixture'},
+  const client=()=>cloud.create({mode:'remote',installation:{proof:async()=>'a'.repeat(64)},config:{enabled:true,projectUrl:origin,workspaceId,endpoint:origin+'/functions/v1/wow-cloud',publishableKey:'fixture'},
     sessionStore:{clear(){}},fetch:(url,options)=>handler(new Request(url,options))});
   const fetchBlob=async url=>{
     const object=objects.get(new URL(url).pathname.slice(signPath.length));assert(object);
@@ -79,7 +79,7 @@ async function filesPage(client,fetchBlob){
 
 test('owner-provisioned customers sign in with restricted galleries, conversations and private files',async t=>{
   const db=await createProviderTestDatabase();t.after(()=>db.close());
-  for(const module of ['gallery','files','chat'])await db.exec(await read('supabase/modules/'+module+'.sql'));
+  for(const module of ['gallery','files','chat','platform-companies','account-installations'])await db.exec(await read('supabase/modules/'+module+'.sql'));
   const wid=randomUUID(),setupToken=randomUUID(),{client,fetchBlob,signed}=application(db,wid);
   await db.query('insert into public.wow_workspaces(id,name) values($1,$2)',[wid,'Gallery']);
   await db.query("insert into public.wow_setup_claims(token_hash,workspace_id,expires_at) values($1,$2,now()+interval '1 hour')",[await sha256(setupToken),wid]);

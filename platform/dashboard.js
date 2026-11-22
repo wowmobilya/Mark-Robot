@@ -125,9 +125,10 @@
     scanner=window.WFOwnerInvite?.mount(content,new URL('../',location.href),lang.value);
     submit(form,3,async()=>{
       const epoch=++authEpoch;
-      const result=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.signIn',workspaceId:config.workspaceId,username:email.value.trim(),password:pass.value})});
+      const result=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.signIn',founderOnly:true,workspaceId:config.workspaceId,username:email.value.trim(),password:pass.value})});
       pass.value='';if(pass.type!=='password')toggle.click();if(!form.isConnected||epoch!==authEpoch||navigator.onLine===false)return;
       if(result.status===401)throw failure(0);
+      if(result.status===403)throw failure(3);
       if(result.status===429)throw failure(1);
       if(!result.ok)throw Error();const data=await result.json(),{session,identity}=data;
       if(epoch!==authEpoch||!form.isConnected)return;
@@ -457,7 +458,7 @@
     });
     if(/^[a-f0-9]{64}$/.test(invite))inputs[0].value=invite;inputs[3].minLength=12;submit(form,6,async()=>{
       const [code,name,user,pass]=inputs;
-      const reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.enrollOwner',workspaceId:workspace,setupToken:code.value.trim(),name:name.value.trim(),username:user.value.trim(),password:pass.value})});
+      const reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.enrollOwner',installationProof:await window.WFInstallation?.proof(),workspaceId:workspace,setupToken:code.value.trim(),name:name.value.trim(),username:user.value.trim(),password:pass.value})});
       if(!reply.ok)throw Error();
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',workspace);location.replace(url.href);
     });form.querySelector('button').textContent=labels[4];

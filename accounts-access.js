@@ -6,6 +6,8 @@
   const remoteMode=!!root.WFCloudClient?.isRemoteMode?.()||/(?:^|[?&])wf-cloud=(?:employee|owner)(?:&|$)/.test(root.location?.search||'');
   const locales=['ar','en','tr','fr','ru'];
   const words={
+    deviceLock:['هذا الحساب مرتبط بجهاز آخر أو أوقف المسؤول جهازه. تواصل مع مسؤول الشركة.','This account is linked to another device or its device is blocked. Contact your company administrator.','Hesap başka bir cihaza bağlı veya cihaz engelli. Şirket yöneticinize başvurun.','Ce compte est associé à un autre appareil ou son appareil est bloqué. Contactez votre administrateur.','Аккаунт привязан к другому устройству или его устройство заблокировано. Обратитесь к администратору.'],
+    deviceStorage:['حدّث التطبيق واسمح بالتخزين على هذا الجهاز، ثم أعد المحاولة.','Update WOW and allow device storage, then try again.','WOW’u güncelleyin ve cihaz depolamasına izin verip tekrar deneyin.','Mettez WOW à jour et autorisez le stockage sur cet appareil, puis réessayez.','Обновите WOW и разрешите хранение данных на этом устройстве, затем повторите попытку.'],
     title:['تسجيل الدخول','Sign in','Giriş yap','Connexion','Вход'],
     intro:['ادخل بحسابك لفتح مساحة العمل المسموحة لك.','Use your account to open your permitted workspace.','İzin verilen çalışma alanını açmak için hesabınızla giriş yapın.','Connectez-vous pour ouvrir votre espace autorisé.','Войдите, чтобы открыть разрешённые разделы.'],
     username:['اسم الدخول','Username','Kullanıcı adı','Identifiant','Имя пользователя'],
@@ -130,7 +132,7 @@
       loginBusy=true;submit.disabled=true;status.textContent='';translateLock();
       const value=password.value;password.value='';password.type='password';showPassword.setAttribute('aria-pressed','false');
       try{await service.signIn({username:username.value,password:value});const account=snapshot().currentAccount;if(!policy.safeHome(account)){status.textContent=text('noAccess');await service.signOut();}else{setLocked(false);loginResolve?.();loginResolve=null;}}
-      catch(error){status.textContent=text(error?.code==='NETWORK'?'network':error?.code==='CLOUD_UNCONFIGURED'?'cloudUnavailable':['IDENTITY_STORAGE','STORAGE_ERROR','IDENTITY_STATE_INVALID','CONFLICT'].includes(error?.code)?'storage':'failed');password.focus();}
+      catch(error){status.textContent=text(['DEVICE_ALREADY_BOUND','DEVICE_BLOCKED'].includes(error?.code)?'deviceLock':error?.code==='DEVICE_PROOF_REQUIRED'?'deviceStorage':error?.code==='NETWORK'?'network':error?.code==='CLOUD_UNCONFIGURED'?'cloudUnavailable':['IDENTITY_STORAGE','STORAGE_ERROR','IDENTITY_STATE_INVALID','CONFLICT'].includes(error?.code)?'storage':'failed');password.focus();}
       finally{loginBusy=false;submit.disabled=false;translateLock();}
     });
     translateLock();
