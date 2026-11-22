@@ -24,10 +24,13 @@ create table if not exists wow_limits.commercial_addons (
 alter table wow_limits.commercial_features enable row level security;
 alter table wow_limits.commercial_addons enable row level security;
 revoke all on wow_limits.commercial_features,wow_limits.commercial_addons from public,anon,authenticated;
+-- Fresh installations do not yet have pricing rows; defer feature enrollment
+-- until the founder creates the published WOW plans.
 insert into wow_limits.commercial_features(plan_id)
- values ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a01'),
-        ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a02'),
-        ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a03')
+ select p.id from wow_limits.plans p where p.id in
+   ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a01',
+    'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a02',
+    'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a03')
  on conflict(plan_id) do nothing;
 
 create or replace function wow_limits.staff_installations(wid uuid)
