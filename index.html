@@ -10749,7 +10749,12 @@ function wfDriveInitOnboarding(){
   if(!wfRecoveryFrame('welcome'))return;
   const T=wfRecoveryTexts();wfRecoverySetText('wfRestoreModalTitle',T.welcome);wfRecoverySetText('wfRestoreModalSub',T.welcomeSub);
   wfRecoverySetText('wfRestoreWarning',T.privacy);wfRecoverySetText('wfRestoreConfirmBtn',T.connect);wfRecoverySetText('wfRestoreCancelBtn',T.later);wfRecoveryShow('wfRestoreInfoWrap',false);
-  if(wfDriveValidClientId(wfDriveGetClientId()))wfDriveGetTokenClient().catch(()=>{});
+  const connectButton=document.getElementById('wfRestoreConfirmBtn');
+  if(connectButton&&wfDriveValidClientId(wfDriveGetClientId())){
+    const prepare=()=>wfDriveGetTokenClient().catch(()=>{});
+    connectButton.addEventListener('pointerenter',prepare,{once:true});
+    connectButton.addEventListener('focus',prepare,{once:true});
+  }
 }
 function wfRecoveryRememberMeta(meta){
   wfDriveLSSet(WF_DRIVE_FILE_ID_KEY,meta.id);wfDriveLSSet(WF_DRIVE_LAST_KEY,meta.modifiedTime||'');wfDriveLSSet(WF_DRIVE_LAST_SIZE_KEY,meta.size||0);
@@ -28210,7 +28215,7 @@ function bgUpdateUI(){
   row.classList.toggle('error',BG_STATE.status==='error');
   row.classList.toggle('pairing',pairing);
   if(sub)sub.textContent=BG_STATE.status==='error'?(BG_STATE.lastError||T.failed):(pairing?T.pairingSub:(paired?T.subActive:T.subInactive));
-  if(btn){const gisReady=BG_STATE.gisReady||!!window.google?.accounts?.oauth2;btn.style.display=active?'none':'inline-flex';btn.textContent=pairing?T.pairing:T.enable;btn.disabled=pairing||!navigator.onLine||!gisReady||bgRecoveryBlocked();}
+  if(btn){btn.style.display=active?'none':'inline-flex';btn.textContent=pairing?T.pairing:T.enable;btn.disabled=pairing||!navigator.onLine||bgRecoveryBlocked();}
   if(sub&&bgRecoveryBlocked()&&typeof wfRecoveryTexts==='function')sub.textContent=wfRecoveryTexts().heldSub+(BG_STATE.status==='error'?' '+BG_STATE.lastError:'');
   if(badge){badge.style.display=active?'inline-flex':'none';badge.textContent='✓ '+T.active;}
   try{const fs=document.getElementById('wfDriveFrequencySub');if(fs&&active)fs.textContent=({ar:'ملف واحد فقط · يعمل حتى لو كان التطبيق مغلقاً.',tr:'Tek dosya · uygulama kapalıyken de çalışır.',en:'One file · continues while the app is closed.',fr:'Un seul fichier · fonctionne même application fermée.',ru:'Один файл · работает при закрытом приложении.'})[S.lang];}catch(_){}
@@ -28376,11 +28381,18 @@ window.wfDriveBackupButton=async function(){
 
 document.addEventListener('DOMContentLoaded',()=>{
   bgDeviceId();bgDeviceKey();
-  bgLoadGIS().then(()=>{BG_STATE.gisReady=true;bgUpdateUI()}).catch(()=>{BG_STATE.gisReady=false;bgUpdateUI()});
   const consumed=bgConsumeReturnQuery();
   bgClearPending();bgLSSet(BG_RESULT_KEY,null);
   if(!consumed&&!bgPaired())BG_STATE.status='idle';
   bgEnsureRow();bgUpdateUI();
+  const setupRow=document.getElementById('wfBgRow');
+  if(setupRow){
+    const warm=()=>bgLoadGIS().then(bgUpdateUI).catch(()=>{BG_STATE.gisReady=false;bgUpdateUI();});
+    if('IntersectionObserver' in window){
+      const watch=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){watch.disconnect();warm();}});
+      watch.observe(setupRow);
+    }else{setupRow.addEventListener('pointerenter',warm,{once:true});setupRow.addEventListener('focusin',warm,{once:true});}
+  }
   const backup=document.getElementById('wfDriveBackupNowBtn');if(backup)backup.setAttribute('onclick','wfDriveBackupButton()');
   if(bgPaired()){BG_STATE.status='active';bgUpdateUI();bgHeartbeat()}
   clearInterval(BG_STATE.heartbeatTimer);BG_STATE.heartbeatTimer=setInterval(bgHeartbeat,10*60*1000);
