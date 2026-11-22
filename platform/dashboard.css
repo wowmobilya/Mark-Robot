@@ -1116,3 +1116,6 @@ html[data-theme=dark] .platform-sales-contact-links .platform-sales-whatsapp{
 @media(prefers-reduced-motion:reduce){.platform-home-shortcut,.platform-create-panel>summary::after,#platform-page-companies>.platform-company-card-v2{transition:none!important}}
 
 .platform-header-link[href="#home"]{--header-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'currentColor'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'm3%2010%209-7%209%207v11H3z'%2F%3E%3Cpath%20d%3D'M9%2021v-8h6v8'%2F%3E%3C%2Fsvg%3E")}
+
+/* Six horizontal tabs on phones; full-width vertical navigation on desktop. */
+@media(min-width:1025px){.platform-section-menu{grid-template-columns:minmax(0,1fr)}}
