@@ -1,11 +1,11 @@
 (function(){
   'use strict';
   const labels={
-    ar:['شعار الشركة','اختيار صورة','حفظ الشعار','تعذّر تحميل الشعار. حاول مجددًا.','تم حفظ الشعار','تعذّر حفظ الصورة. تحقق من نوعها وحاول مجددًا.','إعادة المحاولة'],
-    tr:['Şirket logosu','Görsel seç','Logoyu kaydet','Logo yüklenemedi. Tekrar deneyin.','Logo kaydedildi','Görsel kaydedilemedi. Dosya türünü kontrol edin.','Tekrar dene'],
-    en:['Company logo','Choose image','Save logo','Could not load the logo. Try again.','Logo saved','Could not save the image. Check the file type and retry.','Retry'],
-    fr:['Logo de l’entreprise','Choisir une image','Enregistrer le logo','Impossible de charger le logo. Réessayez.','Logo enregistré','Échec de l’enregistrement. Vérifiez le format du fichier.','Réessayer'],
-    ru:['Логотип компании','Выбрать изображение','Сохранить логотип','Не удалось загрузить логотип. Повторите попытку.','Логотип сохранён','Не удалось сохранить изображение. Проверьте формат файла.','Повторить']
+    ar:['شعار الشركة','اختيار صورة','حفظ الشعار','تعذّر تحميل الشعار. حاول مجددًا.','تم حفظ الشعار','تعذّر حفظ الصورة. تحقق من نوعها وحاول مجددًا.','إعادة المحاولة','معاينة الشعار','PNG · JPG · WEBP — بحد أقصى 8 ميجابايت','لم تختر صورة جديدة','الصورة الجديدة جاهزة للحفظ','معاينة الشعار المحفوظ'],
+    tr:['Şirket logosu','Görsel seç','Logoyu kaydet','Logo yüklenemedi. Tekrar deneyin.','Logo kaydedildi','Görsel kaydedilemedi. Dosya türünü kontrol edin.','Tekrar dene','Logo önizlemesi','PNG · JPG · WEBP — en fazla 8 MB','Yeni görsel seçilmedi','Yeni görsel kaydedilmeye hazır','Kaydedilen logo önizlemesi'],
+    en:['Company logo','Choose image','Save logo','Could not load the logo. Try again.','Logo saved','Could not save the image. Check the file type and retry.','Retry','Logo preview','PNG · JPG · WEBP — maximum 8 MB','No new image selected','New image ready to save','Saved logo preview'],
+    fr:['Logo de l’entreprise','Choisir une image','Enregistrer le logo','Impossible de charger le logo. Réessayez.','Logo enregistré','Échec de l’enregistrement. Vérifiez le format du fichier.','Réessayer','Aperçu du logo','PNG · JPG · WEBP — 8 Mo maximum','Aucune nouvelle image','Nouvelle image prête à enregistrer','Aperçu du logo enregistré'],
+    ru:['Логотип компании','Выбрать изображение','Сохранить логотип','Не удалось загрузить логотип. Повторите попытку.','Логотип сохранён','Не удалось сохранить изображение. Проверьте формат файла.','Повторить','Предпросмотр логотипа','PNG · JPG · WEBP — до 8 МБ','Новый файл не выбран','Новое изображение готово к сохранению','Предпросмотр сохранённого логотипа']
   };
   const el=(tag,text)=>{const node=document.createElement(tag);if(text)node.textContent=text;return node;};
   function source(info,config,id){
@@ -48,36 +48,87 @@
       for(const entry of entries)if(entry.isIntersecting){observer.unobserve(entry.target);readers.get(entry.target)?.();}
     }):null;
     function attach(row,details,company){
-      const title=row.querySelector('strong'),wrap=el('div'),avatar=el('span'),group=el('section'),heading=el('strong',w[0]);
-      wrap.className='platform-brand-title';avatar.className='platform-brand-avatar';avatar.setAttribute('aria-hidden','true');title.before(wrap);wrap.append(avatar,title);
-      const picker=el('label',w[1]),file=el('input'),save=el('button',w[2]),retry=el('button',w[6]),status=el('span'),preview=el('span');
-      preview.className='platform-brand-avatar';preview.setAttribute('aria-hidden','true');
-      file.type='file';file.accept='image/png,image/jpeg,image/webp';picker.append(file);save.type=retry.type='button';save.disabled=true;retry.hidden=true;
-      group.className='platform-company-brand';status.setAttribute('role','status');group.append(preview,heading,picker,save,retry,status);details.append(group);
-      let revision=null,loading=false,busy=false,pending='';
-      const paint=url=>{artwork(avatar,url,company.name);artwork(preview,url,company.name);};paint('');
+      const title=row.querySelector('strong'),wrap=el('div'),avatar=el('span');
+      wrap.className='platform-brand-title';avatar.className='platform-brand-avatar';
+      avatar.setAttribute('aria-hidden','true');title.before(wrap);wrap.append(avatar,title);
+
+      // Place the logo editor first in the expanded company tools. The file input
+      // stays keyboard-accessible but the native browser file field is visually hidden.
+      const group=el('section'),head=el('div'),heading=el('strong',w[0]),hint=el('small',w[8]);
+      group.className='platform-company-brand';head.className='platform-brand-head';head.append(heading,hint);
+      const illustration=el('div'),preview=el('span'),copy=el('div');
+      const previewTitle=el('strong',w[7]),fileName=el('small',w[9]);
+      illustration.className='platform-brand-preview-row';
+      preview.className='platform-brand-avatar platform-brand-editor-preview';
+      preview.setAttribute('role','img');preview.setAttribute('aria-label',w[7]);
+      copy.className='platform-brand-preview-copy';fileName.className='platform-brand-filename';
+      copy.append(previewTitle,fileName);illustration.append(preview,copy);
+      const controls=el('div'),picker=el('label'),pickerIcon=el('span');
+      const pickerText=el('span',w[1]),file=el('input'),save=el('button',w[2]),retry=el('button',w[6]),status=el('span');
+      controls.className='platform-brand-controls';picker.className='platform-brand-picker';
+      pickerIcon.className='platform-brand-picker-icon';pickerIcon.setAttribute('aria-hidden','true');
+      file.className='platform-brand-file';file.type='file';file.accept='image/png,image/jpeg,image/webp';
+      picker.append(pickerIcon,pickerText,file);
+      save.type=retry.type='button';save.className='platform-brand-save';
+      retry.className='platform-brand-retry';save.disabled=true;retry.hidden=true;
+      status.className='platform-brand-status';status.setAttribute('role','status');
+      controls.append(picker,save,retry);
+      group.append(head,illustration,controls,status);
+      const actionGrid=details.querySelector('.platform-company-actions-grid');
+      if(actionGrid)actionGrid.before(group);else details.append(group);
+
+      let revision=null,loading=false,busy=false,pending='',savedUrl='';
+      const paint=url=>{
+        savedUrl=url;
+        artwork(avatar,url,company.name);artwork(preview,url,company.name);
+      };
+      paint('');
       async function read(){
-        if(disposed||loading)return;loading=true;retry.hidden=true;revision=null;save.disabled=true;
-        try{const info=await request('company.brand',{workspaceId:company.id});if(disposed||!row.isConnected)return;
-          revision=info.revision;const url=source(info,config,company.id);artwork(avatar,url,company.name);artwork(preview,pending?'data:image/png;base64,'+pending:url,company.name);
+        if(disposed||loading)return;
+        loading=true;retry.hidden=true;revision=null;save.disabled=true;
+        try{
+          const info=await request('company.brand',{workspaceId:company.id});
+          if(disposed||!row.isConnected)return;
+          revision=info.revision;savedUrl=source(info,config,company.id);
+          artwork(avatar,savedUrl,company.name);
+          artwork(preview,pending?'data:image/png;base64,'+pending:savedUrl,company.name);
           status.textContent='';save.disabled=!pending;
-        }catch{if(!disposed){retry.hidden=false;status.textContent=w[3];}}finally{loading=false;}
+        }catch{
+          if(!disposed){retry.hidden=false;status.textContent=w[3];}
+        }finally{loading=false;}
       }
       retry.onclick=read;readers.set(row,read);
       if(observer)observer.observe(row);else queueMicrotask(read);
       details.addEventListener('toggle',()=>{if(details.open&&revision===null&&!loading)read();});
       file.onchange=async()=>{
-        const selected=file.files[0];if(!selected)return;
-        pending='';save.disabled=true;file.disabled=true;
-        try{pending=await encode(selected);if(disposed)return;artwork(preview,'data:image/png;base64,'+pending,company.name);save.disabled=revision===null;status.textContent='';}
-        catch{status.textContent=w[5];}finally{file.disabled=false;}
+        const selected=file.files?.[0];if(!selected)return;
+        pending='';save.disabled=true;file.disabled=true;status.textContent='';
+        try{
+          const compressed=await encode(selected);
+          if(disposed||!row.isConnected)return;
+          pending=compressed;artwork(preview,'data:image/png;base64,'+pending,company.name);
+          fileName.textContent=selected.name;fileName.title=selected.name;
+          previewTitle.textContent=w[10];save.disabled=revision===null;
+        }catch{
+          if(row.isConnected){
+            artwork(preview,savedUrl,company.name);
+            fileName.textContent=w[9];fileName.removeAttribute('title');
+            previewTitle.textContent=w[7];status.textContent=w[5];file.value='';
+          }
+        }finally{file.disabled=false;}
       };
       save.onclick=async()=>{
         if(!pending||revision===null||busy||disposed)return;
         busy=true;save.disabled=file.disabled=true;
-        try{const info=await request('company.setBrand',{workspaceId:company.id,revision,png:pending});if(disposed)return;
-          revision=info.revision;paint('data:image/png;base64,'+pending);pending='';file.value='';status.textContent=w[4];
-        }catch{revision=null;retry.hidden=false;status.textContent=w[5];}finally{busy=false;file.disabled=false;}
+        try{
+          const info=await request('company.setBrand',{workspaceId:company.id,revision,png:pending});
+          if(disposed||!row.isConnected)return;
+          revision=info.revision;paint('data:image/png;base64,'+pending);pending='';file.value='';
+          fileName.textContent=w[9];fileName.removeAttribute('title');
+          previewTitle.textContent=w[11];status.textContent=w[4];
+        }catch{
+          revision=null;retry.hidden=false;status.textContent=w[5];
+        }finally{busy=false;file.disabled=false;save.disabled=true;}
       };
     }
     return {attach,dispose(){disposed=true;observer?.disconnect();}};
