@@ -330,15 +330,15 @@
   let showDestination=null,expandedCompany=null;
   const header=document.querySelector('main > header'),headerActions=el('div');
   headerActions.className='platform-header-actions';headerActions.hidden=true;header.append(headerActions);
-  const compactMenu=matchMedia('(max-width:620px) and (min-height:521px)');
+  // One predictable order across mobile and desktop, matching WOW's primary workspaces.
   function arrangeMenu(){
     const menu=content.querySelector('.platform-section-menu');if(!menu)return;
-    const order=compactMenu.matches?['plans','calls','companies','support','settings']:['companies','plans','support','calls','settings'];
     const focused=menu.contains(document.activeElement)?document.activeElement:null;
-    for(const key of order){const link=menu.querySelector('a[href="#'+key+'"]');if(link)menu.append(link);}
+    for(const key of ['companies','plans','support','calls','settings']){
+      const link=menu.querySelector('a[href="#'+key+'"]');if(link)menu.append(link);
+    }
     focused?.focus({preventScroll:true});
   }
-  compactMenu.addEventListener?.('change',arrangeMenu);
   const topLabels={
     ar:['العودة إلى الشركات','صندوق رسائل الدعم'],en:['Back to companies','Support inbox'],
     tr:['Şirketlere dön','Destek gelen kutusu'],fr:['Retour aux sociétés','Boîte de réception du support'],
@@ -405,13 +405,19 @@
     for(const [i,id] of ids.entries()){
       const link=el('a'),panel=el('section'),title=el('h2',titles[i]);
       title.tabIndex=-1;title.id='platform-title-'+id;
-      link.className='platform-section-link';link.href='#'+id;link.append(el('span',title.textContent));
+      link.className='platform-section-link';link.href='#'+id;
+      const tile=el('span'),caption=el('span',title.textContent);
+      tile.className='platform-nav-icon';caption.className='platform-nav-label';
+      tile.setAttribute('aria-hidden','true');link.append(tile,caption);
       panel.className='platform-page';panel.id='platform-page-'+id;panel.hidden=true;
       panel.setAttribute('aria-labelledby',title.id);panel.append(title);content.append(panel);
       link.setAttribute('aria-controls',panel.id);menu.append(link);panels[id]=panel;links[id]=link;
     }
     arrangeMenu();
-    const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);companies.append(form);
+    const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);
+    form.className='platform-create-form';
+    form.append(el('strong',t(6)));
+    companies.append(form);
     let lastPage=null,loadingPlans=false;
     showDestination=()=>{
       const id=pageFromUrl(),changed=id!==lastPage;
@@ -441,10 +447,11 @@
     const founder=el('strong',verifiedName||label),badge=el('span','✓');
     badge.className='wf-founder-check';badge.setAttribute('role','img');badge.setAttribute('aria-label',label);badge.title=label;
     badge.hidden=navigator.onLine===false;founder.append(badge);nav.append(founder);
-    btn(nav,4,async()=>{const previous=token;forget();clear();login();
+    const signOut=btn(nav,4,async()=>{const previous=token;forget();clear();login();
       await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
         headers:{apikey:config.publishableKey,'Content-Type':'application/json',Authorization:'Bearer '+previous},
         body:JSON.stringify({action:'auth.signOut'})}).then(reply=>{if(!reply.ok)throw failure(2);});});
+    signOut.className='platform-signout';
     const preferences=el('section'),account=el('section');
     preferences.className=account.className='platform-settings-group';
     const preferred=el('div');preferred.className='platform-settings-preferences';
@@ -479,8 +486,13 @@
     for(const company of state.companies){
       const row=el('article'),active=company.status==='active',link=el('a',t(16));
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',company.id);
+      row.className='platform-company-card';link.className='platform-company-launch';
       link.href=url.href;
-      row.append(el('strong',company.name),el('span',t(active?7:8)),el('span',t(13)+' · '+company.accounts),link);
+      const name=el('strong',company.name),stateLabel=el('span',t(active?7:8)),accountLabel=el('span',t(13)+' · '+company.accounts);
+      name.className='platform-company-name';name.dir='auto';
+      stateLabel.className='platform-company-status';stateLabel.dataset.state=active?'active':'suspended';
+      accountLabel.className='platform-company-account-count';
+      row.append(name,stateLabel,accountLabel,link);
       const details=el('details'),summary=el('summary',companyMenu[lang.value]),tools=el('div');
       details.className='platform-company-tools';details.open=expandedCompany===company.id;
       details.ontoggle=()=>{
@@ -490,7 +502,7 @@
       details.append(summary,tools);row.append(details);
       brandList?.attach(row,details,company);
       const accounts=el('a',sale(12)),accountsUrl=new URL(url);
-      accountsUrl.searchParams.set('wf-accounts','cloud');accountsUrl.hash='settings';accounts.href=accountsUrl.href;tools.append(accounts);
+      accountsUrl.searchParams.set('wf-accounts','cloud');accountsUrl.hash='settings';accounts.href=accountsUrl.href;accounts.className='platform-tool-link platform-tool-accounts';tools.append(accounts);
       const editArea=el('section');editArea.className='platform-inline-editor';
       function editCompany(trigger,renaming){
         const editor=el('form'),title=el('strong',renaming?word(6):t(17)),cancel=el('button',word(5));
@@ -510,14 +522,14 @@
         });
         (input||cancel).focus();
       }
-      const statusBtn=btn(tools,active?9:10,()=>editCompany(statusBtn,false));
-      const rename=btn(tools,5,()=>editCompany(rename,true));rename.textContent=word(6);
-      const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company));activation.textContent=activationWords[lang.value][0];
+      const statusBtn=btn(tools,active?9:10,()=>editCompany(statusBtn,false));statusBtn.className='platform-tool platform-tool-status';
+      const rename=btn(tools,5,()=>editCompany(rename,true));rename.textContent=word(6);rename.className='platform-tool platform-tool-rename';
+      const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company));activation.textContent=activationWords[lang.value][0];activation.className='platform-tool platform-tool-activation';
       const devicesBox=el('section'),devicesToggle=btn(tools,21,()=>companyDevices(devicesBox,company.id));
-      devicesToggle.textContent=deviceWords[lang.value][0];devicesBox.className='platform-company-devices';
-      const limitsBox=el('section');btn(tools,18,()=>subscription(limitsBox,company));details.append(editArea,activationBox,limitsBox,devicesBox);companies.append(row);
+      devicesToggle.textContent=deviceWords[lang.value][0];devicesToggle.className='platform-tool platform-tool-devices';devicesBox.className='platform-company-devices';
+      const limitsBox=el('section'),limitButton=btn(tools,18,()=>subscription(limitsBox,company));limitButton.className='platform-tool platform-tool-subscription';details.append(editArea,activationBox,limitsBox,devicesBox);companies.append(row);
     }
-    if(!state.companies.length)companies.append(el('p',labels[4]));
+    if(!state.companies.length){const empty=el('p',labels[4]);empty.className='platform-empty-state';companies.append(empty);}
     const pages=el('nav');companies.append(pages);
     if(offset)btn(pages,11,async()=>{offset=Math.max(0,offset-50);await list();});
     if(offset+50<state.total)btn(pages,12,async()=>{offset+=50;await list();});
