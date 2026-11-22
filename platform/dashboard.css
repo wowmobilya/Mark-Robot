@@ -124,3 +124,6 @@ output{padding:.75rem;background:var(--ui-soft);border-radius:var(--ui-control)}
 .platform-server-info h3 {margin:.3rem 0}
 .platform-server-info bdi {overflow-wrap:anywhere;font-family:ui-monospace,monospace}
 .platform-server-info a {display:inline-flex;align-items:center;min-height:44px;margin-inline-start:.7rem}
+
+.platform-login label.platform-remember{display:flex;align-items:center;gap:.65rem;min-height:44px;cursor:pointer;font-size:.9rem}
+.platform-login label.platform-remember input{inline-size:1.15rem;block-size:1.15rem;min-height:0;flex:none;accent-color:var(--brand-primary)}

@@ -171,3 +171,49 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.getByLabel('رمز الإعداد').waitFor();assert.equal(new URL(page.url()).hash,'');assert.equal((await page.getByLabel('رمز الإعداد').inputValue()).length,64);
   }finally{await browser.close();}
 });
+test('trusted founder device rotates, revalidates founder access and forgets logout across tabs',async()=>{
+  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true});
+  try{
+    const context=await browser.newContext(),page=await context.newPage();
+    let refresh='',revision=0,permitted=true,revoked=false;
+    const workspace=randomUUID(),founder=randomUUID(),events=[];
+    const endpoint='https://founder.test';
+    await context.route('**/*',async route=>{
+      const url=new URL(route.request().url()),file=url.pathname.slice(1);
+      if(file.endsWith('wow-cloud-config.js'))return route.fulfill({contentType:'text/javascript',body:'window.WOW_CLOUD_CONFIG='+JSON.stringify({endpoint:endpoint+'/api',workspaceId:workspace,publishableKey:'fixture'})});
+      if(file==='api'){
+        const body=route.request().postDataJSON();events.push(body.action);
+        if(body.action==='auth.refresh'&&(revoked||body.refreshToken!==refresh))return route.fulfill({status:401,json:{ok:false}});
+        if(['auth.refresh','auth.signIn'].includes(body.action)){
+          refresh=randomUUID();revision++;
+          return route.fulfill({json:{ok:true,workspaceId:workspace,identity:{currentAccount:{id:founder,name:'Founder',status:'active',sessionVersion:1}},
+            session:{access_token:'access-'+revision,refresh_token:refresh,expires_at:Math.floor(Date.now()/1000)+3600}}});
+        }
+        if(body.action==='platform.company.list')return route.fulfill({status:permitted?200:403,json:permitted?{ok:true,total:0,companies:[]}:{ok:false,error:{code:'ACCESS_DENIED'}}});
+        return route.fulfill({json:{ok:true,cases:[],unreadCases:0}});
+      }
+      if(file==='platform/'||file==='platform/index.html')return route.fulfill({path:path.join(__dirname,'../platform/index.html')});
+      if(['platform/dashboard.js','platform/dashboard.css','platform/support.js','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
+      return route.abort();
+    });
+    const signin=async trusted=>{
+      await page.getByLabel('Founder username').fill('local-fixture');
+      await page.getByLabel('Password',{exact:true}).fill('not-a-real-password');
+      if(trusted)await page.getByRole('checkbox').check();
+      await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.locator('.wf-founder-check').waitFor();
+    };
+    const open=async()=>{await page.goto(endpoint+'/platform/');await page.locator('#lang').selectOption('en');};
+    await open();await signin(false);await open();await page.getByLabel('Founder username').waitFor();assert(!events.includes('auth.refresh'));
+    await signin(true);const first=refresh;
+    const stored=await page.evaluate(()=>Object.values(localStorage).join());assert(stored.includes(first)&&!stored.includes('not-a-real-password')&&!stored.includes('access-'));
+    await page.reload();await page.locator('.wf-founder-check').waitFor();assert.notEqual(refresh,first);
+    await page.evaluate(()=>dispatchEvent(new Event('offline')));assert.equal(await page.locator('.wf-founder-check').count(),0);
+    await page.evaluate(()=>dispatchEvent(new Event('online')));await page.locator('.wf-founder-check').waitFor();
+    const peer=await context.newPage();await peer.goto(endpoint+'/platform/');await peer.locator('.wf-founder-check').waitFor();
+    await page.locator('#lang').selectOption('en');await page.getByRole('button',{name:'Sign out'}).click();
+    await peer.locator('.platform-login').waitFor();assert(events.includes('auth.signOut'));await peer.close();
+    await signin(true);permitted=false;await page.reload();await page.locator('.platform-login').waitFor();await page.waitForFunction(()=>!Object.keys(localStorage).some(k=>k.startsWith('wow.platform.remember')));
+    assert.equal(await page.locator('.wf-founder-check').count(),0);permitted=true;
+    await page.locator('#lang').selectOption('en');await signin(true);revoked=true;await page.reload();await page.waitForFunction(()=>!Object.keys(localStorage).some(k=>k.startsWith('wow.platform.remember')));assert.equal(await page.locator('.wf-founder-check').count(),0);
+  }finally{await browser.close();}
+});

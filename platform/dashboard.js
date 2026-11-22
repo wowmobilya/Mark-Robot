@@ -15,7 +15,65 @@
   const el=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   let token='',verifiedName='',offset=0,generation=0,expiryTimer,setup=null,draft=null;
   let scanner=null,supportInbox=null,supportAlerts={enabled:false,seen:new Set()};
-  function clear(){showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  const trustKey='wow.platform.remember.v1:'+config.endpoint+':'+config.workspaceId;
+  const retention=7*86400000;
+  let authEpoch=0,rememberedId='',resuming=null;
+  function saved(){
+    try{
+      const raw=localStorage.getItem(trustKey);if(!raw)return null;
+      const entry=JSON.parse(raw);
+      if(typeof entry.id==='string'&&entry.id&&typeof entry.userId==='string'&&entry.userId&&Number.isInteger(entry.version)&&
+        typeof entry.refresh==='string'&&entry.refresh.length>0&&entry.refresh.length<=4096&&
+        Number.isFinite(entry.until)&&entry.until>Date.now()&&entry.until<=Date.now()+retention)return entry;
+      localStorage.removeItem(trustKey);
+    }catch{}
+    return null;
+  }
+  function forget(id=rememberedId){
+    try{if(id&&saved()?.id===id)localStorage.removeItem(trustKey);}catch{}
+    if(rememberedId===id)rememberedId='';
+  }
+  function canRemember(){try{return isSecureContext&&!!navigator.locks?.request&&!!window.localStorage;}catch{return false;}}
+  function stampSession(result){
+    const account=result.identity?.currentAccount,session=result.session;
+    return result.workspaceId===config.workspaceId&&account?.status==='active'&&account.id&&Number.isInteger(account.sessionVersion)&&
+      typeof session?.refresh_token==='string'&&session.refresh_token.length>0&&session.refresh_token.length<=4096
+      ?{userId:account.id,version:account.sessionVersion,refresh:session.refresh_token}:null;
+  }
+  function schedule(session){
+    clearTimeout(expiryTimer);
+    const expiry=session.expires_at*1000;
+    // Rotate shortly before expiry so edits have a usable bearer. sign-in without opt-in keeps its original lifetime.
+    const deadline=rememberedId?Math.min(saved()?.until||0,expiry-30000):expiry;
+    expiryTimer=setTimeout(()=>{clear();login();if(saved())resume().catch(fail);else fail(failure(4));},
+      Math.max(0,Math.min(3600000,deadline-Date.now())));
+  }
+  async function resume(){
+    if(resuming||token||!canRemember()||navigator.onLine===false||new URL(location.href).searchParams.has('setup'))return;
+    const entry=saved();if(!entry)return;
+    const epoch=authEpoch;
+    const current=()=>authEpoch===epoch&&navigator.onLine!==false&&saved()?.id===entry.id;
+    const task=navigator.locks.request(trustKey,async()=>{
+      if(!current())return;
+      const reply=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',
+        headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.refresh',refreshToken:saved().refresh})});
+      if(!current())return;
+      if([401,403].includes(reply.status)){forget(entry.id);throw failure(4);}
+      if(!reply.ok)throw failure(reply.status===429?1:2);
+      const data=await reply.json(),stamp=stampSession(data);
+      if(!current())return;
+      if(!stamp||stamp.userId!==entry.userId||stamp.version!==entry.version||!data.session.access_token){
+        forget(entry.id);throw failure(4);
+      }
+      // Save rotation before a transient list failure; lists still require live founder authorization.
+      localStorage.setItem(trustKey,JSON.stringify({...entry,...stamp}));rememberedId=entry.id;
+      token=data.session.access_token;verifiedName=data.identity.currentAccount.name;
+      try{await list();if(current()&&token)schedule(data.session);}
+      catch(error){if(authEpoch===epoch){clear();login();}throw error;}
+    });
+    resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
+  }
+  function clear(){authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -34,10 +92,10 @@
     const active=token,reply=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{'Content-Type':'application/json',apikey:config.publishableKey,Authorization:'Bearer '+active},body:JSON.stringify({action:'platform.'+action,...params})});
     if(active!==token)throw failure(-1);
     if(reply.status===429)throw failure(1);
-    if(reply.status===401){clear();login();throw failure(4);}
+    if(reply.status===401){forget();clear();login();throw failure(4);}
     if(reply.status===403&&action==='company.list'){
       const reason=await reply.json().catch(()=>({}));
-      clear();login();throw (reason.code==='ACCESS_DENIED'||reason.error==='ACCESS_DENIED'||reason.error?.code==='ACCESS_DENIED')?failure(3):new Error();
+      forget();clear();login();throw (reason.code==='ACCESS_DENIED'||reason.error==='ACCESS_DENIED'||reason.error?.code==='ACCESS_DENIED')?failure(3):new Error();
     }
     const result=await reply.json();if(!reply.ok||result.ok!==true)throw Error();return result;
   }
@@ -59,14 +117,29 @@
     toggle.onclick=()=>{const show=pass.type==='password';pass.type=show?'text':'password';
       toggle.setAttribute('aria-pressed',String(show));toggle.textContent=visibility[show?1:0];toggle.setAttribute('aria-label',toggle.textContent+' '+t(2));};
     email.required=pass.required=true;email.autocomplete='username';pass.autocomplete='current-password';content.append(form);
+    const remember=el('input');remember.type='checkbox';
+    if(canRemember()){
+      const names={ar:'تذكّرني على هذا الجهاز لمدة ٧ أيام',en:'Remember me on this device for 7 days',tr:'Bu cihazda beni 7 gün hatırla',fr:'Se souvenir de moi sur cet appareil pendant 7 jours',ru:'Запомнить меня на этом устройстве на 7 дней'};
+      const label=el('label');label.className='platform-remember';label.append(remember,document.createTextNode(names[lang.value]));form.append(label);
+    }
     scanner=window.WFOwnerInvite?.mount(content,new URL('../',location.href),lang.value);
     submit(form,3,async()=>{
+      const epoch=++authEpoch;
       const result=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.signIn',workspaceId:config.workspaceId,username:email.value.trim(),password:pass.value})});
-      pass.value='';if(pass.type!=='password')toggle.click();if(!form.isConnected)return;
+      pass.value='';if(pass.type!=='password')toggle.click();if(!form.isConnected||epoch!==authEpoch||navigator.onLine===false)return;
       if(result.status===401)throw failure(0);
       if(result.status===429)throw failure(1);
-      if(!result.ok)throw Error();const {session,identity}=await result.json();token=session.access_token;verifiedName=identity?.currentAccount?.name||'';
-      expiryTimer=setTimeout(()=>{clear();login();fail(failure(4));},Math.min(3600000,session.expires_at*1000-Date.now()));await list();
+      if(!result.ok)throw Error();const data=await result.json(),{session,identity}=data;
+      if(epoch!==authEpoch||!form.isConnected)return;
+      forget(saved()?.id);token=session.access_token;verifiedName=identity?.currentAccount?.name||'';
+      try{await list();}catch(error){if(epoch===authEpoch){clear();login();}throw error;}
+      if(epoch!==authEpoch||!token)return;
+      const stamp=stampSession(data);
+      if(remember.checked&&stamp&&canRemember()){
+        const entry={...stamp,id:crypto.randomUUID(),until:Date.now()+retention};
+        try{localStorage.setItem(trustKey,JSON.stringify(entry));rememberedId=entry.id;}catch{}
+      }
+      schedule(session);
     });
   }
   const salesWords={
@@ -238,7 +311,10 @@
     const founder=el('strong',verifiedName),badge=el('span','✓');
     badge.className='wf-founder-check';badge.setAttribute('role','img');badge.setAttribute('aria-label',label);badge.title=label;
     badge.hidden=navigator.onLine===false;founder.append(badge);nav.append(founder);
-    btn(nav,4,async()=>{const previous=token;clear();login();await fetch(config.projectUrl+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:config.publishableKey,Authorization:'Bearer '+previous},credentials:'omit'});});
+    btn(nav,4,async()=>{const previous=token;forget();clear();login();
+      await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
+        headers:{apikey:config.publishableKey,'Content-Type':'application/json',Authorization:'Bearer '+previous},
+        body:JSON.stringify({action:'auth.signOut'})}).then(reply=>{if(!reply.ok)throw failure(2);});});
     const settings=el('a',{ar:'إعدادات الحساب',en:'Account settings',tr:'Hesap ayarları',fr:'Paramètres du compte',ru:'Настройки аккаунта'}[lang.value]);
     const settingsUrl=new URL('../',location.href);settingsUrl.searchParams.set('wf-cloud','employee');settingsUrl.searchParams.set('workspace',config.workspaceId);settingsUrl.searchParams.set('wf-accounts','cloud');settingsUrl.hash='settings';settings.href=settingsUrl.href;nav.append(settings);
     supportInbox?.dispose();
@@ -325,11 +401,14 @@
   }
   function render(){document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);const ws=new URLSearchParams(location.search).get('setup');if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws))enroll(ws);else if(token)list().catch(fail);else login();}
   function lockDisconnected(){
-    if(!token)return;
-    clear();login();status.textContent=word(2);
+    clear();if(!new URL(location.href).searchParams.has('setup'))login();status.textContent=word(2);
   }
   window.addEventListener('offline',lockDisconnected);
-  window.addEventListener('pagehide',()=>{if(token){clear();login();}});
-  window.addEventListener('online',()=>{if(token)list().catch(fail);});
-  lang.onchange=()=>{if(failureIndex!=null)status.textContent=word(failureIndex);render();};render();
+  window.addEventListener('pagehide',()=>{clear();});
+  window.addEventListener('pageshow',event=>{if(event.persisted){render();resume().catch(fail);}});
+  window.addEventListener('storage',event=>{
+    if((event.key===trustKey||event.key===null)&&rememberedId&&saved()?.id!==rememberedId){clear();login();}
+  });
+  window.addEventListener('online',()=>{if(token)list().catch(fail);else resume().catch(fail);});
+  lang.onchange=()=>{if(failureIndex!=null)status.textContent=word(failureIndex);render();};render();resume().catch(fail);
 })();
