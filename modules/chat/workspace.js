@@ -62,7 +62,7 @@
     const picker=el('input');picker.type='file';picker.hidden=true;composer.append(picker);
     // Calls never start automatically: only a user tap requests the microphone.
     // Owner/customer/staff identity and chat membership remain server-authoritative.
-    const callUI=root.WFChatCallUI?.mount?.({container:main,api,lang:()=>language});
+    const callUI=root.WFChatCallUI?.mount?.({container:app,historyContainer:feedBox,api,lang:()=>language});
     const roomName=r=>r?.kind==='team'&&!r.name?t('team'):(r?.name||t('direct'));
     const roomNow=id=>alive&&room?.id===id;
     function closeDialogs(){for(const d of container.querySelectorAll('dialog[open]'))d.close();}
@@ -223,6 +223,7 @@
           if(Math.abs(dx)>65&&Math.abs(dy)<36){setReply(m);return;}
           if(Math.abs(dx)<8&&Math.abs(dy)<8){if(selected.size)toggleSelect(m);else if(Date.now()-lastTap<320&&edit()){run(()=>react(m,'❤️'))();lastTap=0;return;}lastTap=Date.now();}};
       }
+      callUI?.renderHistoryInFeed?.();
     }
     function canEditMessage(m){return edit()&&m.authorId===me.id&&!m.forwarded&&(room.role!=='member'||Date.now()-Date.parse(m.createdAt)<=1800000);}
     function canDeleteMessage(m){return del()&&!m.event&&(room.role!=='member'||(m.authorId===me.id&&Date.now()-Date.parse(m.createdAt)<=3600000));}
