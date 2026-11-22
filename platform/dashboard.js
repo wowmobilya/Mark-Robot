@@ -137,7 +137,7 @@
     toggle.onclick=()=>{const show=pass.type==='password';pass.type=show?'text':'password';
       toggle.setAttribute('aria-pressed',String(show));toggle.textContent=visibility[show?1:0];toggle.setAttribute('aria-label',toggle.textContent+' '+t(2));};
     email.required=pass.required=true;email.autocomplete='username';pass.autocomplete='current-password';content.append(form);
-    const remember=el('input');remember.type='checkbox';remember.checked=canRemember();
+    const remember=el('input');remember.type='checkbox';
     if(canRemember()){
       const names={ar:'تذكّرني على هذا الجهاز لمدة ٧ أيام',en:'Remember me on this device for 7 days',tr:'Bu cihazda beni 7 gün hatırla',fr:'Se souvenir de moi sur cet appareil pendant 7 jours',ru:'Запомнить меня на этом устройстве на 7 дней'};
       const label=el('label');label.className='platform-remember';label.append(remember,document.createTextNode(names[lang.value]));form.append(label);
