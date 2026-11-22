@@ -594,6 +594,11 @@
     load().then(()=>{if(!alive()||opened)return;opened=true;
       if(params.orderId){const order=orders.find(o=>o.id===params.orderId);if(order)showDoc(exportsApi.makeDocument([order],{lang:language}),route==='gallery-orders'?'orders':'myorders');}
       if(params.productId!=null&&route==='gallery'){const visible=products.filter(p=>p.published),product=visible.find(p=>core.typed(p.productId)===core.typed(params.productId));if(product)lightbox(visible,product);}
+      if(params.productId!=null&&route==='gallery-studio'){
+        const product=products.find(p=>core.typed(p.productId)===core.typed(params.productId));
+        if(product){tab='stockAdmin';render();stockEditor(product,()=>render());}
+        else{status.textContent=text('productNotSynced');status.dataset.type='pending';}
+      }
     });
     return {dispose(){
       if(disposed)return;disposed=true;++generation;abort.abort();root.clearInterval(slideTimer);root.clearInterval(pollTimer);
