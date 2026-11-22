@@ -33,7 +33,7 @@ test('the complete repeatable release installs and the production Edge entrypoin
  const base='https://'+release.projectRef+'.supabase.co';
  const env={SUPABASE_URL:base,SUPABASE_SERVICE_ROLE_KEY:'local-fixture-service',WOW_ALLOWED_ORIGINS:release.productionOrigin};
  globalThis.Deno={env:{get:key=>env[key]},serve:handler=>{serve=handler;}};
- const allowed=new Set(['wow_service','wow_gallery_service','wow_files_service','wow_chat_service','wow_finance_service','wow_operations_service','wow_assistant_service','wow_customer_auth_service','wow_public_share_service','wow_communications_service']);
+ const allowed=new Set(['wow_service','wow_device_session','wow_gallery_service','wow_files_service','wow_chat_service','wow_finance_service','wow_operations_service','wow_assistant_service','wow_customer_auth_service','wow_public_share_service','wow_communications_service']);
  globalThis.fetch=async(url,options)=>{
   calls++;assert.equal(new URL(url).origin,base,'provider fixtures never make an external request');
   const path=new URL(url).pathname;
@@ -78,9 +78,9 @@ test('the complete repeatable release installs and the production Edge entrypoin
  assert.equal(options.status,200);assert.deepEqual(await options.json(),{ok:true,registrationEnabled:false,recoveryEnabled:false});
  const ownerLinkResponse=await call('auth.ownerActivationLink'),ownerLink=await ownerLinkResponse.json();assert.equal(ownerLinkResponse.status,200);
  const ownerProof=JSON.parse(Buffer.from(new URL(ownerLink.url).hash.slice('#wf-owner-activate='.length),'base64url').toString());
- const ownerActivationResponse=await call('auth.activateOwner',ownerProof,false),ownerActivation=await ownerActivationResponse.json();
+ const ownerActivationResponse=await call('auth.activateOwner',{...ownerProof,installationProof:'a'.repeat(64)},false),ownerActivation=await ownerActivationResponse.json();
  assert.equal(ownerActivationResponse.status,200);assert.equal(ownerActivation.identity.currentAccount.id,uid);assert.equal(ownerActivation.workspaceId,w);
- assert.equal((await call('auth.activateOwner',ownerProof,false)).status,401,'a consumed activation proof cannot open another session');
+ assert.equal((await call('auth.activateOwner',{...ownerProof,installationProof:'a'.repeat(64)},false)).status,401,'a consumed activation proof cannot open another session');
  const publicResponse=await serve(new Request(base+'/functions/v1/wow-cloud/public-share/'+randomUUID()+'/metadata'));
  assert.equal(publicResponse.status,503,'public publication stays disabled without the verified same-origin route');
  assert.equal((await serve(new Request(base+'/functions/v1/wow-cloud/mail-webhook'))).status,405);

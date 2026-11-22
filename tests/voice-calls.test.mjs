@@ -137,7 +137,7 @@ test('WOW familiar chat UI, in-chat events, customer signup and release source p
  read('../supabase/release.json')]);
  assert.match(signup,/actions\.append\(button\('register'/);
  assert.match(signup,/if\(!options\.registrationEnabled\)/);
- assert.match(html,/modules\/chat\/call-ui\.js\?v=4/);
+ assert.match(html,/modules\/chat\/call-ui\.js\?v=7/);
  assert.match(html,/modules\/chat\/realtime-channel\.js\?v=1/);
  assert.match(html,/data-release="227"/);assert.match(sw,/wow-furniture-v227-cloud/);
  assert.match(workspace,/callUI\.controls\(room\)/);
