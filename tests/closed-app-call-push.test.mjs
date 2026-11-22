@@ -45,6 +45,11 @@ test('incoming call queues an opt-in push, not an artificial text message',async
  assert.equal(jobs.length,1);assert.equal(jobs[0].subscription_id,subId);
  const details=(await db.query("select wow_notify.payload('call',$1,$2,$3) body",
   [call.id,workspace,customer])).rows[0].body;
+ // Another invitee can already have answered a group. The pending recipient still gets the invitation.
+ await db.query("update wow_voice.calls set status='active' where id=$1",[call.id]);
+ const pendingInvite=(await db.query("select wow_notify.payload('call',$1,$2,$3) body",[call.id,workspace,customer])).rows[0].body;
+ assert.equal(pendingInvite.callId,call.id);
+ await db.query("update wow_voice.calls set status='ringing' where id=$1",[call.id]);
  assert.equal(details.callId,call.id);assert.equal(details.roomId,room);
  assert.equal(details.mediaKind,'video');assert.equal(details.callerName,'owner');
  const payload=formatPushPayload({id:events[0].id,kind:'call',details,createdAt:Date.now()},

@@ -15,7 +15,7 @@ const {chromium}=require('playwright');
      const url=new URL(route.request().url());
      if(url.pathname==='/manager.js')return route.fulfill({contentType:'text/javascript',body:manager});
      return route.fulfill({contentType:'text/html',body:url.pathname==='/'?
-       '<iframe name="caller" src="/caller"></iframe><iframe name="callee" src="/callee"></iframe>':'<script src="/manager.js"></script>'});
+       '<iframe name="caller" src="/caller"></iframe><iframe name="callee" src="/callee"></iframe><iframe name="third" src="/third"></iframe><iframe name="fourth" src="/fourth"></iframe>':'<script src="/manager.js"></script>'});
    });
    await page.goto(origin);
    // Only the signaling transport and authorized server responses are simulated.
@@ -24,11 +24,12 @@ const {chromium}=require('playwright');
    await page.evaluate(testRelay=>{
      const topics=new Map(),ids=[crypto.randomUUID(),crypto.randomUUID()],room=crypto.randomUUID();
      let current=null;
+     window.addGroupPeers=()=>{for(const frame of [frames.third,frames.fourth]){ids.push(crypto.randomUUID());setup(frame,ids.length-1);}};
      window.dropParticipant=id=>{current.participants.find(p=>p.id===id).status='left';};
      window.setup=(peer,index)=>{
        const me=ids[index],newId=()=>crypto.randomUUID();peer.userId=me;peer.events=[];
        peer.received=[];peer.errors=[];peer.connections=[];
-       const Native=peer.RTCPeerConnection;
+       const Native=peer.originalPeerConnection||peer.RTCPeerConnection;peer.originalPeerConnection=Native;
        peer.RTCPeerConnection=class extends Native{
          constructor(config){super(testRelay?{...config,iceTransportPolicy:'relay'}:config);peer.connections.push(this);}
        };
@@ -141,6 +142,33 @@ const {chromium}=require('playwright');
    assert.equal(await a.evaluate(()=>lateStart),'CALL_CANCELLED');
    assert.equal(await a.evaluate(()=>events.filter(e=>e==='end').length),endsBefore+1);
    console.log('Permission retry, membership removal, revoked session and late start cancellation passed.');
+   await page.evaluate(()=>addGroupPeers());
+   const group=[a,b,page.frame({name:'third'}),page.frame({name:'fourth'})];
+   // Earlier tests deliberately disposed the first manager, so create it again in a fresh frame.
+   await page.evaluate(()=>{frames.caller.deferStart=false;setup(frames.caller,0);});
+   await Promise.all(group.map(frame=>frame.evaluate(()=>manager.selectRoom(room))));
+   await a.evaluate(()=>manager.start(room,'video'));
+   for(const frame of group.slice(1))await frame.waitForFunction(()=>manager.getState().call?.status==='ringing');
+   for(const frame of group.slice(1))await frame.evaluate(()=>manager.accept());
+   const groupDeadline=Date.now()+20000;
+   let counts=[];
+   do {
+     counts=await Promise.all(group.map(frame=>frame.evaluate(async()=>{
+       await manager.poll();
+       const pcs=connections.filter(pc=>pc.connectionState==='connected');
+       const receiving=await Promise.all(pcs.map(async pc=>{
+         const stats=[...(await pc.getStats()).values()].filter(s=>s.type==='inbound-rtp'&&s.packetsReceived>0);
+         return stats.some(s=>s.kind==='audio')&&stats.some(s=>s.kind==='video'&&s.framesDecoded>0);
+       }));
+       return receiving.filter(Boolean).length;
+     })));
+     if(counts.every(n=>n>=3))break;
+     await new Promise(resolve=>setTimeout(resolve,200));
+   }while(Date.now()<groupDeadline);
+   assert.deepEqual(counts,[3,3,3,3],'four participants must each receive three audio and video streams');
+   await a.evaluate(()=>manager.finish());
+   console.log('Four participants exchanged audio RTP and decoded video over all twelve inbound paths.');
+
 
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
