@@ -12,14 +12,14 @@
   };
   const labels=()=>words[document.documentElement.lang]||words.ar;
   const E=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!=null)el.textContent=text;return el;};
-  const originalRobot=\`<svg xmlns="http://www.w3.org/2000/svg" viewBox="60 -70 480 480">
+  const originalRobot=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="60 -70 480 480">
     <rect x="60" y="-70" width="480" height="480" rx="84" fill="#eff5f6"/>
     <defs><g id="eye"><path d="M -29 -70 Q 0 -80 29 -70" fill="none" stroke="#171923" stroke-width="7" stroke-linecap="round"/>
     <ellipse rx="34" ry="50" fill="#171923"/><ellipse cx="-10" cy="-18" rx="10" ry="13" fill="#fff"/>
     <circle cx="13" cy="19" r="4" fill="#d7d7dd"/></g></defs>
     <use href="#eye" transform="translate(174 147.84)"/><use href="#eye" transform="translate(426 147.84)"/>
     <path d="M 274 252.72 Q 300 273.72 326 252.72" fill="none" stroke="#171923" stroke-width="9" stroke-linecap="round"/>
-  </svg>\`;
+  </svg>`;
   function markQr(svg){
     if(!svg?.classList?.contains('platform-setup-qr')||svg.querySelector('[data-wow-robot-qr]'))return svg;
     const box=document.createElementNS(ns,'rect');
