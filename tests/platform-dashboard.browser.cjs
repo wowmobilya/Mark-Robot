@@ -65,7 +65,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
       if(f==='vendor/zxing-browser.min.js')qrDownloads++;
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/analytics.js','platform/admin-audio.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/analytics.js','platform/admin-audio.js','platform/pricing-cards.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
     await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');
@@ -259,7 +259,18 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     canRecover=true;await company.getByRole('button',{name:'Owner setup'}).click();await page.getByRole('button',{name:'Send recovery email'}).click();
     const recovery=page.getByRole('form',{name:'Owner setup'});assert.equal(events.includes('platform.company.recover'),false);
     await recovery.getByRole('button',{name:'Send recovery email'}).click();await page.getByText('Recovery email requested.').waitFor();
-    await menu.getByRole('link',{name:'Plans'}).click();await page.getByLabel('Plan',{exact:true}).last().fill('Test plan');await page.getByLabel('Active user limit').fill('5');
+    await menu.getByRole('link',{name:'Plans'}).click();
+    const pricing=page.locator('.platform-pricing-dashboard');
+    await pricing.waitFor();
+    assert.equal(await pricing.locator('.platform-pricing-card').count(),3);
+    assert.equal(await pricing.locator('[data-tier=year] .platform-plan-price').innerText(),'$1,000');
+    await pricing.locator('[data-tier=month] .platform-plan-edit').click();
+    assert.equal(await page.getByLabel('Subscription price').inputValue(),'100');
+    assert.equal(await page.getByLabel('Currency').inputValue(),'USD');
+    assert.equal(await page.getByLabel('Duration in days').inputValue(),'30');
+    assert.equal(events.filter(item=>item==='platform.plans.save').length,0,'template does not silently save or charge');
+    await page.locator('.platform-plan-editor > select').selectOption('');
+    await page.getByLabel('Plan',{exact:true}).last().fill('Test plan');await page.getByLabel('Active user limit').fill('5');
     await page.getByLabel('File storage limit').fill('1.5');await page.getByLabel('Storage unit').selectOption('GB');
     await page.getByLabel('Subscription price').fill('14.9975');await page.getByLabel('Currency').fill('eur');await page.getByLabel('Duration in days').fill('30');
     await page.getByLabel('Device limit').fill('3');await page.getByRole('button',{name:'Save'}).click();await page.waitForFunction(()=>!document.querySelector('form button:disabled'));
@@ -338,7 +349,7 @@ test('trusted founder device rotates, revalidates founder access and forgets log
         return route.fulfill({json:{ok:true,cases:[],unreadCases:0}});
       }
       if(file==='platform/'||file==='platform/index.html')return route.fulfill({path:path.join(__dirname,'../platform/index.html')});
-      if(['platform/dashboard.js','platform/dashboard.css','platform/admin-shell.js','platform/analytics.js','platform/qr-invite.js','platform/admin-audio.js','platform/preferences.js','platform/support.js','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
+      if(['platform/dashboard.js','platform/dashboard.css','platform/admin-shell.js','platform/analytics.js','platform/qr-invite.js','platform/admin-audio.js','platform/pricing-cards.js','platform/preferences.js','platform/support.js','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
       return route.abort();
     });
     const signin=async trusted=>{
