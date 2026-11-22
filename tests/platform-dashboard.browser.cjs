@@ -114,7 +114,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
         overflow:document.documentElement.scrollWidth>innerWidth}));
       assert(!metrics.overflow);
       assert(metrics.links.every(link=>link.height>=44&&link.width>=44));
-      if(width<=620){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[2].path,'#companies');}
+      if(width<=620){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[0].path,'#companies');assert.equal(metrics.links[2].path,'#support');}
       else if(width>900){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[0].path,'#companies');}
     }
     await menu.getByRole('link',{name:'Companies'}).click();
