@@ -103,3 +103,27 @@ test('late evidence cannot render after identity changes, and no-source accounts
   const q=await page({sources:{}});await wait(()=>q.container.textContent.includes(C.t('noSource','en')));
   assert(!q.button(C.t('run','en')));q.handle.dispose();
 });
+
+test('review priorities keep duplicate barcode groups and currencies separate',()=>{
+  const grouped=C.reviewGroups([
+    {ref:'E1',source:'products',finding:'duplicateBarcode',barcode:'A'},
+    {ref:'E2',source:'products',finding:'duplicateBarcode',barcode:'A'},
+    {ref:'E3',source:'products',finding:'duplicateBarcode',barcode:'B'},
+    {ref:'E4',source:'finance',finding:'netOut',currency:'TRY'},
+    {ref:'E5',source:'finance',finding:'netOut',currency:'EUR'},
+    {ref:'E6',source:'chat',text:'موعد التسليم؟'}]);
+  assert.deepEqual(grouped.map(g=>g.rows.map(r=>r.ref)),[['E1','E2'],['E3'],['E4'],['E5'],['E6']]);
+});
+
+test('a follow-up draft uses current evidence locally and is cleared when the session changes',async()=>{
+  const p=await page({configured:false});
+  try{
+    await p.runQuery();await wait(()=>p.button(C.t('prepareDraft','en')));
+    p.button(C.t('prepareDraft','en')).fire('click');await wait(()=>p.field('localDraft'));
+    const draft=p.field('localDraft');assert.match(draft.value,/\[E1\].*Oak chair/);assert.match(draft.value,/\[E2\].*Oak stool/);
+    draft.value='Edited locally';draft.fire('input');assert(p.handle.hasUnsavedChanges());
+    assert.deepEqual(p.events.map(x=>x.action),['assistant.status','assistant.inspect']);
+    p.session.userId='another';p.root.dispatchEvent(new Event('wf-account-access-change'));
+    assert.equal(p.container.children.length,0);
+  }finally{p.handle.dispose();}
+});

@@ -253,8 +253,17 @@
     for (const word of words) {
       if (word.length > MAX_CHUNK_LENGTH) fail('oversized-word');
       if (current && current.length + 1 + word.length > MAX_CHUNK_LENGTH) {
-        chunks.push({ text: current, charIndex, charLength });
-        current = '';
+        // Keep the breath at a clause ending when the tail still fits with
+        // the next word. Preserve the exact financial wording and source span.
+        const split=Math.max(...[',',';','?','!','.'].map(mark=>current.lastIndexOf(mark+' ')))+1;
+        const tail=split>0?current.slice(split).trimStart():'';
+        if(split>=MAX_CHUNK_LENGTH*.55&&tail.length+1+word.length<=MAX_CHUNK_LENGTH){
+          chunks.push({text:current.slice(0,split),charIndex,charLength});
+          current=tail;
+        }else{
+          chunks.push({text:current,charIndex,charLength});
+          current='';
+        }
       }
       current += (current ? ' ' : '') + word;
     }

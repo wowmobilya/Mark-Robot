@@ -139,8 +139,8 @@ test('token refresh cannot silently accept a changed account permission epoch',a
 });
 
 test('copied employee links never retain the owner account-management query',async()=>{
-  const h=harness();await login(h.client);const link=new URL(h.client.entryUrl('https://wow.example/?wf-accounts=cloud#settings'));
-  assert.equal(link.searchParams.get('wf-cloud'),'employee');assert.equal(link.searchParams.has('wf-accounts'),false);
+  const h=harness();await login(h.client);const link=new URL(h.client.entryUrl('https://wow.example/Mark-Robot/?wf-accounts=cloud&private-context=1#settings'));
+  assert.equal(link.searchParams.get('wf-cloud'),'employee');assert.deepEqual([...link.searchParams.keys()],['wf-cloud','workspace']);assert.equal(link.pathname,'/Mark-Robot/');
 });
 
 test('logout unregisters device push while the bearer is valid and still locks when push cleanup fails',async t=>{

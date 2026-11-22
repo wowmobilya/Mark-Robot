@@ -36,7 +36,7 @@ const amount = value => integer(value,0,MAX_PRICE);
 const optionalAsset = value => value ? uuid(value) : null;
 function specs(entry) {
   if (entry == null) return {};
-  if (!plain(entry) || Object.keys(entry).length > 25) invalid();
+  if (!plain(entry) || Object.keys(entry).length > 100) invalid();
   return Object.fromEntries(Object.entries(entry).map(([name,value]) => [key(name),string(value,160)]));
 }
 function listing(item) {
@@ -57,10 +57,11 @@ function presentation(value) {
     if (!plain(item)) invalid();
     return {id:key(item.id),title:string(item.title,120,true),subtitle:string(item.subtitle,160),description:string(item.description,400),
       countLabel:string(item.countLabel,60),buttonText:string(item.buttonText,80),priceLabel:string(item.priceLabel,80),
-      collection:string(item.collection,80),imageId:optionalAsset(item.imageId),visible:bool(item.visible ?? true)};
+      collection:string(item.collection,80),imageId:optionalAsset(item.imageId),
+      ...(item.legacyImage?{legacyImage:choice(item.legacyImage,['tv-card','orta-card','orders-card','dresuar-card','tv-slide','orta-slide','dresuar-slide'])}:{}),visible:bool(item.visible ?? true)};
   };
   return {cards:list(value.cards ?? [],40,card,'id'),slides:list(value.slides ?? [],40,card,'id'),
-    fields:list(value.fields ?? [],25,item => ({id:key(item.id),label:string(item.label,80,true),unit:string(item.unit,30),
+    fields:list(value.fields ?? [],100,item => ({id:key(item.id),label:string(item.label,80,true),unit:string(item.unit,30),
       icon:choice(item.icon || 'ruler',['ruler','weight','box','length','width','height','tag']),visible:bool(item.visible ?? true)}),'id'),
     autoplay:bool(value.autoplay ?? true),interval:integer(value.interval ?? 6,2,60),tagline:string(value.tagline,160),footer:string(value.footer,240),
     ogTitle:string(value.ogTitle,140),ogDescription:string(value.ogDescription,300),ogImageId:optionalAsset(value.ogImageId),

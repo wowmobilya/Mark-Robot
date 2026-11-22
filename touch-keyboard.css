@@ -73,3 +73,29 @@
   }
 }
 @media print { #wfTouchKeyboard { display: none !important; } }
+@media screen {
+  html body #wfTouchKeyboard {
+    max-block-size:calc(100dvh - max(8px,env(safe-area-inset-top,0px)));
+    padding-inline:max(0px,env(safe-area-inset-left,0px)) max(0px,env(safe-area-inset-right,0px));
+  }
+  #wfTouchKeyboard .wf-tk-body { background:var(--window-muted,var(--input,#f4f7fa)); border-block-start:1px solid var(--border); padding-block-start:6px; }
+  #wfTouchKeyboard .wf-tk-header > .wf-tk-close { flex-basis:44px; min-block-size:44px; }
+  #wfTouchKeyboard .wf-tk-languages { background:transparent; padding:0; }
+  #wfTouchKeyboard .wf-tk-language { min-block-size:36px; }
+  #wfTouchKeyboard .wf-tk-footer .wf-tk-key { min-block-size:44px; }
+}
+@media screen and (orientation:landscape) and (max-height:500px) and (min-width:600px) {
+  html body #wfTouchKeyboard[open] {
+    display:grid; grid-template-columns:minmax(160px,.44fr) minmax(0,1fr);
+    grid-template-rows:auto auto auto minmax(0,1fr) auto;
+    grid-template-areas:"heading keys" "editor keys" "tools keys" "error keys" "footer footer";
+    align-content:start;
+  }
+  #wfTouchKeyboard .wf-tk-header { grid-area:heading; }
+  #wfTouchKeyboard .wf-tk-edit-host { grid-area:editor; }
+  #wfTouchKeyboard .wf-tk-toolbar { grid-area:tools; flex-wrap:wrap; }
+  #wfTouchKeyboard .wf-tk-body { grid-area:keys; border-block:0; border-inline-start:1px solid var(--border); }
+  #wfTouchKeyboard .wf-tk-footer { grid-area:footer; }
+  #wfTouchKeyboard .wf-tk-error { grid-area:error; overflow:auto; }
+  #wfTouchKeyboard .wf-tk-key { min-block-size:36px; }
+}

@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {readFile,realpath,stat,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
+import {writePrivateFile} from './write-private-file.mjs';
 
 const projectRef='sldthbnigivpsqixccah';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -45,6 +46,23 @@ function classifyAsset(row){
  // Non-canonical HTTP URLs, inline data, and arbitrary foreign objects are never
  // treated as trusted WOW private media. Transfer bytes/hash with a separate adapter.
  return 'verification-required';
+}
+function pieceDimensions(row,fields){
+ if(row.dims==null)return [];
+ if(!Array.isArray(row.dims)||row.dims.length>50)throw Error('INVALID_LEGACY_PIECES');
+ return row.dims.map(piece=>{
+   if(!object(piece)||typeof piece.name!=='string'||piece.name.length>80)throw Error('INVALID_LEGACY_PIECE');
+   const dim={name:piece.name},specs={};
+   for(const [key,value] of Object.entries(piece)){
+     if(key==='name'||key==='icon'||value==null||value==='')continue;
+     if(!['l','w','h','kg'].includes(key)&&!fields.has(key))throw Error('LEGACY_DIMENSION_DEFINITION_REQUIRED');
+     if(typeof value!=='number'||!Number.isFinite(value)||value<0)throw Error('INVALID_LEGACY_MEASUREMENT');
+     if(key==='kg')dim.weight=value;
+     else if(['l','w','h'].includes(key))dim[key]=value;
+     else specs[key]=value;
+   }
+   return Object.keys(specs).length?{...dim,specs}:dim;
+ });
 }
 function onlyFields(row){
  return {id:row.id,title:row.title,stock:row.stock,is_active:row.is_active!==false,
@@ -107,6 +125,17 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
      model&&candidate.length===1&&sourcesByCode.get(model)===1?id(candidate[0].id):null;
    if(target){const all=proposedTargets.get(target)||[];all.push(sourceKey);proposedTargets.set(target,all);}
  }
+ const definitions=legacy.dimension_fields??legacy.tables?.dimension_fields??[];
+ if(!Array.isArray(definitions)||definitions.length>100)throw Error('INVALID_LEGACY_DIMENSION_FIELDS');
+ const fields=new Map();
+ for(const f of definitions){
+   if(!object(f)||typeof f.field_key!=='string'||!/^([a-zA-Z0-9_-]{1,70})$/.test(f.field_key)||['__proto__','constructor','prototype'].includes(f.field_key)||
+      fields.has(f.field_key)||typeof f.field_label!=='string'||!f.field_label.trim()||f.field_label.length>80||
+      (f.field_unit!=null&&(typeof f.field_unit!=='string'||f.field_unit.length>30))||
+      typeof f.is_visible!=='boolean'||!Number.isSafeInteger(f.order_num))throw Error('INVALID_LEGACY_DIMENSION_FIELD');
+   fields.set(f.field_key,{id:f.field_key,label:f.field_label,unit:f.field_unit??'',visible:f.is_visible,order:f.order_num});
+ }
+ const dimensionFields=[...fields.values()].sort((a,b)=>a.order-b.order||a.id.localeCompare(b.id,'en'));
  const decisions=[],warnings=[];
  const synced=primary.fullPrimarySyncVerified===true;
  for(const row of [...inventory].sort((a,b)=>id(a.id).localeCompare(id(b.id),'en'))){
@@ -125,7 +154,9 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
    if(prior&&prior.stock!==row.stock)conflicts.push('STOCK_RECONCILIATION_REQUIRED');
    if(row.price!=null)warnings.push({sourceId:row.id,code:'LEGACY_PRICE_NOT_AUTHORITY'});
    if(row.image_url)warnings.push({sourceId:row.id,code:'SOURCE_MEDIA_BYTES_UNVERIFIED'});
-   const source=onlyFields(row);
+   const dims=pieceDimensions(row,fields);
+   const source={...onlyFields(row),dims};
+   if(matching&&dims.length)warnings.push({sourceId:row.id,code:'COMPARE_PIECES_WITH_PRIMARY'});
    const destination=matching?{id:matching.id,revision:matching.revision,mode:'preserve-primary'}:
      {id:'galeri-inventory:'+legacyId,revision:0,mode:'new-primary-draft'};
    if(!matching&&targets.has(id(destination.id)))conflicts.push('TARGET_ID_COLLISION');
@@ -137,7 +168,7 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
      badge:'',specs:{},expectedVersion:0};
    const draft=decision==='create-unpublished-draft'?{
      id:destination.id,name:row.title.trim().normalize('NFC'),code:row.title.trim().normalize('NFC'),
-     type:typeof row.cat==='string'?row.cat.slice(0,80):'',
+     type:typeof row.cat==='string'?row.cat.slice(0,80):'',dims,
      // No guessed price, external image pointer, customer identity or old password.
      legacyImport:{source:'Galeri.TR/inventory',sourceId:row.id}
    }:null;
@@ -153,9 +184,9 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
    missingLegacyPrice:decisions.filter(x=>!x.source.hasPrice).length};
  return {format:'wow-model-unification-plan/1',mode:'preview-only',projectRef,
    workspaceId:primary.workspaceId,primaryDataRevision:primary.dataRevision,fullPrimarySyncVerified:synced,
-   applyReady:false,summary,decisions,warnings,
+   applyReady:false,summary,decisions,warnings,dimensionFields,
    // Keep an immutable local comparison indicator, not a bearer credential.
-   evidenceDigest:sha({source:inventory.map(onlyFields),primary:primaryProducts.map(x=>[x.id,x.revision,x.name,x.code]),
+   evidenceDigest:sha({dimensionFields,decisions,primary:primaryProducts.map(x=>[x.id,x.revision,x.name,x.code]),
      listings:primaryListings.map(x=>[x.productId,x.version,x.stock]),workspaceId:primary.workspaceId,dataRevision:primary.dataRevision}),
    nextGate:'AUTHENTICATED_OWNER_MIGRATION_WITH_TRANSACTIONAL_RECHECK_AND_MEDIA_BYTES'};
 }
@@ -170,7 +201,7 @@ export async function main(args){
  const dest=path.join(await realpath(path.dirname(c)),path.basename(c));
  if(dest===repo||dest.startsWith(repo+path.sep))throw Error('PRIVATE_REPORT_MUST_STAY_OUTSIDE_REPOSITORY');
  const result=buildModelTransferPlan({legacy:await input(a),primary:await input(b)});
- await writeFile(dest,JSON.stringify(result,null,2)+'\n',{flag:'wx',mode:0o600});
+ await writePrivateFile(dest,JSON.stringify(result,null,2)+'\n');
  return {mode:result.mode,...result.summary,evidenceDigest:result.evidenceDigest,applyReady:false};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

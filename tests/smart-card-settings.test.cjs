@@ -4,12 +4,15 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const {pages, normalize, persist, copy} = require('../smart-card-settings.js');
 
-test('smart-card preferences default to the original five faces and manual playback', () => {
+test('smart-card preferences default to six faces and manual playback', () => {
   const original = normalize();
   assert.deepEqual(original.order, pages);
   assert.deepEqual(original.visible, pages);
   assert.equal(original.initial, pages[4]);
   assert.equal(original.autoplay, false);
+  const oldPages=pages.slice(0,-1);
+  assert.deepEqual(normalize({visible:oldPages,order:oldPages}).visible,pages);
+  assert.deepEqual(normalize({visible:[pages[4]],order:oldPages}).visible,[pages[4]]);
   assert.equal(normalize({}, true).autoplay, true);
   assert.equal(normalize({autoplay:false}, true).autoplay, false);
   for (const words of Object.values(copy)) assert.equal(words.filter(Boolean).length,5);
@@ -17,7 +20,7 @@ test('smart-card preferences default to the original five faces and manual playb
 
 test('imported smart-card preferences keep a valid order, opening face and timing', () => {
   const pref = normalize({order:[pages[3],pages[3],'bad'],visible:[],initial:pages[1],interval:90,density:'bad'});
-  assert.equal(pref.order.length,5);
+  assert.equal(pref.order.length,6);
   assert.deepEqual(pref.visible,[pages[3]]);
   assert.equal(pref.initial,pages[3]);
   assert.equal(pref.interval,30);

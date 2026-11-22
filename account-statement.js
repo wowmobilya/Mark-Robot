@@ -431,7 +431,7 @@ function render(){
  if(!state.clientId)return;let m;try{m=buildModel();}catch(err){notice(t(err.message==='INVALID_DATE_RANGE'?'dateRangeError':'failed'));return;}
  state.model=m;const L=uiLang(),e=q('wfsa');e.dir=L==='ar'?'rtl':'ltr';e.lang=L;
  const clients=(app().companies||[]).map(c=>[String(c.id),c.name||c.buyerName||String(c.id)]);
- e.innerHTML=`<div class="wsa-shell"><header class="wsa-head"><div class="wsa-brand"><div class="wsa-mark">WOW</div><div><h1 id="wfsaTitle">${t('title')}</h1><div class="wsa-muted">${t('subtitle')}</div></div></div><div class="wsa-actions"><button data-wf-permission="payments.print" data-action="preview">${t('preview')}</button><button class="wsa-primary" data-wf-permission="payments.export" data-action="pdf">${t('pdf')}</button><button data-wf-permission="payments.export" data-action="excel">${t('excel')}</button><button data-wf-permission="payments.export" data-action="sharePDF">${t('sharePDF')}</button><button data-wf-permission="payments.export" data-action="shareExcel">${t('shareExcel')}</button><button data-action="close" aria-label="${t('close')}">✕ ${t('close')}</button></div></header>
+ e.innerHTML=`<div class="wsa-shell"><header class="wsa-head"><div class="wsa-brand"><div class="wsa-mark">WOW</div><div><h1 id="wfsaTitle">${t('title')}</h1><div class="wsa-muted">${t('subtitle')}</div></div></div><div class="wsa-actions"><button data-wf-permission="payments.print" data-action="preview">${t('preview')}</button><button class="wsa-primary" data-wf-permission="payments.export" data-action="pdf">${t('pdf')}</button><button data-wf-permission="payments.export" data-action="excel">${t('excel')}</button><button data-wf-permission="payments.export" data-action="sharePDF">${t('sharePDF')}</button><button data-wf-permission="payments.export" data-action="shareExcel">${t('shareExcel')}</button>${root.WFStatementDelivery?.available()?'<button data-action="schedule" data-wf-permission="payments.export">'+esc(root.WFStatementDelivery.label(uiLang()))+'</button>':''}<button data-action="close" aria-label="${t('close')}">✕ ${t('close')}</button></div></header>
  <div class="wsa-filters"><label>${t('client')}<select id="wfsaClient">${optionsHTML(clients,state.clientId)}</select></label><label>${t('period')}<select id="wfsaPeriod">${optionsHTML(['all','month','last30','custom'].map(v=>[v,t(v)]),state.preset)}</select></label><label>${t('from')}<input id="wfsaFrom" type="date" value="${esc(state.from)}"></label><label>${t('to')}<input id="wfsaTo" type="date" value="${esc(state.to)}"></label><label>${t('currency')}<select id="wfsaCurrency">${optionsHTML([['ALL',t('allCurrencies')],['USD','USD'],['EUR','EUR'],['TRY','TRY']],state.currency)}</select></label><label>${t('reportLang')}<select id="wfsaLang">${optionsHTML([['ar','العربية'],['tr','Türkçe'],['en','English'],['fr','Français'],['ru','Русский']],state.lang)}</select></label></div>
  <div class="wsa-options"><label class="wsa-check"><input id="wfsaDetails" type="checkbox"${state.details?' checked':''}>${t('detail')}</label><div class="wsa-actions"><span class="wsa-badge">${t('base')}</span><button data-action="refresh">↻ ${t('refresh')}</button></div></div>
  <div id="wfsaMessage" class="wsa-notice" role="status" aria-live="polite"></div>
@@ -488,7 +488,7 @@ function onClick(ev){const b=ev.target.closest('button');if(!b)return;
  if(a==='previous'||a==='next'){state.page=Math.max(0,state.page+(a==='next'?1:-1));renderContent();}
  if(a==='invoice'){const id=app().invoices.find(i=>String(i.id)===b.dataset.invoice)?.id;if(id!=null){close();root.previewSaved(id);}}
  if(a==='payment'){const id=app().invoices.find(i=>String(i.id)===b.dataset.invoice)?.id;if(id!=null){close();root.openPaymentMgmt(id);}}
- if(['pdf','excel','preview','sharePDF','shareExcel'].includes(a))exportAction(a);
+ if(['pdf','excel','preview','sharePDF','shareExcel','schedule'].includes(a))exportAction(a);
  if(a==='shareReady'&&state.readyFile)shareReady(state.readyFile);
  if(a==='downloadReady'&&state.readyFile)download(state.readyFile);
 }
@@ -506,13 +506,19 @@ async function exportAction(action){
   if(root.WFAccountAccess&&!root.WFAccountAccess.allow(action==='preview'?'payments.print':'payments.export'))return;
  if(state.busy)return;let m;try{m=buildModel();}catch(e){notice(t('dateRangeError'));return;}
  const L=state.lang||uiLang(),detail=state.details,key=modelKey(m,L,detail),ext=action==='excel'||action==='shareExcel'?'xlsx':'pdf';
- if(state.cache.has(key+'|'+ext)){const f=state.cache.get(key+'|'+ext);if(action.startsWith('share')){ready(f);return;}if(action==='preview'){preview(f);return;}download(f);return;}
+ const scheduleScope=action==='schedule'?root.WFCloud?.getSnapshot():null;
+ const schedule=f=>{
+   const current=root.WFCloud?.getSnapshot();
+   if(!current?.authenticated||!scheduleScope||current.authGeneration!==scheduleScope.authGeneration||current.userId!==scheduleScope.userId||current.workspaceId!==scheduleScope.workspaceId)return;
+   root.WFStatementDelivery?.open({file:f,companyId:m.client.id,language:L,reportTitle:t('title',L)});
+ };
+ if(state.cache.has(key+'|'+ext)){const f=state.cache.get(key+'|'+ext);if(action==='schedule'){schedule(f);return;}if(action.startsWith('share')){ready(f);return;}if(action==='preview'){preview(f);return;}download(f);return;}
  state.busy=true;state.cancel=false;notice('');q('wfsa')?.setAttribute('aria-busy','true');lock(true);progress(t('preparing'));
  try{
   let blob;if(ext==='xlsx'){await new Promise(r=>setTimeout(r,0));cancelCheck();blob=makeWorkbook(m,L);}else blob=await makePDF(m,L,detail);
   cancelCheck();const file=new File([blob],filename(m,ext),{type:ext==='pdf'?'application/pdf':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',lastModified:Date.now()});
   if(state.cache.size>3)state.cache.clear();state.cache.set(key+'|'+ext,file);
-  if(action.startsWith('share'))ready(file);else if(action==='preview')preview(file);else download(file);
+  if(action==='schedule')schedule(file);else if(action.startsWith('share'))ready(file);else if(action==='preview')preview(file);else download(file);
  }catch(e){console.error('WOW account statement export',e);notice(e.message==='STATEMENT_CANCELLED'?t('cancelled'):t('failed')+' ['+String(e.message).slice(0,100)+']');}
  finally{state.busy=false;lock(false);q('wfsa')?.removeAttribute('aria-busy');progress('');}
 }

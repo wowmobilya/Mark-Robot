@@ -174,7 +174,7 @@
     let startTimer = null;
     let beatTimer = null;
     let expressionTimer = null;
-    let expressionStep = 0;
+    let expressionStep = 0, spokenClause = "";
     let voices = [];
     let disposed = false;
     let preferences = {autoExpressions: true, idleMotion: true, speechEnabled: true, speechRate: 1, speechVolume: 1, arabicDialect: 'sy', speechBackend: 'reference', continuousSpeech: false};
@@ -230,6 +230,7 @@
     function visible() { return !disposed; }
 
     function setExpression(expression) {
+      delete face.dataset.robotMood;
       face.dataset.expression = expression;
       mouth.setAttribute('d', mouthShapes[expression]);
     }
@@ -458,7 +459,12 @@
       reportVoice(state, pack);
     }
 
-    function beginTalking() {
+    function speakExpression(line,phase){
+      if(!preferences.autoExpressions)return;
+      const engine=window.WFRobotExpression;
+      if(engine)engine.apply(face,engine.analyze(line,'',phase));
+    }
+    function beginTalking(line = greeting().greeting) {
       if (paused || disposed) return;
       phase = ''; failureReason = '';
       clearTimeout(startTimer);
@@ -468,11 +474,12 @@
       expressionStep = 0;
       automaticExpression('happy');
       clearTimeout(expressionTimer);
-      const sequence = ['happy', 'calm', 'thinking', 'happy'];
+      spokenClause=line;
+      speakExpression(spokenClause,0);
       const nextExpression = () => {
         if (!active() || state !== 'speaking') return;
         if (!preferences.autoExpressions || root.dataset.wfMotion === 'reduced' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-        automaticExpression(sequence[++expressionStep % sequence.length]);
+        speakExpression(spokenClause,++expressionStep % 3);
         expressionTimer = setTimeout(nextExpression, 3200);
       };
       expressionTimer = setTimeout(nextExpression, 3200);
@@ -595,7 +602,7 @@
             if (offlineRequest !== request || paused) return;
             if (!visible()) { finish('ready', true); return; }
             request.started = true;
-            beginTalking();
+            beginTalking(chunks?.[0]?.text||text);
           },
           onPause(detail) { if (offlineRequest === request) markPaused(detail?.reason || 'user'); },
           onResume() { if (offlineRequest === request) { paused = false; pauseReason = ''; state = 'preparing'; phase = 'audio-resume'; resetPreparationTimer(); render(); reportPlayback('preparing', speechMessage('preparing')); } },
@@ -608,10 +615,13 @@
             automaticExpression('thinking'); render(); reportPlayback('preparing');
           },
           onBoundary(boundary) {
-            if (offlineRequest !== request || sessionKind !== 'report' || paused) return;
+            if (offlineRequest !== request || paused) return;
             const charIndex = Math.max(0, Math.min(text.length, Number(boundary?.charIndex) || 0));
             const charLength = Math.max(0, Math.min(text.length - charIndex, Number(boundary?.charLength) || 0));
-            reportEvent('wf-robot-report-boundary', {charIndex, charLength});
+            spokenClause=text.slice(charIndex,charIndex+charLength);
+            const phase=charIndex===0?0:charIndex+charLength>=text.length?2:1;
+            expressionStep=phase;speakExpression(spokenClause,phase);
+            if(sessionKind==='report')reportEvent('wf-robot-report-boundary', {charIndex, charLength});
           },
           onEnd() { if (offlineRequest === request) finish(); },
           onError(problem) {

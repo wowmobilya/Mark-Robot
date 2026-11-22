@@ -9,7 +9,14 @@ export const PROVIDER_FIXTURES=`
 create role anon;
 create role authenticated;
 create role service_role bypassrls;
-create schema auth;create schema storage;create schema vault;create schema net;create schema cron;create schema extensions;
+create schema auth;create schema storage;create schema vault;create schema net;create schema cron;create schema extensions;create schema realtime;
+create table realtime.messages(topic text,extension text);
+create or replace function realtime.topic() returns text language sql stable as $$
+ select nullif(current_setting('realtime.topic',true),'') $$;
+create or replace function auth.uid() returns uuid language sql stable as $$
+ select nullif((coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb)->>'sub'),'')::uuid $$;
+create or replace function auth.jwt() returns jsonb language sql stable as $$
+ select coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb) $$;
 create table auth.users(id uuid primary key,instance_id uuid,aud text,role text,email text,email_confirmed_at timestamptz,
   created_at timestamptz,updated_at timestamptz,is_anonymous boolean default false,deleted_at timestamptz,banned_until timestamptz);
 create table auth.sessions(id uuid primary key,user_id uuid not null references auth.users(id),created_at timestamptz,updated_at timestamptz,aal text,not_after timestamptz);

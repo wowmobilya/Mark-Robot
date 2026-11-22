@@ -1,5 +1,5 @@
 {
-  "version": 211,
+  "version": 221,
   "name": "مارك ربوت",
   "projectRef": "sldthbnigivpsqixccah",
   "productionOrigin": "https://markrobot.wowfurniture.com.tr",
@@ -7,18 +7,24 @@
   "entrypoint": "functions/wow-cloud/index.ts",
   "migrations": [
     "wow-schema.sql",
+    "modules/platform-companies.sql",
     "modules/files.sql",
     "modules/chat.sql",
+    "modules/voice-calls.sql",
     "modules/finance.sql",
     "modules/gallery.sql",
     "modules/assistant.sql",
     "modules/operations.sql",
     "modules/notifications.sql",
+    "modules/voice-call-push.sql",
     "modules/maintenance.sql",
     "modules/customer-auth.sql",
     "modules/public-share.sql",
     "modules/communications.sql",
-    "modules/offline-owner.sql"
+    "modules/offline-owner.sql",
+    "modules/tenant-limits.sql",
+    "modules/statement-delivery.sql",
+    "modules/order-sms.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",
@@ -28,6 +34,8 @@
     "two-device-offline-reconciliation",
     "closed-app-web-push",
     "verified-smtp-delivery",
-    "owner-origin-data-handover"
+    "owner-origin-data-handover",
+    "real-two-device-voice-calling-with-tls-turn-and-customer-opt-in",
+    "closed-app-incoming-call-push-opt-in-on-android-and-installed-ios-home-screen"
   ]
 }

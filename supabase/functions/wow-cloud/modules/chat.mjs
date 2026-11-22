@@ -5,7 +5,14 @@ const id=value=>{demand(typeof value==='string'&&/^[1-9][0-9]{0,17}$/.test(value
 const optional=(value,fn)=>value==null?null:fn(value);
 const emoji=value=>short(value??'',16,true);
 const reactions=['👍','❤️','😂','😮','😢','🙏','🎉','🔥','👏','👎',''];
-export function createChatActions({moduleRpc,storage}){
+export function turnConfiguration(voiceTurn={}){
+    const urlText=typeof voiceTurn.urls==='string'?voiceTurn.urls:voiceTurn.url||'';
+    const urls=String(urlText).split(',').map(s=>s.trim()).filter(s=>
+      /^turns?:[A-Za-z0-9.-]+(?::[0-9]{2,5})?(?:\?transport=(?:udp|tcp))?$/.test(s)).slice(0,4);
+    const secret=voiceTurn.secret;
+    return {urls,secret:typeof secret==='string'&&secret.length>=32&&secret.length<=512?secret:null};
+}
+export function createChatActions({moduleRpc,storage,voiceTurn={}}){
   const {rpc,sign,upload,collect}=privateActions('chat',moduleRpc,storage);
   const room=b=>({roomId:uuid(b.roomId)});
   const message=b=>({...room(b),messageId:id(b.messageId)});
@@ -58,5 +65,38 @@ export function createChatActions({moduleRpc,storage}){
       return sign(a,'asset.open',purpose==='profile'?{purpose,targetId:uuid(b.targetId)}:{...room(b),purpose,...(purpose==='message'?{messageId:id(b.messageId)}:{})});
     }
   };
-  return Object.fromEntries(Object.entries(handlers).map(([action,run])=>['chat.'+action,({actor,body})=>run(actor,body)]));
+  // Authenticated REST RPCs manage authoritative call lifecycle. Realtime
+  // Broadcast/Presence carries ephemeral SDP/ICE; the server never stores them.
+  const callContext=actor=>({userId:uuid(actor?.userId),sessionId:uuid(actor?.sessionId)});
+  const callValidators={
+    start:body=>({roomId:uuid(body.roomId),kind:choice(body.kind,['audio','video'])}),
+    inbox:()=>({}),
+    status:body=>({callId:uuid(body.callId)}),
+    accept:body=>({callId:uuid(body.callId)}),
+    decline:body=>({callId:uuid(body.callId)}),
+    end:body=>({callId:uuid(body.callId)}),
+    leave:body=>({callId:uuid(body.callId)}),
+    heartbeat:body=>({callId:uuid(body.callId)}),
+    connected:body=>({callId:uuid(body.callId)}),
+    history:body=>({roomId:uuid(body.roomId)})
+  };
+  const voiceActions=Object.fromEntries(Object.entries(callValidators).map(([action,normalize])=>
+    ['chat.call.'+action,({actor,body})=>moduleRpc('wow_voice_service',action,{...normalize(body||{}),...callContext(actor)})]));
+  voiceActions['chat.call.ice']=async({actor,body})=>{
+    const callId=uuid(body?.callId);
+    const snapshot=await moduleRpc('wow_voice_service','status',{callId,...callContext(actor)});
+    if(snapshot.status!=='active'||!snapshot.participants?.some(p=>p.id===actor.userId&&p.status==='joined'))
+      demand(false,'VOICE_CALL_UNAVAILABLE');
+    const iceServers=[{urls:['stun:stun.cloudflare.com:3478','stun:stun.l.google.com:19302']}];
+    const {urls,secret}=turnConfiguration(voiceTurn);
+    if(urls.length && secret){
+      const expiry=Math.floor(Date.now()/1000)+7200,username=expiry+':'+uuid(actor.userId);
+      const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-1'},false,['sign']);
+      const bytes=new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(username)));
+      const credential=btoa(String.fromCharCode(...bytes));
+      iceServers.push({urls,username,credential});
+    }
+    return {iceServers,relayReady:iceServers.length>1,expiresIn:iceServers.length>1?7200:0};
+  };
+  return {...Object.fromEntries(Object.entries(handlers).map(([action,run])=>['chat.'+action,({actor,body})=>run(actor,body)])),...voiceActions};
 }

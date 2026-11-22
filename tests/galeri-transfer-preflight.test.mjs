@@ -1,8 +1,10 @@
 import test from 'node:test';
+import {assertPrivateFile} from './fixtures/private-file.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,readFile,stat,rm,symlink} from 'node:fs/promises';
+import {mkdtemp,writeFile,readFile,rm,symlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {inspectExport,familyTargets,projectRef,main} from '../scripts/galeri-transfer-preflight.mjs';
 const workspace='11111111-1111-4111-8111-111111111111',account='22222222-2222-4222-8222-222222222222';
 function fixture(){
@@ -65,9 +67,9 @@ test('CLI writes a private create-only report, keeps inputs intact and rejects a
  const {source,mapping}=fixture(),exportPath=path.join(dir,'export.json'),mapPath=path.join(dir,'map.json'),report=path.join(dir,'report.json');
  await writeFile(exportPath,JSON.stringify(source));await writeFile(mapPath,JSON.stringify(mapping));
  const before=await readFile(exportPath,'utf8'),result=await main([exportPath,mapPath,report]);
- assert.equal(result.applyReady,false);assert.equal(await readFile(exportPath,'utf8'),before);assert.equal((await stat(report)).mode&0o777,0o600);
+ assert.equal(result.applyReady,false);assert.equal(await readFile(exportPath,'utf8'),before);await assertPrivateFile(report);
  assert(!JSON.stringify(result).includes('buyer'));await assert.rejects(()=>main([exportPath,mapPath,report]),/EEXIST/);
  await assert.rejects(()=>main([exportPath,mapPath,exportPath]),/OUTPUT_OVERWRITES_INPUT/);
- const root=path.resolve(new URL('..',import.meta.url).pathname);await symlink(root,path.join(dir,'repo-link'));
+ const root=fileURLToPath(new URL('..',import.meta.url));await symlink(root,path.join(dir,'repo-link'),process.platform==='win32'?'junction':'dir');
  await assert.rejects(()=>main([exportPath,mapPath,path.join(dir,'repo-link','private-export.json')]),/PRIVATE_REPORT_MUST_STAY_OUTSIDE_REPOSITORY/);
 });

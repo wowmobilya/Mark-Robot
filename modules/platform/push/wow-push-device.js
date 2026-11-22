@@ -11,7 +11,7 @@
   const uuid = value => typeof value === 'string' && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
   const finance = new Set(['proforma','payment','expense','receipt']);
   const routes = {
-    chat:['chat','chat.view'], 'order.created':['gallery-orders','orders.view'], 'order.updated':['my-orders','myorders.view'],
+    chat:['chat','chat.view'], call:['chat','chat.view'], 'order.created':['gallery-orders','orders.view'], 'order.updated':['my-orders','myorders.view'],
     'stock.updated':['gallery','gallery.view'], operations:['server-admin','server.view']
   };
   // Only these module identifiers and typed parameters can cross a notification click.
@@ -23,6 +23,11 @@
     if (entry.kind === 'chat') {
       if (!uuid(params.roomId) || typeof params.messageId !== 'string' || !/^[1-9]\d{0,18}$/.test(params.messageId) || BigInt(params.messageId)>9223372036854775807n) return null;
       safe = {roomId:params.roomId,messageId:params.messageId};
+    } else if (entry.kind === 'call') {
+      // The call is not accepted in a service worker. Only a validated room
+      // deep link crosses into the live authenticated chat UI.
+      if (!uuid(params.roomId) || !uuid(params.callId)) return null;
+      safe = {roomId:params.roomId,callId:params.callId};
     } else if (entry.kind === 'stock.updated') {
       const id = params.productId;
       if (!Number.isSafeInteger(id) && !(typeof id === 'string' && id.trim() && id.length <= 180 && !/[\u0000-\u001f\u007f]/.test(id))) return null;
@@ -89,9 +94,10 @@
           !Number.isFinite(Date.parse(scope.validUntil)) || Date.parse(scope.validUntil)<=Date.now() ||
           (finance.has(entry.kind) || entry.kind==='operations') && b.financial!==true) return {result:null};
         const duplicate = state.entries.some(item => item.eventId === entry.eventId);
-        const result = {deviceId: b.deviceId, language: b.language, duplicate};
+        const entries = duplicate ? state.entries : [entry, ...state.entries].slice(0, LIMIT);
+        const result = {deviceId: b.deviceId, language: b.language, duplicate, feedback:state.feedback, unread:entries.filter(item=>!item.read).length};
         if (duplicate) return {result};
-        return {next: {...state, entries: [entry, ...state.entries].slice(0, LIMIT)}, result};
+        return {next: {...state, entries}, result};
       });
     }
 
@@ -99,8 +105,9 @@
       return transaction(state => {
         const entry=state.entries.find(item=>item.eventId===eventId), destination=entry&&target(entry);
         if (!state.binding?.active || state.binding.deviceId !== deviceId || !destination) return {result: null};
-        return {next:{...state,selected:eventId,pendingOpen:{kind:entry.kind,route:destination.route,params:destination.params,eventId}},
-          result:{...state.binding,destination,eventId}};
+        const entries=state.entries.map(item=>item.eventId===eventId?{...item,read:true}:item);
+        return {next:{...state,entries,selected:eventId,pendingOpen:{kind:entry.kind,route:destination.route,params:destination.params,eventId}},
+          result:{...state.binding,destination,eventId,unread:entries.filter(item=>!item.read).length}};
       });
     }
     function takeOpen(binding,eventId) {
@@ -111,7 +118,10 @@
         return {next:{...state,pendingOpen:null},result:target(p)};
       });
     }
-    return Object.freeze({read: () => transaction(), replace, receive, select, takeOpen, target});
+    function setFeedback(prefs) {
+      return transaction(state=>({next:{...state,feedback:{sound:prefs.sound===true,vibration:prefs.vibration===true}},result:true}));
+    }
+    return Object.freeze({setFeedback,read: () => transaction(), replace, receive, select, takeOpen, target});
   }
   return Object.freeze({create});
 });

@@ -9,7 +9,12 @@
     const parts=[item.name,core.t('dims',lang)];
     for(const dim of item.dims||[]){
       const axes=[dim.l,dim.w,dim.h].filter(v=>v!=null&&String(v)!=='');
-      if(axes.length)parts.push([dim.name,axes.join(' × ')+' cm',dim.weight?dim.weight+' kg':''].filter(Boolean).join(' · '));
+      const values=[dim.name,axes.length?axes.join(' × ')+' cm':'',dim.weight!=null&&dim.weight!==''?dim.weight+' kg':''];
+      for(const field of presentation?.fields||[]){
+        const value=dim.specs?.[field.id];
+        if(field.visible!==false&&typeof value==='number')values.push([field.label,value,field.unit].filter(v=>v!=null&&v!=='').join(' '));
+      }
+      if(values.some(Boolean))parts.push(values.filter(Boolean).join(' · '));
     }
     if(item.weight && Number(item.weight)>0)parts.push(core.t('weight',lang)+' '+item.weight+' kg');
     for(const field of presentation?.fields||[]){
@@ -170,10 +175,15 @@
   async function exportDocument(kind,model,source,active){
     if(!model.rows.length)throw new Error('INVALID_EMPTY_DOCUMENT');
     const name=safeName(model.title),check=()=>{if(!active())throw new Error('AUTH_REQUIRED');};
-    if(kind==='excel'){const file=await workbook(model,source,active);check();linkDownload(file,name+'.xlsx');return;}
+    if(kind==='excel'||kind==='prepareExcel'){
+      const blob=await workbook(model,source,active);check();
+      if(kind==='prepareExcel')return new File([blob],name+'.xlsx',{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      linkDownload(blob,name+'.xlsx');return;
+    }
     const pages=await drawDocument(model,source,active);check();
     if(kind==='print'){await printPages(pages,active);return;}
     const result=pdfBlob(pages),filename=name+'.pdf';
+    if(kind==='preparePdf')return new File([result],filename,{type:'application/pdf'});
     if(kind==='share'&&root.navigator?.share){
       const file=new File([result],filename,{type:'application/pdf'});
       if(root.navigator.canShare?.({files:[file]})){await root.navigator.share({title:model.title,files:[file]});return;}

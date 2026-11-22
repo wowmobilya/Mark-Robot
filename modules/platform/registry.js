@@ -123,7 +123,13 @@
       if(identity!==scope(moduleSession())||generation!==entry.generation||!can(entry.definition.permission))throw failure();
       return result;
     };
-    const api=Object.freeze({...scoped,request,can,getSession:moduleSession,open,notify:(message,type)=>ops.notify(message,type)});
+    const realtimeCredentials=async()=>{
+      if(entry.id!=='chat'||!active()||!session().authenticated||!can('chat.edit'))throw failure();
+      const value=await cloud.realtimeCredentials();
+      if(!active()||value.userId!==session().userId)throw failure();
+      return value;
+    };
+    const api=Object.freeze({...scoped,request,realtimeCredentials,can,getSession:moduleSession,open,notify:(message,type)=>ops.notify(message,type)});
     if(scoped)entry.status=root.WFModuleStatus?.mount(entry.surface.statusbar,api,locale);
     try{
       const instance=await entry.definition.mount({container:entry.surface.body,api,lang:locale(),locale,params:entry.params,route:entry.id,

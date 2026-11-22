@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,readFile,writeFile,readdir,mkdir,symlink,copyFile,rm} from 'node:fs/promises';
+import {mkdtemp,readFile,writeFile,readdir,mkdir,stat,symlink,link,copyFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -12,7 +12,9 @@ test('release verification rejects a stale page update guard before publication'
   try{
     for(const name of await readdir(root)){
       if(name==='scripts'||name==='index.html'||name.startsWith('.git'))continue;
-      await symlink(path.join(root,name),path.join(fixture,name));
+      const source=path.join(root,name),target=path.join(fixture,name);
+      if((await stat(source)).isDirectory())await symlink(source,target,'junction');
+      else await link(source,target);
     }
     await mkdir(path.join(fixture,'scripts'));
     await copyFile(path.join(root,'scripts/verify-release.mjs'),path.join(fixture,'scripts/verify-release.mjs'));

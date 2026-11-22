@@ -1,6 +1,7 @@
 import test from 'node:test';
+import {assertPrivateFile} from './fixtures/private-file.mjs';
 import assert from 'node:assert/strict';
-import {mkdtemp,readFile,writeFile,rm,stat} from 'node:fs/promises';
+import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
 import path from 'node:path';
 import {tmpdir} from 'node:os';
 import {buildModelTransferPlan,main} from '../scripts/wow-model-migration-plan.mjs';
@@ -45,6 +46,18 @@ test('do not match before the complete native WOW sync',()=>{
  const r=buildModelTransferPlan({legacy,primary});
  assert.equal(r.summary.held,3);assert(r.decisions.every(x=>x.conflicts.includes('PRIMARY_SYNC_NOT_VERIFIED')));
 });
+test('ordered Galeri pieces keep their weight and configured numeric fields in a new WOW draft',()=>{
+ const {legacy,primary}=fixture();
+ legacy.dimension_fields=[{field_key:'depth',field_label:'Depth',field_unit:'mm',order_num:1,is_visible:true}];
+ legacy.inventory[1].dims=[{name:'Top',icon:'fa-box-open',w:90,h:0,kg:2.5,depth:15},{name:'Base',kg:1}];
+ const original=buildModelTransferPlan({legacy,primary}),draft=original.decisions.find(x=>x.source.id===2).primaryDraft;
+ assert.deepEqual(draft.dims,[{name:'Top',w:90,h:0,weight:2.5,specs:{depth:15}},{name:'Base',weight:1}]);
+ assert.equal(original.dimensionFields[0].unit,'mm');
+ legacy.inventory[1].dims[0].depth=20;
+ assert.notEqual(buildModelTransferPlan({legacy,primary}).evidenceDigest,original.evidenceDigest);
+ legacy.inventory[1].dims[1].unknown=3;
+ assert.throws(()=>buildModelTransferPlan({legacy,primary}),/DIMENSION_DEFINITION_REQUIRED/);
+});
 test('exact code matching cannot silently join two distinct WOW models',()=>{
  const {legacy,primary}=fixture();
  primary.products.push({id:'duplicate-model',name:'Another',code:'W514',revision:2});
@@ -79,7 +92,7 @@ test('CLI produces a create-only private report, never a live SQL mutation',asyn
  await writeFile(a,JSON.stringify(legacy));await writeFile(b,JSON.stringify(primary));
  const result=await main([a,b,c]);assert.equal(result.applyReady,false);assert.equal(result.mode,'preview-only');
  const persisted=JSON.parse(await readFile(c,'utf8'));assert.equal(persisted.decisions.length,3);
- assert.equal((await stat(c)).mode&0o777,0o600);
+ await assertPrivateFile(c);
  await assert.rejects(()=>main([a,b,c]),/EEXIST/);
  await assert.rejects(()=>main([a,b,a]),/OUTPUT_OVERWRITES_INPUT/);
 });

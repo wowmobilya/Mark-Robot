@@ -11,6 +11,7 @@
     let language=lang,state=null,rooms=null,mode='',generation=0,roomGeneration=0,disposed=false;
     let preview=null,answer=null,busy='',notice='',expiryTimer,focusDirty=false,loadingRooms=false,expiredRequest=null;
     const draft={query:'',source:'all',month:new Date().toISOString().slice(0,7),roomId:'',focus:''};
+    let localDraft=null, draftEdited=false;
     const checked=new Set(),pending=new Map();
     function el(tag,cls,value){
       const node=doc.createElement(tag);
@@ -26,6 +27,7 @@
     const grants=()=>Object.fromEntries(Object.entries(C.permissions).map(([source,perm])=>[source,!!state?.sources?.[source]&&api.can(perm)]));
     const same=id=>alive()&&generation===id;
     function resetEvidence(){
+      localDraft=null;draftEdited=false;
       ++generation;root.clearTimeout(expiryTimer);preview=null;answer=null;checked.clear();busy='';notice='';output.replaceChildren();
     }
     async function request(action,payload={}){
@@ -232,7 +234,7 @@
         const checkbox=el('input');checkbox.type='checkbox';checkbox.checked=checked.has(row.ref);checkbox.disabled=!!busy;
         checkbox.setAttribute('aria-label',tr('selected')+' · '+row.ref+' · '+heading(row));
         checkbox.addEventListener('change',()=>{
-          checkbox.checked?checked.add(row.ref):checked.delete(row.ref);answer=null;drawOutput();
+          checkbox.checked?checked.add(row.ref):checked.delete(row.ref);answer=null;localDraft=null;draftEdited=false;drawOutput();
         });title.append(checkbox);
       }
       title.append(el('bdi','wf-ai-code',row.ref),el('h3','',heading(row)));card.append(title);
@@ -270,6 +272,39 @@
       }
       return panel;
     }
+    function reviewTools(rows){
+      const panel=el('section','wf-ops-card wf-ai-analysis');
+      const groups=C.reviewGroups(rows);
+      if(groups.length){
+        panel.append(el('h3','',tr('reviewQueue')));
+        for(const group of groups){
+          const item=el('div','wf-ai-note');item.append(el('span','',tr(group.action)));
+          for(const row of group.rows)item.append(reference(row.ref));
+          panel.append(item);
+        }
+      }
+      if(localDraft===null){
+        panel.append(btn(tr('prepareDraft'),()=>{
+          if(!alive()||rows.some(r=>!grants()[r.source]))return;
+          const lines=rows.map(row=>{
+            const context=row.source==='chat'?String(row.text||'').slice(0,240):row.source==='finance'?
+              tr(row.finding)+' '+C.amount(row.net,row.currency,language):row.finding==='match'?row.detail:tr(row.finding);
+            return '['+row.ref+'] '+[heading(row),context].filter(Boolean).join(' · ');
+          });
+          localDraft=[tr('draftIntro'),...lines].join('\n');drawOutput();
+        }));
+      }else{
+        const area=el('textarea');area.rows=5;area.dataset.field='localDraft';area.value=localDraft;
+        area.addEventListener('input',()=>{localDraft=area.value;draftEdited=true;});
+        const status=el('span');status.setAttribute('role','status');
+        panel.append(field(tr('followUp'),area),btn(tr('copyDraft'),async()=>{
+          if(rows.some(r=>!grants()[r.source]))return;
+          try{await root.navigator.clipboard.writeText(area.value);if(alive())status.textContent=tr('copiedDraft');}
+          catch{area.focus();area.select?.();status.textContent=tr('selectDraft');}
+        }),status);
+      }
+      return panel;
+    }
     function drawOutput(){
       output.replaceChildren();if(!preview)return;
       output.append(el('h2','wf-ai-output-title',tr('evidence')+' · '+new Intl.NumberFormat(language).format(preview.rows.length)));
@@ -279,6 +314,8 @@
         if(questions.length){const line=el('p','wf-ai-note',tr('questions'));for(const row of questions)line.append(reference(row.ref));output.append(line);}
       }
       const grid=el('div','wf-ai-evidence');for(const row of preview.rows)grid.append(evidenceCard(row));output.append(grid);
+      const scopedRows=preview.rows.filter(row=>grants()[row.source]&&(!state.provider.configured||checked.has(row.ref)));
+      if(scopedRows.length)output.append(reviewTools(scopedRows));
       if(preview.more)output.append(el('p','wf-ai-help',tr('more')));
       if(state.provider.configured){
         const model=el('div','wf-ops-card wf-ai-analysis'),focus=el('textarea');
@@ -318,7 +355,7 @@
       const pick=C.locales.includes(next)?next:'en';if(pick===language)return;
       if(busy==='working'){++generation;busy='';}
       language=pick;answer=null;draw();
-    },hasUnsavedChanges(){return focusDirty||busy==='working';}};
+    },hasUnsavedChanges(){return focusDirty||draftEdited||busy==='working';}};
   }
   registry.register({id:'assistant',permission:'assistant.view',icon:'review',
     title:Object.fromEntries(C.locales.map(lang=>[lang,C.t('title',lang)])),mount});

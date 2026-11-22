@@ -7,6 +7,18 @@
   'use strict';
   const locales=['ar','en','tr','fr','ru'];
   const words={
+    followUp:['مسودة متابعة','Follow-up draft','Takip taslağı','Brouillon de suivi','Черновик для проверки'],
+    prepareDraft:['إعداد مسودة من النتائج','Draft from these results','Sonuçlardan taslak hazırla','Rédiger à partir des résultats','Создать черновик по результатам'],
+    reviewQueue:['أولويات المراجعة','Review priorities','İnceleme öncelikleri','Priorités de vérification','Приоритеты проверки'],
+    compareCodes:['طابق باركود المنتجات مع الملصقات الأصلية.','Compare the product barcodes with their original labels.','Ürün barkodlarını özgün etiketlerle karşılaştırın.','Comparez les codes-barres aux étiquettes d’origine.','Сверьте штрихкоды с исходными этикетками.'],
+    linkInvoice:['تحقق من مرجع الفاتورة والعميل قبل المطابقة.','Check the invoice reference and customer before reconciliation.','Mutabakattan önce fatura referansını ve müşteriyi kontrol edin.','Vérifiez la référence et le client avant le rapprochement.','Проверьте номер счёта и клиента перед сверкой.'],
+    completeRecord:['راجع الحقول الناقصة في السجل الأصلي.','Review incomplete fields in the source record.','Kaynak kayıttaki eksik alanları inceleyin.','Vérifiez les champs incomplets de la fiche source.','Проверьте незаполненные поля в исходной записи.'],
+    reviewOutflow:['راجع قيود الصرف لهذه العملة خلال الشهر.','Review this currency’s outgoing entries for the month.','Bu para biriminin aylık çıkış kayıtlarını inceleyin.','Examinez les sorties du mois pour cette devise.','Проверьте расходные операции за месяц в этой валюте.'],
+    reviewQuestions:['راجع الأسئلة في سياق المحادثة قبل الرد.','Review these questions in their conversation before replying.','Yanıtlamadan önce soruları sohbet içinde inceleyin.','Relisez ces questions dans la conversation avant de répondre.','Посмотрите вопросы в контексте беседы перед ответом.'],
+    draftIntro:['أرجو مراجعة النقاط التالية والرجوع إلى سجلاتها المرفقة.','Please review the following items against their referenced records.','Aşağıdaki maddeleri belirtilen kayıtlarla karşılaştırarak inceleyebilir misiniz?','Merci de vérifier les points ci-dessous dans les fiches référencées.','Пожалуйста, проверьте следующие пункты по указанным записям.'],
+    copyDraft:['نسخ المسودة','Copy draft','Taslağı kopyala','Copier le brouillon','Скопировать черновик'],
+    copiedDraft:['نُسخت المسودة','Draft copied','Taslak kopyalandı','Brouillon copié','Черновик скопирован'],
+    selectDraft:['حدد النص لنسخه','Select the text to copy it','Kopyalamak için metni seçin','Sélectionnez le texte pour le copier','Выделите текст для копирования'],
     title:['مساعد مارك','Mark Assistant','Mark Asistan','Assistant Mark','Помощник Марк'],
     search:['بحث السجلات','Find records','Kayıt ara','Rechercher des fiches','Поиск записей'],
     checks:['مراجعة البيانات','Check data','Verileri denetle','Vérifier les données','Проверка данных'],
@@ -96,6 +108,23 @@
     const digits=new Intl.NumberFormat(lang,{useGrouping:false}),radix=digits.formatToParts(1.1).find(v=>v.type==='decimal').value;
     return (part[1]?'−':'')+integer+radix+[...fraction].map(d=>digits.format(Number(d))).join('')+' '+currency;
   }
+  function reviewGroups(rows){
+    const groups=new Map();
+    for(const row of rows){
+      let action;
+      if(row.finding==='duplicateBarcode')action='compareCodes';
+      else if(['missingReference','missingCustomer'].includes(row.finding))action='linkInvoice';
+      else if(['missingName','missingType'].includes(row.finding))action='completeRecord';
+      else if(row.source==='finance'&&row.finding==='netOut')action='reviewOutflow';
+      else if(row.source==='chat'&&/[?؟？]/u.test(row.text||''))action='reviewQuestions';
+      if(!action)continue;
+      const key=action==='compareCodes'?action+':'+(row.barcode||row.ref):action==='reviewOutflow'?action+':'+row.currency:action;
+      if(!groups.has(key))groups.set(key,{action,rows:[]});
+      groups.get(key).rows.push(row);
+    }
+    const order=['compareCodes','linkInvoice','reviewOutflow','completeRecord','reviewQuestions'];
+    return [...groups.values()].sort((a,b)=>order.indexOf(a.action)-order.indexOf(b.action));
+  }
   function modes(sources){return [...(sources.products||sources.invoices||sources.customers?['search','checks']:[]),...(sources.finance?['report']:[]),...(sources.chat?['chat']:[])];}
-  return Object.freeze({locales,t,scopeKey,permissions,routes,errorKey,amount,modes});
+  return Object.freeze({locales,t,scopeKey,permissions,routes,errorKey,amount,modes,reviewGroups});
 });

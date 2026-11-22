@@ -30,6 +30,13 @@ test('PDF export uses a distinct page tree and valid byte offsets for each page'
  const offsets=[...data.matchAll(/(\d{10}) 00000 n/g)].map(x=>Number(x[1]));
  for(const [index,n] of offsets.entries())assert.ok(data.slice(n).startsWith((index+1)+' 0 obj'));
 });
+test('piece-only weight and configured measurements appear in dimensions downloads',()=>{
+ const item={name:'Model',dims:[{name:'Top',weight:1.5,specs:{depth:0,hidden:99}}]};
+ const fields=[{id:'depth',label:'Depth',unit:'mm',visible:true},{id:'hidden',label:'Private',visible:false}];
+ const text=documents.dimsText(item,{fields},'en');
+ assert.match(text,/Top · 1.5 kg · Depth 0 mm/);
+ assert.doesNotMatch(text,/Private|99/);
+});
 
 // Execute the same registered route, event callbacks, Edge validation and PostgreSQL
 // mutations used by the app. The local DOM models controls, focus and native dialogs;
@@ -60,11 +67,13 @@ test('native controls publish a WOW product, place a customer order, release it 
    const sandbox=vm.createContext({window:win,globalThis:win,URL,Blob,TextEncoder,AbortController,queueMicrotask,Intl,setTimeout,structuredClone});
    for(const file of ['core','exports','workspace'])vm.runInContext(await read('modules/gallery/'+file+'.js'),sandbox);
    const actions=createGalleryActions({moduleRpc:async(name,action,data)=>(await db.query('select wow_gallery_service($1,$2::jsonb) result',[action,JSON.stringify(data)])).rows[0].result,storage:{}});
-   let handle,container,active,role,queueOnce=true;const orderRequestIds=[];
+   let handle,container,active,role,queueOnce=true;const orderRequestIds=[],smsRequests=[];
    function enter(route,actor){
      if(handle)handle.dispose();container=doc.createElement('div');body.replaceChildren(container);active=actor;role=actor===owner?'owner':'custom';
      const api={getSession:()=>({authenticated:true,currentAccount:{role},userId:active.userId,workspaceId:workspace,sessionVersion:1,authGeneration:1}),
         can:key=>role==='owner'||wants.includes(key),request:(action,payload)=>{
+         if(action==='orderSms.preview')return {configured:true,senders:['Fixture'],sender:'Fixture',destinationMasked:'•••42',orderNumber:'Fixture',version:1};
+         if(action==='orderSms.send'){smsRequests.push(payload);return {status:'accepted'};}
          if(action==='gallery.order.place'){orderRequestIds.push(payload.commandId);if(queueOnce){queueOnce=false;return Promise.resolve({queued:true});}}
          return actions[action]({body:payload,actor:active});
        },
@@ -85,6 +94,17 @@ test('native controls publish a WOW product, place a customer order, release it 
    await find(dialog,'BUTTON','Place order').fire('click');assert.equal(visits.at(-1).route,'my-orders');assert.equal(orderRequestIds[0],orderRequestIds[1]);
    const orderId=visits.at(-1).params.orderId;
    enter('gallery-orders',owner);await until(()=>container.textContent.includes('Native console'));
+   for(let attempt=0;attempt<2;attempt++){
+     await find(container,'BUTTON','Send order SMS').fire('click');dialog=modal();
+     assert.match(dialog.textContent,/•••42/);assert.equal(find(dialog,'BUTTON','Send now').disabled,true);
+     const consent=find(dialog,'LABEL','I confirm sending the order status message to this number.').children[0];
+     consent.checked=true;await consent.fire('change');await find(dialog,'BUTTON','Send now').fire('click');
+     assert.match(dialog.textContent,/provider accepted/);await find(dialog,'BUTTON','Close').fire('click');
+   }
+   assert.equal(smsRequests[0].commandId,smsRequests[1].commandId);
+   assert.equal(smsRequests[0].orderId,orderId);assert.equal(smsRequests[0].sender,'Fixture');
+   assert.equal(smsRequests[0].consent,true);assert.equal(smsRequests[0].language,'en');
+   assert.equal('destination' in smsRequests[0],false);
    await find(container,'BUTTON','Edit').fire('click');dialog=modal();valueField(dialog,'Status').value='ready';
    await find(dialog,'BUTTON','Save').fire('click');
    enter('my-orders',buyer);await until(()=>container.textContent.includes('Native console'));

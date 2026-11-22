@@ -141,6 +141,28 @@
     }
     return {append,read,finish(){sealed=true;},get pending(){return Math.max(0,end-position);},get done(){return sealed&&position>=end;}};
   }
+  // Browser Blobs are immutable. Keep only validated metadata while the clip is alive.
+  const wavHeaders=new WeakMap();
+  async function readWavHeader(blob){
+    const cached=wavHeaders.get(blob);
+    if(cached)return cached;
+    if(!blob||!Number.isSafeInteger(blob.size)||blob.size<46||typeof blob.slice!=='function')throw error('invalid-audio');
+    const dataBytes=blob.size-44;
+    if(dataBytes>MAX_RENDERED_AUDIO_BYTES)throw error('speech-too-long');
+    const header=new Uint8Array(await blob.slice(0,44).arrayBuffer());
+    if(header.byteLength!==44)throw error('invalid-audio');
+    const view=new DataView(header.buffer,header.byteOffset,header.byteLength),rate=view.getUint32(24,true);
+    const label=(offset,value)=>[...value].every((letter,index)=>header[offset+index]===letter.charCodeAt(0));
+    if(!label(0,'RIFF')||!label(8,'WAVE')||!label(12,'fmt ')||!label(36,'data')||
+      view.getUint32(4,true)!==blob.size-8||view.getUint32(16,true)!==16||view.getUint16(20,true)!==1||
+      view.getUint16(22,true)!==1||view.getUint16(32,true)!==2||view.getUint16(34,true)!==16||
+      view.getUint32(40,true)!==dataBytes||dataBytes%2||rate<8000||rate>96000||
+      view.getUint32(28,true)!==rate*2)throw error('invalid-audio');
+    if(dataBytes/(rate*2)>MAX_RENDERED_AUDIO_SECONDS)throw error('speech-too-long');
+    const info={header,rate,dataBytes,duration:dataBytes/(2*rate)};
+    wavHeaders.set(blob,info);
+    return info;
+  }
   function createWavSequence(){
     // Both local workers return canonical mono PCM16 WAV. Keep their PCM bytes
     // verbatim: one source avoids waiting for synthesis between spoken clauses.
@@ -148,19 +170,9 @@
     const parts=[],boundaries=[];let firstHeader=null,sampleRate=0,totalBytes=0;
     return {
       async append(blob,chunk){
-        if(!blob||!Number.isSafeInteger(blob.size)||blob.size<46||typeof blob.slice!=='function')throw error('invalid-audio');
-        const dataBytes=blob.size-44;
-        if(totalBytes+dataBytes>MAX_RENDERED_AUDIO_BYTES)throw error('speech-too-long');
-        const header=new Uint8Array(await blob.slice(0,44).arrayBuffer());
-        if(header.byteLength!==44)throw error('invalid-audio');
-        const view=new DataView(header.buffer,header.byteOffset,header.byteLength),rate=view.getUint32(24,true);
-        const label=(offset,value)=>[...value].every((letter,index)=>header[offset+index]===letter.charCodeAt(0));
-        if(!label(0,'RIFF')||!label(8,'WAVE')||!label(12,'fmt ')||!label(36,'data')||
-          view.getUint32(4,true)!==blob.size-8||view.getUint32(16,true)!==16||view.getUint16(20,true)!==1||
-          view.getUint16(22,true)!==1||view.getUint16(32,true)!==2||view.getUint16(34,true)!==16||
-          view.getUint32(40,true)!==dataBytes||dataBytes%2||rate<8000||rate>96000||
-          view.getUint32(28,true)!==rate*2||(sampleRate&&sampleRate!==rate))throw error('invalid-audio');
-        if((totalBytes+dataBytes)/(rate*2)>MAX_RENDERED_AUDIO_SECONDS)throw error('speech-too-long');
+        const {header,rate,dataBytes}=await readWavHeader(blob);
+        if(sampleRate&&sampleRate!==rate)throw error('invalid-audio');
+        if(totalBytes+dataBytes>MAX_RENDERED_AUDIO_BYTES||(totalBytes+dataBytes)/(rate*2)>MAX_RENDERED_AUDIO_SECONDS)throw error('speech-too-long');
         if(!firstHeader){firstHeader=header;sampleRate=rate;}
         boundaries.push({start:totalBytes/(sampleRate*2),charIndex:chunk.charIndex,charLength:chunk.charLength});
         parts.push(blob.slice(44));totalBytes+=dataBytes;
@@ -660,11 +672,11 @@
               checkAbort(controller.signal);
               if(options.normalizeGenerated===true&&window.WFVoiceLoudness)blob=await window.WFVoiceLoudness.normalize(blob,{locale,signal:controller.signal});
               checkAbort(controller.signal);
-              const sequence=createWavSequence();await sequence.append(blob,chunk);
-              checkAbort(controller.signal);const rendered=sequence.finish();
-              renderedBytes+=rendered.blob.size-44;renderedSeconds+=rendered.duration;
+              const {dataBytes,duration}=await readWavHeader(blob);
+              checkAbort(controller.signal);
+              renderedBytes+=dataBytes;renderedSeconds+=duration;
               if(renderedBytes>MAX_RENDERED_AUDIO_BYTES||renderedSeconds>MAX_RENDERED_AUDIO_SECONDS)throw error('speech-too-long');
-              return {blob:rendered.blob,duration:rendered.duration};
+              return {blob,duration};
             }).catch(problem=>{productionProblem=problem;return {problem};}).then(result=>{pending.ready=true;pending.result=result;return result;});
             return pending;
           };

@@ -2,11 +2,11 @@
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) { module.exports = factory; return; }
-  root.importScripts('./modules/platform/push/wow-push-device.js?v=2');
+  root.importScripts('./modules/platform/push/wow-push-device.js?v=4');
   factory(root, root.WFPushDevice.create(root.indexedDB));
 })(typeof self === 'object' ? self : globalThis, function installPush(root, store) {
   'use strict';
-  const kinds = new Set(['proforma', 'payment', 'expense', 'receipt', 'test','chat','order.created','order.updated','stock.updated','operations']);
+  const kinds = new Set(['proforma', 'payment', 'expense', 'receipt', 'test','chat','order.created','order.updated','stock.updated','operations','call']);
   const generic = {
     ar: 'افتح WOW للاطّلاع على إشعاراتك.', en: 'Open WOW to check your notifications.',
     tr: 'Bildirimlerinizi görmek için WOW uygulamasını açın.', fr: 'Ouvrez WOW pour consulter vos notifications.',
@@ -42,12 +42,29 @@
     const lang = entry?.language || language(root.navigator?.language?.split('-')[0]);
     const data = match ? {deviceId: match.deviceId, eventId: entry.eventId} : {};
     const options = {body: entry?.body || generic[lang], lang, dir: lang === 'ar' ? 'rtl' : 'ltr',
-      icon: new URL('app-icon-192.png?v=198', base).href, tag: match ? 'wow-push/' + match.deviceId + '/' + entry.eventId : 'wow-push/attention',
+      icon: new URL('app-icon-192.png?v=221', base).href,
+      badge: new URL('assets/mark-robot-badge.png?v=221', base).href,
+      tag: match ? 'wow-push/' + match.deviceId + '/' + entry.eventId : 'wow-push/attention',
       renotify: false, data};
+    // A call can wake a stopped service worker on a push-capable device, but a
+    // browser cannot promise native full-screen ringing or bypass OS policies.
+    if (entry?.kind === 'call' && !match?.duplicate) {
+      options.requireInteraction = true;
+      options.vibrate = [250,120,250,120,350];
+      options.renotify = true;
+    }
+    if(match?.feedback?.vibration===false)delete options.vibrate;
+    else if(match?.feedback?.vibration===true&&!match.duplicate&&!options.vibrate)options.vibrate=[55,70,55];
+    if(match?.feedback?.sound===false){options.silent=true;delete options.vibrate;}
+    if(entry?.kind==='chat'){
+      const labels={ar:'الرد',en:'Reply',tr:'Yanıtla',fr:'Répondre',ru:'Ответить'};
+      options.actions=[{action:'reply',title:labels[lang]}];
+    }
+    if(match)await Promise.resolve(match.unread?root.navigator?.setAppBadge?.(match.unread):root.navigator?.clearAppBadge?.()).catch(()=>{});
     if (entry) options.timestamp = entry.timestamp;
     if (match?.duplicate) options.silent = true;
     await root.registration.showNotification(entry?.title || 'WOW FURNITURE', options);
-    if (match) await tellWindows({type: 'wf-push-changed'}).catch(() => {});
+    if (match) await tellWindows({type: 'wf-push-changed',audible:!match.duplicate}).catch(() => {});
   }
   function destination(binding) {
     const url = new URL(base.href);
@@ -70,6 +87,7 @@
     if (identifier(data.deviceId, 128) && identifier(data.eventId)) {
       try { binding = await store.select(data.deviceId, data.eventId); } catch (_) {}
     }
+    if(binding)await Promise.resolve(binding.unread?root.navigator?.setAppBadge?.(binding.unread):root.navigator?.clearAppBadge?.()).catch(()=>{});
     const url = destination(binding);
     const windows = await root.clients.matchAll({type: 'window', includeUncontrolled: true});
     const client = windows.find(item => item.focused && sameApp(item, url)) || windows.find(item => sameApp(item, url));

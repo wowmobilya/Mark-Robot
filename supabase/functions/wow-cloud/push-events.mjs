@@ -57,6 +57,13 @@ const sharedCopy={
  fr:{chat:['Nouveau message','Ouvrez la conversation pour lire le message.'],operations:['Alerte du serveur','Ouvrez l’administration du serveur pour consulter l’alerte.'],resolved:['Alerte du serveur résolue','Ouvrez l’administration du serveur pour consulter la mise à jour.']},
  ru:{chat:['Новое сообщение','Откройте чат, чтобы прочитать сообщение.'],operations:['Предупреждение сервера','Откройте раздел управления сервером, чтобы посмотреть предупреждение.'],resolved:['Предупреждение сервера снято','Откройте раздел управления сервером, чтобы посмотреть обновление.']}
 };
+const callCopy={
+ ar:{audio:'مكالمة صوتية واردة',video:'مكالمة فيديو واردة',from:'المتصل'},
+ en:{audio:'Incoming voice call',video:'Incoming video call',from:'Caller'},
+ tr:{audio:'Gelen sesli arama',video:'Gelen görüntülü arama',from:'Arayan'},
+ fr:{audio:'Appel vocal entrant',video:'Appel vidéo entrant',from:'De'},
+ ru:{audio:'Входящий голосовой вызов',video:'Входящий видеозвонок',from:'Звонит'}
+};
 function invalidNotice(){throw Object.assign(Error('INVALID_NOTICE'),{code:'INVALID_NOTICE'});}
 function sharedNotice(kind,d,language){
   if(['order.created','order.updated','stock.updated'].includes(kind)){
@@ -65,6 +72,14 @@ function sharedNotice(kind,d,language){
       const {title,body,route,params}=formatGalleryNotice(d,language);
       return {title,body,route,params};
     } catch {invalidNotice();}
+  }
+  if(kind==='call'){
+    const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+    if(!uuid.test(d.roomId)||!uuid.test(d.callId)||!['audio','video'].includes(d.mediaKind)||
+      !Number.isFinite(Date.parse(d.expiresAt))||Date.parse(d.expiresAt)<=Date.now())invalidNotice();
+    const label=callCopy[language];
+    return {title:label[d.mediaKind],body:label.from+': '+cleanPushText(d.callerName||'WOW',80),
+      route:'chat',params:{roomId:d.roomId,callId:d.callId}};
   }
   if(kind==='chat'){
     if(typeof d.roomId!=='string'||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(d.roomId)||
@@ -84,7 +99,9 @@ export function formatPushPayload(event,recipient){
   const envelope={eventId:cleanPushText(event.id,220),kind,workspaceId:recipient.workspaceId,userId:recipient.userId,deviceId:recipient.deviceId,
     bindingId:recipient.bindingId,sessionVersion:recipient.sessionVersion,validUntil:recipient.validUntil,language,timestamp:event.createdAt};
   const notice=sharedNotice(kind,d,language);
-  if(notice)return {...envelope,...notice};
+  const company=cleanPushText(recipient.companyName,60).replace(/\s+/g,' ').trim();
+  const brandedTitle=title=>cleanPushText(company?company+' · '+title:title,120);
+  if(notice)return {...envelope,...notice,title:brandedTitle(notice.title)};
   if(!['test','proforma','payment','expense','receipt'].includes(kind))invalidNotice();
   const number=new Intl.NumberFormat(language==='ar'?'ar-u-nu-latn':language,{minimumFractionDigits:2,maximumFractionDigits:2});
   const money=(amount,code=d.currency)=>amount!==null&&Number.isFinite(Number(amount))?currency(code)+' '+number.format(Number(amount)):'';
@@ -104,7 +121,7 @@ export function formatPushPayload(event,recipient){
     if(d.note)lines.push(t.note+': '+d.note);
   }
   const title=kind==='test'?t.test:[t[event.action]||t.updated,t[d.movement==='transfer'?'transfer':d.movement==='opening'?'opening':kind]||t.proforma,d.reference&&'· '+d.reference].filter(Boolean).join(' ');
-  const payload={...envelope,title:cleanPushText(title,120),body:cleanPushText(lines.join('\n')||t[kind],450)};
+  const payload={...envelope,title:brandedTitle(title),body:cleanPushText(lines.join('\n')||t[kind],450)};
   const bytes=new TextEncoder();while(bytes.encode(JSON.stringify(payload)).length>3072&&payload.body)payload.body=Array.from(payload.body).slice(0,-16).join('');
   return payload;
 }

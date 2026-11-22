@@ -72,8 +72,10 @@
    const actions=el('div');actions.className='wf-customer-auth-actions';
    if(mode)actions.append(button('back',()=>{if(busy)return;mode='';proof=null;message='';render();}));
    else{
-    if(options.registrationEnabled)actions.append(button('register',()=>{mode='register';message='';render();}));
-    if(options.recoveryEnabled)actions.append(button('recover',()=>{mode='recover';message='';render();}));
+    // Keep the customer signup entry visibly available even when outbound
+    // verification email is not configured. Never open an unverified form.
+    actions.append(button('register',()=>{if(!options.registrationEnabled){message=t('unavailable');render();return;}mode='register';message='';render();}));
+    actions.append(button('recover',()=>{if(!options.recoveryEnabled){message=t('unavailable');render();return;}mode='recover';message='';render();}));
    }
    area.append(actions);if(message)area.append(note());if(!mode)return;
    const form=el('form');form.className='wf-customer-auth-form';form.autocomplete='on';
@@ -134,7 +136,7 @@
   const ready=Promise.resolve().then(()=>client.customerAuthOptions()).then(value=>{if(!disposed){options=value;render();}}).catch(error=>{if(!disposed){message=errorMessage(error);render();}});
   return {ready,updateLanguage(value){locale=langOf(value);render();},dispose(){disposed=true;proof=null;area.remove();if(loginForm)loginForm.hidden=false;}};
  }
- function mountOwner({container,api,lang='ar',origin=root.location?.origin}){
+ function mountOwner({container,api,lang='ar',origin=root.location?.href}){
   if(!container||api?.can?.('accounts.edit')!==true)return {updateLanguage(){},dispose(){}};
   const doc=container.ownerDocument||root.document,area=doc.createElement('section');area.className='wf-customer-control';container.append(area);
   let locale=langOf(lang),disposed=false,busy=false,data=null,message='';
@@ -151,7 +153,7 @@
    const save=el('button',t(busy?'sending':'save'));save.type='submit';save.className='btn';save.disabled=busy;form.append(save);area.append(form);
    form.addEventListener('submit',async event=>{event.preventDefault();if(busy)return;await load('customerAuth.configure',{revision:data.settings.revision,registrationEnabled:fields.registrationEnabled.checked,recoveryEnabled:fields.recoveryEnabled.checked});});
    if(typeof origin==='string'&&origin.startsWith('https://')){
-    const url=new URL('/',origin);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',data.workspaceId);url.hash='gallery';
+    const url=new URL(origin);url.search='';url.username='';url.password='';url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',data.workspaceId);url.hash='gallery';
     const label=el('label'),link=el('input');link.type='url';link.readOnly=true;link.value=url.href;link.className='fi';label.append(el('span',t('link')),link);area.append(label);
    }
    for(const [label,key] of [['accepted','accepted24h'],['failed','failed24h'],['finished','completed24h']])area.append(el('p',t(label)+': '+new Intl.NumberFormat(locale).format(data[key]||0)));

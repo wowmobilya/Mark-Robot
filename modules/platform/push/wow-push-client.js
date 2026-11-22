@@ -31,7 +31,9 @@
       canEnable: !!current && status === 'ready' && !busy, canDisable: !!current && (mine || status === 'keyChanged') && !busy,
       canTest: !!current && mine && status === 'enabled' && !busy};
   }
-  function emit() { const value = snapshot(); for (const listener of listeners) { try { listener(value); } catch (_) {} } }
+  function emit() { const value = snapshot();
+    const count=value.entries.filter(entry=>!entry.read).length;
+    Promise.resolve(count?nav.setAppBadge?.(count):nav.clearAppBadge?.()).catch(()=>{}); for (const listener of listeners) { try { listener(value); } catch (_) {} } }
   function problem(code) { return Object.assign(Error(code), {code}); }
   function supported() {
     const ios = /iP(?:hone|ad|od)/i.test(nav.userAgent || '') || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
@@ -251,6 +253,7 @@
     try{
       await loadDevice();const binding=device.binding;
       if(!same(binding,accountIdentity()) || !await store.select(binding.deviceId,eventId))return false;
+      await loadDevice();emit();
       return await openSelected(eventId,binding.deviceId);
     }catch{return false;}
   }
@@ -258,6 +261,7 @@
     if (data?.type === 'wf-push-subscription-change') { verified = ''; await refresh(); return; }
     if (!['wf-push-changed', 'wf-push-open'].includes(data?.type) || !accountIdentity()) return;
     await loadDevice(); emit();
+    if(data.type==='wf-push-changed'&&data.audible&&doc.visibilityState==='visible')root.WFDeviceFeedback?.alert();
     if (data.type === 'wf-push-open') await openSelected(data.eventId,data.deviceId);
   }
   cloud?.subscribe(sessionChanged); if (access?.service !== cloud) access?.service?.subscribe?.(sessionChanged);

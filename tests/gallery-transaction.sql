@@ -20,9 +20,22 @@ begin
  owner_actor=jsonb_build_object('userId',owner_id,'sessionId',owner_session);
  buyer_actor=jsonb_build_object('userId',buyer,'sessionId',buyer_session);
  other_actor=jsonb_build_object('userId',other_id,'sessionId',other_session);
+ insert into public.wow_workspaces(id,name) values(other_id,'Separate gallery');
+ insert into public.wow_gallery_source_inventory(workspace_id,source_id,title,collection,stock,source_price,active,pieces)
+ values(wid,9,'Original model','tv',3,100,true,'[]'),(wid,10,'Inactive','tv',0,null,false,'[]'),
+ (other_id,9,'Other tenant','tv',2,500,true,'[]');
+ res=public.wow_gallery_service('gallery.snapshot',buyer_actor);
+ if jsonb_array_length(res->'sourceItems')<>1 or res->'sourceItems'->0->>'title'<>'Original model'
+ or res->'sourceItems'->0->>'priceLabel'<>'100 ₺' or res->'sourceItems'->0 ? 'productId'
+ or jsonb_array_length(res->'items')<>0 or public.wow_gallery_quote(wid,'9') is not null
+ or jsonb_array_length(public.wow_gallery_service('gallery.snapshot',buyer_actor||'{"offset":1}') ->'sourceItems')<>0
+ or has_table_privilege('authenticated','public.wow_gallery_source_inventory','select')
+ then raise exception 'TEST_SOURCE_SCOPE'; end if;
  insert into public.wow_records(workspace_id,store,record_id,payload,revision,updated_by)
- values(wid,'products','1','{"id":1,"name":"Console","type":"console","priceA":30.24,"costs":"private","dims":[{"l":120,"w":40,"h":80,"private":"private"}]}',1,owner_id),
- (wid,'products','"1"','{"id":"1","name":"Draft","priceA":12}',1,owner_id);
+ values(wid,'products','1','{"id":1,"name":"Console","type":"console","priceA":30.24,"costs":"private","dims":[{"l":120,"w":40,"h":80,"private":"private","specs":{"depth":1.25,"hidden":9,"unknown":3}}]}',1,owner_id),
+ (wid,'products','"1"','{"id":"1","name":"Draft","priceA":12,"dimL":80,"dimW":40,"dimH":36}',1,owner_id);
+ insert into public.wow_gallery_presentation(workspace_id,value) values(wid,'{"fields":[{"id":"depth","visible":true},{"id":"hidden","visible":false}]}');
+ if public.wow_gallery_quote(wid,'"1"')->'dims'->0->>'l' is distinct from '80' then raise exception 'TEST_OLDER_WOW_DIMENSIONS';end if;
  res=public.wow_gallery_service('gallery.snapshot',buyer_actor);
  if jsonb_array_length(res->'items')<>0 then raise exception 'TEST_UNPUBLISHED';end if;
  cmd=jsonb_build_object('rows','[{"productId":1,"version":0,"stock":4,"published":true,"currency":"USD","collection":"","badge":"","specs":{"hidden":"private"}}]'::jsonb,'commandId',gen_random_uuid());
@@ -30,6 +43,7 @@ begin
  perform public.wow_gallery_service('gallery.stock',owner_actor||cmd);
  res=public.wow_gallery_service('gallery.snapshot',buyer_actor);
  if jsonb_array_length(res->'items')<>1 or res::text like '%private%' or res->'items'->0->>'priceMinor'<>'3024' then raise exception 'TEST_CATALOG_PROJECTION';end if;
+ if res#>'{items,0,dims,0,specs}' is distinct from '{"depth":1.25}'::jsonb then raise exception 'TEST_PIECE_FIELD_VISIBILITY';end if;
  begin perform public.wow_gallery_service('gallery.snapshot',buyer_actor||'{"manage":true}');raise exception 'FAIL';
  exception when others then if sqlerrm<>'ACCESS_DENIED' then raise;end if;end;
  cmd=jsonb_build_object('commandId',gen_random_uuid(),'accepted',true,'note','Buyer note','items','[{"productId":1,"quantity":2,"priceMinor":3024,"currency":"USD"}]'::jsonb);
@@ -59,7 +73,7 @@ begin
  perform public.wow_gallery_service('gallery.order.update',owner_actor||jsonb_build_object('commandId',gen_random_uuid(),'version',2,'orderId',oid,'status','cancelled'));
  res=public.wow_gallery_service('gallery.snapshot',buyer_actor);
  if res->'items'->0->>'stock'<>'4' then raise exception 'TEST_STOCK_RESTORE';end if;
- perform public.wow_gallery_service('gallery.presentation',owner_actor||jsonb_build_object('commandId',gen_random_uuid(),'version',0,'value',
+ perform public.wow_gallery_service('gallery.presentation',owner_actor||jsonb_build_object('commandId',gen_random_uuid(),'version',1,'value',
   '{"cards":[{"id":"a","title":"Listed","visible":true},{"id":"b","title":"private","visible":false}],"slides":[],"fields":[]}'::jsonb));
  res=public.wow_gallery_service('gallery.snapshot',buyer_actor);
  if res::text like '%private%' or jsonb_array_length(res->'presentation'->'cards')<>1 then raise exception 'TEST_STUDIO_PROJECTION';end if;

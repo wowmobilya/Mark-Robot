@@ -5,6 +5,7 @@
   const client=root.WFCloudClient?.getClient?.();if(!workspace||!client||root.WFCloudSettings)return root.WFCloudSettings||null;
   const locales=['ar','en','tr','fr','ru'];
   const words={
+    platform:['لوحة إدارة الشركات','Company administration','Şirket yönetimi','Gestion des entreprises','Управление компаниями'],
     title:['السحابة والوصول عن بُعد','Cloud and remote access','Bulut ve uzaktan erişim','Cloud et accès distant','Облако и удалённый доступ'],
     intro:['حسابات WOW ومزامنة العمل مع الحفاظ على مساحة جهازك.','WOW accounts and work sync, with your device workspace preserved.','Cihaz çalışma alanınızı koruyarak WOW hesapları ve iş eşitlemesi.','Comptes WOW et synchronisation, avec conservation de votre espace local.','Учётные записи WOW и синхронизация с сохранением локального пространства.'],
     localScope:['مساحة جهاز المالك','Owner device workspace','Sahibin cihaz çalışma alanı','Espace local du propriétaire','Локальное пространство владельца'],
@@ -174,6 +175,7 @@
     if(state.authenticated){
       actions.append(button('sync',()=>perform(async()=>{await root.wfInitializeCloudSync?.();if(!root.WFCloudSyncEngine?.syncNow)throw Object.assign(Error('SYNC_UNAVAILABLE'),{code:'SYNC_UNAVAILABLE'});await root.WFCloudSyncEngine.syncNow();})),button('refresh',()=>perform(()=>client.refresh())),button('signOut',()=>perform(()=>client.signOut())));
       if(state.role==='owner'){
+        actions.append(linkButton('platform',new URL('./platform/',root.location.href).href));
         if(client.isRemote())actions.prepend(button('manage',()=>root.WFAccounts?.open?.()));
         else{const url=new URL(client.entryUrl());url.searchParams.set('wf-accounts','cloud');url.hash='settings';actions.prepend(linkButton('manage',url.href));}
       }

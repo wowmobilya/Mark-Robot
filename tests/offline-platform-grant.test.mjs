@@ -1,3 +1,4 @@
+import {assertPrivateFile} from './fixtures/private-file.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -125,7 +126,7 @@ test('a fresh offline app/window with a verified local owner reopens its real ca
 test('operator helper creates only a protected private file and refuses to overwrite it',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'wf-key-fixture-')),out=join(dir,'signing.jwk');
   try{const pin=await generatePrivateFile(out),jwk=JSON.parse(await readFile(out,'utf8'));
-    assert.match(pin,/^[A-Za-z0-9_-]{43}$/);assert.equal((await stat(out)).mode&0o777,0o600);
+    assert.match(pin,/^[A-Za-z0-9_-]{43}$/);await assertPrivateFile(out);
     assert.equal(pin,createHash('sha256').update(JSON.stringify({crv:jwk.crv,kty:jwk.kty,x:jwk.x,y:jwk.y})).digest('base64url'));
     await assert.rejects(generatePrivateFile(out),{code:'EEXIST'});await assert.rejects(generatePrivateFile('./bad.jwk'));
   }finally{await rm(dir,{recursive:true,force:true});}

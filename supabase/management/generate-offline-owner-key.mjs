@@ -1,6 +1,7 @@
 // Operator-only key generation. Writes an exclusive owner-readable file; prints only its public RFC 7638 thumbprint.
 import {webcrypto,createHash} from 'node:crypto';
-import {writeFile,realpath} from 'node:fs/promises';
+import {writePrivateFile} from '../../scripts/write-private-file.mjs';
+import {realpath} from 'node:fs/promises';
 import {resolve,dirname,relative,isAbsolute} from 'node:path';
 import {fileURLToPath} from 'node:url';
 export async function generatePrivateFile(outPath) {
@@ -11,7 +12,7 @@ export async function generatePrivateFile(outPath) {
   const pair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
   const jwk=await webcrypto.subtle.exportKey('jwk',pair.privateKey),publicKey={crv:jwk.crv,kty:jwk.kty,x:jwk.x,y:jwk.y};
   const pin=createHash('sha256').update(JSON.stringify(publicKey)).digest('base64url');
-  await writeFile(outPath,JSON.stringify(jwk),{flag:'wx',mode:0o600});
+  await writePrivateFile(outPath,JSON.stringify(jwk));
   return pin;
 }
 if (process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)) {

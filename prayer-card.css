@@ -1,0 +1,29 @@
+/* The carousel owns visibility, focus and rotation of the prayer face. */
+#wfPrayer{position:relative;isolation:isolate;display:grid;gap:.25rem;align-content:center;justify-items:start;color:var(--text)}
+#wfPrayer::before{content:"";pointer-events:none;position:absolute;z-index:-1;inset-inline-end:12%;inset-block-end:-42%;inline-size:8rem;block-size:10rem;border:double 7px color-mix(in srgb,var(--brand-primary) 17%,transparent);border-radius:55% 55% 0 0;transform:rotate(0)}
+.wf-prayer-heading{display:flex;align-items:center;gap:.5rem;font-size:.96rem}
+.wf-prayer-mark{width:2.6rem;height:2.6rem;display:grid;place-items:center;border-radius:50% 50% 30% 30%;background:var(--business-soft,var(--card));color:var(--brand-primary)}
+.wf-prayer-mark svg{width:2.15rem;height:2.15rem}
+#wfPrayer>span{color:var(--text2);font-size:.86rem}
+#wfPrayer>b{font-size:clamp(1rem,2vw,1.5rem);font-variant-numeric:tabular-nums}
+#wfPrayer>b:empty{display:none}
+#wfPrayer .btn{min-height:36px;font-size:.82rem;line-height:1.2;padding:.35rem .7rem}
+.wf-prayer-settings{box-sizing:border-box;width:min(94vw,29rem);max-height:88dvh;margin:auto;padding:clamp(16px,3vw,24px);color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:auto}
+.wf-prayer-settings[open]{display:grid;gap:.8rem}
+.wf-prayer-settings::backdrop{background:rgb(7 22 32 / 58%)}
+.wf-prayer-settings header,.wf-prayer-notice{display:flex;align-items:center;justify-content:space-between;gap:.65rem}
+.wf-prayer-settings h2,.wf-prayer-settings p,.wf-prayer-times,.wf-prayer-times dd{margin:0}
+.wf-prayer-settings p:empty,.wf-prayer-settings [hidden]{display:none}
+.wf-prayer-settings label{display:grid;gap:.25rem;font-size:.9rem}
+.wf-prayer-settings :is(input,select,button),.wf-prayer-notice button{font:inherit;min-height:44px;max-width:100%;min-width:0;border:1px solid var(--border);border-radius:9px;padding:.45rem .65rem;color:var(--text);background:var(--card)}
+.wf-prayer-settings .btn-p{color:var(--on-primary,#fff);background:var(--brand-primary)}
+.wf-prayer-times{display:grid;grid-template-columns:repeat(auto-fit,minmax(4rem,1fr));gap:.4rem}
+.wf-prayer-times div{padding:.4rem;background:var(--business-soft,var(--card));border:1px solid var(--border);border-radius:8px;text-align:center}
+.wf-prayer-times dt{font-size:.79rem;color:var(--text2)}
+.wf-prayer-times dd{font-variant-numeric:tabular-nums;font-weight:700}
+.wf-prayer-notice{position:fixed;z-index:9999;inset-block-start:calc(env(safe-area-inset-top) + .7rem);inset-inline:0;max-width:min(96vw,32rem);margin:auto;padding:.6rem;border-radius:12px;border:1px solid var(--border);color:var(--text);background:var(--card);box-shadow:var(--business-shadow);flex-wrap:wrap}
+.wf-prayer-notice[hidden]{display:none}
+@media(max-width:640px){.wf-prayer-settings{width:100%;max-height:90dvh;margin:auto auto 0;border-radius:18px 18px 0 0;padding-block-end:calc(14px + env(safe-area-inset-bottom))}}
+/* Fit all six page targets and playback inside the current card height. */
+html body #mainContent #page-dashboard .wf-smart-pager:has([aria-controls="wfPrayer"]){max-block-size:100%;grid-template-rows:repeat(var(--wf-smart-pages),minmax(22px,26px)) 28px}
+html body #mainContent #page-dashboard .wf-smart-pager:has([aria-controls="wfPrayer"]) .wf-smart-page{block-size:26px;min-block-size:22px}
