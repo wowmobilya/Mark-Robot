@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=5');
 importScripts('./modules/platform/push/wow-push-sw.js?v=6');
-const CACHE_NAME = 'wow-furniture-v224-cloud';
+const CACHE_NAME = 'wow-furniture-v224-cloud-r2';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -181,7 +181,7 @@ const urlsToCache = [
   './ui-i18n.js?v=27',
   './modern-ui.css?v=47',
   './ui-identity.css?v=35',
-  './ui-navigation.js?v=33',
+  './ui-navigation.js?v=34',
   './ui-logo.js?v=4',
   './ui-settings.js?v=2',
   './ui-icons.js?v=49',
@@ -249,7 +249,7 @@ const urlsToCache = [
   './app-icon-192.png',
   './app-icon-512.png',
   './account-statement-core.js?v=25',
-  './account-statement.js?v=28',
+  './account-statement.js?v=29',
   './statement-delivery.js?v=1',
   './assets/prayer/makkah-sai-excerpt.mp3',
   './assets/galeri-tr/inventory-3.webp',
