@@ -5,7 +5,7 @@ const id=value=>{demand(typeof value==='string'&&/^[1-9][0-9]{0,17}$/.test(value
 const optional=(value,fn)=>value==null?null:fn(value);
 const emoji=value=>short(value??'',16,true);
 const reactions=['👍','❤️','😂','😮','😢','🙏','🎉','🔥','👏','👎',''];
-export function createChatActions({moduleRpc,storage}){
+export function createChatActions({moduleRpc,storage,voiceTurn={}}){
   const {rpc,sign,upload,collect}=privateActions('chat',moduleRpc,storage);
   const room=b=>({roomId:uuid(b.roomId)});
   const message=b=>({...room(b),messageId:id(b.messageId)});
@@ -58,5 +58,54 @@ export function createChatActions({moduleRpc,storage}){
       return sign(a,'asset.open',purpose==='profile'?{purpose,targetId:uuid(b.targetId)}:{...room(b),purpose,...(purpose==='message'?{messageId:id(b.messageId)}:{})});
     }
   };
-  return Object.fromEntries(Object.entries(handlers).map(([action,run])=>['chat.'+action,({actor,body})=>run(actor,body)]));
+  // Voice is scoped to the same verified WOW sessions and direct chat membership.
+  // SDP and ICE are temporary private signals; no media passes through this API.
+  const voiceContext=actor=>({userId:uuid(actor?.userId),sessionId:uuid(actor?.sessionId)});
+  const voiceParams={
+    inbox:()=>({}),
+    start:body=>({roomId:uuid(body.roomId),targetId:uuid(body.targetId)}),
+    accept:body=>({callId:uuid(body.callId)}),
+    decline:body=>({callId:uuid(body.callId)}),
+    end:body=>({callId:uuid(body.callId)}),
+    events:body=>{
+      const after=body.after??'0';
+      demand(typeof after==='string'&&/^(0|[1-9][0-9]{0,17})$/.test(after),'INVALID_VOICE_REQUEST');
+      return {callId:uuid(body.callId),after};
+    },
+    signal:body=>{
+      const kind=choice(body.kind,['offer','answer','ice']),raw=body.payload;
+      demand(raw&&typeof raw==='object'&&!Array.isArray(raw),'INVALID_VOICE_SIGNAL');
+      let payload;
+      if(kind==='ice'){
+        demand(typeof raw.candidate==='string'&&raw.candidate.length>0&&raw.candidate.length<=2048,'INVALID_VOICE_SIGNAL');
+        demand(raw.sdpMid==null||typeof raw.sdpMid==='string'&&raw.sdpMid.length<=64,'INVALID_VOICE_SIGNAL');
+        demand(raw.sdpMLineIndex==null||Number.isSafeInteger(raw.sdpMLineIndex)&&raw.sdpMLineIndex>=0&&raw.sdpMLineIndex<1024,'INVALID_VOICE_SIGNAL');
+        payload={candidate:raw.candidate,sdpMid:raw.sdpMid??null,sdpMLineIndex:raw.sdpMLineIndex??null};
+      }else{
+        demand(raw.type===kind&&typeof raw.sdp==='string'&&raw.sdp.length>0&&raw.sdp.length<=24000,'INVALID_VOICE_SIGNAL');
+        payload={type:kind,sdp:raw.sdp};
+      }
+      return {callId:uuid(body.callId),kind,payload};
+    }
+  };
+  const voiceActions=Object.fromEntries(Object.entries(voiceParams).map(([action,validate])=>
+    ['chat.call.'+action,({actor,body})=>moduleRpc('wow_voice_service',action,{...validate(body||{}),...voiceContext(actor)})]));
+  voiceActions['chat.call.ice']=async({actor,body})=>{
+    const callId=uuid(body?.callId);
+    const snapshot=await moduleRpc('wow_voice_service','events',{callId,after:'0',...voiceContext(actor)});
+    demand(snapshot?.status==='active','VOICE_CALL_UNAVAILABLE');
+    const iceServers=[{urls:['stun:stun.cloudflare.com:3478','stun:stun.l.google.com:19302']}];
+    const url=typeof voiceTurn.url==='string'?voiceTurn.url.trim():'',secret=voiceTurn.secret;
+    let relayReady=false;
+    if(/^turns?:[A-Za-z0-9.-]+(?::[0-9]{2,5})?(?:\?transport=(?:udp|tcp))?$/.test(url)&&
+      typeof secret==='string'&&secret.length>=32&&secret.length<=512){
+      const expiry=Math.floor(Date.now()/1000)+7500,username=expiry+':'+uuid(actor.userId);
+      const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-1'},false,['sign']);
+      const bytes=new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(username)));
+      const credential=btoa(String.fromCharCode(...bytes));
+      iceServers.push({urls:[url],username,credential});relayReady=true;
+    }
+    return {iceServers,relayReady,expiresIn:relayReady?7500:0};
+  };
+  return {...Object.fromEntries(Object.entries(handlers).map(([action,run])=>['chat.'+action,({actor,body})=>run(actor,body)])),...voiceActions};
 }
