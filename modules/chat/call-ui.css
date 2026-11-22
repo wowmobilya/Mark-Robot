@@ -1,0 +1,37 @@
+/* WOW unified chat call UI — compact, responsive, five-language labels. */
+.wf-calling{display:flex;flex-direction:column;gap:.35rem;min-width:0}
+.wf-calling-panel[hidden],.wf-calling-history[hidden]{display:none!important}
+.wf-calling-panel{border:1px solid var(--border,#9ba4af);background:var(--card,var(--bg2,#fff));color:var(--text,#273343);
+ margin:.35rem .65rem;padding:.6rem .7rem;border-radius:16px;display:grid;gap:.45rem;box-shadow:0 3px 18px rgba(0,0,0,.1)}
+.wf-calling-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.35rem}
+.wf-calling-header>span{font-size:.83rem;color:var(--text2,#5d6673)}
+.wf-calling-shortcuts{display:flex;gap:.35rem;flex-wrap:wrap;align-items:center}
+.wf-calling-start{font-size:.77rem;min-height:36px;padding:.36rem .55rem}
+.wf-calling-start:disabled{opacity:.55}
+.wf-calling-videos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:.4rem;max-height:min(45dvh,430px);overflow:auto}
+.wf-calling-videos:empty{display:none}
+.wf-calling-tile{position:relative;min-height:80px;border-radius:12px;overflow:hidden;background:var(--bg,#1b2731);color:var(--text,#fff);
+ border:1px solid var(--border,#999);display:grid;place-items:center}
+.wf-calling-tile video{width:100%;max-height:210px;object-fit:cover;aspect-ratio:16/9;background:#192632}
+.wf-calling-tile video[hidden]{display:none}
+.wf-calling-tile small{position:absolute;bottom:.25rem;inset-inline-start:.4rem;background:rgba(0,0,0,.6);color:#fff;border-radius:6px;padding:.1rem .35rem}
+.wf-calling-tile:first-child video{transform:scaleX(-1)}
+.wf-calling-actions{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+.wf-calling-button{flex:1 1 auto;min-height:39px;font-size:.82rem}
+.wf-calling-accept{background:var(--primary,#3f7c94);color:white}
+.wf-calling-danger{border-color:#c64d52;color:#be3b42}
+.wf-calling-notice{font-size:.8rem;line-height:1.4;color:#b34a50;margin:0}
+.wf-calling-notice[hidden]{display:none}
+.wf-calling-history{max-height:125px;overflow:auto;padding:.15rem .65rem;border-bottom:1px solid var(--border)}
+.wf-calling-history-title{min-height:30px;font-size:.8rem;border:0;background:transparent;color:var(--text2,#666);cursor:pointer}
+.wf-calling-history-list{display:grid;gap:.2rem}
+.wf-calling-history-list[hidden]{display:none}
+.wf-calling-history-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.35rem;border-bottom:1px solid var(--border);padding:.2rem 0;font-size:.8rem}
+.wf-calling-history-row small{color:var(--text2,#666)}
+@media(max-width:779px){
+.wf-calling-panel{margin:.25rem;padding:.5rem}
+.wf-calling-start{font-size:.75rem;min-height:38px}
+.wf-calling-videos{max-height:36dvh}
+.wf-calling-tile video{max-height:28dvh}
+.wf-calling-header{font-size:.9rem}
+}
