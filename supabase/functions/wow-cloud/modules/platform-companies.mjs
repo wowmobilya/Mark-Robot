@@ -5,7 +5,7 @@ export function createPlatformActions({platformRpc,requirePlatformFounder,manage
     try{await requirePlatformFounder(actor);return {verifiedFounder:true};}
     catch(error){if(error?.code==='ACCESS_DENIED')return {verifiedFounder:false};throw error;}
   }};
-  for(const action of ['company.list','company.rename','company.audit','company.status','company.create','limits.get','limits.set','plans.list','plans.save']){
+  for(const action of ['company.list','company.rename','company.audit','company.status','company.create','limits.get','limits.set','plans.list','plans.save','addons.get','addons.set']){
     handlers['platform.'+action]=async({actor,body})=>{
       let data={...body};
       delete data.action;
