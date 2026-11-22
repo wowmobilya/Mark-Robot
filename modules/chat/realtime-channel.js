@@ -55,12 +55,15 @@
     try{onBroadcast(message.payload);}catch(_){}
    }
    if(msg.event==='presence_state'&&msg.payload&&typeof msg.payload==='object'){
-    presences.clear();for(const [key,records] of Object.entries(msg.payload))if(Array.isArray(records)&&records.length)presences.set(key,records);
+    presences.clear();for(const [key,records] of Object.entries(msg.payload))if(Array.isArray(records?.metas)&&records.metas.length)presences.set(key,records.metas);
     try{onPresence([...presences.entries()].map(([key,entries])=>({key,entries})));}catch(_){}
    }
    if(msg.event==='presence_diff'){
     for(const [key,entries] of Object.entries(msg.payload?.joins||{}))
-      if(entries?.metas)presences.set(key,entries.metas);
+      if(Array.isArray(entries?.metas)){
+      const previous=presences.get(key)||[],incoming=entries.metas;
+      presences.set(key,[...previous.filter(p=>!incoming.some(n=>n.phx_ref===p.phx_ref)),...incoming]);
+     }
     for(const [key,left] of Object.entries(msg.payload?.leaves||{})){
      const previous=presences.get(key)||[],gone=new Set((left?.metas||[]).map(m=>m.phx_ref));
      const remaining=previous.filter(m=>!gone.has(m.phx_ref));if(remaining.length)presences.set(key,remaining);else presences.delete(key);
