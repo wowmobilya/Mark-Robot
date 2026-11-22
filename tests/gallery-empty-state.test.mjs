@@ -70,3 +70,35 @@ test('gallery music remains available within its management section',async()=>{
     assert.equal(f.requests[0].payload.manage,true);
   }finally{handle.dispose();}
 });
+
+test('a WOW model opens its own gallery stock editor without creating a duplicate product',async()=>{
+ const f=fixture('owner');
+ f.api.request=async(action,payload)=>{
+   f.requests.push({action,payload});
+   return {items:[{productId:'wow-model-514',name:'W 514',published:false,stock:13,
+      priceMinor:2500,currency:'USD',collection:'TV',version:0,specs:{},hasImage:false}],
+     hasMore:false,presentation:{version:0}};
+ };
+ const handle=f.definitions.get('gallery-studio').mount({route:'gallery-studio',
+   params:{productId:'wow-model-514'},container:f.container,api:f.api,lang:'en'});
+ try{
+   await settle(()=>descendants(f.container).some(e=>e.tagName==='DIALOG'&&e.open));
+   const dialog=descendants(f.container).find(e=>e.tagName==='DIALOG'&&e.open);
+   assert.ok(dialog.textContent.includes('W 514'));
+   assert.ok(dialog.textContent.includes('Published'));
+   assert.equal(f.requests.length,1,'Opening existing model must not mutate stock');
+   assert.equal(f.requests[0].action,'gallery.snapshot');
+   assert.equal(f.requests[0].payload.manage,true);
+   assert.equal(f.requests[0].payload.offset,0);
+ }finally{handle.dispose();}
+});
+test('missing native WOW model is not replaced with a guessed gallery duplicate',async()=>{
+ const f=fixture('owner');
+ const handle=f.definitions.get('gallery-studio').mount({route:'gallery-studio',
+   params:{productId:'not-synced'},container:f.container,api:f.api,lang:'en'});
+ try{
+   await settle(()=>f.container.textContent.includes('No duplicate was created'));
+   assert.equal(descendants(f.container).filter(e=>e.tagName==='DIALOG'&&e.open).length,0);
+   assert.equal(f.requests.length,1);
+ }finally{handle.dispose();}
+});
