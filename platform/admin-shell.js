@@ -23,7 +23,7 @@
   button.setAttribute('aria-controls','platformSideDrawer');button.setAttribute('aria-expanded','false');
   header.prepend(button);
   const themeButton=create('button','platform-theme-button');
-  themeButton.type='button';themeButton.id='platformThemeToggle';themeButton.hidden=true;
+  themeButton.type='button';themeButton.id='platformThemeToggle';themeButton.hidden=false;
   themeButton.setAttribute('aria-label',words.ar.theme);
   header.querySelector('.platform-preferences')?.append(themeButton);
   const backdrop=create('div','platform-drawer-backdrop');backdrop.hidden=true;
@@ -196,11 +196,13 @@
     updateAppearance();queueOrbit();
   }
   function reset(){
-    close();button.hidden=themeButton.hidden=true;
+    close();button.hidden=true;themeButton.hidden=false;
     header.classList.remove('platform-authenticated');
+    updateAppearance();
     navObserver?.disconnect();navObserver=null;
     resizeObserver?.disconnect();resizeObserver=null;
     nav=null;preferenceHosts=[];
   }
+  updateAppearance();
   window.WFPlatformShell=Object.freeze({mount,reset});
 })();
