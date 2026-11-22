@@ -463,7 +463,7 @@
     return {dispose(){alive=false;unsubscribe?.();offReceipts?.();generation++;clearInterval(clock);clearTimer();stopRecord();root.removeEventListener('online',resume);root.document.removeEventListener('visibilitychange',resume);
       callUI?.dispose?.();retrySends.clear();durable.clear();drafts.clear();thumbs.clear();members=[];rooms=[];feed=null;me=null;selected.clear();ui.dispose();app.remove();},
       updateLanguage(value){language=value;callUI?.updateLanguage?.();lastFeed='';roomsView='';sideHeader();drawRooms();if(room){drawRoomHead();drawMessages();drawPaging();drawComposer();}else leaveRoom(false);},
-      hasUnsavedChanges:()=>!!(recording||attached||sending||written)};
+      hasUnsavedChanges:()=>!!(recording||attached||sending||written||callUI?.hasActiveCall?.())};
   }
   const definition={id:'chat',title,permission:'chat.view',icon:'message-circle',mount,openRoom:id=>H.validRoom(id)&&root.WFModules?.open('chat',{roomId:id})};
   root.WFChat=definition;root.WFModules?.register(definition);
