@@ -236,6 +236,10 @@
     if(!identity || !same(binding,identity) || binding.deviceId!==deviceId || !eventId)return false;
     const dest=await store.takeOpen(binding,eventId);
     if(!dest || !same(identity,accountIdentity()))return false;
+    if(dest.route==='member-support' && root.WFPlatformSupport?.open){await root.WFPlatformSupport.open();return true;}
+    if(dest.route==='founder-support'){
+      root.location.assign(new URL('./platform/#support',root.location.href).href);return true;
+    }
     if(dest.route==='notifications' || !root.WFModules?.open || !access?.can?.(dest.permission))root.WFNotifications?.open();
     else root.WFModules.open(dest.route,dest.params);
     return true;

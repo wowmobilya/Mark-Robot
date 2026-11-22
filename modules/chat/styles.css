@@ -96,3 +96,21 @@
 }
 #page-chat .wf-chat .wf-chat-send-tools > select {inline-size:auto;max-inline-size:8rem;min-height:40px}
 #page-chat .wf-chat-composer :is(.wf-chat-draft-info,.wf-chat-mentions):empty {display:none}
+/* Calls remain named actions in the inbox and the active conversation. */
+#page-chat .wf-chat .wf-calling-shortcuts {display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;min-inline-size:0;max-inline-size:100%;white-space:normal}
+#page-chat .wf-chat .wf-calling-shortcuts:empty {display:none}
+#page-chat .wf-chat .wf-calling-shortcuts button:has(.wf-calling-label-text) {
+  display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  inline-size:auto;max-inline-size:100%;min-inline-size:44px;
+  block-size:auto;min-block-size:44px;padding:.4rem .65rem;
+  border:1px solid var(--border);border-radius:var(--rs,10px);
+  background:var(--ui-soft);color:var(--text);font-size:.86rem;font-weight:650;
+}
+#page-chat .wf-calling-shortcuts .wf-calling-label-text {white-space:normal;line-height:1.25}
+#page-chat .wf-calling-shortcuts button svg {inline-size:20px;block-size:20px;flex:none;color:var(--ui-accent,var(--brand-primary))}
+#page-chat .wf-chat-sidebar-tools .wf-calling-picker > button:has(.wf-calling-label-text) {flex:1 1 7rem}
+@media (max-width:779px) {
+  #page-chat .wf-chat-head {flex-wrap:wrap}
+  #page-chat .wf-chat-head > .wf-calling-shortcuts {order:1;flex:1 0 100%;margin:0}
+  #page-chat .wf-chat-head > .wf-calling-shortcuts button:has(.wf-calling-label-text) {flex:1 1 6rem}
+}

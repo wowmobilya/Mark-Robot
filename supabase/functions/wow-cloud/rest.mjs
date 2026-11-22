@@ -3,7 +3,7 @@
 import {failure} from './core.mjs';
 const AUTH_CODES=new Set(['AUTH_REQUIRED','SESSION_REVOKED','SESSION_EXPIRED']);
 const FORBIDDEN_CODES=new Set(['ACCESS_DENIED','PERMISSION_DENIED','ACCOUNT_UNAVAILABLE','SETUP_PROOF_INVALID','SETUP_PROOF_REQUIRED','SUBSCRIPTION_EXPIRED','SELF_PROTECTION','LAST_OWNER','CUSTOMER_PRINCIPAL_ROLE_FIXED']);
-const CONFLICT_CODES=new Set(['JOIN_APPROVAL_REQUIRED','DEVICE_LIMIT_REACHED','STORAGE_LIMIT_REACHED','PLAN_NAME_EXISTS','CONFLICT','IDENTITY_CONFLICT','IDEMPOTENCY_MISMATCH','BATCH_SESSION_CHANGED','DUPLICATE_INVOICE_NUMBER','DUPLICATE_RECORD','USERNAME_TAKEN','ALREADY_CONFIGURED','MEDIA_REVISION_MISMATCH','MEDIA_NOT_UPLOADED','SUBSCRIPTION_BOUND_TO_OTHER_IDENTITY','PUSH_SUBSCRIPTION_REQUIRED']);
+const CONFLICT_CODES=new Set(['JOIN_APPROVAL_REQUIRED','DEVICE_LIMIT_REACHED','STORAGE_LIMIT_REACHED','USER_LIMIT_REACHED','PLAN_NAME_EXISTS','CONFLICT','IDENTITY_CONFLICT','IDEMPOTENCY_MISMATCH','BATCH_SESSION_CHANGED','DUPLICATE_INVOICE_NUMBER','DUPLICATE_RECORD','USERNAME_TAKEN','ALREADY_CONFIGURED','MEDIA_REVISION_MISMATCH','MEDIA_NOT_UPLOADED','SUBSCRIPTION_BOUND_TO_OTHER_IDENTITY','PUSH_SUBSCRIPTION_REQUIRED']);
 const MODULE_RPCS=new Set(['wow_company_join','wow_order_sms','wow_statement_service','wow_gallery_service','wow_chat_service','wow_voice_service','wow_files_service','wow_finance_service','wow_operations_service','wow_assistant_service','wow_communications_service','wow_public_share_service']);
 const UUID='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const MODULE_OBJECT_PATH=new RegExp('^(?:chat|files)/'+UUID+'/'+UUID+'/'+UUID+'/[0-9a-f]{64}$');
@@ -71,6 +71,7 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     founderActivation:(actor,action,data)=>call('/rest/v1/rpc/wow_founder_activation',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
     consumeOwnerRecovery:(id,owner,email)=>call('/rest/v1/rpc/wow_owner_recovery_consume',{body:{p_request:id,p_owner:owner,p_email:email},kind:'rpc'}),
     offlineSigningKey:()=>call('/rest/v1/rpc/wow_offline_owner_signing_key',{body:{},kind:'rpc'}),
+    supportRpc:(actor,action,data)=>call('/rest/v1/rpc/wow_support_service',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
     requirePlatformFounder:actor=>call('/rest/v1/rpc/wow_platform_require',{body:{p_user:actor.userId,p_session:actor.sessionId},kind:'rpc'}),
     platformRpc:(actor,action,data)=>call('/rest/v1/rpc/'+(/^(limits|plans)\./.test(action)?'wow_platform_limits':'wow_platform_service'),{
       body:{p_user:actor.userId,p_session:actor.sessionId,p_action:/^(limits|plans)\./.test(action)?'platform.'+action:action,p_data:data},kind:'rpc'}),

@@ -23,8 +23,9 @@ const {chromium}=require('playwright');
    await page.evaluate(()=>{
      const topics=new Map(),ids=[crypto.randomUUID(),crypto.randomUUID()],room=crypto.randomUUID();
      let current=null;
+     window.dropParticipant=id=>{current.participants.find(p=>p.id===id).status='left';};
      window.setup=(peer,index)=>{
-       const me=ids[index],newId=()=>crypto.randomUUID();
+       const me=ids[index],newId=()=>crypto.randomUUID();peer.userId=me;peer.events=[];
        peer.received=[];peer.errors=[];peer.connections=[];
        const Native=peer.RTCPeerConnection;
        peer.RTCPeerConnection=class extends Native{constructor(config){super(config);peer.connections.push(this);}};
@@ -42,7 +43,10 @@ const {chromium}=require('playwright');
        }};
        const api={getSession:()=>({userId:me,authenticated:true}),realtimeCredentials:async()=>({}),
          async request(name,data){
-           switch(name.slice('chat.call.'.length)){
+           const action=name.slice('chat.call.'.length);peer.events.push(action);
+           if(action==='status'&&peer.denyStatus)throw Object.assign(new Error('ACCESS_DENIED'),{code:'ACCESS_DENIED',status:403});
+           if(action==='start'&&peer.deferStart)await new Promise(resolve=>{peer.resumeStart=resolve;});
+           switch(action){
              case 'start':current={id:newId(),roomId:room,callerId:me,kind:data.kind,status:'ringing',
                participants:ids.map(id=>({id,status:id===me?'joined':'invited'}))};break;
              case 'accept':current.status='active';current.participants.find(p=>p.id===me).status='joined';break;
@@ -91,5 +95,32 @@ const {chromium}=require('playwright');
      console.log(mode+': native RTP exchanged by both peers; hangup released tracks.');
    }
    for(const f of [a,b])assert.deepEqual(await f.evaluate(()=>errors),[]);
+   await a.evaluate(()=>manager.start(room,'audio'));
+   await b.waitForFunction(()=>manager.getState().call?.status==='ringing');
+   const denied=await b.evaluate(async()=>{
+     const devices=navigator.mediaDevices,original=devices.getUserMedia;
+     devices.getUserMedia=async()=>{throw new DOMException('Denied','NotAllowedError');};
+     try{await manager.accept();return false;}catch{return manager.getState().call?.status==='ringing'&&!manager.getState().busy;}
+     finally{devices.getUserMedia=original;}
+   });
+   assert.equal(denied,true,'microphone refusal leaves invitation available for retry');
+   await b.evaluate(()=>manager.accept());
+   await a.waitForFunction(()=>connections.at(-1)?.connectionState==='connected');
+   await page.evaluate(()=>dropParticipant(frames.callee.userId));
+   await a.evaluate(()=>manager.poll());
+   assert.equal(await a.evaluate(()=>connections.at(-1).connectionState),'closed');
+   const activeTracks=await a.evaluateHandle(()=>manager.getState().localStream.getTracks());
+   await a.evaluate(async()=>{window.denyStatus=true;await manager.poll();});
+   assert.equal(await a.evaluate(()=>manager.getState().call),null);
+   assert.equal(await activeTracks.evaluate(ts=>ts.every(t=>t.readyState==='ended')),true);
+   await activeTracks.dispose();await b.evaluate(()=>manager.poll());
+   await a.evaluate(()=>{window.denyStatus=false;window.deferStart=true;window.lateStart=manager.start(room,'audio').catch(e=>e.code);});
+   await a.waitForFunction(()=>typeof resumeStart==='function');
+   const endsBefore=await a.evaluate(()=>events.filter(e=>e==='end').length);
+   await a.evaluate(()=>{manager.stop();resumeStart();});
+   assert.equal(await a.evaluate(()=>lateStart),'CALL_CANCELLED');
+   assert.equal(await a.evaluate(()=>events.filter(e=>e==='end').length),endsBefore+1);
+   console.log('Permission retry, membership removal, revoked session and late start cancellation passed.');
+
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

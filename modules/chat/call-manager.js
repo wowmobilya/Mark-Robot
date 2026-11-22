@@ -21,11 +21,14 @@
     topic,credentials:()=>api.realtimeCredentials(),onBroadcast,onPresence:onPres||(()=>{}),
     onStatus:state=>{if(state==='denied'&&call)finish(false).catch(()=>{});}
   });
+  function disconnectPeer(uid,p){
+   peers.delete(uid);
+   p.pc.onnegotiationneeded=null;p.pc.onicecandidate=null;p.pc.ontrack=null;p.pc.onconnectionstatechange=null;
+   try{p.pc.close();}catch(_){}onRemote(uid,null);
+  }
   function cleanup(){
    mediaToken++;
-   for(const [uid,p] of peers){p.pc.onnegotiationneeded=null;p.pc.onicecandidate=null;
-    p.pc.ontrack=null;p.pc.onconnectionstatechange=null;try{p.pc.close();}catch(_){}onRemote(uid,null);}
-   peers.clear();
+   for(const [uid,p] of peers)disconnectPeer(uid,p);
    if(local){for(const tr of local.getTracks())tr.stop();local=null;}
    callChannel?.stop();callChannel=null;call=null;ice=null;muted=false;connectedAck=false;heartAt=0;busy=false;emit();
   }
@@ -169,11 +172,14 @@
    try{
     await acquire(kind,token);
     const row=await request('start',{roomId:target.id,kind});
-    if(!alive||token!==mediaToken)throw fail('CALL_CANCELLED');
+    if(!alive||token!==mediaToken){
+     if(valid(row?.id))await request('end',{callId:row.id}).catch(()=>{});
+     throw fail('CALL_CANCELLED');
+    }
     call={...row,kind};busy=false;emit();await publishRoom('ring');
     if(room?.id!==row.roomId)poll().catch(()=>{});
     return row;
-   }catch(error){cleanup();message(error);throw error;}
+   }catch(error){if(token===mediaToken){cleanup();message(error);}throw error;}
   }
   async function accept(){
    if(!callValid(call)||!call.participants?.some(p=>p.id===me&&p.status==='invited')||busy)return;
@@ -181,9 +187,19 @@
    busy=true;const cid=call.id,token=++mediaToken;emit();
    try{
     await acquire(call.kind,token);
-    const row=await request('accept',{callId:cid});if(!alive||call?.id!==cid)throw fail('CALL_CANCELLED');
+    const row=await request('accept',{callId:cid});
+    if(!alive||call?.id!==cid||token!==mediaToken){
+     await request('leave',{callId:cid}).catch(()=>{});throw fail('CALL_CANCELLED');
+    }
     call=row;busy=false;emit();await publishRoom('accept');await openCallChannel();
-   }catch(error){cleanup();message(error);throw error;}
+   }catch(error){
+    if(token===mediaToken){
+     // Keep the invitation available if permission was declined before acceptance.
+     if(!local&&call?.id===cid){busy=false;emit();}else cleanup();
+     message(error);
+    }
+    throw error;
+   }
   }
   async function decline(){
    const row=call;if(!row)return;cleanup();
@@ -200,15 +216,23 @@
     const row=await request('status',{callId:cid});
     if(!alive||call?.id!==cid)return;
     if(!callValid(row)||!row.participants?.some(p=>p.id===me&&['invited','joined'].includes(p.status))){cleanup();fetchHistory();return;}
-    call=row;emit();
+    call=row;
+    const joined=new Set(accepted(row).map(p=>p.id));
+    for(const [uid,peer] of peers)if(!joined.has(uid))disconnectPeer(uid,peer);
+    emit();
     if(call.status==='active'&&local)await openCallChannel();
     if(local&&call.status==='active'&&Date.now()-heartAt>14000){
      heartAt=Date.now();request('heartbeat',{callId:cid}).catch(message);
     }
-   }catch(error){message(error);}
+   }catch(error){
+    if(call?.id===cid&&([401,403].includes(error?.status)||['AUTH_REQUIRED','SESSION_EXPIRED','SESSION_REVOKED','ACCESS_DENIED','VOICE_CALL_UNAVAILABLE'].includes(error?.code)))cleanup();
+    message(error);
+   }
   }
   async function poll(){
-   if(!alive||polling||busy||!api.getSession?.()?.authenticated)return;
+   if(!alive||polling||busy)return;
+   const session=api.getSession?.();
+   if(!session?.authenticated||getMe()!==me){if(call||local)cleanup();return;}
    polling=true;
    try{
     if(call)await refreshCall();

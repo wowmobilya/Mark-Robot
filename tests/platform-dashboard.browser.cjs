@@ -5,7 +5,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
   const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true});
   try{
     const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true});
-    const events=[],wid=randomUUID(),scope='https://platform.test';let created=false,rejection='wrong',companyName='Test',companyStatus='active',activation='pending',canRecover=false;
+    const events=[],wid=randomUUID(),scope='https://platform.test';let plans=[],assigned=null,expiresAt=null,created=false,rejection='wrong',companyName='Test',companyStatus='active',activation='pending',canRecover=false;
     await page.route('**/*',async route=>{
       const u=new URL(route.request().url());
       if(u.hostname!=='platform.test')return route.abort();
@@ -18,6 +18,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
         if(body.action==='platform.company.list'&&rejection==='member')return route.fulfill({status:403,json:{ok:false,error:{code:'ACCESS_DENIED'}}});
         switch(body.action){
           case 'auth.signIn':response={session:{access_token:'local-fixture',expires_at:Math.floor(Date.now()/1000)+300}};break;
+          case 'platform.support.list':response={cases:[],unreadCases:0};break;
           case 'platform.company.list':response={total:created?1:0,companies:created?[{id:wid,name:companyName,accounts:0,status:companyStatus}]:[]};break;
           case 'platform.company.create':assert.match(body.setupToken,/^[0-9a-f]{64}$/);created=true;response={workspaceId:wid};break;
           case 'platform.company.activation':response={state:activation,expiresAt:null,canRecover};break;
@@ -25,18 +26,28 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
           case 'platform.company.reissue':assert.match(body.setupToken,/^[a-f0-9]{64}$/);response={};break;
           case 'platform.company.rename':companyName=body.name;response={};break;
           case 'platform.company.status':companyStatus=body.status;response={};break;
-          case 'platform.plans.list':response={plans:[]};break;
-          case 'platform.plans.save':assert.equal(body.deviceLimit,3);response={};break;
+          case 'platform.plans.list':response={plans};break;
+          case 'platform.limits.get':assert.equal(body.workspaceId,wid);response={usedUsers:3,usedBytes:500000000,usedDevices:1,planId:assigned?.id||null,plan:assigned,expiresAt,version:0};break;
+          case 'platform.limits.set':
+            assert.equal(body.workspaceId,wid);
+            if(!assigned){assert.ok(Date.parse(body.expiresAt)>Date.now()+29*86400000);expiresAt=body.expiresAt.replace('00.000Z','13.072Z');}
+            else if(body.planId)assert.equal(body.expiresAt,expiresAt);
+            else {assert.equal(body.expiresAt,null);expiresAt=null;}
+            assigned=plans.find(p=>p.id===body.planId);response={};break;
+          case 'platform.plans.save':
+            assert.equal(body.userLimit,5);assert.equal(body.deviceLimit,3);assert.equal(body.storageBytes,1500000000);
+            assert.equal(body.price,'14.9975');assert.equal(body.currency,'EUR');assert.equal(body.durationDays,30);
+            plans=[{...body,version:1}];response={};break;
           default:throw Error(body.action);
         }
         return route.fulfill({json:{ok:true,...response}});
       }
       if(u.pathname.endsWith('wow-cloud-config.js'))return route.fulfill({contentType:'application/javascript',body:"window.WOW_CLOUD_CONFIG={workspaceId:'scope',endpoint:'/service',publishableKey:'local'}"});
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/support.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
-    await page.goto(scope+'/platform/');await page.locator('#lang').selectOption('en');
+    await page.goto(scope+'/platform/#support');await page.locator('#lang').selectOption('en');
     const founderInput=page.getByLabel('Founder username');await founderInput.tap();
     assert.equal(await founderInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);
     await founderInput.pressSequentially('fixture');
@@ -49,13 +60,17 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     }
     assert.equal(await page.locator('.wf-founder-check').count(),0);
     await page.locator('#lang').selectOption('ar');assert.match(await page.locator('#status').innerText(),/صلاحية مؤسس/);
+    assert.equal(events.includes('platform.support.list'),false);
     await page.locator('#lang').selectOption('en');rejection='ok';
     await page.getByLabel('Founder username').fill('fixture');await page.getByLabel('Password',{exact:true}).fill(randomUUID());
     await page.getByRole('button',{name:'Sign in'}).click();await page.getByLabel('Company name').fill('Test');await page.getByRole('button',{name:'Create company'}).click();
     const link=await page.getByText('Owner setup link').getAttribute('href');assert.equal(new URL(link).searchParams.get('setup'),wid);
     const rendered=page.locator('svg');await rendered.waitFor();const decoded=await page.evaluate(async()=>{const svg=document.querySelector('svg').cloneNode(true);svg.style.background='white';const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg));const img=new Image();img.src=url;await img.decode();const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const c=canvas.getContext('2d');c.fillStyle='white';c.fillRect(0,0,canvas.width,canvas.height);c.drawImage(img,0,0);return new ZXingBrowser.BrowserQRCodeReader(new Map([[1,true]])).decodeFromCanvas(canvas).getText();});assert.equal(decoded,link);
+    await page.getByText('No support messages.',{exact:true}).waitFor();
     assert.equal(await page.getByRole('img',{name:'Verified platform administrator'}).count(),1);
     assert.equal(await page.getByText('Open company program').getAttribute('target'),null);
+    const adminUrl=new URL(await page.getByRole('link',{name:'Manage company accounts'}).getAttribute('href'));
+    assert.equal(adminUrl.searchParams.get('workspace'),wid);assert.equal(adminUrl.searchParams.get('wf-accounts'),'cloud');
     const company=page.locator('article'),editor=page.locator('.platform-inline-editor form');
     await company.getByRole('button',{name:'Rename'}).click();const companyInput=editor.getByLabel('Company name');await companyInput.tap();assert.equal(await companyInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);await companyInput.fill('Edited');
     await editor.getByRole('button',{name:'Save'}).click();await company.getByText('Edited').waitFor();
@@ -71,8 +86,39 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     canRecover=true;await company.getByRole('button',{name:'Owner setup'}).click();await page.getByRole('button',{name:'Send recovery email'}).click();
     const recovery=page.getByRole('form',{name:'Owner setup'});assert.equal(events.includes('platform.company.recover'),false);
     await recovery.getByRole('button',{name:'Send recovery email'}).click();await page.getByText('Recovery email requested.').waitFor();
-    await page.getByRole('button',{name:'Plan',exact:true}).click();await page.getByLabel('Plan',{exact:true}).last().fill('Test plan');await page.getByLabel('Device limit').fill('3');await page.getByRole('button',{name:'Save'}).click();await page.waitForFunction(()=>!document.querySelector('form button:disabled'));
-    assert(events.includes('platform.plans.save'));assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.getByRole('button',{name:'Plan',exact:true}).click();await page.getByLabel('Plan',{exact:true}).last().fill('Test plan');await page.getByLabel('Active user limit').fill('5');
+    await page.getByLabel('File storage limit').fill('1.5');await page.getByLabel('Storage unit').selectOption('GB');
+    await page.getByLabel('Subscription price').fill('14.9975');await page.getByLabel('Currency').fill('eur');await page.getByLabel('Duration in days').fill('30');
+    await page.getByLabel('Device limit').fill('3');await page.getByRole('button',{name:'Save'}).click();await page.waitForFunction(()=>!document.querySelector('form button:disabled'));
+    assert(events.includes('platform.plans.save'));
+    await company.getByRole('button',{name:'Subscription and usage'}).click();
+    const assignment=page.locator('form').filter({has:page.getByLabel('Subscription expiry')});
+    await assignment.getByRole('combobox').selectOption({label:'Test plan'});await assignment.getByRole('button',{name:'Save'}).click();
+    const userUsage=page.getByText('Active users',{exact:true}).locator('+ dd').locator('bdi');
+    await userUsage.nth(1).getByText('5',{exact:true}).waitFor();
+    assert.deepEqual(await userUsage.allTextContents(),['3','5','2']);
+    assert.deepEqual(await page.getByText('Private file storage',{exact:true}).locator('+ dd bdi').allTextContents(),['500 MB','1.5 GB','1 GB']);
+    await page.getByText('14.9975 EUR',{exact:true}).waitFor();
+    const oldForm=await assignment.elementHandle();await assignment.getByRole('button',{name:'Save'}).click();
+    await page.waitForFunction(form=>!form.isConnected,oldForm);await assignment.getByRole('combobox').selectOption('');assert.equal(await assignment.getByLabel('Subscription expiry').inputValue(),'');
+    await assignment.getByRole('button',{name:'Save'}).click();await userUsage.nth(1).getByText('Unlimited',{exact:true}).waitFor();
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.locator('#lang').selectOption('ar');
+    await company.getByRole('button',{name:'الاشتراك والاستخدام'}).click();
+    await page.locator('.platform-usage-value bdi').first().waitFor();
+    for(const width of [320,390,1024]){
+      await page.setViewportSize({width,height:840});
+      const metrics=await page.locator('.platform-subscription').evaluate(panel=>{
+        const values=[...panel.querySelectorAll('dd:has(.platform-usage-value)')].map(row=>[...row.children].map(item=>{
+          const box=item.getBoundingClientRect();return {left:box.left,right:box.right,width:box.width,caption:item.querySelector('small')?.textContent};
+        }));
+        return {rtl:getComputedStyle(panel).direction==='rtl',width:innerWidth,scroll:document.documentElement.scrollWidth,values,
+          controls:[...panel.querySelectorAll('input,select,button')].map(node=>node.getBoundingClientRect().height)};
+      });
+      assert(metrics.rtl&&metrics.scroll<=width,JSON.stringify(metrics));assert.equal(metrics.values.length,3);
+      for(const row of metrics.values){assert.equal(row.length,3);for(const value of row)assert(value.caption&&value.width>=42&&value.left>=0&&value.right<=width);assert(row[0].left>row[1].left&&row[1].left>row[2].left);}
+      assert(metrics.controls.every(height=>height>=44));
+    }
     await page.goto(scope+'/platform/');await page.locator('#lang').selectOption('en');
     await page.getByText('Company owner invitation').click();
     await page.getByLabel('Owner invitation link').fill('https://outside.invalid/platform/');await page.getByRole('button',{name:'Open invitation'}).click();

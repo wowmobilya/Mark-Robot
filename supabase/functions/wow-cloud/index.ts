@@ -1,3 +1,4 @@
+import {createSupportActions} from './modules/platform-support.mjs';
 import {createCompanyJoin} from './modules/company-join.mjs';
 import {createFounderActivation} from './modules/founder-activation.mjs';
 import {createOrderSms} from './modules/order-sms.mjs';
@@ -63,7 +64,7 @@ const maintenance=async()=>{
 };
 const voiceTurn={url:Deno.env.get('WOW_TURN_URL'),urls:Deno.env.get('WOW_TURN_URLS'),secret:Deno.env.get('WOW_TURN_SHARED_SECRET')};
 const relay=turnConfiguration(voiceTurn);
-const moduleActions={...companyJoin.actions,...founderActivation.actions,...orderSms.actions,...statements.actions,...createPlatformActions(remote),...createGalleryActions(remote),...createChatActions({...remote,voiceTurn}),...createFilesActions(remote),
+const moduleActions={...companyJoin.actions,...founderActivation.actions,...orderSms.actions,...statements.actions,...createPlatformActions(remote),...createSupportActions(remote),...createGalleryActions(remote),...createChatActions({...remote,voiceTurn}),...createFilesActions(remote),
   ...customerAuth.actions,...ownerActivation.actions,...createPublicShareActions(publicShareOptions),...communications.actions,
   ...createFinanceActions({...remote,quoteProvider:createQuoteProvider({goldApiKey:Deno.env.get('GOLDAPI_KEY')})}),
   ...createOperationsActions({...remote,configuration:{aiConfigured:assistantProvider.configured===true}}),

@@ -14,8 +14,8 @@
   const config=window.WOW_CLOUD_CONFIG,t=i=>dict[lang.value][i];
   const el=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   let token='',verifiedName='',offset=0,generation=0,expiryTimer,setup=null,draft=null;
-  let scanner=null;
-  function clear(){scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  let scanner=null,supportInbox=null,supportAlerts={enabled:false,seen:new Set()};
+  function clear(){supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -69,30 +69,88 @@
       expiryTimer=setTimeout(()=>{clear();login();fail(failure(4));},Math.min(3600000,session.expires_at*1000-Date.now()));await list();
     });
   }
+  const salesWords={
+    ar:['الحد الأقصى للمستخدمين النشطين','حد تخزين الملفات','وحدة التخزين','سعر الاشتراك','العملة','مدة الاشتراك بالأيام','بلا حد','المستخدمون النشطون','تخزين الملفات الخاصة','تسجيلات الإشعارات','المستخدم','المتبقي','إدارة حسابات الشركة','اترك الحد فارغًا للسماح باستخدام غير محدود.','بدون خطة','غير متاح','حُفظت الخطة','حُفظ الاشتراك','الحد المسموح'],
+    en:['Active user limit','File storage limit','Storage unit','Subscription price','Currency','Duration in days','Unlimited','Active users','Private file storage','Notification registrations','Used','Available','Manage company accounts','Leave a limit blank for unlimited use.','No plan','Unavailable','Plan saved','Subscription saved','Allowed'],
+    tr:['Etkin kullanıcı sınırı','Dosya depolama sınırı','Depolama birimi','Abonelik fiyatı','Para birimi','Gün olarak süre','Sınırsız','Etkin kullanıcılar','Özel dosya depolama','Bildirim kayıtları','Kullanılan','Kalan','Şirket hesaplarını yönet','Sınırsız kullanım için sınırı boş bırakın.','Plan yok','Kullanılamıyor','Plan kaydedildi','Abonelik kaydedildi','İzin verilen'],
+    fr:['Limite de comptes actifs','Limite de stockage des fichiers','Unité de stockage','Prix de l’abonnement','Devise','Durée en jours','Illimité','Comptes actifs','Stockage des fichiers privés','Inscriptions aux notifications','Utilisé','Disponible','Gérer les comptes de la société','Laissez une limite vide pour un usage illimité.','Sans formule','Indisponible','Formule enregistrée','Abonnement enregistré','Autorisé'],
+    ru:['Лимит активных пользователей','Лимит хранилища файлов','Единица объёма','Цена подписки','Валюта','Срок в днях','Без ограничений','Активные пользователи','Хранилище частных файлов','Регистрации уведомлений','Использовано','Доступно','Управление аккаунтами компании','Оставьте лимит пустым для использования без ограничений.','Без тарифа','Недоступно','Тариф сохранён','Подписка сохранена','Лимит']
+  };
+  const sale=i=>salesWords[lang.value][i];
+  const storageUnits={GB:1000000000,MB:1000000,KB:1000,B:1};
+  function namedField(form,text,type='text'){
+    const label=el('label',text),input=el('input');input.type=type;label.append(input);form.append(label);return input;
+  }
+  function storageText(bytes){
+    const unit=Object.keys(storageUnits).find(u=>bytes>=storageUnits[u])||'B';
+    return new Intl.NumberFormat(lang.value,{maximumFractionDigits:2}).format(bytes/storageUnits[unit])+' '+unit;
+  }
   async function planEditor(container){
     const {plans}=await request('plans.list');if(!container.isConnected)return;
     container.replaceChildren();
     const form=el('form'),pick=el('select'),fresh=el('option','＋');fresh.value='';pick.append(fresh);
-    pick.setAttribute('aria-label',t(22));for(const plan of plans){const o=el('option',plan.name);o.value=plan.id;pick.append(o);}
-    form.append(pick);const name=field(form,22),devices=field(form,21,'number'),bytes=field(form,20,'number');
-    name.required=true;name.maxLength=100;
-    devices.min=bytes.min='0';devices.step=bytes.step='1';
+    form.className='platform-plan-editor';pick.setAttribute('aria-label',t(22));for(const plan of plans){const o=el('option',plan.name);o.value=plan.id;pick.append(o);}
+    form.append(pick);const name=field(form,22),users=namedField(form,sale(0),'number'),amount=namedField(form,sale(1),'number');
+    const unitLabel=el('label',sale(2)),unit=el('select');for(const u of Object.keys(storageUnits))unit.append(el('option',u));unitLabel.append(unit);form.append(unitLabel);
+    const price=namedField(form,sale(3),'number'),currency=namedField(form,sale(4)),duration=namedField(form,sale(5),'number');
+    const devices=field(form,21,'number');name.required=true;name.maxLength=100;
+    for(const input of [users,devices,duration]){input.min='0';input.step='1';input.max='2147483647';}
+    users.max='1000000';duration.min='1';duration.max='36500';amount.min=price.min='0';amount.step='any';price.step='0.0001';price.max='999999999999.9999';currency.maxLength=3;currency.pattern='[A-Za-z]{3}';
+    currency.addEventListener('input',()=>{currency.value=currency.value.toUpperCase();});
     let id=crypto.randomUUID();
-    pick.onchange=()=>{const plan=plans.find(p=>p.id===pick.value);id=plan?.id||crypto.randomUUID();name.value=plan?.name||'';devices.value=plan?.deviceLimit??'';bytes.value=plan?.storageBytes??'';};
-    submit(form,19,async()=>{const plan=plans.find(p=>p.id===pick.value);
-      await request('plans.save',{id,name:name.value.trim(),deviceLimit:devices.value===''?null:Number(devices.value),storageBytes:bytes.value===''?null:Number(bytes.value),version:plan?.version||0});await planEditor(container);
+    pick.onchange=()=>{
+      const plan=plans.find(p=>p.id===pick.value);id=plan?.id||crypto.randomUUID();name.value=plan?.name||'';
+      devices.value=plan?.deviceLimit??'';users.value=plan?.userLimit??'';
+      const bytes=plan?.storageBytes;
+      unit.value=bytes==null||bytes===0?'GB':Object.keys(storageUnits).find(u=>bytes%storageUnits[u]===0);
+      amount.value=bytes==null?'':bytes/storageUnits[unit.value];
+      price.value=plan?.price??'';currency.value=plan?.currency??'';duration.value=plan?.durationDays??'';
+    };
+    const integer=value=>value===''?null:Number(value);
+    form.append(el('small',sale(13)));
+    submit(form,19,async()=>{
+      const plan=plans.find(p=>p.id===pick.value);
+      const bytes=amount.value===''?null:Number(amount.value)*storageUnits[unit.value];
+      if(bytes!==null&&!Number.isSafeInteger(bytes)){amount.setCustomValidity(sale(1));amount.reportValidity();amount.setCustomValidity('');return;}
+      if((currency.value==='')!==(price.value==='')){const missing=currency.value?price:currency;missing.setCustomValidity(missing.parentElement.textContent);missing.reportValidity();missing.setCustomValidity('');return;}
+      await request('plans.save',{id,name:name.value.trim(),userLimit:integer(users.value),storageBytes:bytes,deviceLimit:integer(devices.value),
+        price:price.value||null,currency:currency.value||null,durationDays:integer(duration.value),version:plan?.version||0});
+      await planEditor(container);status.textContent=sale(16);
     });container.append(form);
   }
   async function subscription(container,company){
     const [state,{plans}]=await Promise.all([request('limits.get',{workspaceId:company.id}),request('plans.list')]);
     if(!container.isConnected)return;
-    container.replaceChildren();const form=el('form'),label=el('label',t(22)),select=el('select'),none=el('option','—');
+    container.replaceChildren();const form=el('form'),label=el('label',t(22)),select=el('select'),none=el('option',sale(14));
     none.value='';select.append(none);for(const p of plans){const o=el('option',p.name);o.value=p.id;select.append(o);}select.value=state.planId||'';
     label.append(select);form.append(label);const expiry=field(form,23,'datetime-local');
-    if(state.expiresAt){const at=new Date(state.expiresAt);expiry.value=new Date(at.getTime()-at.getTimezoneOffset()*60000).toISOString().slice(0,16);}
-    submit(form,19,async()=>{await request('limits.set',{workspaceId:company.id,planId:select.value||null,expiresAt:expiry.value?new Date(expiry.value).toISOString():null,version:state.version});await subscription(container,company);});
-    const scope={ar:['تسجيلات الإشعارات','بايت من حجوزات الملفات الخاصة'],en:['Notification registrations','bytes reserved for private uploads'],tr:['Bildirim kayıtları','özel yüklemeler için ayrılmış bayt'],fr:['Inscriptions aux notifications','octets réservés aux fichiers privés'],ru:['Регистрации уведомлений','байт под частные загрузки']}[lang.value];
-    container.append(el('p',scope[0]+' · '+state.usedDevices+' / '+(state.plan?.deviceLimit??'∞')+' · '+scope[1]+' · '+state.usedBytes+' / '+(state.plan?.storageBytes??'∞')),form);
+    const localDate=date=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    container.classList.add('platform-subscription');
+    const originalDate=state.expiresAt?localDate(new Date(state.expiresAt)):'';
+    expiry.value=originalDate;
+    select.onchange=()=>{
+      if(select.value===(state.planId||'')){expiry.value=originalDate;return;}
+      const days=plans.find(p=>p.id===select.value)?.durationDays;
+      expiry.value='';
+      if(days){const date=new Date();date.setDate(date.getDate()+days);expiry.value=localDate(date);}
+    };
+    submit(form,19,async()=>{
+      const expiresAt=expiry.value===originalDate?(state.expiresAt||null):expiry.value?new Date(expiry.value).toISOString():null;
+      await request('limits.set',{workspaceId:company.id,planId:select.value||null,expiresAt,version:state.version});
+      await subscription(container,company);status.textContent=sale(17);
+    });
+    const usage=el('dl');
+    if(state.plan?.price!=null&&state.plan.currency)usage.append(el('dt',sale(3)),el('dd',String(state.plan.price)+' '+state.plan.currency));
+    if(state.plan?.durationDays!=null)usage.append(el('dt',sale(5)),el('dd',state.plan.durationDays));
+    for(const [title,used,limit,format] of [[sale(7),state.usedUsers,state.plan?.userLimit,String],[sale(8),state.usedBytes,state.plan?.storageBytes,storageText],[sale(9),state.usedDevices,state.plan?.deviceLimit,String]]){
+      const valid=Number.isSafeInteger(used);
+      const values=el('dd');
+      for(const [caption,value] of [[sale(10),valid?format(used):sale(15)],[sale(18),limit==null?sale(6):format(limit)],[sale(11),limit==null?sale(6):valid?format(Math.max(limit-used,0)):sale(15)]]){
+        const item=el('span');item.className='platform-usage-value';item.append(el('small',caption),el('bdi',value));values.append(item);
+      }
+      usage.append(el('dt',title),values);
+    }
+    container.append(usage,form);
   }
   const activationWords={
     ar:['إعداد المالك','مالك نشط','دعوة بانتظار التفعيل','انتهت صلاحية الدعوة','لم تُصدر دعوة','إصدار دعوة جديدة','إرسال بريد استعادة الحساب','تأكيد إرسال رابط الاستعادة إلى البريد الموثّق للمالك','طُلب إرسال رابط الاستعادة.','تُلغي الدعوة الجديدة أي دعوة معلّقة لهذه الشركة.'],
@@ -137,6 +195,8 @@
     btn(nav,4,async()=>{const previous=token;clear();login();await fetch(config.projectUrl+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:config.publishableKey,Authorization:'Bearer '+previous},credentials:'omit'});});
     const settings=el('a',{ar:'إعدادات الحساب',en:'Account settings',tr:'Hesap ayarları',fr:'Paramètres du compte',ru:'Настройки аккаунта'}[lang.value]);
     const settingsUrl=new URL('../',location.href);settingsUrl.searchParams.set('wf-cloud','employee');settingsUrl.searchParams.set('workspace',config.workspaceId);settingsUrl.searchParams.set('wf-accounts','cloud');settingsUrl.hash='settings';settings.href=settingsUrl.href;nav.append(settings);
+    supportInbox?.dispose();
+    supportInbox=window.WFPlatformSupport?.mount({nav,container:content,request,lang:lang.value,alerts:supportAlerts});
     const plansBox=el('section');content.append(plansBox);btn(nav,22,()=>planEditor(plansBox));
     const name=field(form,5);name.required=true;name.maxLength=100;
     submit(form,6,async()=>{
@@ -156,6 +216,8 @@
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',company.id);
       link.href=url.href;
       row.append(el('strong',company.name),el('span',t(active?7:8)),el('span',t(13)+' · '+company.accounts),link);
+      const accounts=el('a',sale(12)),accountsUrl=new URL(url);
+      accountsUrl.searchParams.set('wf-accounts','cloud');accountsUrl.hash='settings';accounts.href=accountsUrl.href;row.append(accounts);
       const editArea=el('section');editArea.className='platform-inline-editor';
       function editCompany(trigger,renaming){
         const editor=el('form'),title=el('strong',renaming?word(6):t(17)),cancel=el('button',word(5));
@@ -208,7 +270,12 @@
     });form.querySelector('button').textContent=labels[4];
   }
   function render(){document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);const ws=new URLSearchParams(location.search).get('setup');if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws))enroll(ws);else if(token)list().catch(fail);else login();}
-  window.addEventListener('offline',()=>{const badge=content.querySelector('.wf-founder-check');if(badge)badge.hidden=true;});
+  function lockDisconnected(){
+    if(!token)return;
+    clear();login();status.textContent=word(2);
+  }
+  window.addEventListener('offline',lockDisconnected);
+  window.addEventListener('pagehide',()=>{if(token){clear();login();}});
   window.addEventListener('online',()=>{if(token)list().catch(fail);});
   lang.onchange=()=>{if(failureIndex!=null)status.textContent=word(failureIndex);render();};render();
 })();

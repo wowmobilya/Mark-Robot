@@ -6501,8 +6501,9 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="smart-card-settings.js?v=3" defer></script>
 <script src="accounts-settings.js?v=5" defer></script>
 <script src="modules/platform/cloud/wow-cloud-settings.js?v=4" defer></script>
+<script src="support-settings.js?v=1" defer></script>
 <link rel="stylesheet" href="modules/platform/cloud/wow-cloud-settings.css?v=1">
-<script src="settings-navigation.js?v=21" defer></script>
+<script src="settings-navigation.js?v=22" defer></script>
 <script src="branding-settings.js?v=4" defer></script>
 <script src="company-identity.js?v=5" defer></script>
 <script src="color-picker.js?v=1" defer></script>
@@ -6547,8 +6548,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="robot-face.js?v=15" defer></script>
 <script src="program-speech.js?v=5" defer></script>
 <script src="notifications-workspace.js?v=2" defer></script>
-<script src="modules/platform/push/wow-push-device.js?v=4" defer></script>
-<script src="modules/platform/push/wow-push-client.js?v=3" defer></script>
+<script src="modules/platform/push/wow-push-device.js?v=5" defer></script>
+<script src="modules/platform/push/wow-push-client.js?v=4" defer></script>
 <script src="modules/platform/push/wow-device-feedback.js?v=1" defer></script>
 <script src="modules/platform/push/wow-push-chat.js?v=1" defer></script>
 <script src="modules/platform/push/wow-push-settings.js?v=3" defer></script>
@@ -6574,11 +6575,11 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="modules/files/workspace.js?v=2" defer></script>
 <link rel="stylesheet" href="modules/files/styles.css?v=2">
 <script src="modules/chat/realtime-channel.js?v=1" defer></script>
- <script src="modules/chat/call-manager.js?v=2" defer></script>
- <script src="modules/chat/call-ui.js?v=2" defer></script>
- <script src="modules/chat/workspace.js?v=6" defer></script>
-<link rel="stylesheet" href="modules/chat/styles.css?v=4">
- <link rel="stylesheet" href="modules/chat/call-ui.css?v=1">
+ <script src="modules/chat/call-manager.js?v=3" defer></script>
+ <script src="modules/chat/call-ui.js?v=3" defer></script>
+ <script src="modules/chat/workspace.js?v=7" defer></script>
+<link rel="stylesheet" href="modules/chat/styles.css?v=5">
+ <link rel="stylesheet" href="modules/chat/call-ui.css?v=2">
 <script src="modules/communications/core.js?v=1" defer></script>
 <script src="modules/communications/workspace.js?v=1" defer></script>
 <link rel="stylesheet" href="modules/communications/styles.css?v=1">
@@ -6607,7 +6608,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="barcode-workspace.js?v=1" defer></script>
 <script src="touch-keyboard.js?v=5" defer></script>
 <script src="developer-profile.js?v=2" defer></script>
-<script src="app-updates.js?v=4" defer data-release="224"></script>
+<script src="app-updates.js?v=4" defer data-release="226"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
@@ -21045,7 +21046,8 @@ async function init(){
   await wfInitializeCloudSync();
   // load settings
   const stRow=await dbGet('settings','main');
-  if(stRow)Object.assign(S.settings,stRow);
+  if(window.WFCloudClient?.isRemoteMode())S.settings={...(stRow||{})};
+  else if(stRow)Object.assign(S.settings,stRow);
   S.settings=window.WFAccountAccess.projectRead('settings',{id:'main',...S.settings})||{};
   S.settings.logo=wfCompanyLogo(S.settings.logo);
   const nextNoRow=await dbGet('settings','nextInvNo');

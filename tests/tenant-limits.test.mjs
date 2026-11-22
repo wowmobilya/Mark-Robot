@@ -6,7 +6,7 @@ import {createProviderTestDatabase} from '../supabase/testing/provider-fixtures.
 
 test('only the platform founder can assign reusable plans, and tenant admission counts durable enrollments and reserved bytes',async t=>{
  const db=await createProviderTestDatabase();t.after(()=>db.close());
- for(const name of ['files','chat','gallery','platform-companies','tenant-limits','tenant-limits']){
+ for(const name of ['files','chat','gallery','platform-companies','tenant-limits','tenant-limits','tenant-seats','tenant-seats']){
    await db.exec(await readFile(new URL('../supabase/modules/'+name+'.sql',import.meta.url),'utf8'));
  }
  const founder=randomUUID(),founderSession=randomUUID(),other=randomUUID(),otherSession=randomUUID();
@@ -30,6 +30,13 @@ test('only the platform founder can assign reusable plans, and tenant admission 
  await assert.rejects(rpc('platform.plans.list',{},other,otherSession),/ACCESS_DENIED/);
  await assert.rejects(rpc('platform.plans.list',{},founder,otherSession),/ACCESS_DENIED/);
  assert.equal((await db.query("select has_function_privilege('authenticated','public.wow_platform_limits(uuid,uuid,text,jsonb)','execute') allowed")).rows[0].allowed,false);
+ assert.equal((await get(workspaceId)).usedUsers,1);
+ const addAccount=async(wid,status='active')=>{
+   const uid=randomUUID();
+   await db.query('insert into auth.users(id) values($1)',[uid]);
+   await db.query("insert into wow_accounts(id,workspace_id,login_email,username,name,role,status) values($1,$2,$3,$4,$4,'customer',$5)",[uid,wid,uid+'@fixture.invalid',uid,status]);
+   return uid;
+ };
  const created=await save({});assert.equal(created.plan.version,1);assert.deepEqual(await save({}),created);
  await assert.rejects(save({name:'Changed'}),/CONFLICT/);
  await assert.rejects(save({id:randomUUID()}),/PLAN_NAME_EXISTS/);
@@ -62,4 +69,41 @@ test('only the platform founder can assign reusable plans, and tenant admission 
  assert.equal((await get(workspaceId)).usedDevices,1);
  assert.equal((await assign({version:2,planId:null})).planId,null);
  await file(1);
+ const commercial={userLimit:2,price:'123456789012.3456',currency:'TRY',durationDays:30};
+ const priced=await save({version:2,...commercial});
+ assert.equal(priced.plan.version,3);
+ for(const [key,value] of Object.entries(commercial))assert.equal(priced.plan[key],value);
+ assert.deepEqual(await save({version:2,...commercial}),priced);
+ assert.deepEqual(await save({version:3}),priced);
+ for(const incorrect of [{price:'1.12345'},{currency:null},{price:-1},{currency:'try'},{userLimit:1.5},{userLimit:1000001},{durationDays:0}]){
+   await assert.rejects(save({version:3,...incorrect}),/INVALID_LIMITS/);
+ }
+ await assign({version:3});
+ const buyer=await addAccount(workspaceId),pending=await addAccount(workspaceId,'suspended');
+ const setStatus=(id,status)=>db.query('update wow_accounts set status=$2 where id=$1',[id,status]);
+ await assert.rejects(addAccount(workspaceId),/USER_LIMIT_REACHED/);
+ await assert.rejects(setStatus(pending,'active'),/USER_LIMIT_REACHED/);
+ await addAccount(separate);
+ assert.equal((await get(workspaceId)).usedUsers,2);
+ assert.equal((await get(separate)).usedUsers,2);
+ await db.query("update wow_accounts set expires_at=now()-interval '1 second' where id=$1",[buyer]);
+ assert.equal((await get(workspaceId)).usedUsers,1);
+ await setStatus(pending,'active');
+ await assert.rejects(db.query('update wow_accounts set expires_at=null where id=$1',[buyer]),/USER_LIMIT_REACHED/);
+ const downgrade=await save({version:3,userLimit:1});
+ assert.equal(downgrade.plan.price,commercial.price);
+ assert.equal(downgrade.plan.durationDays,30);
+ assert.equal((await get(workspaceId)).usedUsers,2);
+ await setStatus(pending,'active');
+ await db.query('update wow_accounts set deleted_at=now() where id=$1',[pending]);
+ assert.equal((await get(workspaceId)).usedUsers,1);
+ await assert.rejects(db.query('update wow_accounts set deleted_at=null where id=$1',[pending]),/USER_LIMIT_REACHED/);
+ const unlimited=await save({version:4,userLimit:null,price:null,currency:null,durationDays:null});
+ assert.equal(unlimited.plan.userLimit,null);
+ assert.equal(unlimited.plan.price,null);
+ await setStatus(buyer,'suspended');
+ await db.query('update wow_accounts set deleted_at=null where id=$1',[pending]);
+ await assign({version:4,expiresAt:'2020-01-01T00:00:00Z'});
+ await assert.rejects(addAccount(workspaceId),/SUBSCRIPTION_EXPIRED/);
+ assert.equal((await get(workspaceId)).usedUsers,2);
 });
