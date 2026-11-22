@@ -225,8 +225,17 @@ exception when invalid_text_representation then return false;
 end $$;
 revoke all on function public.wow_call_realtime_allowed() from public,anon;
 grant execute on function public.wow_call_realtime_allowed() to authenticated;
-create policy "wow call Realtime receive" on realtime.messages for select to authenticated
- using (extension in ('broadcast','presence') and (select public.wow_call_realtime_allowed()));
-create policy "wow call Realtime send" on realtime.messages for insert to authenticated
- with check (extension in ('broadcast','presence') and (select public.wow_call_realtime_allowed()));
+do $wow_policies$
+begin
+ if not exists(select from pg_policies where schemaname='realtime' and tablename='messages'
+   and policyname='wow call Realtime receive') then
+   create policy "wow call Realtime receive" on realtime.messages for select to authenticated
+     using (extension in ('broadcast','presence') and (select public.wow_call_realtime_allowed()));
+ end if;
+ if not exists(select from pg_policies where schemaname='realtime' and tablename='messages'
+   and policyname='wow call Realtime send') then
+   create policy "wow call Realtime send" on realtime.messages for insert to authenticated
+     with check (extension in ('broadcast','presence') and (select public.wow_call_realtime_allowed()));
+ end if;
+end $wow_policies$;
 commit;
