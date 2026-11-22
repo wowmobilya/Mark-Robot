@@ -35,7 +35,8 @@
     "modules/account-installations.sql",
     "modules/missed-call-push.sql",
     "modules/company-directory-index.sql",
-    "modules/platform-brand.sql"
+    "modules/platform-brand.sql",
+    "modules/commercial-entitlements.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",
