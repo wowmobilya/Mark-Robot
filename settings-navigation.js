@@ -97,6 +97,7 @@
    language: ['لغة واجهة البرنامج', 'Interface language', 'Arayüz dili', 'Langue de l’interface', 'Язык интерфейса'],
    data: ['النسخ الاحتياطي والاستعادة', 'Backup and restore', 'Yedekleme ve geri yükleme', 'Sauvegarde et restauration', 'Резервное копирование'],
    accounts: ['حسابات الموظفين وكلمات المرور والصلاحيات', 'Employee accounts, passwords and permissions', 'Çalışan hesapları, parolalar ve izinler', 'Comptes, mots de passe et autorisations', 'Учётные записи, пароли и права'],
+   support: ['مراسلة مؤسس المنصة ومتابعة الردود', 'Contact the platform founder and read replies', 'Platform kurucusuna yazın ve yanıtları okuyun', 'Contacter le fondateur et consulter ses réponses', 'Написать основателю и прочитать ответы'],
    about: ['الإصدار ومعلومات البرنامج', 'Version and app information', 'Sürüm ve uygulama bilgileri', 'Version et informations', 'Версия и сведения'],
  };
  tabs.removeAttribute('role');

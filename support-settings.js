@@ -14,7 +14,7 @@
   const loc=()=>words[doc.documentElement.lang]?doc.documentElement.lang:'ar', t=k=>words[loc()][k];
   const el=(tag,value,cls)=>{const n=doc.createElement(tag);if(value!=null)n.textContent=value;if(cls)n.className=cls;return n;};
   const button=(text,fn)=>{const n=el('button',text,'btn btn-s');n.type='button';n.onclick=fn;return n;};
-  const tab=button(t(0),()=>root.switchTab('support'));tab.className='tab-btn';tab.id='wf-settings-tab-support';tab.dataset.wfPermission='settings.view';tab.setAttribute('aria-controls','stab-support');
+  const tab=el('button'),tabCaption=el('span',t(0));tab.type='button';tab.setAttribute('onclick',"switchTab('support')");tab.append(tabCaption);tab.className='tab-btn';tab.id='wf-settings-tab-support';tab.dataset.wfPermission='settings.view';tab.setAttribute('aria-controls','stab-support');
   const panel=el('section',null,'wf-accounts');panel.id='stab-support';panel.style.display='none';panel.setAttribute('aria-labelledby',tab.id);
   workspace.querySelector('.tabs').append(tab);workspace.querySelector('.wf-settings-content').append(panel);
   const host=workspace.querySelector('.wf-settings-content'),sidebar=doc.getElementById('sidebar'),dialog=el('dialog',null,'wf-app-dialog');
@@ -100,23 +100,27 @@
   function close(){active=false;++seq;scope='';panel.style.display='none';tab.classList.remove('active');panel.replaceChildren();}
   const previous=root.switchTab;
   root.switchTab=function(key){const result=previous?.apply(this,arguments);
-    if(key!=='support'||result===false||!root.WFAccountAccess?.allow?.('settings.view'))close();
+    if(key!=='support'||result===false||!root.WFAccountAccess?.can?.('settings.view'))close();
     else{active=true;panel.style.display='block';tab.classList.add('active');list();}return result;};
   dialog.addEventListener('close',()=>{close();host.append(panel);});
   function changed(){
-    const next=stateKey();shortcut.hidden=!next||root.WFAccountAccess?.allow?.('settings.view')===true;
+    const next=stateKey();shortcut.hidden=!next||root.WFAccountAccess?.can?.('settings.view')===true;
     if(dialog.open&&!next){dialog.close();close();return;}
-    if(active&&!dialog.open&&root.WFAccountAccess?.allow?.('settings.view')!==true){close();return;}
+    if(active&&!dialog.open&&root.WFAccountAccess?.can?.('settings.view')!==true){close();return;}
     if(active&&scope!==next)list();
   }
   root.WFPlatformSupport=Object.freeze({open(){
     if(!stateKey())return false;
-    if(root.WFAccountAccess?.allow?.('settings.view')){root.showPage?.('settings');tab.click();}
+    if(root.WFAccountAccess?.can?.('settings.view')){root.showPage?.('settings');tab.click();}
     else if(dialog.open)list();else shortcut.click();
     return true;
   }});
   changed();
   client.subscribe(changed);root.addEventListener('offline',changed);root.addEventListener('online',changed);root.addEventListener('wf-account-access-change',changed);
-  doc.getElementById('wfSettingsDialog')?.addEventListener('close',close);
-  new MutationObserver(()=>{tab.textContent=shortcut.textContent=t(0);dismiss.textContent=t(5);dialog.setAttribute('aria-label',t(0));if(active)list();}).observe(doc.documentElement,{attributes:true,attributeFilter:['lang']});
+  function observeSettingsClose(){
+    const settings=doc.getElementById('wfSettingsDialog');
+    settings?.addEventListener('close',()=>{if(!settings.open&&!dialog.open)close();});
+  }
+  if(doc.readyState==='loading'||!doc.getElementById('wfSettingsDialog'))doc.addEventListener('DOMContentLoaded',observeSettingsClose,{once:true});else observeSettingsClose();
+  new MutationObserver(()=>{tabCaption.textContent=shortcut.textContent=t(0);dismiss.textContent=t(5);dialog.setAttribute('aria-label',t(0));if(active)list();}).observe(doc.documentElement,{attributes:true,attributeFilter:['lang']});
 })(window);
