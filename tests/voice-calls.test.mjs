@@ -93,16 +93,16 @@ test('Session revocation and realtime topic RLS block unauthorized listening',as
  await db.query("select set_config('request.jwt.claims',$1,false)",
  [JSON.stringify({sub:people.customer.id,session_id:people.customer.sid,role:'authenticated'})]);
  await db.query("select set_config('realtime.topic',$1,false)",['wow-call-room:'+direct]);
- assert.equal((await db.query('select public.wow_call_realtime_allowed() allowed')).rows[0].allowed,true);
+ assert.equal((await db.query('select private_voice.allowed() allowed')).rows[0].allowed,true);
  await db.query("select set_config('realtime.topic',$1,false)",['wow-call:'+call.id]);
- assert.equal((await db.query('select public.wow_call_realtime_allowed() allowed')).rows[0].allowed,true);
+ assert.equal((await db.query('select private_voice.allowed() allowed')).rows[0].allowed,true);
  await db.query("select set_config('realtime.topic',$1,false)",['wow-call-room:'+group]);
- assert.equal((await db.query('select public.wow_call_realtime_allowed() allowed')).rows[0].allowed,false);
+ assert.equal((await db.query('select private_voice.allowed() allowed')).rows[0].allowed,false);
  await db.query("select set_config('realtime.topic',$1,false)",['public:unrelated']);
- assert.equal((await db.query('select public.wow_call_realtime_allowed() allowed')).rows[0].allowed,false);
+ assert.equal((await db.query('select private_voice.allowed() allowed')).rows[0].allowed,false);
  await db.query("update public.wow_sessions set closed_at=now() where session_id=$1",[people.customer.sid]);
  await db.query("select set_config('realtime.topic',$1,false)",['wow-call:'+call.id]);
- assert.equal((await db.query('select public.wow_call_realtime_allowed() allowed')).rows[0].allowed,false);
+ assert.equal((await db.query('select private_voice.allowed() allowed')).rows[0].allowed,false);
  await assert.rejects(request('customer','status',{callId:call.id}),/SESSION_REVOKED/);
 });
 
