@@ -133,7 +133,8 @@
     const signout=create('button','platform-drawer-signout',
       ({ar:'تسجيل الخروج',en:'Sign out',tr:'Çıkış yap',fr:'Se déconnecter',ru:'Выйти'})[doc.getElementById('lang')?.value]||'Sign out');
     signout.type='button';signout.addEventListener('click',()=>window.WFPlatformLogout?.());
-    footer.append(developer,signout);drawer.append(footer);
+    // Match the original WOW company application's sidebar: programmer credit is the final item.
+    footer.append(signout);drawer.append(footer,developer);
     updateAppearance();syncDrawerActive();
   }
   function syncDrawerActive(){
