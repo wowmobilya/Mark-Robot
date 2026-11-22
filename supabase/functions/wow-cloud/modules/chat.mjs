@@ -58,54 +58,41 @@ export function createChatActions({moduleRpc,storage,voiceTurn={}}){
       return sign(a,'asset.open',purpose==='profile'?{purpose,targetId:uuid(b.targetId)}:{...room(b),purpose,...(purpose==='message'?{messageId:id(b.messageId)}:{})});
     }
   };
-  // Voice is scoped to the same verified WOW sessions and direct chat membership.
-  // SDP and ICE are temporary private signals; no media passes through this API.
-  const voiceContext=actor=>({userId:uuid(actor?.userId),sessionId:uuid(actor?.sessionId)});
-  const voiceParams={
+  // Authenticated REST RPCs manage authoritative call lifecycle. Realtime
+  // Broadcast/Presence carries ephemeral SDP/ICE; the server never stores them.
+  const callContext=actor=>({userId:uuid(actor?.userId),sessionId:uuid(actor?.sessionId)});
+  const callValidators={
+    start:body=>({roomId:uuid(body.roomId),kind:choice(body.kind,['audio','video'])}),
     inbox:()=>({}),
-    start:body=>({roomId:uuid(body.roomId),targetId:uuid(body.targetId)}),
+    status:body=>({callId:uuid(body.callId)}),
     accept:body=>({callId:uuid(body.callId)}),
     decline:body=>({callId:uuid(body.callId)}),
     end:body=>({callId:uuid(body.callId)}),
-    events:body=>{
-      const after=body.after??'0';
-      demand(typeof after==='string'&&/^(0|[1-9][0-9]{0,17})$/.test(after),'INVALID_VOICE_REQUEST');
-      return {callId:uuid(body.callId),after};
-    },
-    signal:body=>{
-      const kind=choice(body.kind,['offer','answer','ice']),raw=body.payload;
-      demand(raw&&typeof raw==='object'&&!Array.isArray(raw),'INVALID_VOICE_SIGNAL');
-      let payload;
-      if(kind==='ice'){
-        demand(typeof raw.candidate==='string'&&raw.candidate.length>0&&raw.candidate.length<=2048,'INVALID_VOICE_SIGNAL');
-        demand(raw.sdpMid==null||typeof raw.sdpMid==='string'&&raw.sdpMid.length<=64,'INVALID_VOICE_SIGNAL');
-        demand(raw.sdpMLineIndex==null||Number.isSafeInteger(raw.sdpMLineIndex)&&raw.sdpMLineIndex>=0&&raw.sdpMLineIndex<1024,'INVALID_VOICE_SIGNAL');
-        payload={candidate:raw.candidate,sdpMid:raw.sdpMid??null,sdpMLineIndex:raw.sdpMLineIndex??null};
-      }else{
-        demand(raw.type===kind&&typeof raw.sdp==='string'&&raw.sdp.length>0&&raw.sdp.length<=24000,'INVALID_VOICE_SIGNAL');
-        payload={type:kind,sdp:raw.sdp};
-      }
-      return {callId:uuid(body.callId),kind,payload};
-    }
+    leave:body=>({callId:uuid(body.callId)}),
+    heartbeat:body=>({callId:uuid(body.callId)}),
+    connected:body=>({callId:uuid(body.callId)}),
+    history:body=>({roomId:uuid(body.roomId)})
   };
-  const voiceActions=Object.fromEntries(Object.entries(voiceParams).map(([action,validate])=>
-    ['chat.call.'+action,({actor,body})=>moduleRpc('wow_voice_service',action,{...validate(body||{}),...voiceContext(actor)})]));
+  const voiceActions=Object.fromEntries(Object.entries(callValidators).map(([action,normalize])=>
+    ['chat.call.'+action,({actor,body})=>moduleRpc('wow_voice_service',action,{...normalize(body||{}),...callContext(actor)})]));
   voiceActions['chat.call.ice']=async({actor,body})=>{
     const callId=uuid(body?.callId);
-    const snapshot=await moduleRpc('wow_voice_service','events',{callId,after:'0',...voiceContext(actor)});
-    demand(snapshot?.status==='active','VOICE_CALL_UNAVAILABLE');
+    const snapshot=await moduleRpc('wow_voice_service','status',{callId,...callContext(actor)});
+    if(snapshot.status!=='active'||!snapshot.participants?.some(p=>p.id===actor.userId&&p.status==='joined'))
+      demand(false,'VOICE_CALL_UNAVAILABLE');
     const iceServers=[{urls:['stun:stun.cloudflare.com:3478','stun:stun.l.google.com:19302']}];
-    const url=typeof voiceTurn.url==='string'?voiceTurn.url.trim():'',secret=voiceTurn.secret;
-    let relayReady=false;
-    if(/^turns?:[A-Za-z0-9.-]+(?::[0-9]{2,5})?(?:\?transport=(?:udp|tcp))?$/.test(url)&&
-      typeof secret==='string'&&secret.length>=32&&secret.length<=512){
-      const expiry=Math.floor(Date.now()/1000)+7500,username=expiry+':'+uuid(actor.userId);
+    const urlText=typeof voiceTurn.urls==='string'?voiceTurn.urls:voiceTurn.url||'';
+    const urls=String(urlText).split(',').map(s=>s.trim()).filter(s=>
+      /^turns?:[A-Za-z0-9.-]+(?::[0-9]{2,5})?(?:\?transport=(?:udp|tcp))?$/.test(s)).slice(0,4);
+    const secret=voiceTurn.secret;
+    if(urls.length&&typeof secret==='string'&&secret.length>=32&&secret.length<=512){
+      const expiry=Math.floor(Date.now()/1000)+7200,username=expiry+':'+uuid(actor.userId);
       const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-1'},false,['sign']);
       const bytes=new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(username)));
       const credential=btoa(String.fromCharCode(...bytes));
-      iceServers.push({urls:[url],username,credential});relayReady=true;
+      iceServers.push({urls,username,credential});
     }
-    return {iceServers,relayReady,expiresIn:relayReady?7500:0};
+    return {iceServers,relayReady:iceServers.length>1,expiresIn:iceServers.length>1?7200:0};
   };
   return {...Object.fromEntries(Object.entries(handlers).map(([action,run])=>['chat.'+action,({actor,body})=>run(actor,body)])),...voiceActions};
 }
