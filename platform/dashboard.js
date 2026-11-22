@@ -609,6 +609,7 @@
     // Responsive chrome and local-only company filters reuse the authorized list,
     // without altering the authenticated data source or modifying server state.
     window.WFPlatformShell?.mount({state,companies,menu,links,preferences:preferred});
+    window.WFPlatformAnalytics?.mount({host:companies,state,request,language:lang.value});
   }
   let invite=new URLSearchParams(location.hash.slice(1)).get('invite');
   if(invite)history.replaceState(null,'',location.pathname+location.search);
