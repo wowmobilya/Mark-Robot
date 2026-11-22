@@ -486,7 +486,7 @@
     function studio(){
       body.append(tabs([['stockAdmin','stockAdmin'],['cards','cards'],['slides','slides'],['fields','fields'],['brand','brand']]));
       const actions=group(button(text('preview'),()=>{previewMode=true;category='';query='';render();}));
-      if(can('products.edit'))actions.append(button(text('products'),()=>api.open('products')));
+      if(can('products.edit')&&typeof root.showPage==='function')actions.append(button(text('products'),()=>root.showPage('products')));
       body.append(actions);
       if(tab==='stockAdmin'){stockManager();return;}
       if(tab==='brand'){brandSettings();return;}
