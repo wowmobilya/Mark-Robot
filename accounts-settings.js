@@ -670,7 +670,7 @@
       if(deviceAction(intent.kind)){
         if(!canReleaseDevice(account)||!deviceInfo?.row||deviceInfo.accountId!==account.id)return;
         const release=intent.kind==='device',blocked=intent.kind==='blockDevice';
-        await perform(()=>release?service.releaseDevice(account.id):service.deviceStatus(account.id,blocked),()=>{
+        await perform(()=>release?service.releaseDevice(account.id,deviceInfo.row.boundAt):service.deviceStatus(account.id,blocked,deviceInfo.row.boundAt),()=>{
           if(deviceInfo?.accountId===account.id){
             deviceInfo.row=release?null:{...deviceInfo.row,blocked};
           }

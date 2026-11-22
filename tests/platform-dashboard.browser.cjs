@@ -27,11 +27,11 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
           case 'platform.company.devices':
             assert.equal(body.workspaceId,wid);response={devices:linked,total:linked.length};break;
           case 'platform.company.deviceStatus':
-            assert.equal(body.workspaceId,wid);assert.equal(body.confirmed,true);assert.equal(body.accountId,linked[1].accountId);
+            assert.equal(body.workspaceId,wid);assert.equal(body.expectedBoundAt,linked[1].boundAt);assert.equal(body.confirmed,true);assert.equal(body.accountId,linked[1].accountId);
             linked[1].blocked=body.blocked;response={blocked:body.blocked};break;
           case 'platform.company.releaseDevice':
             assert.equal(body.workspaceId,wid);assert.equal(body.confirmed,true);
-            assert.equal(body.accountId,linked[1].accountId);linked.pop();response={released:true};break;
+            assert.equal(body.accountId,linked[1].accountId);assert.equal(body.expectedBoundAt,linked[1].boundAt);linked.pop();response={released:true};break;
           case 'platform.company.activation':response={state:activation,expiresAt:null,canRecover};break;
           case 'platform.company.recover':assert.equal(body.confirmed,true);response={requested:true};break;
           case 'platform.company.reissue':assert.match(body.setupToken,/^[a-f0-9]{64}$/);response={};break;

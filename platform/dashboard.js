@@ -310,7 +310,7 @@
           form.onsubmit=async e=>{
             e.preventDefault();if(confirm.disabled)return;confirm.disabled=cancel.disabled=true;
             try{
-              const target={workspaceId,accountId:device.accountId,confirmed:true};
+              const target={workspaceId,accountId:device.accountId,expectedBoundAt:device.boundAt,confirmed:true};
               const saved=await request(releasing?'company.releaseDevice':'company.deviceStatus',releasing?target:{...target,blocked:blocking});
               if(!host.isConnected)return;if(releasing&&saved.released!==true)throw Error();
               if(releasing)status.textContent=w[7];
