@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=5');
 importScripts('./modules/platform/push/wow-push-sw.js?v=8');
-const CACHE_NAME = 'wow-furniture-v227-cloud';
+const CACHE_NAME = 'wow-furniture-v228-cloud';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -110,11 +110,12 @@ const urlsToCache = [
   './platform/index.html',
   './platform/install.js?v=2',
   './platform/support.js?v=2',
+  './platform/preferences.js?v=1',
   './platform/relay.js?v=1',
   './support-settings.js?v=1',
   './platform/manifest.webmanifest',
-  './platform/dashboard.js?v=227',
-  './platform/dashboard.css?v=227',
+  './platform/dashboard.js?v=228',
+  './platform/dashboard.css?v=228',
   './touch-keyboard.js?v=5',
   './touch-keyboard.css?v=3',
   './settings-actions.css?v=1',
@@ -139,7 +140,7 @@ const urlsToCache = [
   './modules/platform/push/wow-push-settings.js?v=4',
   './modules/platform/push/wow-push-settings.css?v=2',
   './modules/platform/push/wow-push-sw.js?v=8',
-  './owner-invite.js?v=2',
+  './owner-invite.js?v=3',
   './company-join.js?v=1',
   './accounts-access.js?v=9',
   './accounts-settings.js?v=6',

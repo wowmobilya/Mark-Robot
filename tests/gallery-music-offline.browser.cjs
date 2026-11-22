@@ -70,7 +70,7 @@ async function fixtureFiles(){
     const url=new URL(item.value,'http://fixture.invalid/'),relative=url.pathname.slice(1);
     assert.match(item.value,/^\.\/[A-Za-z0-9_./-]+(?:\?v=[A-Za-z0-9_.-]+)?$/);
     assert.equal(relative.split('/').some(piece=>piece==='..'||piece.startsWith('.')),false);
-    assert.ok(!relative.includes('/')||['modules','assets','vendor'].includes(relative.split('/')[0])||['platform/index.html','platform/dashboard.js','platform/dashboard.css','platform/install.js','platform/support.js','platform/relay.js','platform/manifest.webmanifest'].includes(relative),'Only public shell directories may be read: '+relative);
+    assert.ok(!relative.includes('/')||['modules','assets','vendor'].includes(relative.split('/')[0])||['platform/index.html','platform/dashboard.js','platform/dashboard.css','platform/install.js','platform/support.js','platform/relay.js','platform/preferences.js','platform/manifest.webmanifest'].includes(relative),'Only public shell directories may be read: '+relative);
     assert.ok(mime[path.extname(relative)],'Unsupported public asset type: '+relative);
     names.add(relative);
     files.set(url.pathname+url.search,{relative,type:mime[path.extname(relative)]});
