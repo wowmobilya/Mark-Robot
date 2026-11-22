@@ -37,7 +37,11 @@ test('direct admin install is separate from WOW and offline launch keeps reconne
     }finally{await standalone.close();}
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     assert.deepEqual(await page.evaluate(()=>caches.keys()),[]);
-    await context.setOffline(true);await page.reload();assert.match(await page.locator('main').innerText(),/internet/i);assert.equal(await page.locator('input').count(),0);
+    await page.selectOption('#lang','tr');await page.selectOption('#platformTheme','dark');
+    await context.setOffline(true);await page.reload();
+    assert.equal(await page.locator('html').getAttribute('lang'),'tr');
+    assert.equal(await page.locator('html').evaluate(node=>node.style.colorScheme),'dark');
+    assert.match(await page.locator('main').innerText(),/internet/i);assert.equal(await page.locator('input').count(),0);
     assert.equal(await page.locator('a[href="../"]').count(),0);
     await assert.rejects(()=>page.goto(admin+'?setup=test',{timeout:5000}));
 
