@@ -13,7 +13,7 @@ test('admin preferences inherit WOW settings, persist languages and follow syste
     await page.route('https://preferences.test/**',async route=>{
       const pathname=new URL(route.request().url()).pathname;
       if(pathname==='/'){
-        await route.fulfill({contentType:'text/html',body:`<html dir="rtl"><head><meta charset="utf-8"><meta name="theme-color" content="#153847"><link rel="stylesheet" href="/ui-identity.css"><link rel="stylesheet" href="/platform/dashboard.css"></head><body><main><header><select id="lang">${['ar','en','tr','fr','ru'].map(id=>'<option>'+id+'</option>').join('')}</select><select id="platformTheme"><option>system</option><option>light</option><option>dark</option></select></header><section id="settings"></section></main><script src="/platform/preferences.js"></script><script>WFPlatformPreferences.mount(document.querySelector('#settings'))</script></body></html>`});return;
+        await route.fulfill({contentType:'text/html',body:`<html dir="rtl"><head><meta charset="utf-8"><meta name="theme-color" content="#153847"><link rel="stylesheet" href="/ui-identity.css"><link rel="stylesheet" href="/platform/dashboard.css"></head><body><main><header><div class="platform-preferences"><select id="lang">${['ar','en','tr','fr','ru'].map(id=>'<option>'+id+'</option>').join('')}</select><select id="platformTheme"><option>system</option><option>light</option><option>dark</option></select></div></header><section id="settings"></section></main><script src="/platform/preferences.js"></script><script>WFPlatformPreferences.mount(document.querySelector('#settings'))</script></body></html>`});return;
       }
       if(['/ui-identity.css','/platform/dashboard.css','/platform/preferences.js'].includes(pathname)){
         await route.fulfill({path:path.join(base,pathname),contentType:pathname.endsWith('.js')?'application/javascript':'text/css'});return;
@@ -25,6 +25,28 @@ test('admin preferences inherit WOW settings, persist languages and follow syste
     assert.deepEqual(errors,[]);assert.equal(await locale.count(),1,await settings.innerHTML());await settings.getByLabel('Görünüm').waitFor();
     const reading=()=>page.evaluate(()=>[document.documentElement.lang,document.documentElement.dir,document.documentElement.dataset.theme]);
     assert.deepEqual(await reading(),['tr','ltr','dark']);assert.equal(await theme.inputValue(),'dark');
+    // The native select remains the state bridge, while both visible entry points use one flag dialog.
+    const languageButton=page.locator('#platformLanguageOpen');
+    await languageButton.click();
+    let dialog=page.getByRole('dialog',{name:'Dilini seç'});
+    assert.equal(await dialog.locator('[data-lang-choice]').count(),5);
+    assert.equal(await dialog.locator('[data-lang-choice=tr]').getAttribute('aria-pressed'),'true');
+    assert.match(await dialog.locator('[data-lang-choice=ar]').innerText(),/العربية/);
+    await dialog.locator('[data-lang-choice=ru]').click();
+    assert.deepEqual(await reading(),['ru','ltr','dark']);
+    assert.equal(await languageButton.innerText(), '🇷🇺 RU');
+    await settings.locator('[data-admin-language-trigger]').click();
+    dialog=page.getByRole('dialog',{name:'Выберите язык'});
+    await dialog.locator('[data-lang-choice=ar]').click();
+    assert.deepEqual(await reading(),['ar','rtl','dark']);
+    await languageButton.click();
+    assert.equal(await page.getByRole('dialog').count(),1);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.getByRole('dialog').count(),0);
+    await locale.selectOption('tr');
+    assert.deepEqual(await reading(),['tr','ltr','dark']);
+    assert.deepEqual(errors,[]);
+
     await theme.selectOption('system');assert.deepEqual(await reading(),['tr','ltr','light']);
     await page.emulateMedia({colorScheme:'dark'});await page.waitForFunction(()=>document.documentElement.dataset.theme==='dark');
     await theme.selectOption('light');await page.emulateMedia({colorScheme:'light'});await page.emulateMedia({colorScheme:'dark'});
