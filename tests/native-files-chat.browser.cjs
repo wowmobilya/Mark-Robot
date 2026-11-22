@@ -14,11 +14,17 @@ test('phone chat records and reviews media, attaches native files, and reads new
    const support={id:crypto.randomUUID(),kind:'direct',name:'Support',peer:{id:crypto.randomUUID(),name:'Actual owner',owner:true}};window.supportId=support.id;
    window.messageCount=0;
    const file={id:crypto.randomUUID(),name:'Quote.pdf',kind:'pdf',mime:'application/pdf',bytes:10,originalBytes:10,createdAt:new Date().toISOString()};
+   const NativeRecorder=window.MediaRecorder;window.captureRuns=[];
+   window.MediaRecorder=class extends NativeRecorder{
+    constructor(...args){super(...args);const run={bytes:0,kind:this.mimeType.split('/')[0]};captureRuns.push(run);
+     this.addEventListener('dataavailable',e=>{run.bytes+=e.data.size;});
+    }
+   };
    window.captureStreams=[];const capture=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
    navigator.mediaDevices.getUserMedia=async spec=>{const stream=await capture(spec);captureStreams.push(stream);return stream;};
    window.events=[];window.sentFile=file.id;window.allowed=true;
    const api={can:p=>p!=='files.export'||allowed,getSession:()=>({currentAccount:me}),async request(action,body){
-    events.push([action,body]);
+    events.push([action,body]);if(window.failAction===action)throw Object.assign(new Error('Service unavailable'),{status:503,code:'SERVICE_UNAVAILABLE'});
     switch(action){
      case 'chat.init':return {me};case 'chat.rooms':return {rooms:[room,support]};case 'chat.members':return {members:[]};
      case 'chat.feed':return {messages:Array.from({length:messageCount},(_,i)=>({id:String(i+1),roomId:body.roomId,authorId:support.peer.id,author:'Actual owner',text:'Message '+(i+1),createdAt:new Date(0).toISOString()})),prefs:{wallpaper:'plain',readId:'0'},readByPeer:'0'};
@@ -29,6 +35,11 @@ test('phone chat records and reviews media, attaches native files, and reads new
    window.chatMount=(params={roomId})=>WFChat.mount({container:document.querySelector('#chat'),api,lang:'en',params});
    window.m=chatMount();window.fm=WFFiles.mount({container:document.querySelector('#files'),api,lang:'en'});
   });
+  const searchToggle=page.locator('.wf-chat-head').getByRole('button',{name:'Search messages'});
+  assert.equal(await searchToggle.getAttribute('aria-expanded'),'false');
+  await searchToggle.click();
+  assert.equal(await page.locator('.wf-chat-browse input').evaluate(el=>document.activeElement===el),true);
+  await searchToggle.click();
   await page.locator('.wf-chat-attachments > summary').click();
   await page.getByRole('button',{name:'My files',exact:true}).click();
   await page.getByRole('dialog').getByRole('button',{name:/Quote.pdf/}).click();
@@ -48,7 +59,7 @@ test('phone chat records and reviews media, attaches native files, and reads new
     await tools.getByRole('button',{name:button,exact:true}).click();
     await page.waitForFunction(()=>captureStreams.at(-1)?.getAudioTracks()[0]?.readyState==='live');
     if(tag==='video')await info.locator('video').waitFor();
-    await page.waitForTimeout(1100);
+    await page.waitForFunction(kind=>captureRuns.at(-1)?.kind===kind&&captureRuns.at(-1).bytes>0,tag,{timeout:18000});
     await tools.getByRole('button',{name:'Finish recording',exact:true}).click();
     await info.getByRole('button',{name:'Preview',exact:true}).click();
     const dialog=page.getByRole('dialog'),media=dialog.locator(tag);
@@ -64,21 +75,32 @@ test('phone chat records and reviews media, attaches native files, and reads new
       await page.waitForFunction(()=>events.some(([a,p])=>a==='chat.sendFile'&&p.mime.startsWith('video/')&&p.data.length>20));
     }
   }
+  await page.locator('.wf-chat-attachments > summary').click();
   await tools.getByRole('button',{name:'Record video',exact:true}).click();await info.locator('video').waitFor();
   await tools.getByRole('button',{name:'Cancel',exact:true}).click();
   assert.equal(await page.evaluate(()=>captureStreams.at(-1).getTracks().every(tr=>tr.readyState==='ended')),true);
   await page.evaluate(()=>{navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Denied','NotAllowedError');};});
+  await page.locator('.wf-chat-attachments > summary').click();
   await tools.getByRole('button',{name:'Record video',exact:true}).click();await page.getByText('Recording unavailable. You can choose an existing file.').waitFor();
-  assert.equal(await tools.getByRole('button',{name:'Attach',exact:true}).isEnabled(),true);
+  assert.equal(await page.locator('.wf-chat-attachments > summary').isVisible(),true);
   await page.addStyleTag({content:'.wf-chat-feed{height:160px;overflow:auto}.wf-chat-line{min-height:42px}'});
   await page.evaluate(()=>{m.dispose();events.length=0;messageCount=22;m=chatMount({ownerSupport:true});});
   await page.waitForFunction(()=>events.some(([action,p])=>action==='chat.read'&&p.roomId===supportId&&p.messageId==='22'));
+  assert.equal(await page.locator('.wf-chat-day').count(),1,'messages on the same day share a date separator');
   await page.locator('.wf-chat-feed').evaluate(el=>{el.scrollTop=0;});
   await page.evaluate(()=>{messageCount++;dispatchEvent(new Event('online'));});
   await page.getByRole('button',{name:'New messages (1)'}).waitFor();
   assert.equal(await page.evaluate(()=>events.some(([a,p])=>a==='chat.read'&&p.messageId==='23')),false);
   await page.getByRole('button',{name:'New messages (1)'}).click();
   await page.waitForFunction(()=>events.some(([a,p])=>a==='chat.read'&&p.messageId==='23'));
+  await page.evaluate(()=>{m.dispose();window.failAction='chat.init';m=chatMount();});
+  const problem=page.locator('.wf-chat-status');
+  await problem.getByRole('button',{name:'Retry'}).waitFor();assert.match(await problem.textContent(),/Could not open chat/);
+  await page.evaluate(()=>{window.failAction='chat.feed';});await problem.getByRole('button',{name:'Retry'}).click();
+  await page.waitForFunction(()=>document.querySelector('.wf-chat-status').textContent.includes('Could not load messages'));
+  await page.evaluate(()=>{window.failAction=null;});await problem.getByRole('button',{name:'Retry'}).click();
+  await page.waitForFunction(()=>document.querySelector('.wf-chat-status').textContent==='');
+
 
  }finally{await browser.close();}
 });

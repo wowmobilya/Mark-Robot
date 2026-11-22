@@ -41,6 +41,11 @@
     typing:['Typing…','يكتب…','Yazıyor…','Écrit…','Печатает…'],download:['Download','تنزيل','İndir','Télécharger','Скачать'],play:['Open media','فتح الوسائط','Medyayı aç','Ouvrir le média','Открыть медиа'],
     speed:['Playback speed','سرعة التشغيل','Oynatma hızı','Vitesse de lecture','Скорость воспроизведения'],actionsConfirm:['Confirm this action?','هل تريد تأكيد الإجراء؟','İşlem onaylansın mı?','Confirmer cette action ?','Подтвердить действие?'],
     queue:['Waiting to send. Keep chat open to retry when connected.','بانتظار الإرسال. أبقِ الدردشة مفتوحة لإعادة المحاولة عند الاتصال.','Gönderim bekliyor. Bağlantı gelene kadar sohbeti açık tutun.','Envoi en attente. Gardez la discussion ouverte pour réessayer à la reconnexion.','Ожидание отправки. Оставьте чат открытым до подключения.'],
+    sessionNeeded:['Sign in again to open chat.','سجّل الدخول مجدداً لفتح الدردشة.','Sohbet için yeniden giriş yapın.','Reconnectez-vous pour ouvrir la discussion.','Войдите снова, чтобы открыть чат.'],
+    initFailed:['Could not open chat.','تعذّر فتح الدردشة.','Sohbet açılamadı.','Impossible d’ouvrir la discussion.','Не удалось открыть чат.'],
+    roomsFailed:['Could not load conversations.','تعذّر تحميل قائمة المحادثات.','Sohbetler yüklenemedi.','Impossible de charger les discussions.','Не удалось загрузить список чатов.'],
+    feedFailed:['Could not load messages.','تعذّر تحميل الرسائل.','Mesajlar yüklenemedi.','Impossible de charger les messages.','Не удалось загрузить сообщения.'],
+    membersFailed:['Could not load room members.','تعذّر تحميل أعضاء الغرفة.','Oda üyeleri yüklenemedi.','Impossible de charger les membres.','Не удалось загрузить участников.'],
     retry:['Retry','إعادة المحاولة','Yeniden dene','Réessayer','Повторить'],selected:['Selected','محدد','Seçili','Sélection','Выбрано'],back:['Conversations','المحادثات','Sohbetler','Conversations','Беседы'],
     created:['Group created','تم إنشاء المجموعة','Grup oluşturuldu','Groupe créé','Группа создана'],renamed:['Group updated','تم تعديل المجموعة','Grup güncellendi','Groupe modifié','Группа изменена'],
     unread:['Unread','غير مقروءة','Okunmadı','Non lus','Не прочитано'],preview:['Preview','معاينة','Önizleme','Aperçu','Просмотр'],nextMatch:['Next match','النتيجة التالية','Sonraki sonuç','Résultat suivant','Следующее совпадение'],
@@ -60,7 +65,11 @@
     let reportedRead='0',reportingRead=null,pendingIncoming=0;
     let reply=null,editing=null,attached=null,sending=false,recording=null,requestingCapture=false,recordRequest=0,lastTyping=0,draftTimer,searchTimer,expiryTimer,written=false;
     const retrySends=new Map(),durable=new Map(),drafts=new Map(),thumbs=new Map(),inflightThumbs=new Set(),ui=C.surface(container,api,()=>language,words),{t,run,dialog}=ui;
-    const req=(action,data={})=>api.request('chat.'+action,data),edit=()=>api.can('chat.edit'),del=()=>api.can('chat.delete');
+    const edit=()=>api.can('chat.edit'),del=()=>api.can('chat.delete');
+    async function req(action,data={}){
+      try{return await api.request('chat.'+action,data);}
+      catch(error){throw Object.assign(new Error(error?.message||'CHAT_REQUEST_FAILED'),{code:error?.code,status:error?.status,action});}
+    }
     const act=(label,fn,cls)=>button(label,run(fn),cls);
     const shapes={back:'M15 18l-6-6 6-6',search:'M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',direct:'M4 5h12M4 9h9M4 13h6M14 20l2.5-.5L22 14l-2-2-5.5 5.5z',group:'M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M14 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0M20 8v6m-3-3h6',profile:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0',archive:'M3 4h18v4H3zM5 8v12h14V8M10 12h4',voice:'M9 5a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0zM5 11v1a7 7 0 0 0 14 0v-1M12 19v3m-3 0h6',send:'M22 2L9 15m13-13-7 20-4-9-9-4z',attach:'M21 11l-9 9a6 6 0 0 1-8-8L14 2a4 4 0 0 1 6 6l-9 9a2 2 0 0 1-3-3l8-8',more:'M4 12h1m6 0h1m6 0h1'};
     function glyph(key){
@@ -92,8 +101,26 @@
     function showScreen(value){screen=value;app.dataset.screen=screen;}
     function actionStatus(error){
       if(!alive)return;
-      if(error?.code==='ACCESS_DENIED'||error?.code==='PERMISSION_DENIED'||error?.status===401||error?.status===403){if(room){drafts.delete(room.id);rooms=rooms.filter(r=>r.id!==room.id);}leaveRoom(false);closeDialogs();status.textContent=t('denied');}
-      else status.textContent=t(error?.code==='OFFLINE_NOT_CACHED'?'uncached':error?.code==='NETWORK'?'offline':'failed');
+      const signIn=error?.status===401||['AUTH_REQUIRED','SESSION_EXPIRED','SESSION_REVOKED'].includes(error?.code);
+      if(signIn||error?.code==='ACCESS_DENIED'||error?.code==='PERMISSION_DENIED'||error?.status===403){
+        if(room){drafts.delete(room.id);rooms=rooms.filter(r=>r.id!==room.id);}leaveRoom(false);closeDialogs();
+        status.textContent=t(signIn?'sessionNeeded':'denied');return;
+      }
+      const stage={init:'initFailed',rooms:'roomsFailed',feed:'feedFailed',members:'membersFailed'}[error?.action];
+      const reason=error?.code==='OFFLINE_NOT_CACHED'?'uncached':error?.code==='NETWORK'?'offline':'';
+      status.textContent=[stage&&t(stage),reason&&t(reason)].filter(Boolean).join(' ')||t('failed');
+      if(stage&&['init','rooms','feed','members'].includes(error.action)){
+        const retry=act(t('retry'),async()=>{
+          retry.disabled=true;
+          try{
+            if(!me||error.action==='init')await init();
+            else if(error.action==='members'&&room){const id=room.id,res=await req('members',{roomId:id});if(roomNow(id))members=res.members||[];await loadFeed();}
+            else if(error.action==='feed'&&room)await loadFeed();
+            else await init();
+            if(retry.isConnected)status.replaceChildren();
+          }catch(next){actionStatus(next);}
+        });status.append(' ',retry);
+      }
     }
     function checkConfirm(label,task){
       const {d,body}=dialog(label);body.append(el('p',t('actionsConfirm')),act(label,async()=>{await task();d.close();},'wf-collab-danger'));
