@@ -25,5 +25,8 @@
     else hint.hidden=!hint.hidden;
   });
   standalone.addEventListener?.('change',render);language.addEventListener('change',render);render();
+  navigator.serviceWorker?.addEventListener('message',event=>{
+    if(event.data?.type==='wow-platform-open-support'&&event.source?.scriptURL===new URL('./sw.js',location.href).href)location.hash='support';
+  });
   if('serviceWorker' in navigator&&window.isSecureContext)navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).catch(()=>{});
 })();

@@ -73,6 +73,16 @@ function sharedNotice(kind,d,language){
       return {title,body,route,params};
     } catch {invalidNotice();}
   }
+  if(kind==='support.ticket'||kind==='support.reply'){
+    const route=kind==='support.ticket'?'founder-support':'member-support';
+    if(d.route!==route)invalidNotice();
+    const labels={
+      ar:['دعم WOW','توجد رسالة جديدة في صندوق الدعم.'],en:['WOW Support','There is a new message in your support inbox.'],
+      tr:['WOW Destek','Destek kutunuzda yeni bir mesaj var.'],fr:['Assistance WOW','Vous avez un nouveau message dans votre boîte d’assistance.'],
+      ru:['Поддержка WOW','Новое сообщение в разделе поддержки.']
+    };
+    const [title,body]=labels[language];return {title,body,route,params:{}};
+  }
   if(kind==='call'){
     const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
     if(!uuid.test(d.roomId)||!uuid.test(d.callId)||!['audio','video'].includes(d.mediaKind)||
@@ -101,7 +111,7 @@ export function formatPushPayload(event,recipient){
   const notice=sharedNotice(kind,d,language);
   const company=cleanPushText(recipient.companyName,60).replace(/\s+/g,' ').trim();
   const brandedTitle=title=>cleanPushText(company?company+' · '+title:title,120);
-  if(notice)return {...envelope,...notice,title:brandedTitle(notice.title)};
+  if(notice)return {...envelope,...notice,title:kind.startsWith('support.')?notice.title:brandedTitle(notice.title)};
   if(!['test','proforma','payment','expense','receipt'].includes(kind))invalidNotice();
   const number=new Intl.NumberFormat(language==='ar'?'ar-u-nu-latn':language,{minimumFractionDigits:2,maximumFractionDigits:2});
   const money=(amount,code=d.currency)=>amount!==null&&Number.isFinite(Number(amount))?currency(code)+' '+number.format(Number(amount)):'';

@@ -14,8 +14,8 @@
   const config=window.WOW_CLOUD_CONFIG,t=i=>dict[lang.value][i];
   const el=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   let token='',verifiedName='',offset=0,generation=0,expiryTimer,setup=null,draft=null;
-  let scanner=null;
-  function clear(){scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  let scanner=null,supportInbox=null,supportAlerts={enabled:false,seen:new Set()};
+  function clear(){supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -195,6 +195,8 @@
     btn(nav,4,async()=>{const previous=token;clear();login();await fetch(config.projectUrl+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:config.publishableKey,Authorization:'Bearer '+previous},credentials:'omit'});});
     const settings=el('a',{ar:'إعدادات الحساب',en:'Account settings',tr:'Hesap ayarları',fr:'Paramètres du compte',ru:'Настройки аккаунта'}[lang.value]);
     const settingsUrl=new URL('../',location.href);settingsUrl.searchParams.set('wf-cloud','employee');settingsUrl.searchParams.set('workspace',config.workspaceId);settingsUrl.searchParams.set('wf-accounts','cloud');settingsUrl.hash='settings';settings.href=settingsUrl.href;nav.append(settings);
+    supportInbox?.dispose();
+    supportInbox=window.WFPlatformSupport?.mount({nav,container:content,request,lang:lang.value,alerts:supportAlerts});
     const plansBox=el('section');content.append(plansBox);btn(nav,22,()=>planEditor(plansBox));
     const name=field(form,5);name.required=true;name.maxLength=100;
     submit(form,6,async()=>{

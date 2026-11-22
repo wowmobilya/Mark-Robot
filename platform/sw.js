@@ -21,3 +21,14 @@ self.addEventListener('fetch',event=>{
     return new Response(html,{headers:{'Content-Type':'text/html;charset=UTF-8','Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
   }));
 });
+self.addEventListener('notificationclick',event=>{
+  if(event.notification.tag!=='wow-platform-support')return;
+  event.notification.close();
+  event.waitUntil((async()=>{
+    const target=new URL('./#support',self.location.href);
+    const clients=await self.clients.matchAll({type:'window'});
+    const platform=clients.find(client=>{const url=new URL(client.url);return url.origin===target.origin&&!url.search&&[target.pathname,target.pathname+'index.html'].includes(url.pathname);});
+    if(platform){const focused=await platform.focus();focused.postMessage({type:'wow-platform-open-support'});return;}
+    await self.clients.openWindow(target.href);
+  })());
+});

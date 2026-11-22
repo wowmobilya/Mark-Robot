@@ -172,3 +172,18 @@ test('a generic success response never confirms device enrollment or test delive
   const other=fixture({testResult:{ok:true}});await other.api.ready;await other.api.enable();await other.api.test();
   assert.equal(other.api.getSnapshot().feedback,'failed');assert.equal(other.api.getSnapshot().entries.length,0);
 });
+test('support push click opens only the protected member inbox or fixed founder app',async()=>{
+ const opened=[],f=fixture({root:{WFModules:{open(){}},WFPlatformSupport:{open:()=>opened.push('member')},
+   location:{href:'https://wow.test/app/index.html',assign:url=>opened.push(url)}}});
+ await f.api.ready;await f.api.enable();
+ const b=(await f.store.read()).binding,w=worker(f.store);
+ for(const [kind,route] of [['support.reply','member-support'],['support.ticket','founder-support']]){
+   const entry={...event,...b,eventId:kind,kind,route,params:{url:'https://other.invalid/',caseId:'private'},title:'WOW Support',body:'New message'};
+   await w.run('push',{data:{json:()=>entry}});
+   assert.equal(w.shown.at(-1).body,entry.body);
+   await w.run('notificationclick',{notification:{...w.shown.at(-1),close(){}}});
+   assert.equal(new URL(w.opened.at(-1)).searchParams.get('wf-notice'),kind);
+   assert(await f.api.openEntry(kind));
+ }
+ assert.deepEqual(opened,['member','https://wow.test/app/platform/#support']);
+});

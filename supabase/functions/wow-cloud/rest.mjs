@@ -71,6 +71,7 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     founderActivation:(actor,action,data)=>call('/rest/v1/rpc/wow_founder_activation',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
     consumeOwnerRecovery:(id,owner,email)=>call('/rest/v1/rpc/wow_owner_recovery_consume',{body:{p_request:id,p_owner:owner,p_email:email},kind:'rpc'}),
     offlineSigningKey:()=>call('/rest/v1/rpc/wow_offline_owner_signing_key',{body:{},kind:'rpc'}),
+    supportRpc:(actor,action,data)=>call('/rest/v1/rpc/wow_support_service',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
     requirePlatformFounder:actor=>call('/rest/v1/rpc/wow_platform_require',{body:{p_user:actor.userId,p_session:actor.sessionId},kind:'rpc'}),
     platformRpc:(actor,action,data)=>call('/rest/v1/rpc/'+(/^(limits|plans)\./.test(action)?'wow_platform_limits':'wow_platform_service'),{
       body:{p_user:actor.userId,p_session:actor.sessionId,p_action:/^(limits|plans)\./.test(action)?'platform.'+action:action,p_data:data},kind:'rpc'}),
