@@ -36,7 +36,7 @@
     'Grup aramaları en fazla 4 kişi','Appels de groupe : 4 personnes maximum','Групповой звонок до 4 человек'],
   play:['تشغيل الصوت','Play audio','Sesi aç','Activer le son','Включить звук']
  };
- function mount({container,api,lang=()=>root.document?.documentElement.lang||'ar'}){
+ function mount({container,historyContainer,api,lang=()=>root.document?.documentElement.lang||'ar'}){
   const doc=container.ownerDocument||root.document;
   const layout=doc.createElement('section'),panel=doc.createElement('div'),head=doc.createElement('header');
   const title=doc.createElement('strong'),info=doc.createElement('span'),videos=doc.createElement('div'),actions=doc.createElement('div');
@@ -61,6 +61,26 @@
   };
   const timestamp=value=>new Date(value||Date.now()).toLocaleString(locale(),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
   const duration=seconds=>String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+  // In-chat call events: separate visual chips, not synthetic text messages.
+  // Existing message IDs, message pagination and chat tables remain unchanged.
+  function feedHistory(){
+   if(!historyContainer)return;
+   historyContainer.querySelector?.('[data-wf-call-history]')?.remove();
+   if(!shownRoom||!historyRows.length)return;
+   const section=doc.createElement('section');section.dataset.wfCallHistory='true';section.className='wf-chat-call-events';
+   section.setAttribute('aria-label',t('history'));
+   for(const item of [...historyRows].sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt))){
+    if(item.roomId!==shownRoom.id)continue;
+    const row=doc.createElement('div');row.className='wf-chat-line system wf-chat-call-event';
+    const chip=doc.createElement('span');chip.className='wf-chat-call-chip';
+    const icon=doc.createElement('span');icon.setAttribute('aria-hidden','true');icon.textContent=item.kind==='video'?'▣':'☎';
+    const name=doc.createElement('span');name.textContent=t(item.status==='completed'?'completed':item.status==='declined'?'declined':'missed');
+    const time=doc.createElement('small');
+    time.textContent=timestamp(item.createdAt)+(item.status==='completed'?' · '+duration(item.durationSeconds||0):'');
+    chip.append(icon,name,time);row.append(chip);section.append(row);
+   }
+   if(section.childElementCount)historyContainer.append(section);
+  }
   function displayHistory(){
    historyTitle.textContent=t('history')+' ('+historyRows.length+')';
    historyList.replaceChildren();
@@ -71,7 +91,7 @@
     const when=doc.createElement('small');when.textContent=timestamp(item.createdAt)+' · '+duration(item.durationSeconds||0);
     card.append(name,when);historyList.append(card);
    }
-   history.hidden=!historyRows.length;
+   history.hidden=!historyRows.length;feedHistory();
   }
   historyTitle.addEventListener('click',()=>{
    historyList.hidden=!historyList.hidden;historyTitle.setAttribute('aria-expanded',String(!historyList.hidden));
@@ -90,7 +110,7 @@
   }
   function render(){
    language=locale();displayHistory();const state=lastState;const c=state?.call;
-   panel.hidden=!c;if(!c){for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
+   panel.hidden=!c;layout.classList.toggle('wf-calling-active',!!c);if(!c){for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
    title.textContent=(c.status==='ringing'&&c.callerId!==api.getSession?.()?.userId?t('inbound'):t(c.kind==='video'?'video':'audio'));
    info.textContent=c.status==='ringing'?t('ringing'):t('connecting');
    if(c.status==='active'&&c.startedAt)info.textContent=t('connected')+' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(c.startedAt))/1000)));
@@ -135,8 +155,14 @@
    if(!room||!['direct','group'].includes(room.kind)||!api.can?.('chat.edit'))return wrapper;
    for(const kind of ['audio','video']){
     const key=kind==='video'?'video':'audio';
-    const control=button(key,()=>{error='';return manager.start(room,kind);},'wf-calling-start');
-    control.disabled=!enabled;control.title=enabled?t(key):t('unsupported');wrapper.append(control);
+    const control=button(key,()=>{error='';return manager.start(room,kind);},'wf-calling-start wf-calling-icon');
+    control.textContent='';
+    control.setAttribute('aria-label',t(key));
+    control.innerHTML=kind==='video'
+      ?'<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3"/></svg>'
+      :'<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16.5v3a2 2 0 0 1-3.3 2.2A20 20 0 0 1 2.3 6.3 2 2 0 0 1 4.5 3h3a2 2 0 0 1 2 1.5l.8 2.9a2 2 0 0 1-.6 2L8 11a16 16 0 0 0 5 5l1.6-1.7a2 2 0 0 1 2-.6l2.9.8a2 2 0 0 1 1.5 2Z"/></svg>';
+    control.disabled=!enabled||!!lastState?.call;
+    control.title=enabled?t(key):t('unsupported');wrapper.append(control);
    }
    return wrapper;
   }
@@ -149,8 +175,8 @@
    ticking=root.setInterval(tick,3500);manager.poll().catch(()=>{});
   }
   render();
-  return Object.freeze({controls,selectRoom,refresh:()=>manager?.poll(),updateLanguage:render,
-   dispose(){if(ticking)root.clearInterval(ticking);manager?.stop();layout.remove();}});
+  return Object.freeze({controls,selectRoom,renderHistoryInFeed:feedHistory,refresh:()=>manager?.poll(),updateLanguage:render,
+   dispose(){if(ticking)root.clearInterval(ticking);manager?.stop();historyContainer?.querySelector?.('[data-wf-call-history]')?.remove();layout.remove();}});
  }
  root.WFChatCallUI=Object.freeze({mount});
 })(globalThis);
