@@ -49,10 +49,11 @@ test('incoming call queues an opt-in push, not an artificial text message',async
  assert.equal(details.mediaKind,'video');assert.equal(details.callerName,'owner');
  const payload=formatPushPayload({id:events[0].id,kind:'call',details,createdAt:Date.now()},
   {workspaceId:workspace,userId:customer,deviceId,bindingId:randomUUID(),sessionVersion:1,
-   validUntil:details.expiresAt,language:'ar'});
+   validUntil:details.expiresAt,language:'ar',companyName:'Fixture\nCompany'});
  assert.equal(payload.kind,'call');assert.equal(payload.route,'chat');
  assert.deepEqual(payload.params,{roomId:room,callId:call.id});
  assert.match(payload.title,/فيديو/);
+ assert.match(payload.title,/^Fixture Company · /);
  assert.deepEqual(device.create(null).target(payload),{route:'chat',permission:'chat.view',
   params:{roomId:room,callId:call.id}});
  assert.equal((await db.query('select count(*)::int n from wow_collab.messages')).rows[0].n,0);

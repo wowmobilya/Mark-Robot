@@ -92,7 +92,7 @@ test('committed chat, gallery and owner notices cross the durable encrypted work
     assert.deepEqual(received('proforma'),[owner.userId]);assert.deepEqual(received('operations'),[owner.userId]);
     assert.deepEqual(received('chat'),[staff.userId]);assert.deepEqual(received('stock.updated'),[buyer.userId]);assert.deepEqual(received('test'),[buyer.userId]);
     assert.match(attempts.find(p=>p.kind==='proforma').body,/PRIVATE CUSTOMER/);
-    const chatNotice=attempts.find(p=>p.kind==='chat');assert.equal(chatNotice.title,'Yeni mesaj');assert.deepEqual(chatNotice.params,{roomId,messageId});
+    const chatNotice=attempts.find(p=>p.kind==='chat');assert.equal(chatNotice.title,'Recipients · Yeni mesaj');assert.deepEqual(chatNotice.params,{roomId,messageId});
     for(const item of attempts.filter(p=>p.kind!=='proforma'))assert.doesNotMatch(JSON.stringify(item),/SECRET|PRIVATE CUSTOMER|9988|price|cost/);
 
     // The original event is retried, then muted after encryption and immediately before the provider call.

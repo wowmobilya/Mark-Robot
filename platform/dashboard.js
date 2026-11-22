@@ -1,5 +1,8 @@
 (() => {
   'use strict';
+  const theme=matchMedia('(prefers-color-scheme: dark)');
+  const updateTheme=()=>{document.documentElement.dataset.theme=theme.matches?'dark':'light';};
+  updateTheme();theme.addEventListener?.('change',updateTheme);
   const dict={
     ar:['إدارة الشركات','اسم مستخدم المؤسس','كلمة المرور','تسجيل الدخول','تسجيل الخروج','اسم الشركة','إنشاء شركة','نشطة','موقوفة','إيقاف','تفعيل','السابق','التالي','الحسابات','رمز إعداد مالك الشركة، صالح لساعة','تعذّر إتمام العملية. تحقق من الاتصال والصلاحيات.','فتح برنامج الشركة','تأكيد تغيير حالة الشركة؟','الاشتراك والاستخدام','حفظ','السعة التخزينية بالبايت','عدد الأجهزة','الخطة','تاريخ انتهاء الاشتراك','الاستخدام'],
     en:['Company administration','Founder username','Password','Sign in','Sign out','Company name','Create company','Active','Suspended','Suspend','Activate','Previous','Next','Accounts','Owner setup code, valid for one hour','Request failed. Check your connection and permissions.','Open company program','Confirm company status change?','Subscription and usage','Save','Storage limit in bytes','Device limit','Plan','Subscription expiry','Usage'],

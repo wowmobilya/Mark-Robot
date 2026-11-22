@@ -812,7 +812,7 @@ begin
     delivery_until=least(event.created_at+interval '24 hours',sub.active_until,(verified->>'expiresAt')::timestamptz);
     return jsonb_build_object('event',jsonb_build_object('id',event.id,'kind',event.kind,'action',event.action,'details',verified,'createdAt',event.created_at),
       'subscription',jsonb_build_object('endpoint',sub.endpoint,'keys',jsonb_build_object('p256dh',sub.p256dh,'auth',sub.auth_key),'expirationTime',case when sub.expires_at is not null then extract(epoch from sub.expires_at)*1000 end),
-      'recipient',jsonb_build_object('workspaceId',sub.workspace_id,'userId',sub.account_id,'deviceId',sub.device_id,'language',sub.language,
+      'recipient',jsonb_build_object('workspaceId',sub.workspace_id,'companyName',(select w.name from public.wow_workspaces w where w.id=sub.workspace_id),'userId',sub.account_id,'deviceId',sub.device_id,'language',sub.language,
         'bindingId',sub.binding_id,'sessionVersion',sub.session_version,'validUntil',delivery_until));
   end if;
   if p_action='finish' then

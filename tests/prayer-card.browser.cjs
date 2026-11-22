@@ -14,7 +14,11 @@ const base=path.resolve(__dirname,'..');
       await page.route('**/*',route=>new URL(route.request().url()).origin==='https://prayer-fixture.invalid'
         ?route.fulfill({contentType:'text/html',body:'<meta name="viewport" content="width=device-width"><main id="mainContent"><section id="page-dashboard"><div class="wf-greeting-faces"></div></section></main>'})
         :route.abort());
+      await page.route('**/assets/prayer/makkah-sai-excerpt.mp3',route=>route.fulfill({path:path.join(base,'assets/prayer/makkah-sai-excerpt.mp3'),contentType:'audio/mpeg'}));
       await page.goto('https://prayer-fixture.invalid');
+      await page.evaluate(()=>{const AudioElement=window.Audio;window.Audio=class extends AudioElement{
+        constructor(){super();window.fixtureAudio=this;this.muted=true;}
+      };});
       await page.evaluate(lang=>{
         document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
         window.testActor='fixture';window.WFAccountAccess={actor:()=>({id:window.testActor})};
@@ -29,6 +33,10 @@ const base=path.resolve(__dirname,'..');
       await dialog.locator('.wf-prayer-times').waitFor();assert.equal(await dialog.locator('dd').count(),5);
       assert.equal(await dialog.locator('small').innerText(),'Europe/Istanbul');
       assert.ok(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth));
+      await dialog.locator('select').last().selectOption('excerpt');
+      await dialog.locator('button').nth(2).click();
+      await page.waitForFunction(()=>window.fixtureAudio.duration>19&&window.fixtureAudio.duration<20&&!window.fixtureAudio.paused);
+      await dialog.locator('button').nth(2).click();
       await dialog.locator('select').last().selectOption('notice');
       await dialog.locator('.btn-p').click();
       await dialog.waitFor({state:'detached'});

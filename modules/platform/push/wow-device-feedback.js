@@ -29,7 +29,7 @@
     if(!audio||audio.state!=='running'||!prefs.volume)return;
     const notes=touch?[620]:[660,880];
     notes.forEach((hz,i)=>{
-      const osc=audio.createOscillator(),gain=audio.createGain(),start=audio.currentTime+i*.11,end=start+(touch?.045:.18);
+      const osc=audio.createOscillator(),gain=audio.createGain(),start=audio.currentTime+i*.11,end=start+(touch ? 0.045 : 0.18);
       osc.frequency.value=hz;gain.gain.setValueAtTime(.0001,start);
       gain.gain.exponentialRampToValueAtTime(Math.max(.0002,prefs.volume*.0012),start+.009);
       gain.gain.exponentialRampToValueAtTime(.0001,end);

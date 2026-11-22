@@ -1,5 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {chromium}=require('playwright'),path=require('node:path'),fs=require('node:fs');
+const {chromium}=require('playwright'),path=require('node:path');
 const {randomUUID}=require('node:crypto');
 test('founder can provision, scan the owner setup URL, and save a plan in mobile layout',async()=>{
   const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true});
@@ -23,7 +23,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       }
       if(u.pathname.endsWith('wow-cloud-config.js'))return route.fulfill({contentType:'application/javascript',body:"window.WOW_CLOUD_CONFIG={workspaceId:'scope',endpoint:'/service',publishableKey:'local'}"});
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
-      if(!['platform/index.html','platform/dashboard.css','platform/dashboard.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
     await page.goto(scope+'/platform/');await page.locator('#lang').selectOption('en');

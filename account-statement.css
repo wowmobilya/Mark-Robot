@@ -77,3 +77,10 @@
 /* The additional statement entry stays inside the existing customer toolbar. */
 #page-companies .co-toolbar-row{flex-wrap:wrap}
 @media(max-width:700px){#page-companies .co-toolbar-row #coSearch{order:5;flex:1 1 100%;max-width:none}}
+.wsa-delivery{background:var(--card,Canvas);color:var(--text,CanvasText);border:1px solid var(--border,GrayText);border-radius:16px;max-width:min(42rem,94vw);max-height:85dvh;padding:1.2rem;overflow:auto}
+.wsa-delivery form,.wsa-delivery label{display:grid;gap:.5rem}
+.wsa-delivery form{gap:.9rem;margin-block:1rem}
+.wsa-delivery button,.wsa-delivery select,.wsa-delivery input:not([type=checkbox]){font:inherit;min-height:44px;padding:.4rem .7rem;background:var(--input,Canvas);color:inherit;border:1px solid var(--border,GrayText);border-radius:8px}
+.wsa-delivery button{margin-inline-end:.4rem;cursor:pointer}
+.wsa-delivery iframe{width:100%;height:42dvh;margin-block:.8rem;border:0}
+.wsa-delivery::backdrop{background:#0008}

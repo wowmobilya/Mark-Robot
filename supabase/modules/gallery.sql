@@ -7,6 +7,17 @@ select section||'.'||cap,false from (values
  ('myorders',array['view','edit','print','export'])
 ) s(section,caps) cross join lateral unnest(caps) cap on conflict(permission) do nothing;
 
+-- Verified, display-only Galeri.TR source snapshots. No commerce endpoint consults this table.
+create table if not exists public.wow_gallery_source_inventory (
+ workspace_id uuid not null references public.wow_workspaces,
+ source_id bigint not null,
+ title text not null, collection text, category_label text, stock integer, source_price numeric,
+ active boolean not null, pieces jsonb not null check(jsonb_typeof(pieces)='array'),
+ image_key text check(image_key is null or image_key='inventory-3'), primary key(workspace_id,source_id)
+);
+alter table public.wow_gallery_source_inventory enable row level security;
+revoke all on public.wow_gallery_source_inventory from public,anon,authenticated;
+
 create table if not exists public.wow_gallery_listings (
  workspace_id uuid not null references public.wow_workspaces, product_id jsonb not null check(jsonb_typeof(product_id) in ('number','string')),
  published boolean not null default false, stock integer not null default 0 check(stock between 0 and 1000000),
@@ -254,7 +265,12 @@ begin
        where exists(select 1 from jsonb_array_elements(settings->'fields') f where f->>'id'=spec.key)),'{}'::jsonb)) order by n)
      into items from jsonb_array_elements(items) with ordinality x(v,n);
    end if;
-   return public.wow_gallery_page(items,lim)||jsonb_build_object('presentation',settings);
+   return public.wow_gallery_page(items,lim)||jsonb_build_object('presentation',settings,'sourceItems',
+     case when start_row=0 then coalesce((select jsonb_agg(jsonb_build_object(
+       'sourceId',s.source_id,'title',s.title,'collection',s.collection,'categoryLabel',s.category_label,
+       'stock',s.stock,'priceLabel',case when s.source_price is not null then s.source_price::text||' ₺' end,
+       'legacyImage',s.image_key,'pieces',s.pieces) order by s.source_id)
+       from public.wow_gallery_source_inventory s where s.workspace_id=wid and s.active),'[]'::jsonb) else '[]'::jsonb end);
  elsif p_action in('gallery.orders','gallery.personal') then
    select jsonb_agg(public.wow_gallery_order_json(q.order_row,not staff,staff) order by q.created_at desc,q.id) into items from
    (select o as order_row,o.created_at,o.id from public.wow_gallery_orders o where o.workspace_id=wid and o.archived_at is null and (staff or o.account_id=uid)

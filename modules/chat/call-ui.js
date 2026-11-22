@@ -48,11 +48,11 @@
   videos.className='wf-calling-videos';actions.className='wf-calling-actions';note.className='wf-calling-notice';
   selfCard.className='wf-calling-tile';selfVideo.autoplay=true;selfVideo.muted=true;selfVideo.playsInline=true;
   selfLabel.className='wf-calling-label';selfCard.append(selfVideo,selfLabel);
-  panel.append(head,videos,actions,note);head.append(title,info);
+  note.setAttribute('role','status');panel.append(head,videos,actions);head.append(title,info);
   history.className='wf-calling-history';historyTitle.className='wf-calling-history-title';
   historyTitle.type='button';historyList.className='wf-calling-history-list';
   historyTitle.setAttribute('aria-expanded','false');historyList.hidden=true;history.append(historyTitle,historyList);
-  layout.append(panel,history);container.append(layout);
+  layout.append(panel,note,history);container.append(layout);
   let manager=null,lastState=null,historyRows=[],language='ar',error='',shownRoom=null,presence=[];
   const locale=()=>{const v=typeof lang==='function'?lang():lang;return locales.includes(v)?v:'ar';};
   const t=key=>text[key][locales.indexOf(locale())];let ticking=null;
@@ -113,7 +113,7 @@
   }
   function render(){
    language=locale();displayHistory();const state=lastState;const c=state?.call;
-   panel.hidden=!c;layout.classList.toggle('wf-calling-active',!!c);if(!c){for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
+   note.textContent=error;note.hidden=!error;panel.hidden=!c;layout.classList.toggle('wf-calling-active',!!c);if(!c){for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
    const invited=c.participants?.some(p=>p.id===api.getSession?.()?.userId&&p.status==='invited');
    title.textContent=(invited?t('inbound'):t(c.kind==='video'?'video':'audio'));
    info.textContent=invited||c.status==='ringing'?t('ringing'):t('connecting');
@@ -177,7 +177,7 @@
    return wrapper;
   }
   async function selectRoom(room){
-   shownRoom=room;historyRows=[];displayHistory();
+   shownRoom=room;error='';render();historyRows=[];displayHistory();
    if(manager)await manager.selectRoom(room).catch(()=>{});
   }
   if(manager){

@@ -99,7 +99,9 @@ export function formatPushPayload(event,recipient){
   const envelope={eventId:cleanPushText(event.id,220),kind,workspaceId:recipient.workspaceId,userId:recipient.userId,deviceId:recipient.deviceId,
     bindingId:recipient.bindingId,sessionVersion:recipient.sessionVersion,validUntil:recipient.validUntil,language,timestamp:event.createdAt};
   const notice=sharedNotice(kind,d,language);
-  if(notice)return {...envelope,...notice};
+  const company=cleanPushText(recipient.companyName,60).replace(/\s+/g,' ').trim();
+  const brandedTitle=title=>cleanPushText(company?company+' · '+title:title,120);
+  if(notice)return {...envelope,...notice,title:brandedTitle(notice.title)};
   if(!['test','proforma','payment','expense','receipt'].includes(kind))invalidNotice();
   const number=new Intl.NumberFormat(language==='ar'?'ar-u-nu-latn':language,{minimumFractionDigits:2,maximumFractionDigits:2});
   const money=(amount,code=d.currency)=>amount!==null&&Number.isFinite(Number(amount))?currency(code)+' '+number.format(Number(amount)):'';
@@ -119,7 +121,7 @@ export function formatPushPayload(event,recipient){
     if(d.note)lines.push(t.note+': '+d.note);
   }
   const title=kind==='test'?t.test:[t[event.action]||t.updated,t[d.movement==='transfer'?'transfer':d.movement==='opening'?'opening':kind]||t.proforma,d.reference&&'· '+d.reference].filter(Boolean).join(' ');
-  const payload={...envelope,title:cleanPushText(title,120),body:cleanPushText(lines.join('\n')||t[kind],450)};
+  const payload={...envelope,title:brandedTitle(title),body:cleanPushText(lines.join('\n')||t[kind],450)};
   const bytes=new TextEncoder();while(bytes.encode(JSON.stringify(payload)).length>3072&&payload.body)payload.body=Array.from(payload.body).slice(0,-16).join('');
   return payload;
 }

@@ -25,3 +25,4 @@
   .wf-push-inbox li time { color: var(--text2); font-size: 13px; }
   .wf-push-inbox li p { white-space: pre-line; }
 }
+.wf-feedback-settings{display:grid;gap:.5rem;min-inline-size:0;border:1px solid var(--line,currentColor);border-radius:1rem;padding:1rem}.wf-feedback-settings label{display:flex;align-items:center;justify-content:space-between;gap:1rem;min-block-size:44px}.wf-feedback-settings input[type=range]{max-inline-size:50%}

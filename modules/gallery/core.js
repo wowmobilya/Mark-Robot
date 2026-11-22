@@ -7,6 +7,7 @@
   'use strict';
   const locales=['ar','en','tr','fr','ru'];
   const words={
+    chooseShareApp:['اختيار تطبيق المشاركة','Choose sharing app','Paylaşım uygulamasını seç','Choisir une application','Выбрать приложение'],
     importLayout:['استيراد ترتيب Galeri.TR','Import Galeri.TR layout','Galeri.TR düzenini içe aktar','Importer la disposition Galeri.TR','Импорт структуры Galeri.TR'],
     layoutFile:['ملف تصدير المعرض (JSON)','Gallery export file (JSON)','Galeri dışa aktarım dosyası (JSON)','Fichier d’export du catalogue (JSON)','Файл экспорта каталога (JSON)'],
     layoutRetained:['موجودة مسبقًا','Already present','Zaten mevcut','Déjà présents','Уже существуют'],

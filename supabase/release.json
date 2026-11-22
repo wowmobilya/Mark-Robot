@@ -22,7 +22,9 @@
     "modules/public-share.sql",
     "modules/communications.sql",
     "modules/offline-owner.sql",
-    "modules/tenant-limits.sql"
+    "modules/tenant-limits.sql",
+    "modules/statement-delivery.sql",
+    "modules/order-sms.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",

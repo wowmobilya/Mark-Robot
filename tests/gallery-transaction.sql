@@ -20,6 +20,17 @@ begin
  owner_actor=jsonb_build_object('userId',owner_id,'sessionId',owner_session);
  buyer_actor=jsonb_build_object('userId',buyer,'sessionId',buyer_session);
  other_actor=jsonb_build_object('userId',other_id,'sessionId',other_session);
+ insert into public.wow_workspaces(id,name) values(other_id,'Separate gallery');
+ insert into public.wow_gallery_source_inventory(workspace_id,source_id,title,collection,stock,source_price,active,pieces)
+ values(wid,9,'Original model','tv',3,100,true,'[]'),(wid,10,'Inactive','tv',0,null,false,'[]'),
+ (other_id,9,'Other tenant','tv',2,500,true,'[]');
+ res=public.wow_gallery_service('gallery.snapshot',buyer_actor);
+ if jsonb_array_length(res->'sourceItems')<>1 or res->'sourceItems'->0->>'title'<>'Original model'
+ or res->'sourceItems'->0->>'priceLabel'<>'100 ₺' or res->'sourceItems'->0 ? 'productId'
+ or jsonb_array_length(res->'items')<>0 or public.wow_gallery_quote(wid,'9') is not null
+ or jsonb_array_length(public.wow_gallery_service('gallery.snapshot',buyer_actor||'{"offset":1}') ->'sourceItems')<>0
+ or has_table_privilege('authenticated','public.wow_gallery_source_inventory','select')
+ then raise exception 'TEST_SOURCE_SCOPE'; end if;
  insert into public.wow_records(workspace_id,store,record_id,payload,revision,updated_by)
  values(wid,'products','1','{"id":1,"name":"Console","type":"console","priceA":30.24,"costs":"private","dims":[{"l":120,"w":40,"h":80,"private":"private","specs":{"depth":1.25,"hidden":9,"unknown":3}}]}',1,owner_id),
  (wid,'products','"1"','{"id":"1","name":"Draft","priceA":12,"dimL":80,"dimW":40,"dimH":36}',1,owner_id);

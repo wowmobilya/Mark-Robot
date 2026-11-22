@@ -4,7 +4,7 @@ import {failure} from './core.mjs';
 const AUTH_CODES=new Set(['AUTH_REQUIRED','SESSION_REVOKED','SESSION_EXPIRED']);
 const FORBIDDEN_CODES=new Set(['ACCESS_DENIED','PERMISSION_DENIED','ACCOUNT_UNAVAILABLE','SETUP_PROOF_INVALID','SETUP_PROOF_REQUIRED','SUBSCRIPTION_EXPIRED','SELF_PROTECTION','LAST_OWNER','CUSTOMER_PRINCIPAL_ROLE_FIXED']);
 const CONFLICT_CODES=new Set(['DEVICE_LIMIT_REACHED','STORAGE_LIMIT_REACHED','PLAN_NAME_EXISTS','CONFLICT','IDENTITY_CONFLICT','IDEMPOTENCY_MISMATCH','BATCH_SESSION_CHANGED','DUPLICATE_INVOICE_NUMBER','DUPLICATE_RECORD','USERNAME_TAKEN','ALREADY_CONFIGURED','MEDIA_REVISION_MISMATCH','MEDIA_NOT_UPLOADED','SUBSCRIPTION_BOUND_TO_OTHER_IDENTITY','PUSH_SUBSCRIPTION_REQUIRED']);
-const MODULE_RPCS=new Set(['wow_statement_service','wow_gallery_service','wow_chat_service','wow_voice_service','wow_files_service','wow_finance_service','wow_operations_service','wow_assistant_service','wow_communications_service','wow_public_share_service']);
+const MODULE_RPCS=new Set(['wow_order_sms','wow_statement_service','wow_gallery_service','wow_chat_service','wow_voice_service','wow_files_service','wow_finance_service','wow_operations_service','wow_assistant_service','wow_communications_service','wow_public_share_service']);
 const UUID='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const MODULE_OBJECT_PATH=new RegExp('^(?:chat|files)/'+UUID+'/'+UUID+'/'+UUID+'/[0-9a-f]{64}$');
 const GALLERY_OBJECT_PATH=new RegExp('^'+UUID+'/gallery/'+UUID+'/'+UUID+'\\.(?:jpeg|png|webp)$');

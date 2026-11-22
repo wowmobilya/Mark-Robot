@@ -87,8 +87,8 @@ test('the complete repeatable release installs and the production Edge entrypoin
  const unknownWebhook=await serve(new Request(base+'/functions/v1/wow-cloud/mail-webhook',{method:'POST',body:'{}'}));
  assert.notEqual(unknownWebhook.status,200,'an unsigned callback cannot acknowledge email delivery');
  const health=await serve(new Request(base+'/functions/v1/wow-cloud/health'));assert.equal(health.status,200);
- const readiness=await health.json();assert.equal(typeof readiness.turnConfigured,'boolean');
- assert.deepEqual(Object.keys(readiness).sort(),['checkedAt','ok','service','turnConfigured'],'readiness has no workspace or credential data');
+ const readiness=await health.json();assert.equal(typeof readiness.turnConfigured,'boolean');assert.deepEqual(readiness.statementChannels,{email:false,whatsapp:false});
+ assert.deepEqual(Object.keys(readiness).sort(),['checkedAt','ok','orderSmsConfigured','service','statementChannels','turnConfigured'],'readiness has no workspace or credential data');
  const count=calls;assert.equal((await call('wow_storage_maintenance',{p_action:'claim'})).status,400);assert.equal(calls,count,'private maintenance RPCs are not app actions');
  const devicePair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']);
  const device={privateKey:devicePair.privateKey,publicJwk:await webcrypto.subtle.exportKey('jwk',devicePair.publicKey)};

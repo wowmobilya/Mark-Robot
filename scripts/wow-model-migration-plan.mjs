@@ -126,7 +126,7 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
    if(target){const all=proposedTargets.get(target)||[];all.push(sourceKey);proposedTargets.set(target,all);}
  }
  const definitions=legacy.dimension_fields??legacy.tables?.dimension_fields??[];
- if(!Array.isArray(definitions)||definitions.length>25)throw Error('INVALID_LEGACY_DIMENSION_FIELDS');
+ if(!Array.isArray(definitions)||definitions.length>100)throw Error('INVALID_LEGACY_DIMENSION_FIELDS');
  const fields=new Map();
  for(const f of definitions){
    if(!object(f)||typeof f.field_key!=='string'||!/^([a-zA-Z0-9_-]{1,70})$/.test(f.field_key)||['__proto__','constructor','prototype'].includes(f.field_key)||

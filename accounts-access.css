@@ -33,3 +33,40 @@ html[data-wf-account-state="checking"],html[data-wf-account-state="locked"]{over
 .wf-account-session[hidden]{display:none!important}
 @media(max-width:420px){#wfAccountLock{padding:12px}.wf-account-login{padding:20px 16px;border-radius:18px}.wf-account-login h1{font-size:22px}}
 @media print{#wfAccountLock,.wf-account-session,[data-wf-access-hidden]{display:none!important}html[data-wf-account-state="locked"] body>*{display:none!important}}
+@media screen {
+  #wfAccountLock {
+    box-sizing:border-box; block-size:100dvh; grid-template-columns:minmax(0,1fr);
+    padding:max(12px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
+    overscroll-behavior:contain; scrollbar-gutter:stable both-edges;
+  }
+  .wf-account-login {
+    box-sizing:border-box; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center;
+    inline-size:min(100%,420px); padding:clamp(16px,4vw,28px); border-radius:var(--wf-workspace-radius,20px);
+    box-shadow:var(--shadow2,0 12px 38px rgb(20 46 60 / 9%));
+  }
+  .wf-account-login > * { grid-column:1 / -1; min-inline-size:0; }
+  .wf-account-login .wf-account-login-brand { grid-column:1; grid-row:1; margin:0; gap:.6rem; min-inline-size:0; }
+  .wf-account-login-brand :is(img,.wf-account-login-emblem) { flex:none; inline-size:42px; block-size:42px; }
+  .wf-account-login-brand > span:last-child { overflow-wrap:anywhere; line-height:1.3; }
+  .wf-account-login .wf-account-login-languages { grid-column:2; grid-row:1; margin:0; padding-inline-start:.4rem; }
+  .wf-account-login-languages select { max-inline-size:9em; min-block-size:44px; font-size:.82rem; }
+  .wf-account-login h1 { margin-block:1rem .2rem; font-size:clamp(1.32rem,3.3vw,1.65rem); }
+  .wf-account-login p { margin-block:0 .75rem; line-height:1.6; }
+  .wf-account-login form { gap:.75rem; }
+  .wf-account-login label { gap:.3rem; margin:0; }
+  .wf-account-login form[hidden] { display:none; }
+  .wf-account-login .fi { min-block-size:46px; border:1px solid var(--border); border-radius:11px; padding:.55rem .8rem; background:var(--input); color:var(--text); font-size:16px; }
+  .wf-account-login .fi:focus-visible { outline:2px solid var(--ui-accent,var(--brand-primary)); outline-offset:1px; }
+  .wf-account-login .wf-account-login-status:empty { min-block-size:0; margin:0!important; }
+  .wf-account-login-local { margin-block-start:.4rem; padding-block-start:.7rem; }
+  .wf-account-login-status + p { margin-block-start:.65rem; }
+}
+@media screen and (max-height:500px) and (min-width:600px) {
+  #wfAccountLock { place-items:start center; }
+  .wf-account-login { inline-size:min(100%,650px); grid-template-columns:minmax(0,1fr) minmax(0,1.3fr); column-gap:1.25rem; margin-block:auto; }
+  .wf-account-login .wf-account-login-brand { grid-column:1; grid-row:1; }
+  .wf-account-login .wf-account-login-languages { grid-column:1; grid-row:4; justify-content:flex-start; padding:0; }
+  .wf-account-login > h1 { grid-column:1; grid-row:2; }
+  .wf-account-login > h1 + p { grid-column:1; grid-row:3; }
+  .wf-account-login > #wfAccountLoginForm { grid-column:2; grid-row:1 / 5; }
+}

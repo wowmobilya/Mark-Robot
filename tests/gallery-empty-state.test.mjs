@@ -132,3 +132,23 @@ test('first offline visit explains why the phone has no records and preserves ow
   assert.equal(descendants(f.container).some(e=>e.tagName==='BUTTON'&&e.textContent==='Open WOW products'),false);
  }finally{handle.dispose();}
 });
+
+test('source-only catalog filters original records and provides no mutation or fabricated price or measurement',async()=>{
+ const f=fixture('owner');
+ f.win.WFGalleryLegacyLayout={imagePath:key=>key==='fixture-photo'?'./assets/media/fixture.webp':null};
+ f.api.request=async(action,payload)=>{
+   f.requests.push({action,payload});
+   return {items:[],sourceItems:[{sourceId:7,title:'Source console',collection:'console',categoryLabel:'Dresuar',
+      stock:0,priceLabel:'₺850',legacyImage:'fixture-photo',pieces:[]}],hasMore:false,presentation:{}};
+ };
+ const handle=f.definitions.get('gallery').mount({route:'gallery',container:f.container,api:f.api,lang:'en'});
+ try{
+   await settle(()=>f.container.textContent.includes('Source console'));
+   const card=descendants(f.container).find(e=>e.tagName==='ARTICLE');
+   assert.match(card.textContent,/Galeri\.TR/);assert.match(card.textContent,/₺850/);assert.match(card.textContent,/Dresuar/);
+   assert.equal(descendants(card).filter(e=>e.tagName==='BUTTON').length,1,'Preview only');
+   assert.equal(descendants(card).find(e=>e.tagName==='IMG').src,'./assets/media/fixture.webp');
+   await descendants(card).find(e=>e.tagName==='BUTTON').fire('click');
+   assert.equal(f.requests.length,1);assert.equal(descendants(f.container).find(e=>e.tagName==='DIALOG').open,true);
+ }finally{handle.dispose();}
+});

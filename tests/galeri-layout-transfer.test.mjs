@@ -45,3 +45,20 @@ test('layout rejects an incomplete source count, duplicate typed key and wrong p
  assert.throws(()=>layout.preview({...data,counts:{}},{}));
  assert.throws(()=>layout.preview(source({home_cards:[...data.tables.home_cards,...data.tables.home_cards]}),{}));
 });
+test('real-sized layouts reconcile repeated cards and preserve sixty fields with strict local images',()=>{
+ const rows=[card(10,2,'tv'),card(11,1,'tv'),card(12,1,'tv'),card(20,1,'orta')];
+ const definitions=Array.from({length:60},(_,i)=>({field_key:'field_'+i,field_label:'Field '+i,order_num:i,is_visible:true}));
+ const result=layout.preview(source({home_cards:rows,dimension_fields:definitions}),{});
+ assert.deepEqual(result.added,{cards:2,slides:0,fields:60});
+ assert.equal(result.duplicates,2);
+ assert.equal(result.value.cards.find(c=>c.collection==='tv').id,'galeri-cards-n-11');
+ assert.equal(layout.imagePath('tv-card'),'assets/galeri-tr/tv-card.webp');
+ assert.equal(layout.imagePath('inventory-3'),'assets/galeri-tr/inventory-3.webp');
+ assert.equal(layout.imagePath('../untrusted'),null);
+ assert.deepEqual(layout.preview(source({home_cards:[...rows].reverse()}),{}).value.cards,result.value.cards);
+ const payload={commandId:randomUUID(),version:0,value:result.value};
+ payload.value.cards[0].legacyImage='tv-card';
+ assert.equal(validateGalleryAction('gallery.presentation',payload).value.cards[0].legacyImage,'tv-card');
+ payload.value.cards[0].legacyImage='https://invalid.example/tracker';
+ assert.throws(()=>validateGalleryAction('gallery.presentation',payload));
+});

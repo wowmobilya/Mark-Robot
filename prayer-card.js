@@ -17,6 +17,7 @@
     schools:[['الجمهور','حنفي'],['Standard','Hanafi'],['Standart','Hanefî'],['Standard','Hanafite'],['Стандартный','Ханафитский']],
     mode:['التذكير أثناء فتح البرنامج','Reminder while the app is open','Uygulama açıkken hatırlat','Rappel quand l’application est ouverte','Напоминание в открытом приложении'],
     modes:[['متوقف','تنبيه فقط','أذان مكة'],['Off','Notification only','Makkah adhan'],['Kapalı','Yalnızca bildirim','Mekke ezanı'],['Désactivé','Notification seule','Adhan de La Mecque'],['Выключено','Только уведомление','Азан из Мекки']],
+    excerpt:['مقطع من أذان مكة · ١٩ ثانية دون إنترنت','Makkah adhan excerpt · 19 seconds, offline','Mekke ezanından bölüm · 19 saniye, çevrimdışı','Extrait de l’adhan de La Mecque · 19 secondes, hors ligne','Фрагмент азана из Мекки · 19 секунд, офлайн'],
     recording:['تسجيلي على هذا الجهاز','My recording on this device','Bu cihazdaki kaydım','Mon enregistrement sur cet appareil','Моя запись на устройстве'],
     chooseAudio:['اختر ملفًا صوتيًا (حتى ١٢ ميبيبايت)','Choose audio (up to 12 MiB)','Ses dosyası seçin (en fazla 12 MiB)','Choisir un fichier audio (12 Mio maximum)','Выберите аудио (до 12 МиБ)'],
     listen:['استماع / إيقاف','Listen / stop','Dinle / durdur','Écouter / arrêter','Слушать / остановить'],
@@ -66,6 +67,8 @@
   const audio=new Audio();audio.preload='none';
   const audioPath='https://upload.wikimedia.org/wikipedia/commons/a/a7/Adhan%2C_Great_Mosque_of_Mecca_-_Jan_21%2C_2013.webm';
   const recordSource='https://commons.wikimedia.org/wiki/File:Adhan,_Great_Mosque_of_Mecca_-_Jan_21,_2013.webm';
+  const excerptPath='./assets/prayer/makkah-sai-excerpt.mp3';
+  const audibleMode=mode=>['adhan','local','excerpt'].includes(mode);
   let localUrl='',audioGeneration=0;
   function recording(owner,key,operation,blob){
     return new Promise((resolve,reject)=>{
@@ -92,7 +95,7 @@
   }
   function read(){
     try{const data=JSON.parse(localStorage.getItem(scope));if(!data||!parseLocation(data.lat+','+data.lon)||
-      !methods.includes(data.method)||!['Shafi','Hanafi'].includes(data.school)||!['off','notice','adhan','local'].includes(data.mode))return null;
+      !methods.includes(data.method)||!['Shafi','Hanafi'].includes(data.school)||!['off','notice','adhan','local','excerpt'].includes(data.mode))return null;
       return data;
     }catch{return null;}
   }
@@ -104,8 +107,15 @@
   const name=key=>t('names')[prayers.indexOf(key)];
   async function play(mode=config?.mode,chosen){
     stopAudio();const token=audioGeneration,owner=scope;
-    if(mode==='local'){
-      const blob=chosen||await recording(owner,config?.audioKey,'get');
+    if(mode==='local'||mode==='excerpt'){
+      let blob;
+      if(mode==='local')blob=chosen||await recording(owner,config?.audioKey,'get');
+      else{
+        // Load the complete small MP3 from the offline shell; Safari can seek its local blob.
+        const response=await fetch(excerptPath);
+        if(!response.ok)throw Error('NO_AUDIO');
+        blob=await response.blob();
+      }
       if(token!==audioGeneration||owner!==storeId())return;
       if(!(blob instanceof Blob))throw Error('NO_AUDIO');
       localUrl=URL.createObjectURL(blob);audio.src=localUrl;
@@ -125,11 +135,11 @@
     const fire=async()=>{
       if(storeId()!==owner||!config||config.mode!==mode)return;
       try{if(localStorage.getItem(owner+'.last')===id)return;localStorage.setItem(owner+'.last',id);}catch{return;}
-      const label=t('title')+' · '+name(row.key);message(label,mode==='adhan'||mode==='local');
+      const label=t('title')+' · '+name(row.key);message(label,audibleMode(mode));
       if(root.Notification?.permission==='granted'){
         try{const reg=await navigator.serviceWorker?.getRegistration();if(reg&&storeId()===owner)await reg.showNotification(label,{tag:'wf-prayer-'+id,silent:true});}catch{}
       }
-      if((mode==='adhan'||mode==='local')&&storeId()===owner)play().catch(()=>{if(storeId()===owner)message(t('soundFail'),true);});
+      if((audibleMode(mode))&&storeId()===owner)play().catch(()=>{if(storeId()===owner)message(t('soundFail'),true);});
     };
     if(navigator.locks)navigator.locks.request('wf-prayer-'+owner,fire).catch(()=>{});else fire();
   }
@@ -158,13 +168,15 @@
     const locate=el('button',t('locate'));locate.type='button';
     const method=chooser(methods,t('methodNames'),config?.method||'MuslimWorldLeague');
     const school=chooser(['Shafi','Hanafi'],t('schools'),config?.school||'Shafi');
-    const mode=chooser(['off','notice','adhan','local'],[...t('modes'),t('recording')],config?.mode||'off');
+    const mode=chooser(['off','notice','adhan','local','excerpt'],[...t('modes'),t('recording'),t('excerpt')],config?.mode||'off');
     const file=el('input');file.type='file';file.accept='audio/*';
     const fileField=field(t('chooseAudio'),file);
     const credit=el('div'),source=el('a','Seyfula Islam · Makkah, 2013'),license=el('a','CC BY 3.0');
     source.href=recordSource;license.href='https://creativecommons.org/licenses/by/3.0/';
     for(const link of [source,license]){link.target='_blank';link.rel='noopener noreferrer';}
     credit.append(source,doc.createTextNode(' · '),license);
+    const excerptCredit=el('a','Masmaa · CC BY · Sa’i');excerptCredit.href='https://www.masmaa.org/en/audio/call-to-prayer-sai-route';
+    excerptCredit.target='_blank';excerptCredit.rel='noopener noreferrer';
     function candidate(){const coordsValue=parseLocation(coords.value);return coordsValue?{...coordsValue,method:method.value,school:school.value,mode:mode.value}:null;}
     function show(){
       preview.replaceChildren();const state=candidate();if(!state)return;
@@ -185,7 +197,7 @@
     const listen=el('button',t('listen'));listen.type='button';listen.onclick=()=>audio.paused?play(mode.value,file.files[0]).catch(()=>{status.textContent=t('soundFail');}):stopAudio();
     function audioControls(){
       stopAudio();fileField.hidden=mode.value!=='local';credit.hidden=mode.value!=='adhan';
-      listen.hidden=!['local','adhan'].includes(mode.value);
+      excerptCredit.hidden=mode.value!=='excerpt';listen.hidden=!audibleMode(mode.value);
     }
     mode.onchange=audioControls;audioControls();
     const save=el('button',t('save'));save.type='button';save.className='btn btn-p';
@@ -218,7 +230,7 @@
       try{localStorage.removeItem(owner);localStorage.removeItem(owner+'.last');}catch{status.textContent=t('writeFail');return;}
       if(config?.audioKey)recording(owner,config.audioKey,'delete').catch(()=>{});
       config=null;cache=null;dialog.close();render();};
-    dialog.append(preview,field(t('coords'),coords),locate,field(t('method'),method),field(t('asr'),school),field(t('mode'),mode),fileField,credit,listen,status,save,forget);
+    dialog.append(preview,field(t('coords'),coords),locate,field(t('method'),method),field(t('asr'),school),field(t('mode'),mode),fileField,credit,excerptCredit,listen,status,save,forget);
     dialog.addEventListener('close',()=>{stopAudio();dialog.remove();modal=null;});doc.body.append(dialog);dialog.showModal();show();
   }
   open.onclick=settings;

@@ -151,6 +151,21 @@ async function main(){
     };
     await requestRange();assert.equal(trackRequests,installedRequests,'An online warm range must not fetch the server track.');
     await context.setOffline(true);await requestRange();
+    const excerptPath='/assets/prayer/makkah-sai-excerpt.mp3';
+    const excerptResponse=page.waitForResponse(response=>new URL(response.url()).pathname===excerptPath);
+    const excerpt=await page.evaluate(async path=>{
+      const response=await fetch(path);
+      if(!response.ok)throw Error('Missing offline prayer excerpt');
+      const data=await response.arrayBuffer(),audio=new AudioContext();
+      try{
+        const decoded=await audio.decodeAudioData(data);
+        const channel=decoded.getChannelData(0);
+        let power=0;for(const sample of channel)power+=sample*sample;
+        return {duration:decoded.duration,channels:decoded.numberOfChannels,rms:Math.sqrt(power/channel.length)};
+      }finally{await audio.close();}
+    },excerptPath);
+    assert.equal((await excerptResponse).fromServiceWorker(),true);
+    assert.ok(excerpt.duration>19&&excerpt.duration<20);assert.equal(excerpt.channels,1);assert.ok(excerpt.rms>.05);
     const mediaResponse=page.waitForResponse(response=>new URL(response.url()).pathname===track);
     await page.getByRole('button',{name:'Play music',exact:true}).click();
     assert.equal((await mediaResponse).fromServiceWorker(),true);

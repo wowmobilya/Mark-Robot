@@ -109,7 +109,8 @@ test('cancelled beforeinput and existing input normalizers are respected',async 
 
 test('account login accepts touch typing while the rest of the app stays locked',async t=>{
   for(const reuse of [false,true])await t.test(reuse?'keyboard used before locking':'first keyboard opened at login',async t=>{
-    const page=await fixture(t,{localAccounts:true});
+    const page=await fixture(t,{localAccounts:true,lang:reuse?'ar':'en'});
+    if(reuse)await page.setViewportSize({width:667,height:320});
     await page.addStyleTag({path:path.join(root,'accounts-access.css')});
     for(const file of ['accounts-policy.js','accounts-data-policy.js','accounts-core.js','accounts-local-provider.js','accounts-access.js']){
       await page.addScriptTag({path:path.join(root,file)});
@@ -129,6 +130,14 @@ test('account login accepts touch typing while the rest of the app stays locked'
     await page.evaluate(()=>{window.loginReady=WFAccountAccess.beforeInit();});
     await page.waitForSelector('#wfTouchKeyboard[open]',{state:'attached'});
     assert.equal(await pad.isVisible(),true,'login autofocus must show the app keyboard');
+    const geometry=await pad.evaluate(node=>{
+      const box=node.getBoundingClientRect(),done=node.querySelector('[data-action="done"]').getBoundingClientRect();
+      const form=document.querySelector('.wf-account-login').getBoundingClientRect();
+      return {box:box.toJSON(),done:done.toJSON(),form:form.toJSON(),width:innerWidth,height:innerHeight};
+    });
+    assert(geometry.box.x>=0&&geometry.box.right<=geometry.width+1);
+    assert(geometry.form.x>=0&&geometry.form.right<=geometry.width+1);
+    assert(geometry.done.top>=0&&geometry.done.bottom<=geometry.height+1&&geometry.done.height>=44);
     const background=page.locator('#workspace');
     assert.equal(await background.evaluate(el=>el.inert),true);
     assert.equal(await background.isVisible(),false);
