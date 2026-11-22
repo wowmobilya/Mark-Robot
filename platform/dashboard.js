@@ -71,7 +71,7 @@
     resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
   }
   let brandList=null;
-  function clear(){window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  function clear(){window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -137,7 +137,7 @@
     toggle.onclick=()=>{const show=pass.type==='password';pass.type=show?'text':'password';
       toggle.setAttribute('aria-pressed',String(show));toggle.textContent=visibility[show?1:0];toggle.setAttribute('aria-label',toggle.textContent+' '+t(2));};
     email.required=pass.required=true;email.autocomplete='username';pass.autocomplete='current-password';content.append(form);
-    const remember=el('input');remember.type='checkbox';
+    const remember=el('input');remember.type='checkbox';remember.checked=canRemember();
     if(canRemember()){
       const names={ar:'تذكّرني على هذا الجهاز لمدة ٧ أيام',en:'Remember me on this device for 7 days',tr:'Bu cihazda beni 7 gün hatırla',fr:'Se souvenir de moi sur cet appareil pendant 7 jours',ru:'Запомнить меня на этом устройстве на 7 дней'};
       const label=el('label');label.className='platform-remember';label.append(remember,document.createTextNode(names[lang.value]));form.append(label);
@@ -587,11 +587,16 @@
     const founder=el('strong',verifiedName||label),badge=el('span','✓');
     badge.className='wf-founder-check';badge.setAttribute('role','img');badge.setAttribute('aria-label',label);badge.title=label;
     badge.hidden=navigator.onLine===false;founder.append(badge);nav.append(founder);
-    const signOut=btn(nav,4,async()=>{const previous=token;forget();clear();login();
-      await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
+    const logoutWords={ar:'هل تريد تسجيل الخروج من إدارة WOW على هذا الجهاز؟',en:'Sign out of WOW Admin on this device?',
+      tr:'Bu cihazda WOW yönetiminden çıkış yapılsın mı?',fr:'Se déconnecter de WOW Admin sur cet appareil ?',ru:'Выйти из WOW Admin на этом устройстве?'};
+    window.WFPlatformLogout=async()=>{
+      if(!token||!window.confirm(logoutWords[lang.value]))return;
+      const previous=token;forget();clear();login();
+      try{await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
         headers:{apikey:config.publishableKey,'Content-Type':'application/json',Authorization:'Bearer '+previous},
-        body:JSON.stringify({action:'auth.signOut'})}).then(reply=>{if(!reply.ok)throw failure(2);});});
-    signOut.className='platform-signout';
+        body:JSON.stringify({action:'auth.signOut'})}).then(reply=>{if(!reply.ok)throw failure(2);});}
+      catch(error){fail(error);}
+    };
     const preferences=el('section'),account=el('section');
     preferences.className=account.className='platform-settings-group';
     const preferred=el('div');preferred.className='platform-settings-preferences';
@@ -600,6 +605,7 @@
     window.WFPlatformAudio?.mount(preferred);
     preferences.hidden=!preferred.childElementCount;
     account.append(el('h3',settingsText[2]));if(verifiedName)account.append(el('bdi',verifiedName));passwordSettings(account);
+    const signOut=btn(account,4,()=>window.WFPlatformLogout?.());signOut.className='platform-signout platform-signout-settings';
     panels.settings.append(preferences,account);
     supportInbox?.dispose();
     supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts});
@@ -650,10 +656,9 @@
         }
       },{rootMargin:'100px 0px'}):null;
     for(const company of state.companies){
-      const row=el('article'),active=company.status==='active',link=el('a',t(16));
-      const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',company.id);
+      const row=el('article'),active=company.status==='active',link=el('button',t(16));
       row.className='platform-company-card platform-company-card-v2';link.className='platform-company-launch';
-      link.href=url.href;
+      link.type='button';link.onclick=()=>window.WFPlatformCompanyInspector?.open({company,request,language:lang.value});
       const name=el('strong',company.name),stateLabel=el('span',t(active?7:8)),accountLabel=el('span',t(13)+' · '+company.accounts);
       const hero=el('div'),pills=el('div'),actions=el('div'),summaryLine=el('div');
       hero.className='platform-company-hero';pills.className='platform-company-pills';
@@ -703,8 +708,7 @@
       };
       details.append(summary,tools);row.append(details);
       brandList?.attach(row,details,company);
-      const accounts=el('a',sale(12)),accountsUrl=new URL(url);
-      accountsUrl.searchParams.set('wf-accounts','cloud');accountsUrl.hash='settings';accounts.href=accountsUrl.href;accounts.className='platform-tool-link platform-tool-accounts';tools.append(accounts);
+      const accounts=el('button',sale(12));accounts.type='button';accounts.onclick=()=>window.WFPlatformCompanyInspector?.open({company,request,language:lang.value,section:'accounts'});accounts.className='platform-tool-link platform-tool-accounts';tools.append(accounts);
       const editArea=el('section');editArea.className='platform-inline-editor';
       function editCompany(trigger,renaming){
         const editor=el('form'),title=el('strong',renaming?word(6):t(17)),cancel=el('button',word(5));
@@ -768,7 +772,8 @@
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',workspace);location.replace(url.href);
     });form.querySelector('button').textContent=labels[4];
   }
-  function render(){document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);const ws=new URLSearchParams(location.search).get('setup');if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws))enroll(ws);else if(token)list().catch(fail);else login();}
+  function render(){document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);const ws=new URLSearchParams(location.search).get('setup');if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws))enroll(ws);else if(token)list().catch(fail);else if(canRemember()&&saved()){content.replaceChildren(el('p',({ar:'يتم فتح إدارة WOW بأمان…',en:'Opening WOW Admin securely…',tr:'WOW yönetimi güvenle açılıyor…',fr:"Ouverture sécurisée de WOW Admin…",ru:'Безопасное открытие WOW Admin…'})[lang.value]));}
+    else login();}
   function lockDisconnected(){
     clear();if(!new URL(location.href).searchParams.has('setup'))login();status.textContent=word(2);
   }
@@ -779,5 +784,5 @@
     if((event.key===trustKey||event.key===null)&&rememberedId&&saved()?.id!==rememberedId){clear();login();}
   });
   window.addEventListener('online',()=>{if(token)list().catch(fail);else resume().catch(fail);});
-  lang.onchange=()=>{if(failureIndex!=null)status.textContent=word(failureIndex);render();};render();resume().catch(fail);
+  lang.onchange=()=>{if(failureIndex!=null)status.textContent=word(failureIndex);render();};render();resume().catch(error=>{if(!token&&!(new URLSearchParams(location.search)).has('setup'))login();fail(error);});
 })();
