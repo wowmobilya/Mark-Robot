@@ -1,0 +1,15 @@
+.wf-voice-host[hidden]{display:none!important}
+.wf-voice-host{position:sticky;bottom:.35rem;z-index:25;display:block;margin:.4rem .65rem;pointer-events:none}
+.wf-voice-panel{pointer-events:auto;border:1px solid var(--border,#8fa9b1);border-radius:18px;padding:.65rem .85rem;
+ background:var(--card,var(--bg2,#fff));box-shadow:0 9px 30px rgba(0,0,0,.16);color:var(--text,#22313f);
+ display:grid;gap:.45rem;max-width:min(500px,100%);margin-inline:auto}
+.wf-voice-heading{font-weight:700;overflow-wrap:anywhere}
+.wf-voice-panel p{margin:0;line-height:1.4}
+.wf-voice-panel small{color:var(--text2,#64748b);font-size:.82rem}
+.wf-voice-controls{display:flex;gap:.45rem;flex-wrap:wrap;align-items:center}
+.wf-voice-button{min-height:40px;min-width:78px;flex:1 1 auto}
+.wf-voice-accept{background:var(--primary,#317c91);color:#fff}
+.wf-voice-launch{min-height:38px;white-space:nowrap}
+.wf-voice-launch:disabled{opacity:.5}
+@media(max-width:779px){.wf-voice-host{margin:.3rem;bottom:0}.wf-voice-panel{width:100%;max-width:100%;border-radius:14px}
+.wf-voice-launch{padding:.4rem .55rem}}
