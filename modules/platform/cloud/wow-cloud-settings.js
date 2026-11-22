@@ -162,8 +162,42 @@
       for(const control of box.querySelectorAll('button'))control.disabled=busy;conflictHost.append(box);
     }
   }
+
+  // Advisory, authenticated session diagnostics. Never used as a device identity or authorization proof.
+  const observationCopy={
+    ar:'قد تظهر لإدارة WOW معلومات تقريبية عن نوع جهازك ونظامه ومتصفحه. عنوان IP لدى مزوّد الخدمة قد يخص خادم الوساطة، وليس موقع هاتفك.',
+    en:'WOW administration can see approximate device, system and browser details. The provider IP may belong to a relay server, not your phone.',
+    tr:'WOW yönetimi yaklaşık cihaz, sistem ve tarayıcı bilgilerini görebilir. Sağlayıcı IP adresi telefonunuza değil aracı sunucuya ait olabilir.',
+    fr:'L’administration WOW peut voir le type d’appareil, le système et le navigateur estimés. L’IP du fournisseur peut être celle du serveur relais.',
+    ru:'Администрации WOW доступны приблизительные сведения об устройстве, системе и браузере. IP провайдера может принадлежать промежуточному серверу.'
+  };
+  let observationKey='',observationAttempt=0;
+  function observeAuthenticatedDevice(state){
+    if(!state?.authenticated||!state.userId||!state.workspaceId||!Number.isSafeInteger(state.authGeneration)||
+      root.navigator?.onLine===false||!root.navigator)return;
+    const key=[state.workspaceId,state.userId,state.authGeneration].join(':');
+    if(key===observationKey&&Date.now()-observationAttempt<3600000)return;
+    const userAgent=String(root.navigator.userAgent||'').slice(0,512);
+    const tablet=/iPad|Tablet|Android(?!.*Mobile)/i.test(userAgent)||
+      root.navigator.platform==='MacIntel'&&root.navigator.maxTouchPoints>1;
+    const phone=!tablet&&(root.navigator.userAgentData?.mobile===true||/iPhone|iPod|Android.*Mobile|Mobile/i.test(userAgent));
+    const formFactor=tablet?'tablet':phone?'phone':userAgent?'desktop':'unknown';
+    const platformName=String(root.navigator.userAgentData?.platform||
+      (/Android/i.test(userAgent)?'Android':/iPad|iPhone|iPod/i.test(userAgent)?'iOS':
+      /Windows/i.test(userAgent)?'Windows':/Macintosh|Mac OS X/i.test(userAgent)?'macOS':
+      /Linux/i.test(userAgent)?'Linux':'Unknown')).slice(0,80);
+    const browserMatch=userAgent.match(/(?:Edg|OPR|FxiOS|Firefox|CriOS|Chrome|Safari)\//i);
+    const browserNames={edg:'Edge',opr:'Opera',fxios:'Firefox',firefox:'Firefox',crios:'Chrome',chrome:'Chrome',safari:'Safari'};
+    const browserName=browserNames[browserMatch?.[0]?.slice(0,-1)?.toLowerCase()]||'Unknown';
+    const dimension=value=>Number.isInteger(value)&&value>=0&&value<=10000?value:null;
+    observationKey=key;observationAttempt=Date.now();
+    // An observation is best-effort: no sign-in, navigation, or sync action waits for it.
+    Promise.resolve().then(()=>client.request('device.observe',{formFactor,platformName,browserName,
+      userAgent,screenWidth:dimension(root.screen?.width),screenHeight:dimension(root.screen?.height)})).catch(()=>{});
+  }
   function updateStatus(){
     if(!metrics)return;bindEngine();const state=client.getSnapshot();syncState=engineRef?.getSnapshot?.()||syncState;
+    observeAuthenticatedDevice(state);
     const engineConnection=syncState?.connection||syncState?.status,engineError=syncState?.lastError||syncState?.error;
     const syncKeys={syncing:'syncing',error:'syncError',conflict:'syncConflict',paused:'syncPaused','auth-required':'syncAuth','scope-mismatch':'syncScope',offline:'offline'};
     const connectionKey=syncKeys[engineConnection]||(state.connection==='signed-out'?'signedOut':['online','offline','checking','unconfigured'].includes(state.connection)?state.connection:'idle');
@@ -204,6 +238,7 @@
       const heading=label('h3','employeeLink'),row=make('div','wf-cloud-share');const input=make('input','fi');input.readOnly=true;input.type='text';input.dir='ltr';input.value=client.entryUrl();input.setAttribute('aria-label',text('employeeLink'));
       row.append(input,button('copyLink',async()=>{try{await root.navigator.clipboard.writeText(input.value);showNotice('copied');}catch(_){input.focus();input.select();}}));details.append(heading,row);
     }
+    if(state.authenticated)details.append(make('p','wf-cloud-muted',observationCopy[lang()]||observationCopy.ar));
     if((state.connection==='offline'||engineConnection==='offline')&&!client.isRemote())details.append(label('p','savedOffline','wf-cloud-muted'));
     if(engineConnection==='scope-mismatch'&&!engineError)details.append(label('p','scopeMismatch','wf-cloud-muted'));
     if(syncState?.linked&&!client.isRemote())details.append(label('p','restoreHint','wf-cloud-muted'));

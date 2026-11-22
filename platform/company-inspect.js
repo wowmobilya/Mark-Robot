@@ -33,9 +33,27 @@
       summary:'Главная',companies:'Компании',products:'Товары',invoices:'Счета',payments:'Платежи',accounts:'Аккаунты',settings:'Настройки',audit:'Журнал',
       'gallery-orders':'Заказы галереи','gallery-listings':'Каталог',files:'Файлы',calls:'Звонки',devices:'Устройства и сеансы'}
   };
-  const sections=['summary','companies','products','invoices','payments','accounts','gallery-orders','gallery-listings','files','calls','settings','audit'];
+  const sections=['summary','companies','products','invoices','payments','accounts','gallery-orders','gallery-listings','files','calls','settings','audit','devices'];
   const icons={summary:'⌂',companies:'▦',products:'◈',invoices:'▤',payments:'◉',accounts:'♙',
-    'gallery-orders':'▣','gallery-listings':'◫',files:'▧',calls:'⌕',settings:'⚙',audit:'≡'};
+    'gallery-orders':'▣','gallery-listings':'◫',files:'▧',calls:'⌕',settings:'⚙',audit:'≡',devices:'▤'};
+
+  const deviceCopy={
+    ar:{warning:'هذه مؤشرات تقنية تقديرية وليست إثباتًا لهوية الجهاز أو موقعه. عنوان IP من اتصال Supabase وقد يكون عنوان خادم WOW الوسيط. الجلسة غير المغلقة لا تعني أن الجهاز متصل الآن.',
+      phone:'هاتف',tablet:'تابلت',desktop:'كمبيوتر',unknown:'جهاز غير معروف',notReported:'لم يُرسل الجهاز معلوماته بعد',
+      account:'الحساب',device:'نوع الجهاز المبلّغ عنه',system:'نظام الجهاز',browser:'المتصفح',ip:'IP اتصال مزوّد الخدمة',started:'بداية الجلسة',last:'آخر نشاط مسجّل',reported:'آخر تقرير',status:'الجلسة',closed:'مغلقة',notClosed:'لم تُغلق',resolution:'أبعاد الشاشة'},
+    en:{warning:'These are approximate technical hints, not proof of device identity or location. Supabase IP may belong to the WOW relay server. An unclosed session does not mean the device is online.',
+      phone:'Phone',tablet:'Tablet',desktop:'Computer',unknown:'Unknown device',notReported:'No client report yet',
+      account:'Account',device:'Client-reported device',system:'Platform',browser:'Browser',ip:'Provider connection IP',started:'Session started',last:'Last recorded activity',reported:'Last report',status:'Session',closed:'Closed',notClosed:'Not closed',resolution:'Screen size'},
+    tr:{warning:'Bu bilgiler yaklaşık teknik ipuçlarıdır; cihaz kimliği veya konum kanıtı değildir. Supabase IP adresi WOW ara sunucusuna ait olabilir. Açık oturum çevrimiçi anlamına gelmez.',
+      phone:'Telefon',tablet:'Tablet',desktop:'Bilgisayar',unknown:'Bilinmeyen cihaz',notReported:'Cihaz henüz bilgi göndermedi',
+      account:'Hesap',device:'Bildirilen cihaz',system:'İşletim sistemi',browser:'Tarayıcı',ip:'Sağlayıcı bağlantı IP',started:'Oturum başlangıcı',last:'Son kayıtlı etkinlik',reported:'Son rapor',status:'Oturum',closed:'Kapalı',notClosed:'Kapatılmadı',resolution:'Ekran boyutu'},
+    fr:{warning:'Ces indications techniques sont approximatives, et ne prouvent ni l’identité ni la localisation. L’IP Supabase peut désigner le relais WOW. Une session non fermée ne prouve pas une connexion active.',
+      phone:'Téléphone',tablet:'Tablette',desktop:'Ordinateur',unknown:'Appareil inconnu',notReported:'Aucun rapport du client',
+      account:'Compte',device:'Appareil déclaré',system:'Système',browser:'Navigateur',ip:'IP connexion fournisseur',started:'Début de session',last:'Dernière activité enregistrée',reported:'Dernier rapport',status:'Session',closed:'Fermée',notClosed:'Non fermée',resolution:'Taille écran'},
+    ru:{warning:'Это приблизительные технические сведения, не подтверждающие личность или местоположение. IP Supabase может принадлежать серверу WOW. Незакрытая сессия не означает, что устройство в сети.',
+      phone:'Телефон',tablet:'Планшет',desktop:'Компьютер',unknown:'Неизвестное устройство',notReported:'Нет отчёта от клиента',
+      account:'Аккаунт',device:'Сообщённое устройство',system:'Система',browser:'Браузер',ip:'IP провайдера',started:'Начало сессии',last:'Последняя активность',reported:'Последний отчёт',status:'Сессия',closed:'Закрыта',notClosed:'Не закрыта',resolution:'Размер экрана'}
+  };
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=String(text);return n;};
   const clean=(val)=>{
     if(val==null)return '—';
@@ -99,6 +117,32 @@
       }
       return item;
     }
+
+    function deviceRow(record){
+      const w=deviceCopy[language]||deviceCopy.ar;
+      const item=el('article','wf-inspect-record wf-inspect-device'),top=el('div','wf-inspect-device-head'),
+        icon=el('span','wf-inspect-device-icon'),title=el('div','wf-inspect-device-name');
+      const type=['phone','tablet','desktop'].includes(record.reportedDevice)?record.reportedDevice:'unknown';
+      icon.textContent={phone:'▯',tablet:'▣',desktop:'▤',unknown:'◇'}[type];
+      icon.setAttribute('aria-hidden','true');
+      title.append(el('strong','',clean(record.name||record.username)),el('small','',record.reportedAt?w[type]:w.notReported));
+      top.append(icon,title);item.append(top);
+      const grid=el('dl','wf-inspect-record-data');
+      const rows=[
+        [w.account,record.username],[w.device,record.reportedAt?w[type]:null],
+        [w.system,record.reportedPlatform],[w.browser,record.reportedBrowser],
+        [w.resolution,record.reportedWidth!=null&&record.reportedHeight!=null?
+          record.reportedWidth+' × '+record.reportedHeight:null],
+        [w.ip,record.providerIp],[w.status,record.closedAt?w.closed:w.notClosed],
+        [w.started,date(record.startedAt)],[w.last,date(record.lastActivityAt)],
+        [w.reported,record.reportedAt?date(record.reportedAt):w.notReported]
+      ];
+      for(const [caption,value] of rows){
+        const label=el('dt','',caption),valueNode=el('dd','',clean(value));
+        valueNode.dir='auto';grid.append(label,valueNode);
+      }
+      item.append(grid);return item;
+    }
     function summary(data){
       const s=data.summary||{},w=data.workspace||{},grid=el('div','wf-inspect-summary');
       for(const [label,value] of [[texts.accounts,s.accounts],[texts.devices,s.registeredDevices],[texts.sessions,s.unclosedSessions],
@@ -116,11 +160,12 @@
     function render(data){
       rows=data.items||[];lastTotal=Number(data.total)||0;results.replaceChildren();pages.replaceChildren();
       if(current==='summary'){summary(data);return;}
+      if(current==='devices')results.append(el('p','wf-inspect-device-warning',(deviceCopy[language]||deviceCopy.ar).warning));
       if(!rows.length){results.append(el('p','wf-inspect-empty',texts.empty));return;}
       const input=el('input','wf-inspect-search');input.type='search';input.placeholder=texts.search;input.setAttribute('aria-label',texts.search);
       const list=el('div','wf-inspect-record-list');results.append(input,list);
       const paint=()=>{const q=input.value.trim().toLocaleLowerCase();list.replaceChildren();
-        for(const row of rows)if(!q||JSON.stringify(row).toLocaleLowerCase().includes(q))list.append(rowItem(row));
+        for(const row of rows)if(!q||JSON.stringify(row).toLocaleLowerCase().includes(q))list.append(current==='devices'?deviceRow(row):rowItem(row));
         if(!list.childElementCount)list.append(el('p','wf-inspect-empty',texts.empty));
       };
       input.oninput=paint;paint();
