@@ -164,11 +164,11 @@
     });
   }
   const salesWords={
-    ar:['الحد الأقصى للمستخدمين النشطين','حد تخزين الملفات','وحدة التخزين','سعر الاشتراك','العملة','مدة الاشتراك بالأيام','بلا حد','المستخدمون النشطون','تخزين الملفات الخاصة','تسجيلات الإشعارات','المستخدم','المتبقي','إدارة حسابات الشركة','اترك الحد فارغًا للسماح باستخدام غير محدود.','بدون خطة','غير متاح','حُفظت الخطة','حُفظ الاشتراك','الحد المسموح'],
-    en:['Active user limit','File storage limit','Storage unit','Subscription price','Currency','Duration in days','Unlimited','Active users','Private file storage','Notification registrations','Used','Available','Manage company accounts','Leave a limit blank for unlimited use.','No plan','Unavailable','Plan saved','Subscription saved','Allowed'],
-    tr:['Etkin kullanıcı sınırı','Dosya depolama sınırı','Depolama birimi','Abonelik fiyatı','Para birimi','Gün olarak süre','Sınırsız','Etkin kullanıcılar','Özel dosya depolama','Bildirim kayıtları','Kullanılan','Kalan','Şirket hesaplarını yönet','Sınırsız kullanım için sınırı boş bırakın.','Plan yok','Kullanılamıyor','Plan kaydedildi','Abonelik kaydedildi','İzin verilen'],
-    fr:['Limite de comptes actifs','Limite de stockage des fichiers','Unité de stockage','Prix de l’abonnement','Devise','Durée en jours','Illimité','Comptes actifs','Stockage des fichiers privés','Inscriptions aux notifications','Utilisé','Disponible','Gérer les comptes de la société','Laissez une limite vide pour un usage illimité.','Sans formule','Indisponible','Formule enregistrée','Abonnement enregistré','Autorisé'],
-    ru:['Лимит активных пользователей','Лимит хранилища файлов','Единица объёма','Цена подписки','Валюта','Срок в днях','Без ограничений','Активные пользователи','Хранилище частных файлов','Регистрации уведомлений','Использовано','Доступно','Управление аккаунтами компании','Оставьте лимит пустым для использования без ограничений.','Без тарифа','Недоступно','Тариф сохранён','Подписка сохранена','Лимит']
+    ar:['الحد الأقصى للمستخدمين النشطين','حد تخزين الملفات','وحدة التخزين','سعر الاشتراك','العملة','مدة الاشتراك بالأيام','بلا حد','المستخدمون النشطون','تخزين الملفات الخاصة','الأجهزة المرتبطة','المستخدم','المتبقي','إدارة حسابات الشركة','اترك الحد فارغًا للسماح باستخدام غير محدود.','بدون خطة','غير متاح','حُفظت الخطة','حُفظ الاشتراك','الحد المسموح'],
+    en:['Active user limit','File storage limit','Storage unit','Subscription price','Currency','Duration in days','Unlimited','Active users','Private file storage','Linked employee phones','Used','Available','Manage company accounts','Leave a limit blank for unlimited use.','No plan','Unavailable','Plan saved','Subscription saved','Allowed'],
+    tr:['Etkin kullanıcı sınırı','Dosya depolama sınırı','Depolama birimi','Abonelik fiyatı','Para birimi','Gün olarak süre','Sınırsız','Etkin kullanıcılar','Özel dosya depolama','Bağlı çalışan telefonları','Kullanılan','Kalan','Şirket hesaplarını yönet','Sınırsız kullanım için sınırı boş bırakın.','Plan yok','Kullanılamıyor','Plan kaydedildi','Abonelik kaydedildi','İzin verilen'],
+    fr:['Limite de comptes actifs','Limite de stockage des fichiers','Unité de stockage','Prix de l’abonnement','Devise','Durée en jours','Illimité','Comptes actifs','Stockage des fichiers privés','Téléphones employés associés','Utilisé','Disponible','Gérer les comptes de la société','Laissez une limite vide pour un usage illimité.','Sans formule','Indisponible','Formule enregistrée','Abonnement enregistré','Autorisé'],
+    ru:['Лимит активных пользователей','Лимит хранилища файлов','Единица объёма','Цена подписки','Валюта','Срок в днях','Без ограничений','Активные пользователи','Хранилище частных файлов','Привязанные телефоны сотрудников','Использовано','Доступно','Управление аккаунтами компании','Оставьте лимит пустым для использования без ограничений.','Без тарифа','Недоступно','Тариф сохранён','Подписка сохранена','Лимит']
   };
   const addonWords={
     ar:['دقائق صوت شهريًا','دقائق فيديو شهريًا','هواتف إضافية للموظفين','مضاعفة دقائق المكالمات والتخزين',
@@ -270,8 +270,9 @@
       const tier=plans.find(p=>p.id===select.value),months=Number(tier?.durationDays||0)<=30?1:Number(tier?.durationDays||0)<=365?12:24;
       const base=Number(tier?.price||0),currency=tier?.currency||'USD';
       const fmt=n=>new Intl.NumberFormat(lang.value,{style:'currency',currency:'USD',maximumFractionDigits:2}).format(n);
-      pricing.textContent=addon(7)+': '+fmt(monthCharge)+' · '+addon(8)+': '+fmt(base+(currency==='USD'?monthCharge*months:0))+
-        (currency==='USD'?'':' · '+sale(15));
+      pricing.textContent=addon(7)+': '+fmt(monthCharge)+
+        (currency==='USD'&&tier?' · '+addon(8)+': '+fmt(base+monthCharge*months):'');
+
     };
     extras.addEventListener('input',recalc);doubled.addEventListener('change',recalc);
     select.addEventListener('change',recalc);recalc();
