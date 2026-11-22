@@ -108,18 +108,18 @@
       if(disposed||loading)return;loading=true;const run=++generation;
       if(!silent){status.textContent=text('loading');status.dataset.type='';}
       try{
-        let cached=false;
+        let cached=false,cachedAt=null;
         if(route==='gallery'||route==='gallery-studio'){
           const result=await pages('gallery.snapshot',{manage:route==='gallery-studio'});
-          if(!alive()||run!==generation)return;products=result.items;settings=core.presentation(result.presentation);cached=result.cached===true;
+          if(!alive()||run!==generation)return;products=result.items;settings=core.presentation(result.presentation);cached=result.cached===true;cachedAt=result.cachedAt||null;
         }else{
           const result=await pages(route==='my-orders'?'gallery.personal':'gallery.orders',route==='gallery-orders'?{scope:'staff'}:{});
-          if(!alive()||run!==generation)return;orders=result.items;profile=result.print||{version:0};cached=result.cached===true;
+          if(!alive()||run!==generation)return;orders=result.items;profile=result.print||{version:0};cached=result.cached===true;cachedAt=result.cachedAt||null;
         }
         if(!alive()||run!==generation)return;
         status.textContent=cached?text('savedCopy'):'';status.dataset.type=cached?'pending':'';
         status.dataset.source=cached?'device':'server';
-        status.title=cached&&result.cachedAt?new Date(result.cachedAt).toLocaleString(language):'';
+        status.title=cached&&cachedAt?new Date(cachedAt).toLocaleString(language):'';
         if(!silent||(!dialogs.size&&!dirty&&!main.contains(doc.activeElement)))render();
       }catch(reason){
         if(!silent)showError(reason);
