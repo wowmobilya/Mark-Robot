@@ -79,6 +79,8 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     offlineSigningKey:()=>call('/rest/v1/rpc/wow_offline_owner_signing_key',{body:{},kind:'rpc'}),
     supportRpc:(actor,action,data)=>call('/rest/v1/rpc/wow_support_service',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
     requirePlatformFounder:actor=>call('/rest/v1/rpc/wow_platform_require',{body:{p_user:actor.userId,p_session:actor.sessionId},kind:'rpc'}),
+    inspectCompany:(actor,workspaceId,section,offset)=>call('/rest/v1/rpc/wow_platform_inspect',{
+      body:{p_user:actor.userId,p_session:actor.sessionId,p_workspace:workspaceId,p_section:section,p_offset:offset},kind:'rpc'}),
     platformRpc:(actor,action,data)=>call('/rest/v1/rpc/'+(/^(limits|plans)\./.test(action)?'wow_platform_limits':'wow_platform_service'),{
       body:{p_user:actor.userId,p_session:actor.sessionId,p_action:/^(limits|plans)\./.test(action)?'platform.'+action:action,p_data:data},kind:'rpc'}),
     moduleRpc:(name,action,data)=>{
