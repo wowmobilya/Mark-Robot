@@ -380,7 +380,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
         return {rtl:getComputedStyle(panel).direction==='rtl',width:innerWidth,scroll:document.documentElement.scrollWidth,values,
           controls:[...panel.querySelectorAll('input,select,button')].map(node=>node.getBoundingClientRect().height)};
       });
-      assert(metrics.rtl&&metrics.scroll<=width,JSON.stringify(metrics));assert.equal(metrics.values.length,3);
+      assert(metrics.rtl&&metrics.scroll<=width,JSON.stringify(metrics));assert.equal(metrics.values.length,5,'users, storage, linked devices, voice and video have separate usage rows');
       for(const row of metrics.values){assert.equal(row.length,3);for(const value of row)assert(value.caption&&value.width>=42&&value.left>=0&&value.right<=width);assert(row[0].left>row[1].left&&row[1].left>row[2].left);}
       assert(metrics.controls.every(height=>height>=44));
     }
