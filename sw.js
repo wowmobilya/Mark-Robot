@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=3');
 importScripts('./modules/platform/push/wow-push-sw.js?v=3');
-const CACHE_NAME = 'wow-furniture-v217-cloud';
+const CACHE_NAME = 'wow-furniture-v218-cloud';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -18,7 +18,7 @@ const urlsToCache = [
   './modules/gallery/exports.js?v=1',
   './modules/gallery/public-share.js?v=1',
   './modules/gallery/music.js?v=1',
-  './modules/gallery/workspace.js?v=2',
+  './modules/gallery/workspace.js?v=3',
   './assets/gallery/wow-ambient-v1.mp3',
   './modules/gallery/styles.css?v=2',
   './modules/files/workspace.js?v=1',
@@ -122,7 +122,7 @@ const urlsToCache = [
   './modules/platform/push/wow-push-settings.css?v=1',
   './modules/platform/push/wow-push-sw.js?v=3',
   './accounts-access.js?v=6',
-  './accounts-settings.js?v=3',
+  './accounts-settings.js?v=4',
   './accounts-access.css?v=1',
   './accounts-settings.css?v=1',
 
