@@ -101,9 +101,25 @@
     const label=el('label',t(index)),input=el('input');input.type=type;label.append(input);container.append(label);return input;
   }
   function btn(container,index,fn){
-    const b=el('button',t(index));b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn();}catch(reason){fail(reason);}finally{b.disabled=false;}};container.append(b);return b;
+    const b=el('button',t(index));b.type='button';b.classList.add('platform-interactive');
+    b.onclick=async()=>{
+      if(b.disabled)return;
+      b.disabled=true;b.dataset.phase='busy';b.setAttribute('aria-busy','true');
+      try{await fn();}catch(reason){fail(reason);}
+      finally{b.disabled=false;b.dataset.phase='idle';b.removeAttribute('aria-busy');}
+    };container.append(b);return b;
   }
-  function submit(form,index,fn){const b=el('button',t(index));b.type='submit';form.append(b);form.onsubmit=async e=>{e.preventDefault();if(b.disabled)return;b.disabled=true;try{await fn();}catch(reason){fail(reason);}finally{b.disabled=false;}};}
+  function submit(form,index,fn){
+    const b=el('button',t(index));b.type='submit';b.className='platform-interactive platform-submit';
+    form.append(b);
+    form.onsubmit=async e=>{
+      e.preventDefault();if(b.disabled)return;
+      b.disabled=true;b.dataset.phase='busy';b.setAttribute('aria-busy','true');
+      try{await fn();}catch(reason){fail(reason);}
+      finally{b.disabled=false;b.dataset.phase='idle';b.removeAttribute('aria-busy');}
+    };
+    return b;
+  }
   function login(){
     window.WFPlatformShell?.reset();
     headerActions.hidden=true;headerActions.replaceChildren();
@@ -305,10 +321,12 @@
       card.append(options);host.append(card);options.className='platform-device-options';
       for(const action of device.blocked?['unblock']:['block','release']){
         const releasing=action==='release',blocking=action==='block',actionName=releasing?w[2]:b[blocking?0:1];
-        const trigger=el('button',actionName);trigger.type='button';options.append(trigger);
+        const trigger=el('button',actionName);trigger.type='button';trigger.className='platform-device-action';trigger.dataset.action=action;options.append(trigger);
         trigger.onclick=()=>{
           options.hidden=true;
           const form=el('form'),cancel=el('button',word(5)),confirm=el('button',releasing?w[4]:actionName);form.className='platform-device-confirm';
+          cancel.className='platform-action-cancel';confirm.className='platform-action-confirm';
+          confirm.dataset.action=action;
           form.setAttribute('aria-label',actionName+' · '+identity.textContent);cancel.type='button';confirm.type='submit';
           const close=()=>{form.remove();options.hidden=false;trigger.focus();};
           cancel.onclick=close;form.onkeydown=e=>{if(e.key==='Escape'&&!confirm.disabled){e.preventDefault();close();}};
@@ -470,6 +488,7 @@
     const preferred=el('div');preferred.className='platform-settings-preferences';
     preferences.append(el('h3',settingsText[1]),preferred);
     window.WFPlatformPreferences?.mount(preferred);
+    window.WFPlatformAudio?.mount(preferred);
     preferences.hidden=!preferred.childElementCount;
     account.append(el('h3',settingsText[2]));if(verifiedName)account.append(el('bdi',verifiedName));passwordSettings(account);
     panels.settings.append(preferences,account);
@@ -576,6 +595,7 @@
       const editArea=el('section');editArea.className='platform-inline-editor';
       function editCompany(trigger,renaming){
         const editor=el('form'),title=el('strong',renaming?word(6):t(17)),cancel=el('button',word(5));
+        cancel.className='platform-action-cancel';
         editArea.replaceChildren(editor);editor.append(title);editor.setAttribute('aria-label',title.textContent);
         let input;
         if(renaming){input=field(editor,5);input.value=company.name;input.required=true;input.maxLength=100;}
@@ -593,6 +613,7 @@
         (input||cancel).focus();
       }
       const statusBtn=btn(tools,active?9:10,()=>editCompany(statusBtn,false));statusBtn.className='platform-tool platform-tool-status';
+      statusBtn.dataset.action=active?'suspend':'activate';
       const rename=btn(tools,5,()=>editCompany(rename,true));rename.textContent=word(6);rename.className='platform-tool platform-tool-rename';
       const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company,paintActivation));activation.textContent=activationWords[lang.value][0];activation.className='platform-tool platform-tool-activation';
       const devicesBox=el('section'),devicesToggle=btn(tools,21,()=>companyDevices(devicesBox,company.id));
