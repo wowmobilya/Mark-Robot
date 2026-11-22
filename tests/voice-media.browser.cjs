@@ -48,7 +48,7 @@ const {chromium}=require('playwright');
        const api={getSession:()=>({userId:me,authenticated:true}),realtimeCredentials:async()=>({}),
          async request(name,data){
            const action=name.slice('chat.call.'.length);peer.events.push(action);
-           if(action==='status'&&peer.denyStatus)throw Object.assign(new Error('ACCESS_DENIED'),{code:'ACCESS_DENIED',status:403});
+           if(['status','heartbeat'].includes(action)&&peer.denyStatus)throw Object.assign(new Error('ACCESS_DENIED'),{code:'ACCESS_DENIED',status:403});
            if(action==='start'&&peer.deferStart)await new Promise(resolve=>{peer.resumeStart=resolve;});
            switch(action){
              case 'start':current={id:newId(),roomId:room,callerId:me,kind:data.kind,status:'ringing',
@@ -107,6 +107,19 @@ const {chromium}=require('playwright');
        assert.equal(await a.evaluate(()=>manager.cameraToggle()),false);
        assert.equal(await a.evaluate(()=>manager.cameraToggle()),true);
      }
+     // Five foreground polls include the ordinary 14-second keepalive window.
+     const actions=await a.evaluate(async()=>{
+       const original=Date.now,base=original(),start=events.length;
+       try{
+         for(let tick=1;tick<=5;tick++){
+           Date.now=()=>base+tick*3500;
+           await manager.poll();
+         }
+       }finally{Date.now=original;}
+       return events.slice(start).filter(action=>action==='status'||action==='heartbeat');
+     });
+     assert.equal(actions.length,5,'each active poll needs one authenticated server snapshot');
+     assert(actions.includes('heartbeat'),'the heartbeat still renews the live call');
      const tracks=await a.evaluateHandle(()=>manager.getState().localStream.getTracks());
      await a.evaluate(()=>manager.finish());
      await b.waitForFunction(()=>!manager.getState().call);
@@ -131,7 +144,11 @@ const {chromium}=require('playwright');
    await a.evaluate(()=>manager.poll());
    assert.equal(await a.evaluate(()=>connections.at(-1).connectionState),'closed');
    const activeTracks=await a.evaluateHandle(()=>manager.getState().localStream.getTracks());
-   await a.evaluate(async()=>{window.denyStatus=true;await manager.poll();});
+   await a.evaluate(async()=>{
+     window.denyStatus=true;const original=Date.now,renewal=original()+60000;
+     try{Date.now=()=>renewal;await manager.poll();}finally{Date.now=original;}
+   });
+   assert.equal(await a.evaluate(()=>events.at(-1)),'heartbeat');
    assert.equal(await a.evaluate(()=>manager.getState().call),null);
    assert.equal(await activeTracks.evaluate(ts=>ts.every(t=>t.readyState==='ended')),true);
    await activeTracks.dispose();await b.evaluate(()=>manager.poll());

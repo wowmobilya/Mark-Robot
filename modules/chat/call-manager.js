@@ -218,8 +218,12 @@
   }
   async function refreshCall(){
    if(!call||busy)return;const cid=call.id;
+   // A heartbeat rechecks the same session and room membership and returns
+   // the full server snapshot, just like status. Use that snapshot on renewal.
+   const renew=local&&call.status==='active'&&Date.now()-heartAt>14000;
+   if(renew)heartAt=Date.now();
    try{
-    const row=await request('status',{callId:cid});
+    const row=await request(renew?'heartbeat':'status',{callId:cid});
     if(!alive||call?.id!==cid)return;
     if(!callValid(row)||!row.participants?.some(p=>p.id===me&&['invited','joined'].includes(p.status))){cleanup();fetchHistory();return;}
     call=row;
@@ -227,11 +231,15 @@
     for(const [uid,peer] of peers)if(!joined.has(uid))disconnectPeer(uid,peer);
     emit();
     if(call.status==='active'&&local)await openCallChannel();
-    if(local&&call.status==='active'&&Date.now()-heartAt>14000){
+    // Ringing can become active during the status request. Send its first
+    // heartbeat immediately, including when the call channel took time to join.
+    if(!renew&&local&&call.status==='active'&&Date.now()-heartAt>14000){
      heartAt=Date.now();request('heartbeat',{callId:cid}).catch(message);
     }
    }catch(error){
-    if(call?.id===cid&&([401,403].includes(error?.status)||['AUTH_REQUIRED','SESSION_EXPIRED','SESSION_REVOKED','ACCESS_DENIED','VOICE_CALL_UNAVAILABLE'].includes(error?.code)))cleanup();
+    if(call?.id===cid&&([401,403].includes(error?.status)||['AUTH_REQUIRED','SESSION_EXPIRED','SESSION_REVOKED','ACCESS_DENIED','VOICE_CALL_UNAVAILABLE'].includes(error?.code))){
+     cleanup();if(renew&&error?.code==='VOICE_CALL_UNAVAILABLE')fetchHistory();
+    }
     message(error);
    }
   }
