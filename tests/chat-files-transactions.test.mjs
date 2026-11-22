@@ -52,6 +52,23 @@ test('PostgreSQL enforces private files, membership, moderated writes, retries, 
     await access(outsider.call('chat.feed',{roomId}));
     await access(outsider.call('chat.upload',{...blob(),roomId}));
     await access(member.call('chat.member',{roomId,targetId:outsider.userId,operation:'add'}));
+    const shareFile={roomId,fileId:file.id,requestId:uu(),text:''};
+    await access(owner.call('chat.send',shareFile)); // Archived files are never offered.
+    await owner.call('files.archive',{ids:[file.id],archived:false});
+    await access(member.call('chat.send',{...shareFile,requestId:uu()}));
+    await access(other.call('chat.send',{...shareFile,requestId:uu()}));
+    const objectsBefore=paths.size,shared=await owner.call('chat.send',shareFile);
+    assert.deepEqual(await owner.call('chat.send',shareFile),shared);assert.equal(paths.size,objectsBefore);
+    const sharedFeed=(await member.call('chat.feed',{roomId,kind:'image'})).messages.find(m=>m.id===shared.id);
+    assert.equal(sharedFeed.asset.source,'files');assert.equal(sharedFeed.asset.name,'lamp-new.png');
+    assert.equal(sharedFeed.asset.path,undefined);
+    const readShared={roomId,messageId:shared.id};
+    assert.match((await member.call('chat.asset',readShared)).url,/files/);
+    await access(outsider.call('chat.asset',readShared));
+    await access(member.call('chat.forward',{roomId,sourceRoomId:roomId,messageId:shared.id,requestId:uu()}));
+    await owner.call('files.archive',{ids:[file.id],archived:true});
+    await access(member.call('chat.asset',readShared));
+    assert.equal((await member.call('chat.feed',{roomId})).messages.find(m=>m.id===shared.id).asset,null);
     const upload={...blob(),roomId};const {asset}=await member.call('chat.upload',upload);
     const first={roomId,text:'Photo @owner',assetId:asset.id,requestId:uu()};
     const {id}=await member.call('chat.send',first);assert.equal((await member.call('chat.send',first)).id,id);
