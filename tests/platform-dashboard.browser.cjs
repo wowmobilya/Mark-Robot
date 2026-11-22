@@ -280,6 +280,19 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     const pricing=page.locator('.platform-pricing-dashboard');
     await pricing.waitFor();
     assert.equal(await pricing.locator('.platform-pricing-card').count(),3);
+    // Original WhatsApp silhouette, direct Turkish phone and the exact
+    // user-supplied mailbox are all reachable without any admin action.
+    const contact=pricing.locator('.platform-sales-contact');
+    await contact.waitFor();
+    assert.equal(await contact.locator('.platform-sales-phone').getAttribute('href'),'tel:+905386263700');
+    assert.equal(await contact.locator('.platform-sales-email').getAttribute('href'),'mailto:www.mutez@gmail.com');
+    assert.equal(await contact.locator('.platform-sales-email').innerText(),'www.mutez@gmail.com');
+    assert.equal(await contact.locator('.platform-sales-whatsapp').getAttribute('href'),'https://wa.me/905386263700');
+    assert.equal(await contact.locator('svg.platform-whatsapp-logo path').count(),1);
+    assert.equal(await pricing.locator('.platform-plan-activate svg.platform-whatsapp-logo path').count(),3);
+    const logoPath=await pricing.locator('.platform-plan-activate svg.platform-whatsapp-logo path').first().getAttribute('d');
+    assert.match(logoPath,/^M17\.472 14\.382/);
+    assert.equal(await contact.locator('.platform-sales-email').evaluate(e=>e.getBoundingClientRect().height>=44),true);
     // Every activation opens the same Turkish WhatsApp number with the chosen
     // price and duration, never a silent billing or plan-assignment request.
     for(const [tier,amount,days] of [['month','100','30'],['year','1000','365'],['twoYears','1800','730']]){
@@ -320,6 +333,13 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
         })
       }));
       assert(!metrics.overflow,JSON.stringify({size,metrics}));
+      const contactMetrics=await contact.evaluate(panel=>({
+        bounds:panel.getBoundingClientRect().toJSON(),
+        links:[...panel.querySelectorAll('a')].map(a=>a.getBoundingClientRect().toJSON())
+      }));
+      assert(contactMetrics.bounds.left>=-1&&contactMetrics.bounds.right<=size.width+1,JSON.stringify({size,contactMetrics}));
+      assert(contactMetrics.links.every(link=>link.width>=44&&link.height>=44&&link.left>=-1&&link.right<=size.width+1),
+        JSON.stringify({size,contactMetrics}));
       assert(metrics.cards.every(c=>c.left>=-1&&c.right<=size.width+1&&c.buttonHeight>=44&&c.buttonLeft>=-1&&c.buttonRight<=size.width+1),
         JSON.stringify({size,metrics}));
     }
