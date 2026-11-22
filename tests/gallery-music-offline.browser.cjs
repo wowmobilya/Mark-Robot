@@ -11,7 +11,7 @@ const acorn=require('acorn');
 const {chromium}=require('playwright');
 const base=path.resolve(__dirname,'..'),track='/assets/gallery/wow-ambient-v1.mp3';
 const html=`<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" href="data:,"><link rel="stylesheet" href="/modules/gallery/styles.css?v=2">
+<link rel="icon" href="data:,"><link rel="stylesheet" href="/modules/gallery/styles.css?v=3">
 <style>:root{--brand-primary:#23556d;--text:#122d39;--text2:#54666c;--card:#fff;--border:#cad8dc}body{font:16px sans-serif;margin:20px}.page:not(.active){display:none}</style>
 </head><body><section class="page active"><main class="wfg-workspace"></main></section>
 <script>
@@ -53,7 +53,7 @@ async function fixtureFiles(){
   // All worker imports must already belong to the explicit shell list; no wildcard file server exists.
   for(const name of ['install-identity.js','modules/platform/push/wow-push-sw.js','modules/platform/push/wow-push-device.js'])assert.ok(names.has(name),'Missing allowed worker import '+name);
   await Promise.all([...files.values()].filter(file=>file.relative).map(async file=>{file.body=await fs.readFile(path.join(base,file.relative));}));
-  assert.ok(files.has(track));assert.ok(files.has('/modules/gallery/music.js?v=1'));assert.ok(files.has('/modules/gallery/styles.css?v=2'));
+  assert.ok(files.has(track));assert.ok(files.has('/modules/gallery/music.js?v=1'));assert.ok(files.has('/modules/gallery/styles.css?v=3'));
   const audio=files.get(track).body;assert.ok(audio.length>0&&audio.length<=200000);
   return {files,audio,cacheName:cache.value,digest:createHash('sha256').update(audio).digest('hex')};
 }
