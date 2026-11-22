@@ -19,6 +19,7 @@ function fixture(role='owner'){
   const {doc,body}=localDOM(),definitions=new Map(),opened=[],requests=[];
   let musicMounts=0;
   const win={document:doc,crypto:webcrypto,WFModules:{register:def=>definitions.set(def.id,def)},
+    showPage:route=>opened.push('main:'+route),
     WFGalleryCore:core,WFGalleryExports:exportsApi,
     WFGalleryMusic:{mount(){musicMounts++;return {dispose(){},updateLanguage(){}};}},
     WFAppIdentity:{sources:()=>({logo:''})},matchMedia:()=>({matches:true}),
@@ -41,11 +42,14 @@ test('catalog with no published products hides irrelevant actions and offers man
     assert.equal(f.musicMounts(),0,'Music belongs to the management route, not product browsing');
     const controls=descendants(f.container).filter(e=>e.tagName==='BUTTON');
     assert.ok(controls.some(e=>e.textContent==='Retry'));
+    const canonical=controls.find(e=>e.textContent==='Open WOW products');
+    assert.ok(canonical,'Primary WOW products must be accessible directly');
+    await canonical.fire('click');assert.deepEqual(f.opened,['main:products']);
     const management=controls.find(e=>e.textContent==='Showcase settings');
     assert.ok(management,'Owner can reach the existing management section');
     assert.ok(!controls.some(e=>/Download|Select all|Order cart|List/.test(e.textContent)));
     assert.equal(descendants(f.container).some(e=>e.tagName==='INPUT'&&e.type==='search'),false);
-    await management.fire('click');assert.deepEqual(f.opened,['gallery-studio']);
+    await management.fire('click');assert.deepEqual(f.opened,['main:products','gallery-studio']);
   }finally{handle.dispose();}
 });
 test('empty catalog for customers does not expose staff management',async()=>{
@@ -53,7 +57,7 @@ test('empty catalog for customers does not expose staff management',async()=>{
   try{
     await settle(()=>f.container.textContent.includes('لا توجد منتجات منشورة'));
     assert.equal(f.musicMounts(),0);
-    assert.ok(!descendants(f.container).some(e=>e.tagName==='BUTTON'&&e.textContent.includes('إدارة عرض')));
+    assert.ok(!descendants(f.container).some(e=>e.tagName==='BUTTON'&&/إدارة عرض|فتح منتجات WOW/.test(e.textContent)));
     assert.equal(f.requests[0].action,'gallery.snapshot');
     assert.equal(f.requests[0].payload.manage,false);
   }finally{handle.dispose();}
