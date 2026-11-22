@@ -1,0 +1,51 @@
+/* Read-only founder inspection with WOW company-program density. */
+.wf-inspect{position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:var(--bg,#f5f8fb);color:var(--text,#15242e);font-family:inherit}
+.wf-inspect,.wf-inspect *{box-sizing:border-box}
+.wf-inspect-top{position:relative;z-index:2;display:flex;align-items:center;gap:.75rem;flex-shrink:0;min-height:70px;padding:.65rem clamp(.7rem,2vw,1.5rem);background:var(--card,#fff);border-bottom:1px solid var(--border,#d8e1e5);box-shadow:0 2px 12px rgb(15 40 50 / .04)}
+.wf-inspect-top>img{width:42px;height:42px;object-fit:contain}
+.wf-inspect-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:.2rem}
+.wf-inspect-title>strong{font-size:clamp(1rem,2.5vw,1.2rem);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wf-inspect-title>small{font-size:.76rem;color:var(--text2,#64747e)}
+.wf-inspect-actions{display:flex;gap:.45rem;align-items:center}
+.wf-inspect :is(button,input){font:inherit;color:inherit}
+.wf-inspect button{cursor:pointer}
+.wf-inspect-top button,.wf-inspect-pages button{min-height:42px;border:1px solid var(--border,#d8e1e5);background:var(--ui-soft,#e9f2f5);border-radius:12px;padding:.5rem .75rem;font-size:.85rem;font-weight:750}
+.wf-inspect-top button:hover,.wf-inspect-pages button:not(:disabled):hover{border-color:var(--ui-accent,#3f7c94);color:var(--ui-accent,#3f7c94)}
+.wf-inspect :is(button,input):focus-visible{outline:3px solid var(--ui-accent,#3f7c94);outline-offset:2px}
+.wf-inspect button:disabled{cursor:default;opacity:.5}
+.wf-inspect-nav{display:flex;flex-shrink:0;align-items:stretch;gap:.3rem;overflow-x:auto;overscroll-behavior-inline:contain;padding:.55rem .65rem;background:var(--card,#fff);border-bottom:1px solid var(--border,#d8e1e5);scrollbar-width:thin}
+.wf-inspect-nav-item{display:inline-flex;flex:0 0 auto;align-items:center;gap:.45rem;justify-content:center;border:1px solid transparent;border-radius:12px;background:transparent;padding:.5rem .75rem;min-height:44px;font-size:.83rem;font-weight:750;color:var(--text2,#64747e)!important;white-space:nowrap}
+.wf-inspect-nav-item[aria-current=page]{border-color:var(--border,#d8e1e5);background:var(--ui-soft,#e9f2f5);color:var(--ui-accent,#3f7c94)!important}
+.wf-inspect-nav-icon{display:grid;place-items:center;background:var(--ui-soft,#e9f2f5);border-radius:9px;min-width:26px;height:26px;color:var(--ui-accent,#3f7c94);font-size:1.15rem}
+.wf-inspect-body{min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain;padding:clamp(.75rem,2.5vw,1.5rem);width:100%;max-width:1200px;margin-inline:auto}
+.wf-inspect-hero{background:var(--card,#fff);padding:clamp(.9rem,2vw,1.4rem);border:1px solid var(--border,#d8e1e5);border-radius:19px;margin-bottom:1rem}
+.wf-inspect-hero h2{margin:0 0 .3rem;font-size:1.2rem;overflow-wrap:anywhere}
+.wf-inspect-hero p{margin:.35rem 0;font-size:.84rem;color:var(--text2,#64747e);line-height:1.65}
+.wf-inspect-hero .wf-inspect-readonly{display:inline-block;background:var(--ui-soft,#e9f2f5);color:var(--ui-accent,#3f7c94);border-radius:9px;padding:.4rem .65rem;font-weight:750;margin-top:.45rem}
+.wf-inspect-message{min-height:1.4em;color:var(--text2,#64747e);margin:.4rem 0}
+.wf-inspect-message[data-type=error]{color:#b54835}
+.wf-inspect-results{display:grid;gap:.85rem}
+.wf-inspect-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem}
+.wf-inspect-stat,.wf-inspect-breakdown,.wf-inspect-record{background:var(--card,#fff);border:1px solid var(--border,#d8e1e5);border-radius:15px;padding:.9rem;min-width:0}
+.wf-inspect-stat{display:flex;flex-direction:column;gap:.5rem;min-height:90px}
+.wf-inspect-stat span{color:var(--text2,#64747e);font-size:.8rem;font-weight:650}
+.wf-inspect-stat strong{font-size:1.3rem;overflow-wrap:anywhere}
+.wf-inspect-breakdown h3{margin:0 0 .7rem;font-size:1rem}
+.wf-inspect-breakdown-list{display:flex;flex-wrap:wrap;gap:.5rem}
+.wf-inspect-breakdown-chip{border-radius:999px;background:var(--ui-soft,#e9f2f5);color:var(--text);padding:.5rem .7rem;font-size:.8rem;font-weight:700}
+.wf-inspect-search{width:100%;max-width:480px;min-height:44px;border:1px solid var(--border,#d8e1e5);border-radius:12px;background:var(--input,#fff);padding:.5rem .8rem}
+.wf-inspect-record-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem}
+.wf-inspect-record-title{display:block;margin-bottom:.8rem;line-height:1.5;overflow-wrap:anywhere;font-size:1rem}
+.wf-inspect-record-data{display:grid;grid-template-columns:minmax(90px,35%) minmax(0,1fr);gap:1px 12px;margin:0;font-size:.78rem;line-height:1.65}
+.wf-inspect-record-data dt,.wf-inspect-record-data dd{padding:.3rem .1rem;border-bottom:1px solid var(--border,#d8e1e5);margin:0;min-width:0;overflow-wrap:anywhere}
+.wf-inspect-record-data dt{font-weight:700;color:var(--text2,#64747e)}
+.wf-inspect-record-data dd{white-space:pre-wrap;text-align:start}
+.wf-inspect-record-detail{margin-top:.75rem}
+.wf-inspect-record-detail summary{cursor:pointer;min-height:40px;color:var(--ui-accent,#3f7c94);font-weight:750}
+.wf-inspect-record-detail pre{max-width:100%;max-height:260px;overflow:auto;direction:ltr;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;border-radius:9px;padding:.7rem;background:var(--ui-soft,#e9f2f5);font-size:.72rem;line-height:1.65}
+.wf-inspect-pages{display:flex;align-items:center;justify-content:center;gap:1rem;padding:1rem}
+.wf-inspect-pages small{color:var(--text2,#64747e)}
+.wf-inspect-empty{padding:2rem 1rem;text-align:center;border:1px dashed var(--border,#d8e1e5);border-radius:12px}
+@media(max-width:720px){.wf-inspect-top{min-height:62px;gap:.45rem}.wf-inspect-top>img{height:32px;width:32px}.wf-inspect-actions{gap:.25rem}.wf-inspect-top button{font-size:.72rem;padding:.5rem}.wf-inspect-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.wf-inspect-record-list{grid-template-columns:1fr}}
+@media(max-width:375px){.wf-inspect-top>img{display:none}.wf-inspect-title>small{font-size:.66rem}.wf-inspect-top button{font-size:.68rem}.wf-inspect-nav{padding:.35rem}.wf-inspect-nav-item{font-size:.72rem;padding:.4rem .6rem}}
+@media(prefers-reduced-motion:reduce){.wf-inspect *{animation:none!important;transition:none!important}}
