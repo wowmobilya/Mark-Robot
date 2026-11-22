@@ -43,7 +43,7 @@ test('offline installation bounds network work and activates only after the requ
   const stored=f.stores.get(f.context.qa.CACHE_NAME);
   assert(stored.has(url('./index.html')));assert(stored.has(url('./')));
   assert.equal(f.calls.filter(value=>value===url('./')||value===url('./index.html')).length,1,'fetch the HTML once for both cache aliases');
-  for(const asset of ['purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=6','accounts-settings.css?v=1','modules/platform/cloud/wow-cloud-client.js?v=5','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/cloud/wow-cloud-settings.js?v=2','modules/platform/push/wow-push-device.js?v=2','modules/platform/push/wow-push-client.js?v=2','modules/platform/push/wow-push-settings.js?v=2','modules/platform/push/wow-push-sw.js?v=3'])assert(stored.has(url('./'+asset)),asset+' missing from precache');
+  for(const asset of ['purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=6','accounts-settings.css?v=1','modules/platform/cloud/wow-cloud-client.js?v=5','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/cloud/wow-cloud-settings.js?v=2','modules/platform/push/wow-push-device.js?v=3','modules/platform/push/wow-push-client.js?v=2','modules/platform/push/wow-push-settings.js?v=2','modules/platform/push/wow-push-sw.js?v=4'])assert(stored.has(url('./'+asset)),asset+' missing from precache');
 });
 test('updates reuse exactly versioned prior assets and fetch fresh unversioned configuration and HTML',async()=>{
   const f=fixture({seed:true});await f.install();
@@ -65,7 +65,7 @@ test('an update downloads new versions and retains installed speech compatibilit
   await f.install();
   assert(f.calls.includes(url('./speech-controls.js?v=5')),'changed code must be downloaded');
   assert(f.calls.includes(url('./purchase-planner.js?v=3')),'new modules must be downloaded');
-  for(const asset of ['accounts-core.js?v=3','accounts-access.js?v=6','modules/platform/cloud/wow-cloud-client.js?v=5','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/push/wow-push-sw.js?v=3'])assert(f.calls.includes(url('./'+asset)),'current owner and cloud code must replace previous '+asset);
+  for(const asset of ['accounts-core.js?v=3','accounts-access.js?v=6','modules/platform/cloud/wow-cloud-client.js?v=5','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/push/wow-push-sw.js?v=4'])assert(f.calls.includes(url('./'+asset)),'current owner and cloud code must replace previous '+asset);
   assert.equal(f.calls.includes(url(unchanged)),false,'only exact unchanged URLs may be reused');
   assert.equal(f.calls.includes(url('./speech-controls.js?v=4')),false);
   await f.activate();
