@@ -440,27 +440,27 @@
     ru:['Вернуться на главную','Обращения в поддержку']
   };
   const homeWords={
-    ar:{heading:'مركز إدارة WOW',caption:'ملخص موثّق واختصارات مباشرة لإدارة المنصة',quick:'الأقسام السريعة',
+    ar:{navHome:'الرئيسية',heading:'مركز إدارة WOW',caption:'ملخص موثّق واختصارات مباشرة لإدارة المنصة',quick:'الأقسام السريعة',
       companies:'الشركات',companyNote:'قائمة الشركات والصلاحيات والتفعيل',create:'إضافة شركة',createNote:'إنشاء شركة وإعداد حساب مالكها',
       plans:'الباقات',plansNote:'الأسعار والاشتراكات والحدود',support:'الدعم',supportNote:'طلبات العملاء والردود',
       calls:'المكالمات',callsNote:'العبور واستهلاك المكالمات',settings:'الإعدادات',settingsNote:'المظهر والحساب',
       formHelp:'أنشئ شركة جديدة ثم شارك رابط إعداد المالك الآمن',openForm:'إضافة شركة جديدة'},
-    en:{heading:'WOW Control Center',caption:'Verified overview and quick routes to your administration',quick:'Quick sections',
+    en:{navHome:'Home',heading:'WOW Control Center',caption:'Verified overview and quick routes to your administration',quick:'Quick sections',
       companies:'Companies',companyNote:'Company list, permissions and activation',create:'Add company',createNote:'Create a workspace and invite the owner',
       plans:'Plans',plansNote:'Pricing, subscriptions and limits',support:'Support',supportNote:'Customer requests and replies',
       calls:'Calls',callsNote:'Relay and call usage',settings:'Settings',settingsNote:'Appearance and account',
       formHelp:'Create a company and share its secure owner setup invitation',openForm:'Add a new company'},
-    tr:{heading:'WOW Yönetim Merkezi',caption:'Doğrulanmış özet ve yönetim kısayolları',quick:'Hızlı bölümler',
+    tr:{navHome:'Ana sayfa',heading:'WOW Yönetim Merkezi',caption:'Doğrulanmış özet ve yönetim kısayolları',quick:'Hızlı bölümler',
       companies:'Şirketler',companyNote:'Şirketler, izinler ve etkinleştirme',create:'Şirket ekle',createNote:'Şirket oluşturun ve sahibini davet edin',
       plans:'Paketler',plansNote:'Fiyatlar, abonelikler ve sınırlar',support:'Destek',supportNote:'Müşteri talepleri ve yanıtlar',
       calls:'Aramalar',callsNote:'Aktarım ve kullanım',settings:'Ayarlar',settingsNote:'Görünüm ve hesap',
       formHelp:'Yeni bir şirket oluşturun ve güvenli sahip davetini paylaşın',openForm:'Yeni şirket ekle'},
-    fr:{heading:'Centre de gestion WOW',caption:'Vue vérifiée et accès rapides à l’administration',quick:'Accès rapides',
+    fr:{navHome:'Accueil',heading:'Centre de gestion WOW',caption:'Vue vérifiée et accès rapides à l’administration',quick:'Accès rapides',
       companies:'Sociétés',companyNote:'Liste, droits et activation',create:'Ajouter une société',createNote:'Créer et inviter le propriétaire',
       plans:'Formules',plansNote:'Tarifs, abonnements et quotas',support:'Assistance',supportNote:'Demandes et réponses',
       calls:'Appels',callsNote:'Relais et consommation',settings:'Réglages',settingsNote:'Affichage et compte',
       formHelp:'Créez la société puis partagez l’invitation sécurisée',openForm:'Ajouter une société'},
-    ru:{heading:'Центр управления WOW',caption:'Проверенная сводка и быстрый переход к управлению',quick:'Быстрые разделы',
+    ru:{navHome:'Главная',heading:'Центр управления WOW',caption:'Проверенная сводка и быстрый переход к управлению',quick:'Быстрые разделы',
       companies:'Компании',companyNote:'Список, права и активация',create:'Добавить компанию',createNote:'Создать компанию и пригласить владельца',
       plans:'Тарифы',plansNote:'Цены, подписки и лимиты',support:'Поддержка',supportNote:'Запросы клиентов и ответы',
       calls:'Звонки',callsNote:'Ретрансляция и использование',settings:'Настройки',settingsNote:'Оформление и аккаунт',
@@ -528,7 +528,7 @@
       const link=el('a'),panel=el('section'),title=el('h2',titles[i]);
       title.tabIndex=-1;title.id='platform-title-'+id;
       link.className='platform-section-link';link.href='#'+id;
-      const tile=el('span'),caption=el('span',title.textContent);
+      const tile=el('span'),caption=el('span',id==='home'?homepage.navHome:title.textContent);
       tile.className='platform-nav-icon';caption.className='platform-nav-label';
       tile.setAttribute('aria-hidden','true');link.append(tile,caption);
       panel.className='platform-page';panel.id='platform-page-'+id;panel.hidden=true;
