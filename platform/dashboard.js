@@ -422,14 +422,14 @@
     fr:['Lien au programme','Vérification de l’activation','Propriétaire activé','Activation en attente','Invitation expirée','Aucune invitation','Vérification impossible','Actualiser le statut','Connexion en direct indisponible','Comptes','Ouvrir le programme'],
     ru:['Связь с программой','Проверка активации владельца','Владелец активен','Ожидается активация','Срок приглашения истёк','Приглашение не создано','Не удалось проверить','Обновить статус','Онлайн-статус недоступен','Аккаунты','Открыть программу']
   };
-  let showDestination=null,expandedCompany=null;
+  let showDestination=null,expandedCompany=null,expandedCard=null;
   const header=document.querySelector('main > header'),headerActions=el('div');
   headerActions.className='platform-header-actions';headerActions.hidden=true;header.append(headerActions);
   // One predictable order across mobile and desktop, matching WOW's primary workspaces.
   function arrangeMenu(){
     const menu=content.querySelector('.platform-section-menu');if(!menu)return;
     const focused=menu.contains(document.activeElement)?document.activeElement:null;
-    for(const key of ['home','companies','plans','support','calls','settings']){
+    for(const key of ['companies','plans','home','support','calls','settings']){
       const link=menu.querySelector('a[href="#'+key+'"]');if(link)menu.append(link);
     }
     focused?.focus({preventScroll:true});
@@ -661,6 +661,19 @@
       link.type='button';link.onclick=()=>window.WFPlatformCompanyInspector?.open({company,request,language:lang.value});
       const name=el('strong',company.name),stateLabel=el('span',t(active?7:8)),accountLabel=el('span',t(13)+' · '+company.accounts);
       const hero=el('div'),pills=el('div'),actions=el('div'),summaryLine=el('div');
+      const companyFold=el('details'),companyFoldSummary=el('summary'),companyFoldBody=el('div');
+      const foldText=({ar:['عرض تفاصيل الشركة','إخفاء تفاصيل الشركة'],en:['Show company details','Hide company details'],
+        tr:['Şirket ayrıntılarını göster','Şirket ayrıntılarını gizle'],fr:['Afficher les détails','Masquer les détails'],
+        ru:['Детали компании','Скрыть детали']})[lang.value];
+      companyFold.className='platform-company-fold';companyFoldBody.className='platform-company-fold-body';
+      companyFoldSummary.className='platform-company-fold-summary';companyFoldSummary.textContent=foldText[0];
+      companyFold.open=expandedCard===company.id;
+      companyFold.append(companyFoldSummary,companyFoldBody);
+      companyFold.addEventListener('toggle',()=>{
+        if(!companyFold.isConnected)return;
+        if(companyFold.open){expandedCard=company.id;companyFoldSummary.textContent=foldText[1];}
+        else {if(expandedCard===company.id)expandedCard=null;companyFoldSummary.textContent=foldText[0];}
+      });
       hero.className='platform-company-hero';pills.className='platform-company-pills';
       actions.className='platform-company-primary-actions';summaryLine.className='platform-company-connectivity';
       name.className='platform-company-name';name.dir='auto';
@@ -699,14 +712,14 @@
       health.append(healthTitle,linkState,refresh);
       summaryLine.append(health,live);
       actions.append(link);
-      row.append(hero,pills,summaryLine,actions);
+      companyFoldBody.append(summaryLine,actions);row.append(hero,pills,companyFold);
       const details=el('details'),summary=el('summary',companyMenu[lang.value]),tools=el('div');
       details.className='platform-company-tools';tools.className='platform-company-actions-grid';details.open=expandedCompany===company.id;
       details.ontoggle=()=>{
         if(!details.isConnected)return;
         if(details.open)expandedCompany=company.id;else if(expandedCompany===company.id)expandedCompany=null;
       };
-      details.append(summary,tools);row.append(details);
+      details.append(summary,tools);companyFoldBody.append(details);
       brandList?.attach(row,details,company);
       const accounts=el('button',sale(12));accounts.type='button';accounts.onclick=()=>window.WFPlatformCompanyInspector?.open({company,request,language:lang.value,section:'accounts'});accounts.className='platform-tool-link platform-tool-accounts';tools.append(accounts);
       const editArea=el('section');editArea.className='platform-inline-editor';
