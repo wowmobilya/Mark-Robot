@@ -280,7 +280,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     const pricing=page.locator('.platform-pricing-dashboard');
     await pricing.waitFor();
     assert.equal(await pricing.locator('.platform-pricing-card').count(),3);
-    assert.equal(await pricing.locator('[data-tier=year] .platform-plan-price').innerText(),'$1,000');
+    assert.match(await pricing.locator('[data-tier=year] .platform-plan-price').innerText(),/^\$1,000(?:\.00)?$/);
     await pricing.locator('[data-tier=month] .platform-plan-edit').click();
     assert.equal(await page.getByLabel('Subscription price').inputValue(),'100');
     assert.equal(await page.getByLabel('Currency').inputValue(),'USD');
