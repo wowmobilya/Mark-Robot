@@ -280,6 +280,24 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     const pricing=page.locator('.platform-pricing-dashboard');
     await pricing.waitFor();
     assert.equal(await pricing.locator('.platform-pricing-card').count(),3);
+    // Every activation opens the same Turkish WhatsApp number with the chosen
+    // price and duration, never a silent billing or plan-assignment request.
+    for(const [tier,amount,days] of [['month','100','30'],['year','1000','365'],['twoYears','1800','730']]){
+      const entry=pricing.locator('[data-tier='+tier+'] .platform-plan-activate');
+      const href=await entry.getAttribute('href');
+      const link=new URL(href);
+      assert.equal(link.origin,'https://wa.me');
+      assert.equal(link.pathname,'/905386263700');
+      assert.equal(link.searchParams.has('text'),true);
+      const message=link.searchParams.get('text');
+      assert.match(message,/WOW Furniture/);
+      assert.match(message,new RegExp(days+' days'));
+      assert.match(message,new RegExp(amount==='100'?'100':amount==='1000'?'1,000':'1,800'));
+      assert.equal(await entry.getAttribute('target'),'_blank');
+      assert.match(await entry.getAttribute('rel'),/noopener/);
+      assert.equal(await entry.evaluate(el=>el.getBoundingClientRect().height>=44),true);
+    }
+    assert.equal(events.filter(action=>action==='platform.plans.save').length,0);
     assert.match(await pricing.locator('[data-tier=year] .platform-plan-price').innerText(),/^\$1,000(?:\.00)?$/);
     await pricing.locator('[data-tier=month] .platform-plan-edit').click();
     assert.equal(await page.getByLabel('Subscription price').inputValue(),'100');
