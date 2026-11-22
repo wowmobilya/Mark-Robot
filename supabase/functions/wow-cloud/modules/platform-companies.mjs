@@ -5,6 +5,13 @@ export function createPlatformActions({platformRpc,requirePlatformFounder,manage
     try{await requirePlatformFounder(actor);return {verifiedFounder:true};}
     catch(error){if(error?.code==='ACCESS_DENIED')return {verifiedFounder:false};throw error;}
   }};
+  handlers['platform.company.inspect']=async({actor,body})=>{
+    if(typeof body.workspaceId!=='string'||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(body.workspaceId)||
+      !['summary','accounts','companies','products','invoices','payments','settings','audit','gallery-orders','gallery-listings','files','calls'].includes(body.section)||
+      !Number.isSafeInteger(body.offset)||body.offset<0||body.offset>10000)throw failure('INVALID_REQUEST',422);
+    // Founder identity and company scope are reverified by the service-only PostgreSQL RPC.
+    return inspectCompany(actor,body.workspaceId,body.section,body.offset);
+  };
   for(const action of ['company.list','company.rename','company.audit','company.status','company.create','limits.get','limits.set','plans.list','plans.save']){
     handlers['platform.'+action]=async({actor,body})=>{
       let data={...body};
