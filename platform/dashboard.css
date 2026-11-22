@@ -1012,3 +1012,56 @@ html[data-theme=dark] .platform-pricing-card .platform-plan-label[data-saved=tru
 @media(prefers-reduced-motion:reduce){
  .platform-pricing-card .platform-plan-activate{transition:none;}
 }
+
+
+/* Original WhatsApp silhouette and subscription contact channels — WOW Admin 231. */
+.platform-pricing-card .platform-plan-activate::before{content:none!important;display:none!important}
+.platform-contact-icon{display:block;inline-size:21px;block-size:21px;min-inline-size:21px;flex:0 0 21px;color:currentColor}
+.platform-pricing-card .platform-plan-activate .platform-whatsapp-logo{inline-size:23px;block-size:23px;min-inline-size:23px;flex-basis:23px}
+.platform-pricing-card .platform-plan-actions .platform-plan-activate{
+  background:#128c66;border-color:#128c66;gap:.56rem;min-block-size:48px;
+  box-shadow:0 4px 13px rgb(18 140 102 / .13)
+}
+.platform-pricing-card .platform-plan-actions .platform-plan-activate:hover{background:#0d7355;border-color:#0d7355}
+.platform-sales-contact{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:.75rem;min-width:0;
+  inline-size:100%;max-inline-size:100%;margin:0!important;padding:clamp(.7rem,2vw,1.15rem)!important;
+  border:1px solid var(--border);border-radius:18px;
+  font-style:normal;background:linear-gradient(140deg,var(--card),var(--input));color:var(--text);
+  box-shadow:0 4px 18px rgb(29 45 67 / .045)
+}
+.platform-sales-contact-heading{display:grid;grid-template-columns:minmax(0,1fr);gap:.17rem;min-inline-size:0}
+.platform-sales-contact-heading>strong{font-size:clamp(.92rem,1.6vw,1.08rem);font-weight:830;color:var(--text)}
+.platform-sales-contact-heading>small{font-size:.76rem;line-height:1.5;color:var(--text2)}
+.platform-sales-contact-links{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;min-inline-size:0
+}
+.platform-sales-contact-links .platform-sales-channel{
+  display:inline-flex;align-items:center;justify-content:center;gap:.55rem;
+  min-inline-size:0;min-block-size:49px;max-inline-size:100%;
+  padding:.6rem .67rem;border:1px solid var(--border);border-radius:13px;
+  background:var(--card);color:var(--text);font-size:clamp(.76rem,1.3vw,.9rem);font-weight:730;line-height:1.4;
+  text-align:center;text-decoration:none;overflow-wrap:anywhere;word-break:break-word;
+  box-shadow:0 2px 8px rgb(29 45 67 / .045);
+  transition:background .16s ease,border-color .16s ease,transform .16s ease
+}
+.platform-sales-contact-links .platform-sales-whatsapp{
+  background:color-mix(in srgb,#25d366 9%,var(--card));border-color:color-mix(in srgb,#128c66 30%,var(--border));
+  color:#0c724f
+}
+html[data-theme=dark] .platform-sales-contact-links .platform-sales-whatsapp{
+  background:color-mix(in srgb,#25d366 15%,var(--card));color:#86e9b5
+}
+.platform-sales-contact-links .platform-sales-phone .platform-contact-icon,
+.platform-sales-contact-links .platform-sales-email .platform-contact-icon{color:var(--ui-accent)}
+.platform-sales-contact-links .platform-sales-email{font-size:.8rem}
+.platform-sales-contact-links a:hover{background:var(--ui-soft);border-color:var(--ui-accent)}
+.platform-sales-contact-links .platform-sales-whatsapp:hover{background:color-mix(in srgb,#25d366 19%,var(--card))}
+.platform-sales-contact-links a:focus-visible{outline:3px solid var(--ui-accent);outline-offset:2px}
+@media(max-width:760px){.platform-sales-contact-links{grid-template-columns:minmax(0,1fr)}}
+@media(min-width:761px) and (max-width:1190px){.platform-sales-contact-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .platform-sales-contact-links .platform-sales-email{grid-column:1/-1}}
+@media(max-width:360px){.platform-sales-contact{padding:.6rem!important}
+  .platform-sales-contact-links .platform-sales-channel{font-size:.8rem}
+  .platform-sales-contact-links .platform-contact-icon{inline-size:20px;block-size:20px;min-inline-size:20px}}
+@media(prefers-reduced-motion:reduce){.platform-sales-contact-links .platform-sales-channel{transition:none}}
