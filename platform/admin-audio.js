@@ -16,7 +16,7 @@
   const make=(tag,css,txt)=>{const x=document.createElement(tag);if(css)x.className=css;if(txt!==undefined)x.textContent=txt;return x;};
   function sync(){
     const t=pick();
-    if(!widget?.isConnected)return;
+    if(!widget)return;
     widget.querySelector('.platform-audio-title').textContent=t.heading;
     widget.querySelector('.platform-audio-description').textContent=t.feedbackInfo;
     feedback.textContent=t.feedback+' · '+t[enabled?'on':'off'];
