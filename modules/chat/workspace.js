@@ -62,7 +62,7 @@
     const picker=el('input');picker.type='file';picker.hidden=true;composer.append(picker);
     // Calls never start automatically: only a user tap requests the microphone.
     // Owner/customer/staff identity and chat membership remain server-authoritative.
-    const voice=root.WFVoiceCalls?.mount?.({container:app,request:req,getSession:()=>api.getSession?.(),lang:()=>language});
+    const voice=root.WFVoiceCalls?.mount?.({container:main,request:req,getSession:()=>api.getSession?.(),lang:()=>language});
     const roomName=r=>r?.kind==='team'&&!r.name?t('team'):(r?.name||t('direct'));
     const roomNow=id=>alive&&room?.id===id;
     function closeDialogs(){for(const d of container.querySelectorAll('dialog[open]'))d.close();}
