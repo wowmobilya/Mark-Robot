@@ -17,3 +17,37 @@ output{padding:.75rem;background:var(--ui-soft);border-radius:var(--ui-control)}
 .platform-login+.wf-owner-invite{max-inline-size:28rem;margin-inline:auto}
 .platform-password{display:flex;gap:.5rem;align-items:stretch}.platform-password input{flex:1;min-inline-size:0}
 .platform-invite-card{display:grid;gap:.5rem;justify-items:start;border:1px solid var(--border);padding:1rem;border-radius:var(--ui-radius);background:var(--ui-soft)}.platform-invite-card p{margin:0}.platform-invite-card output{max-inline-size:100%}
+.platform-app-actions {justify-content:center;gap:.65rem 1rem;align-items:center}
+.platform-app-actions a {display:inline-flex;align-items:center;min-height:44px;color:var(--text);text-decoration:underline;text-underline-offset:.2em}
+#installHint {max-inline-size:34rem;margin:.65rem auto;text-align:center;color:var(--text2)}
+@media (display-mode:standalone){main{padding-top:max(1rem,env(safe-area-inset-top));padding-bottom:max(1rem,env(safe-area-inset-bottom))}}
+/* Plan assignment follows the usage readings in the same company section. */
+.platform-plan-editor,.platform-subscription > form {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));
+  align-items:end;gap:.8rem 1rem;margin:0;padding:clamp(.7rem,2vw,1.25rem);
+  border:1px solid var(--border);border-radius:var(--ui-radius,14px);background:var(--ui-soft);
+}
+.platform-plan-editor > :is(select,small),.platform-plan-editor > button[type=submit] {grid-column:1/-1}
+.platform-plan-editor label,.platform-subscription label {text-align:start;font-weight:600;min-inline-size:0}
+.platform-plan-editor :is(input,select),.platform-subscription :is(input,select) {inline-size:100%;min-inline-size:0;font-size:1rem}
+.platform-plan-editor small {color:var(--text2);line-height:1.55}
+.platform-subscription {flex:1 0 100%;inline-size:100%;min-inline-size:0;text-align:start}
+.platform-subscription > dl {
+  display:grid;grid-template-columns:minmax(8rem,.8fr) minmax(0,1.6fr);gap:0;
+  margin:0 0 1rem;padding:0;border:1px solid var(--border);border-radius:var(--ui-radius,14px);overflow:hidden;
+}
+.platform-subscription > dl > :is(dt,dd) {margin:0;padding:.7rem .8rem;min-inline-size:0;overflow-wrap:anywhere}
+.platform-subscription > dl > dt {align-content:center;background:var(--ui-soft);font-weight:650}
+.platform-subscription > dl > :is(dt,dd):nth-child(n+3) {border-block-start:1px solid var(--border)}
+.platform-subscription dd:has(.platform-usage-value) {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem}
+.platform-usage-value {display:grid;align-content:start;gap:.16rem;min-inline-size:0;font-variant-numeric:tabular-nums}
+.platform-usage-value small {color:var(--text2);line-height:1.3}
+.platform-usage-value bdi {font-weight:650}
+@media(max-width:520px) {
+  main {padding-inline:max(.65rem,env(safe-area-inset-left)) max(.65rem,env(safe-area-inset-right))}
+  #content {padding:.65rem}
+  .platform-subscription > dl {display:block}
+  .platform-subscription > dl > :is(dt,dd) {padding:.45rem .55rem}
+  .platform-subscription > dl > dd:nth-child(n+3){border-block-start:none}
+  .platform-plan-editor,.platform-subscription > form {grid-template-columns:minmax(0,1fr)}
+}

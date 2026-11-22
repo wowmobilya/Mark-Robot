@@ -6,6 +6,12 @@
     fullscreen:['Full screen','ملء الشاشة','Tam ekran','Plein écran','На весь экран'],
     hide:['Delete for me','حذف لديّ','Benden sil','Supprimer pour moi','Удалить у меня'],
     removePhoto:['Remove photo','إزالة الصورة','Fotoğrafı kaldır','Supprimer la photo','Убрать фото'],previous:['Previous','السابق','Önceki','Précédent','Назад'],next:['Next','التالي','Sonraki','Suivant','Далее'],
+    audioCall:['Voice call','اتصال صوتي','Sesli ara','Appel vocal','Голосовой звонок'],
+    videoCall:['Video call','اتصال فيديو','Görüntülü ara','Appel vidéo','Видеозвонок'],
+    chooseCallPeer:['Choose a person to call','اختر شخصاً للاتصال به','Aranacak kişiyi seçin','Choisir la personne à appeler','Выберите собеседника'],
+    noCallOwner:['No other staff account is available for calls. Invite or approve another account in company settings, then grant chat access.','لا يوجد موظف آخر متاح للمكالمة. ادعُ أو وافق على حساب في إعدادات الشركة ثم امنحه صلاحية الدردشة.','Aranabilecek başka bir çalışan yok. Şirket ayarlarından bir hesap davet edin veya onaylayın ve sohbet izni verin.','Aucun autre employé disponible. Invitez ou approuvez un compte dans les paramètres de l’entreprise, puis autorisez la discussion.','Нет другого сотрудника для звонка. Пригласите или одобрите учётную запись в настройках компании и разрешите чат.'],
+    noCallPeer:['No other staff account is available for calls. Contact your company administrator.','لا يوجد موظف آخر متاح للمكالمة. تواصل مع مسؤول شركتك.','Aranabilecek başka çalışan yok. Şirket yöneticinize danışın.','Aucun autre employé disponible. Contactez votre administrateur.','Нет другого сотрудника для звонка. Обратитесь к администратору.'],
+    noCallMatch:['No matching people','لا يوجد شخص مطابق','Eşleşen kişi yok','Aucun résultat','Совпадений нет'],
     rooms:['Conversations','المحادثات','Sohbetler','Conversations','Беседы'],team:['Team','الفريق','Ekip','Équipe','Команда'],
     direct:['Direct message','محادثة خاصة','Özel mesaj','Message privé','Личное сообщение'],group:['New group','مجموعة جديدة','Yeni grup','Nouveau groupe','Новая группа'],
     profile:['Chat profile','ملف الدردشة','Sohbet profili','Profil de discussion','Профиль в чате'],name:['Display name','الاسم المعروض','Görünen ad','Nom affiché','Отображаемое имя'],
@@ -145,6 +151,7 @@
         controls.append(iconButton('profile',t('profile'),profileDialog));
       }
       sideTools.append(controls);
+      if(edit()&&callUI)sideTools.append(callUI.controls(null,pickCallRecipient));
     }
     function drawRooms(){
       const signature=JSON.stringify([rooms,rooms.filter(r=>r.last?.expiresAt&&Date.parse(r.last.expiresAt)<=Date.now()).map(r=>r.id),room?.id,language,archived]);if(roomsView===signature)return;roomsView=signature;roomList.replaceChildren();
@@ -187,7 +194,7 @@
     }
     function drawRoomHead(){
       if(!room)return;head.replaceChildren();head.append(iconButton('back',t('back'),()=>{leaveRoom();},'wf-chat-back'));const titleBox=el('div',null,'wf-chat-room-title');addAvatar(titleBox,room);titleBox.append(el('h3',roomName(room)));head.append(titleBox);
-      if(edit()&&callUI)head.append(callUI.controls(room));
+      if(edit()&&callUI)head.append(room.kind==='team'?callUI.controls(room,pickCallRecipient):callUI.controls(room));
       const tools=moreTools('more',t('actions'));
       tools.menu.append(act(t('members'),membersDialog),act(t('settings'),settingsDialog));browse.replaceChildren();
       browse.hidden=!(filter||query);
@@ -364,18 +371,43 @@
       const save=act(t('save'),async()=>{save.disabled=true;try{const r=await req('profile',{name:n.value,status:s.value,assetId:await photo.id('profile')});me=r.me;d.close();await refreshRooms();await loadFeed();}finally{save.disabled=false;}},'wf-collab-primary');
       body.append(field(t('name'),n),field(t('status'),s),photo.box,save);
     }
-    function personSearch(body,choose,skip=new Set(),tick=false,staffOnly=false){
+    function personSearch(body,choose,skip=new Set(),tick=false,staffOnly=false,emptyLabel=''){
       const search=input('',100),results=el('div',null,'wf-chat-people'),pagingBar=el('div',null,'wf-chat-chips');let number=0,timer,offset=0;
       search.type='search';search.placeholder=t('searchPeople');search.setAttribute('aria-label',t('searchPeople'));body.append(search,results,pagingBar);
       async function find(){
         const k=++number,r=await req('people',{query:search.value,offset,staffOnly});if(!body.isConnected||number!==k)return;
-        results.replaceChildren();for(const p of r.people.filter(x=>!skip.has(x.id))){const row=el('div',null,'wf-chat-person');const label=el('span');label.append(el('b',p.name),el('small','@'+p.username+(p.status?' · '+p.status:'')));
+        const people=r.people.filter(x=>!skip.has(x.id));results.replaceChildren();
+        if(emptyLabel&&!people.length&&r.people.length<100)results.append(el('p',t(search.value.trim()||offset?'noCallMatch':emptyLabel),'wf-chat-call-empty'));
+        for(const p of people){const row=el('div',null,'wf-chat-person');const label=el('span');label.append(el('b',p.name),el('small','@'+p.username+(p.status?' · '+p.status:'')));
           if(tick){const ck=el('input');ck.type='checkbox';ck.checked=tick.has(p.id);ck.setAttribute('aria-label',p.name);ck.onchange=()=>ck.checked?tick.add(p.id):tick.delete(p.id);row.append(ck,label);}
           else row.append(label,act(t('select'),()=>choose(p)));results.append(row);}
         pagingBar.replaceChildren();if(offset) pagingBar.append(act(t('previous'),()=>{offset-=100;return find();}));
         if(r.people.length===100)pagingBar.append(act(t('next'),()=>{offset+=100;return find();}));
       }
       search.oninput=()=>{clearTimeout(timer);offset=0;timer=setTimeout(run(find),200);};run(find)();
+    }
+    function pickCallRecipient(kind){
+      if(!alive||!me||!edit()||!callUI||callUI.hasActiveCall?.())return;
+      const {d,body}=dialog(t('chooseCallPeer')),scope=generation,label=t(kind==='video'?'videoCall':'audioCall');
+      let opening=false;
+      personSearch(body,async person=>{
+        if(opening||!d.open||!alive||generation!==scope||!edit()||person.id===me.id)return;
+        opening=true;
+        try{
+          const result=await req('direct',{targetId:person.id});
+          if(!d.open||!alive||scope!==generation)return;
+          await refreshRooms();
+          const direct=rooms.find(r=>r.id===result.roomId&&r.kind==='direct'&&r.peer?.id===person.id);
+          if(!d.open||!alive||scope!==generation||!edit())return;
+          if(!direct)throw Object.assign(Error('ACCESS_DENIED'),{code:'ACCESS_DENIED'});
+          d.close();await openRoom(direct.id);
+          if(!roomNow(direct.id)||!edit()||callUI.hasActiveCall?.())return;
+          const confirm=dialog(label+' · '+roomName(direct));
+          confirm.body.append(act(label,()=>{
+            confirm.d.close();if(roomNow(direct.id)&&edit())return callUI.startPrivate(direct,kind);
+          },'wf-collab-primary'));
+        }finally{opening=false;}
+      },new Set([me.id]),false,true,me.owner===true||me.role==='owner'||api.getSession?.()?.role==='owner'?'noCallOwner':'noCallPeer');
     }
     function peopleDialog(mode){
       const {d,body}=dialog(t(mode==='direct'?'direct':'add')),rid=room?.id;

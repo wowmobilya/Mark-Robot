@@ -137,12 +137,12 @@ test('WOW familiar chat UI, in-chat events, customer signup and release source p
  read('../supabase/release.json')]);
  assert.match(signup,/actions\.append\(button\('register'/);
  assert.match(signup,/if\(!options\.registrationEnabled\)/);
- assert.match(html,/modules\/chat\/call-ui\.js\?v=2/);
+ assert.match(html,/modules\/chat\/call-ui\.js\?v=3/);
  assert.match(html,/modules\/chat\/realtime-channel\.js\?v=1/);
- assert.match(html,/data-release="224"/);assert.match(sw,/wow-furniture-v224-cloud/);
+ assert.match(html,/data-release="225"/);assert.match(sw,/wow-furniture-v225-cloud/);
  assert.match(workspace,/callUI\.controls\(room\)/);
  assert.match(workspace,/callUI\?\.renderHistoryInFeed\?\.\(\)/);
  assert.match(workspace,/wf-chat-bubble/);assert.match(ui,/wf-chat-call-chip/);
  assert.match(manager,/WFCallManager/);assert.match(channel,/config:\{private:true/);
- assert.equal(JSON.parse(manifest).version,224);
+ assert.equal(JSON.parse(manifest).version,225);
 });

@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=5');
 importScripts('./modules/platform/push/wow-push-sw.js?v=6');
-const CACHE_NAME = 'wow-furniture-v224-cloud-r2';
+const CACHE_NAME = 'wow-furniture-v225-cloud';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -25,11 +25,11 @@ const urlsToCache = [
   './modules/files/workspace.js?v=2',
   './modules/files/styles.css?v=2',
   './modules/chat/realtime-channel.js?v=1',
-  './modules/chat/call-manager.js?v=2',
-  './modules/chat/call-ui.js?v=2',
-  './modules/chat/workspace.js?v=6',
-  './modules/chat/styles.css?v=4',
-  './modules/chat/call-ui.css?v=1',
+  './modules/chat/call-manager.js?v=3',
+  './modules/chat/call-ui.js?v=3',
+  './modules/chat/workspace.js?v=7',
+  './modules/chat/styles.css?v=5',
+  './modules/chat/call-ui.css?v=2',
   './modules/communications/core.js?v=1',
   './modules/communications/workspace.js?v=1',
   './modules/communications/styles.css?v=1',
@@ -108,8 +108,10 @@ const urlsToCache = [
   './wow-dialog.js?v=1',
   './wow-dialog.css?v=1',
   './platform/index.html',
-  './platform/dashboard.js?v=224',
-  './platform/dashboard.css?v=224',
+  './platform/install.js?v=1',
+  './platform/manifest.webmanifest',
+  './platform/dashboard.js?v=225',
+  './platform/dashboard.css?v=225',
   './touch-keyboard.js?v=5',
   './touch-keyboard.css?v=3',
   './settings-actions.css?v=1',
