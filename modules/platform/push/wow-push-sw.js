@@ -42,8 +42,8 @@
     const lang = entry?.language || language(root.navigator?.language?.split('-')[0]);
     const data = match ? {deviceId: match.deviceId, eventId: entry.eventId} : {};
     const options = {body: entry?.body || generic[lang], lang, dir: lang === 'ar' ? 'rtl' : 'ltr',
-      icon: new URL('app-icon-192.png?v=222', base).href,
-      badge: new URL('assets/mark-robot-badge.png?v=222', base).href,
+      icon: new URL('app-icon-192.png?v=223', base).href,
+      badge: new URL('assets/mark-robot-badge.png?v=223', base).href,
       tag: match ? 'wow-push/' + match.deviceId + '/' + entry.eventId : 'wow-push/attention',
       renotify: false, data};
     // A call can wake a stopped service worker on a push-capable device, but a

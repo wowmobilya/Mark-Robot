@@ -70,3 +70,8 @@ html[data-wf-account-state="checking"],html[data-wf-account-state="locked"]{over
   .wf-account-login > h1 + p { grid-column:1; grid-row:3; }
   .wf-account-login > #wfAccountLoginForm { grid-column:2; grid-row:1 / 5; }
 }
+.wf-account-login-header{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-block-end:1.2rem}
+.wf-account-login-header .wf-account-login-brand,.wf-account-login-header .wf-account-login-languages{margin:0}
+.wf-account-login-header .wf-account-login-languages select{min-block-size:44px}
+#wfAccountLock{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+@media(max-width:480px){.wf-account-login{padding:1rem;border-radius:var(--ui-radius,16px)}.wf-account-login form{gap:.8rem}.wf-account-login .fi{font-size:16px}.wf-account-login-header .wf-account-login-brand img{inline-size:42px;block-size:42px}.wf-account-login-status:empty{display:none}}

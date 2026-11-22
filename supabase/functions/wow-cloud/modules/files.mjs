@@ -99,7 +99,8 @@ export function privateActions(scope,moduleRpc,storage){
   async function sign(actor,action,data){
     const handle=await rpc(actor,action,data);
     const ttl=integer(handle.ttl,1,action==='share'?300:60);
-    const path=safeObject(handle.path,scope),url=new URL(await storage.sign(path,ttl));
+    const objectScope=scope==='chat'&&action==='asset.open'&&handle.source==='files'?'files':scope;
+    const path=safeObject(handle.path,objectScope),url=new URL(await storage.sign(path,ttl));
     if(action==='share'||data.download||['application/octet-stream','text/plain','application/zip'].includes(handle.mime))url.searchParams.set('download',handle.name);
     return {url:url.href,name:handle.name,mime:handle.mime,digest:path.split('/').at(-1),expiresAt:new Date(Date.now()+ttl*1000).toISOString()};
   }

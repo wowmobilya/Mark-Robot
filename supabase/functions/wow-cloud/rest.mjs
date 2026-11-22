@@ -48,6 +48,10 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     async getUser(token){const data=await call('/auth/v1/user',{method:'GET',token,kind:'auth'});return data.user||data;},
     signIn:(email,password)=>call('/auth/v1/token?grant_type=password',{body:{email,password},kind:'auth'}),
     refresh:refreshToken=>call('/auth/v1/token?grant_type=refresh_token',{body:{refresh_token:refreshToken},kind:'auth'}),
+    ownerRecoveryMail:(email,redirect)=>call('/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),{body:{email},kind:'auth'}),
+    verifyOwnerRecovery:token=>call('/auth/v1/verify',{body:{token_hash:token,type:'recovery'},kind:'auth'}),
+    updateOwnPassword:(token,password)=>call('/auth/v1/user',{method:'PUT',body:{password},token,kind:'auth'}),
+    closeAll:token=>call('/auth/v1/logout?scope=global',{token,kind:'auth'}),
     generateLink:email=>call('/auth/v1/admin/generate_link',{body:{type:'magiclink',email},redirect:'error'}),
     verifyOtp:tokenHash=>call('/auth/v1/verify',{body:{token_hash:tokenHash,type:'email'},kind:'auth',redirect:'error'}),
     signOut:token=>call('/auth/v1/logout?scope=local',{token,kind:'auth'}),
@@ -64,6 +68,8 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     communicationsRpc:(action,data)=>call('/rest/v1/rpc/wow_communications_worker',{body:{p_action:action,p_data:data},kind:'rpc'}),
     health:()=>call('/rest/v1/rpc/wow_operations_health',{body:{},kind:'rpc'}),
     // Fixed service-only credential lookup; never part of module/app dispatch.
+    founderActivation:(actor,action,data)=>call('/rest/v1/rpc/wow_founder_activation',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
+    consumeOwnerRecovery:(id,owner,email)=>call('/rest/v1/rpc/wow_owner_recovery_consume',{body:{p_request:id,p_owner:owner,p_email:email},kind:'rpc'}),
     offlineSigningKey:()=>call('/rest/v1/rpc/wow_offline_owner_signing_key',{body:{},kind:'rpc'}),
     requirePlatformFounder:actor=>call('/rest/v1/rpc/wow_platform_require',{body:{p_user:actor.userId,p_session:actor.sessionId},kind:'rpc'}),
     platformRpc:(actor,action,data)=>call('/rest/v1/rpc/'+(/^(limits|plans)\./.test(action)?'wow_platform_limits':'wow_platform_service'),{

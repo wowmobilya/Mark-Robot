@@ -1,5 +1,5 @@
 {
-  "version": 222,
+  "version": 223,
   "name": "مارك ربوت",
   "projectRef": "sldthbnigivpsqixccah",
   "productionOrigin": "https://markrobot.wowfurniture.com.tr",
@@ -8,6 +8,7 @@
   "migrations": [
     "wow-schema.sql",
     "modules/platform-companies.sql",
+    "modules/founder-activation.sql",
     "modules/files.sql",
     "modules/chat.sql",
     "modules/voice-calls.sql",

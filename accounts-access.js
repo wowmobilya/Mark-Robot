@@ -37,7 +37,7 @@
   let service,ready,booted=false,checking=true,refreshing=null,reloading=false,loginBusy=false,loginResolve,loginWait;
   let explicitLockPending=false,resumeChecking=false;
   let lockSurface,loginForm,username,password,submit,status,showPassword,loginTitle,loginIntro,localNote,sessionNote,langSelect,sessionButton;
-  let customerAuthSurface,founderBadge,founderScope='',founderVerified=false,founderGeneration=0;
+  let ownerInvite,customerAuthSurface,founderBadge,founderScope='',founderVerified=false,founderGeneration=0;
   function badgeScope(state){
     if(!remoteMode||root.navigator?.onLine===false||!state?.authenticated||state.offlineVerified||state.connection!=='online'||!state.currentAccount)return '';
     return JSON.stringify([state.workspaceId,state.currentAccount.id,state.sessionVersion,state.authGeneration,state.lastVerifiedAt]);
@@ -65,6 +65,7 @@
   function assert(key){if(!can(key)){const error=new Error('ACCESS_DENIED');error.code='ACCESS_DENIED';throw error;}return snapshot().currentAccount;}
   function allow(key){return can(key)||denied();}
   function setLocked(locked){
+    if(!locked)ownerInvite?.stop();
     doc.documentElement.dataset.wfAccountState=locked?'locked':'ready';
     if(lockSurface)lockSurface.hidden=!locked;
     for(const node of doc.body.children){
@@ -89,7 +90,7 @@
     showPassword.setAttribute('aria-label',text(password.type==='password'?'show':'hide')+' '+text('password'));
     localNote.textContent=text(remoteMode?'cloud':'local');sessionNote.textContent=text('session');
     langSelect.setAttribute('aria-label',text('language'));langSelect.value=locale();
-    customerAuthSurface?.updateLanguage?.(locale());
+    customerAuthSurface?.updateLanguage?.(locale());ownerInvite?.updateLanguage(locale());
   }
   function buildLock(){
     if(lockSurface)return;
@@ -113,7 +114,9 @@
     submit=make('button','btn btn-p wf-account-login-submit');submit.type='submit';
     status=make('p','wf-account-login-status');status.id='wfAccountLoginStatus';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     password.setAttribute('aria-describedby',status.id);sessionNote=make('p');localNote=make('small','wf-account-login-local');
-    loginForm.append(userLabel,passwordLabel,submit);card.append(languages,brand,loginTitle,loginIntro,loginForm,status,sessionNote,localNote);lockSurface.append(card);doc.body.append(lockSurface);
+    const header=make('header','wf-account-login-header');header.append(brand,languages);
+    loginForm.append(userLabel,passwordLabel,submit);card.append(header,loginTitle,loginIntro,loginForm,status,sessionNote,localNote);lockSurface.append(card);doc.body.append(lockSurface);
+    ownerInvite=root.WFOwnerInvite?.mount(card,new URL('./',root.location.href),locale());
     root.WFTouchKeyboard?.mountPreference?.(card);
     if(remoteMode)customerAuthSurface=root.WFCustomerAuth?.mountVisitor?.({container:card,client:service,loginForm,lang:locale(),
       onComplete:(value,message)=>{username.value=value||'';status.textContent=message;password.focus();}});

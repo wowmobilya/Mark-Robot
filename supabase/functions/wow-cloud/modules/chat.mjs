@@ -21,7 +21,7 @@ export function createChatActions({moduleRpc,storage,voiceTurn={}}){
     init:async(a)=>{const me=await rpc(a,'init');await collect(a).catch(()=>{});return me;},
     rooms:async(a,b)=>projectDelta(await rpc(a,'rooms'),'rooms',b._known),
     people:(a,b)=>rpc(a,'people',{query:short(b.query??'',100,true),offset:integer(b.offset??0,0,100000),staffOnly:bool(b.staffOnly??false)}),
-    profile:(a,b)=>rpc(a,'profile',{name:short(b.name??'',100,true),status:short(b.status??'',160,true),assetId:optional(b.assetId,uuid)}),
+    profile:(a,b)=>rpc(a,'profile',{name:short(b.name??'',100,true),status:short(b.status??'',160,true),assetId:optional(b.assetId,uuid),...(b.fileId?{fileId:uuid(b.fileId)}:{})}),
     group:(a,b)=>rpc(a,'group',{...group(b),members:b.members?.length?arrayOf(b.members,uuid,98):[]}),
     direct:(a,b)=>rpc(a,'direct',{targetId:uuid(b.targetId)}),
     feed:async(a,b)=>projectDelta(await rpc(a,'feed',{...room(b),before:optional(b.before,id),query:short(b.query??'',160,true),starred:bool(b.starred??false),
