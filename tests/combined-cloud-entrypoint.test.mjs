@@ -64,7 +64,7 @@ test('the complete repeatable release installs and the production Edge entrypoin
  await import('../supabase/functions/wow-cloud/index.ts');assert.equal(typeof serve,'function');
  const catalog=await db.query('select permission from public.wow_permission_catalog order by permission');
  assert.deepEqual(catalog.rows.map(row=>row.permission),globalThis.WFAccountPolicy.permissionKeys.slice().sort(),'SQL and application capabilities have one exact catalog');
- const jwt='header.'+Buffer.from(JSON.stringify({session_id:sid})).toString('base64url')+'.signature';
+ let jwt='header.'+Buffer.from(JSON.stringify({session_id:sid})).toString('base64url')+'.signature';
  const call=(action,body={},authenticated=true)=>serve(new Request(base+'/functions/v1/wow-cloud',{method:'POST',headers:{'content-type':'application/json',origin:release.productionOrigin,...(authenticated?{authorization:'Bearer '+jwt}:{})},body:JSON.stringify({action,...body})}));
  assert.equal((await serve(new Request(base+'/functions/v1/wow-cloud/health'))).status,503,'a project without a heartbeat is not ready');
  for(const action of ['gallery.snapshot','chat.rooms','files.list','finance.list','payroll.list','metals.list','assistant.status','operations.snapshot','offline.ownerGrant','customerAuth.snapshot','gallery.share.status','communications.status','auth.ownerActivationLink']){
@@ -96,6 +96,8 @@ test('the complete repeatable release installs and the production Edge entrypoin
   pin:createHash('sha256').update(JSON.stringify(publicJwk)).digest('base64url')};
  const who={localOwner:'account_'+'a'.repeat(32),localEpoch:1};
  const proof=await Grant.enrollment(device,grantConfig,who,webcrypto,Date.now);
+ assert.equal((await call('offline.ownerGrant',proof)).status,401,'first device enrollment retires legacy sessions');
+ jwt=ownerActivation.session.access_token;
  const grantResponse=await call('offline.ownerGrant',proof),envelope=await grantResponse.json();
  assert.equal(grantResponse.status,200);assert(!JSON.stringify(envelope).includes(signingJwk.d),'private signer material never leaves Edge');
  await Grant.verify(envelope,grantConfig,device,{...who,user:uid,workspace:w,serverEpoch:1},webcrypto,Date.now);
