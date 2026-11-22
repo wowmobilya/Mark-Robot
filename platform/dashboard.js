@@ -186,26 +186,26 @@
     };
   }
   const destinations={
-    ar:['الشركات','الباقات','الدعم','أقسام الإدارة','لا توجد شركات بعد.'],
-    en:['Companies','Plans','Support','Administration sections','No companies yet.'],
-    tr:['Şirketler','Paketler','Destek','Yönetim bölümleri','Henüz şirket yok.'],
-    fr:['Sociétés','Formules','Support','Sections d’administration','Aucune société pour le moment.'],
-    ru:['Компании','Тарифы','Поддержка','Разделы управления','Компаний пока нет.']
+    ar:['الشركات','الباقات','الدعم','أقسام الإدارة','لا توجد شركات بعد.','المكالمات'],
+    en:['Companies','Plans','Support','Administration sections','No companies yet.','Calls'],
+    tr:['Şirketler','Paketler','Destek','Yönetim bölümleri','Henüz şirket yok.','Aramalar'],
+    fr:['Sociétés','Formules','Support','Sections d’administration','Aucune société pour le moment.','Appels'],
+    ru:['Компании','Тарифы','Поддержка','Разделы управления','Компаний пока нет.','Звонки']
   };
   const companyMenu={ar:'إدارة الشركة',en:'Manage company',tr:'Şirketi yönet',fr:'Gérer la société',ru:'Управление компанией'};
   let showDestination=null,expandedCompany=null;
-  const pageFromUrl=()=>['plans','support'].includes(location.hash.slice(1))?location.hash.slice(1):'companies';
+  const pageFromUrl=()=>['plans','support','calls'].includes(location.hash.slice(1))?location.hash.slice(1):'companies';
   window.addEventListener('hashchange',()=>showDestination?.());
   async function list(){
     const ticket=++generation,state=await request('company.list',{offset});if(ticket!==generation)return;
     scanner?.dispose();scanner=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
-    const labels=destinations[lang.value],ids=['companies','plans','support'],panels={},links={};
+    const labels=destinations[lang.value],ids=['companies','plans','support','calls'],panels={},links={};
     nav.className='platform-account-bar';menu.className='platform-section-menu';menu.setAttribute('aria-label',labels[3]);
     content.append(nav,menu);
     for(const [i,id] of ids.entries()){
-      const link=el('a'),panel=el('section'),title=el('h2',labels[i]);
+      const link=el('a'),panel=el('section'),title=el('h2',labels[id==='calls'?5:i]);
       title.tabIndex=-1;title.id='platform-title-'+id;
-      link.className='platform-section-link';link.href='#'+id;link.append(el('span',labels[i]));
+      link.className='platform-section-link';link.href='#'+id;link.append(el('span',title.textContent));
       panel.className='platform-page';panel.id='platform-page-'+id;panel.hidden=true;
       panel.setAttribute('aria-labelledby',title.id);panel.append(title);content.append(panel);
       link.setAttribute('aria-controls',panel.id);menu.append(link);panels[id]=panel;links[id]=link;
@@ -217,6 +217,10 @@
       for(const key of ids){
         panels[key].hidden=key!==id;
         if(key===id)links[key].setAttribute('aria-current','page');else links[key].removeAttribute('aria-current');
+      }
+      if(id==='calls'&&!panels.calls.querySelector('.platform-relay')){
+        const host=el('div');host.className='platform-relay';panels.calls.append(host);
+        window.WFPlatformRelay.mount(host,lang.value,request);
       }
       if(id==='plans'&&!plansBox.children.length&&!loadingPlans){
         loadingPlans=true;

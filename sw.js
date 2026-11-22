@@ -110,6 +110,7 @@ const urlsToCache = [
   './platform/index.html',
   './platform/install.js?v=1',
   './platform/support.js?v=2',
+  './platform/relay.js?v=1',
   './support-settings.js?v=1',
   './platform/manifest.webmanifest',
   './platform/dashboard.js?v=227',

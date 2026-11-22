@@ -5,10 +5,12 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
   const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true});
   try{
     const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true});
+    let relayConfigured=false,relayEnabled=false,serverHealthy=true;const relayWrites=[];
     const events=[],wid=randomUUID(),scope='https://platform.test';let plans=[],assigned=null,expiresAt=null,created=false,rejection='wrong',companyName='Test',companyStatus='active',activation='pending',canRecover=false;
     await page.route('**/*',async route=>{
       const u=new URL(route.request().url());
       if(u.hostname!=='platform.test')return route.abort();
+      if(u.pathname==='/service/health'){assert.equal(route.request().headers().authorization,undefined);return route.fulfill({status:serverHealthy?200:503,json:{service:'mark-robot',ok:serverHealthy}});}
       if(u.pathname==='/service'){
         const body=route.request().postDataJSON();events.push(body.action);let response;
         if(body.action==='auth.signIn'){
@@ -26,6 +28,13 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
           case 'platform.company.reissue':assert.match(body.setupToken,/^[a-f0-9]{64}$/);response={};break;
           case 'platform.company.rename':companyName=body.name;response={};break;
           case 'platform.company.status':companyStatus=body.status;response={};break;
+          case 'platform.relay.set':
+            assert.equal(relayConfigured,true);assert.equal(body.acceptPricing,body.enabled?true:undefined);
+            relayWrites.push(body.enabled);relayEnabled=body.enabled;
+            // A successful write and a subsequent read return the authoritative view.
+          case 'platform.relay.get':
+            response={enabled:relayEnabled,configured:relayConfigured,active:relayEnabled&&relayConfigured,includedGb:1000,overageUsdPerGb:.05,remainingGb:null,turnEgressBytes:1250000000};
+            break;
           case 'platform.plans.list':response={plans};break;
           case 'platform.limits.get':assert.equal(body.workspaceId,wid);response={usedUsers:3,usedBytes:500000000,usedDevices:1,planId:assigned?.id||null,plan:assigned,expiresAt,version:0};break;
           case 'platform.limits.set':
@@ -45,7 +54,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       if(u.pathname.endsWith('wow-cloud-config.js'))return route.fulfill({contentType:'application/javascript',body:"window.WOW_CLOUD_CONFIG={workspaceId:'scope',endpoint:'/service',publishableKey:'local'}"});
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/support.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/support.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
     await page.goto(scope+'/platform/#support');await page.locator('#lang').selectOption('en');
@@ -70,6 +79,23 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(await menu.getByRole('link',{name:'Support'}).getAttribute('aria-current'),'page');
     await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByText('No companies yet.').waitFor();
+    await menu.getByRole('link',{name:'Calls'}).click();
+    const relay=page.locator('.platform-relay'),enable=relay.getByRole('button',{name:'Enable relay'});
+    await relay.getByText('Cloudflare relay setup is incomplete.').waitFor();
+    await relay.getByText('Mark Robot service · Available').waitFor();
+    assert(await relay.getByText('platform.test',{exact:true}).isVisible());
+    serverHealthy=false;await relay.getByRole('button',{name:'Check service'}).click();
+    await relay.getByText('Mark Robot service · Unreachable').waitFor();serverHealthy=true;
+    await relay.getByRole('button',{name:'Check service'}).click();
+    await relay.getByText('Mark Robot service · Available').waitFor();
+    assert(await enable.isDisabled());assert.equal(relayWrites.length,0);
+    relayConfigured=true;await relay.getByRole('button',{name:'Refresh'}).click();
+    await relay.getByText('Off',{exact:true}).waitFor();assert(await enable.isDisabled());
+    assert.match(await relay.getByText('Remaining billing allowance').locator('+ dd').innerText(),/Unavailable/);
+    assert.match(await relay.getByText('Call relay usage').locator('+ dd').innerText(),/1.25/);
+    await relay.getByRole('checkbox').check();await enable.click();await relay.getByText('Enabled',{exact:true}).waitFor();
+    await relay.getByRole('button',{name:'Turn off relay'}).click();await relay.getByText('Off',{exact:true}).waitFor();
+    assert.deepEqual(relayWrites,[true,false]);await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByLabel('Company name').fill('Test');await page.getByRole('button',{name:'Create company'}).click();
     const link=await page.getByText('Owner setup link').getAttribute('href');assert.equal(new URL(link).searchParams.get('setup'),wid);
     const rendered=page.locator('svg');await rendered.waitFor();const decoded=await page.evaluate(async()=>{const svg=document.querySelector('svg').cloneNode(true);svg.style.background='white';const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg));const img=new Image();img.src=url;await img.decode();const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const c=canvas.getContext('2d');c.fillStyle='white';c.fillRect(0,0,canvas.width,canvas.height);c.drawImage(img,0,0);return new ZXingBrowser.BrowserQRCodeReader(new Map([[1,true]])).decodeFromCanvas(canvas).getText();});assert.equal(decoded,link);
