@@ -61,14 +61,36 @@
     ru:{button:'Запросить активацию в WhatsApp',message:(name,amount,days)=>`Здравствуйте! Хочу запросить подключение тарифа WOW Furniture «${name}» на ${days} дней за ${amount}. Сообщите, пожалуйста, порядок активации.`}
   };
   const fxWords={
-    ar:{equivalent:'المقابل بالليرة التركية',loading:'جارٍ قراءة سعر البنك المركزي...',unavailable:'السعر الرسمي غير متاح',rate:'سعر بيع العملات',asOf:'نشرة'},
-    en:{equivalent:'Turkish lira equivalent',loading:'Reading central-bank rate...',unavailable:'Official rate unavailable',rate:'Indicative selling rate',asOf:'Bulletin'},
-    tr:{equivalent:'Türk lirası karşılığı',loading:'Merkez Bankası kuru alınıyor...',unavailable:'Resmî kur kullanılamıyor',rate:'Döviz satış kuru',asOf:'Bülten'},
-    fr:{equivalent:'Équivalent en livre turque',loading:'Chargement du cours de la banque centrale…',unavailable:'Cours officiel indisponible',rate:'Cours de vente indicatif',asOf:'Bulletin'},
-    ru:{equivalent:'Эквивалент в турецких лирах',loading:'Загрузка курса ЦБ…',unavailable:'Официальный курс недоступен',rate:'Индикативный курс продажи',asOf:'Бюллетень'}
+    ar:{equivalent:'المقابل بالليرة التركية',loading:'جارٍ قراءة سعر البنك المركزي...',unavailable:'السعر الرسمي غير متاح',rate:'سعر بيع العملات'},
+    en:{equivalent:'Turkish lira equivalent',loading:'Reading central-bank rate...',unavailable:'Official rate unavailable',rate:'Indicative selling rate'},
+    tr:{equivalent:'Türk lirası karşılığı',loading:'Merkez Bankası kuru alınıyor...',unavailable:'Resmî kur kullanılamıyor',rate:'Döviz satış kuru'},
+    fr:{equivalent:'Équivalent en livre turque',loading:'Chargement du cours de la banque centrale…',unavailable:'Cours officiel indisponible',rate:'Cours de vente indicatif'},
+    ru:{equivalent:'Эквивалент в турецких лирах',loading:'Загрузка курса ЦБ…',unavailable:'Официальный курс недоступен',rate:'Индикативный курс продажи'}
   };
   const money=(value,currency,language)=>{
-    if(currency==='USD')return 'const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
+    if(currency==='USD')return '$'+new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(value);
+    return new Intl.NumberFormat(language,{style:'currency',currency,maximumFractionDigits:2}).format(value);
+  };
+  async function showFx(entries,readRate,language){
+    const w=fxWords[language]||fxWords.ar;
+    const fail=()=>{for(const entry of entries){if(entry.value.isConnected){entry.value.textContent='—';entry.note.textContent=w.unavailable;}}};
+    if(typeof readRate!=='function'){fail();return;}
+    try{
+      const answer=await readRate('fx.get');
+      if(answer?.available!==true||answer?.source!=='TCMB'||answer?.rateType!=='forex_selling'||
+        !/^\d{4}-\d{2}-\d{2}$/.test(answer?.date||''))throw Error('RATE_UNAVAILABLE');
+      for(const entry of entries){
+        if(!entry.value.isConnected)continue;
+        const rate=answer.rates?.[entry.currency];
+        if(!Number.isFinite(rate)||rate<=0||rate>1000000){entry.value.textContent='—';entry.note.textContent=w.unavailable;continue;}
+        entry.value.textContent='≈ '+new Intl.NumberFormat('tr-TR',
+          {style:'currency',currency:'TRY',currencyDisplay:'narrowSymbol',minimumFractionDigits:2,maximumFractionDigits:2})
+          .format(entry.amount*rate);
+        entry.note.textContent='TCMB · '+w.rate+' · '+answer.date;
+      }
+    }catch{fail();}
+  }
+  const make=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
   function svgIcon(kind){
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
     svg.classList.add('platform-contact-icon');
@@ -116,8 +138,7 @@
       const fx=make('div','platform-plan-fx'),fxIcon=make('span','platform-plan-fx-icon','⇄');
       fxIcon.setAttribute('aria-hidden','true');
       const fxLabel=make('span','platform-plan-fx-label',fxWords[document.documentElement.lang]?.equivalent||fxWords.ar.equivalent);
-      const fxValue=make('strong','platform-plan-fx-value','—');
-      fxValue.dir='ltr';
+      const fxValue=make('strong','platform-plan-fx-value','—');fxValue.dir='ltr';
       const fxNote=make('small','platform-plan-fx-note',fxWords[document.documentElement.lang]?.loading||fxWords.ar.loading);
       fx.append(fxIcon,fxLabel,fxValue,fxNote);
       fxEntries.push({value:fxValue,note:fxNote,amount,currency});
@@ -179,137 +200,8 @@
     channels.append(chat,phone,email);contactPanel.append(contactHeading,channels);
     const panel=make('section','platform-pricing-dashboard');
     panel.append(heading,grid,contactPanel,make('p','platform-plan-disclaimer',w.noCharge+' '+w.adjust));
+    const editor=host.querySelector('.platform-plan-editor');
     void showFx(fxEntries,readRate,document.documentElement.lang);
-    const editor=host.querySelector('.platform-plan-editor');
-    if(editor)editor.before(panel);else host.append(panel);
-  }
-  window.WFPlatformPricing=Object.freeze({mount,tiers});
-})();+new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(value);
-    return new Intl.NumberFormat(language,{style:'currency',currency,maximumFractionDigits:2}).format(value);
-  };
-  async function showFx(entries,readRate,language){
-    const w=fxWords[language]||fxWords.ar;
-    const fail=()=>{for(const entry of entries){entry.value.textContent='—';entry.note.textContent=w.unavailable;}};
-    if(typeof readRate!=='function'){fail();return;}
-    try{
-      const answer=await readRate('fx.get');
-      if(answer?.available!==true||answer?.source!=='TCMB'||answer?.rateType!=='forex_selling'||
-        !/^\d{4}-\d{2}-\d{2}$/.test(answer?.date||''))throw Error('RATE_UNAVAILABLE');
-      for(const entry of entries){
-        const rate=answer.rates?.[entry.currency];
-        if(!Number.isFinite(rate)||rate<=0||rate>1000000){entry.value.textContent='—';entry.note.textContent=w.unavailable;continue;}
-        if(!entry.value.isConnected)continue;
-        entry.value.textContent='≈ '+new Intl.NumberFormat('tr-TR',
-          {style:'currency',currency:'TRY',currencyDisplay:'narrowSymbol',minimumFractionDigits:2,maximumFractionDigits:2})
-          .format(entry.amount*rate);
-        entry.note.textContent='TCMB · '+w.rate+' · '+answer.date;
-      }
-    }catch{fail();}
-  }
-  const make=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
-  function svgIcon(kind){
-    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.classList.add('platform-contact-icon');
-    svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('focusable','false');svg.setAttribute('aria-hidden','true');
-    const mark=document.createElementNS('http://www.w3.org/2000/svg','path');
-    if(kind==='whatsapp'){
-      svg.classList.add('platform-whatsapp-logo');
-      mark.setAttribute('fill','currentColor');mark.setAttribute('d',whatsappPath);
-    }else{
-      svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.9');
-      svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');
-      mark.setAttribute('d',kind==='call'?'M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.09 5.18 2 2 0 0 1 5.08 3h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L9.1 10.9a16 16 0 0 0 4 4l1.27-1.23a2 2 0 0 1 2.11-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.92Z':
-        'M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm-2 2 10 7L22 7');
-    }
-    svg.append(mark);return svg;
-  }
-  function addIcon(link,kind){link.prepend(svgIcon(kind));return link;}
-  function visual(key){
-    const markup={
-      month:'<rect x="31" y="29" width="106" height="102" rx="22"/><path d="M31 62h106M58 17v28M110 17v28"/><path class="wf-tier-line" d="M61 91h47M61 107h29"/>',
-      year:'<circle cx="84" cy="80" r="53"/><circle cx="84" cy="80" r="33" class="wf-tier-orbit"/><path d="M84 43v38l26 21"/><circle class="wf-tier-dot" cx="84" cy="27" r="6"/>',
-      twoYears:'<path d="M17 85c16-40 44-45 67-4 23 41 51 36 67-4-16-40-44-45-67-4-23 41-51 36-67 4Z"/><path class="wf-tier-spark" d="M131 26v16m-8-8h16M42 19v12m-6-6h12"/>'
-    };
-    const wrap=make('div','wf-plan-art');
-    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.setAttribute('viewBox','0 0 168 158');svg.setAttribute('aria-hidden','true');
-    svg.setAttribute('focusable','false');svg.innerHTML=markup[key];
-    wrap.append(svg);return wrap;
-  }
-  function mount(host,plans,onEdit){
-    if(!host||!Array.isArray(plans)||typeof onEdit!=='function')return;
-    const w=copy[document.documentElement.lang]||copy.ar,heading=make('header','platform-pricing-heading');
-    heading.append(make('h3','',w.title),make('p','',w.lead));
-    const grid=make('div','platform-pricing-cards');
-    for(const item of tiers){
-      const plan=plans.find(p=>p.id===item.id)||plans.find(p=>p.name===item.name)||null;
-      const card=make('article','platform-pricing-card');card.dataset.tier=item.key;
-      if(item.key==='twoYears')card.dataset.recommended='true';
-      const visualNode=visual(item.key);
-      const eyebrow=make('span','platform-plan-eyebrow',item.key==='twoYears'?w.recommended:w[ item.key]);
-      const name=make('h4','',plan?.name||w[item.key]);
-      const amount=Number(plan?.price??item.price),currency=plan?.currency||'USD';
-      const price=make('strong','platform-plan-price');
-      price.append(make('span','',new Intl.NumberFormat(document.documentElement.lang,{style:'currency',currency,maximumFractionDigits:2}).format(amount)));
-      const duration=make('small','platform-plan-duration',(plan?.durationDays||item.days)+' '+(item.key==='month'?w.day.replace(/^30\s*/, ''):item.key==='year'?w.annual.replace(/^365\s*/, ''):w.biennial.replace(/^730\s*/, '')));
-      const monthly=make('span','platform-plan-per-month',w.perMonth+' · '+new Intl.NumberFormat(document.documentElement.lang,{style:'currency',currency,maximumFractionDigits:2}).format(amount/item.months));
-      const label=make('span','platform-plan-label',plan?w.saved:w.draft);
-      label.dataset.saved=String(!!plan);
-      const button=make('button','platform-plan-edit',plan?w.edit:w.create);button.type='button';
-      button.addEventListener('click',()=>onEdit(item,plan));
-      const benefits=benefitCopy[document.documentElement.lang]||benefitCopy.ar;
-      const values=[
-        [String(plan?.deviceLimit??2)+' '+benefits[0],'phone'],
-        [new Intl.NumberFormat(document.documentElement.lang,{maximumFractionDigits:1}).format(
-          Number(plan?.storageBytes??2000000000)/1e9)+' GB · '+benefits[1],'storage'],
-        [String(plan?.voiceMinutes??500)+' '+benefits[2],'voice'],
-        [String(plan?.videoMinutes??250)+' '+benefits[3],'video'],
-        [benefits[4],'addon-phone'],[benefits[5],'addon-double']
-      ];
-      const featureList=make('ul','platform-plan-features');
-      for(const [copy,key] of values){
-        const li=make('li','platform-plan-feature');
-        li.dataset.feature=key;
-        const symbol=make('span','platform-plan-feature-icon');
-        symbol.setAttribute('aria-hidden','true');
-        li.append(symbol,make('span','',copy));featureList.append(li);
-      }
-      const note=make('small','platform-plan-benefits-note',benefits[6]);
-      // WhatsApp is an inquiry channel only; saving and assigning plans remain authenticated admin actions.
-      const lang=document.documentElement.lang in activationCopy?document.documentElement.lang:'ar';
-      const whats=activationCopy[lang];
-      const formattedAmount=new Intl.NumberFormat(lang,{style:'currency',currency,maximumFractionDigits:2}).format(amount);
-      const activationText=whats.message(plan?.name||w[item.key],formattedAmount,Number(plan?.durationDays??item.days));
-      const whatsappUrl=new URL('https://wa.me/'+whatsappNumber);
-      whatsappUrl.searchParams.set('text',activationText);
-      const activate=addIcon(make('a','platform-plan-activate',whats.button),'whatsapp');
-      activate.href=whatsappUrl.toString();
-      activate.target='_blank';activate.rel='noopener noreferrer';activate.referrerPolicy='no-referrer';
-      activate.setAttribute('aria-label',whats.button+' · '+(plan?.name||w[item.key]));
-      const actions=make('div','platform-plan-actions');
-      actions.append(activate,button);
-      card.append(visualNode,eyebrow,name,price,duration,monthly,featureList,note,label,actions);
-      grid.append(card);
-    }
-    // A single shared contact block avoids duplicating sensitive contact links
-    // across the three cards. Email/phone are explicitly user provided.
-    const lang=document.documentElement.lang in contactCopy?document.documentElement.lang:'ar',contact=contactCopy[lang];
-    const contactPanel=make('address','platform-sales-contact');
-    const contactHeading=make('div','platform-sales-contact-heading');
-    contactHeading.append(make('strong','',contact.heading),make('small','',contact.info));
-    const channels=make('div','platform-sales-contact-links');
-    const chat=addIcon(make('a','platform-sales-channel platform-sales-whatsapp',contact.whatsapp),'whatsapp');
-    chat.href='https://wa.me/'+whatsappNumber;chat.target='_blank';chat.rel='noopener noreferrer';chat.referrerPolicy='no-referrer';
-    const phone=addIcon(make('a','platform-sales-channel platform-sales-phone','+90 538 626 37 00'),'call');
-    phone.href='tel:+905386263700';phone.setAttribute('aria-label',contact.call+' · +90 538 626 37 00');
-    phone.dir='ltr';
-    const email=addIcon(make('a','platform-sales-channel platform-sales-email',activationEmail),'email');
-    email.href='mailto:'+activationEmail;email.setAttribute('aria-label',contact.email+' · '+activationEmail);
-    email.dir='ltr';
-    channels.append(chat,phone,email);contactPanel.append(contactHeading,channels);
-    const panel=make('section','platform-pricing-dashboard');
-    panel.append(heading,grid,contactPanel,make('p','platform-plan-disclaimer',w.noCharge+' '+w.adjust));
-    const editor=host.querySelector('.platform-plan-editor');
     if(editor)editor.before(panel);else host.append(panel);
   }
   window.WFPlatformPricing=Object.freeze({mount,tiers});
