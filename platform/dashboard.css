@@ -1138,3 +1138,27 @@ html[data-theme=dark] .platform-sales-contact-links .platform-sales-whatsapp{
   #content .platform-section-menu>.platform-section-link[href="#calls"]{order:5}
   #content .platform-section-menu>.platform-nav-orbit{order:6}
 }
+
+
+/* Developer profile: native collapsible card on WOW admin Home. */
+.platform-developer-card{min-width:0;max-width:100%;margin-block:1rem .3rem;border:1px solid color-mix(in srgb,var(--ui-accent) 24%,var(--border));border-radius:18px;background:var(--card);overflow:hidden}
+.platform-developer-summary{list-style:none;display:flex;align-items:center;gap:.75rem;min-height:74px;padding:.9rem 1rem;cursor:pointer}
+.platform-developer-summary::-webkit-details-marker{display:none}
+.platform-developer-summary:focus-visible{outline:3px solid var(--ui-accent);outline-offset:-4px;border-radius:16px}
+.platform-developer-icon{display:grid;place-items:center;flex:0 0 46px;inline-size:46px;block-size:46px;border-radius:14px;background:color-mix(in srgb,var(--ui-accent) 12%,var(--card));color:var(--ui-accent)}
+.platform-developer-icon svg{inline-size:26px;block-size:26px}
+.platform-developer-heading{display:grid;gap:.25rem;min-width:0;flex:1}
+.platform-developer-heading strong{font-size:.98rem;font-weight:820;color:var(--text)}
+.platform-developer-heading small{font-size:.76rem;color:var(--text2);overflow-wrap:anywhere}
+.platform-developer-arrow{color:var(--ui-accent);font-weight:700;font-size:1.5rem;transition:transform .18s ease}
+.platform-developer-card[open] .platform-developer-arrow{transform:rotate(180deg)}
+.platform-developer-details{display:grid;gap:.8rem;padding:1rem;background:color-mix(in srgb,var(--ui-accent) 3%,var(--card));border-block-start:1px solid var(--border)}
+.platform-developer-details p{margin:0;color:var(--text2);line-height:1.65;font-size:.84rem;overflow-wrap:anywhere}
+.platform-developer-identity{display:flex;gap:.7rem;align-items:center;min-width:0}
+.platform-developer-avatar{display:grid;place-items:center;width:46px;height:46px;flex:0 0 46px;border-radius:15px;background:var(--ui-accent);color:#fff;font-size:.85rem;font-weight:900;letter-spacing:.035em}
+.platform-developer-identity>div{display:grid;gap:.2rem;min-width:0}
+.platform-developer-identity strong{font-size:.94rem;color:var(--text);overflow-wrap:anywhere}
+.platform-developer-identity span:not(.platform-developer-avatar){font-size:.74rem;color:var(--text2)}
+.platform-developer-specialties{display:flex;gap:.42rem;flex-wrap:wrap}
+.platform-developer-skill{font-size:.72rem;font-weight:680;line-height:1.4;padding:.38rem .58rem;border-radius:999px;background:var(--ui-soft);color:var(--ui-accent)}
+@media(prefers-reduced-motion:reduce){.platform-developer-arrow{transition:none}}
