@@ -144,5 +144,5 @@ test('WOW familiar chat UI, in-chat events, customer signup and release source p
  assert.match(workspace,/callUI\?\.renderHistoryInFeed\?\.\(\)/);
  assert.match(workspace,/wf-chat-bubble/);assert.match(ui,/wf-chat-call-chip/);
  assert.match(manager,/WFCallManager/);assert.match(channel,/config:\{private:true/);
- assert.equal(JSON.parse(manifest).version,222);
+ assert.equal(JSON.parse(manifest).version,223);
 });
