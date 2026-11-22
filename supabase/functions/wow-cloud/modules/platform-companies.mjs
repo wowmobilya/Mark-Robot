@@ -1,6 +1,6 @@
 import {sha256,failure} from '../core.mjs';
 
-export function createPlatformActions({platformRpc,requirePlatformFounder,manageDevices}){
+export function createPlatformActions({platformRpc,requirePlatformFounder,manageDevices,inspectCompany}){
   const handlers={'platform.identity':async({actor})=>{
     try{await requirePlatformFounder(actor);return {verifiedFounder:true};}
     catch(error){if(error?.code==='ACCESS_DENIED')return {verifiedFounder:false};throw error;}
