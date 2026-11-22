@@ -843,3 +843,76 @@ html[data-theme=dark] .platform-company-card-v2 .platform-tool-status[data-actio
  .platform-interactive[data-phase=busy]::after,.platform-qr-actions button:disabled::after,
  .platform-company-link-pill[data-link-state=checking]::before{animation:none}
 }
+
+
+/* Three responsive WOW pricing cards: crisp vector artwork, light motion, no bitmap downloads. */
+.platform-pricing-dashboard{display:grid!important;grid-template-columns:minmax(0,1fr);gap:.8rem;max-inline-size:100%;min-inline-size:0;padding:0;margin:0 0 1.15rem;background:transparent}
+.platform-pricing-dashboard .platform-pricing-heading{display:grid;gap:.22rem;justify-items:start;align-items:start;min-height:0;position:static;
+  border:0!important;box-shadow:none!important;background:transparent!important;margin:0!important;padding:0!important}
+.platform-pricing-heading h3{display:inline-flex;align-items:center;gap:.5rem;margin:0;font-size:clamp(1rem,1.5vw,1.2rem);font-weight:850;color:var(--text)}
+.platform-pricing-heading h3::before{content:"✦";color:var(--ui-accent);font-size:1.3rem}
+.platform-pricing-heading p,.platform-plan-disclaimer{margin:0;color:var(--text2);font-size:.79rem;line-height:1.55}
+.platform-pricing-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr));gap:clamp(.55rem,1.7vw,1rem);min-inline-size:0;align-items:stretch}
+.platform-pricing-card{position:relative;isolation:isolate;display:flex!important;flex-direction:column;align-items:stretch!important;gap:.42rem;overflow:hidden;
+ min-inline-size:0;max-inline-size:100%;margin:0;padding:clamp(.75rem,1.65vw,1.25rem)!important;
+ border:1px solid var(--border)!important;border-radius:22px!important;
+ background:linear-gradient(155deg,var(--card) 0%,var(--input) 85%)!important;box-shadow:0 6px 23px rgb(31 54 78 / .075)!important;
+ transition:transform .19s cubic-bezier(.25,.7,.3,1),box-shadow .19s ease,border-color .19s ease}
+.platform-pricing-card::after{position:absolute;z-index:-1;inset-block-start:-5rem;inset-inline-end:-4rem;inline-size:11rem;block-size:11rem;
+ content:"";border-radius:50%;background:color-mix(in srgb,var(--ui-accent) 11%,transparent);filter:blur(16px);pointer-events:none}
+.platform-pricing-card[data-tier=year]::after{background:color-mix(in srgb,#9c80c5 15%,transparent)}
+.platform-pricing-card[data-tier=twoYears]::after{background:color-mix(in srgb,#daac58 19%,transparent)}
+.platform-pricing-card[data-recommended=true]{border-color:color-mix(in srgb,var(--ui-accent) 60%,var(--border))!important;
+ box-shadow:0 9px 27px rgb(31 54 78 / .095)!important}
+@media(hover:hover){.platform-pricing-card:hover{transform:translateY(-3px);box-shadow:0 13px 28px rgb(31 54 78 / .11)!important}}
+.platform-pricing-card .wf-plan-art{display:grid;place-items:center;flex:0 0 auto;inline-size:100%;block-size:116px;min-width:0;overflow:visible}
+.platform-pricing-card .wf-plan-art svg{display:block;width:min(100%,148px);height:112px;fill:none;stroke:var(--ui-accent);
+ stroke-linecap:round;stroke-linejoin:round;stroke-width:6;overflow:visible;filter:drop-shadow(0 8px 13px rgb(31 54 78 / .14));
+ animation:wow-pricing-float 4.8s ease-in-out infinite}
+.platform-pricing-card[data-tier=year] .wf-plan-art svg{stroke:color-mix(in srgb,#9677be 65%,var(--ui-accent))}
+.platform-pricing-card[data-tier=twoYears] .wf-plan-art svg{stroke:color-mix(in srgb,#c89a49 65%,var(--ui-accent))}
+.platform-pricing-card .wf-tier-dot{fill:var(--card);stroke-width:5;transform-origin:84px 80px;animation:wow-pricing-orbit 12s linear infinite}
+.platform-pricing-card .wf-tier-spark{animation:wow-pricing-spark 2.5s ease-in-out infinite}
+.platform-pricing-card .platform-plan-eyebrow{display:inline-flex;align-items:center;align-self:flex-start;gap:.3rem;border-radius:100px;
+ padding:.24rem .7rem;color:var(--ui-accent);background:var(--ui-soft);font-size:.73rem;font-weight:800}
+.platform-pricing-card[data-recommended=true] .platform-plan-eyebrow{background:color-mix(in srgb,#e4bb65 20%,var(--ui-soft));color:var(--text)}
+.platform-pricing-card h4{font-size:clamp(1rem,1.7vw,1.14rem);font-weight:850;line-height:1.4;min-inline-size:0;
+ margin:.2rem 0 0;overflow-wrap:anywhere;color:var(--text)}
+.platform-pricing-card .platform-plan-price{display:block;font-size:clamp(1.65rem,3vw,2.3rem);letter-spacing:-.03em;
+ line-height:1.2;font-weight:850;font-variant-numeric:tabular-nums;color:var(--text)}
+.platform-pricing-card .platform-plan-duration{font-size:.82rem;color:var(--text2)}
+.platform-pricing-card .platform-plan-per-month{display:block;color:var(--ui-accent);font-weight:750;font-size:.79rem}
+.platform-pricing-card .platform-plan-label{display:inline-flex;align-items:center;align-self:flex-start;gap:.32rem;
+ min-height:23px;padding:.18rem .5rem;border:1px solid var(--border);border-radius:10px;
+ font-size:.71rem;font-weight:750;color:var(--text2);background:var(--card)}
+.platform-pricing-card .platform-plan-label[data-saved=true]{background:#e8f6ee;color:#147350;border-color:#b7e2c9}
+html[data-theme=dark] .platform-pricing-card .platform-plan-label[data-saved=true]{background:#183c2b;color:#91dbad;border-color:#326b50}
+.platform-pricing-card .platform-plan-edit{display:inline-flex;align-items:center;justify-content:center;
+ gap:.35rem;inline-size:100%;min-inline-size:0;min-height:45px;margin-top:auto;margin-bottom:0;padding:.53rem .68rem;
+ border:1px solid var(--ui-accent);border-radius:12px;background:var(--ui-accent);color:white;
+ font-size:.84rem;font-weight:800;text-align:center}
+.platform-pricing-card .platform-plan-edit::before{content:"✎";font-size:1.1rem;line-height:1}
+.platform-pricing-card .platform-plan-edit:focus-visible{outline:3px solid var(--text);outline-offset:3px}
+.platform-pricing-dashboard .platform-plan-disclaimer{padding:.55rem .7rem;background:var(--ui-soft);
+ border:1px solid var(--border);border-radius:12px}
+@keyframes wow-pricing-float{0%,100%{transform:translateY(2px)}50%{transform:translateY(-5px)}}
+@keyframes wow-pricing-orbit{to{transform:rotate(360deg)}}
+@keyframes wow-pricing-spark{0%,100%{opacity:.45}50%{opacity:1}}
+@media(max-width:620px){
+ .platform-pricing-cards{grid-template-columns:minmax(0,1fr);gap:.6rem}
+ .platform-pricing-card{padding:.72rem!important;display:grid!important;
+ grid-template-columns:minmax(0,1fr) 100px;gap:.16rem .55rem;align-items:center!important}
+ .platform-pricing-card .wf-plan-art{grid-column:2;grid-row:1/6;block-size:96px}
+ .platform-pricing-card .wf-plan-art svg{width:95px;height:88px;max-width:100%}
+ .platform-pricing-card .platform-plan-eyebrow,.platform-pricing-card h4,
+ .platform-pricing-card .platform-plan-price,.platform-pricing-card .platform-plan-duration,
+ .platform-pricing-card .platform-plan-per-month{grid-column:1;min-width:0}
+ .platform-pricing-card .platform-plan-edit,.platform-pricing-card .platform-plan-label{grid-column:1/-1}
+ .platform-pricing-card .platform-plan-edit{margin-top:.4rem}
+ .platform-pricing-card .platform-plan-price{font-size:1.65rem}
+}
+@media(max-width:350px){.platform-pricing-card{grid-template-columns:minmax(0,1fr) 64px}
+ .platform-pricing-card .wf-plan-art svg{width:63px;height:67px}
+ .platform-pricing-card .platform-plan-price{font-size:1.5rem}}
+@media(prefers-reduced-motion:reduce){.platform-pricing-card,.platform-pricing-card .wf-plan-art svg,
+ .platform-pricing-card .wf-tier-dot,.platform-pricing-card .wf-tier-spark{animation:none;transition:none}}
