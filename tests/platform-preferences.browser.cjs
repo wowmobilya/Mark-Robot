@@ -34,7 +34,8 @@ test('admin preferences inherit WOW settings, persist languages and follow syste
     assert.match(await dialog.locator('[data-lang-choice=ar]').innerText(),/العربية/);
     await dialog.locator('[data-lang-choice=ru]').click();
     assert.deepEqual(await reading(),['ru','ltr','dark']);
-    assert.equal(await languageButton.innerText(), '🇷🇺 RU');
+    assert.equal(await languageButton.locator('.platform-language-flag').innerText(),'🇷🇺');
+    assert.equal(await languageButton.locator('.platform-language-code').innerText(),'RU');
     await settings.locator('[data-admin-language-trigger]').click();
     dialog=page.getByRole('dialog',{name:'Выберите язык'});
     await dialog.locator('[data-lang-choice=ar]').click();
