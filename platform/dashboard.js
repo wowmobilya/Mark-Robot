@@ -234,9 +234,10 @@
     ru:['Настройка владельца','Владелец активен','Ожидается активация','Приглашение истекло','Приглашение не выдавалось','Создать приглашение','Отправить письмо для восстановления','Подтвердите отправку ссылки на проверенную почту владельца','Письмо для восстановления запрошено.','Новое приглашение заменит ожидающее приглашение этой компании.']
   };
   const inviteCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toString(16).padStart(2,'0')).join('');
-  async function ownerSetup(container,company){
+  async function ownerSetup(container,company,onVerified){
     const w=activationWords[lang.value],activation=await request('company.activation',{workspaceId:company.id});
     if(!container.isConnected)return;
+    onVerified?.(activation);
     const i=['active','pending','expired','unissued'].indexOf(activation.state);
     if(i<0)throw Error();
     container.replaceChildren(el('h3',w[0]),el('p',w[i+1]));
@@ -328,6 +329,13 @@
     if(pages.childElementCount)host.append(pages);
   }
   const companyMenu={ar:'إدارة الشركة',en:'Manage company',tr:'Şirketi yönet',fr:'Gérer la société',ru:'Управление компанией'};
+  const companyCardWords={
+    ar:['ربط البرنامج','جارِ التحقق من تفعيل المالك','المالك مفعّل','بانتظار تفعيل المالك','الدعوة منتهية','لم تصدر دعوة','تعذّر التحقق','تحديث حالة الربط','حالة الاتصال المباشر غير متوفرة','الحسابات','فتح برنامج الشركة'],
+    en:['Program link','Checking owner activation','Owner activated','Awaiting owner activation','Invitation expired','No invitation issued','Could not verify','Refresh link status','Live connection status unavailable','Accounts','Open company program'],
+    tr:['Program bağlantısı','Sahip etkinliği kontrol ediliyor','Sahip etkin','Sahip etkinleştirmesi bekleniyor','Davet süresi doldu','Davet oluşturulmadı','Kontrol edilemedi','Bağlantı durumunu yenile','Canlı bağlantı durumu mevcut değil','Hesaplar','Şirket programını aç'],
+    fr:['Lien au programme','Vérification de l’activation','Propriétaire activé','Activation en attente','Invitation expirée','Aucune invitation','Vérification impossible','Actualiser le statut','Connexion en direct indisponible','Comptes','Ouvrir le programme'],
+    ru:['Связь с программой','Проверка активации владельца','Владелец активен','Ожидается активация','Срок приглашения истёк','Приглашение не создано','Не удалось проверить','Обновить статус','Онлайн-статус недоступен','Аккаунты','Открыть программу']
+  };
   let showDestination=null,expandedCompany=null;
   const header=document.querySelector('main > header'),headerActions=el('div');
   headerActions.className='platform-header-actions';headerActions.hidden=true;header.append(headerActions);
@@ -484,18 +492,74 @@
       }).catch(()=>{}); // The selectable setup URL and code are already available.
     }
     brandList?.dispose();brandList=window.WFPlatformBrand?.create({request,config,language:lang.value});
+    const cardWords=companyCardWords[lang.value];
+    // Verify only visible cards, at a bounded concurrency. This existing endpoint
+    // confirms owner setup, NOT live presence; never imply that a device is online.
+    const verifyQueue=[];let verifying=0;
+    const runQueue=()=>{
+      while(verifying<3&&verifyQueue.length){
+        const task=verifyQueue.shift();if(ticket!==generation||!task.row.isConnected)continue;
+        verifying++;
+        Promise.resolve().then(task.action).catch(()=>{}).finally(()=>{verifying--;runQueue();});
+      }
+    };
+    const queueVerification=(row,action)=>{verifyQueue.push({row,action});runQueue();};
+    const activationObserver=typeof IntersectionObserver==='function'
+      ?new IntersectionObserver(entries=>{
+        for(const entry of entries){
+          if(!entry.isIntersecting)continue;
+          activationObserver.unobserve(entry.target);
+          entry.target.querySelector('.platform-company-refresh')?.click();
+        }
+      },{rootMargin:'100px 0px'}):null;
     for(const company of state.companies){
       const row=el('article'),active=company.status==='active',link=el('a',t(16));
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',company.id);
-      row.className='platform-company-card';link.className='platform-company-launch';
+      row.className='platform-company-card platform-company-card-v2';link.className='platform-company-launch';
       link.href=url.href;
       const name=el('strong',company.name),stateLabel=el('span',t(active?7:8)),accountLabel=el('span',t(13)+' · '+company.accounts);
+      const hero=el('div'),pills=el('div'),actions=el('div'),summaryLine=el('div');
+      hero.className='platform-company-hero';pills.className='platform-company-pills';
+      actions.className='platform-company-primary-actions';summaryLine.className='platform-company-connectivity';
       name.className='platform-company-name';name.dir='auto';
       stateLabel.className='platform-company-status';stateLabel.dataset.state=active?'active':'suspended';
       accountLabel.className='platform-company-account-count';
-      row.append(name,stateLabel,accountLabel,link);
+      const linkState=el('span',cardWords[1]),health=el('div'),healthTitle=el('span',cardWords[0]),refresh=el('button');
+      const live=el('small',cardWords[8]);
+      health.className='platform-company-link-status';healthTitle.className='platform-company-link-label';
+      linkState.className='platform-company-link-pill';linkState.dataset.linkState='checking';
+      linkState.setAttribute('role','status');linkState.setAttribute('aria-live','polite');
+      refresh.className='platform-company-refresh';refresh.type='button';refresh.title=refresh.getAttribute('aria-label')||cardWords[7];
+      refresh.setAttribute('aria-label',cardWords[7]);refresh.setAttribute('aria-controls','company-health-'+company.id);
+      summaryLine.id='company-health-'+company.id;
+      const states={active:cardWords[2],pending:cardWords[3],expired:cardWords[4],unissued:cardWords[5]};
+      const paintActivation=result=>{
+        const nextState=result&&Object.hasOwn(states,result.state)?result.state:'unknown';
+        linkState.dataset.linkState=nextState;
+        linkState.textContent=states[nextState]||cardWords[6];
+      };
+      refresh.onclick=()=>{
+        if(refresh.disabled||!row.isConnected)return;
+        refresh.disabled=true;linkState.dataset.linkState='checking';linkState.textContent=cardWords[1];
+        queueVerification(row,async()=>{
+          try{
+            const activation=await request('company.activation',{workspaceId:company.id});
+            if(ticket===generation&&row.isConnected)paintActivation(activation);
+          }catch(error){
+            if(ticket===generation&&row.isConnected){
+              paintActivation(null);
+              if(error?.index===4)fail(error);
+            }
+          }finally{if(row.isConnected)refresh.disabled=false;}
+        });
+      };
+      hero.append(name);pills.append(stateLabel,accountLabel);
+      health.append(healthTitle,linkState,refresh);
+      summaryLine.append(health,live);
+      actions.append(link);
+      row.append(hero,pills,summaryLine,actions);
       const details=el('details'),summary=el('summary',companyMenu[lang.value]),tools=el('div');
-      details.className='platform-company-tools';details.open=expandedCompany===company.id;
+      details.className='platform-company-tools';tools.className='platform-company-actions-grid';details.open=expandedCompany===company.id;
       details.ontoggle=()=>{
         if(!details.isConnected)return;
         if(details.open)expandedCompany=company.id;else if(expandedCompany===company.id)expandedCompany=null;
@@ -525,10 +589,13 @@
       }
       const statusBtn=btn(tools,active?9:10,()=>editCompany(statusBtn,false));statusBtn.className='platform-tool platform-tool-status';
       const rename=btn(tools,5,()=>editCompany(rename,true));rename.textContent=word(6);rename.className='platform-tool platform-tool-rename';
-      const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company));activation.textContent=activationWords[lang.value][0];activation.className='platform-tool platform-tool-activation';
+      const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company,paintActivation));activation.textContent=activationWords[lang.value][0];activation.className='platform-tool platform-tool-activation';
       const devicesBox=el('section'),devicesToggle=btn(tools,21,()=>companyDevices(devicesBox,company.id));
       devicesToggle.textContent=deviceWords[lang.value][0];devicesToggle.className='platform-tool platform-tool-devices';devicesBox.className='platform-company-devices';
-      const limitsBox=el('section'),limitButton=btn(tools,18,()=>subscription(limitsBox,company));limitButton.className='platform-tool platform-tool-subscription';details.append(editArea,activationBox,limitsBox,devicesBox);companies.append(row);
+      const limitsBox=el('section'),limitButton=btn(tools,18,()=>subscription(limitsBox,company));limitButton.className='platform-tool platform-tool-subscription';
+      details.append(editArea,activationBox,limitsBox,devicesBox);companies.append(row);
+      if(activationObserver)activationObserver.observe(row);
+      else refresh.click();
     }
     if(!state.companies.length){const empty=el('p',labels[4]);empty.className='platform-empty-state';companies.append(empty);}
     const pages=el('nav');companies.append(pages);
