@@ -106,3 +106,29 @@ test('missing native WOW model is not replaced with a guessed gallery duplicate'
    assert.equal(f.requests.length,1);
  }finally{handle.dispose();}
 });
+
+test('offline gallery labels a transport device snapshot rather than falsely showing live data',async()=>{
+ const f=fixture('owner');
+ f.api.request=async(action,payload)=>{
+   f.requests.push({action,payload});
+   return {items:[],hasMore:false,presentation:{version:0},_sync:{source:'device',stale:true,cachedAt:1732204800000}};
+ };
+ const handle=f.definitions.get('gallery').mount({route:'gallery',container:f.container,api:f.api,lang:'en'});
+ try{
+  await settle(()=>f.container.textContent.includes('Showing the saved device copy.'));
+  const status=descendants(f.container).find(e=>e.tagName==='P'&&e.className==='wfg-status');
+  assert.equal(status.dataset.type,'pending');
+  assert.equal(status.dataset.source,'device');
+  assert.ok(status.title,'Last saved date should be readable');
+ }finally{handle.dispose();}
+});
+test('first offline visit explains why the phone has no records and preserves owner permissions',async()=>{
+ const f=fixture('owner');
+ f.api.request=async()=>{const error=new Error('OFFLINE_NOT_CACHED');error.code='OFFLINE_NOT_CACHED';throw error;};
+ const handle=f.definitions.get('gallery').mount({route:'gallery',container:f.container,api:f.api,lang:'en'});
+ try{
+  await settle(()=>f.container.textContent.includes('No saved copy on this phone'));
+  assert.ok(f.container.textContent.includes('verified account'));
+  assert.equal(descendants(f.container).some(e=>e.tagName==='BUTTON'&&e.textContent==='Open WOW products'),false);
+ }finally{handle.dispose();}
+});

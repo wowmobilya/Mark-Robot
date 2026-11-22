@@ -4,11 +4,11 @@
   if(!core||!exportsApi||!registry||!doc||root.WFGallery)return;
   const statuses=['pending','manufacturing','ready','delivered','cancelled'];
   const personalWords={
-    ar:{ordersIntro:'تابع الطلبات وحالة تنفيذها في مكان واحد.',stockIntro:'يعرض هذا القسم رصيد طلباتك ومبيعاتك، دون تغيير مخزون موديلات WOW الأساسية.',noOrdersTitle:'لا توجد طلبات مسجلة بعد',noOrders:'ستظهر الطلبات هنا عند إنشائها أو ربطها بهذا الحساب. يمكنك استعراض موديلات WOW.',noStockTitle:'لا يوجد مخزون شخصي مسجل بعد',noStock:'سيظهر رصيد المنتجات عندما تُسجّل طلبات مرتبطة بهذا الحساب.',noMatchesTitle:'لا توجد عناصر مطابقة',noMatches:'غيّر البحث أو فلتر الحالة، أو اعرض العناصر المخفية.',browse:'استعراض موديلات WOW'},
-    tr:{ordersIntro:'Siparişleri ve üretim durumlarını tek yerde izleyin.',stockIntro:'Bu stok hesabınızın sipariş ve satışlarına dayanır; WOW ana ürün stokunu değiştirmez.',noOrdersTitle:'Henüz kayıtlı sipariş yok',noOrders:'Siparişler oluşturulunca veya bu hesaba bağlanınca görünür. WOW modellerine göz atabilirsiniz.',noStockTitle:'Henüz kişisel stok yok',noStock:'Bu hesaba siparişler bağlandığında stok burada görünür.',noMatchesTitle:'Eşleşen öğe bulunamadı',noMatches:'Aramayı veya durum filtresini değiştirin ya da gizli ürünleri gösterin.',browse:'WOW modellerine göz at'},
-    en:{ordersIntro:'Track your orders and their progress in one place.',stockIntro:'This balance comes from your orders and sales; it does not change WOW master product stock.',noOrdersTitle:'No orders recorded yet',noOrders:'Orders appear here after creation or linking to this account. You can browse WOW models.',noStockTitle:'No personal stock recorded yet',noStock:'Product balances appear when orders are recorded for this account.',noMatchesTitle:'No matching items',noMatches:'Change the search or status filter, or show hidden items.',browse:'Browse WOW models'},
-    fr:{ordersIntro:'Suivez vos commandes et leur avancement au même endroit.',stockIntro:'Le solde provient de vos commandes et ventes ; le stock principal WOW reste inchangé.',noOrdersTitle:'Aucune commande enregistrée',noOrders:'Les commandes apparaîtront après leur création ou leur liaison au compte. Consultez les modèles WOW.',noStockTitle:'Aucun stock personnel enregistré',noStock:'Le solde apparaîtra dès que des commandes seront liées à ce compte.',noMatchesTitle:'Aucun résultat',noMatches:'Modifiez la recherche ou le statut, ou affichez les éléments masqués.',browse:'Voir les modèles WOW'},
-    ru:{ordersIntro:'Следите за заказами и их выполнением в одном месте.',stockIntro:'Остаток основан на заказах и продажах; основной склад WOW не изменяется.',noOrdersTitle:'Заказов пока нет',noOrders:'Заказы появятся после создания или привязки к аккаунту. Вы можете просмотреть модели WOW.',noStockTitle:'Личных остатков пока нет',noStock:'Остатки появятся после регистрации заказов этого аккаунта.',noMatchesTitle:'Совпадений нет',noMatches:'Измените поиск или фильтр либо покажите скрытые позиции.',browse:'Каталог моделей WOW'}
+    ar:{offlineNoCopyTitle:'لا توجد نسخة محفوظة على هذا الهاتف',offlineNoCopy:'افتح القسم مرة واحدة مع اتصال الإنترنت وحسابك الموثَّق لحفظ بياناته. لا يمكن إظهار سجلات غير محفوظة أو اعتماد تغييرات قبل تأكيد السيرفر.',ordersIntro:'تابع الطلبات وحالة تنفيذها في مكان واحد.',stockIntro:'يعرض هذا القسم رصيد طلباتك ومبيعاتك، دون تغيير مخزون موديلات WOW الأساسية.',noOrdersTitle:'لا توجد طلبات مسجلة بعد',noOrders:'ستظهر الطلبات هنا عند إنشائها أو ربطها بهذا الحساب. يمكنك استعراض موديلات WOW.',noStockTitle:'لا يوجد مخزون شخصي مسجل بعد',noStock:'سيظهر رصيد المنتجات عندما تُسجّل طلبات مرتبطة بهذا الحساب.',noMatchesTitle:'لا توجد عناصر مطابقة',noMatches:'غيّر البحث أو فلتر الحالة، أو اعرض العناصر المخفية.',browse:'استعراض موديلات WOW'},
+    tr:{offlineNoCopyTitle:'Bu telefonda kayıtlı kopya yok',offlineNoCopy:'Bu bölümü doğrulanmış hesabınızla bir kez çevrimiçi açın. Kaydedilmemiş veriler çevrimdışı gösterilemez ve işlemler sunucu onayı bekler.',ordersIntro:'Siparişleri ve üretim durumlarını tek yerde izleyin.',stockIntro:'Bu stok hesabınızın sipariş ve satışlarına dayanır; WOW ana ürün stokunu değiştirmez.',noOrdersTitle:'Henüz kayıtlı sipariş yok',noOrders:'Siparişler oluşturulunca veya bu hesaba bağlanınca görünür. WOW modellerine göz atabilirsiniz.',noStockTitle:'Henüz kişisel stok yok',noStock:'Bu hesaba siparişler bağlandığında stok burada görünür.',noMatchesTitle:'Eşleşen öğe bulunamadı',noMatches:'Aramayı veya durum filtresini değiştirin ya da gizli ürünleri gösterin.',browse:'WOW modellerine göz at'},
+    en:{offlineNoCopyTitle:'No saved copy on this phone',offlineNoCopy:'Open this section online once with your verified account to save its data. Unsaved records cannot appear offline, and changes await server confirmation.',ordersIntro:'Track your orders and their progress in one place.',stockIntro:'This balance comes from your orders and sales; it does not change WOW master product stock.',noOrdersTitle:'No orders recorded yet',noOrders:'Orders appear here after creation or linking to this account. You can browse WOW models.',noStockTitle:'No personal stock recorded yet',noStock:'Product balances appear when orders are recorded for this account.',noMatchesTitle:'No matching items',noMatches:'Change the search or status filter, or show hidden items.',browse:'Browse WOW models'},
+    fr:{offlineNoCopyTitle:'Aucune copie enregistrée sur ce téléphone',offlineNoCopy:'Ouvrez cette section une fois en ligne avec votre compte vérifié. Les données non enregistrées ne sont pas disponibles hors ligne et les modifications attendent le serveur.',ordersIntro:'Suivez vos commandes et leur avancement au même endroit.',stockIntro:'Le solde provient de vos commandes et ventes ; le stock principal WOW reste inchangé.',noOrdersTitle:'Aucune commande enregistrée',noOrders:'Les commandes apparaîtront après leur création ou leur liaison au compte. Consultez les modèles WOW.',noStockTitle:'Aucun stock personnel enregistré',noStock:'Le solde apparaîtra dès que des commandes seront liées à ce compte.',noMatchesTitle:'Aucun résultat',noMatches:'Modifiez la recherche ou le statut, ou affichez les éléments masqués.',browse:'Voir les modèles WOW'},
+    ru:{offlineNoCopyTitle:'На этом телефоне нет сохранённой копии',offlineNoCopy:'Откройте раздел в сети с подтверждённой учётной записью, чтобы сохранить данные. Несохранённые записи недоступны без сети, а изменения ждут подтверждения сервера.',ordersIntro:'Следите за заказами и их выполнением в одном месте.',stockIntro:'Остаток основан на заказах и продажах; основной склад WOW не изменяется.',noOrdersTitle:'Заказов пока нет',noOrders:'Заказы появятся после создания или привязки к аккаунту. Вы можете просмотреть модели WOW.',noStockTitle:'Личных остатков пока нет',noStock:'Остатки появятся после регистрации заказов этого аккаунта.',noMatchesTitle:'Совпадений нет',noMatches:'Измените поиск или фильтр либо покажите скрытые позиции.',browse:'Каталог моделей WOW'}
   };
   const routes={gallery:['gallery','gallery.view','images'],'gallery-orders':['orders','orders.view','clipboard-list'],
     'my-orders':['mine','myorders.view','package-open'],'gallery-studio':['studio','gallery.edit','sliders-horizontal']};
@@ -56,7 +56,9 @@
     const saveCart=()=>{if(!alive())return;localWrite(cartStorage,cart.size?JSON.stringify({lines:[...cart.values()],note:cartNote}):null);};
     function showError(reason){
       if(disposed||reason?.name==='AbortError')return;
-      const queued=reason?.code==='GALLERY_PENDING';status.textContent=core.userError(reason,language);status.dataset.type=queued?'pending':'error';api.notify?.(status.textContent,queued?'in':'er');
+      const queued=reason?.code==='GALLERY_PENDING',noCopy=reason?.code==='OFFLINE_NOT_CACHED';
+      status.textContent=noCopy?personalText('offlineNoCopy'):core.userError(reason,language);
+      status.dataset.type=queued||noCopy?'pending':'error';api.notify?.(status.textContent,queued||noCopy?'in':'er');
     }
     function button(label,handler,kind=''){
       const node=el('button','btn wfg-button '+kind,label);node.type='button';
@@ -72,7 +74,12 @@
       while(more){
         const part=await request(action,{...values,offset,limit:100});
         if(!Array.isArray(part.items)||part.hasMore&&!part.items.length)throw error('INVALID_RESPONSE');
-        if(!offset)first=part;if(part.cached===true||part.fromCache===true||part.offline===true)first={...first,cached:true};rows.push(...part.items);offset+=part.items.length;more=part.hasMore===true;
+        if(!offset)first=part;
+        // Private transport exposes the device snapshot through _sync, not cached.
+        // Preserve the signal across paginated reads; never present old data as live.
+        const saved=part._sync?.source==='device'||part._sync?.stale===true||part.cached===true||part.fromCache===true||part.offline===true;
+        if(saved)first={...first,cached:true,cachedAt:part._sync?.cachedAt||first.cachedAt||null};
+        rows.push(...part.items);offset+=part.items.length;more=part.hasMore===true;
       }
       return {...first,items:rows};
     }
@@ -101,18 +108,26 @@
       if(disposed||loading)return;loading=true;const run=++generation;
       if(!silent){status.textContent=text('loading');status.dataset.type='';}
       try{
-        let cached=false;
+        let cached=false,cachedAt=null;
         if(route==='gallery'||route==='gallery-studio'){
           const result=await pages('gallery.snapshot',{manage:route==='gallery-studio'});
-          if(!alive()||run!==generation)return;products=result.items;settings=core.presentation(result.presentation);cached=result.cached===true;
+          if(!alive()||run!==generation)return;products=result.items;settings=core.presentation(result.presentation);cached=result.cached===true;cachedAt=result.cachedAt||null;
         }else{
           const result=await pages(route==='my-orders'?'gallery.personal':'gallery.orders',route==='gallery-orders'?{scope:'staff'}:{});
-          if(!alive()||run!==generation)return;orders=result.items;profile=result.print||{version:0};cached=result.cached===true;
+          if(!alive()||run!==generation)return;orders=result.items;profile=result.print||{version:0};cached=result.cached===true;cachedAt=result.cachedAt||null;
         }
         if(!alive()||run!==generation)return;
         status.textContent=cached?text('savedCopy'):'';status.dataset.type=cached?'pending':'';
+        status.dataset.source=cached?'device':'server';
+        status.title=cached&&cachedAt?new Date(cachedAt).toLocaleString(language):'';
         if(!silent||(!dialogs.size&&!dirty&&!main.contains(doc.activeElement)))render();
-      }catch(reason){if(!silent)showError(reason);if(!body.childElementCount&&alive())body.append(button(text('retry'),()=>load()));}
+      }catch(reason){
+        if(!silent)showError(reason);
+        if(!body.childElementCount&&alive()){
+          if(reason?.code==='OFFLINE_NOT_CACHED')body.append(emptyCard(personalText('offlineNoCopyTitle'),personalText('offlineNoCopy'),text('retry'),()=>load()));
+          else body.append(button(text('retry'),()=>load()));
+        }
+      }
       finally{loading=false;}
     }
     async function changed(action,payload,modal,slot){
