@@ -127,3 +127,11 @@ output{padding:.75rem;background:var(--ui-soft);border-radius:var(--ui-control)}
 
 .platform-login label.platform-remember{display:flex;align-items:center;gap:.65rem;min-height:44px;cursor:pointer;font-size:.9rem}
 .platform-login label.platform-remember input{inline-size:1.15rem;block-size:1.15rem;min-height:0;flex:none;accent-color:var(--brand-primary)}
+.platform-linked-device {display:flex;align-items:center;flex-wrap:wrap;gap:.4rem .75rem;padding:.65rem 0;border-block-start:1px solid var(--border)}
+.platform-linked-device :is(strong,bdi,time) {overflow-wrap:anywhere;max-inline-size:100%}
+.platform-linked-device button:not([hidden]) {margin-inline-start:auto}
+.platform-linked-device time {font-size:.87rem;color:var(--text2)}
+.platform-device-confirm {flex:1 0 100%;margin:0;padding:.6rem;background:var(--ui-soft);border-radius:var(--ui-control)}
+.platform-device-confirm p {width:100%;margin:0}
+
+.platform-device-options:not([hidden]) {display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin-inline-start:auto}

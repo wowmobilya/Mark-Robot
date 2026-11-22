@@ -265,6 +265,67 @@
     fr:['Sociétés','Formules','Support','Sections d’administration','Aucune société pour le moment.','Appels'],
     ru:['Компании','Тарифы','Поддержка','Разделы управления','Компаний пока нет.','Звонки']
   };
+  const deviceWords={
+    ar:['الأجهزة المرتبطة','لا توجد أجهزة مرتبطة بهذه الشركة.','فك الارتباط','بعد التأكيد يستطيع صاحب هذا الحساب ربط جهاز آخر بتسجيل الدخول. تحقق من هوية صاحب الطلب.','تأكيد فك الارتباط','تاريخ الربط','مالك الشركة','تم فك ربط الجهاز.'],
+    en:['Linked devices','This company has no linked devices.','Release device','After confirmation, this account can link a different device by signing in. Verify who requested the change.','Confirm release','Linked on','Company owner','Device released.'],
+    tr:['Bağlı cihazlar','Bu şirkete bağlı cihaz yok.','Cihazı ayır','Onaydan sonra hesap sahibi giriş yaparak başka bir cihaz bağlayabilir. İsteği yapan kişiyi doğrulayın.','Ayırmayı onayla','Bağlanma tarihi','Şirket sahibi','Cihaz bağlantısı kaldırıldı.'],
+    fr:['Appareils associés','Aucun appareil associé à cette société.','Dissocier','Après confirmation, ce compte pourra associer un autre appareil en se connectant. Vérifiez l’identité du demandeur.','Confirmer la dissociation','Date d’association','Propriétaire','Appareil dissocié.'],
+    ru:['Привязанные устройства','У компании нет привязанных устройств.','Отвязать устройство','После подтверждения владелец сможет привязать другое устройство при входе. Проверьте, кто запросил изменение.','Подтвердить отвязку','Дата привязки','Владелец компании','Устройство отвязано.']
+  };
+  const blockWords={
+    ar:['حظر الجهاز','رفع الحظر','جهاز محظور','سيُمنع الجهاز من دخول حساب هذه الشركة حتى ترفع الحظر. سيبقى مرتبطًا بالحساب.','سيُسمح للجهاز المرتبط بتسجيل الدخول مجددًا ضمن صلاحيات الحساب.'],
+    en:['Block device','Unblock device','Device blocked','This device will be denied cloud access to this company account until you unblock it. It stays linked.','The linked device may sign in again with the account’s permissions.'],
+    tr:['Cihazı engelle','Engeli kaldır','Cihaz engellendi','Engeli kaldırana kadar cihaz bu şirket hesabına giriş yapamaz. Bağlantısı sürer.','Bağlı cihaz hesap izinleriyle yeniden giriş yapabilir.'],
+    fr:['Bloquer l’appareil','Débloquer l’appareil','Appareil bloqué','Cet appareil ne pourra plus accéder au compte cloud de cette société jusqu’au déblocage. Il reste associé.','L’appareil associé pourra se reconnecter avec les droits du compte.'],
+    ru:['Заблокировать','Разблокировать','Устройство заблокировано','Доступ устройства к облачному аккаунту компании будет закрыт до снятия запрета. Привязка сохранится.','Привязанное устройство снова сможет войти с правами аккаунта.']
+  };
+  async function companyDevices(host,workspaceId,offset=0){
+    const w=deviceWords[lang.value],result=await request('company.devices',{workspaceId,offset});
+    if(!host.isConnected)return;
+    if(!Array.isArray(result.devices)||!Number.isSafeInteger(result.total))throw Error();
+    if(!result.devices.length&&offset>0)return companyDevices(host,workspaceId,Math.max(0,offset-30));
+    host.replaceChildren(el('h3',w[0]));
+    if(!result.devices.length)host.append(el('p',w[1]));
+    for(const device of result.devices){
+      const card=el('div'),identity=el('strong',device.name||device.username);
+      card.className='platform-linked-device';identity.dir='auto';card.append(identity);
+      if(device.username&&device.name!==device.username)card.append(el('bdi',device.username));
+      if(device.role==='owner')card.append(el('small',w[6]));
+      const date=new Date(device.boundAt);if(device.boundAt&&Number.isFinite(date.valueOf())){
+        const linked=el('time',w[5]+' · '+date.toLocaleString(lang.value));linked.dateTime=date.toISOString();card.append(linked);
+      }
+      const options=el('div'),b=blockWords[lang.value];
+      if(device.blocked)card.append(el('small',b[2]));
+      card.append(options);host.append(card);options.className='platform-device-options';
+      for(const action of device.blocked?['unblock']:['block','release']){
+        const releasing=action==='release',blocking=action==='block',actionName=releasing?w[2]:b[blocking?0:1];
+        const trigger=el('button',actionName);trigger.type='button';options.append(trigger);
+        trigger.onclick=()=>{
+          options.hidden=true;
+          const form=el('form'),cancel=el('button',word(5)),confirm=el('button',releasing?w[4]:actionName);form.className='platform-device-confirm';
+          form.setAttribute('aria-label',actionName+' · '+identity.textContent);cancel.type='button';confirm.type='submit';
+          const close=()=>{form.remove();options.hidden=false;trigger.focus();};
+          cancel.onclick=close;form.onkeydown=e=>{if(e.key==='Escape'&&!confirm.disabled){e.preventDefault();close();}};
+          form.append(el('strong',identity.textContent),el('p',releasing?w[3]:b[blocking?3:4]),cancel,confirm);card.append(form);cancel.focus();
+          form.onsubmit=async e=>{
+            e.preventDefault();if(confirm.disabled)return;confirm.disabled=cancel.disabled=true;
+            try{
+              const target={workspaceId,accountId:device.accountId,confirmed:true};
+              const saved=await request(releasing?'company.releaseDevice':'company.deviceStatus',releasing?target:{...target,blocked:blocking});
+              if(!host.isConnected)return;if(releasing&&saved.released!==true)throw Error();
+              if(releasing)status.textContent=w[7];
+              await companyDevices(host,workspaceId,offset);
+            }catch(reason){fail(reason);}
+            finally{confirm.disabled=cancel.disabled=false;}
+          };
+        };
+      }
+    }
+    const pages=el('nav');
+    if(offset>0)btn(pages,11,()=>companyDevices(host,workspaceId,Math.max(0,offset-30)));
+    if(offset+result.devices.length<result.total)btn(pages,12,()=>companyDevices(host,workspaceId,offset+30));
+    if(pages.childElementCount)host.append(pages);
+  }
   const companyMenu={ar:'إدارة الشركة',en:'Manage company',tr:'Şirketi yönet',fr:'Gérer la société',ru:'Управление компанией'};
   let showDestination=null,expandedCompany=null;
   const pageFromUrl=()=>['plans','support','calls'].includes(location.hash.slice(1))?location.hash.slice(1):'companies';
@@ -369,7 +430,9 @@
       const statusBtn=btn(tools,active?9:10,()=>editCompany(statusBtn,false));
       const rename=btn(tools,5,()=>editCompany(rename,true));rename.textContent=word(6);
       const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company));activation.textContent=activationWords[lang.value][0];
-      const limitsBox=el('section');btn(tools,18,()=>subscription(limitsBox,company));details.append(editArea,activationBox,limitsBox);companies.append(row);
+      const devicesBox=el('section'),devicesToggle=btn(tools,21,()=>companyDevices(devicesBox,company.id));
+      devicesToggle.textContent=deviceWords[lang.value][0];devicesBox.className='platform-company-devices';
+      const limitsBox=el('section');btn(tools,18,()=>subscription(limitsBox,company));details.append(editArea,activationBox,limitsBox,devicesBox);companies.append(row);
     }
     if(!state.companies.length)companies.append(el('p',labels[4]));
     const pages=el('nav');companies.append(pages);

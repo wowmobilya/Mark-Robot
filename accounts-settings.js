@@ -146,6 +146,17 @@
     event_unknown:['نشاط الحساب','Account activity','Hesap işlemi','Activité du compte','Действие учётной записи']
   };
   const cloudCopy={
+    viewDevice:['عرض الجهاز المرتبط','View linked device','Bağlı cihazı göster','Voir l’appareil associé','Показать устройство'],
+    noDevice:['لم يُربط جهاز بهذا الحساب.','No device is linked to this account.','Bu hesaba bağlı cihaz yok.','Aucun appareil associé à ce compte.','У этого аккаунта нет привязанного устройства.'],
+    deviceAllowed:['جهاز مسموح','Device allowed','Cihaza izin verildi','Appareil autorisé','Устройство разрешено'],
+    deviceBlocked:['جهاز محظور','Device blocked','Cihaz engellendi','Appareil bloqué','Устройство заблокировано'],
+    blockDevice:['حظر الجهاز','Block device','Cihazı engelle','Bloquer l’appareil','Заблокировать устройство'],
+    unblockDevice:['رفع الحظر','Unblock device','Engeli kaldır','Débloquer l’appareil','Разблокировать устройство'],
+    blockDeviceHint:['سيُمنع الجهاز المرتبط من الدخول السحابي لهذا الحساب حتى ترفع الحظر. يبقى الجهاز مرتبطًا به.','This linked device will be denied cloud access to the account until you unblock it. It stays linked.','Engeli kaldırana kadar bu cihazın hesaba bulut erişimi engellenir. Cihaz bağlı kalır.','Ce compte sera inaccessible depuis cet appareil dans le cloud jusqu’au déblocage. L’association est conservée.','Устройство сохранит привязку, но облачный доступ будет заблокирован до снятия запрета.'],
+    unblockDeviceHint:['سيتمكن الجهاز المرتبط من تسجيل الدخول مجددًا ضمن صلاحيات الحساب.','The linked device may sign in again with this account’s permissions.','Bağlı cihaz bu hesabın izinleriyle yeniden giriş yapabilir.','L’appareil associé pourra se reconnecter avec les droits du compte.','Привязанное устройство снова сможет войти с правами аккаунта.'],
+    releaseDevice:['فك ربط الجهاز','Release linked device','Bağlı cihazı ayır','Dissocier l’appareil','Отвязать устройство'],
+    releaseDeviceHint:['بعد التأكيد يستطيع صاحب الحساب ربط جهاز آخر بتسجيل الدخول. تحقق من هوية صاحب الطلب قبل المتابعة.','After confirmation, the account holder can link a different device by signing in. Verify who requested the change before proceeding.','Onaydan sonra hesap sahibi giriş yaparak başka bir cihaz bağlayabilir. Devam etmeden önce isteği yapan kişiyi doğrulayın.','Après confirmation, le titulaire pourra associer un autre appareil en se connectant. Vérifiez son identité avant de continuer.','После подтверждения владелец сможет привязать другое устройство при входе. Проверьте, кто запросил изменение.'],
+    deviceReleased:['تم فك ربط الجهاز.','Device released.','Cihaz bağlantısı kaldırıldı.','L’appareil a été dissocié.','Устройство отвязано.'],
     title:['حسابات السحابة وصلاحياتها','Cloud accounts and permissions','Bulut hesapları ve izinleri','Comptes cloud et autorisations','Облачные учётные записи и права'],
     local:['هذه حسابات WOW السحابية. يتحقق السيرفر من صلاحيات كل طلب وتُطبّق تغييرات الوصول على الجلسات المتصلة.','These are WOW cloud accounts. The server checks each request and applies access changes to connected sessions.','Bunlar WOW bulut hesaplarıdır. Sunucu her isteğin izinlerini denetler ve erişim değişikliklerini bağlı oturumlara uygular.','Il s’agit des comptes cloud WOW. Le serveur vérifie chaque requête et applique les changements d’accès aux sessions connectées.','Это облачные учётные записи WOW. Сервер проверяет каждый запрос и применяет изменения доступа к подключённым сеансам.'],
     endSessions:['إنهاء الجلسات السحابية','End cloud sessions','Bulut oturumlarını sonlandır','Fermer les sessions cloud','Завершить облачные сеансы'],
@@ -195,6 +206,7 @@
   let loaded = false, loadFailed = false, busy = false, renderAfterOperation = false, view = 'list', selectedId = null, query = '', statusFilter = 'current';
   let draft = null, baseline = '', originalRecord = '', stale = false, message = '', error = false, form = null, formSave = null, formCancel = null;
   let fields = {}, secrets = [], notice = null, preview = null, permissionGrid = null, customLabel = null, confirmation = null, activityLimit = 20, listLimit = 30;
+  let deviceInfo=null;
   const disabledBeforeBusy = new Map();
   const find = id => snapshot.accounts?.find(account => account.id === id);
   const current = () => snapshot.currentAccount;
@@ -553,7 +565,7 @@
     return completed;
   }
   function openDetails(id) {
-    if(busy)return;clearEditor();selectedId=id;view='detail';confirmation=null;activityLimit=20;message='';error=false;render();announce();
+    if(busy)return;deviceInfo=null;clearEditor();selectedId=id;view='detail';confirmation=null;activityLimit=20;message='';error=false;render();announce();
   }
   function detailFact(list,key,value) {
     const group=make('div');group.append(label('dt',key),make('dd','',value || '—'));list.append(group);
@@ -588,6 +600,29 @@
     if(account.status!=='deleted'){
       const controls=make('div','wf-account-inline-actions');controls.append(button('resetPassword',()=>openPassword(account.id),false,'wfAccountPassword'),button('endSessions',()=>ask('sessions',account.id),false,'wfAccountEndSessions'));sessions.append(controls);
     }
+    if(canReleaseDevice(account)){
+      sessions.append(button('viewDevice',async()=>{
+        const actor=current()?.id;
+        await perform(async()=>{
+          const result=await service.devices(account.id);
+          if(actor!==current()?.id||selectedId!==account.id)return;
+          if(!Array.isArray(result.devices))throw Error();
+          deviceInfo={accountId:account.id,row:result.devices.find(device=>device.accountId===account.id)||null};
+          confirmation=null;
+        });
+      },false,'wfAccountViewDevice'));
+      if(deviceInfo?.accountId===account.id){
+        const row=deviceInfo.row;
+        sessions.append(label('p',row?(row.blocked?'deviceBlocked':'deviceAllowed'):'noDevice'));
+        if(row){
+          const actions=make('div','wf-account-inline-actions');
+          if(!row.blocked)actions.append(button('releaseDevice',()=>ask('device',account.id),false,'wfAccountReleaseDevice'));
+          const action=row.blocked?'unblockDevice':'blockDevice';
+          actions.append(button(action,()=>ask(action,account.id),false,'wfAccountDeviceStatus'));sessions.append(actions);
+        }
+      }
+      if(deviceAction(confirmation?.kind))sessions.append(renderConfirmation(account));
+    }
     panel.append(sessions);
     const life=make('section','wf-account-lifecycle');life.append(label('h3','lifecycle'));
     const buttons=make('div','wf-account-inline-actions'),self=account.id===current()?.id;
@@ -603,7 +638,7 @@
     }
     life.append(buttons);
     if(self)life.append(label('small','selfProtected','wf-account-muted'));
-    if(confirmation)life.append(renderConfirmation(account));panel.append(life);
+    if(confirmation&&!deviceAction(confirmation.kind))life.append(renderConfirmation(account));panel.append(life);
     const activity=make('section','wf-account-activity');activity.append(label('h3','activity'),label('p','activityHint','wf-account-muted'));
     const events=(snapshot.audit||[]).filter(entry=>entry.targetId===account.id||entry.actorId===account.id).slice(-500).reverse();
     const list=make('ol','wf-account-events');
@@ -617,17 +652,32 @@
     activity.append(events.length?list:label('p','noActivity','wf-account-muted'));
     if(events.length>activityLimit)activity.append(button('more',()=>{activityLimit+=20;render();}));panel.append(activity);
   }
-  const confirmations={suspend:['suspend','suspendHint','suspended'],reactivate:['reactivate','reactivateHint','active'],revoke:['revoke','revokeHint','revoked'],delete:['remove','deleteHint','deleted'],restore:['restore','restoreHint'],sessions:['endSessions','sessionsHint']};
+  function canReleaseDevice(account) {
+    return root.WFCloudClient?.isRemoteMode()&&current()?.role==='owner'&&account.role!=='owner'&&account.id!==current().id&&account.status!=='deleted'&&typeof service?.devices==='function'&&typeof service.releaseDevice==='function'&&typeof service.deviceStatus==='function';
+  }
+  const deviceAction=kind=>['device','blockDevice','unblockDevice'].includes(kind);
+  const confirmations={blockDevice:['blockDevice','blockDeviceHint'],unblockDevice:['unblockDevice','unblockDeviceHint'],device:['releaseDevice','releaseDeviceHint'],suspend:['suspend','suspendHint','suspended'],reactivate:['reactivate','reactivateHint','active'],revoke:['revoke','revokeHint','revoked'],delete:['remove','deleteHint','deleted'],restore:['restore','restoreHint'],sessions:['endSessions','sessionsHint']};
   function ask(kind,id) {if(busy)return;confirmation={kind,id};render();document.getElementById('wfAccountConfirm')?.focus({preventScroll:true});announce();}
   function renderConfirmation(account) {
     const box=make('section','wf-account-confirmation');box.setAttribute('aria-labelledby','wfAccountConfirmTitle');
     const config=confirmations[confirmation.kind];const heading=make('h4','',t(config[0])+' · '+account.name);heading.id='wfAccountConfirmTitle';
     const hint=label('p',config[1]);box.append(heading,hint);
     const reason=make('textarea','fi');reason.rows=2;reason.maxLength=300;reason.dir='auto';reason.id='wfAccountReason';
-    const reasonLabel=make('label','wf-account-field');reasonLabel.append(make('span','',t('reason')+' · '+t('optional')),reason);box.append(reasonLabel);
+    const reasonLabel=make('label','wf-account-field');reasonLabel.append(make('span','',t('reason')+' · '+t('optional')),reason);if(!deviceAction(confirmation.kind))box.append(reasonLabel);
     const actions=make('div','wf-account-inline-actions');
     const confirm=button('confirm',async()=> {
       const intent=confirmation;if(!intent)return;
+      if(deviceAction(intent.kind)){
+        if(!canReleaseDevice(account)||!deviceInfo?.row||deviceInfo.accountId!==account.id)return;
+        const release=intent.kind==='device',blocked=intent.kind==='blockDevice';
+        await perform(()=>release?service.releaseDevice(account.id):service.deviceStatus(account.id,blocked),()=>{
+          if(deviceInfo?.accountId===account.id){
+            deviceInfo.row=release?null:{...deviceInfo.row,blocked};
+          }
+          confirmation=null;message=release?'deviceReleased':'updated';error=false;
+        });
+        return;
+      }
       await perform(()=>intent.kind==='restore'?service.restoreAccount(intent.id):intent.kind==='sessions'?service.revokeSessions(intent.id):service.setStatus(intent.id,config[2],reason.value),
         ()=>{confirmation=null;message='updated';error=false;});
     },true,'wfAccountConfirm');
@@ -660,7 +710,7 @@
   function onSnapshot(next) {
     const previousActor=current()?.id,previousRevision=snapshot.revision; snapshot=next?.accounts?next:service.getSnapshot();
     if(previousActor===current()?.id&&previousRevision===snapshot.revision)return;
-    if(previousActor!==current()?.id && loaded){clearEditor();confirmation=null;view='list';renderAfterOperation=true;}
+    if(previousActor!==current()?.id && loaded){deviceInfo=null;clearEditor();confirmation=null;view='list';renderAfterOperation=true;}
     if(dirty() && selectedId && fingerprint(find(selectedId))!==originalRecord){stale=true;setMessage('stale',true);}
     if(!busy&&!dirty()&&isOpen())render();
   }

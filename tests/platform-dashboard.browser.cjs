@@ -5,6 +5,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
   const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true});
   try{
     const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true});
+    const linked=[{accountId:randomUUID(),name:'Fixture employee',username:'test.employee',role:'sales',boundAt:new Date().toISOString()},{accountId:randomUUID(),name:'Fixture owner',username:'test.owner',role:'owner',boundAt:new Date().toISOString()}];
     let relayConfigured=false,relayEnabled=false,serverHealthy=true;const relayWrites=[];
     const events=[],wid=randomUUID(),scope='https://platform.test';let plans=[],assigned=null,expiresAt=null,created=false,rejection='wrong',companyName='Test',companyStatus='active',activation='pending',canRecover=false;
     await page.route('**/*',async route=>{
@@ -23,6 +24,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
           case 'platform.support.list':response={cases:[],unreadCases:0};break;
           case 'platform.company.list':response={total:created?1:0,companies:created?[{id:wid,name:companyName,accounts:0,status:companyStatus}]:[]};break;
           case 'platform.company.create':assert.match(body.setupToken,/^[0-9a-f]{64}$/);created=true;response={workspaceId:wid};break;
+          case 'platform.company.devices':
+            assert.equal(body.workspaceId,wid);response={devices:linked,total:linked.length};break;
+          case 'platform.company.deviceStatus':
+            assert.equal(body.workspaceId,wid);assert.equal(body.confirmed,true);assert.equal(body.accountId,linked[1].accountId);
+            linked[1].blocked=body.blocked;response={blocked:body.blocked};break;
+          case 'platform.company.releaseDevice':
+            assert.equal(body.workspaceId,wid);assert.equal(body.confirmed,true);
+            assert.equal(body.accountId,linked[1].accountId);linked.pop();response={released:true};break;
           case 'platform.company.activation':response={state:activation,expiresAt:null,canRecover};break;
           case 'platform.company.recover':assert.equal(body.confirmed,true);response={requested:true};break;
           case 'platform.company.reissue':assert.match(body.setupToken,/^[a-f0-9]{64}$/);response={};break;
@@ -105,6 +114,15 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.getByText('Manage company',{exact:true}).click();
     const adminUrl=new URL(await page.getByRole('link',{name:'Manage company accounts'}).getAttribute('href'));
     assert.equal(adminUrl.searchParams.get('workspace'),wid);assert.equal(adminUrl.searchParams.get('wf-accounts'),'cloud');
+    await page.getByRole('button',{name:'Linked devices'}).click();
+    const ownerDevice=page.locator('.platform-linked-device').filter({hasText:'Fixture owner'});
+    await ownerDevice.getByRole('button',{name:'Block device'}).click();await ownerDevice.getByRole('form').getByRole('button',{name:'Block device'}).click();
+    await ownerDevice.getByText('Device blocked').waitFor();assert.equal(await ownerDevice.getByRole('button',{name:'Release device'}).count(),0);
+    await ownerDevice.getByRole('button',{name:'Unblock device'}).click();await ownerDevice.getByRole('form').getByRole('button',{name:'Unblock device'}).click();
+    await ownerDevice.getByRole('button',{name:'Release device'}).click();await ownerDevice.getByRole('button',{name:'Cancel'}).click();
+    assert.equal(events.includes('platform.company.releaseDevice'),false);
+    await ownerDevice.getByRole('button',{name:'Release device'}).click();await ownerDevice.getByRole('button',{name:'Confirm release'}).click();
+    await ownerDevice.waitFor({state:'detached'});await page.locator('.platform-linked-device').getByText('Fixture employee').waitFor();
     const company=page.locator('article'),editor=page.locator('.platform-inline-editor form');
     await company.getByRole('button',{name:'Rename'}).click();const companyInput=editor.getByLabel('Company name');await companyInput.tap();assert.equal(await companyInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);await companyInput.fill('Edited');
     await editor.getByRole('button',{name:'Save'}).click();await company.getByText('Edited').waitFor();

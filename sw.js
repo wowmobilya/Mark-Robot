@@ -141,7 +141,7 @@ const urlsToCache = [
   './owner-invite.js?v=2',
   './company-join.js?v=1',
   './accounts-access.js?v=7',
-  './accounts-settings.js?v=5',
+  './accounts-settings.js?v=6',
   './accounts-access.css?v=3',
   './accounts-settings.css?v=1',
 
