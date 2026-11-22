@@ -62,7 +62,7 @@
     const picker=el('input');picker.type='file';picker.hidden=true;composer.append(picker);
     // Calls never start automatically: only a user tap requests the microphone.
     // Owner/customer/staff identity and chat membership remain server-authoritative.
-    const voice=root.WFVoiceCalls?.mount?.({container:main,request:req,getSession:()=>api.getSession?.(),lang:()=>language});
+    const callUI=root.WFChatCallUI?.mount?.({container:main,api,lang:()=>language});
     const roomName=r=>r?.kind==='team'&&!r.name?t('team'):(r?.name||t('direct'));
     const roomNow=id=>alive&&room?.id===id;
     function closeDialogs(){for(const d of container.querySelectorAll('dialog[open]'))d.close();}
@@ -122,18 +122,18 @@
     function leaveRoom(flush=true){
       if(flush&&room&&written&&!editing)saveDraft(room.id,draft.value);
       clearTimer();stopRecord();generation++;feedSeq++;room=null;feed=null;members=[];before=null;stack=[];filter='';query='';lastFeed='';written=false;
-      selected.clear();reply=null;editing=null;attached=null;draft.value='';mentions.replaceChildren();head.replaceChildren();browse.replaceChildren();selection.replaceChildren();feedBox.replaceChildren(el('p',t('choose'),'wf-collab-empty'));
+      callUI?.selectRoom?.(null)?.catch?.(()=>{});selected.clear();reply=null;editing=null;attached=null;draft.value='';mentions.replaceChildren();head.replaceChildren();browse.replaceChildren();selection.replaceChildren();feedBox.replaceChildren(el('p',t('choose'),'wf-collab-empty'));
       feedBox.style.removeProperty('background-image');feedBox.dataset.wallpaper='plain';paging.replaceChildren();indicators.replaceChildren();composer.hidden=true;status.textContent='';showScreen('rooms');drawRooms();
     }
     function openRoom(id){
       const next=rooms.find(r=>r.id===id);if(!next){status.textContent=t('denied');return;}
-      leaveRoom();room=next;const current=++generation;showScreen('room');draft.value=drafts.get(id)||'';drawRoomHead();drawComposer();drawRooms();status.textContent=t('loading');
+      leaveRoom();room=next;callUI?.selectRoom?.(next)?.catch?.(()=>{});const current=++generation;showScreen('room');draft.value=drafts.get(id)||'';drawRoomHead();drawComposer();drawRooms();status.textContent=t('loading');
       req('members',{roomId:id}).then(r=>{if(alive&&current===generation)members=r.members||[];}).catch(e=>{if(current===generation)actionStatus(e);});
       return loadFeed(true).catch(e=>{if(current===generation)actionStatus(e);});
     }
     function drawRoomHead(){
       if(!room)return;head.replaceChildren();head.append(act(t('back'),()=>{leaveRoom();},'wf-chat-back'));const titleBox=el('div',null,'wf-chat-room-title');addAvatar(titleBox,room);titleBox.append(el('h3',roomName(room)));head.append(titleBox);
-      if(room.kind==='direct'&&edit()&&voice)head.append(voice.callButton(room));
+      if(edit()&&callUI)head.append(callUI.controls(room));
       head.append(act(t('members'),membersDialog),act(t('settings'),settingsDialog));browse.replaceChildren();
       const search=input(query,160);search.type='search';search.placeholder=t('search');search.setAttribute('aria-label',t('search'));
       search.oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>applyFilter(filter,search.value),240);};
@@ -425,13 +425,13 @@
     picker.onchange=()=>{attach(picker.files?.[0]);picker.value='';};
     async function poll(){
       if(polling||!alive||root.document.hidden||!me)return;polling=true;
-      try{await refreshRooms();await loadFeed();await voice?.poll?.();pendingStatus();}
+      try{await refreshRooms();await loadFeed();await callUI?.refresh?.();pendingStatus();}
       catch(e){actionStatus(e);}finally{polling=false;}
     }
     async function init(){
       try{const r=await req('init');if(!alive)return;me=r.me;}
       catch(e){if(!['NETWORK','OFFLINE_NOT_CACHED'].includes(e?.code))throw e;me=api.getSession?.()?.currentAccount;if(!me)throw e;}
-      await refreshRooms();if(!alive)return;await voice?.poll?.();
+      await refreshRooms();if(!alive)return;await callUI?.refresh?.();
       if(params.roomId&&H.validRoom(params.roomId)){
         await openRoom(params.roomId);
         const target=params.messageId;
@@ -460,8 +460,8 @@
       if(marker!==lastConnection){lastConnection=marker;if(alive&&me)poll();}});
     const clock=setInterval(poll,4400);root.addEventListener('online',resume);root.document.addEventListener('visibilitychange',resume);
     return {dispose(){alive=false;unsubscribe?.();offReceipts?.();generation++;clearInterval(clock);clearTimer();stopRecord();root.removeEventListener('online',resume);root.document.removeEventListener('visibilitychange',resume);
-      voice?.dispose?.();retrySends.clear();durable.clear();drafts.clear();thumbs.clear();members=[];rooms=[];feed=null;me=null;selected.clear();ui.dispose();app.remove();},
-      updateLanguage(value){language=value;voice?.updateLanguage?.();lastFeed='';roomsView='';sideHeader();drawRooms();if(room){drawRoomHead();drawMessages();drawPaging();drawComposer();}else leaveRoom(false);},
+      callUI?.dispose?.();retrySends.clear();durable.clear();drafts.clear();thumbs.clear();members=[];rooms=[];feed=null;me=null;selected.clear();ui.dispose();app.remove();},
+      updateLanguage(value){language=value;callUI?.updateLanguage?.();lastFeed='';roomsView='';sideHeader();drawRooms();if(room){drawRoomHead();drawMessages();drawPaging();drawComposer();}else leaveRoom(false);},
       hasUnsavedChanges:()=>!!(recording||attached||sending||written)};
   }
   const definition={id:'chat',title,permission:'chat.view',icon:'message-circle',mount,openRoom:id=>H.validRoom(id)&&root.WFModules?.open('chat',{roomId:id})};
