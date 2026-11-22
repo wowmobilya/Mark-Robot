@@ -54,6 +54,7 @@
       let state;try{state=api.getConnection();}catch(_){return;}
       const count=state.pending+state.conflicts+state.failed+state.quarantined;
       const online=state.offlineVerified?'saved':state.syncing?'syncing':state.online?'online':'offline';
+      trigger.dataset.syncState=online;
       trigger.textContent=t('sync')+' · '+t(online)+(count?' · '+count:'');
       trigger.title=state.offlineVerified?t('verified')+' · '+new Date(state.verifiedAt).toLocaleString(locale()):t('sync');
       trigger.setAttribute('aria-label',t('sync')+' · '+t(online)+(count?' · '+count:''));
