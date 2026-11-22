@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createPlatformActions} from '../supabase/functions/wow-cloud/modules/platform-companies.mjs';
 import {randomUUID} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {createProviderTestDatabase} from '../supabase/testing/provider-fixtures.mjs';
@@ -12,6 +13,12 @@ test('platform owner creates empty tenant, suspends it and records audit; compan
  await db.query('insert into auth.sessions(id,user_id) values($1,$2),($3,$4)',[session,admin,otherSession,outsider]);
  await db.query('insert into public.wow_platform_owners(user_id) values($1)',[admin]);
  const call=async(u,s,action,data)=>(await db.query('select public.wow_platform_service($1,$2,$3,$4::jsonb) as result',[u,s,action,JSON.stringify(data)])).rows[0].result;
+ const check=createPlatformActions({requirePlatformFounder:async actor=>{
+   try{await db.query('select public.wow_platform_require($1,$2)',[actor.userId,actor.sessionId]);}
+   catch(error){if(error.message==='ACCESS_DENIED')throw Object.assign(new Error(),{code:'ACCESS_DENIED'});throw error;}
+ }})['platform.identity'];
+ assert.deepEqual(await check({actor:{userId:admin,sessionId:session},body:{}}),{verifiedFounder:true});
+ assert.deepEqual(await check({actor:{userId:outsider,sessionId:otherSession},body:{userId:admin,sessionId:session,verifiedFounder:true}}),{verifiedFounder:false});
  const request={name:'Company A',claimHash:'a'.repeat(64),expiresAt:new Date(Date.now()+3600000).toISOString()};
  await assert.rejects(call(outsider,otherSession,'company.create',request),/ACCESS_DENIED/);
  let created=await call(admin,session,'company.create',request);assert(created.workspaceId);

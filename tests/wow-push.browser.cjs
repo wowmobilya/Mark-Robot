@@ -96,7 +96,7 @@ async function main() {
       await new Promise(resolve => setTimeout(resolve,50));
     }
     assert.equal(outstanding.length,1,'native notification must be posted while the app is closed'); assert.equal(outstanding[0].body, details.body);
-    assert.equal(outstanding[0].icon,origin+'/app-icon-192.png?v=221');assert.equal(outstanding[0].badge,origin+'/assets/mark-robot-badge.png?v=221');
+    assert.equal(outstanding[0].icon,origin+'/app-icon-192.png?v=222');assert.equal(outstanding[0].badge,origin+'/assets/mark-robot-badge.png?v=222');
     phase='checking the reopened Arabic device inbox';
     const reopened = await context.newPage(); await reopened.goto(origin);assert.equal(await reopened.evaluate(()=>document.characterSet),'UTF-8');
     await reopened.getByText(details.body,{exact:true}).waitFor();

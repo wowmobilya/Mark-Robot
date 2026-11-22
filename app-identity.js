@@ -3,7 +3,7 @@
   'use strict';
   const DEFAULT_NAME = 'Mark Robot';
   const DEFAULT_LOGO = './assets/mark-robot-logo.svg';
-  const DEFAULT_ICON = './app-icon-512.png?v=221';
+  const DEFAULT_ICON = './app-icon-512.png?v=222';
   const MAX_IMAGE_LENGTH = 2100000;
   const locales = ['ar', 'en', 'tr', 'fr', 'ru'];
   const modes = ['default', 'app', 'custom'];
@@ -247,16 +247,8 @@
   function apply() {
     const identity = manager.current(), media = sources(identity);
     document.documentElement.classList.add('wf-app-identity-active');
-    const navLogo = document.getElementById('navLogo');
-    const wordmark = document.querySelector('.navbar .wf-nav-wordmark');
-    // Keep the real logo with the visible home identity; the former logo
-    // wrapper is hidden by the shared mobile/desktop navigation layout.
-    if (navLogo && wordmark && navLogo.parentElement !== wordmark) wordmark.append(navLogo);
-    if (navLogo) { let image = navLogo.querySelector('img'); if (!image) { image = node('img'); navLogo.replaceChildren(image); } paintImage(image, media.logo); }
     for (const id of ['wfSidebarLogo', 'about-app-logo']) { const image = document.getElementById(id); if (image) paintImage(image, media.logo); }
-    setName(document.querySelector('.navbar .wf-nav-wordmark > bdi'), identity.name, 'strong');
     setName(document.querySelector('#wfSidebarBrand > strong'), identity.name, 'span');
-    setName(document.getElementById('navTitle'), identity.name, 'span');
     const aboutName = document.querySelector('#stab-about .wf-about-identity h2');
     if (aboutName) { aboutName.removeAttribute('data-i18n'); aboutName.removeAttribute('data-wf-ui'); setName(aboutName, identity.name, 'span'); }
     if (document.title !== identity.name) document.title = identity.name;
@@ -271,7 +263,7 @@
   // returning device's installation manifest from the initial empty defaults.
   hook('loadSettingsToForm', () => { installerReady = true; reloadDraft(); translate(); apply(); });
   hook('applyTr', () => { installerReady = true; if (!dirty) reloadDraft(); translate(); apply(); });
-  for (const host of [document.getElementById('navLogo'), document.getElementById('navTitle'), document.querySelector('.navbar .wf-nav-wordmark'), document.getElementById('wfSidebarBrand'), document.querySelector('#stab-about .wf-about-identity')]) {
+  for (const host of [document.getElementById('wfSidebarBrand'), document.querySelector('#stab-about .wf-about-identity')]) {
     if (host) new MutationObserver(queueApply).observe(host, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['src'] });
   }
   new MutationObserver(translate).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });

@@ -62,7 +62,7 @@
   panel.setAttribute('aria-modal', 'true');
   panel.setAttribute('aria-labelledby', 'ccTitle');
   input.type = 'text';
-  input.inputMode = 'none';
+  input.inputMode = 'decimal';
   input.autocomplete = 'off';
   input.removeAttribute('oninput');
   input.setAttribute('maxlength', '18');

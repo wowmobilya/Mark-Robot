@@ -109,7 +109,8 @@ test('cancelled beforeinput and existing input normalizers are respected',async 
 
 test('account login accepts touch typing while the rest of the app stays locked',async t=>{
   for(const reuse of [false,true])await t.test(reuse?'keyboard used before locking':'first keyboard opened at login',async t=>{
-    const page=await fixture(t,{localAccounts:true,lang:reuse?'ar':'en'});
+    const page=await fixture(t,{localAccounts:true,lang:reuse?'ar':'en',html:'<div id="stab-language"></div>'});
+    await page.locator('#stab-language .wf-tk-choice select').selectOption('wow');
     if(reuse)await page.setViewportSize({width:667,height:320});
     await page.addStyleTag({path:path.join(root,'accounts-access.css')});
     for(const file of ['accounts-policy.js','accounts-data-policy.js','accounts-core.js','accounts-local-provider.js','accounts-access.js']){
@@ -136,6 +137,7 @@ test('account login accepts touch typing while the rest of the app stays locked'
       return {box:box.toJSON(),done:done.toJSON(),form:form.toJSON(),width:innerWidth,height:innerHeight};
     });
     assert(geometry.box.x>=0&&geometry.box.right<=geometry.width+1);
+    if(!reuse)assert(geometry.box.height<=geometry.height*.55,'compact WOW keyboard occupies at most 55% of portrait phone');
     assert(geometry.form.x>=0&&geometry.form.right<=geometry.width+1);
     assert(geometry.done.top>=0&&geometry.done.bottom<=geometry.height+1&&geometry.done.height>=44);
     const background=page.locator('#workspace');
@@ -163,4 +165,32 @@ test('account login accepts touch typing while the rest of the app stays locked'
     await pad.locator('[data-action="done"]').tap();
     assert.equal(await page.locator('#name').inputValue(),'draftx');
   });
+});
+
+test('phone login defaults to editable native fields and the device preference survives reload',async t=>{
+  const page=await fixture(t,{localAccounts:true,html:'<div id="stab-language"></div>'});
+  for(const file of ['accounts-policy.js','accounts-data-policy.js','accounts-core.js','accounts-local-provider.js','accounts-access.js'])
+    await page.addScriptTag({path:path.join(root,file)});
+  await page.evaluate(async()=>{
+    await WFAccountAccess.ready;
+    await WFAccountAccess.service.bootstrapOwner({name:'Test',username:'owner',password:'passwordtest'});
+    await WFAccountAccess.service.signOut();
+    window.loginReady=WFAccountAccess.beforeInit();
+  });
+  const choice=page.locator('.wf-account-login .wf-tk-choice select');
+  await choice.waitFor();assert.equal(await choice.inputValue(),'device');
+  const user=page.locator('#wfAccountLoginUsername'),password=page.locator('#wfAccountLoginPassword');
+  for(const [field,value] of [[user,'owner'],[password,'passwordtest']]){
+    await field.tap();assert.equal(await field.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);
+    await field.pressSequentially(value);assert.equal(await page.locator('#wfTouchKeyboard[open]').count(),0);
+  }
+  await choice.selectOption('wow');await user.tap();await action(page,'done');
+  await choice.selectOption('device');await page.locator('#wfAccountLoginForm [type=submit]').tap();
+  await page.evaluate(()=>loginReady);
+  const field=page.locator('#name');await field.tap();await field.fill('edited');assert.equal(await field.inputValue(),'edited');
+  assert.equal(await page.locator('#wfTouchKeyboard[open]').count(),0);
+  await page.reload();await page.setContent('<div id="stab-language"></div>');
+  await page.addScriptTag({path:path.join(root,'touch-keyboard.js')});
+  await page.setViewportSize({width:1100,height:800});
+  assert.equal(await page.locator('.wf-tk-choice select').inputValue(),'device');
 });

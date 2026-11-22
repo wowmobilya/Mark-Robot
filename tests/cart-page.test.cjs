@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),acorn=require('acorn');
 const {cartSummary}=require('../cart-page.js');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'),source=fs.readFileSync(path.join(__dirname,'../cart-page.js'),'utf8');
-function existingFunction(name){const start=html.indexOf('function '+name+'(');assert(start>=0,name);const node=acorn.parseExpressionAt(html,start,{ecmaVersion:'latest'});return html.slice(node.start,node.end);}
+function existingFunction(name){const signature='function '+name+'(';const offset=html.indexOf(signature);assert(offset>=0,name);const start=html.slice(offset-6,offset)==='async '?offset-6:offset;const node=acorn.parseExpressionAt(html,start,{ecmaVersion:'latest'});return html.slice(node.start,node.end);}
 const textsStart=html.indexOf('const QBL_CART_TEXTS = ')+ 'const QBL_CART_TEXTS = '.length;
 const textsNode=acorn.parseExpressionAt(html,textsStart,{ecmaVersion:'latest'}),cartTexts=html.slice(textsNode.start,textsNode.end);
 const legacyNames=['wfValidateCartEntries','qblCartSave','qblCartLoad','qblUpdateCartUI','qblUpdateStickyBar','qblCartChangeQty','qblCartRemoveItem','qblClearCart','qblClearCartConfirm','qblCloseCart','qblOpenCart','qblToggleCart','qblSendToInvoice','getTierPrice'];
@@ -42,7 +42,7 @@ function setup({items=[],saved=null,products=[],customer='selected-client',custo
   onCoSelect(){calls.customerSelections.push(client.value);},
   showToast:(...args)=>calls.toasts.push(args),wfDriveMarkDirty:key=>calls.dirty.push(key),wfItemCount:n=>String(n),
   qblStopCamera:()=>calls.camera++,usdToTry:amount=>amount*40,usdToEur:amount=>amount*.9,wfGetProductDims:()=>[],wfProductSnapshot:(product,tier)=>({id:product.id,tier}),
-  renderInvTable:()=>calls.invoices++,updateSummary(){},renderPrSelector(){},confirm:()=>context.confirmResult,
+  renderInvTable:()=>calls.invoices++,updateSummary(){},renderPrSelector(){},WFDialog:{confirm:async()=>context.confirmResult},
   confirmResult:false,S:{lang:'en',products,invItems:[],invTier:'A',selectedClientId:'selected-client',settings:{}}
  };
  context.window=context;vm.createContext(context);vm.runInContext('const QBL_CART={items:[],open:false};const QBL_CART_TEXTS='+cartTexts+';\n'+legacy,context);
@@ -83,12 +83,12 @@ test('saved carts restore through the existing loader without an initial write, 
  const remove=row.querySelector('.wf-cart-remove');remove.focus();remove.click();assert.equal(f.context.getCurrentPage(),'cart');assert.equal(f.get('page-cart').dataset.cartState,'empty');assert.equal(f.document.activeElement,f.get('wfCartBrowse'));assert.deepEqual(JSON.parse(f.storage.get('wf_qbl_cart')),[]);
 });
 
-test('all languages expose empty and filled states, product names remain text, and clear requires the original confirmation',()=>{
+test('all languages expose empty and filled states, product names remain text, and clear requires the original confirmation',async()=>{
  const product={id:'safe',name:'<img src=x onerror=alert(1)>',priceA:9},item={product,tier:'A',qty:1},f=setup({items:[item]});
  const titles={ar:'السلة',en:'Cart',tr:'Sepet',fr:'Panier',ru:'Корзина'};
  for(const [lang,title]of Object.entries(titles)){f.language(lang);assert.equal(f.get('wfCartTitle').textContent,title);assert.equal(f.get('page-cart').dir,lang==='ar'?'rtl':'ltr');assert.equal(f.row(0).querySelector('h3').textContent,product.name);assert.equal(f.row(0).querySelector('h3').children.length,0);assert(f.row(0).querySelector('.wf-cart-remove').getAttribute('aria-label').endsWith(product.name));}
- f.context.qblOpenCart();f.get('wfCartClear').click();assert.equal(f.cart.items[0],item);assert.equal(f.calls.writes.length,0);
- f.context.confirmResult=true;f.get('wfCartClear').click();assert.equal(f.cart.items.length,0);assert.equal(f.calls.writes.length,1);assert.equal(f.context.getCurrentPage(),'cart');assert(f.get('wfCartCreateInvoice').disabled);assert(!f.get('wfCartEmpty').hidden);
+ f.context.qblOpenCart();f.get('wfCartClear').click();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.cart.items[0],item);assert.equal(f.calls.writes.length,0);
+ f.context.confirmResult=true;f.get('wfCartClear').click();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.cart.items.length,0);assert.equal(f.calls.writes.length,1);assert.equal(f.context.getCurrentPage(),'cart');assert(f.get('wfCartCreateInvoice').disabled);assert(!f.get('wfCartEmpty').hidden);
 });
 
 test('only the explicit invoice action transfers the same cart through the existing invoice flow',()=>{
