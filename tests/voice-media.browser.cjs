@@ -6,7 +6,7 @@ const {chromium}=require('playwright');
 
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,
-   args:['--no-sandbox','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required']});
+   args:['--no-sandbox','--allow-loopback-in-peer-connection','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required']});
  try{
    const page=await browser.newPage();
    const origin='http://localhost:18789';
@@ -20,7 +20,8 @@ const {chromium}=require('playwright');
    await page.goto(origin);
    // Only the signaling transport and authorized server responses are simulated.
    // Media capture, codec negotiation, DTLS/ICE, tracks and RTP stats are native Chromium.
-   await page.evaluate(()=>{
+   const testRelay=process.env.WOW_TEST_TURN_ICE?JSON.parse(process.env.WOW_TEST_TURN_ICE):null;
+   await page.evaluate(testRelay=>{
      const topics=new Map(),ids=[crypto.randomUUID(),crypto.randomUUID()],room=crypto.randomUUID();
      let current=null;
      window.dropParticipant=id=>{current.participants.find(p=>p.id===id).status='left';};
@@ -28,7 +29,9 @@ const {chromium}=require('playwright');
        const me=ids[index],newId=()=>crypto.randomUUID();peer.userId=me;peer.events=[];
        peer.received=[];peer.errors=[];peer.connections=[];
        const Native=peer.RTCPeerConnection;
-       peer.RTCPeerConnection=class extends Native{constructor(config){super(config);peer.connections.push(this);}};
+       peer.RTCPeerConnection=class extends Native{
+         constructor(config){super(testRelay?{...config,iceTransportPolicy:'relay'}:config);peer.connections.push(this);}
+       };
        peer.WFCallRealtime={create({topic,onBroadcast,onPresence}){
          let listeners=topics.get(topic);
          if(!listeners){listeners=new Map();topics.set(topic,listeners);}
@@ -53,7 +56,7 @@ const {chromium}=require('playwright');
              case 'inbox':return {calls:current?.status==='ringing'?[{...structuredClone(current),participantStatus:'invited'}]:[]};
              case 'end':case 'leave':current.status='completed';break;
              case 'history':return {history:[]};
-             case 'ice':return {iceServers:[]};
+             case 'ice':return {iceServers:testRelay?[testRelay]:[]};
              case 'status':case 'connected':case 'heartbeat':break;
              default:throw Error('Unexpected call action');
            }
@@ -64,7 +67,7 @@ const {chromium}=require('playwright');
        peer.room={id:room};
      };
      setup(frames.caller,0);setup(frames.callee,1);
-   });
+   },testRelay);
    const a=page.frame({name:'caller'}),b=page.frame({name:'callee'});
    await Promise.all([a,b].map(f=>f.evaluate(()=>manager.selectRoom(room))));
    for(const mode of ['audio','video']){
@@ -72,12 +75,29 @@ const {chromium}=require('playwright');
      await b.waitForFunction(()=>manager.getState().call?.status==='ringing');
      await b.evaluate(()=>manager.accept());
      for(const f of [a,b]){
-       await f.waitForFunction(async kind=>{
-         const pc=connections.at(-1);
-         if(pc?.connectionState!=='connected')return false;
-         const stats=Array.from((await pc.getStats()).values()).filter(s=>s.type==='inbound-rtp'&&s.packetsReceived>0);
-         return stats.some(s=>s.kind==='audio')&&(kind==='audio'||stats.some(s=>s.kind==='video'&&s.framesDecoded>0));
-       },mode,{timeout:15000});
+       const deadline=Date.now()+20000;let received=false;
+       while(!received&&Date.now()<deadline){
+         received=await f.evaluate(async kind=>{
+           const pc=connections.at(-1);
+           if(pc?.connectionState!=='connected')return false;
+           const stats=Array.from((await pc.getStats()).values()).filter(s=>s.type==='inbound-rtp'&&s.packetsReceived>0);
+           return stats.some(s=>s.kind==='audio')&&(kind==='audio'||stats.some(s=>s.kind==='video'&&s.framesDecoded>0));
+         },mode);
+         if(!received)await new Promise(resolve=>setTimeout(resolve,150));
+       }
+       assert.equal(received,true,'both peers must receive actual '+mode+' RTP');
+       if(testRelay){
+         const types=await f.evaluate(async()=>{
+           const pc=connections.at(-1);
+           const selected=pc.getSenders()[0]?.transport?.iceTransport?.getSelectedCandidatePair?.();
+           if(selected)return [selected.local.type,selected.remote.type];
+           const stats=await pc.getStats();
+           const transport=[...stats.values()].find(stat=>stat.type==='transport'&&stat.selectedCandidatePairId);
+           const pair=stats.get(transport?.selectedCandidatePairId)||[...stats.values()].find(s=>s.type==='candidate-pair'&&s.nominated&&s.state==='succeeded');
+           return [stats.get(pair?.localCandidateId)?.candidateType,stats.get(pair?.remoteCandidateId)?.candidateType];
+         });
+         assert.deepEqual(types,['relay','relay']);
+       }
        assert.equal(await f.evaluate(()=>manager.micToggle()),false);
        assert.equal(await f.evaluate(()=>manager.getState().localStream.getAudioTracks()[0].enabled),false);
        await f.evaluate(()=>manager.micToggle());
@@ -92,7 +112,7 @@ const {chromium}=require('playwright');
      assert.equal(await tracks.evaluate(list=>list.every(t=>t.readyState==='ended')),true);
      await tracks.dispose();
      for(const f of [a,b])assert.equal(await f.evaluate(()=>connections.at(-1).connectionState),'closed');
-     console.log(mode+': native RTP exchanged by both peers; hangup released tracks.');
+     console.log(mode+': native RTP exchanged by both peers'+(testRelay?' via a verified relay candidate pair':'')+'; hangup released tracks.');
    }
    for(const f of [a,b])assert.deepEqual(await f.evaluate(()=>errors),[]);
    await a.evaluate(()=>manager.start(room,'audio'));

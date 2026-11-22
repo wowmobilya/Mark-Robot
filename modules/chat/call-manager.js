@@ -109,6 +109,9 @@
    pc.onnegotiationneeded=async()=>{
     try{
      if(!alive||!call||!callChannel?.isConnected())return;
+     // Both devices add tracks as soon as they join. Give the first offer to
+     // one device so rolling back a simultaneous offer cannot lose its ICE candidates.
+     if(peer.polite&&!pc.remoteDescription)return;
      peer.makingOffer=true;
      await pc.setLocalDescription();
      if(pc.localDescription)await sendSignal(peerId,{description:{type:pc.localDescription.type,sdp:pc.localDescription.sdp}});
