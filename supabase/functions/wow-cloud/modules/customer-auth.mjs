@@ -28,7 +28,7 @@ function verifiedSession(session){
 }
 const accepted=()=>({accepted:true});
 
-export function createCustomerAuthActions({provider,auth,origins=[],enabled=false}){
+export function createCustomerAuthActions({provider,auth,origins=[],enabled=false,requireCompanyApproval=false}){
  const allowed=new Set(origins.filter(origin=>{try{const url=new URL(origin);return url.protocol==='https:'&&url.origin===origin;}catch(_){return false;}}));
  const configured=enabled===true&&provider?.configured===true&&allowed.size>0;
  const scope=(body,request)=>{
@@ -44,9 +44,10 @@ export function createCustomerAuthActions({provider,auth,origins=[],enabled=fals
    const data=scope(body,request);
    if(!configured)return {registrationEnabled:false,recoveryEnabled:false};
    const options=await provider.rpc('options',data);
-   return {registrationEnabled:options.registrationEnabled===true,recoveryEnabled:options.recoveryEnabled===true};
+   return {registrationEnabled:!requireCompanyApproval&&options.registrationEnabled===true,recoveryEnabled:options.recoveryEnabled===true};
   },
   'auth.customerRegister':async({body,request})=>{
+   if(requireCompanyApproval)throw failure('JOIN_APPROVAL_REQUIRED',409);
    requireConfigured();const data=bound(body,request),email=normalizeCustomerEmail(body.email),profile=normalizeCustomerProfile(body);
    return requestMail({...data,kind:'register',email,emailHash:await sha256(email),profile},body.captchaToken);
   },
@@ -61,6 +62,7 @@ export function createCustomerAuthActions({provider,auth,origins=[],enabled=fals
    data.challengeHash=await sha256(body.challenge);
    need(typeof body.password==='string'&&Array.from(body.password).length>=12&&Array.from(body.password).length<=128,'INVALID_PASSWORD');
    const proof=await provider.rpc('inspect',data);need(proof.allowed===true,'INVALID_EMAIL_LINK',401);
+   if(requireCompanyApproval&&proof.kind==='register')throw failure('JOIN_APPROVAL_REQUIRED',409);
    let session,logoutScope='local';
    try{
     session=await provider.verify(body.tokenHash,proof.kind==='recover'?'recovery':'email');

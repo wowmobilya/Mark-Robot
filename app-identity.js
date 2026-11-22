@@ -3,7 +3,7 @@
   'use strict';
   const DEFAULT_NAME = 'Mark Robot';
   const DEFAULT_LOGO = './assets/mark-robot-logo.svg';
-  const DEFAULT_ICON = './app-icon-512.png?v=223';
+  const DEFAULT_ICON = './app-icon-512.png?v=224';
   const MAX_IMAGE_LENGTH = 2100000;
   const locales = ['ar', 'en', 'tr', 'fr', 'ru'];
   const modes = ['default', 'app', 'custom'];

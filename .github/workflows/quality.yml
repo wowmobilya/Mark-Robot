@@ -80,7 +80,10 @@ jobs:
         if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
         timeout-minutes: 2
         # Local synthetic DOM and repository CSS; no customer requests.
-        run: node tests/integrated-workspaces.browser.cjs
+        run: |
+          node tests/integrated-workspaces.browser.cjs
+          node tests/native-files-chat.browser.cjs
+          node tests/voice-media.browser.cjs
       - name: Verify native gallery music playback and lifecycle
         if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
         timeout-minutes: 2

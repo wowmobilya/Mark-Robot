@@ -25,7 +25,7 @@ window.WFProgramSpeech={getState:()=>({active:false})};
 window.music=WFGalleryMusic.mount({container:document.querySelector('main'),api:{getSession:()=>fixtureSession,can:()=>true},lang:'en'});
 document.querySelector('audio').muted=true;
 </script></body></html>`;
-const mime={'.js':'application/javascript','.mjs':'application/javascript','.css':'text/css','.json':'application/json',
+const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript','.mjs':'application/javascript','.css':'text/css','.json':'application/json',
   '.png':'image/png','.svg':'image/svg+xml','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.mp3':'audio/mpeg',
   '.ico':'image/x-icon','.woff':'font/woff','.woff2':'font/woff2'};
 
@@ -70,7 +70,7 @@ async function fixtureFiles(){
     const url=new URL(item.value,'http://fixture.invalid/'),relative=url.pathname.slice(1);
     assert.match(item.value,/^\.\/[A-Za-z0-9_./-]+(?:\?v=[A-Za-z0-9_.-]+)?$/);
     assert.equal(relative.split('/').some(piece=>piece==='..'||piece.startsWith('.')),false);
-    assert.ok(!relative.includes('/')||['modules','assets','vendor'].includes(relative.split('/')[0])||['platform/dashboard.js','platform/dashboard.css'].includes(relative),'Only public shell directories may be read: '+relative);
+    assert.ok(!relative.includes('/')||['modules','assets','vendor'].includes(relative.split('/')[0])||['platform/index.html','platform/dashboard.js','platform/dashboard.css'].includes(relative),'Only public shell directories may be read: '+relative);
     assert.ok(mime[path.extname(relative)],'Unsupported public asset type: '+relative);
     names.add(relative);
     files.set(url.pathname+url.search,{relative,type:mime[path.extname(relative)]});

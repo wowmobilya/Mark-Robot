@@ -74,7 +74,7 @@
    else{
     // Keep the customer signup entry visibly available even when outbound
     // verification email is not configured. Never open an unverified form.
-    actions.append(button('register',()=>{if(!options.registrationEnabled){message=t('unavailable');render();return;}mode='register';message='';render();}));
+    if(!root.WFCompanyJoin)actions.append(button('register',()=>{if(!options.registrationEnabled){message=t('unavailable');render();return;}mode='register';message='';render();}));
     actions.append(button('recover',()=>{if(!options.recoveryEnabled){message=t('unavailable');render();return;}mode='recover';message='';render();}));
    }
    area.append(actions);if(message)area.append(note());if(!mode)return;

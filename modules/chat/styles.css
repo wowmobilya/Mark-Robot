@@ -17,3 +17,5 @@
 
 .wf-chat-library { display:grid;gap:.4rem;max-height:48dvh;overflow:auto; }
 .wf-chat-library button { min-height:44px;text-align:start;overflow-wrap:anywhere; }
+
+.wf-chat-camera-preview {display:block;inline-size:min(100%,17rem);max-block-size:min(25dvh,10rem);object-fit:contain;border-radius:var(--r,12px);background:var(--text);}

@@ -91,6 +91,7 @@
       const sort=options(['new','old','name','nameDesc','small','large'].map(k=>[k,t(k)]),filters.sort);sort.onchange=()=>resetFilter({sort:sort.value});
       const arch=options([['0',t('all')],['1',t('archive')]],filters.archived?'1':'0');arch.onchange=()=>resetFilter({archived:arch.value==='1'});
       const layout=options(['grid','dense','list'].map(key=>[key,t(key)]),view);
+      layout.setAttribute('aria-label',t('layout'));
       layout.onchange=()=>{view=layout.value;draw();};
       tools.append(search,field(t('folders'),folderSelect),field(t('kind'),type),field(t('sort'),sort),arch,
         field(t('layout'),layout));

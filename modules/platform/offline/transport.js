@@ -45,6 +45,7 @@
       if (p.tab==='customers' || p.party?.type==='customer' && action==='finance.transaction') result.add('customers.view');
       if (p.tab==='invoices') {result.add('invoices.view');result.add('payments.view');}
     }
+    if(action==='chat.send'&&p.fileId){result.add('files.view');result.add('files.export');}
     return [...result];
   }
   // Include default parameters in the query identity. Keep numeric product IDs distinct from strings.

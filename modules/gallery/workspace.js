@@ -384,10 +384,14 @@
       if(active.length)body.append(findControls(draw,{stock:true}),toolbar,area);
       else body.append(area);
       draw();
-      if(!previewMode&&active.length){
+      if(!previewMode){
         const links=el('nav','wfg-catalog-links');
         for(const [id,key,permission] of [['my-orders','mine','myorders.view'],['chat','chat','chat.view'],['gallery-orders','orders','orders.view'],['gallery-studio','studio','gallery.edit']]){
-          if(can(permission))links.append(button(text(key),()=>api.open(id)));
+          if(active.length&&can(permission))links.append(button(text(key),()=>api.open(id)));
+        }
+        if(startSession.currentAccount?.role!=='owner'&&can('chat.view')){
+          const label={ar:'تواصل مع الدعم',en:'Contact support',tr:'Destekle iletişim',fr:'Contacter l’assistance',ru:'Связаться с поддержкой'}[language];
+          links.append(button(label,()=>api.open('chat',{ownerSupport:true})));
         }
         if(links.childElementCount)body.append(links);
       }
