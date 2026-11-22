@@ -42,7 +42,7 @@
   const appearance=()=>pref()?.getAppearance?.()||{effective:html.dataset.theme||'light'};
   function updateAppearance(){
     const current=appearance(),dark=current.effective==='dark';
-    themeButton.textContent=dark?'☀':'☾';
+    themeButton.textContent='';themeButton.dataset.icon=dark?'sun':'moon';
     themeButton.setAttribute('aria-label',language().theme);
     themeButton.setAttribute('aria-pressed',String(dark));
     for(const item of drawer.querySelectorAll('.platform-drawer-theme'))item.textContent=(dark?'☀ ':'☾ ')+language().theme;
