@@ -30,6 +30,18 @@
       draft:'Готов к созданию',edit:'Изменить тариф',create:'Создать тариф',perMonth:'За месяц',noCharge:'Цены только для управления тарифами; автоматических списаний нет.',
       adjust:'Перед сохранением измените цену, срок, пользователей, устройства и хранилище',currency:'Доллары США'}
   };
+  const benefitCopy={
+    ar:['هواتف للموظفين (المالك مستثنى)','تخزين سحابي','دقيقة صوت / شهر','دقيقة فيديو / شهر',
+        '+10 $ / شهر للهاتف الإضافي','+20 $ / شهر لمضاعفة المكالمات والتخزين','حدود فعلية مرتبطة بالشركة'],
+    en:['Staff phones (owner excluded)','Cloud storage','voice minutes / month','video minutes / month',
+        '+$10 / month for an extra phone','+$20 / month to double calls and storage','Real company-linked allowances'],
+    tr:['Çalışan telefonu (sahip hariç)','Bulut depolama','sesli dakika / ay','video dakika / ay',
+        'Ek telefon +10 $ / ay','Arama ve depolama iki katı +20 $ / ay','Şirkete bağlı gerçek limitler'],
+    fr:['Téléphones employés (hors propriétaire)','Stockage cloud','minutes audio / mois','minutes vidéo / mois',
+        '+10 $ / mois par téléphone','+20 $ / mois : doubler appels et stockage','Limites réellement liées à la société'],
+    ru:['Телефоны работников (без владельца)','Облачное хранилище','минут аудио / месяц','минут видео / месяц',
+        '+10 $ / месяц за телефон','+20 $ / месяц удвоить звонки и хранилище','Действующие лимиты компании']
+  };
   const make=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
   function visual(key){
     const markup={
@@ -64,7 +76,25 @@
       label.dataset.saved=String(!!plan);
       const button=make('button','platform-plan-edit',plan?w.edit:w.create);button.type='button';
       button.addEventListener('click',()=>onEdit(item,plan));
-      card.append(visualNode,eyebrow,name,price,duration,monthly,label,button);
+      const benefits=benefitCopy[document.documentElement.lang]||benefitCopy.ar;
+      const values=[
+        [String(plan?.deviceLimit??2)+' '+benefits[0],'phone'],
+        [new Intl.NumberFormat(document.documentElement.lang,{maximumFractionDigits:1}).format(
+          Number(plan?.storageBytes??2000000000)/1e9)+' GB · '+benefits[1],'storage'],
+        [String(plan?.voiceMinutes??500)+' '+benefits[2],'voice'],
+        [String(plan?.videoMinutes??250)+' '+benefits[3],'video'],
+        [benefits[4],'addon-phone'],[benefits[5],'addon-double']
+      ];
+      const featureList=make('ul','platform-plan-features');
+      for(const [copy,key] of values){
+        const li=make('li','platform-plan-feature');
+        li.dataset.feature=key;
+        const symbol=make('span','platform-plan-feature-icon');
+        symbol.setAttribute('aria-hidden','true');
+        li.append(symbol,make('span','',copy));featureList.append(li);
+      }
+      const note=make('small','platform-plan-benefits-note',benefits[6]);
+      card.append(visualNode,eyebrow,name,price,duration,monthly,featureList,note,label,button);
       grid.append(card);
     }
     const panel=make('section','platform-pricing-dashboard');
