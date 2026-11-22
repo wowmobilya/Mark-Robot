@@ -88,6 +88,15 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
    if(model)sourcesByCode.set(model,(sourcesByCode.get(model)||0)+1);
  }
  for(const key of explicit.keys())if(!sourceIds.has(key))throw Error('MAPPED_LEGACY_MISSING');
+ // Compute the entire prospective assignment first: one primary product must
+ // never silently consume two legacy models, even if one was auto-matched.
+ const proposedTargets=new Map();
+ for(const row of legacy.inventory){
+   const sourceKey=id(row.id),model=code(row.title),candidate=byCode.get(model)||[];
+   const target=explicit.has(sourceKey)?explicit.get(sourceKey):
+     model&&candidate.length===1&&sourcesByCode.get(model)===1?id(candidate[0].id):null;
+   if(target){const all=proposedTargets.get(target)||[];all.push(sourceKey);proposedTargets.set(target,all);}
+ }
  const decisions=[],warnings=[];
  const synced=primary.fullPrimarySyncVerified===true;
  for(const row of [...legacy.inventory].sort((a,b)=>id(a.id).localeCompare(id(b.id),'en'))){
@@ -98,6 +107,7 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
    if(!model)conflicts.push('MODEL_CODE_UNVERIFIED');
    if(candidates.length>1||model&&sourcesByCode.get(model)>1)conflicts.push('AMBIGUOUS_MODEL_CODE');
    if(mapped&&candidates.length===1&&id(candidates[0].id)!==mapped)conflicts.push('EXPLICIT_MAPPING_CONFLICT');
+   if(matching&&(proposedTargets.get(id(matching.id))||[]).length>1)conflicts.push('MULTIPLE_LEGACY_IDS_ONE_PRIMARY');
    if(matching&&!synced)conflicts.push('PRIMARY_SYNC_NOT_VERIFIED');
    if(!matching&&!synced)conflicts.push('PRIMARY_SYNC_NOT_VERIFIED');
    if(!matching&&candidates.length>1)conflicts.push('UNRESOLVED_PRIMARY_DUPLICATE');
