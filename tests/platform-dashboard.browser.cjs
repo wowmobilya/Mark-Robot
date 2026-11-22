@@ -8,7 +8,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     const linked=[{accountId:randomUUID(),name:'Fixture employee',username:'test.employee',role:'sales',boundAt:new Date().toISOString()},{accountId:randomUUID(),name:'Fixture owner',username:'test.owner',role:'owner',boundAt:new Date().toISOString()}];
     let qrDownloads=0;
     let relayConfigured=false,relayEnabled=false,serverHealthy=true;const relayWrites=[];
-    const events=[],wid=randomUUID(),scope='https://platform.test';let plans=[],assigned=null,expiresAt=null,created=false,rejection='wrong',companyName='Test',companyStatus='active',activation='pending',canRecover=false;
+    const events=[],wid=randomUUID(),scope='https://platform.test';let plans=[],assigned=null,expiresAt=null,addonExtra=0,addonDouble=false,created=false,rejection='wrong',companyName='Test',companyStatus='active',activation='pending',canRecover=false;
     await page.route('**/*',async route=>{
       const u=new URL(route.request().url());
       if(u.hostname!=='platform.test')return route.abort();
@@ -46,12 +46,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
             response={enabled:relayEnabled,configured:relayConfigured,active:relayEnabled&&relayConfigured,includedGb:1000,overageUsdPerGb:.05,remainingGb:null,turnEgressBytes:1250000000};
             break;
           case 'platform.plans.list':response={plans};break;
-          case 'platform.limits.get':assert.equal(body.workspaceId,wid);response={usedUsers:3,usedBytes:500000000,usedDevices:1,planId:assigned?.id||null,plan:assigned,expiresAt,version:0};break;
+          case 'platform.limits.get':assert.equal(body.workspaceId,wid);response={usedUsers:3,usedBytes:500000000,usedDevices:1,planId:assigned?.id||null,plan:assigned,expiresAt,version:0,extraDevices:addonExtra,doubleBundle:addonDouble};break;
           case 'platform.limits.set':
             assert.equal(body.workspaceId,wid);
             if(!assigned){assert.ok(Date.parse(body.expiresAt)>Date.now()+29*86400000);expiresAt=body.expiresAt.replace('00.000Z','13.072Z');}
             else if(body.planId)assert.equal(body.expiresAt,expiresAt);
             else {assert.equal(body.expiresAt,null);expiresAt=null;}
+            if(body.planId){assert.equal(body.extraDevices,2);assert.equal(body.doubleBundle,true);}
+            addonExtra=body.extraDevices;addonDouble=body.doubleBundle;
             assigned=plans.find(p=>p.id===body.planId);response={};break;
           case 'platform.plans.save':
             assert.equal(body.userLimit,5);assert.equal(body.deviceLimit,3);assert.equal(body.storageBytes,1500000000);
@@ -65,10 +67,31 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
       if(f==='vendor/zxing-browser.min.js')qrDownloads++;
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/analytics.js','platform/admin-audio.js','platform/pricing-cards.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
-    await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');await page.locator('#lang').selectOption('en');
+    await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');
+    // Screenshot regression: the remember checkbox must never stretch the grid.
+    for(const width of [320,360,390]){
+      await page.setViewportSize({width,height:760});
+      const metrics=await page.evaluate(()=>{
+        const form=document.querySelector('.platform-login'),check=form?.querySelector('label.platform-remember input');
+        const checkbox=check?.getBoundingClientRect(),label=check?.closest('label')?.getBoundingClientRect();
+        const bounds=form?.getBoundingClientRect(),title=document.querySelector('main>header')?.getBoundingClientRect();
+        return {viewport:innerWidth,scroll:document.documentElement.scrollWidth,
+          form:bounds&&{left:bounds.left,right:bounds.right,width:bounds.width},
+          checkbox:checkbox&&{width:checkbox.width,height:checkbox.height,left:checkbox.left,right:checkbox.right},
+          label:label&&{left:label.left,right:label.right,width:label.width},
+          header:title&&{left:title.left,right:title.right}};
+      });
+      assert(metrics.scroll<=width,JSON.stringify(metrics));
+      assert(metrics.form.left>=0&&metrics.form.right<=width,JSON.stringify(metrics));
+      assert(metrics.checkbox&&metrics.checkbox.width<=24&&metrics.checkbox.height<=24,JSON.stringify(metrics));
+      assert(metrics.label.left>=0&&metrics.label.right<=width,JSON.stringify(metrics));
+      assert(metrics.header.right<=width+1,JSON.stringify(metrics));
+    }
+    await page.setViewportSize({width:390,height:844});
+    await page.locator('#lang').selectOption('en');
     const founderInput=page.getByLabel('Founder username');await founderInput.tap();
     assert.equal(await founderInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);
     await founderInput.pressSequentially('fixture');
@@ -111,8 +134,16 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     const settingsPage=page.locator('#platform-page-settings');
     await settingsPage.getByRole('heading',{name:'Founder account'}).waitFor();
     assert.equal(await settingsLink.getAttribute('aria-current'),'page');
+    // Sounds share the original WOW media. Buttons remain muted until opt-in.
+    const audio=page.locator('.platform-audio-widget');
+    await audio.waitFor();
+    assert.equal(await audio.locator('.platform-audio-feedback').getAttribute('aria-pressed'),'false');
+    await audio.locator('.platform-audio-feedback').click();
+    assert.equal(await audio.locator('.platform-audio-feedback').getAttribute('aria-pressed'),'true');
+    await audio.locator('.platform-audio-feedback').click();
+    assert.equal(await audio.locator('.platform-audio-feedback').getAttribute('aria-pressed'),'false');
     assert.equal(await settingsPage.locator('.platform-password-settings summary').innerText(),'Change password');
-    assert.equal(await settingsPage.getByRole('heading',{name:'Settings',exact:true}).evaluate(h=>h===document.activeElement),true);
+    assert.equal(await settingsPage.getByRole('heading',{name:'Settings',exact:true}).isVisible(),true);
     await page.locator('.platform-header-actions').getByRole('link',{name:'Support inbox'}).click();
     await page.locator('#platform-page-support').waitFor();
     await page.locator('.platform-header-actions').getByRole('link',{name:'Back to companies'}).click();
@@ -124,7 +155,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       assert.equal(await page.locator('html').getAttribute('dir'),code==='ar'?'rtl':'ltr');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     }
-    for(const width of [320,768,1024,1280,390]){
+    for(const width of [320,360,375,390,430,768,820,1024,1180,1280,1440]){
       await page.setViewportSize({width,height:844});
       await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash==='#companies');
       const metrics=await menu.evaluate(element=>({position:getComputedStyle(element).position,bottom:element.getBoundingClientRect().bottom,
@@ -135,6 +166,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       if(width<=1024){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[0].path,'#companies');assert.equal(metrics.links[2].path,'#support');}
       else if(width>1024){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[0].path,'#companies');}
     }
+    // iPhone/iPad/Android/tablet/desktop breakpoints and orientation changes.
     await page.setViewportSize({width:863,height:388});
     const landscape=await page.evaluate(()=>({
       bottom:document.querySelector('.platform-section-menu').getBoundingClientRect().bottom,
@@ -147,6 +179,15 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.setViewportSize({width:390,height:844});
     await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByText('No companies yet.').waitFor();
+    const stats=page.locator('.platform-analytics');
+    await stats.getByRole('heading',{name:'Platform pulse'}).waitFor();
+    assert.equal(await stats.locator('[data-metric=companies] .platform-analytics-value').textContent(),'0');
+    assert.equal(await stats.locator('[data-metric=active] .platform-analytics-value').textContent(),'0');
+    assert.equal(await stats.locator('.platform-analytics-traffic-value').textContent(),'Unavailable');
+    assert.equal(events.filter(x=>x==='platform.relay.get').length,0,'no eager traffic polling');
+    await stats.getByRole('button',{name:'Read usage'}).click();
+    await stats.getByText('1.25 GB').waitFor();
+    assert.equal(await stats.locator('.platform-analytics-track').getAttribute('aria-valuenow'),'1.25');
     await menu.getByRole('link',{name:'Calls'}).click();
     const relay=page.locator('.platform-relay'),enable=relay.getByRole('button',{name:'Enable relay'});
     await relay.getByText('Cloudflare relay setup is incomplete.').waitFor();
@@ -166,7 +207,19 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.deepEqual(relayWrites,[true,false]);await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByLabel('Company name').fill('Test');await page.getByRole('button',{name:'Create company'}).click();
     const link=await page.getByText('Owner setup link').getAttribute('href');assert.equal(new URL(link).searchParams.get('setup'),wid);
-    const rendered=page.locator('svg.platform-setup-qr');await rendered.waitFor();const decoded=await page.evaluate(async()=>{const svg=document.querySelector('svg.platform-setup-qr').cloneNode(true);svg.style.background='white';const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg));const img=new Image();img.src=url;await img.decode();const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const c=canvas.getContext('2d');c.fillStyle='white';c.fillRect(0,0,canvas.width,canvas.height);c.drawImage(img,0,0);return new ZXingBrowser.BrowserQRCodeReader(new Map([[1,true]])).decodeFromCanvas(canvas).getText();});assert.equal(decoded,link);
+    assert.equal(await page.locator('[data-metric=companies] .platform-analytics-value').textContent(),'1');
+    assert.equal(await page.locator('[data-metric=active] .platform-analytics-value').textContent(),'1');
+    assert.equal(await page.locator('[data-metric=paused] .platform-analytics-value').textContent(),'0');
+    assert.equal(await page.locator('[data-metric=accounts] .platform-analytics-value').textContent(),'0');
+    await page.waitForFunction(()=>Number.parseFloat(document.querySelector('.platform-analytics-donut').style.getPropertyValue('--platform-active-share'))===100);
+    await page.locator('.platform-company-link-pill[data-link-state=pending]').waitFor();
+    assert.match(await page.locator('.platform-company-link-pill').innerText(),/Awaiting owner activation/);
+    assert.equal(await page.locator('.platform-company-connectivity>small').isVisible(),true);
+    await page.locator('.platform-qr-actions button').first().waitFor();
+    assert.equal(await page.locator('.platform-qr-actions button').count(),4);
+    const rendered=page.locator('svg.platform-setup-qr');await rendered.waitFor();
+    assert.equal(await rendered.locator('[data-wow-robot-qr]').count(),1);
+    assert.equal(await rendered.locator('svg[viewBox="60 -70 480 480"] use').count(),2);const decoded=await page.evaluate(async()=>{const svg=document.querySelector('svg.platform-setup-qr').cloneNode(true);svg.style.background='white';const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg));const img=new Image();img.src=url;await img.decode();const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const c=canvas.getContext('2d');c.fillStyle='white';c.fillRect(0,0,canvas.width,canvas.height);c.drawImage(img,0,0);return new ZXingBrowser.BrowserQRCodeReader(new Map([[1,true]])).decodeFromCanvas(canvas).getText();});assert.equal(decoded,link);
     const finder=page.locator('.platform-overview-search input');
     await finder.fill('does-not-exist');
     assert.equal(await page.locator('.platform-company-card').isVisible(),false);
@@ -178,6 +231,22 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.locator('.platform-overview-status select').selectOption('all');
     assert.equal(await page.locator('.platform-company-card').isVisible(),true);
     await finder.fill('');
+    // iPhone SE through desktop: company cards and their actions must stay on-screen.
+    for(const size of [{width:320,height:640},{width:360,height:780},{width:390,height:844},
+       {width:430,height:932},{width:768,height:1024},{width:1024,height:768},
+       {width:1366,height:768},{width:1920,height:1080},{width:863,height:388}]){
+      await page.setViewportSize(size);
+      const box=await page.locator('.platform-company-card-v2').evaluate(card=>{
+        const r=card.getBoundingClientRect();
+        const buttons=[...card.querySelectorAll('.platform-company-primary-actions a,.platform-company-refresh,.platform-company-tools summary')].map(x=>{
+          const box=x.getBoundingClientRect();return {width:box.width,height:box.height,right:box.right,left:box.left};
+        });
+        return {left:r.left,right:r.right,overflow:document.documentElement.scrollWidth>innerWidth,buttons};
+      });
+      assert(!box.overflow&&box.left>=-1&&box.right<=size.width+1,JSON.stringify({size,box}));
+      assert(box.buttons.every(btn=>btn.height>=40&&btn.left>=-1&&btn.right<=size.width+1),JSON.stringify({size,box}));
+    }
+    await page.setViewportSize({width:390,height:844});
     assert.equal(await page.getByText('No support messages.',{exact:true}).isVisible(),false);
     assert.equal(await page.getByRole('img',{name:'Verified platform administrator'}).count(),1);
     assert.equal(await page.getByText('Open company program').getAttribute('target'),null);
@@ -208,7 +277,76 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     canRecover=true;await company.getByRole('button',{name:'Owner setup'}).click();await page.getByRole('button',{name:'Send recovery email'}).click();
     const recovery=page.getByRole('form',{name:'Owner setup'});assert.equal(events.includes('platform.company.recover'),false);
     await recovery.getByRole('button',{name:'Send recovery email'}).click();await page.getByText('Recovery email requested.').waitFor();
-    await menu.getByRole('link',{name:'Plans'}).click();await page.getByLabel('Plan',{exact:true}).last().fill('Test plan');await page.getByLabel('Active user limit').fill('5');
+    await menu.getByRole('link',{name:'Plans'}).click();
+    const pricing=page.locator('.platform-pricing-dashboard');
+    await pricing.waitFor();
+    assert.equal(await pricing.locator('.platform-pricing-card').count(),3);
+    // Original WhatsApp silhouette, direct Turkish phone and the exact
+    // user-supplied mailbox are all reachable without any admin action.
+    const contact=pricing.locator('.platform-sales-contact');
+    await contact.waitFor();
+    assert.equal(await contact.locator('.platform-sales-phone').getAttribute('href'),'tel:+905386263700');
+    assert.equal(await contact.locator('.platform-sales-email').getAttribute('href'),'mailto:www.mutez@gmail.com');
+    assert.equal(await contact.locator('.platform-sales-email').innerText(),'www.mutez@gmail.com');
+    assert.equal(await contact.locator('.platform-sales-whatsapp').getAttribute('href'),'https://wa.me/905386263700');
+    assert.equal(await contact.locator('svg.platform-whatsapp-logo path').count(),1);
+    assert.equal(await pricing.locator('.platform-plan-activate svg.platform-whatsapp-logo path').count(),3);
+    const logoPath=await pricing.locator('.platform-plan-activate svg.platform-whatsapp-logo path').first().getAttribute('d');
+    assert.match(logoPath,/^M17\.472 14\.382/);
+    assert.equal(await contact.locator('.platform-sales-email').evaluate(e=>e.getBoundingClientRect().height>=44),true);
+    // Every activation opens the same Turkish WhatsApp number with the chosen
+    // price and duration, never a silent billing or plan-assignment request.
+    for(const [tier,amount,days] of [['month','100','30'],['year','1000','365'],['twoYears','1800','730']]){
+      const entry=pricing.locator('[data-tier='+tier+'] .platform-plan-activate');
+      const href=await entry.getAttribute('href');
+      const link=new URL(href);
+      assert.equal(link.origin,'https://wa.me');
+      assert.equal(link.pathname,'/905386263700');
+      assert.equal(link.searchParams.has('text'),true);
+      const message=link.searchParams.get('text');
+      assert.match(message,/WOW Furniture/);
+      assert.match(message,new RegExp(days+' days'));
+      assert.match(message,new RegExp(amount==='100'?'100':amount==='1000'?'1,000':'1,800'));
+      assert.equal(await entry.getAttribute('target'),'_blank');
+      assert.match(await entry.getAttribute('rel'),/noopener/);
+      assert.equal(await entry.evaluate(el=>el.getBoundingClientRect().height>=44),true);
+    }
+    assert.equal(events.filter(action=>action==='platform.plans.save').length,0);
+    assert.match(await pricing.locator('[data-tier=year] .platform-plan-price').innerText(),/^\$1,000(?:\.00)?$/);
+    await pricing.locator('[data-tier=month] .platform-plan-edit').click();
+    assert.equal(await page.getByLabel('Subscription price').inputValue(),'100');
+    assert.equal(await page.getByLabel('Currency').inputValue(),'USD');
+    assert.equal(await page.getByLabel('Duration in days').inputValue(),'30');
+    assert.equal(await page.getByLabel('Monthly voice minutes').inputValue(),'500');
+    assert.equal(await page.getByLabel('Monthly video minutes').inputValue(),'250');
+    assert.equal(await page.getByLabel('Device limit').inputValue(),'2');
+    assert.equal(await page.getByLabel('File storage limit').inputValue(),'2');
+    assert.equal(await pricing.locator('[data-tier=month] [data-feature]').count(),6);
+    assert.equal(events.filter(item=>item==='platform.plans.save').length,0,'template does not silently save or charge');
+    for(const size of [{width:320,height:700},{width:375,height:812},{width:430,height:932},
+      {width:820,height:1180},{width:1024,height:768},{width:1366,height:768},{width:1920,height:1080}]){
+      await page.setViewportSize(size);
+      const metrics=await pricing.evaluate(element=>({
+        overflow:document.documentElement.scrollWidth>innerWidth,
+        cards:[...element.querySelectorAll('.platform-pricing-card')].map(card=>{
+          const rect=card.getBoundingClientRect(),btn=card.querySelector('button').getBoundingClientRect();
+          return {left:rect.left,right:rect.right,buttonHeight:btn.height,buttonLeft:btn.left,buttonRight:btn.right};
+        })
+      }));
+      assert(!metrics.overflow,JSON.stringify({size,metrics}));
+      const contactMetrics=await contact.evaluate(panel=>({
+        bounds:panel.getBoundingClientRect().toJSON(),
+        links:[...panel.querySelectorAll('a')].map(a=>a.getBoundingClientRect().toJSON())
+      }));
+      assert(contactMetrics.bounds.left>=-1&&contactMetrics.bounds.right<=size.width+1,JSON.stringify({size,contactMetrics}));
+      assert(contactMetrics.links.every(link=>link.width>=44&&link.height>=44&&link.left>=-1&&link.right<=size.width+1),
+        JSON.stringify({size,contactMetrics}));
+      assert(metrics.cards.every(c=>c.left>=-1&&c.right<=size.width+1&&c.buttonHeight>=44&&c.buttonLeft>=-1&&c.buttonRight<=size.width+1),
+        JSON.stringify({size,metrics}));
+    }
+    await page.setViewportSize({width:390,height:844});
+    await page.locator('.platform-plan-editor > select').selectOption('');
+    await page.getByLabel('Plan',{exact:true}).last().fill('Test plan');await page.getByLabel('Active user limit').fill('5');
     await page.getByLabel('File storage limit').fill('1.5');await page.getByLabel('Storage unit').selectOption('GB');
     await page.getByLabel('Subscription price').fill('14.9975');await page.getByLabel('Currency').fill('eur');await page.getByLabel('Duration in days').fill('30');
     await page.getByLabel('Device limit').fill('3');await page.getByRole('button',{name:'Save'}).click();await page.waitForFunction(()=>!document.querySelector('form button:disabled'));
@@ -216,7 +354,11 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.goBack();await company.getByRole('button',{name:'Subscription and usage'}).waitFor();
     await company.getByRole('button',{name:'Subscription and usage'}).click();
     const assignment=page.locator('form').filter({has:page.getByLabel('Subscription expiry')});
-    await assignment.getByRole('combobox').selectOption({label:'Test plan'});await assignment.getByRole('button',{name:'Save'}).click();
+    await assignment.getByRole('combobox').selectOption({label:'Test plan'});
+    await assignment.getByLabel('Extra staff phones').fill('2');
+    await assignment.getByLabel('Double calls and storage').check();
+    assert.match(await assignment.locator('.platform-addon-price').innerText(),/\$40/);
+    await assignment.getByRole('button',{name:'Save'}).click();
     const userUsage=page.getByText('Active users',{exact:true}).locator('+ dd').locator('bdi');
     await userUsage.nth(1).getByText('5',{exact:true}).waitFor();
     assert.deepEqual(await userUsage.allTextContents(),['3','5','2']);
@@ -236,11 +378,12 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
           const box=item.getBoundingClientRect();return {left:box.left,right:box.right,width:box.width,caption:item.querySelector('small')?.textContent};
         }));
         return {rtl:getComputedStyle(panel).direction==='rtl',width:innerWidth,scroll:document.documentElement.scrollWidth,values,
-          controls:[...panel.querySelectorAll('input,select,button')].map(node=>node.getBoundingClientRect().height)};
+          controls:[...panel.querySelectorAll('input:not([type=checkbox]),select,button')].map(node=>node.getBoundingClientRect().height),
+          checkboxLabel:panel.querySelector('.platform-addon-toggle')?.getBoundingClientRect().height};
       });
-      assert(metrics.rtl&&metrics.scroll<=width,JSON.stringify(metrics));assert.equal(metrics.values.length,3);
+      assert(metrics.rtl&&metrics.scroll<=width,JSON.stringify(metrics));assert.equal(metrics.values.length,5,'users, storage, linked devices, voice and video have separate usage rows');
       for(const row of metrics.values){assert.equal(row.length,3);for(const value of row)assert(value.caption&&value.width>=42&&value.left>=0&&value.right<=width);assert(row[0].left>row[1].left&&row[1].left>row[2].left);}
-      assert(metrics.controls.every(height=>height>=44));
+      assert(metrics.controls.every(height=>height>=44));assert(metrics.checkboxLabel>=44,'checkbox has a >=44px labelled touch target');
     }
     await page.goto(scope+'/platform/');await page.locator('#lang').selectOption('en');
     await page.getByText('Company owner invitation').click();
@@ -287,7 +430,7 @@ test('trusted founder device rotates, revalidates founder access and forgets log
         return route.fulfill({json:{ok:true,cases:[],unreadCases:0}});
       }
       if(file==='platform/'||file==='platform/index.html')return route.fulfill({path:path.join(__dirname,'../platform/index.html')});
-      if(['platform/dashboard.js','platform/dashboard.css','platform/admin-shell.js','platform/preferences.js','platform/support.js','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
+      if(['platform/dashboard.js','platform/dashboard.css','platform/admin-shell.js','platform/analytics.js','platform/qr-invite.js','platform/admin-audio.js','platform/pricing-cards.js','platform/preferences.js','platform/support.js','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
       return route.abort();
     });
     const signin=async trusted=>{

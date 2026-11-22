@@ -101,9 +101,25 @@
     const label=el('label',t(index)),input=el('input');input.type=type;label.append(input);container.append(label);return input;
   }
   function btn(container,index,fn){
-    const b=el('button',t(index));b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn();}catch(reason){fail(reason);}finally{b.disabled=false;}};container.append(b);return b;
+    const b=el('button',t(index));b.type='button';b.classList.add('platform-interactive');
+    b.onclick=async()=>{
+      if(b.disabled)return;
+      b.disabled=true;b.dataset.phase='busy';b.setAttribute('aria-busy','true');
+      try{await fn();}catch(reason){fail(reason);}
+      finally{b.disabled=false;b.dataset.phase='idle';b.removeAttribute('aria-busy');}
+    };container.append(b);return b;
   }
-  function submit(form,index,fn){const b=el('button',t(index));b.type='submit';form.append(b);form.onsubmit=async e=>{e.preventDefault();if(b.disabled)return;b.disabled=true;try{await fn();}catch(reason){fail(reason);}finally{b.disabled=false;}};}
+  function submit(form,index,fn){
+    const b=el('button',t(index));b.type='submit';b.className='platform-interactive platform-submit';
+    form.append(b);
+    form.onsubmit=async e=>{
+      e.preventDefault();if(b.disabled)return;
+      b.disabled=true;b.dataset.phase='busy';b.setAttribute('aria-busy','true');
+      try{await fn();}catch(reason){fail(reason);}
+      finally{b.disabled=false;b.dataset.phase='idle';b.removeAttribute('aria-busy');}
+    };
+    return b;
+  }
   function login(){
     window.WFPlatformShell?.reset();
     headerActions.hidden=true;headerActions.replaceChildren();
@@ -111,7 +127,11 @@
     form.className='platform-login';
     const visibility={ar:['إظهار','إخفاء'],en:['Show','Hide'],tr:['Göster','Gizle'],fr:['Afficher','Masquer'],ru:['Показать','Скрыть']}[lang.value];
     const row=el('div'),toggle=el('button',visibility[0]);row.className='platform-password';toggle.type='button';
-    pass.id='platform-founder-password';const passLabel=pass.parentElement;passLabel.htmlFor=pass.id;
+    pass.id='platform-founder-password';const passLabel=pass.parentElement;
+    // Keep the password caption as a genuine label; no empty wrapping label
+    // should enter the login grid when the input moves beside its visibility button.
+    passLabel.htmlFor=pass.id;passLabel.className='platform-password-caption';
+    // The input already has a real label; do not duplicate it on the wrapper.
     passLabel.after(row);row.append(pass,toggle);
     toggle.setAttribute('aria-label',visibility[0]+' '+t(2));toggle.setAttribute('aria-controls',pass.id);toggle.setAttribute('aria-pressed','false');
     toggle.onclick=()=>{const show=pass.type==='password';pass.type=show?'text':'password';
@@ -144,13 +164,31 @@
     });
   }
   const salesWords={
-    ar:['الحد الأقصى للمستخدمين النشطين','حد تخزين الملفات','وحدة التخزين','سعر الاشتراك','العملة','مدة الاشتراك بالأيام','بلا حد','المستخدمون النشطون','تخزين الملفات الخاصة','تسجيلات الإشعارات','المستخدم','المتبقي','إدارة حسابات الشركة','اترك الحد فارغًا للسماح باستخدام غير محدود.','بدون خطة','غير متاح','حُفظت الخطة','حُفظ الاشتراك','الحد المسموح'],
-    en:['Active user limit','File storage limit','Storage unit','Subscription price','Currency','Duration in days','Unlimited','Active users','Private file storage','Notification registrations','Used','Available','Manage company accounts','Leave a limit blank for unlimited use.','No plan','Unavailable','Plan saved','Subscription saved','Allowed'],
-    tr:['Etkin kullanıcı sınırı','Dosya depolama sınırı','Depolama birimi','Abonelik fiyatı','Para birimi','Gün olarak süre','Sınırsız','Etkin kullanıcılar','Özel dosya depolama','Bildirim kayıtları','Kullanılan','Kalan','Şirket hesaplarını yönet','Sınırsız kullanım için sınırı boş bırakın.','Plan yok','Kullanılamıyor','Plan kaydedildi','Abonelik kaydedildi','İzin verilen'],
-    fr:['Limite de comptes actifs','Limite de stockage des fichiers','Unité de stockage','Prix de l’abonnement','Devise','Durée en jours','Illimité','Comptes actifs','Stockage des fichiers privés','Inscriptions aux notifications','Utilisé','Disponible','Gérer les comptes de la société','Laissez une limite vide pour un usage illimité.','Sans formule','Indisponible','Formule enregistrée','Abonnement enregistré','Autorisé'],
-    ru:['Лимит активных пользователей','Лимит хранилища файлов','Единица объёма','Цена подписки','Валюта','Срок в днях','Без ограничений','Активные пользователи','Хранилище частных файлов','Регистрации уведомлений','Использовано','Доступно','Управление аккаунтами компании','Оставьте лимит пустым для использования без ограничений.','Без тарифа','Недоступно','Тариф сохранён','Подписка сохранена','Лимит']
+    ar:['الحد الأقصى للمستخدمين النشطين','حد تخزين الملفات','وحدة التخزين','سعر الاشتراك','العملة','مدة الاشتراك بالأيام','بلا حد','المستخدمون النشطون','تخزين الملفات الخاصة','الأجهزة المرتبطة','المستخدم','المتبقي','إدارة حسابات الشركة','اترك الحد فارغًا للسماح باستخدام غير محدود.','بدون خطة','غير متاح','حُفظت الخطة','حُفظ الاشتراك','الحد المسموح'],
+    en:['Active user limit','File storage limit','Storage unit','Subscription price','Currency','Duration in days','Unlimited','Active users','Private file storage','Linked employee phones','Used','Available','Manage company accounts','Leave a limit blank for unlimited use.','No plan','Unavailable','Plan saved','Subscription saved','Allowed'],
+    tr:['Etkin kullanıcı sınırı','Dosya depolama sınırı','Depolama birimi','Abonelik fiyatı','Para birimi','Gün olarak süre','Sınırsız','Etkin kullanıcılar','Özel dosya depolama','Bağlı çalışan telefonları','Kullanılan','Kalan','Şirket hesaplarını yönet','Sınırsız kullanım için sınırı boş bırakın.','Plan yok','Kullanılamıyor','Plan kaydedildi','Abonelik kaydedildi','İzin verilen'],
+    fr:['Limite de comptes actifs','Limite de stockage des fichiers','Unité de stockage','Prix de l’abonnement','Devise','Durée en jours','Illimité','Comptes actifs','Stockage des fichiers privés','Téléphones employés associés','Utilisé','Disponible','Gérer les comptes de la société','Laissez une limite vide pour un usage illimité.','Sans formule','Indisponible','Formule enregistrée','Abonnement enregistré','Autorisé'],
+    ru:['Лимит активных пользователей','Лимит хранилища файлов','Единица объёма','Цена подписки','Валюта','Срок в днях','Без ограничений','Активные пользователи','Хранилище частных файлов','Привязанные телефоны сотрудников','Использовано','Доступно','Управление аккаунтами компании','Оставьте лимит пустым для использования без ограничений.','Без тарифа','Недоступно','Тариф сохранён','Подписка сохранена','Лимит']
+  };
+  const addonWords={
+    ar:['دقائق صوت شهريًا','دقائق فيديو شهريًا','هواتف إضافية للموظفين','مضاعفة دقائق المكالمات والتخزين',
+      'هاتف المالك الأساسي لا يدخل ضمن الحد','10 USD لكل هاتف إضافي / شهر','20 USD / شهر: مضاعفة الصوت والفيديو والتخزين',
+      'الإضافات شهريًا','التكلفة التقديرية لدورة الاشتراك','دقائق اتصال فعلية للشهر الحالي (UTC)'],
+    en:['Monthly voice minutes','Monthly video minutes','Extra staff phones','Double calls and storage',
+      'The primary owner phone does not use a slot','USD 10 per extra staff phone / month',
+      'USD 20 / month: double voice, video and storage','Monthly add-ons','Estimated subscription-period total','Measured call minutes for the current UTC month'],
+    tr:['Aylık sesli dakika','Aylık video dakikası','Ek çalışan telefonu','Aramaları ve depolamayı ikiye katla',
+      'Ana sahibin telefonu bu sınıra dahil değildir','Ek çalışan telefonu başına aylık 10 USD',
+      'Aylık 20 USD: arama ve depolama iki kat','Aylık ek ücretler','Dönem tahmini toplamı','Bu UTC ayında gerçekleşen arama dakikaları'],
+    fr:['Minutes audio mensuelles','Minutes vidéo mensuelles','Téléphones employés supplémentaires','Doubler appels et stockage',
+      'Le téléphone principal du propriétaire est exclu','10 USD par téléphone employé / mois',
+      '20 USD / mois : doubler appels et stockage','Options mensuelles','Total estimé pour la période','Minutes réellement enregistrées ce mois UTC'],
+    ru:['Минуты аудио в месяц','Минуты видео в месяц','Дополнительные телефоны персонала','Удвоить звонки и хранилище',
+      'Основной телефон владельца не занимает слот','10 USD за дополнительный телефон в месяц',
+      '20 USD / месяц: удвоение звонков и хранилища','Доплаты в месяц','Расчёт за период','Фактические минуты звонков за месяц UTC']
   };
   const sale=i=>salesWords[lang.value][i];
+  const addon=i=>addonWords[lang.value][i];
   const storageUnits={GB:1000000000,MB:1000000,KB:1000,B:1};
   function namedField(form,text,type='text'){
     const label=el('label',text),input=el('input');input.type=type;label.append(input);form.append(label);return input;
@@ -167,7 +205,11 @@
     form.append(pick);const name=field(form,22),users=namedField(form,sale(0),'number'),amount=namedField(form,sale(1),'number');
     const unitLabel=el('label',sale(2)),unit=el('select');for(const u of Object.keys(storageUnits))unit.append(el('option',u));unitLabel.append(unit);form.append(unitLabel);
     const price=namedField(form,sale(3),'number'),currency=namedField(form,sale(4)),duration=namedField(form,sale(5),'number');
-    const devices=field(form,21,'number');name.required=true;name.maxLength=100;
+    const devices=field(form,21,'number');
+    const voiceMinutes=namedField(form,addon(0),'number'),videoMinutes=namedField(form,addon(1),'number');
+    voiceMinutes.min=videoMinutes.min='0';voiceMinutes.max=videoMinutes.max='100000';
+    voiceMinutes.step=videoMinutes.step='1';
+    name.required=true;name.maxLength=100;
     for(const input of [users,devices,duration]){input.min='0';input.step='1';input.max='2147483647';}
     users.max='1000000';duration.min='1';duration.max='36500';amount.min=price.min='0';amount.step='any';price.step='0.0001';price.max='999999999999.9999';currency.maxLength=3;currency.pattern='[A-Za-z]{3}';
     currency.addEventListener('input',()=>{currency.value=currency.value.toUpperCase();});
@@ -179,6 +221,7 @@
       unit.value=bytes==null||bytes===0?'GB':Object.keys(storageUnits).find(u=>bytes%storageUnits[u]===0);
       amount.value=bytes==null?'':bytes/storageUnits[unit.value];
       price.value=plan?.price??'';currency.value=plan?.currency??'';duration.value=plan?.durationDays??'';
+      voiceMinutes.value=plan?.voiceMinutes??'';videoMinutes.value=plan?.videoMinutes??'';
     };
     const integer=value=>value===''?null:Number(value);
     form.append(el('small',sale(13)));
@@ -188,9 +231,24 @@
       if(bytes!==null&&!Number.isSafeInteger(bytes)){amount.setCustomValidity(sale(1));amount.reportValidity();amount.setCustomValidity('');return;}
       if((currency.value==='')!==(price.value==='')){const missing=currency.value?price:currency;missing.setCustomValidity(missing.parentElement.textContent);missing.reportValidity();missing.setCustomValidity('');return;}
       await request('plans.save',{id,name:name.value.trim(),userLimit:integer(users.value),storageBytes:bytes,deviceLimit:integer(devices.value),
-        price:price.value||null,currency:currency.value||null,durationDays:integer(duration.value),version:plan?.version||0});
+        price:price.value||null,currency:currency.value||null,durationDays:integer(duration.value),
+        voiceMinutes:integer(voiceMinutes.value),videoMinutes:integer(videoMinutes.value),
+        version:plan?.version||0});
       await planEditor(container);status.textContent=sale(16);
-    });container.append(form);
+    });
+    container.append(form);
+    window.WFPlatformPricing?.mount(container,plans,(tier,existing)=>{
+      if(existing){
+        pick.value=existing.id;pick.onchange();
+      }else{
+        pick.value='';pick.onchange();id=tier.id;
+        name.value=tier.name;price.value=tier.price;currency.value='USD';duration.value=tier.days;
+        users.value='';devices.value='2';amount.value='2';unit.value='GB';
+        voiceMinutes.value='500';videoMinutes.value='250';
+      }
+      price.focus({preventScroll:true});
+      form.scrollIntoView({block:'nearest',behavior:'instant'});
+    });
   }
   async function subscription(container,company){
     const [state,{plans}]=await Promise.all([request('limits.get',{workspaceId:company.id}),request('plans.list')]);
@@ -200,6 +258,25 @@
     label.append(select);form.append(label);const expiry=field(form,23,'datetime-local');
     const localDate=date=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
     container.classList.add('platform-subscription');
+    const extras=namedField(form,addon(2),'number');
+    extras.min='0';extras.max='100';extras.step='1';extras.value=String(state.extraDevices??0);
+    const doubledLabel=el('label'),doubled=el('input'),doubledCaption=el('span',addon(3));
+    doubled.type='checkbox';doubled.checked=state.doubleBundle===true;
+    doubledLabel.className='platform-addon-toggle';doubledLabel.append(doubled,doubledCaption);
+    form.append(doubledLabel);
+    const pricing=el('output');pricing.className='platform-addon-price';
+    const recalc=()=>{
+      const monthCharge=Math.max(0,Number(extras.value)||0)*10+(doubled.checked?20:0);
+      const tier=plans.find(p=>p.id===select.value),months=Number(tier?.durationDays||0)<=30?1:Number(tier?.durationDays||0)<=365?12:24;
+      const base=Number(tier?.price||0),currency=tier?.currency||'USD';
+      const fmt=n=>new Intl.NumberFormat(lang.value,{style:'currency',currency:'USD',maximumFractionDigits:2}).format(n);
+      pricing.textContent=addon(7)+': '+fmt(monthCharge)+
+        (currency==='USD'&&tier?' · '+addon(8)+': '+fmt(base+monthCharge*months):'');
+
+    };
+    extras.addEventListener('input',recalc);doubled.addEventListener('change',recalc);
+    select.addEventListener('change',recalc);recalc();
+    form.append(el('small',addon(4)),el('small',addon(5)),el('small',addon(6)),pricing);
     const originalDate=state.expiresAt?localDate(new Date(state.expiresAt)):'';
     expiry.value=originalDate;
     select.onchange=()=>{
@@ -210,13 +287,20 @@
     };
     submit(form,19,async()=>{
       const expiresAt=expiry.value===originalDate?(state.expiresAt||null):expiry.value?new Date(expiry.value).toISOString():null;
-      await request('limits.set',{workspaceId:company.id,planId:select.value||null,expiresAt,version:state.version});
+      await request('limits.set',{workspaceId:company.id,planId:select.value||null,expiresAt,
+        extraDevices:select.value?Number(extras.value):0,doubleBundle:select.value&&doubled.checked,version:state.version});
       await subscription(container,company);status.textContent=sale(17);
     });
     const usage=el('dl');
     if(state.plan?.price!=null&&state.plan.currency)usage.append(el('dt',sale(3)),el('dd',String(state.plan.price)+' '+state.plan.currency));
     if(state.plan?.durationDays!=null)usage.append(el('dt',sale(5)),el('dd',state.plan.durationDays));
-    for(const [title,used,limit,format] of [[sale(7),state.usedUsers,state.plan?.userLimit,String],[sale(8),state.usedBytes,state.plan?.storageBytes,storageText],[sale(9),state.usedDevices,state.plan?.deviceLimit,String]]){
+    for(const [title,used,limit,format] of [
+       [sale(7),state.usedUsers,state.plan?.userLimit,String],
+       [sale(8),state.usedBytes,state.effectiveStorageBytes??state.plan?.storageBytes,storageText],
+       [sale(9),state.usedDevices,state.effectiveDeviceLimit??state.plan?.deviceLimit,String],
+       [addon(0),state.usedVoiceMinutes,state.effectiveVoiceMinutes??state.plan?.voiceMinutes,String],
+       [addon(1),state.usedVideoMinutes,state.effectiveVideoMinutes??state.plan?.videoMinutes,String]
+      ]){
       const valid=Number.isSafeInteger(used);
       const values=el('dd');
       for(const [caption,value] of [[sale(10),valid?format(used):sale(15)],[sale(18),limit==null?sale(6):format(limit)],[sale(11),limit==null?sale(6):valid?format(Math.max(limit-used,0)):sale(15)]]){
@@ -234,9 +318,10 @@
     ru:['Настройка владельца','Владелец активен','Ожидается активация','Приглашение истекло','Приглашение не выдавалось','Создать приглашение','Отправить письмо для восстановления','Подтвердите отправку ссылки на проверенную почту владельца','Письмо для восстановления запрошено.','Новое приглашение заменит ожидающее приглашение этой компании.']
   };
   const inviteCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toString(16).padStart(2,'0')).join('');
-  async function ownerSetup(container,company){
+  async function ownerSetup(container,company,onVerified){
     const w=activationWords[lang.value],activation=await request('company.activation',{workspaceId:company.id});
     if(!container.isConnected)return;
+    onVerified?.(activation);
     const i=['active','pending','expired','unissued'].indexOf(activation.state);
     if(i<0)throw Error();
     container.replaceChildren(el('h3',w[0]),el('p',w[i+1]));
@@ -300,10 +385,12 @@
       card.append(options);host.append(card);options.className='platform-device-options';
       for(const action of device.blocked?['unblock']:['block','release']){
         const releasing=action==='release',blocking=action==='block',actionName=releasing?w[2]:b[blocking?0:1];
-        const trigger=el('button',actionName);trigger.type='button';options.append(trigger);
+        const trigger=el('button',actionName);trigger.type='button';trigger.className='platform-device-action';trigger.dataset.action=action;options.append(trigger);
         trigger.onclick=()=>{
           options.hidden=true;
           const form=el('form'),cancel=el('button',word(5)),confirm=el('button',releasing?w[4]:actionName);form.className='platform-device-confirm';
+          cancel.className='platform-action-cancel';confirm.className='platform-action-confirm';
+          confirm.dataset.action=action;
           form.setAttribute('aria-label',actionName+' · '+identity.textContent);cancel.type='button';confirm.type='submit';
           const close=()=>{form.remove();options.hidden=false;trigger.focus();};
           cancel.onclick=close;form.onkeydown=e=>{if(e.key==='Escape'&&!confirm.disabled){e.preventDefault();close();}};
@@ -328,6 +415,13 @@
     if(pages.childElementCount)host.append(pages);
   }
   const companyMenu={ar:'إدارة الشركة',en:'Manage company',tr:'Şirketi yönet',fr:'Gérer la société',ru:'Управление компанией'};
+  const companyCardWords={
+    ar:['ربط البرنامج','جارِ التحقق من تفعيل المالك','المالك مفعّل','بانتظار تفعيل المالك','الدعوة منتهية','لم تصدر دعوة','تعذّر التحقق','تحديث حالة الربط','حالة الاتصال المباشر غير متوفرة','الحسابات','فتح برنامج الشركة'],
+    en:['Program link','Checking owner activation','Owner activated','Awaiting owner activation','Invitation expired','No invitation issued','Could not verify','Refresh link status','Live connection status unavailable','Accounts','Open company program'],
+    tr:['Program bağlantısı','Sahip etkinliği kontrol ediliyor','Sahip etkin','Sahip etkinleştirmesi bekleniyor','Davet süresi doldu','Davet oluşturulmadı','Kontrol edilemedi','Bağlantı durumunu yenile','Canlı bağlantı durumu mevcut değil','Hesaplar','Şirket programını aç'],
+    fr:['Lien au programme','Vérification de l’activation','Propriétaire activé','Activation en attente','Invitation expirée','Aucune invitation','Vérification impossible','Actualiser le statut','Connexion en direct indisponible','Comptes','Ouvrir le programme'],
+    ru:['Связь с программой','Проверка активации владельца','Владелец активен','Ожидается активация','Срок приглашения истёк','Приглашение не создано','Не удалось проверить','Обновить статус','Онлайн-статус недоступен','Аккаунты','Открыть программу']
+  };
   let showDestination=null,expandedCompany=null;
   const header=document.querySelector('main > header'),headerActions=el('div');
   headerActions.className='platform-header-actions';headerActions.hidden=true;header.append(headerActions);
@@ -458,6 +552,7 @@
     const preferred=el('div');preferred.className='platform-settings-preferences';
     preferences.append(el('h3',settingsText[1]),preferred);
     window.WFPlatformPreferences?.mount(preferred);
+    window.WFPlatformAudio?.mount(preferred);
     preferences.hidden=!preferred.childElementCount;
     account.append(el('h3',settingsText[2]));if(verifiedName)account.append(el('bdi',verifiedName));passwordSettings(account);
     panels.settings.append(preferences,account);
@@ -481,21 +576,78 @@
         qr.classList.add('platform-setup-qr');qr.setAttribute('shape-rendering','crispEdges');
         qr.style.background='white';qr.setAttribute('role','img');qr.setAttribute('aria-label',setupLabels[lang.value][1]);
         invitation.append(qr);
+        window.WFPlatformInviteShare?.attach(invitation,{svg:qr,url:url.href,name:state.companies.find(item=>item.id===setup.workspace)?.name||'WOW'});
       }).catch(()=>{}); // The selectable setup URL and code are already available.
     }
     brandList?.dispose();brandList=window.WFPlatformBrand?.create({request,config,language:lang.value});
+    const cardWords=companyCardWords[lang.value];
+    // Verify only visible cards, at a bounded concurrency. This existing endpoint
+    // confirms owner setup, NOT live presence; never imply that a device is online.
+    const verifyQueue=[];let verifying=0;
+    const runQueue=()=>{
+      while(verifying<3&&verifyQueue.length){
+        const task=verifyQueue.shift();if(ticket!==generation||!task.row.isConnected)continue;
+        verifying++;
+        Promise.resolve().then(task.action).catch(()=>{}).finally(()=>{verifying--;runQueue();});
+      }
+    };
+    const queueVerification=(row,action)=>{verifyQueue.push({row,action});runQueue();};
+    const activationObserver=typeof IntersectionObserver==='function'
+      ?new IntersectionObserver(entries=>{
+        for(const entry of entries){
+          if(!entry.isIntersecting)continue;
+          activationObserver.unobserve(entry.target);
+          entry.target.querySelector('.platform-company-refresh')?.click();
+        }
+      },{rootMargin:'100px 0px'}):null;
     for(const company of state.companies){
       const row=el('article'),active=company.status==='active',link=el('a',t(16));
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',company.id);
-      row.className='platform-company-card';link.className='platform-company-launch';
+      row.className='platform-company-card platform-company-card-v2';link.className='platform-company-launch';
       link.href=url.href;
       const name=el('strong',company.name),stateLabel=el('span',t(active?7:8)),accountLabel=el('span',t(13)+' · '+company.accounts);
+      const hero=el('div'),pills=el('div'),actions=el('div'),summaryLine=el('div');
+      hero.className='platform-company-hero';pills.className='platform-company-pills';
+      actions.className='platform-company-primary-actions';summaryLine.className='platform-company-connectivity';
       name.className='platform-company-name';name.dir='auto';
       stateLabel.className='platform-company-status';stateLabel.dataset.state=active?'active':'suspended';
       accountLabel.className='platform-company-account-count';
-      row.append(name,stateLabel,accountLabel,link);
+      const linkState=el('span',cardWords[1]),health=el('div'),healthTitle=el('span',cardWords[0]),refresh=el('button');
+      const live=el('small',cardWords[8]);
+      health.className='platform-company-link-status';healthTitle.className='platform-company-link-label';
+      linkState.className='platform-company-link-pill';linkState.dataset.linkState='checking';
+      linkState.setAttribute('role','status');linkState.setAttribute('aria-live','polite');
+      refresh.className='platform-company-refresh';refresh.type='button';refresh.title=refresh.getAttribute('aria-label')||cardWords[7];
+      refresh.setAttribute('aria-label',cardWords[7]);refresh.setAttribute('aria-controls','company-health-'+company.id);
+      summaryLine.id='company-health-'+company.id;
+      const states={active:cardWords[2],pending:cardWords[3],expired:cardWords[4],unissued:cardWords[5]};
+      const paintActivation=result=>{
+        const nextState=result&&Object.hasOwn(states,result.state)?result.state:'unknown';
+        linkState.dataset.linkState=nextState;
+        linkState.textContent=states[nextState]||cardWords[6];
+      };
+      refresh.onclick=()=>{
+        if(refresh.disabled||!row.isConnected)return;
+        refresh.disabled=true;linkState.dataset.linkState='checking';linkState.textContent=cardWords[1];
+        queueVerification(row,async()=>{
+          try{
+            const activation=await request('company.activation',{workspaceId:company.id});
+            if(ticket===generation&&row.isConnected)paintActivation(activation);
+          }catch(error){
+            if(ticket===generation&&row.isConnected){
+              paintActivation(null);
+              if(error?.index===4)fail(error);
+            }
+          }finally{if(row.isConnected)refresh.disabled=false;}
+        });
+      };
+      hero.append(name);pills.append(stateLabel,accountLabel);
+      health.append(healthTitle,linkState,refresh);
+      summaryLine.append(health,live);
+      actions.append(link);
+      row.append(hero,pills,summaryLine,actions);
       const details=el('details'),summary=el('summary',companyMenu[lang.value]),tools=el('div');
-      details.className='platform-company-tools';details.open=expandedCompany===company.id;
+      details.className='platform-company-tools';tools.className='platform-company-actions-grid';details.open=expandedCompany===company.id;
       details.ontoggle=()=>{
         if(!details.isConnected)return;
         if(details.open)expandedCompany=company.id;else if(expandedCompany===company.id)expandedCompany=null;
@@ -507,6 +659,7 @@
       const editArea=el('section');editArea.className='platform-inline-editor';
       function editCompany(trigger,renaming){
         const editor=el('form'),title=el('strong',renaming?word(6):t(17)),cancel=el('button',word(5));
+        cancel.className='platform-action-cancel';
         editArea.replaceChildren(editor);editor.append(title);editor.setAttribute('aria-label',title.textContent);
         let input;
         if(renaming){input=field(editor,5);input.value=company.name;input.required=true;input.maxLength=100;}
@@ -524,11 +677,15 @@
         (input||cancel).focus();
       }
       const statusBtn=btn(tools,active?9:10,()=>editCompany(statusBtn,false));statusBtn.className='platform-tool platform-tool-status';
+      statusBtn.dataset.action=active?'suspend':'activate';
       const rename=btn(tools,5,()=>editCompany(rename,true));rename.textContent=word(6);rename.className='platform-tool platform-tool-rename';
-      const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company));activation.textContent=activationWords[lang.value][0];activation.className='platform-tool platform-tool-activation';
+      const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company,paintActivation));activation.textContent=activationWords[lang.value][0];activation.className='platform-tool platform-tool-activation';
       const devicesBox=el('section'),devicesToggle=btn(tools,21,()=>companyDevices(devicesBox,company.id));
       devicesToggle.textContent=deviceWords[lang.value][0];devicesToggle.className='platform-tool platform-tool-devices';devicesBox.className='platform-company-devices';
-      const limitsBox=el('section'),limitButton=btn(tools,18,()=>subscription(limitsBox,company));limitButton.className='platform-tool platform-tool-subscription';details.append(editArea,activationBox,limitsBox,devicesBox);companies.append(row);
+      const limitsBox=el('section'),limitButton=btn(tools,18,()=>subscription(limitsBox,company));limitButton.className='platform-tool platform-tool-subscription';
+      details.append(editArea,activationBox,limitsBox,devicesBox);companies.append(row);
+      if(activationObserver)activationObserver.observe(row);
+      else refresh.click();
     }
     if(!state.companies.length){const empty=el('p',labels[4]);empty.className='platform-empty-state';companies.append(empty);}
     const pages=el('nav');companies.append(pages);
@@ -537,6 +694,7 @@
     // Responsive chrome and local-only company filters reuse the authorized list,
     // without altering the authenticated data source or modifying server state.
     window.WFPlatformShell?.mount({state,companies,menu,links,preferences:preferred});
+    window.WFPlatformAnalytics?.mount({host:companies,state,request,language:lang.value});
   }
   let invite=new URLSearchParams(location.hash.slice(1)).get('invite');
   if(invite)history.replaceState(null,'',location.pathname+location.search);
