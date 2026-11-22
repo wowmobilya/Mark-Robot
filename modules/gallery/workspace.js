@@ -260,8 +260,9 @@
       function draw(){
         area.replaceChildren();toolbar.replaceChildren();
         if(!active.length){
-          const empty=el('section','wfg-empty-state');empty.append(el('h3','',text('noProducts')));
+          const empty=el('section','wfg-empty-state');empty.append(el('h3','',text('noProducts')),el('p','',text('catalogSourceHint')));
           const actions=group(button(text('retry'),()=>load()));
+          if(can('products.view')&&!previewMode&&typeof root.showPage==='function')actions.append(button(text('openMainProducts'),()=>root.showPage('products'),'wfg-primary'));
           if(can('gallery.edit')&&!previewMode)actions.append(button(text('studio'),()=>api.open('gallery-studio'),'wfg-primary'));
           empty.append(actions);area.append(empty);return;
         }
