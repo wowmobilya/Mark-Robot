@@ -438,7 +438,7 @@
       lastPage=id;
     };
     const label={ar:'مدير المنصة الموثّق',en:'Verified platform administrator',tr:'Doğrulanmış platform yöneticisi',fr:'Administrateur de plateforme vérifié',ru:'Подтверждённый администратор платформы'}[lang.value];
-    const founder=el('strong',verifiedName),badge=el('span','✓');
+    const founder=el('strong',verifiedName||label),badge=el('span','✓');
     badge.className='wf-founder-check';badge.setAttribute('role','img');badge.setAttribute('aria-label',label);badge.title=label;
     badge.hidden=navigator.onLine===false;founder.append(badge);nav.append(founder);
     btn(nav,4,async()=>{const previous=token;forget();clear();login();

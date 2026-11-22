@@ -198,3 +198,10 @@ main>header>.platform-brand{margin-inline-end:auto}
 .platform-password-settings form{display:grid;gap:.65rem;align-items:start;margin:.35rem 0}
 .platform-password-settings form button{justify-self:start}
 .platform-password-settings form [role=status]{margin:0}
+
+@media(max-width:620px){
+ main>header:has(.platform-header-actions:not([hidden])) #platformTheme{display:none}
+ main>header:has(.platform-header-actions:not([hidden])){flex-wrap:nowrap}
+ main>header:has(.platform-header-actions:not([hidden])) .platform-brand{min-inline-size:0}
+ main>header:has(.platform-header-actions:not([hidden])) #lang{max-inline-size:clamp(4.6rem,21vw,6rem)}
+}

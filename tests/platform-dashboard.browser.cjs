@@ -6,6 +6,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
   try{
     const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true});
     const linked=[{accountId:randomUUID(),name:'Fixture employee',username:'test.employee',role:'sales',boundAt:new Date().toISOString()},{accountId:randomUUID(),name:'Fixture owner',username:'test.owner',role:'owner',boundAt:new Date().toISOString()}];
+    let qrDownloads=0;
     let relayConfigured=false,relayEnabled=false,serverHealthy=true;const relayWrites=[];
     const events=[],wid=randomUUID(),scope='https://platform.test';let plans=[],assigned=null,expiresAt=null,created=false,rejection='wrong',companyName='Test',companyStatus='active',activation='pending',canRecover=false;
     await page.route('**/*',async route=>{
@@ -62,11 +63,12 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       }
       if(u.pathname.endsWith('wow-cloud-config.js'))return route.fulfill({contentType:'application/javascript',body:"window.WOW_CLOUD_CONFIG={workspaceId:'scope',endpoint:'/service',publishableKey:'local'}"});
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
+      if(f==='vendor/zxing-browser.min.js')qrDownloads++;
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
       if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
-    await page.goto(scope+'/platform/#support');await page.locator('#lang').selectOption('en');
+    await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');await page.locator('#lang').selectOption('en');
     const founderInput=page.getByLabel('Founder username');await founderInput.tap();
     assert.equal(await founderInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);
     await founderInput.pressSequentially('fixture');
