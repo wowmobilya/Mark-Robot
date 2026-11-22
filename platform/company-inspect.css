@@ -49,3 +49,11 @@
 @media(max-width:720px){.wf-inspect-top{min-height:62px;gap:.45rem}.wf-inspect-top>img{height:32px;width:32px}.wf-inspect-actions{gap:.25rem}.wf-inspect-top button{font-size:.72rem;padding:.5rem}.wf-inspect-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.wf-inspect-record-list{grid-template-columns:1fr}}
 @media(max-width:375px){.wf-inspect-top>img{display:none}.wf-inspect-title>small{font-size:.66rem}.wf-inspect-top button{font-size:.68rem}.wf-inspect-nav{padding:.35rem}.wf-inspect-nav-item{font-size:.72rem;padding:.4rem .6rem}}
 @media(prefers-reduced-motion:reduce){.wf-inspect *{animation:none!important;transition:none!important}}
+
+/* Founder device diagnostics: evidence is deliberately labelled advisory. */
+.wf-inspect-device-warning{margin:0;padding:.75rem .9rem;border:1px solid var(--border,#d8e1e5);border-radius:13px;background:var(--ui-soft,#e9f2f5);color:var(--text2,#64747e);font-size:.82rem;line-height:1.7}
+.wf-inspect-device-head{display:flex;align-items:center;gap:.65rem;margin-bottom:.75rem;min-width:0}
+.wf-inspect-device-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;background:var(--ui-soft,#e9f2f5);color:var(--ui-accent,#3f7c94);border-radius:12px;font-size:1.4rem}
+.wf-inspect-device-name{display:flex;flex-direction:column;gap:.15rem;min-width:0;overflow-wrap:anywhere}
+.wf-inspect-device-name strong{font-size:1rem}
+.wf-inspect-device-name small{color:var(--text2,#64747e);font-size:.76rem}
