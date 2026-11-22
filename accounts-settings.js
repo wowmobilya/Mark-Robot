@@ -633,8 +633,10 @@
     },true,'wfAccountConfirm');
     actions.append(button('cancel',()=>{confirmation=null;render();announce();}),confirm);box.append(actions);return box;
   }
+  let joinAdmin=null;
   function render() {
     if(busy)return;
+    joinAdmin?.dispose();joinAdmin=null;
     renderAfterOperation=false;
     fields={};secrets=[];form=null;formSave=null;formCancel=null;preview=null;permissionGrid=null;customLabel=null;
     renderFrame();
@@ -648,7 +650,11 @@
     if(view==='edit')renderEditor();
     else if(view==='password')renderPassword();
     else if(view==='detail')renderDetails();
-    else renderList();
+    else {
+      renderList();
+      if(root.WFCompanyJoin&&service?.getSnapshot()?.authenticated&&current()?.role==='owner')
+        joinAdmin=root.WFCompanyJoin.mountOwner({container:panel,client:service,base:new URL('./',root.location.href),lang:lang()});
+    }
     announce();
   }
   function onSnapshot(next) {
@@ -693,7 +699,7 @@
     const result=originalSwitch.apply(this,arguments);
     panel.style.display=key==='accounts'?'block':'none';tab.classList.toggle('active',key==='accounts');
     if(key==='accounts'){if(!dirty())render();if(!loaded)connect();}
-    else {clearEditor();confirmation=null;view='list';message='';error=false;}
+    else {joinAdmin?.dispose();joinAdmin=null;clearEditor();confirmation=null;view='list';message='';error=false;}
     announce();return result;
   };
   const api={

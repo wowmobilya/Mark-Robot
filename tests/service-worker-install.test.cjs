@@ -43,7 +43,7 @@ test('offline installation bounds network work and activates only after the requ
   const stored=f.stores.get(f.context.qa.CACHE_NAME);
   assert(stored.has(url('./index.html')));assert(stored.has(url('./')));
   assert.equal(f.calls.filter(value=>value===url('./')||value===url('./index.html')).length,1,'fetch the HTML once for both cache aliases');
-  for(const asset of ['wow-dialog.js?v=1','wow-dialog.css?v=1','touch-keyboard.js?v=5','touch-keyboard.css?v=3','platform/dashboard.js?v=223','platform/dashboard.css?v=223','purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=7','accounts-settings.css?v=1','modules/platform/cloud/wow-cloud-client.js?v=6','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/cloud/wow-cloud-settings.js?v=3','modules/platform/push/wow-push-device.js?v=4','modules/platform/push/wow-push-client.js?v=3','modules/platform/push/wow-push-settings.js?v=3','modules/platform/push/wow-push-sw.js?v=6'])assert(stored.has(url('./'+asset)),asset+' missing from precache');
+  for(const asset of ['wow-dialog.js?v=1','wow-dialog.css?v=1','touch-keyboard.js?v=5','touch-keyboard.css?v=3','platform/dashboard.js?v=224','platform/dashboard.css?v=224','purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=7','accounts-settings.css?v=1','modules/platform/cloud/wow-cloud-client.js?v=6','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/cloud/wow-cloud-settings.js?v=4','modules/platform/push/wow-push-device.js?v=4','modules/platform/push/wow-push-client.js?v=3','modules/platform/push/wow-push-settings.js?v=3','modules/platform/push/wow-push-sw.js?v=6'])assert(stored.has(url('./'+asset)),asset+' missing from precache');
 });
 test('updates reuse exactly versioned prior assets and fetch fresh unversioned configuration and HTML',async()=>{
   const f=fixture({seed:true});await f.install();
@@ -282,5 +282,14 @@ test('music cache handling does not widen to authenticated, no-store, navigation
  for(const control of ['private','no-store']){
   const isolated=fixture({networkResponse:()=>new Response(musicBytes,{headers:{'Cache-Control':control}})});
   assert.equal((await isolated.request(music)).status,200);assert.equal(isolated.stores.get(isolated.context.qa.CACHE_NAME)?.has(url(music))||false,false);
+ }
+});
+test('offline navigation preserves the platform shell and does not replay enrollment or recovery URLs',async()=>{
+ let offline=false;const f=fixture({fail:()=>offline});await f.install();offline=true;
+ const dashboard=await f.request('./platform/',{mode:'navigate'});
+ assert.equal(dashboard.tag,'network:'+url('./platform/index.html'));
+ for(const page of ['./platform/?setup=fixture','./platform/recover.html?request=fixture']){
+  f.stores.get(f.context.qa.CACHE_NAME).set(url(page),response('invalid old copy'));
+  assert.equal((await f.request(page,{mode:'navigate'})).type,'error');
  }
 });

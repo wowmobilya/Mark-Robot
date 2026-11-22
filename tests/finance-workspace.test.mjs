@@ -17,6 +17,20 @@ test('financial presentation retains precision, currency separation and spreadsh
  assert.match(C.csv([{note:'=2+2',amount:'-0.03'}],['note','amount']),/"'=2\+2","-0.03"/);
  for(const [k,v] of Object.entries(C.dictionary))assert.equal(v.length,5,k);
 });
+test('annual report fills 12 months and keeps payroll and category shares separate for each currency',()=>{
+ const rows=[
+  {month:'2025-01',currency:'USD',kind:'income',category:'A',inflow:'999999999999999.99',outflow:'0'},
+  {month:'2025-01',currency:'USD',kind:'income',category:'B',inflow:'0.01',outflow:'0'},
+  {month:'2025-01',currency:'TRY',kind:'salary',inflow:'0',outflow:'3.00'},
+  {month:'2025-01',currency:'TRY',kind:'expense',category:'A',inflow:'0',outflow:'9.00'},
+  {month:'2024-01',currency:'TRY',kind:'salary',inflow:'0',outflow:'100'}];
+ const [lira,usd]=C.annualCashFlow(rows,'2025');
+ assert.equal(lira.monthly.length,12);assert.equal(lira.monthly[0].paidSalaries,'3.00');
+ assert.equal(lira.monthly[0].net,'-12.00');assert.equal(lira.monthly[1].net,'0.00');
+ assert.deepEqual(lira.breakdown.map(r=>[r.category,r.categoryShare]),[['A',.75],['',.25]]);
+ assert.equal(usd.inflow,'1000000000000000.00');assert.equal(usd.monthly[11].month,'2025-12');
+ assert.deepEqual(C.annualCashFlow(rows,'2023'),[]);
+});
 test('source snapshots keep typed identities, distinguish missing tables, reserve private payroll and omit connection settings',async()=>{
  const w=randomUUID(),input={acc_employees:[{id:1,name:'A'}],customers:[{id:1,name:'A'},{id:'1',name:'B'}],
   transactions:[{id:'wage',entity_type:'employee',amount:150},{id:'sale',amount:30}],settings:{id:1,company_name:'Shop',api_key:'never import'}};
@@ -103,6 +117,18 @@ test('registered finance form keeps retry IDs, pending amounts and private clean
   listener({action:'finance.transaction',status:'posted',queueId:queued.commandId,commandId:queued.commandId});
   await wait(()=>container.textContent.includes('Verified receipt'));assert.doesNotMatch(container.textContent,/Pending sync/);
   assert.equal((await db.query("select wow_fin.balance($1,'main:USD')::text n",[w])).rows[0].n,'19.95');
+  await by(container,'BUTTON',C.t('en','boxes')).click();
+  await by(container,'BUTTON','Cash overview').click();const overview=by(container,'DIALOG'),period=by(overview,'INPUT');
+  period.value='2025-05';await period.onchange();assert.match(overview.textContent,/Verified receipt/);
+  assert.match(overview.textContent,/Overdue invoices · 0/);
+  await by(overview,'BUTTON',C.t('en','close')).click();
+  await by(container,'BUTTON',C.t('en','reports')).click();
+  await by(container,'BUTTON','Annual cash flow').click();const annual=by(container,'DIALOG');
+  const year=by(annual,'INPUT');year.value='2025';await by(annual,'FORM').submit();
+  await wait(()=>annual.textContent.includes('2025-12'));
+  assert.match(annual.textContent,/Salary payments posted/);assert.match(annual.textContent,/19.95/);
+  await by(annual,'BUTTON',C.t('en','close')).click();
+  await by(container,'BUTTON',C.t('en','ledger')).click();
   handle.updateLanguage('ar');assert.match(container.textContent,/سجل حركة النقد/);handle.dispose();assert.equal(container.textContent,'');assert.equal(disconnected,true);
  }finally{await db.close();}
 });

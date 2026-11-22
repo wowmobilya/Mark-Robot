@@ -10,7 +10,7 @@ const columns={barcodes:['name','format','code','price','currency','status'],sta
  holdings:['metal','grams','valuations'],audit:['at','actor','action'],slips:['name','model','currency','base','additions','deductions','advances','net','paidAmount','remaining','status'],
  attendance:['day','name','kind','hours','quantity','value','currency','note']};
 const codes=['USD','TRY','EUR','SYP'],shifts=['present','half','absent','late'],events=[...shifts,'piece','overtime','advance','bonus','deduction'];
-const numFields=new Set(['price','amount','received','balance','threshold','total','remaining','rate','grams','value','inflow','outflow','net','additions','deductions','advances','hours','quantity','shortfall','paidAmount']);
+const numFields=new Set(['paidSalaries','price','amount','received','balance','threshold','total','remaining','rate','grams','value','inflow','outflow','net','additions','deductions','advances','hours','quantity','shortfall','paidAmount']);
 const transFields=new Set(['kind','model','status','method','metal','base','unit']);
 const uid=()=>root.crypto.randomUUID();
 const make=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!=null)n.textContent=String(value);return n;};
@@ -46,6 +46,7 @@ async function mount({container,api,lang,route,params}){
   tab==='ledger'&&route==='payroll'?['day','kind','employee','period','box','amount','currency','note']:columns[tab]||[];
  const content=(r,k)=>{
   if(hideAmounts&&(numFields.has(k)||k==='valuations'||k==='base'&&tab==='slips'))return '••••';
+  if(k==='categoryShare')return hideAmounts?'••••':new Intl.NumberFormat(currentLang,{style:'percent',maximumFractionDigits:2}).format(r[k]);
   if(k==='employee')return C.label(resources('employee').find(x=>x.id===r.employee),currentLang)||'—';if(k==='table')return t(r[k]);if(k==='box')return namedBox(r[k]);if(k==='name'&&r.labels)return C.label(r,currentLang);
   if(k==='category')return C.label(resources('category').find(x=>x.id===r.category),currentLang)||r.category||'—';
   if(k==='status'){const stat=tab==='slips'?(r.paid?'paid':r.frozen?'partial':r.eligible?'pending':'excluded'):r.status||(r.active===false?'inactive':'active');return t(stat);}
@@ -431,6 +432,70 @@ async function mount({container,api,lang,route,params}){
  }
  const printPrefs={paper:'A4',footer:'',logo:true};
  function printRows(items,cols,title){printDocument(t(title),[createTable(items,cols)]);}
+ async function overview(){
+  const dlg=panel('cashOverview'),period=make('input','fi'),label=make('label',null,t('month')),result=make('div');
+  period.type='month';period.value=currentMonth();label.append(period);dlg.append(label,result);let ticket=0;
+  async function draw(){
+   const id=++ticket,month=period.value;if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return;
+   const [year,m]=month.split('-').map(Number),range={from:month+'-01',to:C.day(new Date(year,m,0))};
+   result.replaceChildren(make('p',null,t('loading')));
+   try{
+    const [reports,latest]=await Promise.all([all('finance','reports',range),list('finance','ledger',{...range,limit:5})]);
+    if(!visible()||dialog!==dlg||ticket!==id||!can('view'))return;
+    result.replaceChildren();
+    const summary=C.annualCashFlow(reports,String(year)).map(g=>g.monthly[m-1]);
+    if(summary.length)result.append(append(make('div','wf-fin-scroll'),createTable(summary,['currency','inflow','outflow','net'])));
+    else result.append(make('p','wf-fin-empty',t('empty')));
+    const boxes=active(lookups.boxes);
+    if(boxes.length)result.append(make('h3',null,t('boxes')),append(make('div','wf-fin-scroll'),createTable(boxes,['name','currency','balance','threshold'])));
+    result.append(make('h3',null,t('recentCash')));
+    if(latest.items.length)result.append(append(make('div','wf-fin-scroll'),createTable(latest.items,['day','description','box','amount','currency'])));
+    else result.append(make('p','wf-fin-empty',t('empty')));
+    result.append(button('ledger',()=>{closeDialog();return switchTab('ledger',range);}));
+    if(api.can('invoices.view')&&api.can('payments.view')){
+     const invoices=await all('finance','invoices');
+     if(!visible()||dialog!==dlg||ticket!==id||!api.can('invoices.view')||!api.can('payments.view'))return;
+     const overdue=invoices.filter(r=>r.status==='overdue');
+     const buttonNode=button('overdueInvoices',()=>{
+      if(!api.can('invoices.view')||!api.can('payments.view'))return;
+      const detail=panel('overdueInvoices');detail.append(overdue.length?append(make('div','wf-fin-scroll'),createTable(overdue,columns.invoices)):make('p','wf-fin-empty',t('empty')));
+     });
+     buttonNode.textContent=t('overdueInvoices')+' · '+overdue.length.toLocaleString(currentLang);result.append(buttonNode);
+    }
+   }catch(e){if(dialog===dlg&&ticket===id){if(result.firstChild?.textContent===t('loading'))result.replaceChildren();showError(e);}}
+  }
+  period.onchange=draw;await draw();
+ }
+ function annualReport(){
+  const dlg=panel('annualCash'),criteria=make('form','wf-fin-form'),yearInput=make('input','fi'),label=make('label',null,t('reportYear')),
+    run=make('button','btn btn-p',t('reports')),result=make('div','wf-fin-annual');
+  yearInput.type='number';yearInput.min='1900';yearInput.max='9999';yearInput.required=true;
+  yearInput.value=/^\d{4}/.exec(filters.from||'')?.[0]||today().slice(0,4);label.append(yearInput);run.type='submit';
+  append(criteria,label,run);dlg.append(criteria,result);let ticket=0;
+  async function draw(){
+   const id=++ticket,year=String(yearInput.value);if(!criteria.reportValidity()||!/^\d{4}$/.test(year))return;
+   result.replaceChildren(make('p',null,t('loading')));run.disabled=true;
+   const selected={...filters,from:year+'-01-01',to:year+'-12-31'};
+   try{
+    const data=await all('finance','reports',selected);
+    if(!visible()||dialog!==dlg||ticket!==id||!can('view'))return;
+    const groups=C.annualCashFlow(data,year);result.replaceChildren();
+    if(!groups.length){result.append(make('p','wf-fin-empty',t('empty')));return;}
+    const printable=[];
+    for(const group of groups){
+     const title=make('h3',null,t('monthlyFlow')+' · '+year+' · '+group.currency),
+       months=createTable(group.monthly,['month','inflow','outflow','paidSalaries','net']),
+       categories=make('h3',null,t('annualCategories')+' · '+group.currency),
+       breakdown=createTable(group.breakdown.map(r=>({...r,category:r.category||t('uncategorized')})),['category','kind','amount','categoryShare']);
+     const section=make('section','wf-fin-body');section.append(title,append(make('div','wf-fin-scroll'),months),categories,append(make('div','wf-fin-scroll'),breakdown));result.append(section);
+     printable.push(title,months,categories,breakdown);
+    }
+    if(can('print'))result.append(button('print',()=>{if(can('print'))printDocument(t('annualCash')+' · '+year,printable);}));
+   }catch(e){if(dialog===dlg){result.replaceChildren(make('p',null,t('failed')));showError(e);}}
+   finally{if(ticket===id)run.disabled=false;}
+  }
+  criteria.onsubmit=e=>{e.preventDefault();draw();};draw();
+ }
  function printOptions(){
   const dlg=panel('print'),f=make('form','wf-fin-form'),go=make('button','btn btn-p',t('print'));go.type='submit';
   append(f,field(F('paper','select',printPrefs.paper,choices(['A4','Letter']))),field(F('footer','text',printPrefs.footer)),field(F('logo','checkbox',printPrefs.logo)),go);dlg.append(f);
@@ -439,8 +504,12 @@ async function mount({container,api,lang,route,params}){
  }
  async function exportCSV(){
   if(!can('export'))return;const captured=tab,data=await all(route,captured,filters);if(!visible()||captured!==tab)return;
-  const fieldsForExport=fields(),exportRows=data.map(r=>({...r,...obj(fieldsForExport.filter(k=>k==='box'||k==='status'||k==='valuations'||k==='category').map(k=>[k,content(r,k)]))}));
-  download('WOW-'+route+'-'+tab+'-'+today()+'.csv',csvBlob(C.csv(exportRows,fieldsForExport,k=>t(keyName(k)))));
+  const fieldsForExport=tab==='ledger'&&route==='finance'?[...fields(),'category','method','note']:fields();
+  const exportRows=data.map(r=>obj(fieldsForExport.map(k=>{
+   const display=hideAmounts&&(numFields.has(k)||k==='valuations'||k==='base'&&tab==='slips')||['box','status','valuations','category','method'].includes(k);
+   return [k,display?content(r,k):r[k]];
+  })));
+  download('WOW-'+route+'-'+tab+'-'+today()+'.csv',csvBlob(C.csv(exportRows,fieldsForExport,k=>t(k==='method'&&tab==='ledger'?'paymentMethod':keyName(k)))));
  }
  async function archive(scope=route){
   const commands=[];let after=0,until=null,w;
@@ -494,6 +563,8 @@ async function mount({container,api,lang,route,params}){
   if(tab==='boxes'&&api.can('settings.view'))add('settings',()=>api.open('settings'));
   if(tab==='barcodes'&&can('print'))add('printAll',async()=>{const entries=(await all(route,'barcodes',filters)).filter(r=>r.active!==false);if(visible())printDocument(t('barcodes'),entries.map(r=>labelGraphic(r).card));});
   if((tab==='invoices'||tab==='barcodes')&&api.can('invoices.edit'))add('barcode',()=>api.open('quick-barcode'));
+  if(route==='finance'&&tab==='boxes'&&can('view'))add('cashOverview',overview);
+  if(route==='finance'&&tab==='reports'&&can('view'))add('annualCash',annualReport);
   add('refresh',()=>refresh(true));if(!['audit','resources','customers','legacy'].includes(tab))add(hideAmounts?'showAmounts':'hideAmounts',()=>{hideAmounts=!hideAmounts;paint();});
   if(can('print'))add('print',printOptions);
   if(can('export'))add('csv',exportCSV);

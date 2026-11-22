@@ -72,7 +72,7 @@ test('returning to local device accounts explicitly opts out of automatic owner 
 
 test('changing settings language preserves entered credentials until submission',()=>{
   const h=fixture();h.input('username','owner');const password=h.input('password','Owner password 2026');
-  const titles={ar:'السحابة والوصول عن بُعد',tr:'Bulut ve uzaktan erişim',fr:'Cloud et accès distant',ru:'Облако и удалённый доступ',en:'Cloud and remote access'};
+  const titles={ar:'الشركة والمزامنة',tr:'Şirket ve eşitleme',fr:'Société et synchronisation',ru:'Компания и синхронизация',en:'Company and sync'};
   for(const lang of ['ar','tr','fr','ru','en']){h.language(lang);assert.equal(password.value,'Owner password 2026');assert(h.api.getSettingsActions());assert.equal(h.panel.querySelector('h2').textContent,titles[lang]);}
   h.root.switchTab('company');assert.equal(password.value,'');
 });

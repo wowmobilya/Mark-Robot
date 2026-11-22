@@ -13,7 +13,10 @@
     for(const match of source.matchAll(expression)){if(match.index>start)output.push({value:source.slice(start,match.index),match:false});output.push({value:match[0],match:true});start=match.index+match[0].length;}
     if(start<source.length)output.push({value:source.slice(start),match:false});return output;
   }
-  function recorderType(Recorder){return ['audio/webm;codecs=opus','audio/mp4','audio/ogg;codecs=opus','audio/webm'].find(x=>Recorder.isTypeSupported?.(x))||'';}
+  function recorderType(Recorder,kind='audio'){
+    const types=kind==='video'?['video/webm;codecs=vp8,opus','video/mp4','video/webm']:['audio/webm;codecs=opus','audio/mp4','audio/ogg;codecs=opus','audio/webm'];
+    return types.find(type=>Recorder.isTypeSupported?.(type))||'';
+  }
   function isTransient(error){return ['NETWORK','STORAGE_UNAVAILABLE','SERVICE_UNAVAILABLE'].includes(error?.code);}
   function after(value,other){try{return BigInt(value||0)>BigInt(other||0);}catch{return false;}}
   const core={validRoom:v=>typeof v==='string'&&uuid.test(v),links,parts,after,recorderType,isTransient,reactions:['👍','❤️','😂','😮','😢','🙏','🎉','🔥','👏','👎']};

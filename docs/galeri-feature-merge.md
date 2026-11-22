@@ -6,6 +6,19 @@ The comparison covers the complete public source of Galeri.TR’s main page (39,
 
 WOW’s existing product, company, invoice, payment, manufacturing, archive, task, material, label, search, account and appearance screens remain the primary user experience. New screens should use the same navigation, responsive cards, field styles, theme variables, five locales, direction and accessible controls. One Supabase project owns business state, membership, assets and notifications.
 
+## Native feature review, 22 November 2026
+
+The current integration uses the signed-in company, its products, accounts, room memberships and file permissions. A company without records starts empty. Feature availability does not require importing Galeri.TR accounts, conversations or files.
+
+| Original entry point | Current WOW behavior and verification boundary |
+| --- | --- |
+| Home, category tiles and dynamic category pages | Gallery and Gallery Studio use the tenant presentation. Native products support category filters, grid/list, stock, photographs, measurements, lightbox and multi-selection. |
+| Orders, inventory and commercial exports | The cart is scoped to the signed-in account and workspace. The order transaction checks current stock, amount, currency and acknowledgement, and supports retries. Native exports include product images as ZIP, an XLSX order with images, PDF/print and device sharing when available. Physical printing and individual native share destinations require device acceptance. |
+| Support, rooms, groups and attachments | Support resolves the existing direct room with the signed-in company’s owner. Private room membership controls reads. My Files can attach an existing owned file to the chosen room. The message stores a reference. Archiving, deletion, revoked producer permissions or loss of recipient membership prevent a fresh signed URL. A previously issued short-lived URL lasts until expiry. Forwarding a file reference into a new room is disabled. |
+| My Files | Owner-scoped folders, search, sort, grid, compact grid and list, media previews, upload, download, sharing, archive and bulk actions. The native-file browser regression exercises the actual picker, permission boundary and compact layout on a 390×844 Chromium viewport. |
+| Sound and assistant | App audio is user-controlled and the gallery track can play from the offline cache. The original HTML has no generative-AI adapter. WOW additionally offers permission-scoped search, checks, reports and chat evidence; generative analysis requires a configured server provider and an explicit user action. |
+| Administration and accounting | Tenant administration, presentation, announcements and message archives use permissions. Finance, invoices, statements, payroll, metals and barcodes use the native workspaces listed below. Provider-backed SMS/email, camera capture, native notification delivery and physical printing need their real provider/device acceptance. |
+
 ## Feature matrix
 
 Each row is an acceptance surface. A route, a screenshot, or a local fixture alone cannot demonstrate a complete row. Source locations refer to the original HTML snapshots.

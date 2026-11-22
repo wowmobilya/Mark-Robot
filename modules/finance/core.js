@@ -7,6 +7,16 @@
 'use strict';
 const languages=['en','ar','tr','fr','ru'];
 const dictionary={
+ cashOverview:['Cash overview','نظرة عامة على النقد','Nakit özeti','Vue de trésorerie','Обзор денежных средств'],
+ recentCash:['Recent cash movements','أحدث الحركات النقدية','Son nakit hareketleri','Derniers mouvements de trésorerie','Последние движения денежных средств'],
+ overdueInvoices:['Overdue invoices','فواتير متأخرة','Vadesi geçmiş faturalar','Factures en retard','Просроченные счета'],
+ annualCash:['Annual cash flow','التدفق النقدي السنوي','Yıllık nakit akışı','Flux de trésorerie annuel','Годовой денежный поток'],
+ reportYear:['Year','السنة','Yıl','Année','Год'],
+ monthlyFlow:['Monthly movement','الحركة الشهرية','Aylık hareket','Mouvements mensuels','Движение по месяцам'],
+ paidSalaries:['Salary payments posted','مدفوعات الرواتب المسجلة','Kaydedilen maaş ödemeleri','Salaires versés enregistrés','Проведённые выплаты зарплаты'],
+ categoryShare:['Share of annual flow','النسبة من الحركة السنوية','Yıllık akış payı','Part du flux annuel','Доля годового потока'],
+ annualCategories:['Breakdown by category','التوزيع حسب الفئة','Kategori dağılımı','Répartition par catégorie','Распределение по категориям'],
+ uncategorized:['Uncategorized','دون فئة','Kategorisiz','Sans catégorie','Без категории'],
  resource:['Record type','نوع السجل','Kayıt türü','Type de fiche','Вид записи'],code:['Barcode content','محتوى الرمز','Barkod içeriği','Contenu du code','Содержимое кода'],format:['Format','التنسيق','Biçim','Format','Формат'],price:['Price','السعر','Fiyat','Prix','Цена'],generate:['Generate label','إنشاء ملصق','Etiket oluştur','Créer une étiquette','Создать этикетку'],download:['Download label','تنزيل الملصق','Etiketi indir','Télécharger l’étiquette','Скачать этикетку'],printAll:['Print all labels','طباعة جميع الملصقات','Tüm etiketleri yazdır','Imprimer les étiquettes','Напечатать все этикетки'],backupAll:['Export all accounting','تصدير المحاسبة كاملة','Tüm muhasebeyi dışa aktar','Exporter toute la comptabilité','Экспорт всей бухгалтерии'],openingBalance:['Opening balance','رصيد أول المدة','Dönem açılışı','Solde initial','Входящий остаток'],paymentMethod:['Payment method','وسيلة الدفع','Ödeme yöntemi','Mode de paiement','Способ оплаты'],cash:['Cash','نقداً','Nakit','Espèces','Наличные'],bank:['Bank','بنك','Banka','Banque','Банк'],card:['Card','بطاقة','Kart','Carte','Карта'],cheque:['Cheque','شيك','Çek','Chèque','Чек'],other:['Other','أخرى','Diğer','Autre','Прочее'],priceCurrency:['Price currency','عملة السعر','Fiyat para birimi','Devise du prix','Валюта цены'],fxRate:['Conversion rate','سعر التحويل','Çevrim kuru','Taux de conversion','Курс пересчёта'],transactions:['Legacy transactions','المعاملات السابقة','Eski işlemler','Anciennes opérations','Старые операции'],suppliers:['Suppliers','الموردون','Tedarikçiler','Fournisseurs','Поставщики'],employees:['Employees','الموظفون','Çalışanlar','Salariés','Сотрудники'],categories:['Categories','الفئات','Kategoriler','Catégories','Категории'],cashboxes:['Cashboxes','الصناديق','Kasalar','Caisses','Кассы'],metalTx:['Metal trades','عمليات المعادن','Metal işlemleri','Transactions sur métaux','Операции с металлами'],metalPrices:['Metal prices','أسعار المعادن','Metal fiyatları','Cours des métaux','Цены металлов'],transfers:['Transfers','التحويلات','Transferler','Virements','Переводы'],rates:['FX rates','أسعار الصرف','Döviz kurları','Cours de change','Курсы валют'],barcodes:['Barcodes','الرموز الشريطية','Barkodlar','Codes-barres','Штрихкоды'],statements:['Statements','كشوف الحساب','Ekstreler','Relevés','Выписки'],void:['Voided','ملغى','İptal edildi','Annulé','Аннулирован'],cancelled:['Cancelled','ملغى','İptal edildi','Annulé','Отменён'],showAmounts:['Show amounts','إظهار المبالغ','Tutarları göster','Afficher les montants','Показать суммы'],table:['Source table','الجدول الأصلي','Kaynak tablo','Table source','Исходная таблица'],sourceId:['Source ID','المعرّف الأصلي','Kaynak kimliği','Identifiant source','Исходный ID'],target:['Linked record','السجل المرتبط','Bağlı kayıt','Fiche liée','Связанная запись'],link:['Link existing record','ربط سجل موجود','Mevcut kayda bağla','Lier une fiche','Связать запись'],historical:['Historical records','سجلات تاريخية','Geçmiş kayıtlar','Archives historiques','Исторические записи'],retain:['Historical rows do not change posted balances.','السجلات التاريخية لا تغيّر الأرصدة المرحّلة.','Geçmiş kayıtlar işlenmiş bakiyeyi değiştirmez.','L’archive conserve les soldes comptabilisés.','Архив не меняет учтённые остатки.'],settingsSkipped:['Excluded source settings','إعدادات المصدر المستبعدة','Aktarılmayan eski ayarlar','Réglages source exclus','Исключённые исходные настройки'],metalOpening:['Opening metal holding','الرصيد الافتتاحي للمعدن','Açılış metal miktarı','Avoir initial en métal','Начальный остаток металла'],cutover:['Create from historical record','إنشاء من السجل التاريخي','Geçmiş kayıttan oluştur','Créer à partir de l’archive','Создать по архивной записи'],paidAmount:['Amount paid','المبلغ المدفوع','Ödenen tutar','Montant versé','Выплачено'],partial:['Partially paid','مدفوع جزئياً','Kısmen ödendi','Paiement partiel','Частично оплачен'],imported:['Imported observation','سعر مستورد','Aktarılmış gözlem','Cours importé','Импортированный курс'],fxQuote:['Conversion quote','سعر التحويل','Dönüşüm kuru','Cours de conversion','Курс пересчёта'],method:['Quote type','نوع التسعير','Fiyat türü','Type de cours','Вид котировки'],payAll:['Pay all outstanding','دفع جميع المبالغ المستحقة','Tüm kalanları öde','Régler tous les soldes','Выплатить все остатки'],hideAmounts:['Hide amounts','إخفاء المبالغ','Tutarları gizle','Masquer les montants','Скрыть суммы'],logo:['Print logo','طباعة الشعار','Logoyu yazdır','Imprimer le logo','Печатать логотип'],finance:['Finance','المحاسبة','Muhasebe','Comptabilité','Финансы'],payroll:['Payroll','الرواتب والحضور','Bordro','Paie','Зарплата'],metals:['Precious metals','المعادن الثمينة','Değerli metaller','Métaux précieux','Драгоценные металлы'],
  boxes:['Cashboxes','الصناديق','Kasalar','Caisses','Кассы'],box:['Cashbox','الصندوق','Kasa','Caisse','Касса'],resources:['Directory','الدليل','Rehber','Répertoire','Справочник'],customers:['Customers','العملاء','Müşteriler','Clients','Клиенты'],vendor:['Supplier','المورّد','Tedarikçi','Fournisseur','Поставщик'],category:['Category','الفئة','Kategori','Catégorie','Категория'],customer:['Customer','العميل','Müşteri','Client','Клиент'],employee:['Employee','الموظف','Çalışan','Salarié','Сотрудник'],
  invoices:['Invoices','الفواتير','Faturalar','Factures','Счета'],ledger:['Cash journal','سجل حركة النقد','Kasa hareketleri','Journal de caisse','Кассовый журнал'],reports:['Cash flow','التدفقات النقدية','Nakit akışı','Flux de trésorerie','Денежный поток'],quotes:['Quote history','سجل الأسعار','Kur ve fiyat geçmişi','Historique des cours','История котировок'],audit:['Audit log','سجل التدقيق','Denetim kaydı','Journal d’audit','Журнал аудита'],holdings:['Holdings','الحيازات','Varlıklar','Avoirs','Запасы'],attendance:['Attendance','الحضور','Puantaj','Présences','Табель'],slips:['Salary calculator','حاسبة الرواتب','Maaş hesaplama','Calcul de paie','Расчёт зарплаты'],
@@ -34,6 +44,33 @@ function amount(value,lang='en'){
  return (match[1]?get('minusSign')||'-':'')+group+(suffix?(get('decimal')||'.')+[...suffix].map(x=>fmt.format(Number(x))).join(''):'');
 }
 function cashTotals(rows,key){const totals=new Map();for(const r of rows){if(r[key]==null)continue;totals.set(r.currency,(totals.get(r.currency)||0n)+units(r[key]));}return [...totals].map(([currency,value])=>({currency,value:fixed(value)}));}
+function annualCashFlow(items,year){
+ if(!/^\d{4}$/.test(String(year)))throw Error('INVALID_YEAR');
+ const currencies=new Map();
+ for(const r of items){
+  if(!r.currency||typeof r.month!=='string'||!r.month.startsWith(year+'-'))continue;
+  const index=Number(r.month.slice(5))-1;
+  if(!Number.isInteger(index)||index<0||index>11)continue;
+  let group=currencies.get(r.currency);
+  if(!group){group={months:Array.from({length:12},()=>({income:0n,expense:0n,salary:0n})),categories:new Map(),income:0n,expense:0n};currencies.set(r.currency,group);}
+  const income=units(r.inflow),expense=units(r.outflow),m=group.months[index];
+  m.income+=income;m.expense+=expense;if(r.kind==='salary')m.salary+=expense;
+  group.income+=income;group.expense+=expense;
+  const key=r.category||'',category=group.categories.get(key)||{income:0n,expense:0n};
+  category.income+=income;category.expense+=expense;group.categories.set(key,category);
+ }
+ return [...currencies].sort(([a],[b])=>a.localeCompare(b)).map(([currency,g])=>{
+  const monthly=g.months.map((m,i)=>({month:year+'-'+String(i+1).padStart(2,'0'),currency,inflow:fixed(m.income),outflow:fixed(m.expense),paidSalaries:fixed(m.salary),net:fixed(m.income-m.expense)}));
+  const breakdown=[];
+  for(const kind of ['income','expense']){
+   const total=g[kind];if(!total)continue;
+   for(const [category,values] of [...g.categories].sort(([,a],[,b])=>a[kind]===b[kind]?0:a[kind]>b[kind]?-1:1)){
+    if(values[kind])breakdown.push({category,kind,currency,amount:fixed(values[kind]),categoryShare:Number((values[kind]*10000n+total/2n)/total)/10000});
+   }
+  }
+  return {currency,monthly,breakdown,inflow:fixed(g.income),outflow:fixed(g.expense),net:fixed(g.income-g.expense)};
+ });
+}
 function csv(rows,columns,heading=k=>k){
  const cell=v=>{let s=typeof v==='object'&&v!==null?JSON.stringify(v):String(v??'');if(/^[\s]*[=+@-]/.test(s)&&! /^-?\d+(?:\.\d+)?$/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
  return '\uFEFF'+[columns.map(heading),...rows.map(r=>columns.map(k=>r[k]))].map(line=>line.map(cell).join(',')).join('\r\n');
@@ -100,5 +137,5 @@ async function legacyCommands(input,workspace,scope){
  }
  return {format:'wow.finance.v1',workspace,scope,commands,inventory,excludedSettings};
 }
-return Object.freeze({languages,dictionary,t,label,day,units,fixed,amount,cashTotals,csv,ean13,barcodeImage,inspectLegacy,legacyCommands});
+return Object.freeze({languages,dictionary,t,label,day,units,fixed,amount,cashTotals,annualCashFlow,csv,ean13,barcodeImage,inspectLegacy,legacyCommands});
 });

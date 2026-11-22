@@ -502,3 +502,9 @@ html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-
 .wf-owner-invite>div{display:grid;gap:.75rem;max-width:29rem}
 .wf-owner-invite label{display:grid;gap:.3rem}.wf-owner-invite input,.wf-owner-invite button{font:inherit;min-block-size:44px;border:1px solid var(--border);border-radius:var(--ui-control,10px);background:var(--input);color:var(--text);padding:.5rem .7rem;min-width:0}
 .wf-owner-invite video{max-inline-size:100%;inline-size:100%;max-height:15rem;object-fit:contain;background:#16191b;border-radius:.65rem}.wf-owner-invite [hidden]{display:none!important}
+
+.wf-join-form,.wf-join-qr,.wf-join-request{display:grid;gap:.65rem;min-inline-size:0}.wf-join-form{margin-block:1rem}
+.wf-join-qr{padding:.75rem;background:var(--ui-soft,var(--input));border-radius:var(--ui-control,10px)}
+.wf-join-qr svg{inline-size:min(100%,200px);block-size:auto;justify-self:center}
+.wf-join-request{padding-block:.75rem;border-block-end:1px solid var(--border);overflow-wrap:anywhere}
+.wf-join-request>div{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}

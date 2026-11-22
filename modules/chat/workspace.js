@@ -41,9 +41,20 @@
     typing:['Typing…','يكتب…','Yazıyor…','Écrit…','Печатает…'],download:['Download','تنزيل','İndir','Télécharger','Скачать'],play:['Open media','فتح الوسائط','Medyayı aç','Ouvrir le média','Открыть медиа'],
     speed:['Playback speed','سرعة التشغيل','Oynatma hızı','Vitesse de lecture','Скорость воспроизведения'],actionsConfirm:['Confirm this action?','هل تريد تأكيد الإجراء؟','İşlem onaylansın mı?','Confirmer cette action ?','Подтвердить действие?'],
     queue:['Waiting to send. Keep chat open to retry when connected.','بانتظار الإرسال. أبقِ الدردشة مفتوحة لإعادة المحاولة عند الاتصال.','Gönderim bekliyor. Bağlantı gelene kadar sohbeti açık tutun.','Envoi en attente. Gardez la discussion ouverte pour réessayer à la reconnexion.','Ожидание отправки. Оставьте чат открытым до подключения.'],
+    sessionNeeded:['Sign in again to open chat.','سجّل الدخول مجدداً لفتح الدردشة.','Sohbet için yeniden giriş yapın.','Reconnectez-vous pour ouvrir la discussion.','Войдите снова, чтобы открыть чат.'],
+    initFailed:['Could not open chat.','تعذّر فتح الدردشة.','Sohbet açılamadı.','Impossible d’ouvrir la discussion.','Не удалось открыть чат.'],
+    roomsFailed:['Could not load conversations.','تعذّر تحميل قائمة المحادثات.','Sohbetler yüklenemedi.','Impossible de charger les discussions.','Не удалось загрузить список чатов.'],
+    feedFailed:['Could not load messages.','تعذّر تحميل الرسائل.','Mesajlar yüklenemedi.','Impossible de charger les messages.','Не удалось загрузить сообщения.'],
+    membersFailed:['Could not load room members.','تعذّر تحميل أعضاء الغرفة.','Oda üyeleri yüklenemedi.','Impossible de charger les membres.','Не удалось загрузить участников.'],
     retry:['Retry','إعادة المحاولة','Yeniden dene','Réessayer','Повторить'],selected:['Selected','محدد','Seçili','Sélection','Выбрано'],back:['Conversations','المحادثات','Sohbetler','Conversations','Беседы'],
     created:['Group created','تم إنشاء المجموعة','Grup oluşturuldu','Groupe créé','Группа создана'],renamed:['Group updated','تم تعديل المجموعة','Grup güncellendi','Groupe modifié','Группа изменена'],
     unread:['Unread','غير مقروءة','Okunmadı','Non lus','Не прочитано'],preview:['Preview','معاينة','Önizleme','Aperçu','Просмотр'],nextMatch:['Next match','النتيجة التالية','Sonraki sonuç','Résultat suivant','Следующее совпадение'],
+    videoNote:['Record video','تسجيل فيديو','Video kaydet','Enregistrer une vidéo','Записать видео'],
+    captureFailed:['Recording unavailable. You can choose an existing file.','تعذّر التسجيل. يمكنك اختيار ملف من الجهاز.','Kayıt yapılamadı. Cihazdan bir dosya seçebilirsiniz.','Enregistrement indisponible. Vous pouvez choisir un fichier.','Запись недоступна. Можно выбрать файл с устройства.'],
+    cameraPreview:['Camera preview','معاينة الكاميرا','Kamera önizlemesi','Aperçu de la caméra','Предпросмотр камеры'],
+    supportUnavailable:['Company support chat is unavailable.','محادثة دعم الشركة غير متاحة.','Şirket destek sohbeti kullanılamıyor.','La discussion avec le support est indisponible.','Чат поддержки компании недоступен.'],
+    newMessages:['New messages','رسائل جديدة','Yeni mesajlar','Nouveaux messages','Новые сообщения'],
+    moreFiles:['More files','المزيد من الملفات','Daha fazla dosya','Plus de fichiers','Ещё файлы'],
     nativeFiles:['My files','ملفاتي','Dosyalarım','Mes fichiers','Мои файлы'],
     noFiles:['No files available.','لا توجد ملفات متاحة.','Kullanılabilir dosya yok.','Aucun fichier disponible.','Нет доступных файлов.'],
     loading:['Loading…','جار التحميل…','Yükleniyor…','Chargement…','Загрузка…']
@@ -51,16 +62,35 @@
   function mount({container,api,lang,params={}}){
     let language=lang||'en',me=null,rooms=[],room=null,feed=null,members=[],generation=0,feedSeq=0,roomSeq=0,alive=true,polling=false;
     let filter='',query='',before=null,stack=[],archived=false,screen='rooms',selected=new Map(),lastFeed='',roomsView='',matchAt=0;
-    let reply=null,editing=null,attached=null,sending=false,recording=null,recordRequest=0,lastTyping=0,draftTimer,searchTimer,expiryTimer,written=false;
+    let reportedRead='0',reportingRead=null,pendingIncoming=0;
+    let reply=null,editing=null,attached=null,sending=false,recording=null,requestingCapture=false,recordRequest=0,lastTyping=0,draftTimer,searchTimer,expiryTimer,written=false;
     const retrySends=new Map(),durable=new Map(),drafts=new Map(),thumbs=new Map(),inflightThumbs=new Set(),ui=C.surface(container,api,()=>language,words),{t,run,dialog}=ui;
-    const req=(action,data={})=>api.request('chat.'+action,data),edit=()=>api.can('chat.edit'),del=()=>api.can('chat.delete');
+    const edit=()=>api.can('chat.edit'),del=()=>api.can('chat.delete');
+    async function req(action,data={}){
+      try{return await api.request('chat.'+action,data);}
+      catch(error){throw Object.assign(new Error(error?.message||'CHAT_REQUEST_FAILED'),{code:error?.code,status:error?.status,action});}
+    }
     const act=(label,fn,cls)=>button(label,run(fn),cls);
+    const shapes={back:'M15 18l-6-6 6-6',search:'M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',direct:'M4 5h12M4 9h9M4 13h6M14 20l2.5-.5L22 14l-2-2-5.5 5.5z',group:'M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M14 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0M20 8v6m-3-3h6',profile:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0',archive:'M3 4h18v4H3zM5 8v12h14V8M10 12h4',voice:'M9 5a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0zM5 11v1a7 7 0 0 0 14 0v-1M12 19v3m-3 0h6',send:'M22 2L9 15m13-13-7 20-4-9-9-4z',attach:'M21 11l-9 9a6 6 0 0 1-8-8L14 2a4 4 0 0 1 6 6l-9 9a2 2 0 0 1-3-3l8-8',more:'M4 12h1m6 0h1m6 0h1'};
+    function glyph(key){
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS(svg.namespaceURI,'path');
+      for(const [name,value] of Object.entries({viewBox:'0 0 24 24',width:'21',height:'21',fill:'none',stroke:'currentColor','stroke-width':'1.8','stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true'}))svg.setAttribute(name,value);
+      path.setAttribute('d',shapes[key]);svg.append(path);return svg;
+    }
+    function iconButton(key,label,fn,cls=''){
+      const b=act('',fn,'wf-chat-icon '+cls);b.title=label;b.setAttribute('aria-label',label);b.append(glyph(key));return b;
+    }
+    function moreTools(key,label,cls=''){
+      const group=el('details',null,'wf-chat-more-tools '+cls),summary=el('summary',null,'wf-chat-icon'),menu=el('div',null,'wf-chat-more-menu');
+      summary.setAttribute('aria-label',label);summary.title=label;summary.append(glyph(key));group.append(summary,menu);
+      menu.onclick=()=>{group.open=false;};group.onkeydown=e=>{if(e.key==='Escape'){group.open=false;summary.focus();}};return {group,menu};
+    }
     const app=el('section',null,'wf-chat'),side=el('aside',null,'wf-chat-side'),sideTools=el('div',null,'wf-chat-sidebar-tools'),roomList=el('div',null,'wf-chat-rooms'),
       main=el('section',null,'wf-chat-main'),head=el('header',null,'wf-chat-head'),browse=el('div',null,'wf-chat-browse'),selection=el('div',null,'wf-chat-selection'),
       feedBox=el('div',null,'wf-chat-feed'),paging=el('div',null,'wf-chat-paging'),indicators=el('div',null,'wf-chat-indicators'),composer=el('div',null,'wf-chat-composer'),
       status=el('div',null,'wf-chat-status'),draft=el('textarea'),draftInfo=el('div',null,'wf-chat-draft-info'),mentions=el('div',null,'wf-chat-mentions'),sendTools=el('div',null,'wf-chat-send-tools');
     status.setAttribute('role','status');indicators.setAttribute('role','status');feedBox.setAttribute('role','log');feedBox.setAttribute('aria-live','off');
-    draft.maxLength=8000;draft.rows=2;app.append(side,main);side.append(sideTools,roomList);main.append(head,browse,selection,feedBox,paging,indicators,composer,status);composer.append(draftInfo,draft,mentions,sendTools);container.append(app);
+    draft.maxLength=8000;draft.rows=1;app.append(side,main);side.append(sideTools,roomList);main.append(head,browse,selection,feedBox,paging,indicators,composer,status);composer.append(draftInfo,draft,mentions,sendTools);container.append(app);
     const picker=el('input');picker.type='file';picker.hidden=true;composer.append(picker);
     // Calls never start automatically: only a user tap requests the microphone.
     // Owner/customer/staff identity and chat membership remain server-authoritative.
@@ -71,8 +101,26 @@
     function showScreen(value){screen=value;app.dataset.screen=screen;}
     function actionStatus(error){
       if(!alive)return;
-      if(error?.code==='ACCESS_DENIED'||error?.code==='PERMISSION_DENIED'||error?.status===401||error?.status===403){if(room){drafts.delete(room.id);rooms=rooms.filter(r=>r.id!==room.id);}leaveRoom(false);closeDialogs();status.textContent=t('denied');}
-      else status.textContent=t(error?.code==='OFFLINE_NOT_CACHED'?'uncached':error?.code==='NETWORK'?'offline':'failed');
+      const signIn=error?.status===401||['AUTH_REQUIRED','SESSION_EXPIRED','SESSION_REVOKED'].includes(error?.code);
+      if(signIn||error?.code==='ACCESS_DENIED'||error?.code==='PERMISSION_DENIED'||error?.status===403){
+        if(room){drafts.delete(room.id);rooms=rooms.filter(r=>r.id!==room.id);}leaveRoom(false);closeDialogs();
+        status.textContent=t(signIn?'sessionNeeded':'denied');return;
+      }
+      const stage={init:'initFailed',rooms:'roomsFailed',feed:'feedFailed',members:'membersFailed'}[error?.action];
+      const reason=error?.code==='OFFLINE_NOT_CACHED'?'uncached':error?.code==='NETWORK'?'offline':'';
+      status.textContent=[stage&&t(stage),reason&&t(reason)].filter(Boolean).join(' ')||t('failed');
+      if(stage&&['init','rooms','feed','members'].includes(error.action)){
+        const retry=act(t('retry'),async()=>{
+          retry.disabled=true;
+          try{
+            if(!me||error.action==='init')await init();
+            else if(error.action==='members'&&room){const id=room.id,res=await req('members',{roomId:id});if(roomNow(id))members=res.members||[];await loadFeed();}
+            else if(error.action==='feed'&&room)await loadFeed();
+            else await init();
+            if(retry.isConnected)status.replaceChildren();
+          }catch(next){actionStatus(next);}
+        });status.append(' ',retry);
+      }
     }
     function checkConfirm(label,task){
       const {d,body}=dialog(label);body.append(el('p',t('actionsConfirm')),act(label,async()=>{await task();d.close();},'wf-collab-danger'));
@@ -89,12 +137,12 @@
         queueMicrotask(()=>{if(img.isConnected)setPreviewImage(img,r.avatar?{purpose:'room',roomId:r.id}:{purpose:'profile',targetId:r.peer.id},String(r.avatar||r.peer.avatar));});}
     }
     function sideHeader(){
-      sideTools.replaceChildren(el('h3',t('rooms')));const controls=el('div',null,'wf-chat-chips');
-      const toggle=act(t(archived?'rooms':'archived'),()=>{archived=!archived;roomsView='';sideHeader();drawRooms();});controls.append(toggle);
+      sideTools.replaceChildren(el('h3',t('rooms')));const controls=el('div',null,'wf-chat-chips wf-chat-side-actions');
+      const toggle=iconButton('archive',t(archived?'rooms':'archived'),()=>{archived=!archived;roomsView='';sideHeader();drawRooms();});toggle.setAttribute('aria-pressed',String(archived));controls.append(toggle);
       if(edit()){
-        controls.append(act(t('direct'),()=>peopleDialog('direct')));
-        if(api.getSession?.()?.role!=='customer')controls.append(act(t('group'),groupDialog));
-        controls.append(act(t('profile'),profileDialog));
+        controls.append(iconButton('direct',t('direct'),()=>peopleDialog('direct')));
+        if(api.getSession?.()?.role!=='customer')controls.append(iconButton('group',t('group'),groupDialog));
+        controls.append(iconButton('profile',t('profile'),profileDialog));
       }
       sideTools.append(controls);
     }
@@ -104,7 +152,11 @@
         const b=act('',()=>openRoom(r.id),'wf-chat-room'+(room?.id===r.id?' active':''));b.setAttribute('aria-current',room?.id===r.id?'page':'false');addAvatar(b,r);
         const description=el('span',null,'wf-chat-room-label'),last=r.last?.expiresAt&&Date.parse(r.last.expiresAt)<=Date.now()?null:r.last;
         description.append(el('strong',roomName(r)),el('small',last?.event?t(last.event):last?.text||(last?.attachment?t('attachment'):r.description||'')));b.append(description);
-        if(r.unread){const count=el('span',String(r.unread),'wf-chat-badge');count.setAttribute('aria-label',r.unread+' '+t('unread'));b.append(count);}roomList.append(b);
+        const meta=el('span',null,'wf-chat-room-meta'),when=new Date(last?.at||'');
+        if(Number.isFinite(when.getTime())){const today=when.toDateString()===new Date().toDateString();
+          const clock=el('time',new Intl.DateTimeFormat(language,today?{hour:'2-digit',minute:'2-digit'}:{month:'short',day:'numeric'}).format(when),'wf-chat-room-time');
+          clock.dateTime=when.toISOString();meta.append(clock);}
+        if(r.unread){const count=el('span',String(r.unread),'wf-chat-badge');count.setAttribute('aria-label',r.unread+' '+t('unread'));meta.append(count);}b.append(meta);roomList.append(b);
       }
     }
     async function refreshRooms(){
@@ -118,12 +170,12 @@
     }
     function clearTimer(){clearTimeout(draftTimer);clearTimeout(searchTimer);clearTimeout(expiryTimer);}
     function stopRecord(accept=false){
-      recordRequest++;if(!recording)return;const rec=recording;rec.accept=accept;clearInterval(rec.clock);clearTimeout(rec.timeout);
+      recordRequest++;requestingCapture=false;if(!recording)return;const rec=recording;rec.accept=accept;rec.finishToken=recordRequest;clearInterval(rec.clock);clearTimeout(rec.timeout);
       if(rec.device.state!=='inactive')rec.device.stop();for(const track of rec.stream.getTracks())track.stop();recording=null;
     }
     function leaveRoom(flush=true){
       if(flush&&room&&written&&!editing)saveDraft(room.id,draft.value);
-      clearTimer();stopRecord();generation++;feedSeq++;room=null;feed=null;members=[];before=null;stack=[];filter='';query='';lastFeed='';written=false;
+      clearTimer();stopRecord();reportedRead='0';reportingRead=null;pendingIncoming=0;generation++;feedSeq++;room=null;feed=null;members=[];before=null;stack=[];filter='';query='';lastFeed='';written=false;
       callUI?.selectRoom?.(null)?.catch?.(()=>{});selected.clear();reply=null;editing=null;attached=null;draft.value='';mentions.replaceChildren();head.replaceChildren();browse.replaceChildren();selection.replaceChildren();feedBox.replaceChildren(el('p',t('choose'),'wf-collab-empty'));
       feedBox.style.removeProperty('background-image');feedBox.dataset.wallpaper='plain';paging.replaceChildren();indicators.replaceChildren();composer.hidden=true;status.textContent='';showScreen('rooms');drawRooms();
     }
@@ -134,9 +186,13 @@
       return loadFeed(true).catch(e=>{if(current===generation)actionStatus(e);});
     }
     function drawRoomHead(){
-      if(!room)return;head.replaceChildren();head.append(act(t('back'),()=>{leaveRoom();},'wf-chat-back'));const titleBox=el('div',null,'wf-chat-room-title');addAvatar(titleBox,room);titleBox.append(el('h3',roomName(room)));head.append(titleBox);
+      if(!room)return;head.replaceChildren();head.append(iconButton('back',t('back'),()=>{leaveRoom();},'wf-chat-back'));const titleBox=el('div',null,'wf-chat-room-title');addAvatar(titleBox,room);titleBox.append(el('h3',roomName(room)));head.append(titleBox);
       if(edit()&&callUI)head.append(callUI.controls(room));
-      head.append(act(t('members'),membersDialog),act(t('settings'),settingsDialog));browse.replaceChildren();
+      const tools=moreTools('more',t('actions'));
+      tools.menu.append(act(t('members'),membersDialog),act(t('settings'),settingsDialog));browse.replaceChildren();
+      browse.hidden=!(filter||query);
+      const find=iconButton('search',t('search'),()=>{browse.hidden=!browse.hidden;find.setAttribute('aria-expanded',String(!browse.hidden));if(!browse.hidden)search.focus();});
+      find.setAttribute('aria-expanded',String(!browse.hidden));head.append(find,tools.group);
       const search=input(query,160);search.type='search';search.placeholder=t('search');search.setAttribute('aria-label',t('search'));
       search.oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>applyFilter(filter,search.value),240);};
       const f=options(['','starred','mentioned','image','video','audio','files','links'].map(k=>[k,t(k||'messages')]),filter);f.setAttribute('aria-label',t('messages'));f.onchange=()=>applyFilter(f.value,search.value);
@@ -158,12 +214,15 @@
     async function loadFeed(first=false){
       if(!room)return;const id=room.id,seq=++feedSeq;
       const result=await req('feed',{roomId:id,before,query,starred:filter==='starred',mentioned:filter==='mentioned',kind:['image','video','audio','files','links'].includes(filter)?filter:null});
-      if(!roomNow(id)||seq!==feedSeq)return;feed=result;
+      if(!roomNow(id)||seq!==feedSeq)return;const previousTail=feed?.messages.at(-1)?.id;feed=result;
       if(!result._sync?.stale)for(const m of result.messages)if(m.requestId)durable.delete(m.requestId);
       if(first&&!written&&!drafts.has(id))draft.value=result.prefs.draft||'';
       const signature=JSON.stringify([result.messages,result.readByPeer,before,query,language]);
       if(lastFeed!==signature){const bottom=feedBox.scrollHeight-feedBox.scrollTop-feedBox.clientHeight<80;lastFeed=signature;
         const live=new Set(result.messages.map(m=>m.id));for(const key of selected.keys())if(!live.has(key))selected.delete(key);
+        if(!first&&!bottom&&!before&&!query&&!filter&&previousTail)
+          pendingIncoming+=result.messages.filter(m=>m.authorId!==me.id&&H.after(m.id,previousTail)).length;
+        if(first||bottom||before||query||filter)pendingIncoming=0;
         drawMessages();if((first||bottom)&&!before&&!query&&!filter)feedBox.scrollTop=feedBox.scrollHeight;}
       for(const d of container.querySelectorAll('dialog[data-message-id][open]'))if(!result.messages.some(m=>m.id===d.dataset.messageId&&(!m.expiresAt||Date.parse(m.expiresAt)>Date.now())))d.close();
       clearTimeout(expiryTimer);
@@ -171,14 +230,24 @@
       if(upcoming&&upcoming-Date.now()<2147483647)expiryTimer=setTimeout(()=>{if(roomNow(id)){lastFeed='';drawMessages();drawRooms();}},Math.max(0,upcoming-Date.now())+1);
       drawPaging();indicators.textContent=!result._sync?.stale&&result.typing?.length?result.typing.map(p=>p.name).join('، ')+' · '+t('typing'):'';
       if(!durable.size)status.textContent=result._sync?.source==='device'?[t('device'),new Date(result._sync.cachedAt).toLocaleString(language)].filter(Boolean).join(' · '):'';wallpaper(id,result.prefs).catch(()=>{});
-      const latest=result.messages.at(-1)?.id;
-      if(latest&&!before&&!filter&&!query&&H.after(latest,result.prefs.readId)&&!root.document.hidden&&!result._sync?.stale)req('read',{roomId:id,messageId:latest}).catch(()=>{});
+      acknowledgeVisible();
     }
+    function acknowledgeVisible(){
+      if(!room||!feed||before||filter||query||root.document.hidden||feed._sync?.stale||
+         !feedBox.isConnected||feedBox.clientHeight===0||feedBox.scrollHeight-feedBox.scrollTop-feedBox.clientHeight>=80)return;
+      if(pendingIncoming){pendingIncoming=0;drawPaging();}
+      const latest=feed.messages.at(-1)?.id,id=room.id;
+      if(!latest||reportingRead||!H.after(latest,feed.prefs.readId)||!H.after(latest,reportedRead))return;
+      const receipt={};reportingRead=receipt;
+      req('read',{roomId:id,messageId:latest}).then(()=>{if(roomNow(id)&&reportingRead===receipt)reportedRead=latest;}).catch(()=>{})
+        .finally(()=>{if(reportingRead===receipt)reportingRead=null;});
+    }
+    feedBox.addEventListener('scroll',acknowledgeVisible,{passive:true});
     function drawPaging(){
       paging.replaceChildren();const history=act(t('older'),async()=>{stack.push(before);before=feed.messages[0].id;lastFeed='';await loadFeed();feedBox.scrollTop=feedBox.scrollHeight;});
       history.disabled=!feed?.more;
       paging.append(history);if(before)paging.append(act(t('newer'),async()=>{before=stack.pop()||null;lastFeed='';await loadFeed();}));
-      paging.append(act(t('top'),()=>{feedBox.scrollTop=0;}),act(t('latest'),async()=>{before=null;stack=[];await loadFeed();feedBox.scrollTop=feedBox.scrollHeight;}));
+      paging.append(act(t('top'),()=>{feedBox.scrollTop=0;}),act(pendingIncoming?t('newMessages')+' ('+pendingIncoming+')':t('latest'),async()=>{before=null;stack=[];await loadFeed();feedBox.scrollTop=feedBox.scrollHeight;}));
     }
     function quote(m){return m.text||m.asset?.name||t('attachment');}
     function setReply(m){if(!edit())return;editing=null;reply=m;drawComposer();draft.focus();}
@@ -203,8 +272,14 @@
     function drawMessages(){
       feedBox.replaceChildren();drawSelection();if(!feed)return;
       if(!feed.messages.length)feedBox.append(el('p',t('none'),'wf-collab-empty'));
+      let dayKey='';
       for(const m of feed.messages){
         if(m.expiresAt&&Date.parse(m.expiresAt)<=Date.now())continue;
+        const posted=new Date(m.createdAt);
+        if(Number.isFinite(posted.getTime())&&posted.toDateString()!==dayKey){
+          dayKey=posted.toDateString();const date=el('time',new Intl.DateTimeFormat(language,{dateStyle:'medium'}).format(posted),'wf-chat-day');
+          date.dateTime=posted.toISOString();feedBox.append(date);
+        }
         const row=el('article',null,'wf-chat-line'+(m.authorId===me.id?' own':'')+(selected.has(m.id)?' chosen':''));row.dataset.msg=m.id;
         if(m.event){row.classList.add('system');row.append(el('small',[m.author,t(m.event),m.text].filter(Boolean).join(' · ')));feedBox.append(row);continue;}
         const bubble=el('div',null,'wf-chat-bubble'),by=el('div',null,'wf-chat-by');by.append(el('b',m.author));
@@ -215,7 +290,7 @@
         if(m.text){const p=el('p');for(const part of H.parts(m.text,query))p.append(part.match?el('mark',part.value):root.document.createTextNode(part.value));bubble.append(p);}
         if(filter==='links'){for(const href of H.links(m.text)){const a=el('a',href);a.href=href;a.target='_blank';a.rel='noopener noreferrer nofollow';bubble.append(a);}}
         if(m.asset)bubble.append(act(m.asset.name+' · '+C.humanBytes(m.asset.bytes,language),()=>openAsset(m),'wf-chat-file'));
-        const meta=el('footer');const when=new Date(m.createdAt);meta.append(el('small',when.toLocaleString(language,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})));
+        const meta=el('footer');const when=new Date(m.createdAt);meta.append(el('small',when.toLocaleTimeString(language,{hour:'2-digit',minute:'2-digit'})));
         if(m.editedAt)meta.append(el('small',t('edited')));if(m.starred)meta.append(el('small','★'));
         if(m.authorId===me.id)meta.append(el('small',H.after(m.id,feed.readByPeer)?'✓':'✓✓'));
         for(const [e,n] of Object.entries(m.reactions||{}))meta.append(act(e+' '+n,()=>edit()?react(m,e):infoDialog(m)));bubble.append(meta);row.append(bubble);feedBox.append(row);
@@ -364,7 +439,7 @@
     }
     async function chooseNativeFile(){
       if(!room||!edit()||!api.can('files.view')||!api.can('files.export'))return;
-      const id=room.id,{d,body}=dialog(t('nativeFiles')),search=input('',160),list=el('div',null,'wf-chat-library'),more=act(t('older'),()=>load(true));
+      const id=room.id,{d,body}=dialog(t('nativeFiles')),search=input('',160),list=el('div',null,'wf-chat-library'),more=act(t('moreFiles'),()=>load(true));
       let offset=0,sequence=0,timer;search.type='search';search.setAttribute('aria-label',t('search'));search.placeholder=t('search');
       body.append(search,list,more);more.hidden=true;
       async function load(append=false){
@@ -393,33 +468,70 @@
             d.addEventListener('close',()=>{media.removeAttribute('src');if(typeof media.load==='function')media.load();URL.revokeObjectURL(url);},{once:true});}));}
         draftInfo.append(act(t('cancel'),clearComposeAction));
       }
+      if(recording?.kind==='video'){
+        const preview=el('video',null,'wf-chat-camera-preview');preview.muted=true;preview.autoplay=true;preview.playsInline=true;preview.setAttribute('aria-label',t('cameraPreview'));preview.srcObject=recording.stream;draftInfo.append(preview);
+      }
       sendTools.replaceChildren();const emoji=options([['',t('emoji')],...H.reactions.map(e=>[e,e])],'');emoji.setAttribute('aria-label',t('emoji'));
       emoji.onchange=()=>{if(emoji.value){draft.setRangeText(emoji.value,draft.selectionStart,draft.selectionEnd,'end');emoji.value='';draft.dispatchEvent(new Event('input'));draft.focus();}};
-      sendTools.append(emoji,act(t('attach'),()=>picker.click()));
-      if(api.can('files.view')&&api.can('files.export'))sendTools.append(act(t('nativeFiles'),chooseNativeFile));
+      sendTools.append(emoji);
+      const attachmentMenu=moreTools('attach',t('attach'),'wf-chat-attachments');
+      if(!recording&&!requestingCapture){
+        sendTools.append(attachmentMenu.group);attachmentMenu.menu.append(act(t('attach'),()=>picker.click()));
+        if(api.can('files.view')&&api.can('files.export'))attachmentMenu.menu.append(act(t('nativeFiles'),chooseNativeFile));
+      }
       if(recording){const time=el('span',t('recording'),'wf-chat-record-time');sendTools.append(time,act(t('stop'),()=>{stopRecord(true);drawComposer();}),act(t('cancel'),()=>{stopRecord();drawComposer();}));}
-      else if(root.navigator.mediaDevices?.getUserMedia&&root.MediaRecorder)sendTools.append(act(t('voice'),startRecord));
-      const sendBtn=act(t(editing?'save':'send'),send,'wf-collab-primary');sendBtn.disabled=sending||!!recording;sendTools.append(sendBtn);
+      else if(root.navigator.mediaDevices?.getUserMedia&&root.MediaRecorder&&!attached&&!editing&&!sending){
+        for(const [kind,label] of [['audio','voice'],['video','videoNote']]){
+          const recordButton=kind==='audio'?iconButton('voice',t(label),()=>startRecord(kind)):act(t(label),()=>startRecord(kind));recordButton.disabled=requestingCapture;(kind==='audio'?sendTools:attachmentMenu.menu).append(recordButton);
+        }
+      }
+      const sendBtn=iconButton('send',t(editing?'save':'send'),send,'wf-collab-primary');sendBtn.disabled=sending||!!recording||requestingCapture;sendTools.append(sendBtn);
       if(durable.size&&api.syncNow)sendTools.append(act(t('retry'),async()=>{await api.syncNow();await loadFeed();}));
     }
-    async function startRecord(){
-      if(recording||!room)return;const id=room.id,capture=++recordRequest;let stream;
-      try{stream=await root.navigator.mediaDevices.getUserMedia({audio:true});
-        if(!roomNow(id)||capture!==recordRequest){for(const tr of stream.getTracks())tr.stop();return;}
-        const mime=H.recorderType(root.MediaRecorder),device=new root.MediaRecorder(stream,mime?{mimeType:mime}:undefined);
-        const rec={device,stream,started:Date.now(),accept:false,parts:[],bytes:0};recording=rec;
-        device.ondataavailable=e=>{if(!e.data?.size)return;rec.bytes+=e.data.size;if(rec.bytes>C.maxBytes){rec.parts=[];stopRecord();drawComposer();ui.notice(Error('MEDIA_TOO_LARGE'));}else rec.parts.push(e.data);};
-        device.onstop=()=>{for(const track of stream.getTracks())track.stop();if(!rec.accept||!roomNow(id)||!rec.parts.length)return;
-          const type=device.mimeType||mime||'audio/webm',extension=type.includes('mp4')?'m4a':type.includes('ogg')?'ogg':'webm';
-          attach(new File(rec.parts,['voice',Date.now()].join('-')+'.'+extension,{type}));};
-        device.onerror=()=>{stopRecord();drawComposer();status.textContent=t('voiceFailed');};
-        device.start(1000);drawComposer();
+    async function startRecord(kind='audio'){
+      if(requestingCapture||recording||attached||editing||sending||!room||!edit())return;
+      const id=room.id,scope=generation,capture=++recordRequest,isVideo=kind==='video';
+      let stream;requestingCapture=true;drawComposer();
+      try{
+        stream=await root.navigator.mediaDevices.getUserMedia({audio:true,video:isVideo?{
+          facingMode:{ideal:'user'},width:{ideal:640,max:960},height:{ideal:360,max:540},frameRate:{ideal:15,max:24}
+        }:false});
+        if(!roomNow(id)||scope!==generation||capture!==recordRequest||attached||editing||root.document.hidden)return;
+        const mime=H.recorderType(root.MediaRecorder,kind),device=new root.MediaRecorder(stream,{
+          ...(mime?{mimeType:mime}:{}),audioBitsPerSecond:64000,...(isVideo?{videoBitsPerSecond:650000}:{})
+        });
+        const rec={device,stream,kind,started:Date.now(),accept:false,parts:[],bytes:0};recording=rec;
+        device.ondataavailable=e=>{
+          if(!e.data?.size||rec.oversize)return;rec.bytes+=e.data.size;
+          if(rec.bytes<=C.maxBytes){rec.parts.push(e.data);return;}
+          rec.oversize=true;rec.parts=[];rec.accept=false;
+          if(recording===rec)stopRecord();
+          if(roomNow(id)&&scope===generation){drawComposer();ui.notice(Error('MEDIA_TOO_LARGE'));}
+        };
+        device.onstop=()=>{
+          for(const track of stream.getTracks())track.stop();
+          if(recording===rec){clearInterval(rec.clock);clearTimeout(rec.timeout);recording=null;drawComposer();}
+          if(!rec.accept||rec.finishToken!==recordRequest||rec.oversize||!roomNow(id)||scope!==generation||attached||!edit())return;
+          if(!rec.parts.length){status.textContent=t('captureFailed');return;}
+          const type=(device.mimeType||mime||rec.parts[0].type).split(';')[0];
+          if(!type.startsWith(kind+'/')){status.textContent=t('captureFailed');return;}
+          const extension=type.includes('mp4')?(isVideo?'mp4':'m4a'):type.includes('ogg')?'ogg':'webm';
+          attach(new File(rec.parts,(isVideo?'video':'voice')+'-'+Date.now()+'.'+extension,{type}));
+        };
+        device.onerror=()=>{if(recording===rec){stopRecord();drawComposer();status.textContent=t('captureFailed');}};
+        device.start(500);requestingCapture=false;drawComposer();
         rec.clock=setInterval(()=>{const d=sendTools.querySelector('.wf-chat-record-time');if(d)d.textContent=t('recording')+' '+Math.floor((Date.now()-rec.started)/1000)+' s';},500);
-        rec.timeout=setTimeout(()=>{if(recording===rec){stopRecord(true);drawComposer();}},180000);
-      }catch{if(stream)for(const track of stream.getTracks())track.stop();if(alive)status.textContent=t('voiceFailed');}
+        rec.timeout=setTimeout(()=>{if(recording===rec){stopRecord(true);drawComposer();}},isVideo?60000:180000);
+      }catch{
+        if(recording&&recording.stream===stream)stopRecord();
+        if(roomNow(id)&&scope===generation)status.textContent=t('captureFailed');
+      }finally{
+        if(stream&&recording?.stream!==stream)for(const track of stream.getTracks())track.stop();
+        if(capture===recordRequest){requestingCapture=false;if(alive)drawComposer();}
+      }
     }
     async function send(){
-      if(sending||!room||!edit()||recording)return;const id=room.id,text=draft.value.trim(),editMessage=editing,attachment=attached;
+      if(sending||!room||!edit()||recording||requestingCapture)return;const id=room.id,text=draft.value.trim(),editMessage=editing,attachment=attached;
       if(!text&&!attachment&&!editMessage?.asset)return;clearTimeout(draftTimer);sending=true;drawComposer();
       try{
         await draftWrites.get(id)?.catch(()=>{});
@@ -457,6 +569,12 @@
       try{const r=await req('init');if(!alive)return;me=r.me;}
       catch(e){if(!['NETWORK','OFFLINE_NOT_CACHED'].includes(e?.code))throw e;me=api.getSession?.()?.currentAccount;if(!me)throw e;}
       await refreshRooms();if(!alive)return;await callUI?.refresh?.();
+      if(params.ownerSupport===true){
+        const support=rooms.find(r=>r.kind==='direct'&&r.peer?.owner===true);
+        if(support)await openRoom(support.id);
+        else status.textContent=t('supportUnavailable');
+        return;
+      }
       if(params.roomId&&H.validRoom(params.roomId)){
         await openRoom(params.roomId);
         const target=params.messageId;
@@ -473,7 +591,8 @@
       }
       if(root.matchMedia?.('(min-width: 780px)').matches&&rooms.length)await openRoom(rooms.find(x=>!x.archived)?.id||rooms[0].id);
     }
-    const resume=()=>{if(!root.document.hidden)poll();};
+    const stopCapture=()=>{if(recording||requestingCapture){stopRecord();drawComposer();}};
+    const resume=()=>{if(root.document.hidden)stopCapture();else poll();};
     api.listOutbox?.().then(rows=>{if(!alive)return;for(const item of rows)if(item.requestId&&['chat.send','chat.sendFile','chat.forward'].includes(item.action)&&item.status==='pending')durable.set(item.requestId,{roomId:item.roomId});pendingStatus();}).catch(()=>{});
     const offReceipts=api.subscribeReceipts?.(receipt=>{
       if(!alive||!receipt?.requestId||!['chat.send','chat.sendFile','chat.forward'].includes(receipt.action))return;
@@ -483,8 +602,8 @@
     let lastConnection=String(root.navigator.onLine);
     const unsubscribe=api.subscribeConnection?.(state=>{const marker=String(state?.online??state?.connection??state?.status??root.navigator.onLine);
       if(marker!==lastConnection){lastConnection=marker;if(alive&&me)poll();}});
-    const clock=setInterval(poll,4400);root.addEventListener('online',resume);root.document.addEventListener('visibilitychange',resume);
-    return {dispose(){alive=false;unsubscribe?.();offReceipts?.();generation++;clearInterval(clock);clearTimer();stopRecord();root.removeEventListener('online',resume);root.document.removeEventListener('visibilitychange',resume);
+    const clock=setInterval(poll,4400);root.addEventListener('online',resume);root.addEventListener('pagehide',stopCapture);root.document.addEventListener('visibilitychange',resume);
+    return {dispose(){alive=false;unsubscribe?.();offReceipts?.();generation++;clearInterval(clock);clearTimer();stopRecord();root.removeEventListener('online',resume);root.removeEventListener('pagehide',stopCapture);root.document.removeEventListener('visibilitychange',resume);
       callUI?.dispose?.();retrySends.clear();durable.clear();drafts.clear();thumbs.clear();members=[];rooms=[];feed=null;me=null;selected.clear();ui.dispose();app.remove();},
       updateLanguage(value){language=value;callUI?.updateLanguage?.();lastFeed='';roomsView='';sideHeader();drawRooms();if(room){drawRoomHead();drawMessages();drawPaging();drawComposer();}else leaveRoom(false);},
       hasUnsavedChanges:()=>!!(recording||attached||sending||written||callUI?.hasActiveCall?.())};

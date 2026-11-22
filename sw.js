@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=5');
 importScripts('./modules/platform/push/wow-push-sw.js?v=6');
-const CACHE_NAME = 'wow-furniture-v223-cloud';
+const CACHE_NAME = 'wow-furniture-v224-cloud';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -8,12 +8,12 @@ const urlsToCache = [
   './modules/platform/offline/transport.js?v=1',
   './modules/platform/offline/status.js?v=4',
   './modules/platform/offline/styles.css?v=1',
-  './modules/customer-auth/workspace.js?v=3',
+  './modules/customer-auth/workspace.js?v=5',
   './modules/customer-auth/styles.css?v=1',
-  './modules/platform/registry.js?v=4',
-  './modules/platform/styles.css?v=3',
+  './modules/platform/registry.js?v=5',
+  './modules/platform/styles.css?v=4',
   './modules/files/core.js?v=1',
-  './modules/chat/core.js?v=1',
+  './modules/chat/core.js?v=2',
   './modules/gallery/core.js?v=3',
   './modules/gallery/exports.js?v=2',
   './modules/gallery/public-share.js?v=1',
@@ -27,14 +27,14 @@ const urlsToCache = [
   './modules/chat/realtime-channel.js?v=1',
   './modules/chat/call-manager.js?v=2',
   './modules/chat/call-ui.js?v=2',
-  './modules/chat/workspace.js?v=4',
-  './modules/chat/styles.css?v=2',
+  './modules/chat/workspace.js?v=6',
+  './modules/chat/styles.css?v=4',
   './modules/chat/call-ui.css?v=1',
   './modules/communications/core.js?v=1',
   './modules/communications/workspace.js?v=1',
   './modules/communications/styles.css?v=1',
-  './modules/finance/core.js?v=1',
-  './modules/finance/workspace.js?v=1',
+  './modules/finance/core.js?v=2',
+  './modules/finance/workspace.js?v=2',
   './modules/finance/styles.css?v=1',
   './modules/server/core.js?v=1',
   './modules/server/workspace.js?v=1',
@@ -107,8 +107,9 @@ const urlsToCache = [
   './barcode-workspace.css?v=1',
   './wow-dialog.js?v=1',
   './wow-dialog.css?v=1',
-  './platform/dashboard.js?v=223',
-  './platform/dashboard.css?v=223',
+  './platform/index.html',
+  './platform/dashboard.js?v=224',
+  './platform/dashboard.css?v=224',
   './touch-keyboard.js?v=5',
   './touch-keyboard.css?v=3',
   './settings-actions.css?v=1',
@@ -123,7 +124,7 @@ const urlsToCache = [
   './modules/platform/cloud/wow-cloud-config.js?v=2',
   './modules/platform/cloud/wow-cloud-client.js?v=6',
   './modules/platform/cloud/wow-cloud-sync.js?v=1',
-  './modules/platform/cloud/wow-cloud-settings.js?v=3',
+  './modules/platform/cloud/wow-cloud-settings.js?v=4',
   './modules/platform/cloud/wow-cloud-settings.css?v=1',
   './modules/platform/push/wow-push-device.js?v=4',
   './modules/platform/push/wow-push-client.js?v=3',
@@ -132,9 +133,10 @@ const urlsToCache = [
   './modules/platform/push/wow-push-settings.js?v=3',
   './modules/platform/push/wow-push-settings.css?v=2',
   './modules/platform/push/wow-push-sw.js?v=6',
-  './owner-invite.js?v=1',
+  './owner-invite.js?v=2',
+  './company-join.js?v=1',
   './accounts-access.js?v=7',
-  './accounts-settings.js?v=4',
+  './accounts-settings.js?v=5',
   './accounts-access.css?v=3',
   './accounts-settings.css?v=1',
 
@@ -232,18 +234,18 @@ const urlsToCache = [
   './assets/robot-identity/ru.mp3?v=2',
   './assets/wow-furniture-logo.svg',
   './assets/mark-robot-logo.svg',
-  './assets/mark-robot-badge.png?v=223',
+  './assets/mark-robot-badge.png?v=224',
   './assets/wow-furniture-logo.png',
   './app-icon-maskable-512.png?v=198',
-  './app-icon-maskable-512.png?v=223',
+  './app-icon-maskable-512.png?v=224',
   './apple-touch-icon.png?v=198',
-  './apple-touch-icon.png?v=223',
+  './apple-touch-icon.png?v=224',
   './favicon-32.png?v=198',
-  './favicon-32.png?v=223',
+  './favicon-32.png?v=224',
   './app-icon-192.png?v=198',
   './app-icon-512.png?v=198',
-  './app-icon-192.png?v=223',
-  './app-icon-512.png?v=223',
+  './app-icon-192.png?v=224',
+  './app-icon-512.png?v=224',
   './app-icon-192.png',
   './app-icon-512.png',
   './account-statement-core.js?v=25',
@@ -425,7 +427,10 @@ self.addEventListener('fetch', event => {
   const noCacheCallback = [...url.searchParams.keys()].some(key =>
     ['token_hash','access_token','refresh_token','id_token','code','token','challenge','proof','wf-customer'].includes(key.toLowerCase()));
   const revocableShare = url.origin === self.location.origin && /^\/share(?:\/|$)/.test(url.pathname);
-  if (noCacheCallback || revocableShare) {
+  const platformPath=new URL('./platform/',self.location.href).pathname;
+  const platformEntry=url.origin===self.location.origin&&(url.pathname===platformPath||url.pathname===platformPath+'index.html');
+  const ownerProof=url.origin===self.location.origin&&(url.pathname===platformPath+'recover.html'||platformEntry&&url.searchParams.has('setup'));
+  if (noCacheCallback || revocableShare || ownerProof) {
     event.respondWith(fetch(request, {cache:'no-store'}).catch(() => Response.error()));
     return;
   }
@@ -491,6 +496,6 @@ self.addEventListener('fetch', event => {
       })
       .catch(async () => (sameOrigin ? await (await caches.open(CACHE_NAME)).match(request) : undefined) ||
         (await caches.match(request)) ||
-        (sameOrigin && request.mode === 'navigate' ? await caches.match('./index.html') : undefined) || Response.error())
+        (sameOrigin && request.mode === 'navigate' ? await (await caches.open(CACHE_NAME)).match(platformEntry?'./platform/index.html':'./index.html') : undefined) || Response.error())
   );
 });

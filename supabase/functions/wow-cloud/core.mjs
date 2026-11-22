@@ -174,7 +174,7 @@ export function createHandler(deps) {
   // Only these named proof endpoints may run before bearer authentication.
   // Ordinary module registration cannot make arbitrary actions public.
   const publicActions=new Map(Object.entries(deps.publicActions||{}));
-  for(const [action,handler] of publicActions)requireValue((/^auth\.customer(?:Options|Register|Recover|Verify)$/.test(action)||(action==='auth.activateOwner'||action==='auth.platformOwnerRecovery'))&&!moduleActions.has(action)&&typeof handler==='function','SERVER_CONFIGURATION',503);
+  for(const [action,handler] of publicActions)requireValue((/^auth\.customer(?:Options|Register|Recover|Verify)$/.test(action)||(action==='auth.activateOwner'||action==='auth.platformOwnerRecovery'||action==='auth.companyJoin'))&&!moduleActions.has(action)&&typeof handler==='function','SERVER_CONFIGURATION',503);
   const knownAction=action=>ACTIONS.has(action)||moduleActions.has(action)||publicActions.has(action);
   const snapshot=(actor,expectedSessionVersion) => rpc('session.snapshot',{...actor,expectedSessionVersion});
   async function verifyToken(token) {

@@ -19,20 +19,20 @@
   }
   if(typeof module==='object'&&module.exports){module.exports={parse};return;}
   const doc=root.document;
-  function mount(container,base,lang){
+  function mount(container,base,lang,options={}){
     const create=tag=>doc.createElement(tag),details=create('details'),summary=create('summary'),panel=create('div'),
       start=create('button'),stop=create('button'),label=create('label'),labelText=create('span'),input=create('input'),
       open=create('button'),video=create('video'),status=create('p');
     details.className='wf-owner-invite';details.append(summary,panel);panel.append(start,video,stop,label,open,status);label.append(labelText,input);
     video.playsInline=true;video.muted=true;video.hidden=stop.hidden=true;input.type='url';input.autocomplete='off';input.dir='ltr';
     input.spellcheck=false;start.type=stop.type=open.type='button';status.setAttribute('role','status');
-    const text=i=>(labels[lang]||labels.en)[i];
+    const text=i=>options.labels?.(lang)?.[i]||(labels[lang]||labels.en)[i];
     function translate(value){lang=value;[summary,start,labelText,open,stop].forEach((node,i)=>{node.textContent=text(i);});}
     let generation=0,stream=null,timer;
     function end(){generation++;clearTimeout(timer);stream?.getTracks().forEach(track=>track.stop());stream=null;
       video.srcObject=null;video.hidden=stop.hidden=true;start.disabled=false;}
-    function accept(raw){const url=parse(raw,base);if(!url){status.textContent=text(5);return false;}
-      end();input.value='';root.location.assign(url);return true;}
+    function accept(raw){const url=options.parse?options.parse(raw,base):parse(raw,base);if(!url){status.textContent=text(5);return false;}
+      end();input.value='';if(options.onAccept)options.onAccept(url);else root.location.assign(url);return true;}
     start.onclick=async()=>{
       end();const ticket=generation;start.disabled=true;stop.hidden=false;status.textContent='';
       try{

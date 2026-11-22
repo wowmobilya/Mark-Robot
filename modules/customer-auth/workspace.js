@@ -74,7 +74,7 @@
    else{
     // Keep the customer signup entry visibly available even when outbound
     // verification email is not configured. Never open an unverified form.
-    actions.append(button('register',()=>{if(!options.registrationEnabled){message=t('unavailable');render();return;}mode='register';message='';render();}));
+    if(!root.WFCompanyJoin)actions.append(button('register',()=>{if(!options.registrationEnabled){message=t('unavailable');render();return;}mode='register';message='';render();}));
     actions.append(button('recover',()=>{if(!options.recoveryEnabled){message=t('unavailable');render();return;}mode='recover';message='';render();}));
    }
    area.append(actions);if(message)area.append(note());if(!mode)return;
@@ -148,10 +148,11 @@
    if(!data.configured)area.append(el('p',t('unavailable')));
    const form=el('form'),fields={};
    for(const [key,label] of [['registrationEnabled','signupEnabled'],['recoveryEnabled','recoveryEnabled']]){
+    if(key==='registrationEnabled'&&root.WFCompanyJoin)continue;
     const row=el('label'),input=el('input');input.type='checkbox';input.checked=data.settings[key];input.disabled=busy||(!data.configured&&!data.settings[key]);fields[key]=input;row.append(input,el('span',t(label)));form.append(row);
    }
    const save=el('button',t(busy?'sending':'save'));save.type='submit';save.className='btn';save.disabled=busy;form.append(save);area.append(form);
-   form.addEventListener('submit',async event=>{event.preventDefault();if(busy)return;await load('customerAuth.configure',{revision:data.settings.revision,registrationEnabled:fields.registrationEnabled.checked,recoveryEnabled:fields.recoveryEnabled.checked});});
+   form.addEventListener('submit',async event=>{event.preventDefault();if(busy)return;await load('customerAuth.configure',{revision:data.settings.revision,registrationEnabled:fields.registrationEnabled?.checked===true,recoveryEnabled:fields.recoveryEnabled.checked});});
    if(typeof origin==='string'&&origin.startsWith('https://')){
     const url=new URL(origin);url.search='';url.username='';url.password='';url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',data.workspaceId);url.hash='gallery';
     const label=el('label'),link=el('input');link.type='url';link.readOnly=true;link.value=url.href;link.className='fi';label.append(el('span',t('link')),link);area.append(label);

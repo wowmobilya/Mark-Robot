@@ -5,6 +5,9 @@
   if(!doc||!ops||root.WFModules)return;
   const entries=new Map(),words={
     connect:{ar:'اربط مارك ربوت بحسابك السحابي لفتح هذا القسم.',tr:'Bu bölümü açmak için Mark Robot bulut hesabınıza bağlanın.',en:'Connect your Mark Robot cloud account to open this section.',fr:'Connectez votre compte cloud Mark Robot pour ouvrir cette section.',ru:'Подключите облачную учётную запись Mark Robot для открытия раздела.'},
+    companySignIn:{ar:'تسجيل الدخول إلى الشركة',tr:'Şirket hesabıyla giriş',en:'Sign in to your company',fr:'Se connecter à la société',ru:'Войти в компанию'},
+    companyNotice:{ar:'سجّل الدخول بحساب شركتك لفتح هذا القسم.',tr:'Bu bölümü açmak için şirket hesabınızla giriş yapın.',en:'Sign in with your company account to open this section.',fr:'Connectez-vous avec votre compte de société pour ouvrir cette section.',ru:'Войдите в учётную запись компании, чтобы открыть раздел.'},
+    unavailable:{ar:'هذا القسم يحتاج إلى الإنترنت. أعد فتحه عند عودة الاتصال.',tr:'Bu bölüm için internet gerekir. Bağlantı sağlandığında tekrar açın.',en:'This section needs internet access. Open it again when you are online.',fr:'Cette section nécessite Internet. Rouvrez-la une fois en ligne.',ru:'Для этого раздела нужен интернет. Откройте его, когда связь восстановится.'},
     checking:{ar:'جارٍ التحقق من حسابك والاتصال بالسحابة…',tr:'Hesabınız ve bulut bağlantısı doğrulanıyor…',en:'Verifying your account and cloud connection…',fr:'Vérification de votre compte et de la connexion cloud…',ru:'Проверяем вашу учётную запись и подключение к облаку…'},
     temporary:{ar:'الاتصال بالسحابة غير متاح مؤقتًا. أعد المحاولة لإعادة اتصال حساب الأدمن المرتبط.',tr:'Bulut bağlantısı geçici olarak kullanılamıyor. Bağlı yönetici hesabına yeniden bağlanmayı deneyin.',en:'The cloud connection is temporarily unavailable. Retry to reconnect your linked admin account.',fr:'La connexion cloud est temporairement indisponible. Réessayez pour reconnecter votre compte administrateur associé.',ru:'Подключение к облаку временно недоступно. Повторите попытку подключения связанной учётной записи администратора.'},
     offline:{ar:'اتصل بالسيرفر للتحقق من حساب المالك وإتاحة النسخ المحفوظة على هذا الجهاز.',tr:'Bu cihazdaki kayıtlı kopyalar için sunucuya bağlanarak sahibi doğrulayın.',en:'Connect to the server to verify the owner and enable saved copies on this device.',fr:'Connectez-vous au serveur pour vérifier le propriétaire et activer les copies enregistrées.',ru:'Подключитесь к серверу для проверки владельца и доступа к сохранённым копиям.'},
@@ -97,12 +100,23 @@
     const body=entry.surface.body;body.replaceChildren();
     const box=doc.createElement('section');box.className='wf-module-notice';box.setAttribute('role',type==='error'?'alert':'status');
     if(type==='checking')box.setAttribute('aria-busy','true');
-    const text=doc.createElement('p');text.textContent=label(words[type]);box.append(text);
-    const allowedSetup=['connect','offline'].includes(type)&&root.WFAccountAccess?.can?.('settings.view');
-    if(type==='error'||type==='temporary'||allowedSetup){
-      const caption=type==='error'||type==='temporary'?'retry':cloud?.isConfigured?.()===true&&localOwner()?'ownerSignIn':'setup';
+    const published=!!root.WOW_CLOUD_CONFIG?.productionOrigin&&root.location?.origin===root.WOW_CLOUD_CONFIG.productionOrigin;
+    let signInUrl;
+    if(published&&type==='connect'&&cloud?.isConfigured?.()){
+      try{
+        const url=new URL(cloud.entryUrl());
+        if(url.origin===root.location.origin&&url.searchParams.get('wf-cloud')==='employee'&&url.searchParams.get('workspace')){
+          url.hash=entry.id;signInUrl=url.href;
+        }
+      }catch(_){}
+    }
+    const message=published&&type==='connect'?'companyNotice':published&&type==='offline'?'unavailable':type;
+    const text=doc.createElement('p');text.textContent=label(words[message]);box.append(text);
+    const allowedSetup=!published&&['connect','offline'].includes(type)&&root.WFAccountAccess?.can?.('settings.view');
+    if(type==='error'||type==='temporary'||signInUrl||allowedSetup){
+      const caption=signInUrl?'companySignIn':type==='error'||type==='temporary'?'retry':cloud?.isConfigured?.()===true&&localOwner()?'ownerSignIn':'setup';
       const button=doc.createElement('button');button.type='button';button.className='btn';button.textContent=label(words[caption]);
-      button.addEventListener('click',()=>type==='temporary'?retryConnection(entry):type==='error'?activate(entry,true):root.WFCloudSettings?.open?.());box.append(button);
+      button.addEventListener('click',()=>signInUrl?root.location.assign(signInUrl):type==='temporary'?retryConnection(entry):type==='error'?activate(entry,true):root.WFCloudSettings?.open?.());box.append(button);
     }
     body.append(box);
   }
