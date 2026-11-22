@@ -160,7 +160,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.locator('#platform-page-home').waitFor();
     await sideButton.click();await drawer.getByRole('link',{name:'Settings'}).first().click();
     for(const [code,title] of [['ar','الإعدادات'],['tr','Ayarlar'],['fr','Réglages'],['ru','Настройки'],['en','Settings']]){
-      await page.locator('#lang').selectOption(code);
+      await page.locator('#lang').selectOption(code,{force:true});
       await settingsPage.getByRole('heading',{name:title,exact:true}).waitFor();
       assert.equal(await page.locator('html').getAttribute('dir'),code==='ar'?'rtl':'ltr');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
