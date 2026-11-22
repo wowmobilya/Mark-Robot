@@ -115,7 +115,7 @@
     // Keep the password caption as a genuine label; no empty wrapping label
     // should enter the login grid when the input moves beside its visibility button.
     passLabel.htmlFor=pass.id;passLabel.className='platform-password-caption';
-    row.setAttribute('role','group');row.setAttribute('aria-label',t(2));
+    // The input already has a real label; do not duplicate it on the wrapper.
     passLabel.after(row);row.append(pass,toggle);
     toggle.setAttribute('aria-label',visibility[0]+' '+t(2));toggle.setAttribute('aria-controls',pass.id);toggle.setAttribute('aria-pressed','false');
     toggle.onclick=()=>{const show=pass.type==='password';pass.type=show?'text':'password';
