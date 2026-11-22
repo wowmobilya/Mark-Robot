@@ -36,7 +36,8 @@
     "modules/missed-call-push.sql",
     "modules/company-directory-index.sql",
     "modules/platform-brand.sql",
-    "modules/platform-plan-entitlements.sql"
+    "modules/platform-plan-entitlements.sql",
+    "modules/platform-primary-owner-device.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",
