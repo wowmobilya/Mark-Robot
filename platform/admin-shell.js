@@ -114,6 +114,11 @@
     theme.addEventListener('click',()=>pref()?.toggleTheme?.());
     const settings=create('a','platform-drawer-settings',links.settings?.textContent||'⚙');settings.href='#settings';settings.addEventListener('click',close);
     quick.append(theme,settings);drawer.append(quick,densityPicker());
+    const footer=create('footer','platform-drawer-footer');
+    const signout=create('button','platform-drawer-signout',
+      ({ar:'تسجيل الخروج',en:'Sign out',tr:'Çıkış yap',fr:'Se déconnecter',ru:'Выйти'})[doc.getElementById('lang')?.value]||'Sign out');
+    signout.type='button';signout.addEventListener('click',()=>window.WFPlatformLogout?.());
+    footer.append(signout);drawer.append(footer);
     updateAppearance();syncDrawerActive();
   }
   function syncDrawerActive(){
