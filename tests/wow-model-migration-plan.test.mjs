@@ -83,3 +83,19 @@ test('CLI produces a create-only private report, never a live SQL mutation',asyn
  await assert.rejects(()=>main([a,b,c]),/EEXIST/);
  await assert.rejects(()=>main([a,b,a]),/OUTPUT_OVERWRITES_INPUT/);
 });
+
+test('the tool directly ingests the original Galeri export and WOW native database rows',()=>{
+ const {legacy,primary}=fixture();
+ const native={
+   workspaceId:primary.workspaceId,dataRevision:primary.dataRevision,fullPrimarySyncVerified:true,
+   records:primary.products.map(x=>({store:'products',record_id:x.id,revision:x.revision,
+      deleted_at:null,payload:{id:x.id,name:x.name,code:x.code,priceA:x.priceA}})),
+   listings:primary.listings.map(x=>({product_id:x.productId,version:x.version,stock:x.stock,published:x.published}))
+ };
+ const source={projectRef:legacy.projectRef,tables:{inventory:legacy.inventory},counts:{inventory:legacy.inventory.length}};
+ const planned=buildModelTransferPlan({legacy:source,primary:native});
+ assert.equal(planned.summary.linked,1);
+ assert.equal(planned.summary.proposed,1);
+ assert.equal(planned.summary.held,1);
+ assert.equal(planned.applyReady,false);
+});
