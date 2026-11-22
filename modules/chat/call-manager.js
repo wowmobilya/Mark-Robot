@@ -7,13 +7,14 @@
  const fail=code=>Object.assign(new Error(code),{code});
  const valid=id=>typeof id==='string'&&UUID.test(id);
  const videoLimits={width:{ideal:640,max:960},height:{ideal:360,max:540},frameRate:{ideal:15,max:24}};
- function create({api,onState=()=>{},onRemote=()=>{},onPresence=()=>{},onHistory=()=>{},onError=()=>{}}){
+ function create({api,invitation,onState=()=>{},onRemote=()=>{},onPresence=()=>{},onHistory=()=>{},onError=()=>{}}){
   if(!api?.realtimeCredentials||!root.WFCallRealtime||!root.RTCPeerConnection)throw fail('CALLS_UNSUPPORTED');
   let alive=true,room=null,channel=null,callChannel=null,call=null,local=null,ice=null,muted=false;
   let peers=new Map(),joining=false,busy=false,polling=false,mediaToken=0,heartAt=0,connectedAck=false;
   const getMe=()=>api.getSession?.()?.userId||api.getSession?.()?.currentAccount?.id;
   const me=getMe();
   if(!valid(me))throw fail('CALLS_AUTH_REQUIRED');
+  let notified=valid(invitation?.roomId)&&valid(invitation?.callId)?invitation:null;
   const request=(name,data={})=>api.request('chat.call.'+name,data);
   const emit=()=>{if(alive)onState({call,muted,localStream:local,peers:[...peers.keys()],busy});};
   const message=err=>{if(alive)onError(err?.code||err?.name||'CALL_FAILED');};
@@ -236,7 +237,15 @@
    polling=true;
    try{
     if(call)await refreshCall();
-    else{
+    else if(notified){
+     const target=notified;
+     const row=await request('status',{callId:target.callId});
+     notified=null;
+     if(alive&&!call&&api.getSession?.()?.authenticated&&getMe()===me&&callValid(row)&&
+       row.id===target.callId&&row.roomId===target.roomId&&row.callerId!==me&&row.participants?.some(p=>p.id===me&&p.status==='invited')){
+      call=row;emit();
+     }
+    }else{
      const result=await request('inbox');
      if(!alive||call)return;
      const requestCall=(result.calls||[]).find(c=>c.participantStatus==='invited'&&c.callerId!==me);
@@ -246,7 +255,10 @@
       call=row;emit();
      }
     }
-   }catch(error){message(error);}finally{polling=false;}
+   }catch(error){
+    if(notified&&([401,403,404].includes(error?.status)||['ACCESS_DENIED','VOICE_CALL_UNAVAILABLE'].includes(error?.code)))notified=null;
+    message(error);
+   }finally{polling=false;}
   }
   function micToggle(){
    if(!local)return false;muted=!muted;
@@ -278,7 +290,7 @@
   function stop(){
    alive=false;channel?.stop();channel=null;
    const prev=call;cleanup();
-   if(prev)request(prev.callerId===me?'end':'leave',{callId:prev.id}).catch(()=>{});
+   if(prev&&(prev.callerId===me||accepted(prev).some(p=>p.id===me)))request(prev.callerId===me?'end':'leave',{callId:prev.id}).catch(()=>{});
   }
   emit();
   return Object.freeze({selectRoom:joinRoom,start,accept,decline,finish,poll,micToggle,cameraToggle,switchMode,stop,

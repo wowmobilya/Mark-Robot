@@ -126,6 +126,16 @@ test('closed-window pushes save the authorized full body, replace repeated tags 
   assert.deepEqual(messages, [{type:'wf-push-open',deviceId:binding.deviceId,eventId:event.eventId}]); assert.equal(withTab.opened.length, 0);
 });
 
+test('incoming call action opens the bound workspace and leaves media consent to the recipient', async()=>{
+  const store=storage(), w=worker(store);await store.replace(null,binding);
+  const call={...event,kind:'call',route:'chat',params:{roomId:'00000000-0000-4000-8000-000000000002',callId:'00000000-0000-4000-8000-000000000003'}};
+  await w.run('push',{data:{json:()=>call}});
+  assert.equal(w.shown[0].actions[0].action,'open-call');assert.equal(w.shown[0].requireInteraction,true);
+  await w.run('notificationclick',{action:'open-call',notification:{...w.shown[0],close(){}}});
+  assert.equal(new URL(w.opened[0]).hash,'#chat');
+  assert.equal(new URL(w.opened[0]).searchParams.get('wf-notice'),event.eventId);
+});
+
 test('malformed, unbound, mismatched, or stale payloads display only a generic notification and never persist private data', async () => {
   const store = storage(), w = worker(store); await store.replace(null, binding);
   for (const change of [{deviceId:'old'}, {userId:'old'}, {workspaceId:'old'}, {kind:'unknown'}, {eventId:''},

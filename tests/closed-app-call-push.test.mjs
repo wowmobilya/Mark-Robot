@@ -80,3 +80,22 @@ test('notification navigation rejects arbitrary routes and forged call identifie
  assert.equal(device.create(null).target({...base,params:{roomId:room,callId:'../../settings'}}),null);
  assert.equal(device.create(null).target({...base,params:{roomId:'bogus',callId}}),null);
 });
+
+
+test('a notification resumes its exact authorized invitation; closing the chat preserves ringing on other devices',async()=>{
+ const {runInNewContext}=await import('node:vm');
+ const roomId=randomUUID(),callId=randomUUID(),me=randomUUID(),callerId=randomUUID();
+ const response={id:callId,roomId,callerId,status:'ringing',participants:[{id:me,status:'invited'},{id:callerId,status:'joined'}]};
+ const context={WFCallRealtime:{},RTCPeerConnection:class {}};
+ runInNewContext(await read('../modules/chat/call-manager.js'),context);
+ const requests=[];
+ const api={getSession:()=>({userId:me,authenticated:true}),realtimeCredentials:async()=>({}),
+  async request(action,data){requests.push([action,data.callId]);return response;}};
+ const open=room=>context.WFCallManager.create({api,invitation:{roomId:room,callId}});
+ const manager=open(roomId);await manager.poll();assert.equal(manager.getState().call.id,callId);manager.stop();
+ assert.deepEqual(requests,[['chat.call.status',callId]]);
+ const otherRoom=open(randomUUID());await otherRoom.poll();assert.equal(otherRoom.getState().call,null);otherRoom.stop();
+ response.participants[0].status='joined';
+ const answeredOnOtherDevice=open(roomId);await answeredOnOtherDevice.poll();assert.equal(answeredOnOtherDevice.getState().call,null);
+ answeredOnOtherDevice.stop();assert(requests.every(([action])=>action==='chat.call.status'));
+});

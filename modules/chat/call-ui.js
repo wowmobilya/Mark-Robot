@@ -37,7 +37,7 @@
   play:['تشغيل الصوت','Play audio','Sesi aç','Activer le son','Включить звук'],
   alerts:['تفعيل إشعار المكالمات','Enable call alerts','Arama bildirimlerini aç','Activer les alertes d’appel','Включить уведомления о звонках']
  };
- function mount({container,historyContainer,api,lang=()=>root.document?.documentElement.lang||'ar'}){
+ function mount({container,historyContainer,api,invitation,lang=()=>root.document?.documentElement.lang||'ar'}){
   const doc=container.ownerDocument||root.document;
   const layout=doc.createElement('section'),panel=doc.createElement('div'),head=doc.createElement('header');
   const title=doc.createElement('strong'),info=doc.createElement('span'),videos=doc.createElement('div'),actions=doc.createElement('div');
@@ -114,9 +114,11 @@
   function render(){
    language=locale();displayHistory();const state=lastState;const c=state?.call;
    for(const start of container.querySelectorAll('[data-call-start]'))start.disabled=!enabled||!!c||!!state?.busy||!api.can?.('chat.edit');
-   note.textContent=error;note.hidden=!error;panel.hidden=!c;layout.classList.toggle('wf-calling-active',!!c);if(!c){for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
+   note.textContent=error;note.hidden=!error;panel.hidden=!c;layout.classList.toggle('wf-calling-active',!!c||!!error);if(!c){for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
    const invited=c.participants?.some(p=>p.id===api.getSession?.()?.userId&&p.status==='invited');
-   title.textContent=(invited?t('inbound'):t(c.kind==='video'?'video':'audio'));
+   const kind=t(c.kind==='video'?'video':'audio');
+   const caller=invited&&c.participants?.find(p=>p.id===c.callerId)?.name;
+   title.textContent=invited?[caller,t('inbound'),kind].filter(Boolean).join(' · '):kind;
    info.textContent=invited||c.status==='ringing'?t('ringing'):t('connecting');
    if(!invited&&c.status==='active'&&c.startedAt)info.textContent=t('connected')+' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(c.startedAt))/1000)));
 
@@ -146,14 +148,18 @@
   }
   let enabled=!!root.isSecureContext&&!!root.RTCPeerConnection&&!!root.navigator?.mediaDevices?.getUserMedia;
   try{
-   if(enabled)manager=root.WFCallManager.create({api,
+   if(enabled)manager=root.WFCallManager.create({api,invitation,
     onState:s=>{lastState=s;render();},
     onRemote:updateRemote,
     onPresence:values=>{presence=values;},
     onHistory:rows=>{historyRows=rows;displayHistory();},
-    onError:()=>{error=t('failed');render();}
+    onError:()=>{if(lastState?.call){error=t('failed');render();}}
    });
   }catch(_){enabled=false;}
+  const showAlertOption=snapshot=>{
+   for(const control of container.querySelectorAll('[data-call-alerts]'))control.hidden=!snapshot?.canEnable;
+  };
+  const unsubscribeAlerts=root.WFPush?.subscribe?.(showAlertOption);
   function controls(room,pickRecipient){
    const wrapper=doc.createElement('span');wrapper.className='wf-calling-shortcuts';
    const picker=typeof pickRecipient==='function'&&(!room||room.kind==='team');
@@ -172,11 +178,11 @@
     control.title=enabled?t(key):t('unsupported');wrapper.append(control);
    }
    const push=root.WFPush;
-   if(!picker&&push?.getSnapshot?.()?.status==='ready'){
+   if(push?.getSnapshot){
     const toggle=button('alerts',()=>push.enable(),'wf-calling-start wf-calling-icon');
     toggle.textContent='';toggle.setAttribute('aria-label',t('alerts'));toggle.title=t('alerts');
     toggle.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4M12 2v2"/></svg>';
-    wrapper.append(toggle);
+    toggle.dataset.callAlerts='';toggle.hidden=!push.getSnapshot().canEnable;wrapper.append(toggle);
    }
    return wrapper;
   }
@@ -185,7 +191,7 @@
    if(manager)await manager.selectRoom(room).catch(()=>{});
   }
   if(manager){
-   const tick=()=>{if(doc.visibilityState==='visible'||lastState?.call?.status==='active')manager.poll().catch(()=>{});if(lastState?.call?.startedAt)info.textContent=t('connected')+' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(lastState.call.startedAt))/1000)));};
+   const tick=()=>{if(doc.visibilityState==='visible'||lastState?.call?.status==='active')manager.poll().catch(()=>{});if(lastState?.call?.startedAt&&lastState.localStream)info.textContent=t('connected')+' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(lastState.call.startedAt))/1000)));};
    ticking=root.setInterval(tick,3500);manager.poll().catch(()=>{});
   }
   render();
@@ -195,7 +201,7 @@
   }
   return Object.freeze({controls,startPrivate,selectRoom,renderHistoryInFeed:feedHistory,refresh:()=>manager?.poll(),
    hasActiveCall:()=>!!lastState?.call,updateLanguage:render,
-   dispose(){if(ticking)root.clearInterval(ticking);manager?.stop();historyContainer?.querySelector?.('[data-wf-call-history]')?.remove();layout.remove();}});
+   dispose(){unsubscribeAlerts?.();if(ticking)root.clearInterval(ticking);manager?.stop();historyContainer?.querySelector?.('[data-wf-call-history]')?.remove();layout.remove();}});
  }
  root.WFChatCallUI=Object.freeze({mount});
 })(globalThis);

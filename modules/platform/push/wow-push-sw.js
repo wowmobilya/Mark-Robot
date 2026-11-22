@@ -50,6 +50,8 @@
     // browser cannot promise native full-screen ringing or bypass OS policies.
     if (entry?.kind === 'call' && !match?.duplicate) {
       options.requireInteraction = true;
+      const labels={ar:'فتح المكالمة',en:'Open call',tr:'Aramayı aç',fr:'Ouvrir l’appel',ru:'Открыть вызов'};
+      options.actions=[{action:'open-call',title:labels[lang]}];
       options.vibrate = [250,120,250,120,350];
       options.renotify = true;
     }
