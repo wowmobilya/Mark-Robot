@@ -8,7 +8,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     const linked=[{accountId:randomUUID(),name:'Fixture employee',username:'test.employee',role:'sales',boundAt:new Date().toISOString()},{accountId:randomUUID(),name:'Fixture owner',username:'test.owner',role:'owner',boundAt:new Date().toISOString()}];
     let qrDownloads=0;
     let relayConfigured=false,relayEnabled=false,serverHealthy=true;const relayWrites=[];
-    const events=[],wid=randomUUID(),scope='https://platform.test';let plans=[],assigned=null,expiresAt=null,created=false,rejection='wrong',companyName='Test',companyStatus='active',activation='pending',canRecover=false;
+    const events=[],wid=randomUUID(),scope='https://platform.test';let plans=[],assigned=null,expiresAt=null,addonExtra=0,addonDouble=false,created=false,rejection='wrong',companyName='Test',companyStatus='active',activation='pending',canRecover=false;
     await page.route('**/*',async route=>{
       const u=new URL(route.request().url());
       if(u.hostname!=='platform.test')return route.abort();
@@ -46,13 +46,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
             response={enabled:relayEnabled,configured:relayConfigured,active:relayEnabled&&relayConfigured,includedGb:1000,overageUsdPerGb:.05,remainingGb:null,turnEgressBytes:1250000000};
             break;
           case 'platform.plans.list':response={plans};break;
-          case 'platform.limits.get':assert.equal(body.workspaceId,wid);response={usedUsers:3,usedBytes:500000000,usedDevices:1,planId:assigned?.id||null,plan:assigned,expiresAt,version:0};break;
+          case 'platform.limits.get':assert.equal(body.workspaceId,wid);response={usedUsers:3,usedBytes:500000000,usedDevices:1,planId:assigned?.id||null,plan:assigned,expiresAt,version:0,extraDevices:addonExtra,doubleBundle:addonDouble};break;
           case 'platform.limits.set':
             assert.equal(body.workspaceId,wid);
             if(!assigned){assert.ok(Date.parse(body.expiresAt)>Date.now()+29*86400000);expiresAt=body.expiresAt.replace('00.000Z','13.072Z');}
             else if(body.planId)assert.equal(body.expiresAt,expiresAt);
             else {assert.equal(body.expiresAt,null);expiresAt=null;}
             if(body.planId){assert.equal(body.extraDevices,2);assert.equal(body.doubleBundle,true);}
+            addonExtra=body.extraDevices;addonDouble=body.doubleBundle;
             assigned=plans.find(p=>p.id===body.planId);response={};break;
           case 'platform.plans.save':
             assert.equal(body.userLimit,5);assert.equal(body.deviceLimit,3);assert.equal(body.storageBytes,1500000000);
