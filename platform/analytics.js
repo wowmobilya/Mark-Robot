@@ -72,8 +72,9 @@
       finally{refresh.disabled=false;}
     };
     section.append(header,cards,viz,network);
+    const hero=host.querySelector('.platform-home-hero');
     const form=host.querySelector('.platform-create-form');
-    if(form)form.before(section);else host.prepend(section);
+    if(hero)hero.after(section);else if(form)form.before(section);else host.prepend(section);
     requestAnimationFrame(()=>{
       if(section.isConnected)circle.style.setProperty('--platform-active-share',ratio.toFixed(3)+'%');
     });

@@ -117,7 +117,7 @@
     updateAppearance();syncDrawerActive();
   }
   function syncDrawerActive(){
-    const current=location.hash.slice(1)||'companies';
+    const current=location.hash.slice(1)||'home';
     for(const item of drawer.querySelectorAll('.platform-drawer-link')){
       if(item.dataset.section===current)item.setAttribute('aria-current','page');
       else item.removeAttribute('aria-current');
@@ -167,8 +167,8 @@
     };
     search.addEventListener('input',apply);filter.addEventListener('change',apply);
     outer.append(tools,stats,empty);
-    const form=companies.querySelector('.platform-create-form');
-    if(form)form.after(outer);else companies.prepend(outer);
+    const panel=companies.querySelector('.platform-create-panel');
+    if(panel)panel.after(outer);else companies.prepend(outer);
     apply();
   }
   function mount({state,companies,menu,links,preferences}){

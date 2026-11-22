@@ -60,6 +60,36 @@
     fr:{button:'Demander l’activation sur WhatsApp',message:(name,amount,days)=>`Bonjour, je souhaite demander l'activation de l'abonnement WOW Furniture ${name}, pour ${days} jours au prix de ${amount}. Merci de m'indiquer les étapes.`},
     ru:{button:'Запросить активацию в WhatsApp',message:(name,amount,days)=>`Здравствуйте! Хочу запросить подключение тарифа WOW Furniture «${name}» на ${days} дней за ${amount}. Сообщите, пожалуйста, порядок активации.`}
   };
+  const fxWords={
+    ar:{equivalent:'المقابل بالليرة التركية',loading:'جارٍ قراءة سعر البنك المركزي...',unavailable:'السعر الرسمي غير متاح',rate:'سعر بيع العملات'},
+    en:{equivalent:'Turkish lira equivalent',loading:'Reading central-bank rate...',unavailable:'Official rate unavailable',rate:'Indicative selling rate'},
+    tr:{equivalent:'Türk lirası karşılığı',loading:'Merkez Bankası kuru alınıyor...',unavailable:'Resmî kur kullanılamıyor',rate:'Döviz satış kuru'},
+    fr:{equivalent:'Équivalent en livre turque',loading:'Chargement du cours de la banque centrale…',unavailable:'Cours officiel indisponible',rate:'Cours de vente indicatif'},
+    ru:{equivalent:'Эквивалент в турецких лирах',loading:'Загрузка курса ЦБ…',unavailable:'Официальный курс недоступен',rate:'Индикативный курс продажи'}
+  };
+  const money=(value,currency,language)=>{
+    if(currency==='USD')return '$'+new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(value);
+    return new Intl.NumberFormat(language,{style:'currency',currency,maximumFractionDigits:2}).format(value);
+  };
+  async function showFx(entries,readRate,language){
+    const w=fxWords[language]||fxWords.ar;
+    const fail=()=>{for(const entry of entries){if(entry.value.isConnected){entry.value.textContent='—';entry.note.textContent=w.unavailable;}}};
+    if(typeof readRate!=='function'){fail();return;}
+    try{
+      const answer=await readRate('fx.get');
+      if(answer?.available!==true||answer?.source!=='TCMB'||answer?.rateType!=='forex_selling'||
+        !/^\d{4}-\d{2}-\d{2}$/.test(answer?.date||''))throw Error('RATE_UNAVAILABLE');
+      for(const entry of entries){
+        if(!entry.value.isConnected)continue;
+        const rate=answer.rates?.[entry.currency];
+        if(!Number.isFinite(rate)||rate<=0||rate>1000000){entry.value.textContent='—';entry.note.textContent=w.unavailable;continue;}
+        entry.value.textContent='≈ '+new Intl.NumberFormat('tr-TR',
+          {style:'currency',currency:'TRY',currencyDisplay:'narrowSymbol',minimumFractionDigits:2,maximumFractionDigits:2})
+          .format(entry.amount*rate);
+        entry.note.textContent='TCMB · '+w.rate+' · '+answer.date;
+      }
+    }catch{fail();}
+  }
   const make=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
   function svgIcon(kind){
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -82,7 +112,7 @@
     const markup={
       month:'<rect x="31" y="29" width="106" height="102" rx="22"/><path d="M31 62h106M58 17v28M110 17v28"/><path class="wf-tier-line" d="M61 91h47M61 107h29"/>',
       year:'<circle cx="84" cy="80" r="53"/><circle cx="84" cy="80" r="33" class="wf-tier-orbit"/><path d="M84 43v38l26 21"/><circle class="wf-tier-dot" cx="84" cy="27" r="6"/>',
-      twoYears:'<path d="M17 85c16-40 44-45 67-4 23 41 51 36 67-4-16-40-44-45-67-4-23 41-51 36-67 4Z"/><path class="wf-tier-spark" d="M131 26v16m-8-8h16M42 19v12m-6-6h12"/>'
+      twoYears:'<path d="M84 16 127 36v44c0 29-15 47-43 61-28-14-43-32-43-61V36L84 16Z"/><path class="wf-tier-line" d="M64 65 84 47l20 18-20 19-20-19ZM64 98l20 17 20-17"/><path class="wf-tier-spark" d="M84 30v8M130 49l9-5M38 49l-9-5"/>'
     };
     const wrap=make('div','wf-plan-art');
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -90,11 +120,11 @@
     svg.setAttribute('focusable','false');svg.innerHTML=markup[key];
     wrap.append(svg);return wrap;
   }
-  function mount(host,plans,onEdit){
+  function mount(host,plans,onEdit,readRate){
     if(!host||!Array.isArray(plans)||typeof onEdit!=='function')return;
     const w=copy[document.documentElement.lang]||copy.ar,heading=make('header','platform-pricing-heading');
     heading.append(make('h3','',w.title),make('p','',w.lead));
-    const grid=make('div','platform-pricing-cards');
+    const grid=make('div','platform-pricing-cards'),fxEntries=[];
     for(const item of tiers){
       const plan=plans.find(p=>p.id===item.id)||plans.find(p=>p.name===item.name)||null;
       const card=make('article','platform-pricing-card');card.dataset.tier=item.key;
@@ -104,9 +134,16 @@
       const name=make('h4','',plan?.name||w[item.key]);
       const amount=Number(plan?.price??item.price),currency=plan?.currency||'USD';
       const price=make('strong','platform-plan-price');
-      price.append(make('span','',new Intl.NumberFormat(document.documentElement.lang,{style:'currency',currency,maximumFractionDigits:2}).format(amount)));
+      price.append(make('span','',money(amount,currency,document.documentElement.lang)));
+      const fx=make('div','platform-plan-fx'),fxIcon=make('span','platform-plan-fx-icon','⇄');
+      fxIcon.setAttribute('aria-hidden','true');
+      const fxLabel=make('span','platform-plan-fx-label',fxWords[document.documentElement.lang]?.equivalent||fxWords.ar.equivalent);
+      const fxValue=make('strong','platform-plan-fx-value','—');fxValue.dir='ltr';
+      const fxNote=make('small','platform-plan-fx-note',fxWords[document.documentElement.lang]?.loading||fxWords.ar.loading);
+      fx.append(fxIcon,fxLabel,fxValue,fxNote);
+      fxEntries.push({value:fxValue,note:fxNote,amount,currency});
       const duration=make('small','platform-plan-duration',(plan?.durationDays||item.days)+' '+(item.key==='month'?w.day.replace(/^30\s*/, ''):item.key==='year'?w.annual.replace(/^365\s*/, ''):w.biennial.replace(/^730\s*/, '')));
-      const monthly=make('span','platform-plan-per-month',w.perMonth+' · '+new Intl.NumberFormat(document.documentElement.lang,{style:'currency',currency,maximumFractionDigits:2}).format(amount/item.months));
+      const monthly=make('span','platform-plan-per-month',w.perMonth+' · '+money(amount/item.months,currency,document.documentElement.lang));
       const label=make('span','platform-plan-label',plan?w.saved:w.draft);
       label.dataset.saved=String(!!plan);
       const button=make('button','platform-plan-edit',plan?w.edit:w.create);button.type='button';
@@ -132,7 +169,7 @@
       // WhatsApp is an inquiry channel only; saving and assigning plans remain authenticated admin actions.
       const lang=document.documentElement.lang in activationCopy?document.documentElement.lang:'ar';
       const whats=activationCopy[lang];
-      const formattedAmount=new Intl.NumberFormat(lang,{style:'currency',currency,maximumFractionDigits:2}).format(amount);
+      const formattedAmount=money(amount,currency,lang);
       const activationText=whats.message(plan?.name||w[item.key],formattedAmount,Number(plan?.durationDays??item.days));
       const whatsappUrl=new URL('https://wa.me/'+whatsappNumber);
       whatsappUrl.searchParams.set('text',activationText);
@@ -142,7 +179,7 @@
       activate.setAttribute('aria-label',whats.button+' · '+(plan?.name||w[item.key]));
       const actions=make('div','platform-plan-actions');
       actions.append(activate,button);
-      card.append(visualNode,eyebrow,name,price,duration,monthly,featureList,note,label,actions);
+      card.append(visualNode,eyebrow,name,price,fx,duration,monthly,featureList,note,label,actions);
       grid.append(card);
     }
     // A single shared contact block avoids duplicating sensitive contact links
@@ -164,6 +201,7 @@
     const panel=make('section','platform-pricing-dashboard');
     panel.append(heading,grid,contactPanel,make('p','platform-plan-disclaimer',w.noCharge+' '+w.adjust));
     const editor=host.querySelector('.platform-plan-editor');
+    void showFx(fxEntries,readRate,document.documentElement.lang);
     if(editor)editor.before(panel);else host.append(panel);
   }
   window.WFPlatformPricing=Object.freeze({mount,tiers});

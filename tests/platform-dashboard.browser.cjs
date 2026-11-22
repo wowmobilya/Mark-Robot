@@ -46,6 +46,8 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
             response={enabled:relayEnabled,configured:relayConfigured,active:relayEnabled&&relayConfigured,includedGb:1000,overageUsdPerGb:.05,remainingGb:null,turnEgressBytes:1250000000};
             break;
           case 'platform.plans.list':response={plans};break;
+          case 'platform.fx.get':response={available:true,source:'TCMB',rateType:'forex_selling',date:'2026-11-20',
+            rates:{USD:50.4936,EUR:55.3970,TRY:1}};break;
           case 'platform.limits.get':assert.equal(body.workspaceId,wid);response={usedUsers:3,usedBytes:500000000,usedDevices:1,planId:assigned?.id||null,plan:assigned,expiresAt,version:0,extraDevices:addonExtra,doubleBundle:addonDouble};break;
           case 'platform.limits.set':
             assert.equal(body.workspaceId,wid);
@@ -146,8 +148,8 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(await settingsPage.getByRole('heading',{name:'Settings',exact:true}).isVisible(),true);
     await page.locator('.platform-header-actions').getByRole('link',{name:'Support inbox'}).click();
     await page.locator('#platform-page-support').waitFor();
-    await page.locator('.platform-header-actions').getByRole('link',{name:'Back to companies'}).click();
-    await page.locator('#platform-page-companies').waitFor();
+    await page.locator('.platform-header-actions').getByRole('link',{name:'Back to dashboard'}).click();
+    await page.locator('#platform-page-home').waitFor();
     await settingsLink.click();
     for(const [code,title] of [['ar','الإعدادات'],['tr','Ayarlar'],['fr','Réglages'],['ru','Настройки'],['en','Settings']]){
       await page.locator('#lang').selectOption(code);
@@ -157,14 +159,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     }
     for(const width of [320,360,375,390,430,768,820,1024,1180,1280,1440]){
       await page.setViewportSize({width,height:844});
-      await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash==='#companies');
+      await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash==='#home');
       const metrics=await menu.evaluate(element=>({position:getComputedStyle(element).position,bottom:element.getBoundingClientRect().bottom,
         links:[...element.querySelectorAll('a')].map(a=>({height:a.getBoundingClientRect().height,width:a.getBoundingClientRect().width,path:a.hash})),
         overflow:document.documentElement.scrollWidth>innerWidth}));
       assert(!metrics.overflow);
       assert(metrics.links.every(link=>link.height>=44&&link.width>=44));
-      if(width<=1024){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[0].path,'#companies');assert.equal(metrics.links[2].path,'#support');}
-      else if(width>1024){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[0].path,'#companies');}
+      if(width<=1024){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[0].path,'#home');assert.equal(metrics.links[3].path,'#support');}
+      else if(width>1024){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[0].path,'#home');}
     }
     // iPhone/iPad/Android/tablet/desktop breakpoints and orientation changes.
     await page.setViewportSize({width:863,height:388});
@@ -179,6 +181,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.setViewportSize({width:390,height:844});
     await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByText('No companies yet.').waitFor();
+    await menu.getByRole('link',{name:'Home'}).click();
     const stats=page.locator('.platform-analytics');
     await stats.getByRole('heading',{name:'Platform pulse'}).waitFor();
     assert.equal(await stats.locator('[data-metric=companies] .platform-analytics-value').textContent(),'0');
@@ -205,6 +208,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await relay.getByRole('checkbox').check();await enable.click();await relay.getByText('Enabled',{exact:true}).waitFor();
     await relay.getByRole('button',{name:'Turn off relay'}).click();await relay.getByText('Off',{exact:true}).waitFor();
     assert.deepEqual(relayWrites,[true,false]);await menu.getByRole('link',{name:'Companies'}).click();
+    await page.locator('.platform-create-panel summary').click();
     await page.getByLabel('Company name').fill('Test');await page.getByRole('button',{name:'Create company'}).click();
     const link=await page.getByText('Owner setup link').getAttribute('href');assert.equal(new URL(link).searchParams.get('setup'),wid);
     assert.equal(await page.locator('[data-metric=companies] .platform-analytics-value').textContent(),'1');
@@ -262,7 +266,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(events.includes('platform.company.releaseDevice'),false);
     await ownerDevice.getByRole('button',{name:'Release device'}).click();await ownerDevice.getByRole('button',{name:'Confirm release'}).click();
     await ownerDevice.waitFor({state:'detached'});await page.locator('.platform-linked-device').getByText('Fixture employee').waitFor();
-    const company=page.locator('article'),editor=page.locator('.platform-inline-editor form');
+    const company=page.locator('.platform-company-card-v2'),editor=page.locator('.platform-inline-editor form');
     await company.getByRole('button',{name:'Rename'}).click();const companyInput=editor.getByLabel('Company name');await companyInput.tap();assert.equal(await companyInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);await companyInput.fill('Edited');
     await editor.getByRole('button',{name:'Save'}).click();await company.getByText('Edited').waitFor();
     await company.getByRole('button',{name:'Suspend'}).click();await page.keyboard.press('Escape');
@@ -281,6 +285,12 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     const pricing=page.locator('.platform-pricing-dashboard');
     await pricing.waitFor();
     assert.equal(await pricing.locator('.platform-pricing-card').count(),3);
+    assert.equal(await pricing.locator('[data-tier=month] .platform-plan-price').innerText(),'$100');
+    assert.equal(await pricing.locator('[data-tier=month] .platform-plan-fx-value').innerText(),'≈ ₺5.049,36');
+    assert.match(await pricing.locator('[data-tier=month] .platform-plan-fx-note').innerText(),/TCMB.*2026-11-20/);
+    assert.equal(await pricing.locator('[data-tier=twoYears] .wf-plan-art svg path').first().getAttribute('d'),
+      'M84 16 127 36v44c0 29-15 47-43 61-28-14-43-32-43-61V36L84 16Z');
+    assert.equal(events.filter(action=>action==='platform.fx.get').length,1);
     // Original WhatsApp silhouette, direct Turkish phone and the exact
     // user-supplied mailbox are all reachable without any admin action.
     const contact=pricing.locator('.platform-sales-contact');

@@ -248,7 +248,7 @@
       }
       price.focus({preventScroll:true});
       form.scrollIntoView({block:'nearest',behavior:'instant'});
-    });
+    },request);
   }
   async function subscription(container,company){
     const [state,{plans}]=await Promise.all([request('limits.get',{workspaceId:company.id}),request('plans.list')]);
@@ -429,15 +429,42 @@
   function arrangeMenu(){
     const menu=content.querySelector('.platform-section-menu');if(!menu)return;
     const focused=menu.contains(document.activeElement)?document.activeElement:null;
-    for(const key of ['companies','plans','support','calls','settings']){
+    for(const key of ['home','companies','plans','support','calls','settings']){
       const link=menu.querySelector('a[href="#'+key+'"]');if(link)menu.append(link);
     }
     focused?.focus({preventScroll:true});
   }
   const topLabels={
-    ar:['العودة إلى الشركات','صندوق رسائل الدعم'],en:['Back to companies','Support inbox'],
-    tr:['Şirketlere dön','Destek gelen kutusu'],fr:['Retour aux sociétés','Boîte de réception du support'],
-    ru:['Вернуться к компаниям','Обращения в поддержку']
+    ar:['العودة إلى الرئيسية','صندوق رسائل الدعم'],en:['Back to dashboard','Support inbox'],
+    tr:['Ana sayfaya dön','Destek gelen kutusu'],fr:['Retour à l’accueil','Boîte de réception du support'],
+    ru:['Вернуться на главную','Обращения в поддержку']
+  };
+  const homeWords={
+    ar:{navHome:'الرئيسية',heading:'مركز إدارة WOW',caption:'ملخص موثّق واختصارات مباشرة لإدارة المنصة',quick:'الأقسام السريعة',
+      companies:'الشركات',companyNote:'قائمة الشركات والصلاحيات والتفعيل',create:'إضافة شركة',createNote:'إنشاء شركة وإعداد حساب مالكها',
+      plans:'الباقات',plansNote:'الأسعار والاشتراكات والحدود',support:'الدعم',supportNote:'طلبات العملاء والردود',
+      calls:'المكالمات',callsNote:'العبور واستهلاك المكالمات',settings:'الإعدادات',settingsNote:'المظهر والحساب',
+      formHelp:'أنشئ شركة جديدة ثم شارك رابط إعداد المالك الآمن',openForm:'إضافة شركة جديدة'},
+    en:{navHome:'Home',heading:'WOW Control Center',caption:'Verified overview and quick routes to your administration',quick:'Quick sections',
+      companies:'Companies',companyNote:'Company list, permissions and activation',create:'Add company',createNote:'Create a workspace and invite the owner',
+      plans:'Plans',plansNote:'Pricing, subscriptions and limits',support:'Support',supportNote:'Customer requests and replies',
+      calls:'Calls',callsNote:'Relay and call usage',settings:'Settings',settingsNote:'Appearance and account',
+      formHelp:'Create a company and share its secure owner setup invitation',openForm:'Add a new company'},
+    tr:{navHome:'Ana sayfa',heading:'WOW Yönetim Merkezi',caption:'Doğrulanmış özet ve yönetim kısayolları',quick:'Hızlı bölümler',
+      companies:'Şirketler',companyNote:'Şirketler, izinler ve etkinleştirme',create:'Şirket ekle',createNote:'Şirket oluşturun ve sahibini davet edin',
+      plans:'Paketler',plansNote:'Fiyatlar, abonelikler ve sınırlar',support:'Destek',supportNote:'Müşteri talepleri ve yanıtlar',
+      calls:'Aramalar',callsNote:'Aktarım ve kullanım',settings:'Ayarlar',settingsNote:'Görünüm ve hesap',
+      formHelp:'Yeni bir şirket oluşturun ve güvenli sahip davetini paylaşın',openForm:'Yeni şirket ekle'},
+    fr:{navHome:'Accueil',heading:'Centre de gestion WOW',caption:'Vue vérifiée et accès rapides à l’administration',quick:'Accès rapides',
+      companies:'Sociétés',companyNote:'Liste, droits et activation',create:'Ajouter une société',createNote:'Créer et inviter le propriétaire',
+      plans:'Formules',plansNote:'Tarifs, abonnements et quotas',support:'Assistance',supportNote:'Demandes et réponses',
+      calls:'Appels',callsNote:'Relais et consommation',settings:'Réglages',settingsNote:'Affichage et compte',
+      formHelp:'Créez la société puis partagez l’invitation sécurisée',openForm:'Ajouter une société'},
+    ru:{navHome:'Главная',heading:'Центр управления WOW',caption:'Проверенная сводка и быстрый переход к управлению',quick:'Быстрые разделы',
+      companies:'Компании',companyNote:'Список, права и активация',create:'Добавить компанию',createNote:'Создать компанию и пригласить владельца',
+      plans:'Тарифы',plansNote:'Цены, подписки и лимиты',support:'Поддержка',supportNote:'Запросы клиентов и ответы',
+      calls:'Звонки',callsNote:'Ретрансляция и использование',settings:'Настройки',settingsNote:'Оформление и аккаунт',
+      formHelp:'Создайте компанию и поделитесь защищённым приглашением',openForm:'Добавить компанию'}
   };
   const settingsWords={
     ar:['الإعدادات','تفضيلات هذا الجهاز','حساب المؤسس','إعدادات الحساب'],
@@ -482,17 +509,17 @@
     };
     return section;
   }
-  const pageFromUrl=()=>['plans','support','calls','settings'].includes(location.hash.slice(1))?location.hash.slice(1):'companies';
+  const pageFromUrl=()=>['home','companies','plans','support','calls','settings'].includes(location.hash.slice(1))?location.hash.slice(1):'home';
   window.addEventListener('hashchange',()=>showDestination?.());
   async function list(){
     const ticket=++generation,state=await request('company.list',{offset});if(ticket!==generation)return;
     scanner?.dispose();scanner=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
-    const labels=destinations[lang.value],settingsText=settingsWords[lang.value];
-    const ids=['companies','plans','support','calls','settings'],titles=[labels[0],labels[1],labels[2],labels[5],settingsText[0]],panels={},links={};
+    const labels=destinations[lang.value],settingsText=settingsWords[lang.value],homepage=homeWords[lang.value];
+    const ids=['home','companies','plans','support','calls','settings'],titles=[homepage.heading,labels[0],labels[1],labels[2],labels[5],settingsText[0]],panels={},links={};
     nav.className='platform-account-bar';menu.className='platform-section-menu';menu.setAttribute('aria-label',labels[3]);
     headerActions.hidden=false;headerActions.replaceChildren();
     const home=el('a'),inbox=el('a');
-    for(const [link,id,description] of [[home,'companies',topLabels[lang.value][0]],[inbox,'support',topLabels[lang.value][1]]]){
+    for(const [link,id,description] of [[home,'home',topLabels[lang.value][0]],[inbox,'support',topLabels[lang.value][1]]]){
       link.href='#'+id;link.className='platform-header-link';link.setAttribute('aria-label',description);link.title=description;
       headerActions.append(link);
     }
@@ -501,7 +528,7 @@
       const link=el('a'),panel=el('section'),title=el('h2',titles[i]);
       title.tabIndex=-1;title.id='platform-title-'+id;
       link.className='platform-section-link';link.href='#'+id;
-      const tile=el('span'),caption=el('span',title.textContent);
+      const tile=el('span'),caption=el('span',id==='home'?homepage.navHome:title.textContent);
       tile.className='platform-nav-icon';caption.className='platform-nav-label';
       tile.setAttribute('aria-hidden','true');link.append(tile,caption);
       panel.className='platform-page';panel.id='platform-page-'+id;panel.hidden=true;
@@ -510,14 +537,32 @@
     }
     arrangeMenu();
     const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);
-    form.className='platform-create-form';
-    form.append(el('strong',t(6)));
-    companies.append(form);
+    const hero=el('section'),heroTitle=el('h3',homepage.heading),heroLead=el('p',homepage.caption);
+    hero.className='platform-home-hero';hero.append(heroTitle,heroLead);
+    const quickHeading=el('h3',homepage.quick),quick=el('nav');
+    quick.className='platform-home-quick';quick.setAttribute('aria-label',homepage.quick);
+    const shortcuts=[
+      ['companies','companies','companyNote'],['create','create','createNote'],['plans','plans','plansNote'],
+      ['support','support','supportNote'],['calls','calls','callsNote'],['settings','settings','settingsNote']
+    ];
+    for(const [key,labelKey,noteKey] of shortcuts){
+      const link=el('a'),icon=el('span'),body=el('span'),title=el('strong',homepage[labelKey]),note=el('small',homepage[noteKey]);
+      link.className='platform-home-shortcut';link.dataset.shortcut=key;
+      link.href='#'+(key==='create'?'companies':key);
+      icon.className='platform-home-shortcut-icon';icon.setAttribute('aria-hidden','true');
+      body.className='platform-home-shortcut-copy';body.append(title,note);link.append(icon,body);
+      quick.append(link);
+    }
+    panels.home.append(hero,quickHeading,quick);
+    const createPanel=el('details'),createSummary=el('summary',homepage.openForm),createHint=el('p',homepage.formHelp);
+    createPanel.className='platform-create-panel';createHint.className='platform-create-hint';
+    form.className='platform-create-form';form.append(createHint);
+    createPanel.append(createSummary,form);companies.append(createPanel);
     let lastPage=null,loadingPlans=false;
     showDestination=()=>{
       const id=pageFromUrl(),changed=id!==lastPage;
       if(changed&&lastPage==='settings'){const details=panels.settings.querySelector('.platform-password-settings');if(details)details.open=false;}
-      home.hidden=id==='companies';inbox.hidden=id==='support';
+      home.hidden=id==='home';inbox.hidden=id==='support';
       for(const key of ids){
         panels[key].hidden=key!==id;
         if(key===id)links[key].setAttribute('aria-current','page');else links[key].removeAttribute('aria-current');
@@ -560,6 +605,10 @@
     supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts});
     showDestination();
     const name=field(form,5);name.required=true;name.maxLength=100;
+    panels.home.querySelector('[data-shortcut=create]')?.addEventListener('click',()=>{
+      createPanel.open=true;
+      requestAnimationFrame(()=>{if(pageFromUrl()==='companies'&&name.isConnected)name.focus({preventScroll:true});});
+    });
     submit(form,6,async()=>{
       const company=name.value.trim();if(!company)return;
       if(draft?.company!==company)draft={company,code:inviteCode()};
@@ -694,7 +743,7 @@
     // Responsive chrome and local-only company filters reuse the authorized list,
     // without altering the authenticated data source or modifying server state.
     window.WFPlatformShell?.mount({state,companies,menu,links,preferences:preferred});
-    window.WFPlatformAnalytics?.mount({host:companies,state,request,language:lang.value});
+    window.WFPlatformAnalytics?.mount({host:panels.home,state,request,language:lang.value});
   }
   let invite=new URLSearchParams(location.hash.slice(1)).get('invite');
   if(invite)history.replaceState(null,'',location.pathname+location.search);

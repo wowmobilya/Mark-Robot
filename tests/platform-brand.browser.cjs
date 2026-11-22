@@ -20,15 +20,38 @@ const {chromium}=require('playwright');
       }});
       for(const company of companies){
         const row=document.createElement('article'),title=document.createElement('strong'),detail=document.createElement('details'),summary=document.createElement('summary');
-        title.textContent=company.name;summary.textContent='تفاصيل';detail.append(summary);row.append(title,detail);document.querySelector('main').append(row);view.attach(row,detail,company);
+        title.textContent=company.name;summary.textContent='تفاصيل';const actionGrid=document.createElement('div');actionGrid.className='platform-company-actions-grid';detail.append(summary,actionGrid);row.append(title,detail);document.querySelector('main').append(row);view.attach(row,detail,company);
       }
     });
     await page.waitForFunction(()=>document.querySelector('article .platform-brand-avatar img')?.naturalWidth===156);
     assert.equal(await page.locator('article').last().locator('.platform-brand-title .platform-brand-avatar').innerText(),'FS');
     await page.locator('summary').first().click();
+    const editor=page.locator('article').first().locator('.platform-company-brand');
+    assert.equal(await editor.evaluate(el=>el.nextElementSibling?.classList.contains('platform-company-actions-grid')),true,
+      'logo picker should sit before company management buttons');
+    const picker=editor.locator('.platform-brand-picker');
+    assert.equal(await picker.getByText('اختيار صورة').isVisible(),true);
+    assert.equal(await picker.evaluate(el=>el.getBoundingClientRect().height>=44),true);
+    assert.equal(await editor.locator('.platform-brand-file').evaluate(el=>getComputedStyle(el).opacity),'0');
+    assert.equal(await editor.locator('.platform-brand-editor-preview img').evaluate(el=>el.naturalWidth),156);
     const file=await page.evaluate(()=>window.upload);
     await page.locator('input[type=file]').first().setInputFiles({name:'custom.png',mimeType:'image/png',buffer:Buffer.from(file,'base64')});
-    await page.getByRole('button',{name:'حفظ الشعار'}).first().click();
+    await editor.getByText('custom.png').waitFor();
+    assert.equal(await editor.locator('.platform-brand-save').isEnabled(),true);
+    for(const width of [320,360,390,430]){
+      await page.setViewportSize({width,height:780});
+      const metrics=await editor.evaluate(el=>{
+        const rect=el.getBoundingClientRect();
+        return {left:rect.left,right:rect.right,screen:document.documentElement.scrollWidth,
+          controls:[...el.querySelectorAll('.platform-brand-picker,.platform-brand-save')].map(item=>{
+            const r=item.getBoundingClientRect();return {left:r.left,right:r.right,height:r.height};
+          })};
+      });
+      assert(metrics.screen<=width+1,JSON.stringify(metrics));
+      assert(metrics.left>=-1&&metrics.right<=width+1,JSON.stringify(metrics));
+      assert(metrics.controls.every(c=>c.left>=-1&&c.right<=width+1&&c.height>=44),JSON.stringify(metrics));
+    }
+    await editor.getByRole('button',{name:'حفظ الشعار'}).click();
     await page.getByText('تم حفظ الشعار').waitFor();
     assert.equal(await page.evaluate(()=>window.saved[0].revision),5);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
