@@ -134,9 +134,11 @@
     const data=await request('call.events',{callId:id,after:cursor});
     if(!live||current?.id!==id)return;
     if(!['ringing','active'].includes(data.status)){closeLocal();return;}
-    if(current.status==='ringing'&&data.status==='active'){
+    if(data.status==='active'){
      current.status='active';
-     if(current.direction==='outgoing'&&!connecting){
+     // A slower room-list refresh may already have marked this accepted.
+     // Negotiation must still start once even after that state transition.
+     if(current.direction==='outgoing'&&!connection&&!connecting){
       connecting=true;
       try{
        const pc=await rtc();if(current?.id!==id)return;
