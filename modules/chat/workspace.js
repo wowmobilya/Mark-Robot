@@ -511,7 +511,8 @@
         device.onstop=()=>{
           for(const track of stream.getTracks())track.stop();
           if(recording===rec){clearInterval(rec.clock);clearTimeout(rec.timeout);recording=null;drawComposer();}
-          if(!rec.accept||rec.finishToken!==recordRequest||rec.oversize||!roomNow(id)||scope!==generation||!rec.parts.length||attached||!edit())return;
+          if(!rec.accept||rec.finishToken!==recordRequest||rec.oversize||!roomNow(id)||scope!==generation||attached||!edit())return;
+          if(!rec.parts.length){status.textContent=t('captureFailed');return;}
           const type=(device.mimeType||mime||rec.parts[0].type).split(';')[0];
           if(!type.startsWith(kind+'/')){status.textContent=t('captureFailed');return;}
           const extension=type.includes('mp4')?(isVideo?'mp4':'m4a'):type.includes('ogg')?'ogg':'webm';
