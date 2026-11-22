@@ -40,6 +40,8 @@ const base=path.resolve(__dirname,'..');
       await dialog.locator('select').last().selectOption('notice');
       await dialog.locator('.btn-p').click();
       await dialog.waitFor({state:'detached'});
+      assert.ok(await page.locator('.wf-prayer-remaining').innerText());
+      assert.ok(await page.locator('.wf-prayer-progress').isVisible());
       await page.clock.fastForward(30000);await page.locator('.wf-prayer-notice:not([hidden])').waitFor();
       await page.evaluate(()=>{window.testActor='other';window.dispatchEvent(new Event('wf-account-access-change'));});
       assert.equal(await page.locator('.wf-prayer-notice').isHidden(),true);

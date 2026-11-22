@@ -5,6 +5,7 @@
   const langs=['ar','en','tr','fr','ru'];
   const copy={
     title:['مواقيت الصلاة','Prayer times','Namaz vakitleri','Horaires de prière','Время молитвы'],
+    remaining:['الوقت المتبقي','Time remaining','Kalan süre','Temps restant','Осталось'],
     next:['الصلاة القادمة','Next prayer','Sonraki namaz','Prochaine prière','Следующая молитва'],
     names:[['الفجر','الظهر','العصر','المغرب','العشاء'],['Fajr','Dhuhr','Asr','Maghrib','Isha'],['İmsak','Öğle','İkindi','Akşam','Yatsı'],['Fajr','Dhuhr','Asr','Maghrib','Isha'],['Фаджр','Зухр','Аср','Магриб','Иша']],
     open:['المواقيت والإعدادات','Times and settings','Vakitler ve ayarlar','Horaires et réglages','Расписание и настройки'],
@@ -63,7 +64,9 @@
   const title=el('strong');title.id='wfPrayerTitle';
   const line=el('span'),next=el('b'),open=el('button');open.type='button';open.className='btn';
   const heading=el('div');heading.className='wf-prayer-heading';heading.append(mark,title);
-  face.append(heading,line,next,open);track.append(face);
+  const remaining=el('small'),progress=el('progress');remaining.className='wf-prayer-remaining';
+  progress.max=1;progress.className='wf-prayer-progress';progress.setAttribute('aria-hidden','true');
+  face.append(heading,line,next,remaining,progress,open);track.append(face);
   const audio=new Audio();audio.preload='none';
   const audioPath='https://upload.wikimedia.org/wikipedia/commons/a/a7/Adhan%2C_Great_Mosque_of_Mecca_-_Jan_21%2C_2013.webm';
   const recordSource='https://commons.wikimedia.org/wiki/File:Adhan,_Great_Mosque_of_Mecca_-_Jan_21,_2013.webm';
@@ -85,7 +88,7 @@
     });
   }
   const notice=el('aside');notice.className='wf-prayer-notice';notice.setAttribute('role','status');notice.hidden=true;doc.body.append(notice);
-  let config=null,scope='',cache=null,cacheMinute=-1,modal=null,lastEvent='',noticeTimer;
+  let config=null,scope='',cache=null,cacheDay='',modal=null,lastEvent='',noticeTimer;
   const storeId=()=>{if(doc.documentElement.dataset.wfAccountState==='locked')return '';
     const account=root.WFAccountAccess?.actor?.(),cloud=root.WFCloud?.getSnapshot?.();
     return account?.id?'wf.prayer.v1.'+JSON.stringify([cloud?.workspaceId||'',account.id]):'';};
@@ -145,13 +148,24 @@
   }
   function render(){
     title.textContent=t('title');open.textContent=t('open');open.disabled=!scope;
-    line.textContent=config?t('next'):t('setup');next.textContent='';
+    line.textContent=config?t('next'):t('setup');next.textContent='';remaining.textContent='';progress.hidden=true;
     if(!config)return;
-    const now=Date.now(),minute=Math.floor(now/60000);
+    const now=Date.now();
     try{
-      if(!cache||cacheMinute!==minute){cache=calculate(config,new Date(now),root.adhan,root.tzlookup);cacheMinute=minute;}
+      const zone=cache?.zone||root.tzlookup(config.lat,config.lon);
+      const day=new Intl.DateTimeFormat('en-CA',{timeZone:zone}).format(now);
+      if(!cache||cacheDay!==day){cache=calculate(config,new Date(now),root.adhan,root.tzlookup);cacheDay=day;}
       const upcoming=cache.rows.find(r=>r.at>now);
       next.textContent=upcoming?name(upcoming.key)+' · '+fmt(upcoming.at,cache.zone):t('missing');
+      if(upcoming){
+        const minutes=Math.ceil((upcoming.at-now)/60000),locale=langs[lang()];
+        const unit=(n,u)=>new Intl.NumberFormat(locale,{style:'unit',unit:u,unitDisplay:'short'}).format(n);
+        const parts=[];if(minutes>=60)parts.push(unit(Math.floor(minutes/60),'hour'));
+        if(minutes%60)parts.push(unit(minutes%60,'minute'));
+        remaining.textContent=t('remaining')+' · '+parts.join(' ');
+        const previous=cache.rows[cache.rows.indexOf(upcoming)-1];
+        if(previous){progress.value=(now-previous.at)/(upcoming.at-previous.at);progress.hidden=false;}
+      }
       const due=cache.rows.find(r=>now>=r.at&&now-r.at<60000);
       if(due&&config.mode!=='off'&&storeId()===scope)alertPrayer(due);
     }catch{cache=null;next.textContent=t('missing');}
