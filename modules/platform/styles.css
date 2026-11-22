@@ -11,3 +11,60 @@
  .wf-module-page table{font-variant-numeric:tabular-nums}
  .wf-module-page [hidden]{display:none!important}
 }
+
+/* Release 219: unified phone presentation for the imported WOW workspaces.
+   All existing module permissions, records and synchronization APIs are retained. */
+@media screen{
+.wf-module-page{--wf-module-panel:var(--card,var(--bg2));--wf-module-line:var(--border,var(--bdr))}
+.wf-module-page>.wf-module-statusbar{
+ display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-inline-size:0;
+ padding:0;margin-block:0 12px;line-height:1.4;
+}
+.wf-module-page>.wf-module-statusbar:empty{display:none}
+.wf-module-page .wf-module-sync-trigger{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ max-inline-size:100%;inline-size:auto;min-block-size:38px;padding:6px 12px;
+ border:1px solid var(--wf-module-line);border-radius:999px;
+ background:var(--wf-module-panel);color:var(--brand-primary,var(--text));
+ font:inherit;font-size:.84rem;font-weight:650;box-shadow:none;white-space:normal;
+ text-align:center;line-height:1.4;cursor:pointer;overflow-wrap:anywhere;
+}
+.wf-module-page .wf-module-sync-trigger::before{
+ content:"";inline-size:8px;block-size:8px;flex:0 0 8px;
+ border-radius:50%;background:currentColor;opacity:.7;
+}
+.wf-module-page .wf-ops-body{inline-size:100%;min-inline-size:0;align-content:start}
+.wf-module-page .wf-ops-body>:is(.wfg-workspace,.wf-files,.wf-chat,.wf-fin,.wf-mail,.wf-server,.wf-assistant){
+ max-inline-size:100%;min-inline-size:0;box-sizing:border-box;line-height:1.55;
+}
+.wf-module-page .wf-ops-body :is(.wfg-workspace,.wf-files,.wf-chat,.wf-fin,.wf-mail,.wf-server,.wf-assistant) :is(h2,h3,h4,p,span,small,dd){
+ overflow-wrap:anywhere;letter-spacing:normal;
+}
+.wf-module-page :is(.wf-files-tools,.wf-mail-filters,.wf-fin-grid,.wf-ai-fields,.wf-mail-actions,.wf-files-actions,.wf-fin-actions){
+ min-inline-size:0;max-inline-size:100%;
+}
+.wf-module-page :is(.wf-chat,.wf-files,.wf-mail,.wf-fin,.wf-assistant) :is(input:not([type="checkbox"]),select,textarea){
+ box-sizing:border-box;max-inline-size:100%;min-inline-size:0;min-block-size:44px;
+ font-size:16px;color:var(--text);background:var(--input,var(--card));
+}
+.wf-module-page :is(.wf-mail-card,.wf-file-entry,.wf-fin-secondary,.wf-server-panel,.wf-ai-card){
+ box-sizing:border-box;min-inline-size:0;max-inline-size:100%;
+}
+.wf-module-page :is(.wf-fin-dialog,.wf-collab-dialog,.wf-mail-dialog,.wfg-dialog){
+ color:var(--text);max-inline-size:calc(100vw - 16px);overscroll-behavior:contain;
+}
+@media(max-width:680px){
+ .wf-module-page>.wf-module-statusbar{margin-block:0 10px}
+ .wf-module-page .wf-module-sync-trigger{min-block-size:36px;font-size:.78rem}
+ .wf-module-page .wf-ops-body{gap:12px}
+ .wf-module-page :is(.wf-fin-tabs,.wf-ai-modes,.wf-chat-chips){max-inline-size:100%;scrollbar-width:thin}
+ .wf-module-page .wf-fin-actions>.btn,.wf-module-page .wf-mail-actions>.wf-mail-button{
+  flex:1 1 auto;max-inline-size:100%;
+ }
+ .wf-module-page .wf-server-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(any-pointer:coarse){
+ .wf-module-page :is(.wfg-button,.wf-mail-button,.wf-collab-primary,.wf-module-sync-trigger){min-block-size:44px}
+}
+@media(prefers-reduced-motion:reduce){.wf-module-page .wf-module-sync-trigger{transition:none}}
+}
