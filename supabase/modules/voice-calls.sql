@@ -1,168 +1,232 @@
--- Mark Robot private one-to-one voice signaling. No recorded audio or legacy history changes.
+-- WOW Mark Robot: audio/video calls isolated from all existing text chat tables.
+-- Private Supabase Realtime Broadcast/Presence carries only ephemeral signaling.
+-- This migration is additive to the live production schema (the earlier PR219
+-- draft is not in main); keep an offline backup before applying.
 begin;
 create schema if not exists wow_voice;
-revoke all on schema wow_voice from public, anon, authenticated;
+revoke all on schema wow_voice from public,anon,authenticated;
 create table if not exists wow_voice.calls (
  id uuid primary key default gen_random_uuid(),
  workspace_id uuid not null references public.wow_workspaces(id),
  room_id uuid not null references wow_collab.rooms(id),
  caller_id uuid not null references public.wow_accounts(id),
- callee_id uuid not null references public.wow_accounts(id),
- status text not null default 'ringing' check(status in ('ringing','active','declined','ended','missed')),
+ kind text not null check(kind in ('audio','video')),
+ status text not null default 'ringing' check(status in ('ringing','active','completed','missed','declined')),
  created_at timestamptz not null default now(),
- expires_at timestamptz not null default (now()+interval '35 seconds'),
- accepted_at timestamptz, ended_at timestamptz,
- check(caller_id<>callee_id)
+ ring_until timestamptz not null default (now()+interval '40 seconds'),
+ expires_at timestamptz not null default (now()+interval '40 seconds'),
+ started_at timestamptz,
+ ended_at timestamptz
 );
-create index if not exists wow_voice_call_inbox on wow_voice.calls(workspace_id,callee_id,status,created_at desc);
-create index if not exists wow_voice_call_outbox on wow_voice.calls(workspace_id,caller_id,status,created_at desc);
-create table if not exists wow_voice.signals (
- id bigint generated always as identity primary key,
+create table if not exists wow_voice.participants (
  call_id uuid not null references wow_voice.calls(id) on delete cascade,
- sender_id uuid not null references public.wow_accounts(id),
- kind text not null check(kind in ('offer','answer','ice')),
- payload jsonb not null check(jsonb_typeof(payload)='object' and octet_length(payload::text)<=32768),
- created_at timestamptz not null default now()
+ account_id uuid not null references public.wow_accounts(id),
+ status text not null check(status in ('invited','joined','declined','left')),
+ joined_at timestamptz,
+ left_at timestamptz,
+ primary key(call_id,account_id)
 );
-create index if not exists wow_voice_signal_cursor on wow_voice.signals(call_id,id);
+create index if not exists wow_voice_inbox on wow_voice.participants(account_id,status,call_id);
+create index if not exists wow_voice_room_history on wow_voice.calls(room_id,created_at desc);
+create index if not exists wow_voice_expiry on wow_voice.calls(status,expires_at);
 alter table wow_voice.calls enable row level security;
-alter table wow_voice.signals enable row level security;
-revoke all on wow_voice.calls,wow_voice.signals from public,anon,authenticated;
-revoke all on sequence wow_voice.signals_id_seq from public,anon,authenticated;
+alter table wow_voice.participants enable row level security;
+revoke all on wow_voice.calls,wow_voice.participants from public,anon,authenticated;
+-- The functions enforce per-account authorization, never expose base tables.
 
 create or replace function public.wow_voice_service(p_action text,p_data jsonb default '{}'::jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare
- uid uuid; sid uuid; wid uuid; ctx jsonb;
- rid uuid; peer_id uuid; call_id uuid; live_call wow_voice.calls; conversation wow_collab.rooms;
- caller public.wow_accounts; callee public.wow_accounts;
- signal_kind text; signal_payload jsonb; cursor bigint; items jsonb; state text;
+ uid uuid; sid uuid; wid uuid; ctx jsonb; rid uuid; cid uuid; cal wow_voice.calls;
+ requested text; member_role text; role text; n integer; items jsonb; participants jsonb;
 begin
- if jsonb_typeof(p_data)<>'object' or p_action not in ('inbox','start','accept','decline','end','signal','events') then
-  raise exception using message='INVALID_VOICE_REQUEST',errcode='P0001';
+ if jsonb_typeof(p_data)<>'object' or p_action not in
+ ('start','inbox','status','accept','decline','leave','end','heartbeat','connected','history') then
+   raise exception using message='INVALID_VOICE_REQUEST',errcode='P0001';
  end if;
  uid:=(p_data->>'userId')::uuid;sid:=(p_data->>'sessionId')::uuid;
  if uid is null or sid is null then raise exception using message='AUTH_REQUIRED',errcode='P0001';end if;
- ctx:=public.wow_actor(uid,sid,null,false,false);
- wid:=(ctx->>'workspaceId')::uuid;
- if ctx#>>'{account,role}'<>'owner' and
-   not ((ctx#>'{account,permissions}') ? 'chat.view' and (ctx#>'{account,permissions}') ? 'chat.edit') then
-  raise exception using message='ACCESS_DENIED',errcode='P0001';
- end if;
- -- Ringing and active sessions have short, server-enforced lifetimes.
- update wow_voice.calls c set status='missed',ended_at=now()
-  where c.workspace_id=wid and c.status='ringing' and c.expires_at<=now();
- update wow_voice.calls c set status='ended',ended_at=now()
-  where c.workspace_id=wid and c.status='active' and c.expires_at<=now();
- delete from wow_voice.signals s using wow_voice.calls c
-  where s.call_id=c.id and c.workspace_id=wid and
-    (c.status not in ('ringing','active') or s.created_at<now()-interval '2 hours');
+ ctx:=public.wow_actor(uid,sid,null,false,false);wid:=(ctx->>'workspaceId')::uuid;
+ role:=ctx#>>'{account,role}';
+ if role<>'owner' and not ((ctx#>'{account,permissions}') ? 'chat.view'
+  and (ctx#>'{account,permissions}') ? 'chat.edit') then
+   raise exception using message='ACCESS_DENIED',errcode='P0001';end if;
+ -- Server expiration is independent of open browsers and never deletes call history.
+ update wow_voice.calls c set status=case when c.status='ringing' then 'missed'
+  when c.started_at is not null then 'completed' else 'missed' end,ended_at=now()
+ where c.workspace_id=wid and c.status in ('ringing','active') and c.expires_at<=now();
 
  if p_action='start' then
-  rid:=(p_data->>'roomId')::uuid;peer_id:=(p_data->>'targetId')::uuid;
-  if rid is null or peer_id is null or peer_id=uid then raise exception using message='INVALID_VOICE_REQUEST',errcode='P0001';end if;
-  select * into conversation from wow_collab.rooms r where r.id=rid and r.workspace_id=wid and r.active and r.kind='direct';
-  select * into caller from public.wow_accounts a where a.id=uid and a.workspace_id=wid and wow_collab.eligible(a);
-  select * into callee from public.wow_accounts a where a.id=peer_id and a.workspace_id=wid and wow_collab.eligible(a)
-   and (a.role='owner' or 'chat.edit'=any(a.permissions));
-  if conversation.id is null or caller.id is null or callee.id is null or not wow_collab.can_message(caller.role,callee.role)
-   or (select count(*) from wow_collab.members m where m.room_id=rid and m.state='active')<>2
-   or not exists(select from wow_collab.members m where m.room_id=rid and m.account_id=uid and m.state='active')
-   or not exists(select from wow_collab.members m where m.room_id=rid and m.account_id=peer_id and m.state='active')
-   then raise exception using message='ACCESS_DENIED',errcode='P0001';end if;
-  -- Serialize calls within one workspace so simultaneous start cannot double-ring.
-  perform pg_advisory_xact_lock(hashtext('wow-voice:'||wid::text));
-  update wow_voice.calls c set status=case when c.status='ringing' then 'missed' else 'ended' end,ended_at=now()
-   where c.workspace_id=wid and c.status in ('ringing','active') and c.expires_at<=now();
-  if exists(select from wow_voice.calls c where c.workspace_id=wid and c.status in ('ringing','active')
-   and (c.caller_id=any(array[uid,peer_id]) or c.callee_id=any(array[uid,peer_id]))) then
-   raise exception using message='VOICE_BUSY',errcode='P0001';
-  end if;
-  insert into wow_voice.calls(workspace_id,room_id,caller_id,callee_id)
-    values(wid,rid,uid,peer_id) returning * into live_call;
-  return jsonb_build_object('id',live_call.id,'roomId',live_call.room_id,'peerId',live_call.callee_id,
-   'status',live_call.status,'direction','outgoing','expiresAt',live_call.expires_at);
+   rid:=(p_data->>'roomId')::uuid;requested:=p_data->>'kind';
+   if rid is null or requested not in ('audio','video') then
+     raise exception using message='INVALID_VOICE_REQUEST',errcode='P0001';end if;
+   select r.kind,m.role into requested,member_role
+   from wow_collab.rooms r join wow_collab.members m on m.room_id=r.id and m.account_id=uid and m.state='active'
+   where r.id=rid and r.workspace_id=wid and r.active and r.kind in ('direct','group')
+     and wow_collab.room_allowed(uid,role,r);
+   if requested is null or (requested='group' and role='customer') then
+     raise exception using message='ACCESS_DENIED',errcode='P0001';end if;
+   -- Only all currently eligible chat members may be invited; limit mesh calls.
+   select count(*) into n from wow_collab.members m join public.wow_accounts a on a.id=m.account_id
+    where m.room_id=rid and m.state='active' and wow_collab.eligible(a)
+      and (a.role='owner' or ('chat.view'=any(a.permissions) and 'chat.edit'=any(a.permissions)));
+   if n<2 or n>4 or (requested='direct' and n<>2) or
+     exists(select from wow_collab.members m join public.wow_accounts a on a.id=m.account_id
+      where m.room_id=rid and m.state='active' and (not wow_collab.eligible(a) or
+       (a.role<>'owner' and not ('chat.view'=any(a.permissions) and 'chat.edit'=any(a.permissions)))))
+     then raise exception using message='VOICE_PARTICIPANTS_UNAVAILABLE',errcode='P0001';end if;
+   perform pg_advisory_xact_lock(hashtext('wow-voice:'||wid::text));
+   if exists(select from wow_voice.calls c join wow_voice.participants p on p.call_id=c.id
+      where c.workspace_id=wid and c.status in ('ringing','active') and p.status in ('invited','joined') and p.account_id in
+        (select m.account_id from wow_collab.members m where m.room_id=rid and m.state='active'))
+     then raise exception using message='VOICE_BUSY',errcode='P0001';end if;
+   insert into wow_voice.calls(workspace_id,room_id,caller_id,kind)
+    values(wid,rid,uid,p_data->>'kind') returning * into cal;
+   insert into wow_voice.participants(call_id,account_id,status,joined_at)
+    select cal.id,m.account_id,case when m.account_id=uid then 'joined' else 'invited' end,
+      case when m.account_id=uid then now() end
+    from wow_collab.members m where m.room_id=rid and m.state='active';
+   cid:=cal.id;
+ elsif p_action='inbox' then
+   select coalesce(jsonb_agg(v.item order by v.created_at desc),'[]') into items from (
+     select c.created_at,jsonb_build_object('id',c.id,'roomId',c.room_id,'kind',c.kind,'status',c.status,
+      'callerId',c.caller_id,'callerName',a.name,'participantStatus',p.status,'expiresAt',c.expires_at) item
+     from wow_voice.calls c join wow_voice.participants p on p.call_id=c.id
+     join public.wow_accounts a on a.id=c.caller_id
+     join wow_collab.rooms r on r.id=c.room_id and r.active and r.workspace_id=wid
+     join wow_collab.members m on m.room_id=r.id and m.account_id=uid and m.state='active'
+     where c.workspace_id=wid and p.account_id=uid and p.status in ('invited','joined')
+      and c.status in ('ringing','active') and wow_collab.room_allowed(uid,role,r)
+     order by c.created_at desc limit 4
+   ) v;
+   return jsonb_build_object('calls',items);
+ elsif p_action='history' then
+   rid:=(p_data->>'roomId')::uuid;
+   if not exists(select from wow_collab.rooms r join wow_collab.members m
+    on m.room_id=r.id and m.account_id=uid and m.state='active'
+    where r.id=rid and r.workspace_id=wid and r.active and wow_collab.room_allowed(uid,role,r))
+    then raise exception using message='ACCESS_DENIED',errcode='P0001';end if;
+   select coalesce(jsonb_agg(j.item order by j.created_at),'[]') into items from (
+    select c.created_at,jsonb_build_object('id',c.id,'roomId',c.room_id,'kind',c.kind,
+     'status',c.status,'callerId',c.caller_id,'startedAt',c.started_at,'endedAt',c.ended_at,
+     'createdAt',c.created_at,'durationSeconds',case when c.started_at is not null
+       then greatest(0,extract(epoch from coalesce(c.ended_at,now())-c.started_at)::int) else 0 end) item
+    from wow_voice.calls c join wow_voice.participants p on p.call_id=c.id and p.account_id=uid
+    where c.room_id=rid and c.workspace_id=wid and c.status not in ('ringing','active')
+    order by c.created_at desc limit 30
+   ) j;
+   return jsonb_build_object('history',items);
  end if;
 
- if p_action='inbox' then
-  select coalesce(jsonb_agg(q.value order by q.created_at desc),'[]') into items from (
-   select c.created_at, jsonb_build_object('id',c.id,'roomId',c.room_id,
-    'peerId',case when c.caller_id=uid then c.callee_id else c.caller_id end,
-    'peerName',peer.name,'direction',case when c.caller_id=uid then 'outgoing' else 'incoming' end,
-    'status',c.status,'expiresAt',c.expires_at) value
-   from wow_voice.calls c
-   join wow_collab.rooms r on r.id=c.room_id and r.active and r.kind='direct' and r.workspace_id=wid
-   join wow_collab.members mine on mine.room_id=r.id and mine.account_id=uid and mine.state='active'
-   join wow_collab.members other on other.room_id=r.id and other.account_id<>uid and other.state='active'
-   join public.wow_accounts peer on peer.id=other.account_id and peer.workspace_id=wid and wow_collab.eligible(peer)
-   where c.workspace_id=wid and uid in (c.caller_id,c.callee_id) and c.status in ('ringing','active')
-    and wow_collab.room_allowed(uid,ctx#>>'{account,role}',r)
-   order by c.created_at desc limit 3
-  ) q;
-  return jsonb_build_object('calls',items);
- end if;
-
- call_id:=(p_data->>'callId')::uuid;
- if call_id is null then raise exception using message='INVALID_VOICE_REQUEST',errcode='P0001';end if;
- select * into live_call from wow_voice.calls c where c.id=call_id and c.workspace_id=wid and uid in(c.caller_id,c.callee_id) for update;
- if live_call.id is null then raise exception using message='ACCESS_DENIED',errcode='P0001';end if;
- select * into conversation from wow_collab.rooms r where r.id=live_call.room_id and r.workspace_id=wid and r.active and r.kind='direct';
- select * into caller from public.wow_accounts a where a.id=live_call.caller_id and a.workspace_id=wid and wow_collab.eligible(a);
- select * into callee from public.wow_accounts a where a.id=live_call.callee_id and a.workspace_id=wid and wow_collab.eligible(a);
- if conversation.id is null or caller.id is null or callee.id is null or not wow_collab.can_message(caller.role,callee.role)
-  or not exists(select from wow_collab.members m where m.room_id=conversation.id and m.account_id=caller.id and m.state='active')
-  or not exists(select from wow_collab.members m where m.room_id=conversation.id and m.account_id=callee.id and m.state='active')
-  or not wow_collab.room_allowed(uid,ctx#>>'{account,role}',conversation)
+ -- Every call action re-checks both the signed-in member and the current room.
+ cid:=coalesce(cid,(p_data->>'callId')::uuid);
+ if cid is null then raise exception using message='INVALID_VOICE_REQUEST',errcode='P0001';end if;
+ select * into cal from wow_voice.calls c
+   where c.id=cid and c.workspace_id=wid and exists
+     (select from wow_voice.participants p where p.call_id=c.id and p.account_id=uid)
+   for update;
+ if cal.id is null or not exists(
+    select from wow_collab.rooms r join wow_collab.members m on m.room_id=r.id
+    where r.id=cal.room_id and r.active and r.workspace_id=wid
+      and m.account_id=uid and m.state='active' and wow_collab.room_allowed(uid,role,r))
   then raise exception using message='ACCESS_DENIED',errcode='P0001';end if;
- if p_action='accept' then
-  if uid<>live_call.callee_id or live_call.status<>'ringing' then raise exception using message='VOICE_CALL_UNAVAILABLE',errcode='P0001';end if;
-  update wow_voice.calls set status='active',accepted_at=now(),expires_at=least(created_at+interval '2 hours',now()+interval '90 seconds')
-   where id=call_id returning * into live_call;
- elsif p_action='decline' then
-  if uid<>live_call.callee_id or live_call.status<>'ringing' then raise exception using message='VOICE_CALL_UNAVAILABLE',errcode='P0001';end if;
-  update wow_voice.calls set status='declined',ended_at=now() where id=call_id returning * into live_call;
- elsif p_action='end' then
-  if live_call.status in ('ringing','active') then
-   update wow_voice.calls set status='ended',ended_at=now() where id=call_id returning * into live_call;
-  end if;
- elsif p_action='signal' then
-  signal_kind:=p_data->>'kind';signal_payload:=p_data->'payload';
-  if live_call.status<>'active' or signal_kind not in ('offer','answer','ice') or
-   jsonb_typeof(signal_payload)<>'object' or octet_length(signal_payload::text)>32768 or
-   (signal_kind='offer' and uid<>live_call.caller_id) or
-   (signal_kind='answer' and uid<>live_call.callee_id) then
-   raise exception using message='INVALID_VOICE_SIGNAL',errcode='P0001';
-  end if;
-  if signal_kind in ('offer','answer') then
-   if signal_payload->>'type'<>signal_kind or length(coalesce(signal_payload->>'sdp','')) not between 1 and 24000 then
-    raise exception using message='INVALID_VOICE_SIGNAL',errcode='P0001';end if;
-   if exists(select from wow_voice.signals s where s.call_id=call_id and s.sender_id=uid and s.kind=signal_kind) then
-    raise exception using message='VOICE_SIGNAL_DUPLICATE',errcode='P0001';end if;
-  else
-   if length(coalesce(signal_payload->>'candidate','')) not between 1 and 2048
-    or jsonb_typeof(signal_payload->'sdpMLineIndex') not in ('number','null') and signal_payload ? 'sdpMLineIndex'
-    then raise exception using message='INVALID_VOICE_SIGNAL',errcode='P0001';end if;
-  end if;
-  if (select count(*) from wow_voice.signals where call_id=live_call.id)>=256 then
-    raise exception using message='RATE_LIMITED',errcode='P0001';end if;
-  insert into wow_voice.signals(call_id,sender_id,kind,payload) values(call_id,uid,signal_kind,signal_payload);
- elsif p_action='events' then
-  cursor:=coalesce((p_data->>'after')::bigint,0);
-  if cursor<0 then raise exception using message='INVALID_VOICE_REQUEST',errcode='P0001';end if;
-  if live_call.status='active' then
-   update wow_voice.calls set expires_at=least(created_at+interval '2 hours',now()+interval '90 seconds') where id=call_id returning * into live_call;
-  end if;
-  select coalesce(jsonb_agg(x.data order by x.id),'[]') into items from (
-   select s.id,jsonb_build_object('id',s.id::text,'kind',s.kind,'payload',s.payload) data
-   from wow_voice.signals s where s.call_id=call_id and s.sender_id<>uid and s.id>cursor order by s.id limit 80
-  ) x;
-  return jsonb_build_object('id',call_id,'status',live_call.status,'signals',items,'expiresAt',live_call.expires_at);
- else
-  raise exception using message='INVALID_VOICE_REQUEST',errcode='P0001';
+ if p_action in ('accept','decline') then
+   if not exists(select from wow_voice.participants p where p.call_id=cid and p.account_id=uid and p.status='invited')
+      or cal.status not in ('ringing','active') or cal.ring_until<=now() then
+     raise exception using message='VOICE_CALL_UNAVAILABLE',errcode='P0001';end if;
+   update wow_voice.participants p set status=case when p_action='accept' then 'joined' else 'declined' end,
+     joined_at=case when p_action='accept' then now() else p.joined_at end,
+     left_at=case when p_action='decline' then now() else p.left_at end
+     where p.call_id=cid and p.account_id=uid;
+   if p_action='accept' then
+     update wow_voice.calls c set status='active',expires_at=least(c.created_at+interval '2 hours',now()+interval '50 seconds')
+       where c.id=cid;
+   end if;
+ elsif p_action in ('end','leave') then
+   if p_action='end' and uid=cal.caller_id then
+      update wow_voice.participants p set status='left',left_at=now()
+       where p.call_id=cid and p.status in ('invited','joined');
+   else
+      update wow_voice.participants p set status='left',left_at=now() where p.call_id=cid and p.account_id=uid and p.status in ('invited','joined');
+   end if;
+ elsif p_action='connected' then
+   if cal.status<>'active' or not exists(
+     select from wow_voice.participants p where p.call_id=cid and p.account_id=uid and p.status='joined')
+     then raise exception using message='VOICE_CALL_UNAVAILABLE',errcode='P0001';end if;
+   update wow_voice.calls c set started_at=coalesce(c.started_at,now()) where c.id=cid;
+ elsif p_action='heartbeat' then
+   if cal.status<>'active' or not exists(select from wow_voice.participants p where p.call_id=cid and p.account_id=uid and p.status='joined')
+     then raise exception using message='VOICE_CALL_UNAVAILABLE',errcode='P0001';end if;
+   update wow_voice.calls c set expires_at=least(c.created_at+interval '2 hours',now()+interval '50 seconds') where c.id=cid;
+ elsif p_action<>'start' and p_action<>'status' then
+   raise exception using message='INVALID_VOICE_REQUEST',errcode='P0001';
  end if;
- if live_call.status not in ('ringing','active') then delete from wow_voice.signals where call_id=call_id;end if;
- return jsonb_build_object('id',call_id,'status',live_call.status,'expiresAt',live_call.expires_at);
+ -- Never keep a call active without at least two accepted participants, or after
+ -- all invitations have been rejected. A participant can always hang up.
+ if p_action in ('decline','end','leave') then
+   if (select count(*) from wow_voice.participants p where p.call_id=cid and p.status='joined')<2
+     and not exists(select from wow_voice.participants p where p.call_id=cid and p.status='invited') then
+      update wow_voice.calls c set status=case when c.started_at is not null then 'completed'
+       when p_action='decline' then 'declined' else 'missed' end,ended_at=now() where c.id=cid and c.status in ('ringing','active');
+   elsif p_action='end' and uid=cal.caller_id then
+      update wow_voice.calls c set status=case when c.started_at is not null then 'completed' else 'missed' end,ended_at=now()
+       where c.id=cid and c.status in ('ringing','active');
+   end if;
+ end if;
+ select * into cal from wow_voice.calls c where c.id=cid;
+ select coalesce(jsonb_agg(jsonb_build_object('id',p.account_id,'name',a.name,'status',p.status)
+   order by p.joined_at nulls last,a.name),'[]') into participants
+   from wow_voice.participants p join public.wow_accounts a on a.id=p.account_id where p.call_id=cid;
+ return jsonb_build_object('id',cal.id,'roomId',cal.room_id,'callerId',cal.caller_id,'kind',cal.kind,
+   'status',cal.status,'createdAt',cal.created_at,'startedAt',cal.started_at,'endedAt',cal.ended_at,
+   'expiresAt',cal.expires_at,'participants',participants);
 end $$;
 revoke all on function public.wow_voice_service(text,jsonb) from public,anon,authenticated;
 grant execute on function public.wow_voice_service(text,jsonb) to service_role;
+
+-- RLS authorization for private Broadcast and Presence.
+-- These policies authorize the LIVE JWT user/session, never a client-supplied ID
+-- or mutable user_metadata. They do not open any other Realtime topic.
+create or replace function public.wow_call_realtime_allowed()
+returns boolean language plpgsql stable security definer set search_path='' as $$
+declare
+ user_id uuid:=(select auth.uid()); token jsonb:=(select auth.jwt());
+ session_id uuid; current_topic text:=realtime.topic(); room_id uuid; call_id uuid;
+begin
+ if user_id is null or token->>'session_id' is null or
+   (current_topic !~ '^wow-call-room:[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$'
+    and current_topic !~ '^wow-call:[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
+   then return false;end if;
+ session_id:=(token->>'session_id')::uuid;
+ if not exists(select from public.wow_accounts a
+  join public.wow_workspaces w on w.id=a.workspace_id and w.status='active'
+  join public.wow_sessions s on s.account_id=a.id and s.session_id=session_id and s.closed_at is null and s.session_version=a.session_version
+  join auth.sessions z on z.id=session_id and z.user_id=a.id and (z.not_after is null or z.not_after>now())
+  where a.id=user_id and a.status='active' and a.deleted_at is null
+   and (a.expires_at is null or a.expires_at>now())
+   and (a.role='owner' or ('chat.view'=any(a.permissions) and 'chat.edit'=any(a.permissions))))
+   then return false;end if;
+ if left(current_topic,14)='wow-call-room:' then
+   room_id:=substring(current_topic from 15)::uuid;
+   return exists(select from wow_collab.rooms r
+     join wow_collab.members m on m.room_id=r.id and m.account_id=user_id and m.state='active'
+     join public.wow_accounts a on a.id=user_id and a.workspace_id=r.workspace_id
+     where r.id=room_id and r.active and wow_collab.room_allowed(user_id,a.role,r));
+ end if;
+ call_id:=substring(current_topic from 10)::uuid;
+ return exists(select from wow_voice.calls c
+   join wow_voice.participants p on p.call_id=c.id and p.account_id=user_id and p.status='joined'
+   join wow_collab.rooms r on r.id=c.room_id and r.active
+   join wow_collab.members m on m.room_id=r.id and m.account_id=user_id and m.state='active'
+   join public.wow_accounts a on a.id=user_id and a.workspace_id=c.workspace_id
+   where c.id=call_id and c.status='active' and c.expires_at>now()
+    and wow_collab.room_allowed(user_id,a.role,r));
+exception when invalid_text_representation then return false;
+end $$;
+revoke all on function public.wow_call_realtime_allowed() from public,anon;
+grant execute on function public.wow_call_realtime_allowed() to authenticated;
+create policy "wow call Realtime receive" on realtime.messages for select to authenticated
+ using (extension in ('broadcast','presence') and (select public.wow_call_realtime_allowed()));
+create policy "wow call Realtime send" on realtime.messages for insert to authenticated
+ with check (extension in ('broadcast','presence') and (select public.wow_call_realtime_allowed()));
 commit;
