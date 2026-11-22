@@ -155,8 +155,17 @@ begin
      denomination=p_data->>'currency';
    end if;
    if p_data?'voiceMinutes' then
-     if jsonb_typeof(p_data->'voiceMinutes') not in ('number','null') or
-       (p_data->>'voiceMinutes') is not null and (p_data->>'voiceMinutes') !~ '^[0-9]{1,6} or days not between 1 and 36500 or denomination !~ '^[A-Z]{3}$'
+     if jsonb_typeof(p_data->'voiceMinutes') not in ('number','null')
+       or (p_data->>'voiceMinutes') is not null and (p_data->>'voiceMinutes') !~ '^[0-9]{1,6}$' then raise exception 'INVALID_LIMITS';end if;
+     audio_cap=(p_data->>'voiceMinutes')::integer;
+   end if;
+   if p_data?'videoMinutes' then
+     if jsonb_typeof(p_data->'videoMinutes') not in ('number','null')
+       or (p_data->>'videoMinutes') is not null and (p_data->>'videoMinutes') !~ '^[0-9]{1,6}$' then raise exception 'INVALID_LIMITS';end if;
+     video_cap=(p_data->>'videoMinutes')::integer;
+   end if;
+   if audio_cap not between 0 and 100000 or video_cap not between 0 and 100000 then raise exception 'INVALID_LIMITS';end if;
+   if seats not between 0 and 1000000 or days not between 1 and 36500 or denomination !~ '^[A-Z]{3}$'
       or (amount is null)<>(denomination is null) then raise exception 'INVALID_LIMITS';end if;
    if plan.id is not null and (plan.name,plan.device_limit,plan.storage_bytes,plan.user_limit,plan.price,plan.currency,plan.duration_days,plan.voice_minutes,plan.video_minutes)
       is not distinct from (label,device_max,byte_max,seats,amount,denomination,days,audio_cap,video_cap)
@@ -182,7 +191,14 @@ begin
    if not (p_data ?& array['planId','expiresAt']) then raise exception 'INVALID_LIMITS';end if;
    pid=(p_data->>'planId')::uuid;expiry=(p_data->>'expiresAt')::timestamptz;
    if p_data?'extraDevices' then
-     if jsonb_typeof(p_data->'extraDevices')<>'number' or (p_data->>'extraDevices') !~ '^[0-9]{1,3}
+     if jsonb_typeof(p_data->'extraDevices')<>'number' or (p_data->>'extraDevices') !~ '^[0-9]{1,3}$' then raise exception 'INVALID_LIMITS';end if;
+     extra_count=(p_data->>'extraDevices')::integer;
+   end if;
+   if p_data?'doubleBundle' then
+     if jsonb_typeof(p_data->'doubleBundle')<>'boolean' then raise exception 'INVALID_LIMITS';end if;
+     double_it=(p_data->>'doubleBundle')::boolean;
+   end if;
+   if extra_count not between 0 and 100 or pid is null and (extra_count>0 or double_it) then raise exception 'INVALID_LIMITS';end if;
    if expiry is not null and (not isfinite(expiry) or pid is null) then raise exception 'INVALID_LIMITS';end if;
    if pid is not null and not exists(select from wow_limits.plans where id=pid) then raise exception 'PLAN_NOT_FOUND';end if;
    if (sub.plan_id,sub.expires_at,old_extra,old_double) is distinct from (pid,expiry,extra_count,double_it) then
@@ -206,199 +222,6 @@ begin
    'effectiveVideoMinutes',case when plan.video_minutes is null then null else plan.video_minutes*(case when coalesce(sub.double_bundle,false) then 2 else 1 end) end,
    'usedVoiceMinutes',wow_limits.minutes_used(wid,'audio'),'usedVideoMinutes',wow_limits.minutes_used(wid,'video'),
    'addOnMonthlyUSD',coalesce(sub.extra_devices,0)*10+case when coalesce(sub.double_bundle,false) then 20 else 0 end);
-exception when unique_violation then raise exception 'PLAN_NAME_EXISTS';
- when invalid_text_representation or numeric_value_out_of_range or datetime_field_overflow or invalid_datetime_format then raise exception 'INVALID_LIMITS';
-end $$; then raise exception 'INVALID_LIMITS';end if;
-     audio_cap=(p_data->>'voiceMinutes')::integer;
-   end if;
-   if p_data?'videoMinutes' then
-     if jsonb_typeof(p_data->'videoMinutes') not in ('number','null') or
-       (p_data->>'videoMinutes') is not null and (p_data->>'videoMinutes') !~ '^[0-9]{1,6} or days not between 1 and 36500 or denomination !~ '^[A-Z]{3}$'
-      or (amount is null)<>(denomination is null) then raise exception 'INVALID_LIMITS';end if;
-   if plan.id is not null and (plan.name,plan.device_limit,plan.storage_bytes,plan.user_limit,plan.price,plan.currency,plan.duration_days)
-      is not distinct from (label,device_max,byte_max,seats,amount,denomination,days)
-      and expected in (plan.version,plan.version-1) then return jsonb_build_object('plan',wow_limits.plan_json(plan));end if;
-   if expected<>coalesce(plan.version,0) then raise exception 'CONFLICT';end if;
-   insert into wow_limits.plans(id,name,device_limit,storage_bytes,user_limit,price,currency,duration_days,updated_by) values(pid,label,device_max,byte_max,seats,amount,denomination,days,p_user)
-    on conflict(id) do update set name=excluded.name,device_limit=excluded.device_limit,storage_bytes=excluded.storage_bytes,
-      user_limit=excluded.user_limit,price=excluded.price,currency=excluded.currency,duration_days=excluded.duration_days,version=wow_limits.plans.version+1,updated_by=p_user
-    returning * into plan;
-   return jsonb_build_object('plan',wow_limits.plan_json(plan));
- end if;
- wid=(p_data->>'workspaceId')::uuid;
- if p_action='platform.limits.set' then
-   perform 1 from public.wow_workspaces where id=wid for no key update;
- else
-   perform 1 from public.wow_workspaces where id=wid;
- end if;
- if not found then raise exception 'COMPANY_NOT_FOUND';end if;
- select * into sub from wow_limits.subscriptions where workspace_id=wid;
- if p_action='platform.limits.set' then
-   if not (p_data ?& array['planId','expiresAt']) then raise exception 'INVALID_LIMITS';end if;
-   pid=(p_data->>'planId')::uuid;expiry=(p_data->>'expiresAt')::timestamptz;
-   if expiry is not null and (not isfinite(expiry) or pid is null) then raise exception 'INVALID_LIMITS';end if;
-   if pid is not null and not exists(select from wow_limits.plans where id=pid) then raise exception 'PLAN_NOT_FOUND';end if;
-   if (sub.plan_id,sub.expires_at) is distinct from (pid,expiry) then
-     if expected<>coalesce(sub.version,0) then raise exception 'CONFLICT';end if;
-     insert into wow_limits.subscriptions(workspace_id,plan_id,expires_at) values(wid,pid,expiry)
-       on conflict(workspace_id) do update set plan_id=excluded.plan_id,expires_at=excluded.expires_at,version=wow_limits.subscriptions.version+1 returning * into sub;
-     insert into public.wow_platform_company_audit(actor_id,workspace_id,action) values(p_user,wid,'subscription_updated');
-   end if;
- end if;
- select * into plan from wow_limits.plans where id=sub.plan_id;
- return jsonb_build_object('workspaceId',wid,'planId',sub.plan_id,'plan',case when plan.id is not null then wow_limits.plan_json(plan) end,
-   'expiresAt',sub.expires_at,'expired',coalesce(sub.expires_at<=now(),false),'version',coalesce(sub.version,0),
-   'usedUsers',wow_limits.users_used(wid),'usedDevices',wow_limits.devices_used(wid),'usedBytes',wow_limits.storage_used(wid));
-exception when unique_violation then raise exception 'PLAN_NAME_EXISTS';
- when invalid_text_representation or numeric_value_out_of_range or datetime_field_overflow or invalid_datetime_format then raise exception 'INVALID_LIMITS';
-end $$; then raise exception 'INVALID_LIMITS';end if;
-     video_cap=(p_data->>'videoMinutes')::integer;
-   end if;
-   if audio_cap not between 0 and 100000 or video_cap not between 0 and 100000 then raise exception 'INVALID_LIMITS';end if;
-   if seats not between 0 and 1000000 or days not between 1 and 36500 or denomination !~ '^[A-Z]{3}$'
-      or (amount is null)<>(denomination is null) then raise exception 'INVALID_LIMITS';end if;
-   if plan.id is not null and (plan.name,plan.device_limit,plan.storage_bytes,plan.user_limit,plan.price,plan.currency,plan.duration_days)
-      is not distinct from (label,device_max,byte_max,seats,amount,denomination,days)
-      and expected in (plan.version,plan.version-1) then return jsonb_build_object('plan',wow_limits.plan_json(plan));end if;
-   if expected<>coalesce(plan.version,0) then raise exception 'CONFLICT';end if;
-   insert into wow_limits.plans(id,name,device_limit,storage_bytes,user_limit,price,currency,duration_days,updated_by) values(pid,label,device_max,byte_max,seats,amount,denomination,days,p_user)
-    on conflict(id) do update set name=excluded.name,device_limit=excluded.device_limit,storage_bytes=excluded.storage_bytes,
-      user_limit=excluded.user_limit,price=excluded.price,currency=excluded.currency,duration_days=excluded.duration_days,version=wow_limits.plans.version+1,updated_by=p_user
-    returning * into plan;
-   return jsonb_build_object('plan',wow_limits.plan_json(plan));
- end if;
- wid=(p_data->>'workspaceId')::uuid;
- if p_action='platform.limits.set' then
-   perform 1 from public.wow_workspaces where id=wid for no key update;
- else
-   perform 1 from public.wow_workspaces where id=wid;
- end if;
- if not found then raise exception 'COMPANY_NOT_FOUND';end if;
- select * into sub from wow_limits.subscriptions where workspace_id=wid;
- if p_action='platform.limits.set' then
-   if not (p_data ?& array['planId','expiresAt']) then raise exception 'INVALID_LIMITS';end if;
-   pid=(p_data->>'planId')::uuid;expiry=(p_data->>'expiresAt')::timestamptz;
-   if expiry is not null and (not isfinite(expiry) or pid is null) then raise exception 'INVALID_LIMITS';end if;
-   if pid is not null and not exists(select from wow_limits.plans where id=pid) then raise exception 'PLAN_NOT_FOUND';end if;
-   if (sub.plan_id,sub.expires_at) is distinct from (pid,expiry) then
-     if expected<>coalesce(sub.version,0) then raise exception 'CONFLICT';end if;
-     insert into wow_limits.subscriptions(workspace_id,plan_id,expires_at) values(wid,pid,expiry)
-       on conflict(workspace_id) do update set plan_id=excluded.plan_id,expires_at=excluded.expires_at,version=wow_limits.subscriptions.version+1 returning * into sub;
-     insert into public.wow_platform_company_audit(actor_id,workspace_id,action) values(p_user,wid,'subscription_updated');
-   end if;
- end if;
- select * into plan from wow_limits.plans where id=sub.plan_id;
- return jsonb_build_object('workspaceId',wid,'planId',sub.plan_id,'plan',case when plan.id is not null then wow_limits.plan_json(plan) end,
-   'expiresAt',sub.expires_at,'expired',coalesce(sub.expires_at<=now(),false),'version',coalesce(sub.version,0),
-   'usedUsers',wow_limits.users_used(wid),'usedDevices',wow_limits.devices_used(wid),'usedBytes',wow_limits.storage_used(wid));
-exception when unique_violation then raise exception 'PLAN_NAME_EXISTS';
- when invalid_text_representation or numeric_value_out_of_range or datetime_field_overflow or invalid_datetime_format then raise exception 'INVALID_LIMITS';
-end $$; then raise exception 'INVALID_LIMITS';end if;
-     extra_count=(p_data->>'extraDevices')::integer;
-   end if;
-   if p_data?'doubleBundle' then
-     if jsonb_typeof(p_data->'doubleBundle')<>'boolean' then raise exception 'INVALID_LIMITS';end if;
-     double_it=(p_data->>'doubleBundle')::boolean;
-   end if;
-   if extra_count not between 0 and 100 or pid is null and (extra_count>0 or double_it) then raise exception 'INVALID_LIMITS';end if;
-   if expiry is not null and (not isfinite(expiry) or pid is null) then raise exception 'INVALID_LIMITS';end if;
-   if pid is not null and not exists(select from wow_limits.plans where id=pid) then raise exception 'PLAN_NOT_FOUND';end if;
-   if (sub.plan_id,sub.expires_at) is distinct from (pid,expiry) then
-     if expected<>coalesce(sub.version,0) then raise exception 'CONFLICT';end if;
-     insert into wow_limits.subscriptions(workspace_id,plan_id,expires_at) values(wid,pid,expiry)
-       on conflict(workspace_id) do update set plan_id=excluded.plan_id,expires_at=excluded.expires_at,version=wow_limits.subscriptions.version+1 returning * into sub;
-     insert into public.wow_platform_company_audit(actor_id,workspace_id,action) values(p_user,wid,'subscription_updated');
-   end if;
- end if;
- select * into plan from wow_limits.plans where id=sub.plan_id;
- return jsonb_build_object('workspaceId',wid,'planId',sub.plan_id,'plan',case when plan.id is not null then wow_limits.plan_json(plan) end,
-   'expiresAt',sub.expires_at,'expired',coalesce(sub.expires_at<=now(),false),'version',coalesce(sub.version,0),
-   'usedUsers',wow_limits.users_used(wid),'usedDevices',wow_limits.devices_used(wid),'usedBytes',wow_limits.storage_used(wid));
-exception when unique_violation then raise exception 'PLAN_NAME_EXISTS';
- when invalid_text_representation or numeric_value_out_of_range or datetime_field_overflow or invalid_datetime_format then raise exception 'INVALID_LIMITS';
-end $$; then raise exception 'INVALID_LIMITS';end if;
-     audio_cap=(p_data->>'voiceMinutes')::integer;
-   end if;
-   if p_data?'videoMinutes' then
-     if jsonb_typeof(p_data->'videoMinutes') not in ('number','null') or
-       (p_data->>'videoMinutes') is not null and (p_data->>'videoMinutes') !~ '^[0-9]{1,6} or days not between 1 and 36500 or denomination !~ '^[A-Z]{3}$'
-      or (amount is null)<>(denomination is null) then raise exception 'INVALID_LIMITS';end if;
-   if plan.id is not null and (plan.name,plan.device_limit,plan.storage_bytes,plan.user_limit,plan.price,plan.currency,plan.duration_days)
-      is not distinct from (label,device_max,byte_max,seats,amount,denomination,days)
-      and expected in (plan.version,plan.version-1) then return jsonb_build_object('plan',wow_limits.plan_json(plan));end if;
-   if expected<>coalesce(plan.version,0) then raise exception 'CONFLICT';end if;
-   insert into wow_limits.plans(id,name,device_limit,storage_bytes,user_limit,price,currency,duration_days,updated_by) values(pid,label,device_max,byte_max,seats,amount,denomination,days,p_user)
-    on conflict(id) do update set name=excluded.name,device_limit=excluded.device_limit,storage_bytes=excluded.storage_bytes,
-      user_limit=excluded.user_limit,price=excluded.price,currency=excluded.currency,duration_days=excluded.duration_days,version=wow_limits.plans.version+1,updated_by=p_user
-    returning * into plan;
-   return jsonb_build_object('plan',wow_limits.plan_json(plan));
- end if;
- wid=(p_data->>'workspaceId')::uuid;
- if p_action='platform.limits.set' then
-   perform 1 from public.wow_workspaces where id=wid for no key update;
- else
-   perform 1 from public.wow_workspaces where id=wid;
- end if;
- if not found then raise exception 'COMPANY_NOT_FOUND';end if;
- select * into sub from wow_limits.subscriptions where workspace_id=wid;
- if p_action='platform.limits.set' then
-   if not (p_data ?& array['planId','expiresAt']) then raise exception 'INVALID_LIMITS';end if;
-   pid=(p_data->>'planId')::uuid;expiry=(p_data->>'expiresAt')::timestamptz;
-   if expiry is not null and (not isfinite(expiry) or pid is null) then raise exception 'INVALID_LIMITS';end if;
-   if pid is not null and not exists(select from wow_limits.plans where id=pid) then raise exception 'PLAN_NOT_FOUND';end if;
-   if (sub.plan_id,sub.expires_at) is distinct from (pid,expiry) then
-     if expected<>coalesce(sub.version,0) then raise exception 'CONFLICT';end if;
-     insert into wow_limits.subscriptions(workspace_id,plan_id,expires_at) values(wid,pid,expiry)
-       on conflict(workspace_id) do update set plan_id=excluded.plan_id,expires_at=excluded.expires_at,version=wow_limits.subscriptions.version+1 returning * into sub;
-     insert into public.wow_platform_company_audit(actor_id,workspace_id,action) values(p_user,wid,'subscription_updated');
-   end if;
- end if;
- select * into plan from wow_limits.plans where id=sub.plan_id;
- return jsonb_build_object('workspaceId',wid,'planId',sub.plan_id,'plan',case when plan.id is not null then wow_limits.plan_json(plan) end,
-   'expiresAt',sub.expires_at,'expired',coalesce(sub.expires_at<=now(),false),'version',coalesce(sub.version,0),
-   'usedUsers',wow_limits.users_used(wid),'usedDevices',wow_limits.devices_used(wid),'usedBytes',wow_limits.storage_used(wid));
-exception when unique_violation then raise exception 'PLAN_NAME_EXISTS';
- when invalid_text_representation or numeric_value_out_of_range or datetime_field_overflow or invalid_datetime_format then raise exception 'INVALID_LIMITS';
-end $$; then raise exception 'INVALID_LIMITS';end if;
-     video_cap=(p_data->>'videoMinutes')::integer;
-   end if;
-   if audio_cap not between 0 and 100000 or video_cap not between 0 and 100000 then raise exception 'INVALID_LIMITS';end if;
-   if seats not between 0 and 1000000 or days not between 1 and 36500 or denomination !~ '^[A-Z]{3}$'
-      or (amount is null)<>(denomination is null) then raise exception 'INVALID_LIMITS';end if;
-   if plan.id is not null and (plan.name,plan.device_limit,plan.storage_bytes,plan.user_limit,plan.price,plan.currency,plan.duration_days)
-      is not distinct from (label,device_max,byte_max,seats,amount,denomination,days)
-      and expected in (plan.version,plan.version-1) then return jsonb_build_object('plan',wow_limits.plan_json(plan));end if;
-   if expected<>coalesce(plan.version,0) then raise exception 'CONFLICT';end if;
-   insert into wow_limits.plans(id,name,device_limit,storage_bytes,user_limit,price,currency,duration_days,updated_by) values(pid,label,device_max,byte_max,seats,amount,denomination,days,p_user)
-    on conflict(id) do update set name=excluded.name,device_limit=excluded.device_limit,storage_bytes=excluded.storage_bytes,
-      user_limit=excluded.user_limit,price=excluded.price,currency=excluded.currency,duration_days=excluded.duration_days,version=wow_limits.plans.version+1,updated_by=p_user
-    returning * into plan;
-   return jsonb_build_object('plan',wow_limits.plan_json(plan));
- end if;
- wid=(p_data->>'workspaceId')::uuid;
- if p_action='platform.limits.set' then
-   perform 1 from public.wow_workspaces where id=wid for no key update;
- else
-   perform 1 from public.wow_workspaces where id=wid;
- end if;
- if not found then raise exception 'COMPANY_NOT_FOUND';end if;
- select * into sub from wow_limits.subscriptions where workspace_id=wid;
- if p_action='platform.limits.set' then
-   if not (p_data ?& array['planId','expiresAt']) then raise exception 'INVALID_LIMITS';end if;
-   pid=(p_data->>'planId')::uuid;expiry=(p_data->>'expiresAt')::timestamptz;
-   if expiry is not null and (not isfinite(expiry) or pid is null) then raise exception 'INVALID_LIMITS';end if;
-   if pid is not null and not exists(select from wow_limits.plans where id=pid) then raise exception 'PLAN_NOT_FOUND';end if;
-   if (sub.plan_id,sub.expires_at) is distinct from (pid,expiry) then
-     if expected<>coalesce(sub.version,0) then raise exception 'CONFLICT';end if;
-     insert into wow_limits.subscriptions(workspace_id,plan_id,expires_at) values(wid,pid,expiry)
-       on conflict(workspace_id) do update set plan_id=excluded.plan_id,expires_at=excluded.expires_at,version=wow_limits.subscriptions.version+1 returning * into sub;
-     insert into public.wow_platform_company_audit(actor_id,workspace_id,action) values(p_user,wid,'subscription_updated');
-   end if;
- end if;
- select * into plan from wow_limits.plans where id=sub.plan_id;
- return jsonb_build_object('workspaceId',wid,'planId',sub.plan_id,'plan',case when plan.id is not null then wow_limits.plan_json(plan) end,
-   'expiresAt',sub.expires_at,'expired',coalesce(sub.expires_at<=now(),false),'version',coalesce(sub.version,0),
-   'usedUsers',wow_limits.users_used(wid),'usedDevices',wow_limits.devices_used(wid),'usedBytes',wow_limits.storage_used(wid));
 exception when unique_violation then raise exception 'PLAN_NAME_EXISTS';
  when invalid_text_representation or numeric_value_out_of_range or datetime_field_overflow or invalid_datetime_format then raise exception 'INVALID_LIMITS';
 end $$;
