@@ -65,10 +65,31 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
       if(f==='vendor/zxing-browser.min.js')qrDownloads++;
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
-    await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');await page.locator('#lang').selectOption('en');
+    await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');
+    // Screenshot regression: the remember checkbox must never stretch the grid.
+    for(const width of [320,360,390]){
+      await page.setViewportSize({width,height:760});
+      const metrics=await page.evaluate(()=>{
+        const form=document.querySelector('.platform-login'),check=form?.querySelector('label.platform-remember input');
+        const checkbox=check?.getBoundingClientRect(),label=check?.closest('label')?.getBoundingClientRect();
+        const bounds=form?.getBoundingClientRect(),title=document.querySelector('main>header')?.getBoundingClientRect();
+        return {viewport:innerWidth,scroll:document.documentElement.scrollWidth,
+          form:bounds&&{left:bounds.left,right:bounds.right,width:bounds.width},
+          checkbox:checkbox&&{width:checkbox.width,height:checkbox.height,left:checkbox.left,right:checkbox.right},
+          label:label&&{left:label.left,right:label.right,width:label.width},
+          header:title&&{left:title.left,right:title.right}};
+      });
+      assert(metrics.scroll<=width,JSON.stringify(metrics));
+      assert(metrics.form.left>=0&&metrics.form.right<=width,JSON.stringify(metrics));
+      assert(metrics.checkbox&&metrics.checkbox.width<=24&&metrics.checkbox.height<=24,JSON.stringify(metrics));
+      assert(metrics.label.left>=0&&metrics.label.right<=width,JSON.stringify(metrics));
+      assert(metrics.header.right<=width+1,JSON.stringify(metrics));
+    }
+    await page.setViewportSize({width:390,height:844});
+    await page.locator('#lang').selectOption('en');
     const founderInput=page.getByLabel('Founder username');await founderInput.tap();
     assert.equal(await founderInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);
     await founderInput.pressSequentially('fixture');
@@ -166,7 +187,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.deepEqual(relayWrites,[true,false]);await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByLabel('Company name').fill('Test');await page.getByRole('button',{name:'Create company'}).click();
     const link=await page.getByText('Owner setup link').getAttribute('href');assert.equal(new URL(link).searchParams.get('setup'),wid);
-    const rendered=page.locator('svg.platform-setup-qr');await rendered.waitFor();const decoded=await page.evaluate(async()=>{const svg=document.querySelector('svg.platform-setup-qr').cloneNode(true);svg.style.background='white';const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg));const img=new Image();img.src=url;await img.decode();const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const c=canvas.getContext('2d');c.fillStyle='white';c.fillRect(0,0,canvas.width,canvas.height);c.drawImage(img,0,0);return new ZXingBrowser.BrowserQRCodeReader(new Map([[1,true]])).decodeFromCanvas(canvas).getText();});assert.equal(decoded,link);
+    await page.locator('.platform-company-link-pill[data-link-state=pending]').waitFor();
+    assert.match(await page.locator('.platform-company-link-pill').innerText(),/Awaiting owner activation/);
+    assert.equal(await page.locator('.platform-company-connectivity>small').isVisible(),true);
+    await page.locator('.platform-qr-actions button').first().waitFor();
+    assert.equal(await page.locator('.platform-qr-actions button').count(),4);
+    const rendered=page.locator('svg.platform-setup-qr');await rendered.waitFor();
+    assert.equal(await rendered.locator('[data-wow-robot-qr]').count(),1);
+    assert.equal(await rendered.locator('svg[viewBox="60 -70 480 480"] use').count(),2);const decoded=await page.evaluate(async()=>{const svg=document.querySelector('svg.platform-setup-qr').cloneNode(true);svg.style.background='white';const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg));const img=new Image();img.src=url;await img.decode();const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const c=canvas.getContext('2d');c.fillStyle='white';c.fillRect(0,0,canvas.width,canvas.height);c.drawImage(img,0,0);return new ZXingBrowser.BrowserQRCodeReader(new Map([[1,true]])).decodeFromCanvas(canvas).getText();});assert.equal(decoded,link);
     const finder=page.locator('.platform-overview-search input');
     await finder.fill('does-not-exist');
     assert.equal(await page.locator('.platform-company-card').isVisible(),false);
