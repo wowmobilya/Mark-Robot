@@ -135,3 +135,13 @@ output{padding:.75rem;background:var(--ui-soft);border-radius:var(--ui-control)}
 .platform-device-confirm p {width:100%;margin:0}
 
 .platform-device-options:not([hidden]) {display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin-inline-start:auto}
+
+.platform-preferences,.platform-preference-fields {display:flex;flex-wrap:wrap;align-items:end;gap:.55rem .8rem;min-width:0}
+.platform-preference-fields {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr))}
+.platform-preference-fields label {color:var(--text2);font-weight:600}
+.platform-preference-fields select,.platform-preferences select {min-inline-size:0;max-inline-size:100%;min-height:44px}
+.platform-preference-fields select {inline-size:100%;font-weight:500}
+@media(max-width:520px){
+  .platform-preferences {gap:.4rem}
+  .platform-preferences select {font-size:1rem}
+}
