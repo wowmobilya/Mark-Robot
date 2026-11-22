@@ -1189,3 +1189,19 @@ html[data-theme=dark] .platform-sales-contact-links .platform-sales-whatsapp{
 @media(prefers-reduced-motion:no-preference){.wf-subscription-clock[data-state='soon'] .wf-subscription-icon svg{animation:wow-clock-sway 2.2s ease-in-out infinite}}
 @keyframes wow-clock-sway{0%,100%{transform:rotate(0)}50%{transform:rotate(8deg)}}
 @media(max-width:480px){.wf-subscription-clock{grid-template-columns:32px minmax(0,1fr);gap:.55rem;padding:.6rem}.wf-subscription-icon{height:32px;width:32px}.wf-subscription-icon svg{height:20px;width:20px}}
+
+
+/* Top bar: notification bell takes the former menu side; the drawer menu takes the former alerts side. */
+main>header #platformMenuButton{order:4;flex-shrink:0}
+main>header>.platform-header-actions{order:-2;display:flex;gap:.4rem}
+main>header>.platform-brand{order:0;flex:1 1 0;min-width:0}
+main>header>.platform-preferences{order:1;flex-shrink:0}
+main>header .platform-header-link[href="#home"]{display:none!important}
+main>header .platform-header-link[href="#support"]{display:inline-flex!important;position:relative;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;min-height:42px}
+main>header .platform-header-link[href="#support"]{--header-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z'/%3E%3Cpath d='M10 21h4'/%3E%3Cpath d='M15.5 4.5 17 3'/%3E%3C/svg%3E")}
+main>header .platform-header-link[href="#support"] .platform-support-count:not([hidden]){position:absolute;top:-4px;right:-4px;border-radius:999px;min-width:19px;height:19px;line-height:17px;background:#c3443b;color:#fff;padding:0 .25rem;font-size:.65rem;font-weight:850;z-index:3}
+main>header .platform-header-link[href="#support"]:not([aria-label*="0"]):focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px}
+@media(max-width:430px){
+ main>header .platform-header-link[href="#support"],main>header #platformMenuButton{width:38px;min-width:38px;flex-basis:38px;height:40px;min-height:40px}
+ main>header .platform-header-actions:not([hidden]){margin:0;padding:0}
+}
