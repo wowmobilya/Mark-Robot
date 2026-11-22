@@ -15,7 +15,7 @@
   const el=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   let token='',verifiedName='',offset=0,generation=0,expiryTimer,setup=null,draft=null;
   let scanner=null,supportInbox=null,supportAlerts={enabled:false,seen:new Set()};
-  function clear(){supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  function clear(){showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -185,9 +185,51 @@
       });form.querySelector('button[type=submit]').textContent=w[recovering?6:5];cancel.focus();
     };
   }
+  const destinations={
+    ar:['الشركات','الباقات','الدعم','أقسام الإدارة','لا توجد شركات بعد.'],
+    en:['Companies','Plans','Support','Administration sections','No companies yet.'],
+    tr:['Şirketler','Paketler','Destek','Yönetim bölümleri','Henüz şirket yok.'],
+    fr:['Sociétés','Formules','Support','Sections d’administration','Aucune société pour le moment.'],
+    ru:['Компании','Тарифы','Поддержка','Разделы управления','Компаний пока нет.']
+  };
+  const companyMenu={ar:'إدارة الشركة',en:'Manage company',tr:'Şirketi yönet',fr:'Gérer la société',ru:'Управление компанией'};
+  let showDestination=null,expandedCompany=null;
+  const pageFromUrl=()=>['plans','support'].includes(location.hash.slice(1))?location.hash.slice(1):'companies';
+  window.addEventListener('hashchange',()=>showDestination?.());
   async function list(){
     const ticket=++generation,state=await request('company.list',{offset});if(ticket!==generation)return;
-    scanner?.dispose();scanner=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('nav'),form=el('form');content.append(nav,form);
+    scanner?.dispose();scanner=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
+    const labels=destinations[lang.value],ids=['companies','plans','support'],panels={},links={};
+    nav.className='platform-account-bar';menu.className='platform-section-menu';menu.setAttribute('aria-label',labels[3]);
+    content.append(nav,menu);
+    for(const [i,id] of ids.entries()){
+      const link=el('a'),panel=el('section'),title=el('h2',labels[i]);
+      title.tabIndex=-1;title.id='platform-title-'+id;
+      link.className='platform-section-link';link.href='#'+id;link.append(el('span',labels[i]));
+      panel.className='platform-page';panel.id='platform-page-'+id;panel.hidden=true;
+      panel.setAttribute('aria-labelledby',title.id);panel.append(title);content.append(panel);
+      link.setAttribute('aria-controls',panel.id);menu.append(link);panels[id]=panel;links[id]=link;
+    }
+    const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);companies.append(form);
+    let lastPage=null,loadingPlans=false;
+    showDestination=()=>{
+      const id=pageFromUrl(),changed=id!==lastPage;
+      for(const key of ids){
+        panels[key].hidden=key!==id;
+        if(key===id)links[key].setAttribute('aria-current','page');else links[key].removeAttribute('aria-current');
+      }
+      if(id==='plans'&&!plansBox.children.length&&!loadingPlans){
+        loadingPlans=true;
+        planEditor(plansBox).catch(error=>{
+          if(!plansBox.isConnected)return;fail(error);
+          const retry=el('button',labels[1]);retry.onclick=()=>{plansBox.replaceChildren();showDestination?.();};plansBox.append(retry);
+        }).finally(()=>{loadingPlans=false;});
+      }
+      if(changed&&lastPage!==null){
+        panels[id].querySelector('h2').focus({preventScroll:true});menu.scrollIntoView({block:'nearest'});
+      }
+      lastPage=id;
+    };
     const label={ar:'مدير المنصة الموثّق',en:'Verified platform administrator',tr:'Doğrulanmış platform yöneticisi',fr:'Administrateur de plateforme vérifié',ru:'Подтверждённый администратор платформы'}[lang.value];
     const founder=el('strong',verifiedName),badge=el('span','✓');
     badge.className='wf-founder-check';badge.setAttribute('role','img');badge.setAttribute('aria-label',label);badge.title=label;
@@ -196,8 +238,8 @@
     const settings=el('a',{ar:'إعدادات الحساب',en:'Account settings',tr:'Hesap ayarları',fr:'Paramètres du compte',ru:'Настройки аккаунта'}[lang.value]);
     const settingsUrl=new URL('../',location.href);settingsUrl.searchParams.set('wf-cloud','employee');settingsUrl.searchParams.set('workspace',config.workspaceId);settingsUrl.searchParams.set('wf-accounts','cloud');settingsUrl.hash='settings';settings.href=settingsUrl.href;nav.append(settings);
     supportInbox?.dispose();
-    supportInbox=window.WFPlatformSupport?.mount({nav,container:content,request,lang:lang.value,alerts:supportAlerts});
-    const plansBox=el('section');content.append(plansBox);btn(nav,22,()=>planEditor(plansBox));
+    supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts});
+    showDestination();
     const name=field(form,5);name.required=true;name.maxLength=100;
     submit(form,6,async()=>{
       const company=name.value.trim();if(!company)return;
@@ -208,7 +250,7 @@
     if(setup){
       const link=el('a',setupLabels[lang.value][5]),url=new URL(location.pathname,location.origin);
       url.searchParams.set('setup',setup.workspace);url.hash='invite='+setup.code;link.href=url.href;
-      const invitation=el('section');invitation.className='platform-invite-card';invitation.append(link,el('p',t(14)),el('output',setup.code));content.append(invitation);
+      const invitation=el('section');invitation.className='platform-invite-card';invitation.append(link,el('p',t(14)),el('output',setup.code));companies.append(invitation);
       if(window.ZXingBrowser?.BrowserQRCodeSvgWriter){const qr=new window.ZXingBrowser.BrowserQRCodeSvgWriter().write(url.href,660,660,new Map([[0,'M']]));qr.classList.add('platform-setup-qr');qr.setAttribute('shape-rendering','crispEdges');qr.style.background='white';qr.setAttribute('role','img');qr.setAttribute('aria-label',setupLabels[lang.value][5]);invitation.append(qr);}
     }
     for(const company of state.companies){
@@ -216,8 +258,15 @@
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',company.id);
       link.href=url.href;
       row.append(el('strong',company.name),el('span',t(active?7:8)),el('span',t(13)+' · '+company.accounts),link);
+      const details=el('details'),summary=el('summary',companyMenu[lang.value]),tools=el('div');
+      details.className='platform-company-tools';details.open=expandedCompany===company.id;
+      details.ontoggle=()=>{
+        if(!details.isConnected)return;
+        if(details.open)expandedCompany=company.id;else if(expandedCompany===company.id)expandedCompany=null;
+      };
+      details.append(summary,tools);row.append(details);
       const accounts=el('a',sale(12)),accountsUrl=new URL(url);
-      accountsUrl.searchParams.set('wf-accounts','cloud');accountsUrl.hash='settings';accounts.href=accountsUrl.href;row.append(accounts);
+      accountsUrl.searchParams.set('wf-accounts','cloud');accountsUrl.hash='settings';accounts.href=accountsUrl.href;tools.append(accounts);
       const editArea=el('section');editArea.className='platform-inline-editor';
       function editCompany(trigger,renaming){
         const editor=el('form'),title=el('strong',renaming?word(6):t(17)),cancel=el('button',word(5));
@@ -237,12 +286,13 @@
         });
         (input||cancel).focus();
       }
-      const statusBtn=btn(row,active?9:10,()=>editCompany(statusBtn,false));
-      const rename=btn(row,5,()=>editCompany(rename,true));rename.textContent=word(6);
-      const activationBox=el('section'),activation=btn(row,6,()=>ownerSetup(activationBox,company));activation.textContent=activationWords[lang.value][0];
-      const limitsBox=el('section');btn(row,18,()=>subscription(limitsBox,company));content.append(row,editArea,activationBox,limitsBox);
+      const statusBtn=btn(tools,active?9:10,()=>editCompany(statusBtn,false));
+      const rename=btn(tools,5,()=>editCompany(rename,true));rename.textContent=word(6);
+      const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company));activation.textContent=activationWords[lang.value][0];
+      const limitsBox=el('section');btn(tools,18,()=>subscription(limitsBox,company));details.append(editArea,activationBox,limitsBox);companies.append(row);
     }
-    const pages=el('nav');content.append(pages);
+    if(!state.companies.length)companies.append(el('p',labels[4]));
+    const pages=el('nav');companies.append(pages);
     if(offset)btn(pages,11,async()=>{offset=Math.max(0,offset-50);await list();});
     if(offset+50<state.total)btn(pages,12,async()=>{offset+=50;await list();});
   }

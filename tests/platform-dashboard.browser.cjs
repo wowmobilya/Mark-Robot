@@ -44,6 +44,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       }
       if(u.pathname.endsWith('wow-cloud-config.js'))return route.fulfill({contentType:'application/javascript',body:"window.WOW_CLOUD_CONFIG={workspaceId:'scope',endpoint:'/service',publishableKey:'local'}"});
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
+      if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
       if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/support.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
@@ -63,12 +64,19 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(events.includes('platform.support.list'),false);
     await page.locator('#lang').selectOption('en');rejection='ok';
     await page.getByLabel('Founder username').fill('fixture');await page.getByLabel('Password',{exact:true}).fill(randomUUID());
-    await page.getByRole('button',{name:'Sign in'}).click();await page.getByLabel('Company name').fill('Test');await page.getByRole('button',{name:'Create company'}).click();
+    await page.getByRole('button',{name:'Sign in'}).click();
+    await page.getByText('No support messages.',{exact:true}).waitFor();
+    const menu=page.getByRole('navigation',{name:'Administration sections'});
+    assert.equal(await menu.getByRole('link',{name:'Support'}).getAttribute('aria-current'),'page');
+    await menu.getByRole('link',{name:'Companies'}).click();
+    await page.getByText('No companies yet.').waitFor();
+    await page.getByLabel('Company name').fill('Test');await page.getByRole('button',{name:'Create company'}).click();
     const link=await page.getByText('Owner setup link').getAttribute('href');assert.equal(new URL(link).searchParams.get('setup'),wid);
     const rendered=page.locator('svg');await rendered.waitFor();const decoded=await page.evaluate(async()=>{const svg=document.querySelector('svg').cloneNode(true);svg.style.background='white';const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg));const img=new Image();img.src=url;await img.decode();const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const c=canvas.getContext('2d');c.fillStyle='white';c.fillRect(0,0,canvas.width,canvas.height);c.drawImage(img,0,0);return new ZXingBrowser.BrowserQRCodeReader(new Map([[1,true]])).decodeFromCanvas(canvas).getText();});assert.equal(decoded,link);
-    await page.getByText('No support messages.',{exact:true}).waitFor();
+    assert.equal(await page.getByText('No support messages.',{exact:true}).isVisible(),false);
     assert.equal(await page.getByRole('img',{name:'Verified platform administrator'}).count(),1);
     assert.equal(await page.getByText('Open company program').getAttribute('target'),null);
+    await page.getByText('Manage company',{exact:true}).click();
     const adminUrl=new URL(await page.getByRole('link',{name:'Manage company accounts'}).getAttribute('href'));
     assert.equal(adminUrl.searchParams.get('workspace'),wid);assert.equal(adminUrl.searchParams.get('wf-accounts'),'cloud');
     const company=page.locator('article'),editor=page.locator('.platform-inline-editor form');
@@ -86,11 +94,12 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     canRecover=true;await company.getByRole('button',{name:'Owner setup'}).click();await page.getByRole('button',{name:'Send recovery email'}).click();
     const recovery=page.getByRole('form',{name:'Owner setup'});assert.equal(events.includes('platform.company.recover'),false);
     await recovery.getByRole('button',{name:'Send recovery email'}).click();await page.getByText('Recovery email requested.').waitFor();
-    await page.getByRole('button',{name:'Plan',exact:true}).click();await page.getByLabel('Plan',{exact:true}).last().fill('Test plan');await page.getByLabel('Active user limit').fill('5');
+    await menu.getByRole('link',{name:'Plans'}).click();await page.getByLabel('Plan',{exact:true}).last().fill('Test plan');await page.getByLabel('Active user limit').fill('5');
     await page.getByLabel('File storage limit').fill('1.5');await page.getByLabel('Storage unit').selectOption('GB');
     await page.getByLabel('Subscription price').fill('14.9975');await page.getByLabel('Currency').fill('eur');await page.getByLabel('Duration in days').fill('30');
     await page.getByLabel('Device limit').fill('3');await page.getByRole('button',{name:'Save'}).click();await page.waitForFunction(()=>!document.querySelector('form button:disabled'));
     assert(events.includes('platform.plans.save'));
+    await page.goBack();await company.getByRole('button',{name:'Subscription and usage'}).waitFor();
     await company.getByRole('button',{name:'Subscription and usage'}).click();
     const assignment=page.locator('form').filter({has:page.getByLabel('Subscription expiry')});
     await assignment.getByRole('combobox').selectOption({label:'Test plan'});await assignment.getByRole('button',{name:'Save'}).click();
