@@ -30,7 +30,7 @@
     const viz=make('section','platform-analytics-visual');
     const circle=make('div','platform-analytics-donut');
     const ratio=loaded?100*active/loaded:0;
-    circle.style.setProperty('--platform-active-share',ratio.toFixed(3)+'%');
+    circle.style.setProperty('--platform-active-share','0%');
     circle.setAttribute('role','img');circle.setAttribute('aria-label',t.chart+': '+active+' / '+loaded);
     const center=make('span','platform-analytics-donut-center');
     center.append(make('strong','',String(loaded)),make('small','',t.loaded));circle.append(center);
@@ -74,6 +74,9 @@
     section.append(header,cards,viz,network);
     const form=host.querySelector('.platform-create-form');
     if(form)form.before(section);else host.prepend(section);
+    requestAnimationFrame(()=>{
+      if(section.isConnected)circle.style.setProperty('--platform-active-share',ratio.toFixed(3)+'%');
+    });
   }
   window.WFPlatformAnalytics=Object.freeze({mount});
 })();
