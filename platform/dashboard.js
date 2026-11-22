@@ -111,7 +111,11 @@
     form.className='platform-login';
     const visibility={ar:['إظهار','إخفاء'],en:['Show','Hide'],tr:['Göster','Gizle'],fr:['Afficher','Masquer'],ru:['Показать','Скрыть']}[lang.value];
     const row=el('div'),toggle=el('button',visibility[0]);row.className='platform-password';toggle.type='button';
-    pass.id='platform-founder-password';const passLabel=pass.parentElement;passLabel.htmlFor=pass.id;
+    pass.id='platform-founder-password';const passLabel=pass.parentElement;
+    // Keep the password caption as a genuine label; no empty wrapping label
+    // should enter the login grid when the input moves beside its visibility button.
+    passLabel.htmlFor=pass.id;passLabel.className='platform-password-caption';
+    row.setAttribute('role','group');row.setAttribute('aria-label',t(2));
     passLabel.after(row);row.append(pass,toggle);
     toggle.setAttribute('aria-label',visibility[0]+' '+t(2));toggle.setAttribute('aria-controls',pass.id);toggle.setAttribute('aria-pressed','false');
     toggle.onclick=()=>{const show=pass.type==='password';pass.type=show?'text':'password';
