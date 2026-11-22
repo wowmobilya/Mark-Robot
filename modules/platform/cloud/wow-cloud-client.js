@@ -365,6 +365,17 @@
           .finally(()=>{if(refreshing===task)refreshing=null;});refreshing=task;}
       await refreshing;expire();if(!session)throw failure('AUTH_REQUIRED',401);
     }
+    // In-memory credentials for short-lived, private Supabase Realtime channels.
+    // Caller must hold a live verified session with chat permissions. Never
+    // write access tokens to a URL, log, IndexedDB, or exported files.
+    async function realtimeCredentials(){
+      await ready;const expected=generation;await ensureAccess();checkGeneration(expected);
+      const account=identity.currentAccount;
+      if(!account||!can('chat.view')||!can('chat.edit')||!/^https:\/\//.test(config.projectUrl||''))
+        throw failure('ACCESS_DENIED',403);
+      return Object.freeze({projectUrl:config.projectUrl,publishableKey:config.publishableKey,
+        accessToken:session.access_token,userId:account.id,workspaceId,sessionVersion:account.sessionVersion});
+    }
     async function request(action,payload={},options={}){
       await ready;const expected=generation;
       if(options.authenticated===false)return transport(action,payload);
@@ -471,7 +482,7 @@
       for(const type of ['online','focus','pageshow'])root.addEventListener?.(type,resume);
       root.document?.addEventListener?.('visibilitychange',resume);
     }
-    return Object.freeze({ready,request,getSnapshot:snapshot,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
+    return Object.freeze({ready,request,realtimeCredentials,getSnapshot:snapshot,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
       isConfigured:()=>configured,isRemote:()=>mode==='remote',isRemoteMode:()=>mode==='remote',isLinkedOwner:()=>mode==='local'&&!!link,
       localIdentityChanged,lockLocalAccess,invalidateSession,cacheName,entryUrl,can,touch,refresh,signIn,signOut,enrollOwner,bootstrapOwner:enrollOwner,
       customerAuthOptions:()=>customerAuth('auth.customerOptions'),
