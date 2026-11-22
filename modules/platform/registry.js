@@ -160,7 +160,9 @@
     }});
     entry.surface.page.classList.add('wf-module-page');
     const statusbar=doc.createElement('div');statusbar.className='wf-module-statusbar';
-    entry.surface.page.insertBefore(statusbar,entry.surface.body);entry.surface.statusbar=statusbar;
+    if(typeof entry.surface.page.insertBefore==='function')entry.surface.page.insertBefore(statusbar,entry.surface.body);
+    else entry.surface.page.append(statusbar); // Synthetic DOM test fixtures lack insertBefore.
+    entry.surface.statusbar=statusbar;
     const button=doc.createElement('button');button.type='button';button.className='nav-item';button.dataset.wfPermission=definition.permission;
     button.setAttribute('data-wf-module-route',entry.id);
     const icon=doc.createElement('span');icon.className='nav-icon';icon.setAttribute('aria-hidden','true');icon.innerHTML=ops.icon(definition.icon||'package');
