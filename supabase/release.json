@@ -37,7 +37,10 @@
     "modules/company-directory-index.sql",
     "modules/platform-brand.sql",
     "modules/platform-plan-entitlements.sql",
-    "modules/platform-primary-owner-device.sql"
+    "modules/platform-primary-owner-device.sql",
+    "modules/platform-inspection.sql",
+    "modules/platform-subscription-summary.sql",
+    "modules/platform-device-observations.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",

@@ -70,8 +70,8 @@
     });
     resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
   }
-  let brandList=null;
-  function clear(){window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  let brandList=null,subscriptionClocks=null;
+  function clear(){subscriptionClocks?.dispose();subscriptionClocks=null;window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -422,14 +422,14 @@
     fr:['Lien au programme','Vérification de l’activation','Propriétaire activé','Activation en attente','Invitation expirée','Aucune invitation','Vérification impossible','Actualiser le statut','Connexion en direct indisponible','Comptes','Ouvrir le programme'],
     ru:['Связь с программой','Проверка активации владельца','Владелец активен','Ожидается активация','Срок приглашения истёк','Приглашение не создано','Не удалось проверить','Обновить статус','Онлайн-статус недоступен','Аккаунты','Открыть программу']
   };
-  let showDestination=null,expandedCompany=null;
+  let showDestination=null,expandedCompany=null,expandedCard=null;
   const header=document.querySelector('main > header'),headerActions=el('div');
   headerActions.className='platform-header-actions';headerActions.hidden=true;header.append(headerActions);
   // One predictable order across mobile and desktop, matching WOW's primary workspaces.
   function arrangeMenu(){
     const menu=content.querySelector('.platform-section-menu');if(!menu)return;
     const focused=menu.contains(document.activeElement)?document.activeElement:null;
-    for(const key of ['home','companies','plans','support','calls','settings']){
+    for(const key of ['companies','plans','home','support','calls','settings']){
       const link=menu.querySelector('a[href="#'+key+'"]');if(link)menu.append(link);
     }
     focused?.focus({preventScroll:true});
@@ -513,7 +513,7 @@
   window.addEventListener('hashchange',()=>showDestination?.());
   async function list(){
     const ticket=++generation,state=await request('company.list',{offset});if(ticket!==generation)return;
-    scanner?.dispose();scanner=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
+    scanner?.dispose();scanner=null;subscriptionClocks?.dispose();subscriptionClocks=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
     const labels=destinations[lang.value],settingsText=settingsWords[lang.value],homepage=homeWords[lang.value];
     const ids=['home','companies','plans','support','calls','settings'],titles=[homepage.heading,labels[0],labels[1],labels[2],labels[5],settingsText[0]],panels={},links={};
     nav.className='platform-account-bar';menu.className='platform-section-menu';menu.setAttribute('aria-label',labels[3]);
@@ -562,7 +562,7 @@
     showDestination=()=>{
       const id=pageFromUrl(),changed=id!==lastPage;
       if(changed&&lastPage==='settings'){const details=panels.settings.querySelector('.platform-password-settings');if(details)details.open=false;}
-      home.hidden=id==='home';inbox.hidden=id==='support';
+      home.hidden=id==='home';inbox.hidden=false;
       for(const key of ids){
         panels[key].hidden=key!==id;
         if(key===id)links[key].setAttribute('aria-current','page');else links[key].removeAttribute('aria-current');
@@ -587,11 +587,16 @@
     const founder=el('strong',verifiedName||label),badge=el('span','✓');
     badge.className='wf-founder-check';badge.setAttribute('role','img');badge.setAttribute('aria-label',label);badge.title=label;
     badge.hidden=navigator.onLine===false;founder.append(badge);nav.append(founder);
-    const signOut=btn(nav,4,async()=>{const previous=token;forget();clear();login();
-      await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
+    const logoutWords={ar:'هل تريد تسجيل الخروج من إدارة WOW على هذا الجهاز؟',en:'Sign out of WOW Admin on this device?',
+      tr:'Bu cihazda WOW yönetiminden çıkış yapılsın mı?',fr:'Se déconnecter de WOW Admin sur cet appareil ?',ru:'Выйти из WOW Admin на этом устройстве?'};
+    window.WFPlatformLogout=async()=>{
+      if(!token||!window.confirm(logoutWords[lang.value]))return;
+      const previous=token;forget();clear();login();
+      try{await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
         headers:{apikey:config.publishableKey,'Content-Type':'application/json',Authorization:'Bearer '+previous},
-        body:JSON.stringify({action:'auth.signOut'})}).then(reply=>{if(!reply.ok)throw failure(2);});});
-    signOut.className='platform-signout';
+        body:JSON.stringify({action:'auth.signOut'})}).then(reply=>{if(!reply.ok)throw failure(2);});}
+      catch(error){fail(error);}
+    };
     const preferences=el('section'),account=el('section');
     preferences.className=account.className='platform-settings-group';
     const preferred=el('div');preferred.className='platform-settings-preferences';
@@ -600,6 +605,7 @@
     window.WFPlatformAudio?.mount(preferred);
     preferences.hidden=!preferred.childElementCount;
     account.append(el('h3',settingsText[2]));if(verifiedName)account.append(el('bdi',verifiedName));passwordSettings(account);
+    const signOut=btn(account,4,()=>window.WFPlatformLogout?.());signOut.className='platform-signout platform-signout-settings';
     panels.settings.append(preferences,account);
     supportInbox?.dispose();
     supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts});
@@ -649,13 +655,26 @@
           entry.target.querySelector('.platform-company-refresh')?.click();
         }
       },{rootMargin:'100px 0px'}):null;
+    const clockCards=[];
     for(const company of state.companies){
-      const row=el('article'),active=company.status==='active',link=el('a',t(16));
-      const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',company.id);
+      const row=el('article'),active=company.status==='active',link=el('button',t(16));
       row.className='platform-company-card platform-company-card-v2';link.className='platform-company-launch';
-      link.href=url.href;
+      link.type='button';link.onclick=()=>window.WFPlatformCompanyInspector?.open({company,request,language:lang.value});
       const name=el('strong',company.name),stateLabel=el('span',t(active?7:8)),accountLabel=el('span',t(13)+' · '+company.accounts);
       const hero=el('div'),pills=el('div'),actions=el('div'),summaryLine=el('div');
+      const companyFold=el('details'),companyFoldSummary=el('summary'),companyFoldBody=el('div');
+      const foldText=({ar:['عرض تفاصيل الشركة','إخفاء تفاصيل الشركة'],en:['Show company details','Hide company details'],
+        tr:['Şirket ayrıntılarını göster','Şirket ayrıntılarını gizle'],fr:['Afficher les détails','Masquer les détails'],
+        ru:['Детали компании','Скрыть детали']})[lang.value];
+      companyFold.className='platform-company-fold';companyFoldBody.className='platform-company-fold-body';
+      companyFoldSummary.className='platform-company-fold-summary';companyFoldSummary.textContent=foldText[0];
+      companyFold.open=expandedCard===company.id;
+      companyFold.append(companyFoldSummary,companyFoldBody);
+      companyFold.addEventListener('toggle',()=>{
+        if(!companyFold.isConnected)return;
+        if(companyFold.open){expandedCard=company.id;companyFoldSummary.textContent=foldText[1];}
+        else {if(expandedCard===company.id)expandedCard=null;companyFoldSummary.textContent=foldText[0];}
+      });
       hero.className='platform-company-hero';pills.className='platform-company-pills';
       actions.className='platform-company-primary-actions';summaryLine.className='platform-company-connectivity';
       name.className='platform-company-name';name.dir='auto';
@@ -694,17 +713,18 @@
       health.append(healthTitle,linkState,refresh);
       summaryLine.append(health,live);
       actions.append(link);
-      row.append(hero,pills,summaryLine,actions);
+      const subscriptionHost=el('div');subscriptionHost.className='platform-company-subscription';
+      clockCards.push({id:company.id,host:subscriptionHost});
+      companyFoldBody.append(summaryLine,actions);row.append(hero,pills,subscriptionHost,companyFold);
       const details=el('details'),summary=el('summary',companyMenu[lang.value]),tools=el('div');
       details.className='platform-company-tools';tools.className='platform-company-actions-grid';details.open=expandedCompany===company.id;
       details.ontoggle=()=>{
         if(!details.isConnected)return;
         if(details.open)expandedCompany=company.id;else if(expandedCompany===company.id)expandedCompany=null;
       };
-      details.append(summary,tools);row.append(details);
+      details.append(summary,tools);companyFoldBody.append(details);
       brandList?.attach(row,details,company);
-      const accounts=el('a',sale(12)),accountsUrl=new URL(url);
-      accountsUrl.searchParams.set('wf-accounts','cloud');accountsUrl.hash='settings';accounts.href=accountsUrl.href;accounts.className='platform-tool-link platform-tool-accounts';tools.append(accounts);
+      const accounts=el('button',sale(12));accounts.type='button';accounts.onclick=()=>window.WFPlatformCompanyInspector?.open({company,request,language:lang.value,section:'accounts'});accounts.className='platform-tool-link platform-tool-accounts';tools.append(accounts);
       const editArea=el('section');editArea.className='platform-inline-editor';
       function editCompany(trigger,renaming){
         const editor=el('form'),title=el('strong',renaming?word(6):t(17)),cancel=el('button',word(5));
@@ -742,6 +762,7 @@
     if(offset+50<state.total)btn(pages,12,async()=>{offset+=50;await list();});
     // Responsive chrome and local-only company filters reuse the authorized list,
     // without altering the authenticated data source or modifying server state.
+    subscriptionClocks=window.WFPlatformSubscriptionClocks?.mount({cards:clockCards,request,language:lang.value})||null;
     window.WFPlatformShell?.mount({state,companies,menu,links,preferences:preferred});
     window.WFPlatformAnalytics?.mount({host:panels.home,state,request,language:lang.value});
   }
@@ -768,7 +789,8 @@
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',workspace);location.replace(url.href);
     });form.querySelector('button').textContent=labels[4];
   }
-  function render(){document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);const ws=new URLSearchParams(location.search).get('setup');if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws))enroll(ws);else if(token)list().catch(fail);else login();}
+  function render(){document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);const ws=new URLSearchParams(location.search).get('setup');if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws))enroll(ws);else if(token)list().catch(fail);else if(canRemember()&&saved()){content.replaceChildren(el('p',({ar:'يتم فتح إدارة WOW بأمان…',en:'Opening WOW Admin securely…',tr:'WOW yönetimi güvenle açılıyor…',fr:"Ouverture sécurisée de WOW Admin…",ru:'Безопасное открытие WOW Admin…'})[lang.value]));}
+    else login();}
   function lockDisconnected(){
     clear();if(!new URL(location.href).searchParams.has('setup'))login();status.textContent=word(2);
   }
@@ -779,5 +801,5 @@
     if((event.key===trustKey||event.key===null)&&rememberedId&&saved()?.id!==rememberedId){clear();login();}
   });
   window.addEventListener('online',()=>{if(token)list().catch(fail);else resume().catch(fail);});
-  lang.onchange=()=>{if(failureIndex!=null)status.textContent=word(failureIndex);render();};render();resume().catch(fail);
+  lang.onchange=()=>{if(failureIndex!=null)status.textContent=word(failureIndex);render();};render();resume().catch(error=>{if(!token&&!(new URLSearchParams(location.search)).has('setup'))login();fail(error);});
 })();

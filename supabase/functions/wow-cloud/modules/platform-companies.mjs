@@ -1,10 +1,24 @@
 import {sha256,failure} from '../core.mjs';
 
-export function createPlatformActions({platformRpc,requirePlatformFounder,manageDevices}){
+export function createPlatformActions({platformRpc,requirePlatformFounder,manageDevices,inspectCompany,subscriptionSummaries,deviceObservations}){
   const handlers={'platform.identity':async({actor})=>{
     try{await requirePlatformFounder(actor);return {verifiedFounder:true};}
     catch(error){if(error?.code==='ACCESS_DENIED')return {verifiedFounder:false};throw error;}
   }};
+  handlers['device.observe']=async({actor,body})=>deviceObservations(actor,'report',body);
+  handlers['platform.company.inspect']=async({actor,body})=>{
+    if(typeof body.workspaceId!=='string'||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(body.workspaceId)||
+      !['summary','accounts','companies','products','invoices','payments','settings','audit','gallery-orders','gallery-listings','files','calls','devices'].includes(body.section)||
+      !Number.isSafeInteger(body.offset)||body.offset<0||body.offset>10000)throw failure('INVALID_REQUEST',422);
+    // Founder identity and company scope are reverified by the service-only PostgreSQL RPC.
+    return body.section==='devices'?deviceObservations(actor,'list',{workspaceId:body.workspaceId,offset:body.offset}):inspectCompany(actor,body.workspaceId,body.section,body.offset);
+  };
+  handlers['platform.company.subscriptionSummaries']=async({actor,body})=>{
+    const ids=body.workspaceIds;
+    if(!Array.isArray(ids)||ids.length>50||ids.some(id=>typeof id!=='string'||
+      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id)))throw failure('INVALID_REQUEST',422);
+    return subscriptionSummaries(actor,ids);
+  };
   for(const action of ['company.list','company.rename','company.audit','company.status','company.create','limits.get','limits.set','plans.list','plans.save']){
     handlers['platform.'+action]=async({actor,body})=>{
       let data={...body};
