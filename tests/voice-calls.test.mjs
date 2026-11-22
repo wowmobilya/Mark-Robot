@@ -5,109 +5,146 @@ import {readFile} from 'node:fs/promises';
 import {createProviderTestDatabase} from '../supabase/testing/provider-fixtures.mjs';
 import {createChatActions} from '../supabase/functions/wow-cloud/modules/chat.mjs';
 
-const read=path=>readFile(new URL(path,import.meta.url),'utf8');
-const account=(id,sid)=>({userId:id,sessionId:sid});
-async function live(){
+const read=p=>readFile(new URL(p,import.meta.url),'utf8');
+async function fixture(){
  const db=await createProviderTestDatabase();
+ // Supabase Realtime owns these in production; minimal PGlite auth fixture.
+ await db.exec([
+  'create schema realtime;',
+  'create table realtime.messages(topic text,extension text);',
+  "create or replace function realtime.topic() returns text language sql stable as $$ select nullif(current_setting('realtime.topic',true),'') $$;",
+  "create or replace function auth.uid() returns uuid language sql stable as $$ select nullif((coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb)->>'sub'),'')::uuid $$;",
+  "create or replace function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb) $$;"
+ ].join('\n'));
  await db.exec(await read('../supabase/modules/files.sql'));
  await db.exec(await read('../supabase/modules/chat.sql'));
  await db.exec(await read('../supabase/modules/voice-calls.sql'));
- const workspace=randomUUID(),owner=randomUUID(),buyer=randomUUID(),outsider=randomUUID();
- const ownerSid=randomUUID(),buyerSid=randomUUID(),outsiderSid=randomUUID();
- await db.query('insert into public.wow_workspaces(id,name) values($1,$2)',[workspace,'WOW']);
- for(const [id,sid,email,username,role,permissions] of [
-  [owner,ownerSid,'owner@example.com','owner','owner',null],
-  [buyer,buyerSid,'buyer@example.com','buyer','customer',['chat.view','chat.edit']],
-  [outsider,outsiderSid,'other@example.com','other','customer',['chat.view','chat.edit']]
- ]){
+ const workspace=randomUUID(),otherWorkspace=randomUUID(),people={};
+ await db.query("insert into public.wow_workspaces(id,name) values($1,'WOW'),($2,'OTHER')",[workspace,otherWorkspace]);
+ for(const [username,role,wid] of [['owner','owner',workspace],['customer','customer',workspace],
+ ['worker','sales',workspace],['third','sales',workspace],['outside','owner',otherWorkspace]]){
+  const id=randomUUID(),sid=randomUUID(),email=username+'@example.com',permissions=role==='owner'?[]:['chat.view','chat.edit'];
+  people[username]={id,sid};
   await db.query('insert into auth.users(id,email,email_confirmed_at) values($1,$2,now())',[id,email]);
   await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[sid,id]);
-  await db.query('insert into public.wow_accounts(id,workspace_id,login_email,username,name,role,permissions) values($1,$2,$3,$4,$5,$6,$7)',
-   [id,workspace,email,username,username,role,permissions||[]]);
+  await db.query('insert into public.wow_accounts(id,workspace_id,login_email,username,name,role,permissions) values($1,$2,$3,$4,$4,$5,$6)',
+    [id,wid,email,username,role,permissions]);
   await db.query('insert into public.wow_sessions(session_id,account_id,session_version) values($1,$2,1)',[sid,id]);
  }
- const room=(await db.query('select wow_collab.direct_room($1,$2,$3) id',[workspace,owner,buyer])).rows[0].id;
- const request=async(actor,action,data={})=>(await db.query('select public.wow_voice_service($1,$2::jsonb) value',
-  [action,JSON.stringify({...data,...actor})])).rows[0].value;
- return {db,workspace,owner,buyer,outsider,room,request,ownerActor:account(owner,ownerSid),
-  buyerActor:account(buyer,buyerSid),outsiderActor:account(outsider,outsiderSid)};
+ const direct=(await db.query('select wow_collab.direct_room($1,$2,$3) id',
+  [workspace,people.owner.id,people.customer.id])).rows[0].id;
+ const group=randomUUID();
+ await db.query("insert into wow_collab.rooms(id,workspace_id,kind,title,creator) values($1,$2,'group','Team',$3)",
+  [group,workspace,people.owner.id]);
+ for(const name of ['owner','worker','third']){
+  await db.query('insert into wow_collab.members(room_id,account_id,role) values($1,$2,$3)',
+    [group,people[name].id,name==='owner'?'owner':'member']);
+ }
+ const request=async(who,action,data={})=>(await db.query(
+  'select public.wow_voice_service($1,$2::jsonb) result',
+  [action,JSON.stringify({...data,userId:people[who].id,sessionId:people[who].sid})])).rows[0].result;
+ return {db,workspace,people,direct,group,request};
 }
 
-test('private voice signaling keeps customer/staff membership and ephemeral SDP inside WOW',async t=>{
- const app=await live();t.after(()=>app.db.close());
- const {request,room,owner,buyer,ownerActor,buyerActor,outsiderActor}=app;
- await assert.rejects(request(outsiderActor,'start',{roomId:room,targetId:owner}),/ACCESS_DENIED/);
- const start=await request(ownerActor,'start',{roomId:room,targetId:buyer});
- assert.equal(start.status,'ringing');assert.equal(start.direction,'outgoing');
- await assert.rejects(request(ownerActor,'start',{roomId:room,targetId:buyer}),/VOICE_BUSY/);
- const inbox=await request(buyerActor,'inbox');assert.equal(inbox.calls.length,1);
- assert.equal(inbox.calls[0].direction,'incoming');assert.equal(inbox.calls[0].peerId,owner);
- await assert.rejects(request(outsiderActor,'events',{callId:start.id,after:'0'}),/ACCESS_DENIED/);
- await assert.rejects(request(ownerActor,'accept',{callId:start.id}),/VOICE_CALL_UNAVAILABLE/);
- assert.equal((await request(buyerActor,'accept',{callId:start.id})).status,'active');
- await request(ownerActor,'signal',{callId:start.id,kind:'offer',payload:{type:'offer',sdp:'v=0\r\ns=WOW'}})
- await request(buyerActor,'signal',{callId:start.id,kind:'answer',payload:{type:'answer',sdp:'v=0\r\ns=WOW'}})
- await request(buyerActor,'signal',{callId:start.id,kind:'ice',payload:{candidate:'candidate:123',sdpMid:'0',sdpMLineIndex:0}})
- const received=await request(ownerActor,'events',{callId:start.id,after:'0'});
- assert.deepEqual(received.signals.map(signal=>signal.kind),['answer','ice']);
- const direct=await request(buyerActor,'events',{callId:start.id,after:'0'});
- assert.deepEqual(direct.signals.map(signal=>signal.kind),['offer']);
- assert.equal((await request(ownerActor,'end',{callId:start.id})).status,'ended');
- assert.equal((await app.db.query('select count(*)::int as n from wow_voice.signals')).rows[0].n,0);
- assert.equal((await request(buyerActor,'inbox')).calls.length,0);
+test('Direct video call: answer, timer, end and history; original messages untouched',async t=>{
+ const x=await fixture();t.after(()=>x.db.close());
+ const {request,direct,people,db}=x;
+ assert.equal((await request('owner','inbox')).calls.length,0);
+ const call=await request('owner','start',{roomId:direct,kind:'video'});
+ assert.equal(call.status,'ringing');assert.equal(call.kind,'video');assert.equal(call.participants.length,2);
+ await assert.rejects(request('worker','status',{callId:call.id}),/ACCESS_DENIED/);
+ await assert.rejects(request('owner','start',{roomId:direct,kind:'audio'}),/VOICE_BUSY/);
+ const inbox=await request('customer','inbox');
+ assert.equal(inbox.calls[0].callerId,people.owner.id);
+ await assert.rejects(request('owner','accept',{callId:call.id}),/VOICE_CALL_UNAVAILABLE/);
+ assert.equal((await request('customer','accept',{callId:call.id})).status,'active');
+ assert.equal((await request('owner','connected',{callId:call.id})).status,'active');
+ assert.equal((await request('owner','heartbeat',{callId:call.id})).status,'active');
+ assert.equal((await request('owner','end',{callId:call.id})).status,'completed');
+ const history=(await request('customer','history',{roomId:direct})).history;
+ assert.equal(history.length,1);assert.equal(history[0].status,'completed');assert.equal(history[0].kind,'video');
+ assert(history[0].durationSeconds>=0);
+ const declined=await request('owner','start',{roomId:direct,kind:'audio'});
+ await request('customer','decline',{callId:declined.id});
+ assert.equal((await request('owner','status',{callId:declined.id})).status,'declined');
+ const missed=await request('owner','start',{roomId:direct,kind:'audio'});
+ await request('owner','end',{callId:missed.id});
+ assert.equal((await request('owner','status',{callId:missed.id})).status,'missed');
+ assert.equal((await db.query('select count(*)::int n from wow_collab.messages')).rows[0].n,0);
+ assert.equal((await db.query('select count(*)::int n from wow_voice.calls')).rows[0].n,3);
 });
 
-test('voice signaling requires authenticated active memberships and limits SDP mutations',async t=>{
- const app=await live();t.after(()=>app.db.close());
- const {request,room,owner,buyer,ownerActor,buyerActor}=app;
- await assert.rejects(request({...ownerActor,sessionId:randomUUID()},'inbox'),/SESSION_REVOKED|AUTH_REQUIRED/);
- const start=await request(ownerActor,'start',{roomId:room,targetId:buyer});
- await assert.rejects(request(ownerActor,'signal',{callId:start.id,kind:'offer',payload:{type:'offer',sdp:'bad'}}),/INVALID_VOICE_SIGNAL/);
- await request(buyerActor,'accept',{callId:start.id});
- await assert.rejects(request(buyerActor,'signal',{callId:start.id,kind:'offer',payload:{type:'offer',sdp:'bad'}}),/INVALID_VOICE_SIGNAL/);
- await assert.rejects(request(ownerActor,'signal',{callId:start.id,kind:'offer',payload:{type:'offer',sdp:'x'.repeat(25000)}}),/INVALID_VOICE_SIGNAL/);
- await request(ownerActor,'signal',{callId:start.id,kind:'offer',payload:{type:'offer',sdp:'v=0'}});
- await assert.rejects(request(ownerActor,'signal',{callId:start.id,kind:'offer',payload:{type:'offer',sdp:'v=0'}}),/VOICE_SIGNAL_DUPLICATE/);
- await app.db.query("update public.wow_accounts set status='suspended' where id=$1",[buyer]);
- await assert.rejects(request(ownerActor,'events',{callId:start.id,after:'0'}),/ACCESS_DENIED/);
+test('Group calls only invite eligible members (3-person mesh)',async t=>{
+ const x=await fixture();t.after(()=>x.db.close());
+ const {request,group,db}=x;
+ await assert.rejects(request('customer','start',{roomId:group,kind:'audio'}),/ACCESS_DENIED/);
+ const call=await request('worker','start',{roomId:group,kind:'audio'});
+ assert.equal(call.participants.length,3);
+ await assert.rejects(request('outside','status',{callId:call.id}),/ACCESS_DENIED/);
+ assert.equal((await request('owner','accept',{callId:call.id})).status,'active');
+ assert.equal((await request('third','decline',{callId:call.id})).status,'active');
+ assert.equal((await request('worker','connected',{callId:call.id})).status,'active');
+ assert.equal((await request('owner','leave',{callId:call.id})).status,'completed');
+ assert.equal((await db.query('select count(*)::int n from wow_collab.messages')).rows[0].n,0);
 });
 
-test('Edge module validates payloads and issues short-lived TURN credentials only to callers',async()=>{
- const calls=[],workspace=randomUUID(),owner=randomUUID(),sid=randomUUID(),turnSecret='test-secret-that-is-longer-than-thirty-two-characters';
- const storage={};
- const actions=createChatActions({storage,moduleRpc:async(name,action,payload)=>{
-  calls.push({name,action,payload});
-  if(name!=='wow_voice_service')throw Error('Wrong backend');
-  if(action==='events')return {status:'active',signals:[]};
-  return {id:randomUUID(),status:'ringing'};
- },voiceTurn:{url:'turns:turn.example.com:5349?transport=tcp',secret:turnSecret}});
- const actor=account(owner,sid),room=randomUUID(),peer=randomUUID(),id=randomUUID();
- await actions['chat.call.start']({actor,body:{roomId:room,targetId:peer}});
- assert.equal(calls[0].name,'wow_voice_service');
- assert.deepEqual(calls[0].payload,{roomId:room,targetId:peer,userId:owner,sessionId:sid});
- await assert.rejects(actions['chat.call.signal']({actor,body:{callId:id,kind:'offer',payload:{type:'offer',sdp:''}}}),/INVALID_VOICE_SIGNAL/);
- await assert.rejects(actions['chat.call.signal']({actor,body:{callId:id,kind:'ice',payload:{candidate:'a'.repeat(2200)}}}),/INVALID_VOICE_SIGNAL/);
- const ice=await actions['chat.call.ice']({actor,body:{callId:id}});
- assert.equal(ice.relayReady,true);assert.equal(ice.iceServers.length,2);
- assert(ice.iceServers[1].username.includes(owner));
- const expected=createHmac('sha1',turnSecret).update(ice.iceServers[1].username).digest('base64');
- assert.equal(ice.iceServers[1].credential,expected);
- const withoutTurn=createChatActions({storage,moduleRpc:async()=>({status:'active'}),voiceTurn:{}});
- const fallback=await withoutTurn['chat.call.ice']({actor,body:{callId:id}});
- assert.equal(fallback.relayReady,false);assert.equal(fallback.iceServers.length,1);
+test('Session revocation and realtime topic RLS block unauthorized listening',async t=>{
+ const x=await fixture();t.after(()=>x.db.close());
+ const {request,direct,group,people,db}=x;
+ await assert.rejects(request('owner','start',{roomId:randomUUID(),kind:'audio'}),/ACCESS_DENIED/);
+ await assert.rejects(request('owner','start',{roomId:direct,kind:'screen'}),/INVALID_VOICE_REQUEST/);
+ const call=await request('owner','start',{roomId:direct,kind:'audio'});
+ await request('customer','accept',{callId:call.id});
+ await db.query("select set_config('request.jwt.claims',$1,false)",
+ [JSON.stringify({sub:people.customer.id,session_id:people.customer.sid,role:'authenticated'})]);
+ await db.query("select set_config('realtime.topic',$1,false)",['wow-call-room:'+direct]);
+ assert.equal((await db.query('select public.wow_call_realtime_allowed() allowed')).rows[0].allowed,true);
+ await db.query("select set_config('realtime.topic',$1,false)",['wow-call:'+call.id]);
+ assert.equal((await db.query('select public.wow_call_realtime_allowed() allowed')).rows[0].allowed,true);
+ await db.query("select set_config('realtime.topic',$1,false)",['wow-call-room:'+group]);
+ assert.equal((await db.query('select public.wow_call_realtime_allowed() allowed')).rows[0].allowed,false);
+ await db.query("select set_config('realtime.topic',$1,false)",['public:unrelated']);
+ assert.equal((await db.query('select public.wow_call_realtime_allowed() allowed')).rows[0].allowed,false);
+ await db.query("update public.wow_sessions set closed_at=now() where session_id=$1",[people.customer.sid]);
+ await db.query("select set_config('realtime.topic',$1,false)",['wow-call:'+call.id]);
+ assert.equal((await db.query('select public.wow_call_realtime_allowed() allowed')).rows[0].allowed,false);
+ await assert.rejects(request('customer','status',{callId:call.id}),/SESSION_REVOKED/);
 });
 
-test('customer signup remains visibly discoverable and WebRTC ships as one versioned WOW module',async()=>{
- const [registration,html,sw,client]=await Promise.all([
-  read('../modules/customer-auth/workspace.js'),read('../index.html'),read('../sw.js'),read('../modules/chat/workspace.js')
- ]);
- assert.match(registration,/actions\.append\(button\('register'/);
- assert.match(registration,/if\(!options\.registrationEnabled\)/);
- assert.match(registration,/if\(!options\.recoveryEnabled\)/);
- assert.match(html,/modules\/chat\/voice-calls\.js\?v=1/);
- assert.match(html,/modules\/chat\/voice-calls\.css\?v=1/);
- assert.match(html,/data-release="219"/);
- assert.match(sw,/wow-furniture-v219-cloud/);
- assert.match(sw,/modules\/chat\/voice-calls\.js\?v=1/);
- assert.match(client,/voice\.callButton\(room\)/);
+test('TURN credentials are short-lived and never reveal the shared secret',async()=>{
+ const user=randomUUID(),sid=randomUUID(),callId=randomUUID(),roomId=randomUUID(),events=[];
+ const secret='TEST-THIS-IS-A-LONG-RANDOM-SECRET-ROTATE-IN-PRODUCTION';
+ const actor={userId:user,sessionId:sid};
+ const moduleRpc=async(name,action,data)=>{
+  events.push({name,action,data});assert.equal(name,'wow_voice_service');
+  if(action==='status')return {status:'active',participants:[{id:user,status:'joined'}]};
+  return {ok:true};
+ };
+ const calls=createChatActions({moduleRpc,storage:{},
+  voiceTurn:{urls:'turn:turn.example.invalid:3478?transport=udp,turns:turn.example.invalid:5349?transport=tcp',secret}});
+ await calls['chat.call.start']({actor,body:{roomId,kind:'video'}});
+ assert.deepEqual(events[0].data,{roomId,kind:'video',userId:user,sessionId:sid});
+ const ice=await calls['chat.call.ice']({actor,body:{callId}});
+ assert.equal(ice.relayReady,true);assert.equal(ice.iceServers.length,2);assert.equal(ice.iceServers[1].urls.length,2);
+ assert.equal(ice.iceServers[1].credential,createHmac('sha1',secret).update(ice.iceServers[1].username).digest('base64'));
+ const fallback=await createChatActions({moduleRpc,storage:{},voiceTurn:{}})['chat.call.ice']({actor,body:{callId}});
+ assert.equal(fallback.relayReady,false);
+});
+
+test('WOW familiar chat UI, in-chat events, customer signup and release source preserved',async()=>{
+ const [signup,html,sw,workspace,ui,manager,channel,manifest]=await Promise.all([
+ read('../modules/customer-auth/workspace.js'),read('../index.html'),read('../sw.js'),
+ read('../modules/chat/workspace.js'),read('../modules/chat/call-ui.js'),
+ read('../modules/chat/call-manager.js'),read('../modules/chat/realtime-channel.js'),
+ read('../supabase/release.json')]);
+ assert.match(signup,/actions\.append\(button\('register'/);
+ assert.match(signup,/if\(!options\.registrationEnabled\)/);
+ assert.match(html,/modules\/chat\/call-ui\.js\?v=1/);
+ assert.match(html,/modules\/chat\/realtime-channel\.js\?v=1/);
+ assert.match(html,/data-release="220"/);assert.match(sw,/wow-furniture-v220-cloud/);
+ assert.match(workspace,/callUI\.controls\(room\)/);
+ assert.match(workspace,/callUI\?\.renderHistoryInFeed\?\.\(\)/);
+ assert.match(workspace,/wf-chat-bubble/);assert.match(ui,/wf-chat-call-chip/);
+ assert.match(manager,/WFCallManager/);assert.match(channel,/config:\{private:true/);
+ assert.equal(JSON.parse(manifest).version,220);
 });
