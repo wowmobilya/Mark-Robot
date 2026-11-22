@@ -5,6 +5,7 @@
   const langs=['ar','en','tr','fr','ru'];
   const copy={
     title:['مواقيت الصلاة','Prayer times','Namaz vakitleri','Horaires de prière','Время молитвы'],
+    fallback:['تعذّر تشغيل الأذان الكامل. يُشغَّل مقطع مكة المحفوظ.','The full adhan is unavailable. Playing the saved Makkah excerpt.','Tam ezan kullanılamıyor. Kayıtlı Mekke bölümü çalınıyor.','Adhan complet indisponible. Lecture de l’extrait de La Mecque enregistré.','Полный азан недоступен. Звучит сохранённый фрагмент из Мекки.'],
     remaining:['الوقت المتبقي','Time remaining','Kalan süre','Temps restant','Осталось'],
     next:['الصلاة القادمة','Next prayer','Sonraki namaz','Prochaine prière','Следующая молитва'],
     names:[['الفجر','الظهر','العصر','المغرب','العشاء'],['Fajr','Dhuhr','Asr','Maghrib','Isha'],['İmsak','Öğle','İkindi','Akşam','Yatsı'],['Fajr','Dhuhr','Asr','Maghrib','Isha'],['Фаджр','Зухр','Аср','Магриб','Иша']],
@@ -123,7 +124,12 @@
       if(!(blob instanceof Blob))throw Error('NO_AUDIO');
       localUrl=URL.createObjectURL(blob);audio.src=localUrl;
     }else audio.src=audioPath;
-    await audio.play();
+    try{await audio.play();}
+    catch(error){
+      if(mode!=='adhan'||error?.name==='NotAllowedError'||token!==audioGeneration||owner!==storeId())throw error;
+      await play('excerpt');
+      message(t('fallback'),true);
+    }
   }
   function message(label,offerPlay=false){
     clearTimeout(noticeTimer);notice.replaceChildren(el('strong',label));
