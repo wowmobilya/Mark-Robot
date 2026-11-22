@@ -34,7 +34,8 @@
     'Aramalar HTTPS ve WebRTC gerektirir.','HTTPS et WebRTC nécessaires.','Нужны HTTPS и WebRTC.'],
   group:['حد المكالمة الجماعية 4 أشخاص','Group calls support up to 4 people',
     'Grup aramaları en fazla 4 kişi','Appels de groupe : 4 personnes maximum','Групповой звонок до 4 человек'],
-  play:['تشغيل الصوت','Play audio','Sesi aç','Activer le son','Включить звук']
+  play:['تشغيل الصوت','Play audio','Sesi aç','Activer le son','Включить звук'],
+  alerts:['تفعيل إشعار المكالمات','Enable call alerts','Arama bildirimlerini aç','Activer les alertes d’appel','Включить уведомления о звонках']
  };
  function mount({container,historyContainer,api,lang=()=>root.document?.documentElement.lang||'ar'}){
   const doc=container.ownerDocument||root.document;
@@ -57,7 +58,9 @@
   const t=key=>text[key][locales.indexOf(locale())];let ticking=null;
   const button=(key,action,cls='')=>{
    const b=doc.createElement('button');b.type='button';b.className='btn wf-calling-button '+cls;b.textContent=t(key);
-   b.onclick=()=>Promise.resolve().then(action).catch(()=>{error=t('failed');render();});return b;
+   // Permission requests must start from a trusted user gesture, not a timer.
+   b.onclick=()=>{try{Promise.resolve(action()).catch(()=>{error=t('failed');render();});}
+    catch(_){error=t('failed');render();}};return b;
   };
   const timestamp=value=>new Date(value||Date.now()).toLocaleString(locale(),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
   const duration=seconds=>String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
@@ -164,6 +167,13 @@
     control.disabled=!enabled||!!lastState?.call;
     control.title=enabled?t(key):t('unsupported');wrapper.append(control);
    }
+   const push=root.WFPush;
+   if(push?.getSnapshot?.()?.status==='ready'){
+    const toggle=button('alerts',()=>push.enable(),'wf-calling-start wf-calling-icon');
+    toggle.textContent='';toggle.setAttribute('aria-label',t('alerts'));toggle.title=t('alerts');
+    toggle.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4M12 2v2"/></svg>';
+    wrapper.append(toggle);
+   }
    return wrapper;
   }
   async function selectRoom(room){
@@ -175,7 +185,8 @@
    ticking=root.setInterval(tick,3500);manager.poll().catch(()=>{});
   }
   render();
-  return Object.freeze({controls,selectRoom,renderHistoryInFeed:feedHistory,refresh:()=>manager?.poll(),updateLanguage:render,
+  return Object.freeze({controls,selectRoom,renderHistoryInFeed:feedHistory,refresh:()=>manager?.poll(),
+   hasActiveCall:()=>!!lastState?.call,updateLanguage:render,
    dispose(){if(ticking)root.clearInterval(ticking);manager?.stop();historyContainer?.querySelector?.('[data-wf-call-history]')?.remove();layout.remove();}});
  }
  root.WFChatCallUI=Object.freeze({mount});
