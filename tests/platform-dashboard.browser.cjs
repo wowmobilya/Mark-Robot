@@ -52,6 +52,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
             if(!assigned){assert.ok(Date.parse(body.expiresAt)>Date.now()+29*86400000);expiresAt=body.expiresAt.replace('00.000Z','13.072Z');}
             else if(body.planId)assert.equal(body.expiresAt,expiresAt);
             else {assert.equal(body.expiresAt,null);expiresAt=null;}
+            if(body.planId){assert.equal(body.extraDevices,2);assert.equal(body.doubleBundle,true);}
             assigned=plans.find(p=>p.id===body.planId);response={};break;
           case 'platform.plans.save':
             assert.equal(body.userLimit,5);assert.equal(body.deviceLimit,3);assert.equal(body.storageBytes,1500000000);
@@ -284,6 +285,11 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(await page.getByLabel('Subscription price').inputValue(),'100');
     assert.equal(await page.getByLabel('Currency').inputValue(),'USD');
     assert.equal(await page.getByLabel('Duration in days').inputValue(),'30');
+    assert.equal(await page.getByLabel('Monthly voice minutes').inputValue(),'500');
+    assert.equal(await page.getByLabel('Monthly video minutes').inputValue(),'250');
+    assert.equal(await page.getByLabel('Device limit').inputValue(),'2');
+    assert.equal(await page.getByLabel('File storage limit').inputValue(),'2');
+    assert.equal(await pricing.locator('[data-tier=month] [data-feature]').count(),6);
     assert.equal(events.filter(item=>item==='platform.plans.save').length,0,'template does not silently save or charge');
     for(const size of [{width:320,height:700},{width:375,height:812},{width:430,height:932},
       {width:820,height:1180},{width:1024,height:768},{width:1366,height:768},{width:1920,height:1080}]){
@@ -309,7 +315,11 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.goBack();await company.getByRole('button',{name:'Subscription and usage'}).waitFor();
     await company.getByRole('button',{name:'Subscription and usage'}).click();
     const assignment=page.locator('form').filter({has:page.getByLabel('Subscription expiry')});
-    await assignment.getByRole('combobox').selectOption({label:'Test plan'});await assignment.getByRole('button',{name:'Save'}).click();
+    await assignment.getByRole('combobox').selectOption({label:'Test plan'});
+    await assignment.getByLabel('Extra staff phones').fill('2');
+    await assignment.getByLabel('Double calls and storage').check();
+    assert.match(await assignment.locator('.platform-addon-price').innerText(),/\$40/);
+    await assignment.getByRole('button',{name:'Save'}).click();
     const userUsage=page.getByText('Active users',{exact:true}).locator('+ dd').locator('bdi');
     await userUsage.nth(1).getByText('5',{exact:true}).waitFor();
     assert.deepEqual(await userUsage.allTextContents(),['3','5','2']);
