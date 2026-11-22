@@ -19,6 +19,7 @@ async function fixture(){
  await db.exec(await read('../supabase/modules/files.sql'));
  await db.exec(await read('../supabase/modules/chat.sql'));
  await db.exec(await read('../supabase/modules/voice-calls.sql'));
+ await db.exec(await read('../supabase/modules/voice-calls.sql'));
  const workspace=randomUUID(),otherWorkspace=randomUUID(),people={};
  await db.query("insert into public.wow_workspaces(id,name) values($1,'WOW'),($2,'OTHER')",[workspace,otherWorkspace]);
  for(const [username,role,wid] of [['owner','owner',workspace],['customer','customer',workspace],
