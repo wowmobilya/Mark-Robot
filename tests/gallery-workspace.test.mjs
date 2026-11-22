@@ -62,7 +62,7 @@ test('native controls publish a WOW product, place a customer order, release it 
    await db.query('insert into wow_records(workspace_id,store,record_id,payload,revision,updated_by) values($1,$2,$3,$4,1,$5)',[workspace,'products','7',JSON.stringify({id:7,name:'Native console',type:'console',priceA:12.35}),owner.userId]);
    const {doc,body}=localDOM(),definitions=new Map(),storage=new Map(),alerts=[],visits=[];
    const win={document:doc,crypto:webcrypto,WFModules:{register:def=>definitions.set(def.id,def)},WFAppIdentity:{sources:()=>({logo:''})},
-     matchMedia:()=>({matches:true}),addEventListener(){},removeEventListener(){},setInterval:()=>1,clearInterval(){},confirm:()=>true,
+     matchMedia:()=>({matches:true}),addEventListener(){},removeEventListener(){},setInterval:()=>1,clearInterval(){},WFDialog:{confirm:async()=>true},
      localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)}};
    const sandbox=vm.createContext({window:win,globalThis:win,URL,Blob,TextEncoder,AbortController,queueMicrotask,Intl,setTimeout,structuredClone});
    for(const file of ['core','exports','workspace'])vm.runInContext(await read('modules/gallery/'+file+'.js'),sandbox);

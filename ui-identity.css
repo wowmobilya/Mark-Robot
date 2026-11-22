@@ -495,3 +495,5 @@ html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-
    outline-offset:3px!important;
  }
 }
+.wf-founder-check,.wf-account-session .wf-founder-check{display:inline-grid;place-items:center;flex:none;inline-size:1.25rem;block-size:1.25rem;margin-inline-start:.4rem;border-radius:50%;background:#176a43;color:#fff;font:700 .85rem/1 system-ui}
+.wf-founder-check[hidden]{display:none!important}

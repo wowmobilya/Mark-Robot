@@ -20,7 +20,7 @@
   const week = document.getElementById('wfWeatherDays');
   const logoTitle = document.getElementById('wfGreetingLogoTitle');
   const logoTarget = document.getElementById('wfGreetingLogoImage');
-  const navLogo = document.getElementById('navLogo');
+  const identityLogo = document.getElementById('wfSidebarLogo');
   const words = {
     ar: ['إينغول، بورصة', 'المطر خلال ٧ أيام', 'جارٍ تحديث الطقس…', 'الطقس غير متاح الآن', 'واو موبيليا', 'مم'],
     tr: ['İnegöl, Bursa', '7 günlük yağmur', 'Hava durumu yükleniyor…', 'Hava durumu şu an alınamıyor', 'WOW Mobilya', 'mm'],
@@ -214,7 +214,7 @@
   }
 
   function syncLogo() {
-    const image = navLogo?.querySelector('img');
+    const image = identityLogo;
     logoTarget.replaceChildren(image ? image.cloneNode(false) : document.createTextNode('∞'));
     const identity = window.WFAppIdentity?.current?.();
     if (identity?.name) logoTitle.textContent = identity.name;
@@ -364,8 +364,8 @@
     schedule();
   }).observe(dashboard, {attributes:true, attributeFilter:['class']});
   new MutationObserver(() => { render(); syncMotion(); }).observe(document.documentElement, {attributes:true, attributeFilter:['lang', 'dir', 'data-wf-motion']});
-  if (navLogo) new MutationObserver(syncLogo).observe(navLogo, {childList:true, subtree:true, attributes:true, attributeFilter:['src']});
-  const appName = document.querySelector('.navbar .wf-nav-wordmark > bdi');
+  if (identityLogo) new MutationObserver(syncLogo).observe(identityLogo, {attributes:true, attributeFilter:['src']});
+  const appName = document.querySelector('#wfSidebarBrand > strong');
   if (appName) new MutationObserver(syncLogo).observe(appName, {childList:true, subtree:true, characterData:true});
   syncLogo();
   render();

@@ -39,9 +39,9 @@ const wfTakeOwnerActivation=(()=>{
 <link rel="stylesheet" href="./modules/customer-auth/styles.css?v=1">
 <!-- WOW V22: read-only statement model and scoped UI; no database migration. -->
 <link rel="stylesheet" href="./account-statement.css?v=26">
-<script src="./account-statement-core.js?v=25"></script>
-<script src="./account-statement.js?v=28"></script>
-<script src="./statement-delivery.js?v=1"></script>
+<script src="./account-statement-core.js?v=25" defer></script>
+<script src="./account-statement.js?v=28" defer></script>
+<script src="./statement-delivery.js?v=1" defer></script>
 <script id="wf-bg-pair-bootstrap-v3">
 (function(){
   try{
@@ -74,10 +74,10 @@ const wfTakeOwnerActivation=(()=>{
 <title>Mark Robot</title>
 
 <!-- ربط ملف الـ Manifest -->
-<link rel="manifest" href="manifest.json?v=8">
+<link rel="manifest" href="manifest.json?v=9">
 <meta name="application-name" content="Mark Robot">
 <meta name="apple-mobile-web-app-title" content="Mark Robot">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=221">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=222">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -86,9 +86,9 @@ const wfTakeOwnerActivation=(()=>{
 <!-- Private deployment config: end users never edit this file -->
 <script src="google-drive-config.js"></script>
 <!-- Preload Google Identity Services so activation opens immediately on tablet -->
-<script src="https://accounts.google.com/gsi/client" async defer data-wf-google-identity="1"></script>
+<!-- Google Identity loads when a Google connection is requested. -->
 <!-- أيقونة أجهزة آبل (iOS) -->
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=221">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=222">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -6467,7 +6467,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script>document.documentElement.classList.add('wf-booting');if(location.hash&&location.hash!=='#dashboard')document.documentElement.classList.add('wf-section-mode');</script>
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=47">
-     <link rel="stylesheet" href="ui-identity.css?v=34">
+     <link rel="stylesheet" href="ui-identity.css?v=35">
      <link rel="stylesheet" href="accounts-access.css?v=2">
 <link rel="stylesheet" href="accounts-settings.css?v=1">
 <script src="accounts-policy.js?v=2" defer></script>
@@ -6477,18 +6477,20 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="modules/platform/cloud/wow-cloud-config.js?v=2" defer></script>
 <script src="modules/platform/cloud/wow-cloud-client.js?v=6" defer></script>
 <script src="modules/platform/cloud/wow-cloud-sync.js?v=1" defer></script>
-<script src="accounts-access.js?v=6" defer></script>
+<link rel="stylesheet" href="wow-dialog.css?v=1">
+<script src="wow-dialog.js?v=1" defer></script>
+<script src="accounts-access.js?v=7" defer></script>
 <script src="cart-page.js?v=1" defer></script>
 <script src="operations-workspace.js?v=8" defer></script>
 <script src="ui-navigation.js?v=33" defer></script>
 <script src="bottomnav-fit.js?v=2" defer></script>
 <script src="context-nav.js?v=14" defer></script>
 <link rel="stylesheet" href="bottomnav-fit.css?v=1">
-     <script src="ui-logo.js?v=3" defer></script>
+     <script src="ui-logo.js?v=4" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
 <script src="product-categories.js?v=4" defer></script>
-<script src="install-identity.js?v=4" defer></script>
-<script src="app-identity.js?v=5" defer></script>
+<script src="install-identity.js?v=5" defer></script>
+<script src="app-identity.js?v=7" defer></script>
 <script src="voice-loudness.js?v=1" defer></script>
 <script src="offline-voice.js?v=12" defer></script>
 <script src="reference-voice-assets.js?v=1" defer></script>
@@ -6554,7 +6556,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="modules/platform/offline/store.js?v=1" defer></script>
 <script src="modules/platform/offline/grant.js?v=1" defer></script>
 <script src="modules/platform/offline/transport.js?v=1" defer></script>
-<script src="modules/platform/offline/status.js?v=3" defer></script>
+<script src="modules/platform/offline/status.js?v=4" defer></script>
 <link rel="stylesheet" href="modules/platform/offline/styles.css?v=1">
 <script src="modules/platform/registry.js?v=4" defer></script>
 <link rel="stylesheet" href="modules/platform/styles.css?v=3">
@@ -6594,16 +6596,16 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="vendor/tz-lookup/tz.js?v=1" defer></script>
 <link rel="stylesheet" href="prayer-card.css?v=1">
 <script src="prayer-card.js?v=1" defer></script>
-<script src="greeting-carousel.js?v=20" defer></script>
+<script src="greeting-carousel.js?v=21" defer></script>
 <script src="home-layout.js?v=2" defer></script>
 <script src="home-dock.js?v=2" defer></script>
 <script src="home-customizer.js?v=4" defer></script>
 <script src="invoice-workspace.js?v=1" defer></script>
 <script src="invoice-preview.js?v=1" defer></script>
 <script src="barcode-workspace.js?v=1" defer></script>
-<script src="touch-keyboard.js?v=4" defer></script>
+<script src="touch-keyboard.js?v=5" defer></script>
 <script src="developer-profile.js?v=2" defer></script>
-<script src="app-updates.js?v=4" defer data-release="221"></script>
+<script src="app-updates.js?v=4" defer data-release="222"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">
@@ -6641,7 +6643,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="home-customizer.css?v=5">
 <link rel="stylesheet" href="invoice-workspace.css?v=1">
 <link rel="stylesheet" href="barcode-workspace.css?v=1">
-<link rel="stylesheet" href="touch-keyboard.css?v=2">
+<link rel="stylesheet" href="touch-keyboard.css?v=3">
 <link rel="stylesheet" href="notifications-workspace.css?v=2">
 <link rel="stylesheet" href="unified-workspaces.css?v=1">
 <link rel="stylesheet" href="operations-workspace.css?v=3">
@@ -6797,12 +6799,9 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
     <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
       <span></span><span></span><span></span>
     </button>
-    <div class="nb-logo" id="navLogo">
-      <span class="nb-logo-txt" id="navLogoTxt">W</span>
-    </div>
-    <div class="nb-title" id="navTitle"><span>WOW</span> Furniture</div>
+
   </div>
-  <div class="wf-nav-wordmark"><bdi dir="ltr"><strong>WOW</strong> Furniture</bdi></div>
+  <div class="wf-nav-wordmark"></div>
   <div class="nb-right wf-header-controls">
     <div class="lang-sw">
       <!-- Language selection is managed in Settings. -->
@@ -6817,7 +6816,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <aside class="sidebar" id="sidebar" inert aria-labelledby="wf-nav-nav_main">
     <button type="button" id="wfSidebarClose" aria-controls="sidebar" onclick="wfToggleDesktopSidebar()">×</button>
   <div class="wf-sidebar-brand" id="wfSidebarBrand">
-    <img id="wfSidebarLogo" src="app-icon-192.png?v=221" alt="">
+    <img id="wfSidebarLogo" src="app-icon-192.png?v=222" alt="">
     <strong dir="ltr">WOW <span>Furniture</span></strong>
 
   </div>
@@ -8731,7 +8730,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
       <div style="padding:14px;">
         <div style="display:flex;gap:8px;">
 
-          <input type="text" id="qblInput" class="fc" inputmode="none" aria-haspopup="dialog" onclick="qblOpenKeyboard()"
+          <input type="text" id="qblInput" class="fc" inputmode="search" enterkeyhint="search" onclick="qblOpenKeyboard()"
             placeholder="اسم الموديل أو الباركود..."
             oninput="onQblInput()"
             onkeydown="if(event.key==='Enter')searchQbl()"
@@ -10750,7 +10749,12 @@ function wfDriveInitOnboarding(){
   if(!wfRecoveryFrame('welcome'))return;
   const T=wfRecoveryTexts();wfRecoverySetText('wfRestoreModalTitle',T.welcome);wfRecoverySetText('wfRestoreModalSub',T.welcomeSub);
   wfRecoverySetText('wfRestoreWarning',T.privacy);wfRecoverySetText('wfRestoreConfirmBtn',T.connect);wfRecoverySetText('wfRestoreCancelBtn',T.later);wfRecoveryShow('wfRestoreInfoWrap',false);
-  if(wfDriveValidClientId(wfDriveGetClientId()))wfDriveGetTokenClient().catch(()=>{});
+  const connectButton=document.getElementById('wfRestoreConfirmBtn');
+  if(connectButton&&wfDriveValidClientId(wfDriveGetClientId())){
+    const prepare=()=>wfDriveGetTokenClient().catch(()=>{});
+    connectButton.addEventListener('pointerenter',prepare,{once:true});
+    connectButton.addEventListener('focus',prepare,{once:true});
+  }
 }
 function wfRecoveryRememberMeta(meta){
   wfDriveLSSet(WF_DRIVE_FILE_ID_KEY,meta.id);wfDriveLSSet(WF_DRIVE_LAST_KEY,meta.modifiedTime||'');wfDriveLSSet(WF_DRIVE_LAST_SIZE_KEY,meta.size||0);
@@ -10794,7 +10798,7 @@ async function wfDriveStartFreshBackup(){
   if(WF_DRIVE_STATE.connectBusy||WF_RESTORE_PENDING.busy||WF_RESTORE_PENDING.complete||WF_DRIVE_STATE.inFlight)return false;
   const held=wfRecoveryGet();if(!held)return wfDriveBackupNow({interactive:true,force:true,reason:'manual'});
   if(held.state==='check')return wfDriveConnect();
-  if(held.state==='found'&&!window.confirm(wfRecoveryTexts().replaceConfirm))return false;
+  if(held.state==='found'&&!await WFDialog.confirm(wfRecoveryTexts().replaceConfirm))return false;
   // Only this explicit action may replace an un-restored backup.
   wfBackupCloseRestoreModal(true);wfRecoverySet(null);
   const ok=await wfDriveBackupNow({interactive:true,force:true,reason:'start-fresh',replaceFileId:held.state==='found'?held.fileId:''});
@@ -11080,7 +11084,7 @@ async function wfDriveOpenFolder(){
   if(!wfDriveIsLinked())return;let popup=null;try{popup=window.open('about:blank','_blank');}catch(_){}try{await wfDriveEnsureToken(true);const folder=await wfDriveEnsureFolder(true);const url=folder.webViewLink||wfDriveLSGet(WF_DRIVE_FOLDER_LINK_KEY,'')||`https://drive.google.com/drive/folders/${folder.id}`;if(popup&&!popup.closed)popup.location.href=url;else window.open(url,'_blank','noopener,noreferrer');}catch(err){try{if(popup&&!popup.closed)popup.close();}catch(_){}const msg=err?.message||wfDriveTexts().failed;wfDriveSetStatus('error',msg);if(typeof showToast==='function')showToast('⚠️ '+msg,'er');}
 }
 async function wfDriveDisconnect(){
-  const T=wfDriveTexts();if(WF_RESTORE_PENDING.busy||WF_DRIVE_STATE.connectBusy||WF_DRIVE_STATE.inFlight)return;if(!window.confirm(T.disconnectConfirm))return;const token=WF_DRIVE_STATE.accessToken;try{if(token&&window.google?.accounts?.oauth2?.revoke)await new Promise(resolve=>google.accounts.oauth2.revoke(token,()=>resolve()));}catch(_){}
+  const T=wfDriveTexts();if(WF_RESTORE_PENDING.busy||WF_DRIVE_STATE.connectBusy||WF_DRIVE_STATE.inFlight)return;if(!await WFDialog.confirm(T.disconnectConfirm))return;const token=WF_DRIVE_STATE.accessToken;try{if(token&&window.google?.accounts?.oauth2?.revoke)await new Promise(resolve=>google.accounts.oauth2.revoke(token,()=>resolve()));}catch(_){}
   WF_DRIVE_STATE.accessToken='';WF_DRIVE_STATE.expiresAt=0;WF_DRIVE_STATE.connected=false;WF_DRIVE_STATE.status='disconnected';clearTimeout(WF_DRIVE_STATE.debounceTimer);
   [WF_DRIVE_AUTH_KEY,WF_DRIVE_FILE_ID_KEY,WF_DRIVE_FOLDER_ID_KEY,WF_DRIVE_FOLDER_LINK_KEY,WF_DRIVE_LAST_KEY,WF_DRIVE_LAST_SIZE_KEY,WF_DRIVE_LAST_HASH_KEY,WF_DRIVE_CLEANED_KEY].forEach(k=>wfDriveLSSet(k,null));wfDriveUpdateUI();if(typeof showToast==='function')showToast(T.disconnectedToast,'in');
 }
@@ -21396,7 +21400,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   init().catch(err=>{
     console.error('WOW Furniture initialization failed:',err);
     const msg=({ar:'تعذر تشغيل البرنامج. يرجى تحديث الصفحة.',tr:'Program başlatılamadı. Sayfayı yenileyin.',en:'The app could not start. Please refresh the page.',fr:"L’application n’a pas démarré. Actualisez la page.",ru:"Не удалось запустить приложение. Обновите страницу."})[S.lang];
-    try{showToast('⚠️ '+msg,'err')}catch(_){alert(msg)}
+    try{showToast('⚠️ '+msg,'err')}catch(_){void WFDialog.alert(msg)}
   });
 });
 
@@ -22355,8 +22359,7 @@ function qblAcceptScan(value) {
 let qblKeyboard;
 function qblOpenKeyboard() {
   if(window.WFTouchKeyboard){
-    if(window.WFTouchKeyboard.isTouchDevice()) window.WFTouchKeyboard.open('qblInput');
-    else document.getElementById('qblInput')?.focus({preventScroll:true});
+    if(!window.WFTouchKeyboard.open('qblInput')) document.getElementById('qblInput')?.focus({preventScroll:true});
     return;
   }
   if (qblKeyboard?.open) return;
@@ -23319,7 +23322,7 @@ function qblClearCart() {
 }
 
 /* ── تأكيد مسح السلة من الشريط العلوي ── */
-function qblClearCartConfirm() {
+async function qblClearCartConfirm() {
   const lang = S.lang || 'ar';
   const msgs = {
     ar: 'هل تريد مسح السلة؟',
@@ -23329,7 +23332,7 @@ function qblClearCartConfirm() {
   fr: "Vider le panier ?",
   ru: "Очистить корзину?"
 };
-  if (confirm(msgs[lang] || msgs.en)) {
+  if (await WFDialog.confirm(msgs[lang] || msgs.en)) {
     qblClearCart();
   }
 }
@@ -28212,7 +28215,7 @@ function bgUpdateUI(){
   row.classList.toggle('error',BG_STATE.status==='error');
   row.classList.toggle('pairing',pairing);
   if(sub)sub.textContent=BG_STATE.status==='error'?(BG_STATE.lastError||T.failed):(pairing?T.pairingSub:(paired?T.subActive:T.subInactive));
-  if(btn){const gisReady=BG_STATE.gisReady||!!window.google?.accounts?.oauth2;btn.style.display=active?'none':'inline-flex';btn.textContent=pairing?T.pairing:T.enable;btn.disabled=pairing||!navigator.onLine||!gisReady||bgRecoveryBlocked();}
+  if(btn){btn.style.display=active?'none':'inline-flex';btn.textContent=pairing?T.pairing:T.enable;btn.disabled=pairing||!navigator.onLine||bgRecoveryBlocked();}
   if(sub&&bgRecoveryBlocked()&&typeof wfRecoveryTexts==='function')sub.textContent=wfRecoveryTexts().heldSub+(BG_STATE.status==='error'?' '+BG_STATE.lastError:'');
   if(badge){badge.style.display=active?'inline-flex':'none';badge.textContent='✓ '+T.active;}
   try{const fs=document.getElementById('wfDriveFrequencySub');if(fs&&active)fs.textContent=({ar:'ملف واحد فقط · يعمل حتى لو كان التطبيق مغلقاً.',tr:'Tek dosya · uygulama kapalıyken de çalışır.',en:'One file · continues while the app is closed.',fr:'Un seul fichier · fonctionne même application fermée.',ru:'Один файл · работает при закрытом приложении.'})[S.lang];}catch(_){}
@@ -28378,11 +28381,18 @@ window.wfDriveBackupButton=async function(){
 
 document.addEventListener('DOMContentLoaded',()=>{
   bgDeviceId();bgDeviceKey();
-  bgLoadGIS().then(()=>{BG_STATE.gisReady=true;bgUpdateUI()}).catch(()=>{BG_STATE.gisReady=false;bgUpdateUI()});
   const consumed=bgConsumeReturnQuery();
   bgClearPending();bgLSSet(BG_RESULT_KEY,null);
   if(!consumed&&!bgPaired())BG_STATE.status='idle';
   bgEnsureRow();bgUpdateUI();
+  const setupRow=document.getElementById('wfBgRow');
+  if(setupRow){
+    const warm=()=>bgLoadGIS().then(bgUpdateUI).catch(()=>{BG_STATE.gisReady=false;bgUpdateUI();});
+    if('IntersectionObserver' in window){
+      const watch=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){watch.disconnect();warm();}});
+      watch.observe(setupRow);
+    }else{setupRow.addEventListener('pointerenter',warm,{once:true});setupRow.addEventListener('focusin',warm,{once:true});}
+  }
   const backup=document.getElementById('wfDriveBackupNowBtn');if(backup)backup.setAttribute('onclick','wfDriveBackupButton()');
   if(bgPaired()){BG_STATE.status='active';bgUpdateUI();bgHeartbeat()}
   clearInterval(BG_STATE.heartbeatTimer);BG_STATE.heartbeatTimer=setInterval(bgHeartbeat,10*60*1000);

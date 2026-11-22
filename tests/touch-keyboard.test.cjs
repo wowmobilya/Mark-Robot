@@ -90,7 +90,7 @@ function domFixture({touch=true,coarse=false,width=1280,lang='en',pickers=false}
   const make=(tag,id,parent=doc.body)=>{const node=new Element(tag);node.id=id||'';parent.append(node);return node;};
   const scope=make('section','workspace'),name=make('input','name',scope),other=make('input','other',scope);name.value='draft';other.value='untouched';
   if(pickers){make('input','prHsCode',scope);make('input','prDesc',scope);}
-  const window={document:doc,innerWidth:width,navigator:{maxTouchPoints:touch?5:0},matchMedia:()=>{mediaQueries++;return pointerMedia;},PointerEvent:Event,addEventListener(){},getComputedStyle:()=>({visibility:'visible',display:'block'}),localStorage:{getItem(){return null;},setItem(){}},qblEnableSound(){},qblStopCamera(){}};
+  const window={document:doc,innerWidth:width,navigator:{maxTouchPoints:touch?5:0},matchMedia:query=>{mediaQueries++;return query.includes('max-width')?{matches:width<=600}:pointerMedia;},PointerEvent:Event,addEventListener(){},getComputedStyle:()=>({visibility:'visible',display:'block'}),localStorage:{getItem(){return null;},setItem(){}},qblEnableSound(){},qblStopCamera(){}};
   const context=vm.createContext({window,document:doc,Intl,Event,InputEvent:Event,FocusEvent:Event,KeyboardEvent:Event,
     MutationObserver:class{constructor(callback){this.callback=callback;this.targets=[];observers.push(this);}observe(target,options){this.targets.push({target,options});}disconnect(){this.targets=[];}},
     requestAnimationFrame(callback){frames.push(callback);return frames.length;},cancelAnimationFrame(){},setTimeout,clearTimeout,setInterval,clearInterval});
@@ -119,13 +119,13 @@ test('DOM: touch interception keeps originals editable and uses a readonly mirro
   f.action('done');assert.deepEqual(f.events,[['name','input','draftx'],['name','change','draftx']]);assert.equal(f.api.isOpen,false);f.frames();assert.equal(f.api.isOpen,false);
 });
 
-test('DOM: touch eligibility follows live device capabilities with one media query, regardless of width',()=>{
+test('DOM: narrow touch fields use native input and wide touch fields reuse the cached media queries',()=>{
   const desktop=domFixture({touch:false,width:360});
   for(let i=0;i<8;i++){assert.equal(desktop.tap(desktop.name),true);desktop.dispatch(desktop.name,'focusin');}
-  assert.equal(desktop.api.isOpen,false);assert.equal(desktop.mediaQueries,1,'desktop events reuse the live media-query object');
+  assert.equal(desktop.api.isOpen,false);assert.equal(desktop.mediaQueries,2,'desktop events reuse the live media-query object');
   const touchPC=domFixture({touch:true,width:1920});assert.equal(touchPC.tap(touchPC.name),false);assert.equal(touchPC.api.isOpen,true);touchPC.api.close();
   const coarse=domFixture({touch:false,coarse:true,width:1920});assert.equal(coarse.tap(coarse.name),false);assert.equal(coarse.api.isOpen,true);coarse.api.close();
-  desktop.pointerMedia.matches=true;assert.equal(desktop.api.isTouchDevice(),true);assert.equal(desktop.tap(desktop.name),false);assert.equal(desktop.mediaQueries,1);desktop.api.close();
+  desktop.pointerMedia.matches=true;assert.equal(desktop.api.isTouchDevice(),true);assert.equal(desktop.tap(desktop.name),true);assert.equal(desktop.api.isOpen,false);assert.equal(desktop.mediaQueries,2);desktop.api.close();
   const lateTouch=domFixture({touch:false,width:1920});lateTouch.dispatch(lateTouch.name,'pointerdown',{pointerType:'touch',pointerId:1,clientX:20,clientY:50});lateTouch.dispatch(lateTouch.name,'click',{detail:1});assert.equal(lateTouch.api.isOpen,true);lateTouch.api.close();
 });
 

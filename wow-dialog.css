@@ -1,0 +1,5 @@
+.wf-app-dialog{box-sizing:border-box;inline-size:min(28rem,calc(100% - 2rem));max-block-size:calc(100dvh - 2rem);overflow:auto;inset:0;margin:auto;padding:1.4rem;border:1px solid var(--border,#9caeb1);border-radius:var(--radius,16px);background:var(--card,#fff);color:var(--text,#142c34);font:inherit;text-align:start;box-shadow:0 16px 60px #0003}
+.wf-app-dialog::backdrop{background:rgb(13 24 32 / .55)}
+.wf-app-dialog p{margin:0 0 1.35rem;white-space:pre-line;overflow-wrap:anywhere;line-height:1.65;font-weight:600}
+.wf-app-dialog-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:.65rem}
+.wf-app-dialog-actions button{min-block-size:44px;min-inline-size:5.5rem}

@@ -75,7 +75,7 @@ function runtime({initial=identity(),readFailure=false,missingPolicy=false,tabSt
     MutationObserver,BroadcastChannel:class{constructor(){channels.push(this);}postMessage(){}},
     requestAnimationFrame:callback=>frames.push(callback),setInterval:callback=>intervals.push(callback),
     Event:class{constructor(type){this.type=type;}},dispatchEvent(event){emittedEvents.push({type:event.type,canPrint:context.WFAccountAccess?.can('manufacturing.print')||false});events.get(event.type)?.(event);return true;},
-    addEventListener(type,callback){events.set(type,callback);},location:{search,reload(){reloads++;reloadEvents.push(copy(saved?.audit||[]));}},confirm:()=>true,
+    addEventListener(type,callback){events.set(type,callback);},location:{search,reload(){reloads++;reloadEvents.push(copy(saved?.audit||[]));}},WFDialog:{confirm:async()=>true},
     localStorage:{setItem(){}},sessionStorage:{
       getItem(key){if(storageBlocked)throw Error('Storage blocked');return tabStorage.get(key)??null;},
       setItem(key,value){if(storageBlocked)throw Error('Storage blocked');tabStorage.set(key,String(value));},
@@ -90,7 +90,7 @@ function runtime({initial=identity(),readFailure=false,missingPolicy=false,tabSt
     async admin(){const service=core.createService({...adapter,crypto:webcrypto,policy,now:()=>clock});await service.signIn({username:'owner',password:PASSWORD});return service;},
     async settle(){let drained=0;for(let i=0;i<4;i++){while(frames.length){assert(++drained<=50,'permission controls must not create an animation-frame loop');frameRuns++;frames.shift()();}await flush();}assert.equal(frames.length,0,'permission controls must settle');}};
 }
-function remoteService(role='owner'){
+function remoteService(role='owner',verifiedFounder=false){
   let error=null,barrier=null;const calls=[];
   const account=row('remote-'+role,role);delete account.credential;
   const state={configured:true,revision:1,currentAccount:account,accounts:[account],audit:[]};
@@ -99,6 +99,7 @@ function remoteService(role='owner'){
       const request=JSON.parse(options.body);calls.push(request.action);if(barrier)await barrier;
       if(error?.code==='NETWORK')throw new TypeError('Network unavailable');
       const status=error?.status||200,body=error?{ok:false,error}:{ok:true,workspaceId:'workspace-1',identity:state,
+        ...(request.action==='platform.identity'?{verifiedFounder}:{}),
         ...(request.action==='auth.signIn'?{session:{access_token:'fixture-access',refresh_token:'fixture-refresh',expires_at:Math.floor(Date.now()/1000)+3600}}:{})};
       return {ok:status>=200&&status<300,status,json:async()=>copy(body)};
     }});
@@ -437,4 +438,17 @@ test('resuming a valid session announces access after the verification gate reop
   const accessEvents=h.emittedEvents.filter(event=>event.type==='wf-account-access-change');
   assert(accessEvents.length>0,'navigation must receive a fresh access event even when the account metadata has not changed');
   assert.equal(accessEvents.at(-1).canPrint,true,'listeners must see restored permissions when the event is dispatched');
+});
+
+test('founder check requires the current online server grant and clears on offline',async()=>{
+ for(const grant of [false,true]){
+   const remote=remoteService('owner',grant);
+   const h=runtime({search:'?wf-cloud=employee',cloud:remote.client});
+   await h.signed('remote-owner');await h.settle();
+   const badge=h.document.getElementById('wfAccountSession').children[2];
+   assert(remote.calls.includes('platform.identity'));assert.equal(badge.hidden,!grant);
+   h.context.navigator={onLine:false};h.events.get('offline')();assert.equal(badge.hidden,true);
+ }
+ const local=runtime();await local.signed('owner');await local.settle();
+ assert.equal(local.document.getElementById('wfAccountSession').children[2].hidden,true);
 });

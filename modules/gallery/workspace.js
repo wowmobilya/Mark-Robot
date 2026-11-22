@@ -452,8 +452,8 @@
         },'wfg-primary');
         consent.node.onchange=()=>{confirm.disabled=!consent.node.checked||lines.some(row=>!row.available);};
         confirm.disabled=true;
-        modal.content.append(sums,field(text('note'),notes),consent.wrap,group(confirm,button(text('clear'),()=>{
-          if(root.confirm(text('clearCart'))){cart.clear();cartNote='';saveCart();paint();redraw();}
+        modal.content.append(sums,field(text('note'),notes),consent.wrap,group(confirm,button(text('clear'),async()=>{
+          if(await root.WFDialog.confirm(text('clearCart'))){cart.clear();cartNote='';saveCart();paint();redraw();}
         })));
       };paint();
     }
@@ -530,7 +530,7 @@
       const buttons=group(button(text('preview'),()=>showDoc(exportsApi.makeDocument([order],{lang:language}),section)));
       if(section==='orders'&&can('orders.edit'))buttons.append(button(text('edit'),()=>orderEditor(order)),button((smsCopy[language]||smsCopy.en)[0],()=>orderSms(order)));
       if(section==='orders'&&can('orders.delete'))buttons.append(button(text('archive'),async()=>{
-        if(root.confirm(text('confirmArchive')))await changed('gallery.order.update',{orderId:order.id,version:order.version,archive:true},null,'archive.'+order.id);
+        if(await root.WFDialog.confirm(text('confirmArchive')))await changed('gallery.order.update',{orderId:order.id,version:order.version,archive:true},null,'archive.'+order.id);
       },'wfg-quiet'));
       card.append(buttons);return card;
     }
@@ -620,7 +620,7 @@
         for(const sale of result.items){const entry=el('div','wfg-sale');entry.append(el('strong','',[sale.buyer,showDate(sale.createdAt)].filter(Boolean).join(' · ')),
           el('p','',sale.quantity+' × '+money(sale.priceMinor,item.currency)),el('small','',[sale.phone,sale.note].filter(Boolean).join(' · ')));
           if(sale.reversedAt)entry.append(el('small','',text('reversed')));
-          else if(can('myorders.edit'))entry.append(button(text('reverse'),async()=>{if(!root.confirm(text('confirmReverse')))return;
+          else if(can('myorders.edit'))entry.append(button(text('reverse'),async()=>{if(!await root.WFDialog.confirm(text('confirmReverse')))return;
             await command('gallery.sale.reverse',{saleId:sale.id},'reverse.'+sale.id);await draw();await load();}));
           modal.content.append(entry);
         }
@@ -670,7 +670,7 @@
           [next[index],next[i]]=[next[i],next[index]];await savePresentation({...settings,[kind]:next});};
         const up=button(text('moveUp'),()=>move(-1)),down=button(text('moveDown'),()=>move(1));up.disabled=!index;down.disabled=index===settings[kind].length-1;
         card.append(visibility.wrap,group(button(text('edit'),()=>presentationEditor(kind,item)),up,down,button(text('remove'),async()=>{
-          if(root.confirm(text('remove')+' · '+(item.title||item.label)+'?'))await savePresentation({...settings,[kind]:settings[kind].filter(x=>x.id!==item.id)});
+          if(await root.WFDialog.confirm(text('remove')+' · '+(item.title||item.label)+'?'))await savePresentation({...settings,[kind]:settings[kind].filter(x=>x.id!==item.id)});
         },'wfg-quiet')));grid.append(card);
       }
       if(!settings[kind].length)grid.append(el('p','wfg-empty',text('empty')));body.append(grid);

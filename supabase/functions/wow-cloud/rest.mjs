@@ -65,6 +65,7 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     health:()=>call('/rest/v1/rpc/wow_operations_health',{body:{},kind:'rpc'}),
     // Fixed service-only credential lookup; never part of module/app dispatch.
     offlineSigningKey:()=>call('/rest/v1/rpc/wow_offline_owner_signing_key',{body:{},kind:'rpc'}),
+    requirePlatformFounder:actor=>call('/rest/v1/rpc/wow_platform_require',{body:{p_user:actor.userId,p_session:actor.sessionId},kind:'rpc'}),
     platformRpc:(actor,action,data)=>call('/rest/v1/rpc/'+(/^(limits|plans)\./.test(action)?'wow_platform_limits':'wow_platform_service'),{
       body:{p_user:actor.userId,p_session:actor.sessionId,p_action:/^(limits|plans)\./.test(action)?'platform.'+action:action,p_data:data},kind:'rpc'}),
     moduleRpc:(name,action,data)=>{

@@ -76,7 +76,7 @@
         details.append(button(t('save'),()=>download(new Blob([text],{type:'application/json'}),'mark-robot-'+row.queueId+'.json')));
         if(item.blob)details.append(button(t('file'),()=>download(item.blob,item.fileName||'attachment')));
         if(row.status!=='pending')details.append(button(t('remove'),async()=>{
-          if(!root.confirm(t('confirm')))return;
+          if(!await root.WFDialog.confirm(t('confirm')))return;
           try{await api.discardDraft(row.queueId);if(panel===selected){details.replaceChildren();await rows();draw();}}catch(e){error(e);}
         }));
       }catch(e){error(e);}

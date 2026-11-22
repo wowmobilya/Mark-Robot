@@ -21,6 +21,7 @@
     storage:['تعذّر قراءة حسابات الجهاز. أعد المحاولة؛ لم تُفتح البيانات.','Device accounts could not be read. Retry; business data remains locked.','Cihaz hesapları okunamadı. Yeniden deneyin; veriler kilitli kalır.','Impossible de lire les comptes. Réessayez ; les données restent verrouillées.','Не удалось прочитать учётные записи. Данные остаются заблокированы.'],
     retry:['إعادة المحاولة','Retry','Yeniden dene','Réessayer','Повторить'],
     denied:['هذا الإجراء غير متاح لصلاحيات حسابك.','Your account does not have permission for this action.','Hesabınız bu işlem için yetkili değil.','Votre compte n’autorise pas cette action.','У вашей учётной записи нет прав на это действие.'],
+    founder:['مدير المنصة الموثّق','Verified platform administrator','Doğrulanmış platform yöneticisi','Administrateur de plateforme vérifié','Подтверждённый администратор платформы'],
     lock:['قفل وتبديل الحساب','Lock and switch account','Kilitle ve hesap değiştir','Verrouiller et changer de compte','Заблокировать и сменить пользователя'],
     switch:['تبديل الحساب','Switch account','Hesap değiştir','Changer de compte','Сменить пользователя'],
     lockConfirm:['سيُقفل البرنامج وتُغلق النماذج المفتوحة. احفظ تعديلاتك أولًا. هل تريد المتابعة؟','The app will lock and close open forms. Save your changes first. Continue?','Uygulama kilitlenecek ve açık formlar kapanacak. Önce değişikliklerinizi kaydedin. Devam edilsin mi?','L’application se verrouillera et fermera les formulaires. Enregistrez vos modifications. Continuer ?','Приложение заблокируется, открытые формы закроются. Сначала сохраните изменения. Продолжить?'],
@@ -36,7 +37,24 @@
   let service,ready,booted=false,checking=true,refreshing=null,reloading=false,loginBusy=false,loginResolve,loginWait;
   let explicitLockPending=false,resumeChecking=false;
   let lockSurface,loginForm,username,password,submit,status,showPassword,loginTitle,loginIntro,localNote,sessionNote,langSelect,sessionButton;
-  let customerAuthSurface;
+  let customerAuthSurface,founderBadge,founderScope='',founderVerified=false,founderGeneration=0;
+  function badgeScope(state){
+    if(!remoteMode||root.navigator?.onLine===false||!state?.authenticated||state.offlineVerified||state.connection!=='online'||!state.currentAccount)return '';
+    return JSON.stringify([state.workspaceId,state.currentAccount.id,state.sessionVersion,state.authGeneration,state.lastVerifiedAt]);
+  }
+  function refreshFounder(state){
+    const scope=badgeScope(state);if(scope===founderScope)return;
+    founderScope=scope;founderVerified=false;const generation=++founderGeneration;
+    if(founderBadge)founderBadge.hidden=true;
+    if(!scope||!service?.request)return;
+    service.request('platform.identity').then(result=>{
+      if(generation!==founderGeneration||scope!==badgeScope(snapshot()))return;
+      founderVerified=result.verifiedFounder===true;
+      if(founderBadge)founderBadge.hidden=!founderVerified;
+    }).catch(()=>{});
+  }
+  root.addEventListener('offline',()=>refreshFounder(snapshot()));
+  root.addEventListener('online',()=>refreshFounder(snapshot()));
   let lastSnapshot=null,lastUIKey='',controlsQueued=false,channel=null;
   const auditActions=new WeakMap();
   const hiddenDisplays=new WeakMap();
@@ -58,6 +76,7 @@
   function translateLock(){
     if(sessionButton){
       const account=snapshot().currentAccount,action=text(account?.role==='owner'?'switch':'lock');
+      if(founderBadge){founderBadge.title=text('founder');founderBadge.setAttribute('aria-label',text('founder'));founderBadge.hidden=!founderVerified||badgeScope(snapshot())!==founderScope;}
       sessionButton.querySelector('strong').textContent=account?.name||'';sessionButton.querySelector('small').textContent=action;sessionButton.title=action;
       if(sessionButton.dataset.wfSessionRole!==account?.role){sessionButton.dataset.wfSessionRole=account?.role||'';sessionButton.children[0].innerHTML=account?.role==='owner'?ownerIcon:lockIcon;}
     }
@@ -77,8 +96,8 @@
     lockSurface=make('section');lockSurface.id='wfAccountLock';lockSurface.hidden=true;lockSurface.setAttribute('role','dialog');lockSurface.setAttribute('aria-modal','true');lockSurface.setAttribute('aria-labelledby','wfAccountLoginTitle');
     const card=make('div','wf-account-login'),brand=make('div','wf-account-login-brand');
     const emblem=make('span','wf-account-login-emblem');emblem.innerHTML=lockIcon;
-    const brandName=make('span','',doc.getElementById('navTitle')?.textContent?.trim()||'WOW FURNITURE');
-    const logo=doc.querySelector('#navLogo img');
+    const brandName=make('span','',root.WFAppIdentity?.current?.().name||doc.querySelector('#wfSidebarBrand > strong')?.textContent?.trim()||'WOW FURNITURE');
+    const logo=doc.getElementById('wfSidebarLogo');
     if(logo){const copy=logo.cloneNode(false);copy.removeAttribute('id');copy.alt='';brand.append(copy);}else brand.append(emblem);
     brand.append(brandName);
     const languages=make('div','wf-account-login-languages');langSelect=make('select');
@@ -95,6 +114,7 @@
     status=make('p','wf-account-login-status');status.id='wfAccountLoginStatus';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     password.setAttribute('aria-describedby',status.id);sessionNote=make('p');localNote=make('small','wf-account-login-local');
     loginForm.append(userLabel,passwordLabel,submit);card.append(languages,brand,loginTitle,loginIntro,loginForm,status,sessionNote,localNote);lockSurface.append(card);doc.body.append(lockSurface);
+    root.WFTouchKeyboard?.mountPreference?.(card);
     if(remoteMode)customerAuthSurface=root.WFCustomerAuth?.mountVisitor?.({container:card,client:service,loginForm,lang:locale(),
       onComplete:(value,message)=>{username.value=value||'';status.textContent=message;password.focus();}});
     loginForm.addEventListener('submit',async event=>{
@@ -144,7 +164,7 @@
   }
   function onSnapshot(state){
     if(!remoteMode)root.WFCloud?.localIdentityChanged?.();
-    const previous=lastSnapshot;lastSnapshot=state;
+    const previous=lastSnapshot;lastSnapshot=state;refreshFounder(state);
     if(booted&&state.configured&&!state.currentAccount){if(!explicitLockPending)invalidate();return;}
     if(previous?.currentAccount&&state.currentAccount&&previous.currentAccount.id!==state.currentAccount.id&&booted){invalidate();return;}
     const account=state.currentAccount,key=[state.configured,account?.id,account?.sessionVersion,account?.updatedAt,account?.role,account?.permissions?.join('|')].join(':');
@@ -168,7 +188,7 @@
     if(explicitLockPending)return;
     if(!snapshot().configured)return;
     if(!snapshot().currentAccount){showLogin();return;}
-    if(!root.confirm(text('lockConfirm')))return;
+    if(!await root.WFDialog.confirm(text('lockConfirm')))return;
     explicitLockPending=true;buildLock();setLocked(true);loginBusy=true;submit.disabled=true;translateLock();
     // signOut publishes a locked session before committing its audit event.
     // Keep the page alive until that transaction settles, then clear all state.
@@ -179,7 +199,7 @@
   }
   function updateSession(){
     const sidebar=doc.getElementById('sidebar');if(!sidebar)return;
-    if(!sessionButton){sessionButton=make('button','wf-account-session');sessionButton.type='button';sessionButton.id='wfAccountSession';const symbol=make('span');symbol.innerHTML=lockIcon;const caption=make('span');caption.append(make('strong'),make('small'));sessionButton.append(symbol,caption);sidebar.append(sessionButton);sessionButton.addEventListener('click',requestLock);}
+    if(!sessionButton){sessionButton=make('button','wf-account-session');sessionButton.type='button';sessionButton.id='wfAccountSession';const symbol=make('span');symbol.innerHTML=lockIcon;const caption=make('span');caption.append(make('strong'),make('small'));founderBadge=make('span','wf-founder-check','✓');founderBadge.hidden=true;founderBadge.setAttribute('role','img');sessionButton.append(symbol,caption,founderBadge);sidebar.append(sessionButton);sessionButton.addEventListener('click',requestLock);}
     sessionButton.hidden=!snapshot().currentAccount;translateLock();
   }
   const functionPermissions={

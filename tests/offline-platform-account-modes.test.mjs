@@ -32,7 +32,7 @@ function realApp(f,tab=new Map(),href=url){
   WFAccountsLocalProvider:{create:()=>({read:async()=>structuredClone(f.state),commit:async(revision,state)=>{assert.equal(f.state?.revision||0,revision);f.state=structuredClone(state);}})},
   WOW_CLOUD_CONFIG:{enabled:true,publishableKey:'test-publishable',endpoint,projectRef:'test'},sessionStorage:s,localStorage:ls,
   crypto:webcrypto,Event:E,CustomEvent:E,addEventListener:(t,fn)=>{if(!events.has(t))events.set(t,[]);events.get(t).push(fn);},dispatchEvent:e=>{for(const fn of events.get(e.type)||[])fn(e);},
-  requestAnimationFrame:()=>1,setInterval:()=>1,confirm:()=>true,setTimeout,clearTimeout,fetch:async(u,o)=>{
+  requestAnimationFrame:()=>1,setInterval:()=>1,WFDialog:{confirm:async()=>true},setTimeout,clearTimeout,fetch:async(u,o)=>{
    const body=JSON.parse(o.body);calls.push({action:body.action,headers:o.headers,body});let value;
    if(handler)value=await handler(body,o);
    if(!value){if(body.action==='auth.signIn')role=body.username==='worker'?'sales':'owner';

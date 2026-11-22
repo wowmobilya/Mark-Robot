@@ -99,3 +99,26 @@
   #wfTouchKeyboard .wf-tk-error { grid-area:error; overflow:auto; }
   #wfTouchKeyboard .wf-tk-key { min-block-size:36px; }
 }
+@media screen {
+  .wf-tk-choice { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-block:6px;color:var(--text2);font:inherit;font-size:13px; }
+  .wf-tk-choice[hidden] { display:none!important; }
+  .wf-tk-choice select { max-inline-size:70%;min-block-size:44px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font:inherit;font-size:16px; }
+  .wf-account-login > .wf-tk-choice { border-block-start:1px solid var(--border);padding-block-start:6px; }
+  #wfTouchKeyboard .wf-tk-tools-toggle { display:none; }
+}
+@media screen and (max-width:600px), screen and (orientation:landscape) and (max-height:500px) {
+  html body #wfTouchKeyboard { border-radius:14px 14px 0 0; }
+  #wfTouchKeyboard .wf-tk-header { padding:1px 8px;gap:3px; }
+  #wfTouchKeyboard .wf-tk-heading { flex:1;min-inline-size:0; }
+  #wfTouchKeyboard .wf-tk-heading h2 { font-size:14px; }
+  #wfTouchKeyboard .wf-tk-caption { display:none; }
+  #wfTouchKeyboard .wf-tk-tools-toggle { display:flex;flex:0 0 42px;min-height:36px;border:0;box-shadow:none;background:transparent; }
+  #wfTouchKeyboard[data-tools=false] .wf-tk-toolbar { display:none; }
+  #wfTouchKeyboard .wf-tk-edit-host { padding:0 8px 4px; }
+  #wfTouchKeyboard .wf-tk-editor { min-block-size:36px;padding:4px 8px;font-size:16px; }
+  #wfTouchKeyboard .wf-tk-body { padding:2px 4px 4px; }
+  #wfTouchKeyboard .wf-tk-keys,#wfTouchKeyboard .wf-tk-row { gap:3px; }
+  #wfTouchKeyboard .wf-tk-language { min-block-size:30px; }
+  #wfTouchKeyboard .wf-tk-key { min-block-size:36px;padding:2px;border-radius:6px; }
+  #wfTouchKeyboard .wf-tk-footer { padding:3px 6px max(3px,env(safe-area-inset-bottom)); }
+}

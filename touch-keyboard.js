@@ -43,6 +43,9 @@
   const names={ar:'العربية',tr:'Türkçe',en:'English',fr:'Français',ru:'Русский'};
   const copy={
     title:['لوحة المفاتيح','Klavye','Keyboard','Clavier','Клавиатура'],
+    device:['لوحة الجهاز','Cihaz klavyesi','Device keyboard','Clavier de l’appareil','Клавиатура устройства'],
+    custom:['لوحة WOW','WOW klavyesi','WOW keyboard','Clavier WOW','Клавиатура WOW'],
+    tools:['أدوات التحرير','Düzenleme araçları','Editing tools','Outils de saisie','Инструменты ввода'],
     close:['إغلاق','Kapat','Close','Fermer','Закрыть'],
     done:['تم','Tamam','Done','Terminé','Готово'],
     search:['بحث','Ara','Search','Rechercher','Поиск'],
@@ -86,6 +89,34 @@
   const uiLanguage=()=>locales.includes(root.lang)?root.lang:'en';
   const t=key=>copy[key]?.[locales.indexOf(uiLanguage())]||key;
   function isTouchDevice() { return observedTouch||Number(global.navigator?.maxTouchPoints)>0||Number(global.navigator?.msMaxTouchPoints)>0||!!coarsePointer?.matches; }
+  const smallTouch=global.matchMedia?.('(max-width:600px), (orientation:landscape) and (max-height:500px)');
+  const preferenceKey='wf_touch_keyboard_mode';
+  let preferred;
+  try { preferred=global.localStorage.getItem(preferenceKey); } catch (_) {}
+  function phoneLayout(){
+    const {width,height}=global.screen||{};
+    return smallTouch?.matches||(width>0&&height>0&&Math.min(width,height)<=600);
+  }
+  function mode(){return preferred==='device'||preferred==='wow'?preferred:phoneLayout()?'device':'wow';}
+  function intercept(){return isTouchDevice()&&mode()==='wow';}
+  function refreshChoices(){
+    for(const control of doc.querySelectorAll('.wf-tk-choice')){
+      control.hidden=!isTouchDevice();
+      const select=control.querySelector('select');
+      control.querySelector('span').textContent=t('title');select.options[0].text=t('device');select.options[1].text=t('custom');
+      select.value=mode();
+    }
+  }
+  function mountPreference(host){
+    if(!host||host.querySelector('.wf-tk-choice'))return;
+    const label=make('label','wf-tk-choice'),select=make('select');
+    for(const value of ['device','wow']){const option=make('option');option.value=value;select.append(option);}
+    select.addEventListener('change',()=>{
+      preferred=select.value;try{global.localStorage.setItem(preferenceKey,preferred);}catch(_){}
+      cancelAnimationFrame(focusFrame);if(active)close('dismiss',false);refreshChoices();
+    });
+    label.append(make('span'),select);host.append(label);refreshChoices();
+  }
   function supports(field) {
     return !!field && !registrations.get(field.id)?.picker && (field.tagName==='TEXTAREA'||field.tagName==='INPUT'&&supported.has(field.type||'text')) && !field.readOnly&&!field.disabled&&!field.matches(':disabled')&&!field.closest('[inert]')&&!dialog?.contains(field);
   }
@@ -137,9 +168,9 @@
     dialog=make('dialog','wf-touch-keyboard');dialog.id='wfTouchKeyboard';dialog.setAttribute('aria-labelledby','wfTouchKeyboardTitle');
     const header=make('header','wf-tk-header'),heading=make('div','wf-tk-heading');
     title=make('h2');title.id='wfTouchKeyboardTitle';caption=make('p','wf-tk-caption');heading.append(title,caption);
-    const closeButton=button('close','×','close');closeButton.classList.add('wf-tk-close');header.append(heading,closeButton);
+    const closeButton=button('close','×','close');closeButton.classList.add('wf-tk-close');const toolsButton=button('tools','⋯','tools');toolsButton.classList.add('wf-tk-tools-toggle');toolsButton.setAttribute('aria-controls','wfTouchEditTools');header.append(heading,toolsButton,closeButton);
     const editHost=make('div','wf-tk-edit-host');editHost.id='wfTouchKeyboardEditHost';
-    toolbar=make('div','wf-tk-toolbar');languageBar=make('div','wf-tk-languages');languageBar.setAttribute('role','group');
+    toolbar=make('div','wf-tk-toolbar');toolbar.id='wfTouchEditTools';languageBar=make('div','wf-tk-languages');languageBar.setAttribute('role','group');
     keys=make('div','wf-tk-keys');keys.setAttribute('dir','ltr');
     const body=make('div','wf-tk-body');body.append(languageBar,keys);
     error=make('p','wf-tk-error');error.hidden=true;error.setAttribute('role','status');
@@ -152,6 +183,7 @@
       const node=event.target.closest('button');
       if(!node){if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)close('dismiss');}return;}
       if(node.disabled)return;
+      if(node.dataset.action==='tools'){active.tools=!active.tools;render();return;}
       if(node.dataset.language){active.language=node.dataset.language;chosenLanguage=active.language;try{global.localStorage.setItem('wf_touch_keyboard_language',chosenLanguage);}catch(_){}render();focusEditor();return;}
       if(node.dataset.key!==undefined){edit('insert',node.dataset.key);return;}
       if(repeated&&node.dataset.action==='backspace'){repeated=false;return;}
@@ -194,6 +226,8 @@
   function render() {
     if(!active)return;
     dialog.dir=uiLanguage()==='ar'?'rtl':'ltr';dialog.dataset.numeric=String(active.numeric);
+    dialog.dataset.tools=String(!!active.tools);
+    const toolsButton=dialog.querySelector('[data-action="tools"]');toolsButton.setAttribute('aria-label',t('tools'));toolsButton.setAttribute('aria-expanded',String(!!active.tools));
     title.textContent=t('title');caption.textContent=active.options.title||describe(active.field);
     const closeButton=dialog.querySelector('[data-action="close"]');closeButton.setAttribute('aria-label',t('close'));closeButton.title=t('close');
     toolbar.replaceChildren(...[['select','▣'],['left','←'],['right','→'],['undo','↶'],['paste',t('paste')],['clear',t('clear')]].map(([action,text])=>button(action,text)));
@@ -335,7 +369,7 @@
   }
   function open(field,options={}) {
     if(typeof field==='string')field=doc.getElementById(field);
-    if(!isTouchDevice()||!supports(field)||!visible(field))return false;
+    if(!intercept()||!supports(field)||!visible(field))return false;
     if(active?.field===field){focusEditor();return true;}
     if(active)close('switch',false);
     build();
@@ -402,7 +436,7 @@
   }
   function beginGesture(event) {
     if(event.pointerType==='touch'||event.type==='touchstart')observedTouch=true;
-    if(!isTouchDevice()||event.button>0||suppressFocus)return;
+    if(!intercept()||event.button>0||suppressFocus)return;
     if(gesture)finishGesture(gesture,false);
     ignoredClick=null;
     const field=targetField(event.target);if(!field)return;
@@ -435,7 +469,7 @@
     doc.addEventListener('touchcancel',()=>{if(gesture)finishGesture(gesture,false);},{capture:true,passive:true});
   }
   doc.addEventListener('click',event=>{
-    if(!isTouchDevice()||suppressFocus||dialog?.contains(event.target))return;
+    if(!intercept()||suppressFocus||dialog?.contains(event.target))return;
     const node=event.target?.nodeType===1?event.target:event.target?.parentElement;
     const rawField=node?.tagName==='INPUT'||node?.tagName==='TEXTAREA'?node:node?.closest('label')?.control;
     if(gesture&&rawField===gesture.field){
@@ -451,7 +485,7 @@
   for(const type of ['blur','focusout'])doc.addEventListener(type,event=>{if(event.target===transferField)event.stopImmediatePropagation();},true);
   doc.addEventListener('focusin',event=>{
     if(dialog?.contains(event.target)){event.stopPropagation();return;}
-    if(suppressFocus||!isTouchDevice())return;
+    if(suppressFocus||!intercept())return;
     const field=targetField(event.target);if(!field)return;
     // Focus can be requested by existing search buttons and validation code.
     // Suppress native input before leaving this focus event, then show our pad.
@@ -461,13 +495,16 @@
   },true);
   global.addEventListener('pagehide',()=>{if(gesture)finishGesture(gesture,false);close('navigation',false);});
   global.addEventListener('popstate',()=>close('navigation',false));
-  new MutationObserver(()=>{if(active)render();}).observe(root,{attributes:true,attributeFilter:['lang']});
+  new MutationObserver(()=>{refreshChoices();if(active)render();}).observe(root,{attributes:true,attributeFilter:['lang']});
   if(isTouchDevice())root.classList.add('wf-touch-device');
   global.WFTouchKeyboard={
-    open,close,isTouchDevice,
+    open,close,isTouchDevice,mountPreference,
     register(field,options){if(typeof field==='string')registrations.set(field,options);else if(field)nodeRegistrations.set(field,options);},
     get isOpen(){return !!active;},get activeField(){return active?.field||null;}
   };
+  mountPreference(doc.getElementById('stab-language'));
+  mountPreference(doc.querySelector('.wf-account-login'));
+  smallTouch?.addEventListener?.('change',refreshChoices);
   // Keep the scanner's existing camera lifecycle and search action. Register by
   // ID so recreated controls retain the same behavior without new listeners.
   global.WFTouchKeyboard.register('qblInput',{
@@ -478,6 +515,16 @@
       if(!['dismiss','done'].includes(reason)||doc.hidden||global.WFTouchKeyboard.isOpen)return;
       if(typeof QBL==='object'&&QBL.phase===1&&typeof qblDropdownOpen!=='undefined'&&!qblDropdownOpen&&global.getCurrentPage?.()==='quick-barcode')global.qblStartCamera?.();
     }
+  });
+  const scannerInput=doc.getElementById('qblInput');
+  let nativeScanner=false;
+  scannerInput?.addEventListener('focus',()=>{
+    if(!isTouchDevice()||intercept()||nativeScanner)return;
+    nativeScanner=true;registrations.get('qblInput')?.onOpen?.();
+  });
+  scannerInput?.addEventListener('blur',()=>{
+    if(!nativeScanner)return;
+    nativeScanner=false;registrations.get('qblInput')?.onClose?.({reason:'done'});
   });
   // currency-calculator.js deliberately uses a text input for partial decimals.
   global.WFTouchKeyboard.register('ccInput',{numeric:true});

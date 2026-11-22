@@ -1,7 +1,10 @@
 import {sha256,failure} from '../core.mjs';
 
-export function createPlatformActions({platformRpc}){
-  const handlers={};
+export function createPlatformActions({platformRpc,requirePlatformFounder}){
+  const handlers={'platform.identity':async({actor})=>{
+    try{await requirePlatformFounder(actor);return {verifiedFounder:true};}
+    catch(error){if(error?.code==='ACCESS_DENIED')return {verifiedFounder:false};throw error;}
+  }};
   for(const action of ['company.list','company.rename','company.audit','company.status','company.create','limits.get','limits.set','plans.list','plans.save']){
     handlers['platform.'+action]=async({actor,body})=>{
       let data={...body};

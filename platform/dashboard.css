@@ -8,3 +8,7 @@ a{color:var(--ui-accent)}
 #content section:empty{display:none}
 #content>form:only-child{display:grid;max-width:28rem;margin:0 auto;gap:1rem}
 output{padding:.75rem;background:var(--ui-soft);border-radius:var(--ui-control)}
+.platform-inline-editor form{padding:1rem;border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--ui-soft)}
+.platform-inline-editor strong{flex-basis:100%}.platform-inline-editor input{inline-size:100%;min-inline-size:0}
+
+.platform-setup-qr{display:block;inline-size:min(100%,220px);block-size:auto}
