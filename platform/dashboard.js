@@ -210,7 +210,19 @@
       await request('plans.save',{id,name:name.value.trim(),userLimit:integer(users.value),storageBytes:bytes,deviceLimit:integer(devices.value),
         price:price.value||null,currency:currency.value||null,durationDays:integer(duration.value),version:plan?.version||0});
       await planEditor(container);status.textContent=sale(16);
-    });container.append(form);
+    });
+    container.append(form);
+    window.WFPlatformPricing?.mount(container,plans,(tier,existing)=>{
+      if(existing){
+        pick.value=existing.id;pick.onchange();
+      }else{
+        pick.value='';pick.onchange();id=tier.id;
+        name.value=tier.name;price.value=tier.price;currency.value='USD';duration.value=tier.days;
+        users.value='';devices.value='';amount.value='';unit.value='GB';
+      }
+      price.focus({preventScroll:true});
+      form.scrollIntoView({block:'nearest',behavior:'instant'});
+    });
   }
   async function subscription(container,company){
     const [state,{plans}]=await Promise.all([request('limits.get',{workspaceId:company.id}),request('plans.list')]);
