@@ -553,34 +553,7 @@
       body.className='platform-home-shortcut-copy';body.append(title,note);link.append(icon,body);
       quick.append(link);
     }
-    // Use the same developer identity and scope as the original WOW program's profile.
-    const developerWords={
-      ar:{title:'معلومات المبرمج',name:'المهندس معتز بالله حاج شعبان',role:'برمجة وتطوير أنظمة WOW الذكية',desc:'تطوير أنظمة الأعمال، الروبوتات والذكاء الاصطناعي، وربط البرمجيات بالأجهزة مع العناية بسرعة ووضوح تجربة الاستخدام.',details:'ملف المطوّر',skills:['أنظمة الأعمال','الروبوتات والأتمتة','الذكاء الاصطناعي','تكامل الأجهزة'],product:'WOW FURNITURE · Mark Robot'},
-      en:{title:'Developer information',name:'Eng. Mutez Billah Haj Shaban',role:'WOW intelligent software and systems',desc:'Business systems, robotics and AI, with software–hardware integration and a focus on usable and reliable workflows.',details:'Developer profile',skills:['Business systems','Robotics and automation','Artificial intelligence','Hardware integration'],product:'WOW FURNITURE · Mark Robot'},
-      tr:{title:'Geliştirici bilgileri',name:'Müh. Mutez Billah Haj Shaban',role:'WOW akıllı yazılım ve sistemler',desc:'İş sistemleri, robotik, yapay zekâ ve yazılım–donanım bütünleşmesi; güvenilir ve anlaşılır iş akışları.',details:'Geliştirici profili',skills:['İş sistemleri','Robotik ve otomasyon','Yapay zekâ','Donanım entegrasyonu'],product:'WOW FURNITURE · Mark Robot'},
-      fr:{title:'Informations sur le développeur',name:'Ing. Mutez Billah Haj Shaban',role:'Logiciels et systèmes intelligents WOW',desc:'Systèmes de gestion, robotique, intelligence artificielle et intégration logiciel–matériel avec des parcours fiables et clairs.',details:'Profil du développeur',skills:['Gestion','Robotique et automatisation','Intelligence artificielle','Intégration matérielle'],product:'WOW FURNITURE · Mark Robot'},
-      ru:{title:'Информация о разработчике',name:'Инженер Мутаз Биллах Хадж Шаабан',role:'Интеллектуальные системы WOW',desc:'Бизнес-программы, робототехника, искусственный интеллект и интеграция программ с оборудованием.',details:'Профиль разработчика',skills:['Бизнес-системы','Робототехника','Искусственный интеллект','Интеграция устройств'],product:'WOW FURNITURE · Mark Robot'}
-    };
-    const developer=developerWords[lang.value]||developerWords.ar;
-    const developerCard=el('details'),developerSummary=el('summary'),developerDetails=el('div');
-    developerCard.className='platform-developer-card';developerSummary.className='platform-developer-summary';
-    const developerIcon=el('span');developerIcon.className='platform-developer-icon';
-    developerIcon.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="m10 8-3 2.5L10 13m4-5 3 2.5-3 2.5M8 21h8m-4-4v4"/></svg>';
-    const developerHeading=el('span'),developerArrow=el('span','platform-developer-arrow','⌄');
-    developerHeading.className='platform-developer-heading';
-    developerHeading.append(el('strong',developer.title),el('small',developer.role));
-    developerSummary.append(developerIcon,developerHeading,developerArrow);
-    developerDetails.className='platform-developer-details';
-    const developerIdentity=el('div','platform-developer-identity');
-    const developerAvatar=el('span','platform-developer-avatar','WOW');
-    const developerIdentityText=el('div');
-    developerIdentityText.append(el('strong',developer.name),el('span',developer.product));
-    developerIdentity.append(developerAvatar,developerIdentityText);
-    const specialties=el('div','platform-developer-specialties');
-    for(const skill of developer.skills)specialties.append(el('span','platform-developer-skill',skill));
-    developerDetails.append(developerIdentity,el('p',developer.desc),specialties);
-    developerCard.append(developerSummary,developerDetails);
-    panels.home.append(hero,quickHeading,quick,developerCard);
+    panels.home.append(hero,quickHeading,quick);
     const createPanel=el('details'),createSummary=el('summary',homepage.openForm),createHint=el('p',homepage.formHelp);
     createPanel.className='platform-create-panel';createHint.className='platform-create-hint';
     form.className='platform-create-form';form.append(createHint);
