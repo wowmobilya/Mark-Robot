@@ -9,13 +9,7 @@ const read=p=>readFile(new URL(p,import.meta.url),'utf8');
 async function fixture(){
  const db=await createProviderTestDatabase();
  // Supabase Realtime owns these in production; minimal PGlite auth fixture.
- await db.exec([
-  'create schema realtime;',
-  'create table realtime.messages(topic text,extension text);',
-  "create or replace function realtime.topic() returns text language sql stable as $$ select nullif(current_setting('realtime.topic',true),'') $$;",
-  "create or replace function auth.uid() returns uuid language sql stable as $$ select nullif((coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb)->>'sub'),'')::uuid $$;",
-  "create or replace function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb) $$;"
- ].join('\n'));
+ // The shared local provider fixture models Supabase Realtime metadata.
  await db.exec(await read('../supabase/modules/files.sql'));
  await db.exec(await read('../supabase/modules/chat.sql'));
  await db.exec(await read('../supabase/modules/voice-calls.sql'));
