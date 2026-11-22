@@ -9,7 +9,8 @@
     measurement: ['قياس القطعة', 'Product size', 'Ürün ölçüsü', 'Dimensions du produit', 'Размер товара'],
     removePackage: ['حذف الباكيت', 'Remove package', 'Paketi kaldır', 'Supprimer le colis', 'Удалить упаковку'],
     removeMeasurement: ['حذف القياس', 'Remove size', 'Ölçüyü kaldır', 'Supprimer les dimensions', 'Удалить размер'],
-    addMeasurement: ['إضافة قياس', 'Add size', 'Ölçü ekle', 'Ajouter des dimensions', 'Добавить размер']
+    addMeasurement: ['إضافة قياس', 'Add size', 'Ölçü ekle', 'Ajouter des dimensions', 'Добавить размер'],
+    galleryLink: ['عرض ومخزون المعرض', 'Showcase & stock', 'Vitrin ve stok', 'Vitrine et stock', 'Каталог и остатки']
   };
   const word = (key, language) => words[key]?.[Math.max(0, locales.indexOf(language))] || key;
   function activePrice(product = {}) {
@@ -121,6 +122,26 @@
         remove.title = text('remove');
       }
       syncDisclosure(panel, details);
+      // WOW owns the model. The optional showcase merely edits its existing
+      // cloud publication and stock; it never creates another product record.
+      const actions=card.querySelector('.pr-card-new-actions');
+      if(actions){
+        const permitted=window.WFModules?.can?.('gallery.edit')===true;
+        let shortcut=actions.querySelector('[data-wf-gallery-product]');
+        if(permitted&&!shortcut){
+          shortcut=make('button','btn wf-product-gallery-action',text('galleryLink'));
+          shortcut.type='button';shortcut.dataset.wfGalleryProduct='true';
+          shortcut.addEventListener('click',event=>{
+            event.preventDefault();event.stopPropagation();
+            if(window.WFModules?.can?.('gallery.edit')!==true)return;
+            window.WFModules.open('gallery-studio',{productId:product.id});
+          });
+          actions.append(shortcut);
+        }
+        if(shortcut){shortcut.hidden=!permitted;shortcut.disabled=!permitted;
+          shortcut.textContent=text('galleryLink');
+          shortcut.setAttribute('aria-label',text('galleryLink')+' · '+product.name);}
+      }
     }
   }
 
@@ -239,5 +260,7 @@
   function refresh() { form(); catalog(); tiers(); dimensions(); packages(); browse(); }
   window.WFProductWorkspace = {refresh};
   new MutationObserver(refresh).observe(document.documentElement, {attributes: true, attributeFilter: ['lang']});
+  window.addEventListener('wf-account-access-change',catalog);
+  window.addEventListener('wf-cloud-session-change',catalog);
   refresh();
 })();

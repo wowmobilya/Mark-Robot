@@ -253,7 +253,7 @@
     CUSTOMER_PRINCIPAL_ROLE_FIXED:'customerPrincipalRoleFixed',
     INVALID_EXPIRY:'invalidExpiry',USERNAME_EXISTS:'duplicate',ALREADY_CONFIGURED:'conflict',AUTH_REQUIRED:'locked',
     PERMISSION_DENIED:'denied',ACCOUNT_NOT_FOUND:'missing',SELF_PROTECTION:'selfProtected',LAST_OWNER:'selfProtected',
-    CONFLICT:'conflict',LOGIN_FAILED:'passwordIncorrect',CURRENT_PASSWORD_REQUIRED:'passwordIncorrect',INVALID_CURRENT_PASSWORD:'passwordIncorrect',
+    CONFLICT:'conflict',LOGIN_FAILED:'passwordIncorrect',CURRENT_PASSWORD_REQUIRED:'passwordIncorrect',INVALID_CURRENT_PASSWORD:'passwordIncorrect',CURRENT_PASSWORD_INCORRECT:'passwordIncorrect',
     INVALID_STATUS:'failed',INVALID_CHANGE:'failed',STORAGE_ERROR:'failed',CRYPTO_UNAVAILABLE:'cryptoUnavailable'
   };
   function renderFrame() {

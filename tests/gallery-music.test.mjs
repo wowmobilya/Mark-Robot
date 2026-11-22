@@ -202,14 +202,17 @@ test('five locale labels and RTL update without reconstructing or starting the a
   assert.equal(new Set(labels).size,5);view.handle.dispose();
 });
 
-test('the gallery route mounts music once across catalog and language redraws and disposes it on exit',async()=>{
+test('catalog has no music controls while gallery management owns playback and disposes it on exit',async()=>{
   const f=fixture(),definitions=new Map();f.win.WFModules={register:value=>definitions.set(value.id,value)};
   f.win.setInterval=()=>1;f.win.clearInterval=()=>{};
   f.api.request=async()=>({items:[],hasMore:false,presentation:{}});
   for(const file of ['core','exports','workspace'])vm.runInContext(await fs.readFile(new URL('../modules/gallery/'+file+'.js',import.meta.url),'utf8'),f.context);
   const container=f.doc.createElement('div');f.doc.body.append(container);
-  const handle=definitions.get('gallery').mount({route:'gallery',container,api:f.api,lang:'en'});await flush();
-  const button=descendants(container).find(node=>node.tagName==='BUTTON'&&node.textContent==='Play music');assert.ok(button,'Gallery must mount its persistent music controls.');
+  let handle=definitions.get('gallery').mount({route:'gallery',container,api:f.api,lang:'en'});await flush();
+  assert.equal(f.audios.length,0,'Product browsing must not mount music controls');
+  handle.dispose();
+  handle=definitions.get('gallery-studio').mount({route:'gallery-studio',container,api:f.api,lang:'en'});await flush();
+  const button=descendants(container).find(node=>node.tagName==='BUTTON'&&node.textContent==='Play music');assert.ok(button,'Gallery management must mount music controls.');
   await dispatch(button,'click');handle.updateLanguage('tr');assert.equal(f.audios.length,1);assert.equal(f.audios[0].paused,false);
   assert.equal(button.textContent,'Müziği durdur');handle.dispose();assert.equal(f.audios[0].paused,true);assert.equal(container.textContent,'');
 });

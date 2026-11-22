@@ -41,7 +41,7 @@
     const text=key=>core.t(key,language),can=key=>api.can(key);
     const alive=()=>!disposed&&core.scopeKey(api.getSession())===scope;
     const assertActive=()=>{if(!alive())throw error('AUTH_REQUIRED');};
-    const music=['gallery','gallery-studio'].includes(route)?root.WFGalleryMusic?.mount({container:main,api,lang,permission:routes[route][1]}):null;
+    const music=route==='gallery-studio'?root.WFGalleryMusic?.mount({container:main,api,lang,permission:routes[route][1]}):null;
     const cartStorage=core.cartKey(startSession);
     const localRead=key=>{try{return root.localStorage.getItem(key);}catch{return null;}};
     const localWrite=(key,value)=>{try{if(value==null)root.localStorage.removeItem(key);else root.localStorage.setItem(key,value);}catch{/* Keep current-tab cart available. */}};
@@ -259,16 +259,23 @@
       const area=el('div'),toolbar=el('div','wfg-toolbar');
       function draw(){
         area.replaceChildren();toolbar.replaceChildren();
+        if(!active.length){
+          const empty=el('section','wfg-empty-state');empty.append(el('h3','',text('noProducts')),el('p','',text('catalogSourceHint')));
+          const actions=group(button(text('retry'),()=>load()));
+          if(can('products.view')&&!previewMode&&typeof root.showPage==='function')actions.append(button(text('openMainProducts'),()=>root.showPage('products'),'wfg-primary'));
+          if(can('gallery.edit')&&!previewMode)actions.append(button(text('studio'),()=>api.open('gallery-studio'),'wfg-primary'));
+          empty.append(actions);area.append(empty);return;
+        }
         const visible=active.filter(p=>(!category||p.collection===category)&&(!inStock||p.stock>0)&&matches(p.name,categoryLabel(p.collection),p.badge));
         const opts=group(button(text(view==='grid'?'list':'grid'),()=>{view=view==='grid'?'list':'grid';draw();}));
-        if(can('gallery.export')&&!previewMode){
+        if(can('gallery.export')&&!previewMode&&visible.length){
           opts.append(button(text('selectAll'),()=>{for(const p of visible)selected.add(core.typed(p.productId));draw();}),
             button(text('clear'),()=>{selected.clear();draw();}),
             button(text('download')+' ZIP ('+selected.size+')',()=>exportsApi.downloadProducts(active.filter(p=>selected.has(core.typed(p.productId))),settings,language,readBlob,alive)));
           opts.lastElementChild.disabled=!selected.size;
         }
         if(can('myorders.edit')&&!previewMode){const count=[...cart.values()].reduce((n,line)=>n+line.quantity,0);
-          opts.append(button(text('cart')+' ('+count+')',()=>cartDialog(draw),'wfg-primary'));}
+          if(visible.length||count)opts.append(button(text('cart')+' ('+count+')',()=>cartDialog(draw),'wfg-primary'));}
         toolbar.append(opts);
         if(!visible.length){area.append(el('p','wfg-empty',text(active.length?'empty':'noProducts')));return;}
         const grid=el('div','wfg-products'+(view==='list'?' wfg-list':''));
@@ -294,7 +301,9 @@
         }
         area.append(grid);pageEnd(area,visible.length,draw);
       }
-      body.append(findControls(draw,{collections,stock:true}),toolbar,area);draw();
+      if(active.length)body.append(findControls(draw,{collections,stock:true}),toolbar,area);
+      else body.append(area);
+      draw();
       if(settings.footer)body.append(el('footer','wfg-footer',settings.footer));
     }
     function specDialog(item){
@@ -477,7 +486,7 @@
     function studio(){
       body.append(tabs([['stockAdmin','stockAdmin'],['cards','cards'],['slides','slides'],['fields','fields'],['brand','brand']]));
       const actions=group(button(text('preview'),()=>{previewMode=true;category='';query='';render();}));
-      if(can('products.edit'))actions.append(button(text('products'),()=>api.open('products')));
+      if(can('products.edit')&&typeof root.showPage==='function')actions.append(button(text('products'),()=>root.showPage('products')));
       body.append(actions);
       if(tab==='stockAdmin'){stockManager();return;}
       if(tab==='brand'){brandSettings();return;}
@@ -585,6 +594,11 @@
     load().then(()=>{if(!alive()||opened)return;opened=true;
       if(params.orderId){const order=orders.find(o=>o.id===params.orderId);if(order)showDoc(exportsApi.makeDocument([order],{lang:language}),route==='gallery-orders'?'orders':'myorders');}
       if(params.productId!=null&&route==='gallery'){const visible=products.filter(p=>p.published),product=visible.find(p=>core.typed(p.productId)===core.typed(params.productId));if(product)lightbox(visible,product);}
+      if(params.productId!=null&&route==='gallery-studio'){
+        const product=products.find(p=>core.typed(p.productId)===core.typed(params.productId));
+        if(product){tab='stockAdmin';render();stockEditor(product,()=>render());}
+        else{status.textContent=text('productNotSynced');status.dataset.type='pending';}
+      }
     });
     return {dispose(){
       if(disposed)return;disposed=true;++generation;abort.abort();root.clearInterval(slideTimer);root.clearInterval(pollTimer);

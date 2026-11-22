@@ -94,3 +94,9 @@ test('barcode browse hides only an exact duplicate secondary name and retains di
   f.row.children[2].textContent='wow k400';enhanceBrowseResult(f.row);assert.equal(f.row.children[2].hidden,false);
   const onlyName=browseRow('W500');assert.doesNotThrow(()=>enhanceBrowseResult(onlyName.row));assert.equal(onlyName.row.children.length,2);
 });
+
+test('native model to showcase shortcut has a real caption in all five locales',()=>{
+ const values=['ar','en','tr','fr','ru'].map(lang=>word('galleryLink',lang));
+ assert.deepEqual(values,['عرض ومخزون المعرض','Showcase & stock','Vitrin ve stok','Vitrine et stock','Каталог и остатки']);
+ assert.equal(new Set(values).size,5);
+});
