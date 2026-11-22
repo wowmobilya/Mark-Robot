@@ -430,7 +430,13 @@
       const link=el('a',setupLabels[lang.value][5]),url=new URL(location.pathname,location.origin);
       url.searchParams.set('setup',setup.workspace);url.hash='invite='+setup.code;link.href=url.href;
       const invitation=el('section');invitation.className='platform-invite-card';invitation.append(link,el('p',t(14)),el('output',setup.code));companies.append(invitation);
-      if(window.ZXingBrowser?.BrowserQRCodeSvgWriter){const qr=new window.ZXingBrowser.BrowserQRCodeSvgWriter().write(url.href,660,660,new Map([[0,'M']]));qr.classList.add('platform-setup-qr');qr.setAttribute('shape-rendering','crispEdges');qr.style.background='white';qr.setAttribute('role','img');qr.setAttribute('aria-label',setupLabels[lang.value][5]);invitation.append(qr);}
+      window.WFOwnerInvite?.loadQrTools().then(({BrowserQRCodeSvgWriter})=>{
+        if(!invitation.isConnected||generation!==ticket)return;
+        const qr=new BrowserQRCodeSvgWriter().write(url.href,660,660,new Map([[0,'M']]));
+        qr.classList.add('platform-setup-qr');qr.setAttribute('shape-rendering','crispEdges');
+        qr.style.background='white';qr.setAttribute('role','img');qr.setAttribute('aria-label',setupLabels[lang.value][1]);
+        invitation.append(qr);
+      }).catch(()=>{}); // The selectable setup URL and code are already available.
     }
     for(const company of state.companies){
       const row=el('article'),active=company.status==='active',link=el('a',t(16));

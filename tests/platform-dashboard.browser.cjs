@@ -63,7 +63,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       if(u.pathname.endsWith('wow-cloud-config.js'))return route.fulfill({contentType:'application/javascript',body:"window.WOW_CLOUD_CONFIG={workspaceId:'scope',endpoint:'/service',publishableKey:'local'}"});
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/support.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
     await page.goto(scope+'/platform/#support');await page.locator('#lang').selectOption('en');
@@ -215,7 +215,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.waitForFunction(()=>window.cameraTrack?.readyState==='live');await page.getByRole('button',{name:'Stop camera'}).click();
     assert.equal(await page.evaluate(()=>window.cameraTrack.readyState),'ended');
     await page.evaluate(()=>{window.scanEnabled=true;});await page.getByRole('button',{name:'Scan the QR code with camera'}).click();
-    await page.getByLabel('رمز الإعداد').waitFor();assert.equal(new URL(page.url()).hash,'');assert.equal((await page.getByLabel('رمز الإعداد').inputValue()).length,64);
+    await page.getByLabel('Setup code').waitFor();assert.equal(new URL(page.url()).hash,'');assert.equal((await page.getByLabel('Setup code').inputValue()).length,64);
   }finally{await browser.close();}
 });
 test('trusted founder device rotates, revalidates founder access and forgets logout across tabs',async()=>{

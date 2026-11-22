@@ -76,5 +76,5 @@
     container.append(details);translate(lang);
     return {updateLanguage:translate,stop:end,dispose(){end();root.removeEventListener('pagehide',end);doc.removeEventListener('visibilitychange',hide);details.remove();}};
   }
-  root.WFOwnerInvite={mount,parse};
+  root.WFOwnerInvite={mount,parse,loadQrTools:decoder};
 })(globalThis);
