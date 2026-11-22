@@ -14,6 +14,13 @@
     tr:['Sunucu bilgileri','Mark Robot hizmeti','Erişilebilir','Ulaşılamıyor','Son kontrol','Supabase projesini aç','Hizmeti denetle'],
     ru:['Сведения о сервере','Сервис Mark Robot','Доступен','Недоступен','Последняя проверка','Открыть проект Supabase','Проверить сервис']
   };
+  const capabilities={
+    ar:['زمن الاستجابة','تمرير المكالمات','رسائل الطلبات SMS','كشوف الحساب بالبريد','كشوف الحساب عبر واتساب','مُعدّ','غير مُعدّ'],
+    en:['Response time','Call relay','Order SMS','Statements by email','Statements via WhatsApp','Configured','Unconfigured'],
+    tr:['Yanıt süresi','Arama aktarma','Sipariş SMS','E-posta ile ekstre','WhatsApp ile ekstre','Yapılandırıldı','Yapılandırılmadı'],
+    fr:['Temps de réponse','Relais des appels','SMS de commande','Relevés par e-mail','Relevés via WhatsApp','Configuré','Non configuré'],
+    ru:['Время отклика','Ретрансляция звонков','SMS о заказе','Выписки по почте','Выписки в WhatsApp','Настроено','Не настроено']
+  };
   function mount(host,lang,request){
     const t=words[lang]||words.ar;
     const make=(tag,text)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;return e;};
@@ -28,7 +35,8 @@
     info.className='platform-server-info';health.setAttribute('role','status');check.type='button';
     const endpoint=new URL(config.endpoint,location.href);
     const address=make('bdi',endpoint.hostname);
-    info.append(make('h3',service[0]),address,health,checked,check);
+    const details=make('dl'),labels=capabilities[lang]||capabilities.ar;
+    info.append(make('h3',service[0]),address,health,details,checked,check);
     if(/^[a-z0-9]{20}$/.test(config.projectRef)&&endpoint.hostname===config.projectRef+'.supabase.co'){
       info.append(link(service[5],'https://supabase.com/dashboard/project/'+config.projectRef));
     }
@@ -36,6 +44,7 @@
     async function checkService(){
       if(check.disabled)return;
       check.disabled=true;health.textContent=t[20];checked.textContent='';
+      details.replaceChildren();const started=performance.now();
       const stop=new AbortController(),timeout=setTimeout(()=>stop.abort(),10000);
       try{
         const url=new URL(endpoint);url.pathname=url.pathname.replace(/\/$/,'')+'/health';url.search='';url.hash='';
@@ -43,6 +52,10 @@
         const data=await response.json();
         if(!response.ok||data.ok!==true||data.service!=='mark-robot')throw Error();
         health.textContent=service[1]+' · '+service[2];
+        const timing=new Intl.NumberFormat(lang,{style:'unit',unit:'millisecond'}).format(Math.round(performance.now()-started));
+        details.append(make('dt',labels[0]),make('dd',timing));
+        const flags=[data.turnConfigured,data.orderSmsConfigured,data.statementChannels?.email,data.statementChannels?.whatsapp];
+        flags.forEach((flag,index)=>details.append(make('dt',labels[index+1]),make('dd',typeof flag==='boolean'?labels[flag?5:6]:t[10])));
       }catch{health.textContent=service[1]+' · '+service[3];}
       finally{
         clearTimeout(timeout);check.disabled=false;
