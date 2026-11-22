@@ -1198,3 +1198,10 @@ main>header .platform-header-link[href="#support"]:not([aria-label*="0"]):focus-
 .platform-drawer-developer-copy small{font-size:.7rem;color:var(--text2);line-height:1.35;overflow-wrap:anywhere}
 .platform-drawer-developer:hover{border-color:var(--ui-accent);color:var(--ui-accent)}
 .platform-drawer-developer:focus-visible{outline:3px solid var(--ui-accent);outline-offset:2px}
+
+/* Match the original company sidebar credit: final item, below sign-out, at its foot. */
+.platform-drawer-footer{margin-block-start:auto;padding:1rem .55rem .45rem;flex-shrink:0}
+.platform-side-drawer>.platform-drawer-developer{flex:0 0 auto;min-height:70px;margin:0 .55rem max(.65rem,env(safe-area-inset-bottom,0px))}
+.platform-drawer-developer-copy small{display:block;font-size:.7rem;color:var(--text2);font-weight:650}
+.platform-drawer-developer-copy b{display:block;color:var(--text);font-size:.87rem;font-weight:850;overflow-wrap:anywhere;line-height:1.35}
+
