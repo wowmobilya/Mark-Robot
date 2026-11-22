@@ -94,9 +94,10 @@
           !Number.isFinite(Date.parse(scope.validUntil)) || Date.parse(scope.validUntil)<=Date.now() ||
           (finance.has(entry.kind) || entry.kind==='operations') && b.financial!==true) return {result:null};
         const duplicate = state.entries.some(item => item.eventId === entry.eventId);
-        const result = {deviceId: b.deviceId, language: b.language, duplicate};
+        const entries = duplicate ? state.entries : [entry, ...state.entries].slice(0, LIMIT);
+        const result = {deviceId: b.deviceId, language: b.language, duplicate, feedback:state.feedback, unread:entries.filter(item=>!item.read).length};
         if (duplicate) return {result};
-        return {next: {...state, entries: [entry, ...state.entries].slice(0, LIMIT)}, result};
+        return {next: {...state, entries}, result};
       });
     }
 
@@ -104,8 +105,9 @@
       return transaction(state => {
         const entry=state.entries.find(item=>item.eventId===eventId), destination=entry&&target(entry);
         if (!state.binding?.active || state.binding.deviceId !== deviceId || !destination) return {result: null};
-        return {next:{...state,selected:eventId,pendingOpen:{kind:entry.kind,route:destination.route,params:destination.params,eventId}},
-          result:{...state.binding,destination,eventId}};
+        const entries=state.entries.map(item=>item.eventId===eventId?{...item,read:true}:item);
+        return {next:{...state,entries,selected:eventId,pendingOpen:{kind:entry.kind,route:destination.route,params:destination.params,eventId}},
+          result:{...state.binding,destination,eventId,unread:entries.filter(item=>!item.read).length}};
       });
     }
     function takeOpen(binding,eventId) {
@@ -116,7 +118,10 @@
         return {next:{...state,pendingOpen:null},result:target(p)};
       });
     }
-    return Object.freeze({read: () => transaction(), replace, receive, select, takeOpen, target});
+    function setFeedback(prefs) {
+      return transaction(state=>({next:{...state,feedback:{sound:prefs.sound===true,vibration:prefs.vibration===true}},result:true}));
+    }
+    return Object.freeze({setFeedback,read: () => transaction(), replace, receive, select, takeOpen, target});
   }
   return Object.freeze({create});
 });

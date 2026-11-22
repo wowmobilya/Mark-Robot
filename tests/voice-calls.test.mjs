@@ -100,6 +100,9 @@ test('Session revocation and realtime topic RLS block unauthorized listening',as
  assert.equal((await db.query('select private_voice.allowed() allowed')).rows[0].allowed,false);
  await db.query("select set_config('realtime.topic',$1,false)",['public:unrelated']);
  assert.equal((await db.query('select private_voice.allowed() allowed')).rows[0].allowed,false);
+ await db.query("select set_config('realtime.topic',$1,false)",['wow-call:'+call.id]);
+ await db.query("update public.wow_sessions set last_active_at=now()-interval '31 minutes' where session_id=$1",[people.customer.sid]);
+ assert.equal((await db.query('select private_voice.allowed() allowed')).rows[0].allowed,false);
  await db.query("update public.wow_sessions set closed_at=now() where session_id=$1",[people.customer.sid]);
  await db.query("select set_config('realtime.topic',$1,false)",['wow-call:'+call.id]);
  assert.equal((await db.query('select private_voice.allowed() allowed')).rows[0].allowed,false);
@@ -134,7 +137,7 @@ test('WOW familiar chat UI, in-chat events, customer signup and release source p
  read('../supabase/release.json')]);
  assert.match(signup,/actions\.append\(button\('register'/);
  assert.match(signup,/if\(!options\.registrationEnabled\)/);
- assert.match(html,/modules\/chat\/call-ui\.js\?v=1/);
+ assert.match(html,/modules\/chat\/call-ui\.js\?v=2/);
  assert.match(html,/modules\/chat\/realtime-channel\.js\?v=1/);
  assert.match(html,/data-release="221"/);assert.match(sw,/wow-furniture-v221-cloud/);
  assert.match(workspace,/callUI\.controls\(room\)/);

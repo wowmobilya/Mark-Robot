@@ -452,7 +452,7 @@
     }
     function entryUrl(base=root.location?.href||'https://galeri.wowfurniture.com.tr/'){
       const scope=workspaceId||link?.workspaceId||workspaceHint;if(!scope)throw failure('WORKSPACE_REQUIRED');
-      const url=new URL(base);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',scope);url.searchParams.delete('wf-accounts');url.hash='dashboard';return url.href;
+      const url=new URL(base);url.search='';url.username='';url.password='';url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',scope);url.hash='dashboard';return url.href;
     }
     const ready=(async()=>{
       // Employee links can inherit an opener's sessionStorage. Clear the local-link copy before any auth or storage read.

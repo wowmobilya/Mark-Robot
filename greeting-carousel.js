@@ -9,7 +9,7 @@
   if (!faces.length) return;
   const labelIds = {
     greetingCard:'greetingSub', tipCardStandalone:'tipLabel tipText',
-    wfGreetingWeather:'wfWeatherTitle', wfGreetingLogo:'wfGreetingLogoTitle', wfGreetingRobot:'wfRobotTitle'
+    wfGreetingWeather:'wfWeatherTitle', wfGreetingLogo:'wfGreetingLogoTitle', wfGreetingRobot:'wfRobotTitle', wfPrayer:'wfPrayerTitle'
   };
   const robot = faces.find(panel => panel.id === 'wfGreetingRobot');
   let initialFace = Math.max(0, faces.indexOf(robot));
@@ -29,11 +29,11 @@
     ru: ['Инегёль, Бурса', 'Дождь на 7 дней', 'Загрузка погоды…', 'Погода недоступна', 'WOW Furniture', 'мм'],
   };
   const carouselWords = {
-    ar: {card:'البطاقة الذكية',pages:'صفحات البطاقة الذكية',slide:'صفحة',open:'عرض',names:['الترحيب','نصيحة اليوم','الطقس','هوية البرنامج','مارك روبوت'],hint:'اختر صفحة من المؤشر الجانبي. استخدم الأسهم للتنقل، أو اضغط المساحة الخالية لعرض الصفحة التالية.'},
-    tr: {card:'Akıllı kart',pages:'Akıllı kart sayfaları',slide:'Sayfa',open:'Göster',names:['Karşılama','Günün önerisi','Hava durumu','Uygulama kimliği','Mark Robot'],hint:'Yandaki göstergeden bir sayfa seçin. Ok tuşlarıyla ilerleyin veya sonraki sayfa için boş alana dokunun.'},
-    en: {card:'Smart card',pages:'Smart card pages',slide:'Slide',open:'Show',names:['Welcome','Today’s tip','Weather','App identity','Mark Robot'],hint:'Choose a page with the side indicator. Use the arrow keys, or press the empty card area to show the next page.'},
-    fr: {card:'Carte intelligente',pages:'Pages de la carte',slide:'Page',open:'Afficher',names:['Accueil','Conseil du jour','Météo','Identité de l’application','Robot Mark'],hint:'Choisissez une page avec l’indicateur latéral. Utilisez les flèches ou appuyez sur une zone vide pour passer à la page suivante.'},
-    ru: {card:'Умная карточка',pages:'Страницы карточки',slide:'Слайд',open:'Показать',names:['Приветствие','Совет дня','Погода','Оформление приложения','Робот Марк'],hint:'Выберите страницу боковым индикатором. Используйте стрелки или нажмите на свободную область для перехода дальше.'}
+    ar: {card:'البطاقة الذكية',pages:'صفحات البطاقة الذكية',slide:'صفحة',open:'عرض',names:['الترحيب','نصيحة اليوم','الطقس','هوية البرنامج','مارك روبوت','مواقيت الصلاة'],hint:'اختر صفحة من المؤشر الجانبي. استخدم الأسهم للتنقل، أو اضغط المساحة الخالية لعرض الصفحة التالية.'},
+    tr: {card:'Akıllı kart',pages:'Akıllı kart sayfaları',slide:'Sayfa',open:'Göster',names:['Karşılama','Günün önerisi','Hava durumu','Uygulama kimliği','Mark Robot','Namaz vakitleri'],hint:'Yandaki göstergeden bir sayfa seçin. Ok tuşlarıyla ilerleyin veya sonraki sayfa için boş alana dokunun.'},
+    en: {card:'Smart card',pages:'Smart card pages',slide:'Slide',open:'Show',names:['Welcome','Today’s tip','Weather','App identity','Mark Robot','Prayer times'],hint:'Choose a page with the side indicator. Use the arrow keys, or press the empty card area to show the next page.'},
+    fr: {card:'Carte intelligente',pages:'Pages de la carte',slide:'Page',open:'Afficher',names:['Accueil','Conseil du jour','Météo','Identité de l’application','Robot Mark','Horaires de prière'],hint:'Choisissez une page avec l’indicateur latéral. Utilisez les flèches ou appuyez sur une zone vide pour passer à la page suivante.'},
+    ru: {card:'Умная карточка',pages:'Страницы карточки',slide:'Слайд',open:'Показать',names:['Приветствие','Совет дня','Погода','Оформление приложения','Робот Марк','Время молитвы'],hint:'Выберите страницу боковым индикатором. Используйте стрелки или нажмите на свободную область для перехода дальше.'}
   };
   const playbackWords = {
     ar:['تشغيل التنقل التلقائي','إيقاف التنقل التلقائي'],
@@ -42,7 +42,7 @@
     fr:['Démarrer le défilement automatique','Mettre en pause le défilement automatique'],
     ru:['Включить автоматическое переключение','Приостановить автоматическое переключение']
   };
-  const faceNames = ['greetingCard','tipCardStandalone','wfGreetingWeather','wfGreetingLogo','wfGreetingRobot'];
+  const faceNames = ['greetingCard','tipCardStandalone','wfGreetingWeather','wfGreetingLogo','wfGreetingRobot','wfPrayer'];
   const interactive = 'button,a,input,select,textarea,summary,[role="button"],[role="link"],[contenteditable="true"]';
   const pager = document.createElement('nav');
   pager.className = 'wf-smart-pager';

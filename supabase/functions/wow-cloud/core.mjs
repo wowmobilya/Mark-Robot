@@ -266,6 +266,7 @@ export function createHandler(deps) {
       requireValue(typeof body.setupToken==='string' && body.setupToken.length>=32 && body.setupToken.length<=256,'SETUP_PROOF_REQUIRED',403);
       const profile=normalizeProfile({...body,role:'owner',expiresAt:null},policy),pass=password(body.password),claimHash=await sha256(body.setupToken);
       const setup=await rpc('setup.inspect',{claimHash});
+      if(body.workspaceId!=null&&body.workspaceId!==setup.workspaceId)throw failure('SETUP_PROOF_INVALID',403);
       const email=crypto.randomUUID()+'@wow.invalid';let created;
       try {
         created=await auth.createUser({email,password:pass,email_confirm:true,user_metadata:{wow:true}});

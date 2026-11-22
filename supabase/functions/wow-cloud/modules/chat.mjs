@@ -5,6 +5,13 @@ const id=value=>{demand(typeof value==='string'&&/^[1-9][0-9]{0,17}$/.test(value
 const optional=(value,fn)=>value==null?null:fn(value);
 const emoji=value=>short(value??'',16,true);
 const reactions=['👍','❤️','😂','😮','😢','🙏','🎉','🔥','👏','👎',''];
+export function turnConfiguration(voiceTurn={}){
+    const urlText=typeof voiceTurn.urls==='string'?voiceTurn.urls:voiceTurn.url||'';
+    const urls=String(urlText).split(',').map(s=>s.trim()).filter(s=>
+      /^turns?:[A-Za-z0-9.-]+(?::[0-9]{2,5})?(?:\?transport=(?:udp|tcp))?$/.test(s)).slice(0,4);
+    const secret=voiceTurn.secret;
+    return {urls,secret:typeof secret==='string'&&secret.length>=32&&secret.length<=512?secret:null};
+}
 export function createChatActions({moduleRpc,storage,voiceTurn={}}){
   const {rpc,sign,upload,collect}=privateActions('chat',moduleRpc,storage);
   const room=b=>({roomId:uuid(b.roomId)});
@@ -81,11 +88,8 @@ export function createChatActions({moduleRpc,storage,voiceTurn={}}){
     if(snapshot.status!=='active'||!snapshot.participants?.some(p=>p.id===actor.userId&&p.status==='joined'))
       demand(false,'VOICE_CALL_UNAVAILABLE');
     const iceServers=[{urls:['stun:stun.cloudflare.com:3478','stun:stun.l.google.com:19302']}];
-    const urlText=typeof voiceTurn.urls==='string'?voiceTurn.urls:voiceTurn.url||'';
-    const urls=String(urlText).split(',').map(s=>s.trim()).filter(s=>
-      /^turns?:[A-Za-z0-9.-]+(?::[0-9]{2,5})?(?:\?transport=(?:udp|tcp))?$/.test(s)).slice(0,4);
-    const secret=voiceTurn.secret;
-    if(urls.length&&typeof secret==='string'&&secret.length>=32&&secret.length<=512){
+    const {urls,secret}=turnConfiguration(voiceTurn);
+    if(urls.length && secret){
       const expiry=Math.floor(Date.now()/1000)+7200,username=expiry+':'+uuid(actor.userId);
       const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-1'},false,['sign']);
       const bytes=new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(username)));

@@ -15,6 +15,7 @@
     checking: ['جارٍ التحقق من حالة الجهاز…','Checking this device…','Cihaz kontrol ediliyor…','Vérification de cet appareil…','Проверяем устройство…'],
     ready: ['جاهز للتفعيل. اضغط الزر واسمح بإشعارات WOW عندما يطلب جهازك ذلك.','Ready to enable. Tap the button and allow WOW notifications when your device asks.','Etkinleştirmeye hazır. Düğmeye dokunun ve cihazınız sorunca WOW bildirimlerine izin verin.','Prêt à activer. Appuyez sur le bouton et autorisez les notifications WOW à la demande de votre appareil.','Всё готово. Нажмите кнопку и разрешите уведомления WOW по запросу устройства.'],
     enabled: ['إشعارات حسابك مفعّلة على هذا الجهاز.','Your account notifications are enabled on this device.','Hesap bildirimleriniz bu cihazda açık.','Les notifications de votre compte sont activées sur cet appareil.','Уведомления вашей учётной записи включены на этом устройстве.'],
+    read: ['تعليم كمقروء','Mark as read','Okundu işaretle','Marquer comme lu','Отметить прочитанным'],
     open: ['فتح','Open','Aç','Ouvrir','Открыть'],
     unavailable: ['إرسال الإشعارات غير متاح على الخادم حاليًا.','Push delivery is currently unavailable on the server.','Sunucuda bildirim gönderimi şu anda kullanılamıyor.','L’envoi des notifications est actuellement indisponible sur le serveur.','Отправка уведомлений на сервере сейчас недоступна.'],
     offline: ['الجهاز غير متصل بخدمة WOW. أعد التحقّق عند عودة الاتصال.','This device cannot reach WOW. Check again when the connection returns.','Bu cihaz WOW’a bağlanamıyor. Bağlantı gelince tekrar kontrol edin.','Cet appareil ne peut pas joindre WOW. Vérifiez à nouveau une fois la connexion rétablie.','Устройству не удаётся связаться с WOW. Повторите проверку после подключения.'],
@@ -30,6 +31,7 @@
     permission: ['يحتاج التفعيل إلى إذن الإشعارات من جهازك.','This device needs your permission to enable notifications.','Bildirimler için cihazda izin vermeniz gerekiyor.','Vous devez autoriser les notifications sur cet appareil.','Разрешите уведомления на этом устройстве.'],
     failed: ['تعذّر إكمال الطلب.','The request could not be completed.','İstek tamamlanamadı.','La demande n’a pas abouti.','Не удалось выполнить запрос.'],
     history: ['آخر الإشعارات المستلمة','Recently received','Son alınan bildirimler','Notifications reçues récemment','Последние уведомления'],
+    unread: ['غير مقروء','Unread','Okunmadı','Non lu','Не прочитано'],
     empty: ['لم يصل أي إشعار إلى هذا الجهاز بعد.','No notifications have reached this device yet.','Bu cihaza henüz bildirim ulaşmadı.','Cet appareil n’a encore reçu aucune notification.','На это устройство ещё не поступали уведомления.']
   };
   const locale = () => { const lang = doc.documentElement.lang?.toLowerCase().split(/[-_]/)[0]; return languages.includes(lang) ? lang : 'ar'; };
@@ -45,8 +47,8 @@
     }
     action('enable', push.enable, true); action('test', push.test); action('disable', push.disable); action('retry', push.refresh);
     if (inbox) action('connect', () => root.WFCloudSettings?.open());
-    section.append(title, intro, status, bar); host.append(section);
-    let history, heading, list, empty, previous;
+    section.append(title, intro, status, bar); host.append(section);root.WFDeviceFeedback?.mount(section,locale);
+    let history, heading, list, empty, previous;const chatViews=[];
     if (inbox) {
       history = node('section', 'wf-push-inbox'); heading = node('h2'); heading.id = 'wfPushInboxTitle'; history.setAttribute('aria-labelledby', heading.id);
       list = node('ol'); empty = node('p'); history.append(heading, empty, list); host.append(history);
@@ -55,11 +57,13 @@
       title.textContent = text('title'); intro.textContent = text(state.owner?'intro':'shared'); status.textContent = [text(state.status), text(state.feedback)].filter(Boolean).join(' ');
       const visible = {enable: state.status === 'ready', test: state.status === 'enabled', disable: state.bound || state.status === 'keyChanged',
         retry: ['denied','updating','offline','unavailable','error'].includes(state.status), connect: state.status === 'account' && !!root.WFCloudSettings && (!root.WFAccountAccess?.hasAccounts?.() || root.WFAccountAccess.can('settings.view'))};
+      status.dataset.state=state.status;
       for (const [key, button] of Object.entries(buttons)) { button.textContent = text(key); button.hidden = !visible[key]; button.disabled = state.busy || !visible[key]; }
       if (!history) return;
       history.hidden = !state.bound; heading.textContent = text('history'); empty.textContent = text('empty'); empty.hidden = state.entries.length > 0;
-      const signature = JSON.stringify([locale(), state.selected, state.entries.map(entry => entry.eventId)]);
+      const signature = JSON.stringify([locale(), state.selected, state.entries.map(entry => [entry.eventId,!!entry.read]),root.WFCloud?.getSnapshot?.()?.userId,root.WFAccountAccess?.can?.('chat.edit')]);
       if (signature === previous) return; previous = signature;
+      for(const view of chatViews.splice(0))view?.dispose?.();
       list.replaceChildren();
       const formatter = new Intl.DateTimeFormat(locale(), {dateStyle:'medium', timeStyle:'short'});
       for (const item of state.entries) {
@@ -67,11 +71,17 @@
         row.lang = item.language; row.dir = item.language === 'ar' ? 'rtl' : 'ltr';
         time.dateTime = new Date(item.timestamp).toISOString(); time.textContent = formatter.format(item.timestamp);
         if (item.eventId === state.selected) row.setAttribute('aria-current', 'true');
-        row.append(time, name, detail);
-        if(item.route && item.route!=='notifications'){
-          const open=node('button','btn');open.type='button';open.textContent=text('open');open.addEventListener('click',()=>{push.openEntry(item.eventId);});row.append(open);
+        row.dataset.unread=String(!item.read);
+        const mark=root.WFRobotExpression?.avatar(doc,item.title+' '+item.body,item.kind,item.read?2:0);
+        if(mark)row.append(mark);
+        const meta=node('div','wf-push-meta');meta.append(time);
+        if(!item.read){const marker=node('span','wf-push-unread');marker.lang=locale();marker.textContent=text('unread');meta.append(marker);}
+        row.append(meta, name, detail);
+        if(!item.read||item.route && item.route!=='notifications'){
+          const open=node('button','btn');open.type='button';open.textContent=text(item.route==='notifications'?'read':'open');open.addEventListener('click',()=>{push.openEntry(item.eventId);});row.append(open);
         }
         list.append(row);
+        if(item.kind==='chat'&&root.WFPushChat){const cloud=root.WFCloud;chatViews.push(root.WFPushChat.mount(row,item,{request:(...args)=>cloud.request(...args),can:p=>root.WFAccountAccess?.can?.(p),getSession:()=>cloud?.getSnapshot?.(),locale}));}
       }
     };
   }
@@ -79,7 +89,16 @@
     const views = [], bell = doc.querySelector('#page-notifications .wf-notifications-body'), cloud = doc.getElementById('stab-cloud');
     if (bell) { bell.querySelector('.wf-notifications-empty')?.remove(); views.push(mount(bell, true)); }
     if (cloud) views.push(mount(cloud, false));
-    const draw = state => views.forEach(view => view(state)); draw(push.getSnapshot()); push.subscribe(draw);
+    const draw = state => {
+      for(const view of views)view(state);
+      const button=doc.getElementById('wfNotificationsButton');
+      if(!button)return;
+      let badge=button.querySelector('.wf-unread-count');
+      if(!badge){badge=node('span','wf-unread-count');button.append(badge);}
+      const count=state.entries.filter(item=>!item.read).length;
+      badge.textContent=count?new Intl.NumberFormat(locale()).format(count):'';badge.hidden=!count;
+      button.setAttribute('aria-label',[button.title,badge.textContent].filter(Boolean).join(' · '));
+    }; draw(push.getSnapshot()); push.subscribe(draw);
     if (root.MutationObserver) new root.MutationObserver(() => draw(push.getSnapshot())).observe(doc.documentElement, {attributes:true, attributeFilter:['lang']});
   }
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', bind, {once: true}); else bind();

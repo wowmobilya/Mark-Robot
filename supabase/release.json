@@ -7,6 +7,7 @@
   "entrypoint": "functions/wow-cloud/index.ts",
   "migrations": [
     "wow-schema.sql",
+    "modules/platform-companies.sql",
     "modules/files.sql",
     "modules/chat.sql",
     "modules/voice-calls.sql",
@@ -20,7 +21,9 @@
     "modules/customer-auth.sql",
     "modules/public-share.sql",
     "modules/communications.sql",
-    "modules/offline-owner.sql"
+    "modules/offline-owner.sql",
+    "modules/tenant-limits.sql",
+    "modules/statement-delivery.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",

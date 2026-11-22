@@ -30,6 +30,13 @@ test('PDF export uses a distinct page tree and valid byte offsets for each page'
  const offsets=[...data.matchAll(/(\d{10}) 00000 n/g)].map(x=>Number(x[1]));
  for(const [index,n] of offsets.entries())assert.ok(data.slice(n).startsWith((index+1)+' 0 obj'));
 });
+test('piece-only weight and configured measurements appear in dimensions downloads',()=>{
+ const item={name:'Model',dims:[{name:'Top',weight:1.5,specs:{depth:0,hidden:99}}]};
+ const fields=[{id:'depth',label:'Depth',unit:'mm',visible:true},{id:'hidden',label:'Private',visible:false}];
+ const text=documents.dimsText(item,{fields},'en');
+ assert.match(text,/Top · 1.5 kg · Depth 0 mm/);
+ assert.doesNotMatch(text,/Private|99/);
+});
 
 // Execute the same registered route, event callbacks, Edge validation and PostgreSQL
 // mutations used by the app. The local DOM models controls, focus and native dialogs;

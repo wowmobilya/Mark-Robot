@@ -244,3 +244,15 @@ html body #mainContent #page-dashboard :is(#wfGreetingRobot, #wfRobotSettingsPre
 }
 
 #wfGreetingRobot .wf-robot-display {cursor:default;}
+
+#wfGreetingRobot[data-robot-mood] .wf-robot-eye-open{ry:var(--wf-pose-eye)}
+#wfGreetingRobot[data-robot-mood] .wf-robot-brow{stroke:var(--wf-robot-ink,#171923);transform-box:fill-box;transform-origin:center;transform:rotate(var(--wf-pose-brow))}
+#wfGreetingRobot[data-robot-mood] .wf-robot-eye-right .wf-robot-brow{transform:rotate(calc(-1 * var(--wf-pose-brow)))}
+#wfGreetingRobot[data-robot-mood] .wf-robot-glint{transform:translate(var(--wf-pose-x),var(--wf-pose-y))}
+#wfGreetingRobot[data-robot-mood][data-speaking="true"] .wf-robot-mouth-cavity{ry:var(--wf-pose-aperture)}
+@media(prefers-reduced-motion:no-preference){
+ html:not([data-wf-motion="reduced"]) #wfGreetingRobot[data-robot-mood] :is(.wf-robot-eye-open,.wf-robot-brow,.wf-robot-glint){transition:transform .18s ease,ry .18s ease}
+}
+html body #toastBox .toast:has(>.wf-expression-avatar)::before,.wf-push-inbox li:has(>.wf-expression-avatar)::before{display:none}
+#toastBox .wf-expression-avatar{inline-size:34px;block-size:34px;flex:none}
+.wf-push-inbox li>.wf-expression-avatar{position:absolute;inset-block-start:.85rem;inset-inline-start:.8rem;inline-size:2.2rem;block-size:2.2rem}

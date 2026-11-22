@@ -9,7 +9,12 @@
     const parts=[item.name,core.t('dims',lang)];
     for(const dim of item.dims||[]){
       const axes=[dim.l,dim.w,dim.h].filter(v=>v!=null&&String(v)!=='');
-      if(axes.length)parts.push([dim.name,axes.join(' × ')+' cm',dim.weight?dim.weight+' kg':''].filter(Boolean).join(' · '));
+      const values=[dim.name,axes.length?axes.join(' × ')+' cm':'',dim.weight!=null&&dim.weight!==''?dim.weight+' kg':''];
+      for(const field of presentation?.fields||[]){
+        const value=dim.specs?.[field.id];
+        if(field.visible!==false&&typeof value==='number')values.push([field.label,value,field.unit].filter(v=>v!=null&&v!=='').join(' '));
+      }
+      if(values.some(Boolean))parts.push(values.filter(Boolean).join(' · '));
     }
     if(item.weight && Number(item.weight)>0)parts.push(core.t('weight',lang)+' '+item.weight+' kg');
     for(const field of presentation?.fields||[]){

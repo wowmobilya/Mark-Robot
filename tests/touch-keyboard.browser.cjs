@@ -90,6 +90,7 @@ test('multiline return, hardware editing on touch, password masking and maxlengt
   assert.equal(await page.locator('#notes').inputValue(),'first\na');await action(page,'done');await page.locator('#password').click();
   assert.equal(await page.locator('#wfTouchKeyboardEditor').getAttribute('type'),'password');await paste(page,'abc😀');assert.equal(await page.locator('#password').inputValue(),'abc','maxlength never leaves half a surrogate');
   await key(page,'x');assert.equal(await page.locator('#password').inputValue(),'abcx');await key(page,'y');assert.equal(await page.locator('#password').inputValue(),'abcx');
+  await action(page,'done');assert.equal(await page.locator('#wfTouchKeyboardEditor').inputValue(),'');assert.equal(await page.locator('#password').inputValue(),'abcx');
 });
 
 test('search registration runs the original action after commit and parent navigation dismisses safely',async t=>{

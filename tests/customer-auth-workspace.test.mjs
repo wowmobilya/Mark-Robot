@@ -68,12 +68,12 @@ test('expired proof gives an actionable new-link path and local owner login neve
 test('owner controls use revision checks and show accepted requests separately from completed proofs',async()=>{
  const p=page(),calls=[],wid=randomUUID();let state={configured:true,workspaceId:wid,settings:{registrationEnabled:false,recoveryEnabled:false,revision:1},accepted24h:3,failed24h:1,completed24h:2};
  const api={can:key=>key==='accounts.edit',async request(action,payload){calls.push({action,payload});if(action==='customerAuth.configure')state={...state,settings:{...payload,revision:2}};return state;}};
- const surface=p.win.WFCustomerAuth.mountOwner({container:p.container,api,lang:'en',origin:'https://customer-auth.invalid'});await surface.ready;
+ const surface=p.win.WFCustomerAuth.mountOwner({container:p.container,api,lang:'en',origin:'https://customer-auth.invalid/Mark-Robot/?wf-accounts=cloud#settings'});await surface.ready;
  assert(p.tree().some(x=>x.textContent.includes('Requests accepted by email provider in 24 hours: 3')));
  const checks=p.tree().filter(x=>x.type==='checkbox');checks[0].checked=checks[1].checked=true;
  const form=p.tree().find(x=>x.tagName==='FORM'&&x!==p.loginForm);await form.fire('submit');
  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1))),{action:'customerAuth.configure',payload:{revision:1,registrationEnabled:true,recoveryEnabled:true}});
- const link=p.tree().find(x=>x.type==='url');assert.equal(new URL(link.value).searchParams.get('workspace'),wid);assert.equal(link.readOnly,true);
+ const link=p.tree().find(x=>x.type==='url');assert.equal(new URL(link.value).searchParams.get('workspace'),wid);assert.equal(link.readOnly,true);assert.equal(new URL(link.value).pathname,'/Mark-Robot/');assert.deepEqual([...new URL(link.value).searchParams.keys()],['wf-cloud','workspace']);
  surface.dispose();const before=p.container.children.length;
  p.win.WFCustomerAuth.mountOwner({container:p.container,api:{can:()=>false,request(){assert.fail('staff cannot read control');}},lang:'en'});assert.equal(p.container.children.length,before);
 });

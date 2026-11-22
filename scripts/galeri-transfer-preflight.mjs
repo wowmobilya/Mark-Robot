@@ -2,8 +2,9 @@
 // Offline evidence only. No provider client, SQL execution, file upload or writes
 // to the application are present in this program.
 import {createHash} from 'node:crypto';
-import {readFile,stat,writeFile,realpath} from 'node:fs/promises';
+import {readFile,stat,realpath} from 'node:fs/promises';
 import path from 'node:path';
+import {writePrivateFile} from './write-private-file.mjs';
 import {fileURLToPath} from 'node:url';
 
 export const projectRef='sldthbnigivpsqixccah';
@@ -180,7 +181,7 @@ export async function main(args){
  if(physicalOutput===repo||physicalOutput.startsWith(repo+path.sep))throw Error('PRIVATE_REPORT_MUST_STAY_OUTSIDE_REPOSITORY');
  const [source,mapping]=await Promise.all([readJson(exportPath),readJson(mappingPath)]);
  const result=inspectExport(source,mapping);
- await writeFile(reportPath,JSON.stringify(result,null,2)+'\n',{flag:'wx',mode:0o600});
+ await writePrivateFile(reportPath,JSON.stringify(result,null,2)+'\n');
  return {mode:result.mode,applyReady:false,rows:result.rows,issues:result.issues.length,omittedCredentialFields:result.omittedCredentialFields,manifestSha256:result.manifestSha256};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

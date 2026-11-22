@@ -3,6 +3,13 @@
   const core=root.WFGalleryCore,exportsApi=root.WFGalleryExports,registry=root.WFModules,doc=root.document;
   if(!core||!exportsApi||!registry||!doc||root.WFGallery)return;
   const statuses=['pending','manufacturing','ready','delivered','cancelled'];
+  const personalWords={
+    ar:{offlineNoCopyTitle:'لا توجد نسخة محفوظة على هذا الهاتف',offlineNoCopy:'افتح القسم مرة واحدة مع اتصال الإنترنت وحسابك الموثَّق لحفظ بياناته. لا يمكن إظهار سجلات غير محفوظة أو اعتماد تغييرات قبل تأكيد السيرفر.',ordersIntro:'تابع الطلبات وحالة تنفيذها في مكان واحد.',stockIntro:'يعرض هذا القسم رصيد طلباتك ومبيعاتك، دون تغيير مخزون موديلات WOW الأساسية.',noOrdersTitle:'لا توجد طلبات مسجلة بعد',noOrders:'ستظهر الطلبات هنا عند إنشائها أو ربطها بهذا الحساب. يمكنك استعراض موديلات WOW.',noStockTitle:'لا يوجد مخزون شخصي مسجل بعد',noStock:'سيظهر رصيد المنتجات عندما تُسجّل طلبات مرتبطة بهذا الحساب.',noMatchesTitle:'لا توجد عناصر مطابقة',noMatches:'غيّر البحث أو فلتر الحالة، أو اعرض العناصر المخفية.',browse:'استعراض موديلات WOW'},
+    tr:{offlineNoCopyTitle:'Bu telefonda kayıtlı kopya yok',offlineNoCopy:'Bu bölümü doğrulanmış hesabınızla bir kez çevrimiçi açın. Kaydedilmemiş veriler çevrimdışı gösterilemez ve işlemler sunucu onayı bekler.',ordersIntro:'Siparişleri ve üretim durumlarını tek yerde izleyin.',stockIntro:'Bu stok hesabınızın sipariş ve satışlarına dayanır; WOW ana ürün stokunu değiştirmez.',noOrdersTitle:'Henüz kayıtlı sipariş yok',noOrders:'Siparişler oluşturulunca veya bu hesaba bağlanınca görünür. WOW modellerine göz atabilirsiniz.',noStockTitle:'Henüz kişisel stok yok',noStock:'Bu hesaba siparişler bağlandığında stok burada görünür.',noMatchesTitle:'Eşleşen öğe bulunamadı',noMatches:'Aramayı veya durum filtresini değiştirin ya da gizli ürünleri gösterin.',browse:'WOW modellerine göz at'},
+    en:{offlineNoCopyTitle:'No saved copy on this phone',offlineNoCopy:'Open this section online once with your verified account to save its data. Unsaved records cannot appear offline, and changes await server confirmation.',ordersIntro:'Track your orders and their progress in one place.',stockIntro:'This balance comes from your orders and sales; it does not change WOW master product stock.',noOrdersTitle:'No orders recorded yet',noOrders:'Orders appear here after creation or linking to this account. You can browse WOW models.',noStockTitle:'No personal stock recorded yet',noStock:'Product balances appear when orders are recorded for this account.',noMatchesTitle:'No matching items',noMatches:'Change the search or status filter, or show hidden items.',browse:'Browse WOW models'},
+    fr:{offlineNoCopyTitle:'Aucune copie enregistrée sur ce téléphone',offlineNoCopy:'Ouvrez cette section une fois en ligne avec votre compte vérifié. Les données non enregistrées ne sont pas disponibles hors ligne et les modifications attendent le serveur.',ordersIntro:'Suivez vos commandes et leur avancement au même endroit.',stockIntro:'Le solde provient de vos commandes et ventes ; le stock principal WOW reste inchangé.',noOrdersTitle:'Aucune commande enregistrée',noOrders:'Les commandes apparaîtront après leur création ou leur liaison au compte. Consultez les modèles WOW.',noStockTitle:'Aucun stock personnel enregistré',noStock:'Le solde apparaîtra dès que des commandes seront liées à ce compte.',noMatchesTitle:'Aucun résultat',noMatches:'Modifiez la recherche ou le statut, ou affichez les éléments masqués.',browse:'Voir les modèles WOW'},
+    ru:{offlineNoCopyTitle:'На этом телефоне нет сохранённой копии',offlineNoCopy:'Откройте раздел в сети с подтверждённой учётной записью, чтобы сохранить данные. Несохранённые записи недоступны без сети, а изменения ждут подтверждения сервера.',ordersIntro:'Следите за заказами и их выполнением в одном месте.',stockIntro:'Остаток основан на заказах и продажах; основной склад WOW не изменяется.',noOrdersTitle:'Заказов пока нет',noOrders:'Заказы появятся после создания или привязки к аккаунту. Вы можете просмотреть модели WOW.',noStockTitle:'Личных остатков пока нет',noStock:'Остатки появятся после регистрации заказов этого аккаунта.',noMatchesTitle:'Совпадений нет',noMatches:'Измените поиск или фильтр либо покажите скрытые позиции.',browse:'Каталог моделей WOW'}
+  };
   const routes={gallery:['gallery','gallery.view','images'],'gallery-orders':['orders','orders.view','clipboard-list'],
     'my-orders':['mine','myorders.view','package-open'],'gallery-studio':['studio','gallery.edit','sliders-horizontal']};
   const error=code=>Object.assign(new Error(code),{code});
@@ -32,13 +39,13 @@
   function mount({route,container,api,lang='ar',params={}}){
     const startSession=api.getSession(),scope=core.scopeKey(startSession);
     if(!scope)throw error('AUTH_REQUIRED');
-    let language=lang,disposed=false,loading=false,generation=0,query='',category=String(params.collection||''),inStock=false,view='grid',limit=36,
+    let language=lang,disposed=false,loading=false,generation=0,query='',category=String(params.collection||''),inStock=false,view='grid3',limit=36,
       tab=route==='gallery-studio'?'stockAdmin':'orders',statusFilter='',showHidden=false,slideIndex=0,slideTimer=0,pollTimer=0,dirty=false,previewMode=false;
     let products=[],orders=[],settings=core.presentation(),profile={version:0},cart=new Map(),cartNote='',sharePanel=null;
     const selected=new Set(),draft=new Map(),dialogs=new Set(),objectUrls=new Set(),imageCache=new Map(),pending=new Map();
     const abort=new AbortController(),main=el('div','wfg-workspace'),status=el('p','wfg-status'),body=el('div','wfg-body');
-    status.setAttribute('aria-live','polite');status.setAttribute('role','status');main.append(status,body);container.replaceChildren(main);
-    const text=key=>core.t(key,language),can=key=>api.can(key);
+    status.setAttribute('aria-live','polite');status.setAttribute('role','status');main.classList.add('wfg-route-'+route);main.append(status,body);container.replaceChildren(main);
+    const text=key=>core.t(key,language),can=key=>api.can(key),personalText=key=>(personalWords[language]||personalWords.en)[key]||key;
     const alive=()=>!disposed&&core.scopeKey(api.getSession())===scope;
     const assertActive=()=>{if(!alive())throw error('AUTH_REQUIRED');};
     const music=route==='gallery-studio'?root.WFGalleryMusic?.mount({container:main,api,lang,permission:routes[route][1]}):null;
@@ -49,7 +56,9 @@
     const saveCart=()=>{if(!alive())return;localWrite(cartStorage,cart.size?JSON.stringify({lines:[...cart.values()],note:cartNote}):null);};
     function showError(reason){
       if(disposed||reason?.name==='AbortError')return;
-      const queued=reason?.code==='GALLERY_PENDING';status.textContent=core.userError(reason,language);status.dataset.type=queued?'pending':'error';api.notify?.(status.textContent,queued?'in':'er');
+      const queued=reason?.code==='GALLERY_PENDING',noCopy=reason?.code==='OFFLINE_NOT_CACHED';
+      status.textContent=noCopy?personalText('offlineNoCopy'):core.userError(reason,language);
+      status.dataset.type=queued||noCopy?'pending':'error';api.notify?.(status.textContent,queued||noCopy?'in':'er');
     }
     function button(label,handler,kind=''){
       const node=el('button','btn wfg-button '+kind,label);node.type='button';
@@ -65,7 +74,12 @@
       while(more){
         const part=await request(action,{...values,offset,limit:100});
         if(!Array.isArray(part.items)||part.hasMore&&!part.items.length)throw error('INVALID_RESPONSE');
-        if(!offset)first=part;if(part.cached===true||part.fromCache===true||part.offline===true)first={...first,cached:true};rows.push(...part.items);offset+=part.items.length;more=part.hasMore===true;
+        if(!offset)first=part;
+        // Private transport exposes the device snapshot through _sync, not cached.
+        // Preserve the signal across paginated reads; never present old data as live.
+        const saved=part._sync?.source==='device'||part._sync?.stale===true||part.cached===true||part.fromCache===true||part.offline===true;
+        if(saved)first={...first,cached:true,cachedAt:part._sync?.cachedAt||first.cachedAt||null};
+        rows.push(...part.items);offset+=part.items.length;more=part.hasMore===true;
       }
       return {...first,items:rows};
     }
@@ -94,18 +108,26 @@
       if(disposed||loading)return;loading=true;const run=++generation;
       if(!silent){status.textContent=text('loading');status.dataset.type='';}
       try{
-        let cached=false;
+        let cached=false,cachedAt=null;
         if(route==='gallery'||route==='gallery-studio'){
           const result=await pages('gallery.snapshot',{manage:route==='gallery-studio'});
-          if(!alive()||run!==generation)return;products=result.items;settings=core.presentation(result.presentation);cached=result.cached===true;
+          if(!alive()||run!==generation)return;products=result.items;settings=core.presentation(result.presentation);cached=result.cached===true;cachedAt=result.cachedAt||null;
         }else{
           const result=await pages(route==='my-orders'?'gallery.personal':'gallery.orders',route==='gallery-orders'?{scope:'staff'}:{});
-          if(!alive()||run!==generation)return;orders=result.items;profile=result.print||{version:0};cached=result.cached===true;
+          if(!alive()||run!==generation)return;orders=result.items;profile=result.print||{version:0};cached=result.cached===true;cachedAt=result.cachedAt||null;
         }
         if(!alive()||run!==generation)return;
         status.textContent=cached?text('savedCopy'):'';status.dataset.type=cached?'pending':'';
+        status.dataset.source=cached?'device':'server';
+        status.title=cached&&cachedAt?new Date(cachedAt).toLocaleString(language):'';
         if(!silent||(!dialogs.size&&!dirty&&!main.contains(doc.activeElement)))render();
-      }catch(reason){if(!silent)showError(reason);if(!body.childElementCount&&alive())body.append(button(text('retry'),()=>load()));}
+      }catch(reason){
+        if(!silent)showError(reason);
+        if(!body.childElementCount&&alive()){
+          if(reason?.code==='OFFLINE_NOT_CACHED')body.append(emptyCard(personalText('offlineNoCopyTitle'),personalText('offlineNoCopy'),text('retry'),()=>load()));
+          else body.append(button(text('retry'),()=>load()));
+        }
+      }
       finally{loading=false;}
     }
     async function changed(action,payload,modal,slot){
@@ -179,6 +201,17 @@
       else if(route==='gallery-orders')adminOrders();
       else personal();
     }
+    function emptyCard(title,message,actionLabel,handler){
+      const section=el('section','wfg-personal-empty');section.setAttribute('role','status');
+      section.append(el('h3','',title),el('p','',message));
+      if(actionLabel&&handler)section.append(button(actionLabel,handler,'wfg-primary'));
+      return section;
+    }
+    function personalIntro(){
+      const section=el('section','wfg-personal-intro'),ordersTab=tab==='orders';
+      section.append(el('h2','',text(ordersTab?'orderList':'personalStock')),el('p','',personalText(ordersTab?'ordersIntro':'stockIntro')));
+      return section;
+    }
     function tabs(entries){
       const bar=el('div','wfg-tabs');bar.setAttribute('role','group');
       for(const [id,key] of entries){
@@ -218,7 +251,11 @@
       if(qty)cart.set(id,{productId:product.productId,quantity:qty});else cart.delete(id);
       saveCart();
     }
-    function openCollection(value){category=value||'';query='';limit=36;render();}
+    function openCollection(value){
+      category=value||'';query='';limit=36;render();
+      const heading=body.querySelector('.wfg-catalog-header h3');
+      if(heading){heading.tabIndex=-1;heading.focus();}
+    }
     function heroAndCards(){
       const visible=(items)=>items.filter(x=>x.visible!==false);const slides=visible(settings.slides),cards=visible(settings.cards);
       if(settings.logoId||settings.tagline){
@@ -254,9 +291,24 @@
     }
     function catalog(){
       if(previewMode)body.append(button(text('studio'),()=>{previewMode=false;render();},'wfg-quiet'));
-      heroAndCards();
+      if(!category)heroAndCards();
       const active=products.filter(p=>p.published),collections=[...new Set(active.map(p=>p.collection).filter(Boolean))];
       const area=el('div'),toolbar=el('div','wfg-toolbar');
+      const sectionHeading=el('h3','',category?categoryLabel(category):text('allCollections'));
+      const resultCount=el('span','wfg-catalog-count');
+      if(active.length){
+        const header=el('header','wfg-catalog-header');
+        header.append(sectionHeading,resultCount);body.append(header);
+        const collectionsNav=el('nav','wfg-catalog-nav');
+        collectionsNav.setAttribute('aria-label',text('category'));
+        for(const value of ['',...collections]){
+          const choice=button(value?categoryLabel(value):text('all'),()=>openCollection(value),'wfg-category');
+          choice.dataset.collection=value;
+          if(category===value)choice.setAttribute('aria-current','page');
+          collectionsNav.append(choice);
+        }
+        body.append(collectionsNav);
+      }
       function draw(){
         area.replaceChildren();toolbar.replaceChildren();
         if(!active.length){
@@ -267,7 +319,12 @@
           empty.append(actions);area.append(empty);return;
         }
         const visible=active.filter(p=>(!category||p.collection===category)&&(!inStock||p.stock>0)&&matches(p.name,categoryLabel(p.collection),p.badge));
-        const opts=group(button(text(view==='grid'?'list':'grid'),()=>{view=view==='grid'?'list':'grid';draw();}));
+        resultCount.textContent=visible.length.toLocaleString(language)+' / '+active.length.toLocaleString(language);
+        resultCount.setAttribute('aria-label',text('products')+' '+resultCount.textContent);
+        const layout=select(enumPairs(['grid2','grid3','grid4','masonry','panorama','list'],text),view);
+        layout.setAttribute('aria-label',text('layout'));
+        layout.addEventListener('change',()=>{view=layout.value;draw();toolbar.querySelector('select')?.focus();});
+        const opts=group(layout);
         if(can('gallery.export')&&!previewMode&&visible.length){
           opts.append(button(text('selectAll'),()=>{for(const p of visible)selected.add(core.typed(p.productId));draw();}),
             button(text('clear'),()=>{selected.clear();draw();}),
@@ -278,7 +335,7 @@
           if(visible.length||count)opts.append(button(text('cart')+' ('+count+')',()=>cartDialog(draw),'wfg-primary'));}
         toolbar.append(opts);
         if(!visible.length){area.append(el('p','wfg-empty',text(active.length?'empty':'noProducts')));return;}
-        const grid=el('div','wfg-products'+(view==='list'?' wfg-list':''));
+        const grid=el('div','wfg-products wfg-'+view);
         for(const item of visible.slice(0,limit)){
           const card=el('article','card wfg-product'),open=button('',()=>lightbox(visible,item),'wfg-image-button');
           open.setAttribute('aria-label',text('preview')+' '+item.name);open.append(photo({productId:item.productId},item.name,item.hasImage));
@@ -301,9 +358,16 @@
         }
         area.append(grid);pageEnd(area,visible.length,draw);
       }
-      if(active.length)body.append(findControls(draw,{collections,stock:true}),toolbar,area);
+      if(active.length)body.append(findControls(draw,{stock:true}),toolbar,area);
       else body.append(area);
       draw();
+      if(!previewMode&&active.length){
+        const links=el('nav','wfg-catalog-links');
+        for(const [id,key,permission] of [['my-orders','mine','myorders.view'],['chat','chat','chat.view'],['gallery-orders','orders','orders.view'],['gallery-studio','studio','gallery.edit']]){
+          if(can(permission))links.append(button(text(key),()=>api.open(id)));
+        }
+        if(links.childElementCount)body.append(links);
+      }
       if(settings.footer)body.append(el('footer','wfg-footer',settings.footer));
     }
     function specDialog(item){
@@ -317,10 +381,15 @@
         const frame=el('div','wfg-lightbox');frame.append(image);frame.onpointerdown=e=>{start=e.clientX;};frame.onpointerup=e=>{if(start!=null&&Math.abs(e.clientX-start)>60)move(e.clientX<start?1:-1);start=null;};
         const action=group(button(text('previous'),()=>move(-1)),button(text('next'),()=>move(1)),button(text('dims'),()=>specDialog(product)));
         if(can('gallery.export')&&product.hasImage)action.append(button(text('download'),async()=>{const blob=await readBlob({productId:product.productId});assertActive();exportsApi.linkDownload(blob,product.name+'.'+filenameExtension(blob.type));}));
-        modal.content.append(frame,el('h4','',product.name),action);
+        const details=el('div','wfg-lightbox-details');
+        details.setAttribute('aria-live','polite');
+        details.append(el('small','',categoryLabel(product.collection)),el('h4','',product.name),
+          el('strong','wfg-price',product.priceMinor==null?text('noPrice'):money(product.priceMinor,product.currency)),
+          el('small','wfg-catalog-count',(index+1).toLocaleString(language)+' / '+list.length.toLocaleString(language)));
+        modal.content.append(frame,details,action);
       };
       const move=delta=>{index=(index+delta+list.length)%list.length;paint();};paint();
-      modal.node.onkeydown=e=>{if(e.key==='ArrowRight')move(1);else if(e.key==='ArrowLeft')move(-1);};
+      modal.node.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();move((e.key==='ArrowRight'?1:-1)*(language==='ar'?-1:1));}};
     }
     function cartDialog(redraw){
       if(!can('myorders.edit'))throw error('ACCESS_DENIED');
@@ -390,7 +459,11 @@
       const area=el('div');
       const draw=()=>{area.replaceChildren();const filtered=orders.filter(order=>(!statusFilter||order.status===statusFilter)&&matches(order.number,order.customer,order.note,...order.items.map(item=>item.name)));
         const grid=el('div','wfg-order-grid');for(const order of filtered.slice(0,limit))grid.append(orderCard(order,section));
-        if(!filtered.length)grid.append(el('p','wfg-empty',text('empty')));area.append(grid);pageEnd(area,filtered.length,draw);
+        if(!filtered.length)grid.append(section==='myorders'
+          ?emptyCard(orders.length?personalText('noMatchesTitle'):personalText('noOrdersTitle'),orders.length?personalText('noMatches'):personalText('noOrders'),
+              !orders.length&&can('gallery.view')?personalText('browse'):'',()=>api.open('gallery'))
+          :el('p','wfg-empty',text('empty')));
+        area.append(grid);pageEnd(area,filtered.length,draw);
       };
       body.append(findControls(draw,{statusesFilter:true}),area);draw();
     }
@@ -419,7 +492,7 @@
       form.onsubmit=e=>e.preventDefault();
     }
     function personal(){
-      body.append(tabs([['orders','orderList'],['inventory','personalStock']]));
+      body.append(tabs([['orders','orderList'],['inventory','personalStock']]),personalIntro());
       if(tab==='orders'){renderOrders('myorders');return;}
       const tools=group();
       if(can('myorders.edit'))tools.append(button(text('printSettings'),printSettings));
@@ -427,8 +500,10 @@
       const hide=toggle(text('showHidden'),showHidden),area=el('div');
       function draw(){area.replaceChildren();const entries=orders.flatMap(order=>order.items.map(item=>({order,item}))).filter(({order,item})=>
         (!item.hidden||showHidden)&&(!statusFilter||order.status===statusFilter)&&matches(item.name,item.collection,order.number));
-        const summary=el('div','wfg-stats'),purchased=entries.reduce((n,x)=>n+(x.order.status==='cancelled'?0:x.item.quantity),0),sold=entries.reduce((n,x)=>n+x.item.sold,0);
-        summary.append(cell(text('purchased'),purchased),cell(text('sold'),sold),cell(text('remaining'),purchased-sold));area.append(summary);
+        const summary=el('div','wfg-stats'),purchased=entries.reduce((n,x)=>n+(x.order.status==='cancelled'?0:x.item.quantity),0),
+          sold=entries.reduce((n,x)=>n+(x.order.status==='cancelled'?0:x.item.sold),0);
+        summary.append(cell(text('purchased'),purchased),cell(text('sold'),sold),cell(text('remaining'),Math.max(0,purchased-sold)));
+        if(entries.length)area.append(summary);
         const grid=el('div','wfg-order-grid');for(const {order,item} of entries.slice(0,limit)){
           const card=el('article','card wfg-order');const top=el('div','wfg-holding-head');if(item.hasImage)top.append(photo({productId:item.productId,orderId:order.id},''));
           const desc=el('div');desc.append(el('small','',order.number+' · '+text(order.status)),el('h3','',item.name));if(order.deliveredAt)desc.append(el('small','',showDate(order.deliveredAt)));top.append(desc);
@@ -438,10 +513,14 @@
           if(can('myorders.edit')){const sell=button(text('sale'),()=>saleForm(order,item),'wfg-primary');sell.disabled=!['ready','delivered'].includes(order.status)||item.sold>=item.quantity;actions.append(sell,button(text('edit'),()=>linePreferences(order,item)));}
           if(can('myorders.print')||can('myorders.export'))actions.append(button(text('printOne'),()=>showDoc(exportsApi.makeDocument([order],{lang:language,personal:true,profile,only:{orderId:order.id,productId:item.productId}}),'myorders')));
           card.append(actions);grid.append(card);
-        }if(!entries.length)grid.append(el('p','wfg-empty',text('empty')));area.append(grid);pageEnd(area,entries.length,draw);
+        }if(!entries.length)grid.append(emptyCard(orders.length?personalText('noMatchesTitle'):personalText('noStockTitle'),
+          orders.length?personalText('noMatches'):personalText('noStock'),
+          !orders.length&&can('gallery.view')?personalText('browse'):'',()=>api.open('gallery')));
+        area.append(grid);pageEnd(area,entries.length,draw);
       }
-      hide.node.onchange=()=>{showHidden=hide.node.checked;draw();};tools.append(hide.wrap);
-      body.append(tools,findControls(draw,{statusesFilter:true}),area);draw();
+      hide.node.onchange=()=>{showHidden=hide.node.checked;draw();};
+      const filters=findControls(draw,{statusesFilter:true});filters.append(hide.wrap);
+      if(tools.childElementCount)body.append(tools);body.append(filters,area);draw();
     }
     function saleForm(order,item){
       const modal=dialog(text('sale')+' · '+item.name),form=el('form','wfg-form'),count=numeric(1,1,item.quantity-item.sold),
@@ -487,6 +566,10 @@
       body.append(tabs([['stockAdmin','stockAdmin'],['cards','cards'],['slides','slides'],['fields','fields'],['brand','brand']]));
       const actions=group(button(text('preview'),()=>{previewMode=true;category='';query='';render();}));
       if(can('products.edit')&&typeof root.showPage==='function')actions.append(button(text('products'),()=>root.showPage('products')));
+      if(can('gallery.edit')&&root.WFGalleryLegacyLayout){
+        const importButton=button(text('importLayout'),layoutImport);
+        importButton.disabled=dirty;actions.append(importButton);
+      }
       body.append(actions);
       if(tab==='stockAdmin'){stockManager();return;}
       if(tab==='brand'){brandSettings();return;}
@@ -512,6 +595,43 @@
         },'wfg-quiet')));grid.append(card);
       }
       if(!settings[kind].length)grid.append(el('p','wfg-empty',text('empty')));body.append(grid);
+    }
+    function layoutImport(){
+      if(dirty||!can('gallery.edit'))return;
+      const modal=dialog(text('importLayout')),file=el('input'),preview=el('div','wfg-layout-preview');
+      file.type='file';file.accept='.json,application/json';preview.setAttribute('aria-live','polite');
+      let proposal=null,revision=0;
+      const save=button(text('save'),async()=>{
+        if(!proposal||!can('gallery.edit'))throw error('ACCESS_DENIED');
+        file.disabled=true;
+        try{await savePresentation(proposal.value,modal);}finally{file.disabled=false;}
+      },'wfg-primary');
+      save.disabled=true;
+      modal.content.append(field(text('layoutFile'),file),preview,save);
+      file.addEventListener('change',async()=>{
+        const current=++revision,chosen=file.files?.[0];proposal=null;save.disabled=true;preview.replaceChildren();
+        if(!chosen)return;
+        try{
+          if(chosen.size>2*1024*1024)throw error('INVALID_FILE');
+          const data=JSON.parse(await chosen.text());
+          if(current!==revision||!modal.node.open||!alive())return;
+          const result=root.WFGalleryLegacyLayout.preview(data,settings);
+          const counts=el('div','wfg-stats');
+          for(const key of ['cards','slides','fields']){
+            const added=result.added[key];
+            counts.append(cell(text(key),added.toLocaleString(language)));
+            if(!added)continue;
+            const section=el('section'),items=el('ul');section.append(el('h4','',text(key)),items);
+            for(const item of result.value[key].slice(-added))items.append(el('li','',item.title||item.label));
+            preview.append(section);
+          }
+          for(const [key,n] of [['layoutRetained',result.retained],['layoutConflicts',result.conflicts],['layoutMedia',result.mediaPending]]){
+            if(n)counts.append(cell(text(key),n.toLocaleString(language)));
+          }
+          preview.prepend(counts);proposal=result;
+          save.disabled=!Object.values(result.added).some(Boolean);
+        }catch{if(current===revision&&alive())preview.textContent=text('layoutFileInvalid');}
+      });
     }
     async function savePresentation(value,modal){
       const {version,...clean}=value;return changed('gallery.presentation',{version,value:clean},modal,'presentation');

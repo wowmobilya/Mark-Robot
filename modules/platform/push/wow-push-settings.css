@@ -2,15 +2,25 @@
   .wf-push-card, .wf-push-inbox { box-sizing: border-box; min-inline-size: 0; padding: clamp(16px, 3vw, 26px); margin-block: 16px; border: 1px solid var(--border); border-radius: var(--wf-workspace-radius, 18px); background: var(--card); color: var(--text); }
   .wf-push-card :is(h2, h3), .wf-push-inbox h2 { margin: 0 0 10px; font-size: 19px; line-height: 1.5; }
   .wf-push-card p, .wf-push-inbox p { margin: 6px 0; color: var(--text2); font-size: 15px; line-height: 1.75; overflow-wrap: anywhere; }
-  .wf-push-card .wf-push-status { color: var(--text); }
+  .wf-push-card .wf-push-status { display:flex; gap:.65rem; align-items:baseline; padding:.65rem .85rem; border-radius:12px; background:var(--ui-soft); color:var(--text); }
+  .wf-push-status::before { content:""; flex:none; inline-size:.55rem; block-size:.55rem; align-self:flex-start; margin-block-start:.55rem; border-radius:50%; background:var(--ui-accent,#21566b); }
+  .wf-push-status[data-state="enabled"]::before { background:var(--green); }
+  .wf-push-status:is([data-state="error"],[data-state="denied"])::before { background:var(--red); }
   .wf-push-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block-start: 12px; }
   .wf-push-actions:empty { display: none; }
   .wf-push-actions .btn { min-block-size: 44px; max-inline-size: 100%; white-space: normal; line-height: 1.5; }
   .wf-push-actions .btn:focus-visible { outline: 2px solid var(--brand-primary, #21566b); outline-offset: 3px; }
   .wf-push-actions [hidden], .wf-push-inbox[hidden], .wf-push-inbox [hidden] { display: none !important; }
   .wf-push-inbox ol { list-style: none; margin: 0; padding: 0; }
-  .wf-push-inbox li { padding-block: 14px; border-block-start: 1px solid var(--border); overflow-wrap: anywhere; }
-  .wf-push-inbox li[aria-current] { padding-inline-start: 12px; border-inline-start: 3px solid var(--brand-primary, #21566b); }
+  .wf-push-inbox ol { display:grid; gap:.65rem; }
+  .wf-push-inbox li { position:relative; min-inline-size:0; padding:.85rem 1rem; padding-inline-start:3.75rem; border:1px solid var(--border); border-radius:14px; overflow-wrap:anywhere; }
+  .wf-push-inbox li::before { content:""; position:absolute; inset-block-start:.85rem; inset-inline-start:.8rem; inline-size:2.2rem; block-size:2.2rem; background: url("../../../assets/mark-robot-logo.svg") center / contain no-repeat; }
+  .wf-push-inbox li[aria-current] { outline:2px solid var(--ui-accent,#21566b); outline-offset:-2px; }
+  .wf-push-inbox li[data-unread="true"] { background:var(--ui-soft); }
+  .wf-push-meta { display:flex; align-items:center; flex-wrap:wrap; gap:.5rem; }
+  .wf-push-unread { display:inline-flex; align-items:center; gap:.3em; color:var(--text); font-size:.78rem; font-weight:700; }
+  .wf-push-unread::before { content:""; inline-size:.5em; block-size:.5em; border-radius:50%; background:var(--ui-accent,#21566b); }
+  .wf-push-inbox li > button { min-block-size:44px; margin-block-start:.35rem; }
   .wf-push-inbox li h3 { margin: 3px 0; font-size: 16px; }
   .wf-push-inbox li time { color: var(--text2); font-size: 13px; }
   .wf-push-inbox li p { white-space: pre-line; }

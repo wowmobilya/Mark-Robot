@@ -5,13 +5,15 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');
 const http=require('node:http');
+const https=require('node:https');
+const {execFileSync}=require('node:child_process');
 const path=require('node:path');
-const {createHash}=require('node:crypto');
+const {createHash,createPrivateKey,createPublicKey}=require('node:crypto');
 const acorn=require('acorn');
 const {chromium}=require('playwright');
 const base=path.resolve(__dirname,'..'),track='/assets/gallery/wow-ambient-v1.mp3';
 const html=`<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" href="data:,"><link rel="stylesheet" href="/modules/gallery/styles.css?v=2">
+<link rel="icon" href="data:,"><link rel="stylesheet" href="/modules/gallery/styles.css?v=5">
 <style>:root{--brand-primary:#23556d;--text:#122d39;--text2:#54666c;--card:#fff;--border:#cad8dc}body{font:16px sans-serif;margin:20px}.page:not(.active){display:none}</style>
 </head><body><section class="page active"><main class="wfg-workspace"></main></section>
 <script>
@@ -26,6 +28,29 @@ document.querySelector('audio').muted=true;
 const mime={'.js':'application/javascript','.mjs':'application/javascript','.css':'text/css','.json':'application/json',
   '.png':'image/png','.svg':'image/svg+xml','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.mp3':'audio/mpeg',
   '.ico':'image/x-icon','.woff':'font/woff','.woff2':'font/woff2'};
+
+// Some Windows web filters return a synthetic 204 for cleartext MP3s, even
+// on loopback. Use a fresh loopback-only TLS certificate in memory and pin
+// just its key for this disposable browser. No machine trust settings change.
+function windowsLoopbackTLS(){
+  const shell=path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe');
+  const generate=`$ErrorActionPreference='Stop'
+    $rsa=[System.Security.Cryptography.RSA]::Create(2048)
+    $req=[System.Security.Cryptography.X509Certificates.CertificateRequest]::new('CN=localhost',$rsa,[System.Security.Cryptography.HashAlgorithmName]::SHA256,[System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
+    $san=[System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder]::new()
+    $san.AddIpAddress([System.Net.IPAddress]::Loopback)
+    $req.CertificateExtensions.Add($san.Build())
+    $cert=$req.CreateSelfSigned([DateTimeOffset]::Now.AddMinutes(-1),[DateTimeOffset]::Now.AddHours(1))
+    $par=$rsa.ExportParameters($true)
+    $values=@($cert.RawData,$par.Modulus,$par.Exponent,$par.D,$par.P,$par.Q,$par.DP,$par.DQ,$par.InverseQ)
+    foreach($v in $values){[Console]::WriteLine([Convert]::ToBase64String($v))}
+  `;
+  const [der,...params]=execFileSync(shell,['-NoProfile','-NonInteractive','-Command',generate],{encoding:'utf8',windowsHide:true}).trim().split(/\r?\n/);
+  const jwk={kty:'RSA'};['n','e','d','p','q','dp','dq','qi'].forEach((name,i)=>{jwk[name]=Buffer.from(params[i],'base64').toString('base64url');});
+  const key=createPrivateKey({key:jwk,format:'jwk'});
+  const pin=createHash('sha256').update(createPublicKey(key).export({format:'der',type:'spki'})).digest('base64');
+  return {pin,options:{cert:'-----BEGIN CERTIFICATE-----\n'+der+'\n-----END CERTIFICATE-----',key:key.export({type:'pkcs8',format:'pem'})}};
+}
 
 async function fixtureFiles(){
   const worker=await fs.readFile(path.join(base,'sw.js'),'utf8');
@@ -53,7 +78,7 @@ async function fixtureFiles(){
   // All worker imports must already belong to the explicit shell list; no wildcard file server exists.
   for(const name of ['install-identity.js','modules/platform/push/wow-push-sw.js','modules/platform/push/wow-push-device.js'])assert.ok(names.has(name),'Missing allowed worker import '+name);
   await Promise.all([...files.values()].filter(file=>file.relative).map(async file=>{file.body=await fs.readFile(path.join(base,file.relative));}));
-  assert.ok(files.has(track));assert.ok(files.has('/modules/gallery/music.js?v=1'));assert.ok(files.has('/modules/gallery/styles.css?v=2'));
+  assert.ok(files.has(track));assert.ok(files.has('/modules/gallery/music.js?v=1'));assert.ok(files.has('/modules/gallery/styles.css?v=5'));
   const audio=files.get(track).body;assert.ok(audio.length>0&&audio.length<=200000);
   return {files,audio,cacheName:cache.value,digest:createHash('sha256').update(audio).digest('hex')};
 }
@@ -65,7 +90,9 @@ async function main(){
     return;
   }
   let origin='',trackRequests=0;const rejected=[],serverErrors=[];
-  const server=http.createServer((request,response)=>{
+  const tls=process.platform==='win32'?windowsLoopbackTLS():null;
+  const server=tls?https.createServer(tls.options):http.createServer();
+  server.on('request',(request,response)=>{
     try{
       const url=new URL(request.url,origin);
       const allowed=url.origin===origin&&['GET','HEAD'].includes(request.method)&&fixture.files.get(url.pathname+url.search);
@@ -83,11 +110,12 @@ async function main(){
     }catch(error){serverErrors.push(error.message);if(!response.headersSent)response.writeHead(500);response.end();}
   });
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
-  origin='http://127.0.0.1:'+server.address().port;
+  origin=(tls?'https://':'http://')+'127.0.0.1:'+server.address().port;
   let browser;
   const watchdog=setTimeout(()=>{console.error('Offline music fixture exceeded its 90-second limit.');process.exit(1);},90000);watchdog.unref();
   try{
-    browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox'],timeout:20000});
+    const args=['--no-sandbox'];if(tls)args.push('--ignore-certificate-errors-spki-list='+tls.pin);
+    browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args,timeout:20000});
     const context=await browser.newContext({viewport:{width:390,height:820}}),external=[],errors=[];
     context.on('request',request=>{const url=new URL(request.url());if(['http:','https:'].includes(url.protocol)&&url.origin!==origin)external.push(request.url());});
     const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.message));

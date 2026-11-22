@@ -114,21 +114,21 @@
   function render(){
    language=locale();displayHistory();const state=lastState;const c=state?.call;
    panel.hidden=!c;layout.classList.toggle('wf-calling-active',!!c);if(!c){for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
-   title.textContent=(c.status==='ringing'&&c.callerId!==api.getSession?.()?.userId?t('inbound'):t(c.kind==='video'?'video':'audio'));
-   info.textContent=c.status==='ringing'?t('ringing'):t('connecting');
-   if(c.status==='active'&&c.startedAt)info.textContent=t('connected')+' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(c.startedAt))/1000)));
-   videos.replaceChildren();
+   const invited=c.participants?.some(p=>p.id===api.getSession?.()?.userId&&p.status==='invited');
+   title.textContent=(invited?t('inbound'):t(c.kind==='video'?'video':'audio'));
+   info.textContent=invited||c.status==='ringing'?t('ringing'):t('connecting');
+   if(!invited&&c.status==='active'&&c.startedAt)info.textContent=t('connected')+' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(c.startedAt))/1000)));
+
    if(state.localStream){
-    selfVideo.srcObject=state.localStream;selfLabel.textContent=t('local');
+    if(selfVideo.srcObject!==state.localStream)selfVideo.srcObject=state.localStream;selfLabel.textContent=t('local');
     selfCard.hidden=!state.localStream.getVideoTracks().some(track=>track.enabled&&track.readyState==='live');
-    if(!selfCard.hidden)videos.append(selfCard);
+    if(!selfCard.hidden && selfCard.parentNode!==videos)videos.prepend(selfCard);
    }
    for(const item of remote.values()){const track=item.video.srcObject?.getVideoTracks?.()[0];
-    item.video.hidden=!(track&&track.readyState==='live'&&track.enabled);videos.append(item.card);}
+    item.video.hidden=!(track&&track.readyState==='live'&&track.enabled);if(item.card.parentNode!==videos)videos.append(item.card);}
    actions.replaceChildren();
    const myId=api.getSession?.()?.userId;
-   const membership=c.participants?.find(p=>p.id===myId);
-   if(c.status==='ringing'&&membership?.status==='invited'){
+   if(invited){
     actions.append(button('answer',()=>manager.accept(),'wf-calling-accept'),button('reject',()=>manager.decline(),'wf-calling-danger'));
    }else{
     if(c.status==='active'){
@@ -181,7 +181,7 @@
    if(manager)await manager.selectRoom(room).catch(()=>{});
   }
   if(manager){
-   const tick=()=>{if(doc.visibilityState==='visible'||lastState?.call?.status==='active')manager.poll().catch(()=>{});if(lastState?.call)render();};
+   const tick=()=>{if(doc.visibilityState==='visible'||lastState?.call?.status==='active')manager.poll().catch(()=>{});if(lastState?.call?.startedAt)info.textContent=t('connected')+' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(lastState.call.startedAt))/1000)));};
    ticking=root.setInterval(tick,3500);manager.poll().catch(()=>{});
   }
   render();

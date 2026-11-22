@@ -124,13 +124,13 @@
       return result;
     };
     const realtimeCredentials=async()=>{
-      if(!active()||!session().authenticated||!can('chat.edit'))throw failure();
+      if(entry.id!=='chat'||!active()||!session().authenticated||!can('chat.edit'))throw failure();
       const value=await cloud.realtimeCredentials();
       if(!active()||value.userId!==session().userId)throw failure();
       return value;
     };
     const api=Object.freeze({...scoped,request,realtimeCredentials,can,getSession:moduleSession,open,notify:(message,type)=>ops.notify(message,type)});
-    if(scoped)entry.status=root.WFModuleStatus?.mount(entry.surface.actions,api,locale);
+    if(scoped)entry.status=root.WFModuleStatus?.mount(entry.surface.statusbar,api,locale);
     try{
       const instance=await entry.definition.mount({container:entry.surface.body,api,lang:locale(),locale,params:entry.params,route:entry.id,
         request,can,onNavigate:open});
@@ -165,6 +165,10 @@
       if(current()===entry.id&&!entry.instance&&!entry.loading)activate(entry,true);
     }});
     entry.surface.page.classList.add('wf-module-page');
+    const statusbar=doc.createElement('div');statusbar.className='wf-module-statusbar';
+    if(typeof entry.surface.page.insertBefore==='function')entry.surface.page.insertBefore(statusbar,entry.surface.body);
+    else entry.surface.page.append(statusbar); // Synthetic DOM test fixtures lack insertBefore.
+    entry.surface.statusbar=statusbar;
     const button=doc.createElement('button');button.type='button';button.className='nav-item';button.dataset.wfPermission=definition.permission;
     button.setAttribute('data-wf-module-route',entry.id);
     const icon=doc.createElement('span');icon.className='nav-icon';icon.setAttribute('aria-hidden','true');icon.innerHTML=ops.icon(definition.icon||'package');

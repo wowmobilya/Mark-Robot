@@ -25,7 +25,7 @@ async function waitForControls(page,lang){
 // Exercise real Chromium workers, notifications and IndexedDB locally. DevTools supplies the provider event.
 // No VAPID key, hosted workspace, owner session or physical device is used by this test.
 async function main() {
-  const dir = path.join(__dirname, '..'), files = new Set(['modules/platform/push/wow-push-sw.js','modules/platform/push/wow-push-device.js','modules/platform/push/wow-push-client.js','modules/platform/push/wow-push-settings.js','modules/platform/push/wow-push-settings.css','app-icon-192.png']);
+  const dir = path.join(__dirname, '..'), files = new Set(['modules/platform/push/wow-push-sw.js','modules/platform/push/wow-push-device.js','modules/platform/push/wow-push-client.js','modules/platform/push/wow-push-settings.js','modules/platform/push/wow-push-settings.css','app-icon-192.png','assets/mark-robot-badge.png','assets/mark-robot-logo.svg']);
   if(process.argv.includes('--check-fixture')){
     assert.match(fixtureHTML,/<meta charset="utf-8">/);assert.match(htmlType,/charset=utf-8/);assert.match(scriptType,/charset=utf-8/);
     const settings=await fs.readFile(path.join(dir,'modules/platform/push/wow-push-settings.js'),'utf8');
@@ -40,7 +40,7 @@ async function main() {
     if (!name) { res.setHeader('content-type',htmlType); res.end(fixtureHTML); return; }
     if (name === 'sw.js') { res.setHeader('content-type',scriptType); res.end("importScripts('./modules/platform/push/wow-push-sw.js?v=3'); self.addEventListener('activate', e => e.waitUntil(clients.claim()));"); return; }
     if (!files.has(name)) { res.writeHead(404).end(); return; }
-    res.setHeader('content-type', name.endsWith('.js') ? scriptType : name.endsWith('.css') ? 'text/css; charset=utf-8' : 'image/png');
+    res.setHeader('content-type', name.endsWith('.js') ? scriptType : name.endsWith('.css') ? 'text/css; charset=utf-8' : name.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
     res.end(await fs.readFile(path.join(dir, name)));
     }catch(error){serverErrors.push(error.message);if(!res.headersSent)res.writeHead(500);res.end();}
   });
@@ -91,11 +91,12 @@ async function main() {
     let outstanding = [];
     while (Date.now() < deadline) {
       const worker = context.serviceWorkers().find(w => w.url() === origin + '/sw.js');
-      if (worker) try { outstanding = await bounded(worker.evaluate(async () => (await registration.getNotifications()).map(n => ({title:n.title,body:n.body,tag:n.tag}))),2000,'native notification inspection'); } catch (_) {}
+      if (worker) try { outstanding = await bounded(worker.evaluate(async () => (await registration.getNotifications()).map(n => ({title:n.title,body:n.body,tag:n.tag,icon:n.icon,badge:n.badge}))),2000,'native notification inspection'); } catch (_) {}
       if (outstanding.length) break;
       await new Promise(resolve => setTimeout(resolve,50));
     }
     assert.equal(outstanding.length,1,'native notification must be posted while the app is closed'); assert.equal(outstanding[0].body, details.body);
+    assert.equal(outstanding[0].icon,origin+'/app-icon-192.png?v=221');assert.equal(outstanding[0].badge,origin+'/assets/mark-robot-badge.png?v=221');
     phase='checking the reopened Arabic device inbox';
     const reopened = await context.newPage(); await reopened.goto(origin);assert.equal(await reopened.evaluate(()=>document.characterSet),'UTF-8');
     await reopened.getByText(details.body,{exact:true}).waitFor();

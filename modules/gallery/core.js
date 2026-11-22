@@ -7,6 +7,20 @@
   'use strict';
   const locales=['ar','en','tr','fr','ru'];
   const words={
+    importLayout:['استيراد ترتيب Galeri.TR','Import Galeri.TR layout','Galeri.TR düzenini içe aktar','Importer la disposition Galeri.TR','Импорт структуры Galeri.TR'],
+    layoutFile:['ملف تصدير المعرض (JSON)','Gallery export file (JSON)','Galeri dışa aktarım dosyası (JSON)','Fichier d’export du catalogue (JSON)','Файл экспорта каталога (JSON)'],
+    layoutRetained:['موجودة مسبقًا','Already present','Zaten mevcut','Déjà présents','Уже существуют'],
+    layoutConflicts:['تعارضات تم تجاوزها','Conflicts skipped','Atlanan çakışmalar','Conflits ignorés','Пропущенные конфликты'],
+    layoutMedia:['صور تحتاج إلى رفع في WOW','Images to upload in WOW','WOW’a yüklenecek görseller','Images à importer dans WOW','Изображения для загрузки в WOW'],
+    layoutFileInvalid:['تعذرت قراءة ترتيب المعرض. اختر تصدير Galeri.TR بصيغة JSON بحجم أقصاه ٢ ميبيبايت.','Could not read the layout. Choose a Galeri.TR JSON export up to 2 MiB.','Düzen okunamadı. En fazla 2 MiB boyutunda bir Galeri.TR JSON dosyası seçin.','Disposition illisible. Choisissez un export JSON Galeri.TR de 2 Mio maximum.','Не удалось прочитать структуру. Выберите JSON-экспорт Galeri.TR размером до 2 МиБ.'],
+    layout:['طريقة العرض','Layout','Görünüm','Disposition','Вид'],
+    grid2:['عمودان','Two columns','İki sütun','Deux colonnes','Два столбца'],
+    grid3:['ثلاثة أعمدة','Three columns','Üç sütun','Trois colonnes','Три столбца'],
+    grid4:['أربعة أعمدة','Four columns','Dört sütun','Quatre colonnes','Четыре столбца'],
+    masonry:['شبكة صور متدرجة','Masonry','Mozaik','Mosaïque','Мозаика'],
+    panorama:['بانوراما','Panorama','Panorama','Panorama','Панорама'],
+    allCollections:['كل المجموعات','All collections','Tüm koleksiyonlar','Toutes les collections','Все коллекции'],
+    chat:['المحادثات','Chat','Sohbet','Messagerie','Чат'],
     orderList:['طلباتي','My orders','Siparişlerim','Mes commandes','Мои заказы'],
     reviewSaved:['تم حفظ المحاولة السابقة. راجع السجل قبل إرسال تغيير آخر.','The previous attempt was saved. Review the record before submitting another change.','Önceki işlem kaydedildi. Başka bir değişiklik göndermeden önce kaydı kontrol edin.','La tentative précédente a été enregistrée. Vérifiez le dossier avant une autre modification.','Предыдущая операция сохранена. Проверьте запись перед новой отправкой.'],
     cartLimit:['الحد الأقصى للطلب ١٠٠ منتج مختلف.','An order can contain up to 100 different products.','Sipariş en fazla 100 farklı ürün içerebilir.','Une commande accepte jusqu’à 100 produits distincts.','В заказе может быть до 100 разных товаров.'],

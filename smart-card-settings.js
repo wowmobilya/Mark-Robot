@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const pages = ['greetingCard', 'tipCardStandalone', 'wfGreetingWeather', 'wfGreetingLogo', 'wfGreetingRobot'];
+  const pages = ['greetingCard', 'tipCardStandalone', 'wfGreetingWeather', 'wfGreetingLogo', 'wfGreetingRobot', 'wfPrayer'];
   const langs = ['ar','en','tr','fr','ru'];
   const copy = {
     title: ['البطاقة الذكية','Smart card','Akıllı kart','Carte intelligente','Умная карточка'],
@@ -10,6 +10,7 @@
     tipCardStandalone: ['نصيحة اليوم','Today’s tip','Günün önerisi','Conseil du jour','Совет дня'],
     wfGreetingWeather: ['الطقس','Weather','Hava durumu','Météo','Погода'],
     wfGreetingLogo: ['هوية البرنامج','App identity','Uygulama kimliği','Identité de l’application','Оформление приложения'],
+    wfPrayer: ['مواقيت الصلاة','Prayer times','Namaz vakitleri','Horaires de prière','Время молитвы'],
     wfGreetingRobot: ['مارك روبوت','Mark Robot','Mark Robot','Robot Mark','Робот Марк'],
     up: ['تحريك لأعلى','Move up','Yukarı taşı','Déplacer vers le haut','Передвинуть вверх'],
     down: ['تحريك لأسفل','Move down','Aşağı taşı','Déplacer vers le bas','Передвинуть вниз'],
@@ -29,7 +30,9 @@
   function normalize(value, legacyAutoplay = false) {
     const pref = value && typeof value === 'object' ? value : {};
     const order = [...new Set((Array.isArray(pref.order) ? pref.order : []).filter(id => pages.includes(id)).concat(pages))];
-    const visible = order.filter(id => !Array.isArray(pref.visible) || pref.visible.includes(id));
+    const allLegacyFacesVisible = Array.isArray(pref.visible) && Array.isArray(pref.order) &&
+      !pref.order.includes('wfPrayer') && pages.slice(0,-1).every(id=>pref.visible.includes(id));
+    const visible = order.filter(id => !Array.isArray(pref.visible) || pref.visible.includes(id) || (id==='wfPrayer' && allLegacyFacesVisible));
     if (!visible.length) visible.push(order[0]);
     const initial = pref.initial ?? pages[4];
     return {

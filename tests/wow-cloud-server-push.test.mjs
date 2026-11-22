@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {createECDH,randomBytes,createPublicKey,verify} from 'node:crypto';
 const require=createRequire(new URL('../supabase/package.json',import.meta.url));
-const webPush=await import(require.resolve('web-push'));
+const webPush=require('web-push');
 const ece=require('http_ece');
 const {derivePushEvents,formatPushPayload}=await import('../supabase/functions/wow-cloud/push-events.mjs');
 const {normalizeSubscription,validatePushEndpoint}=await import('../supabase/functions/wow-cloud/push-security.mjs');

@@ -368,6 +368,7 @@
     if(!active)return false;
     if(reason==='done'&&!canCommit())return false;
     const session=active,field=source();active=null;stopRepeat();session.ancestors?.disconnect();session.children?.disconnect();
+    editor.value='';session.undo.length=0;session.redo.length=0;
     const priorReadonly=field?.readOnly,previousTransfer=transferField;transferField=field;
     if(field)field.readOnly=true;
     suppressFocus++;

@@ -1,10 +1,12 @@
+import {createStatementDelivery} from './modules/statement-delivery.mjs';
+import {createPlatformActions} from './modules/platform-companies.mjs';
 import './accounts-policy.js';
 import './accounts-data-policy.js';
 import './product-cost-core.js';
 import {createHandler} from './core.mjs';
 import {createRestDependencies} from './rest.mjs';
 import {createGalleryActions} from './modules/gallery.mjs';
-import {createChatActions} from './modules/chat.mjs';
+import {createChatActions,turnConfiguration} from './modules/chat.mjs';
 import {createFilesActions} from './modules/files.mjs';
 import {createFinanceActions} from './modules/finance.mjs';
 import {createQuoteProvider} from './modules/quote-provider.mjs';
@@ -40,12 +42,22 @@ const publicShareOptions={...remote,projectUrl:Deno.env.get('SUPABASE_URL'),publ
 const publicShare=createPublicShareAPI(publicShareOptions);
 const communications=createCommunications({moduleRpc:remote.moduleRpc,workerRpc:remote.communicationsRpc,
   provider:createMailProvider({apiKey:Deno.env.get('RESEND_API_KEY'),enabled:Deno.env.get('WOW_EMAIL_ENABLED')==='true',webhookSecret:Deno.env.get('RESEND_WEBHOOK_SECRET')})});
+const statements=createStatementDelivery({...remote,config:{
+  emailEnabled:Deno.env.get('WOW_STATEMENT_EMAIL_ENABLED')==='true',emailKey:Deno.env.get('RESEND_API_KEY'),
+  emailFrom:Deno.env.get('WOW_STATEMENT_FROM_EMAIL'),emailWorkspace:Deno.env.get('WOW_STATEMENT_EMAIL_WORKSPACE'),
+  waEnabled:Deno.env.get('WOW_STATEMENT_WHATSAPP_ENABLED')==='true',waToken:Deno.env.get('WOW_WHATSAPP_TOKEN'),
+  waPhone:Deno.env.get('WOW_WHATSAPP_PHONE_ID'),waVersion:Deno.env.get('WOW_WHATSAPP_GRAPH_VERSION'),
+  waTemplate:Deno.env.get('WOW_WHATSAPP_TEMPLATE'),waLocale:Deno.env.get('WOW_WHATSAPP_TEMPLATE_LANGUAGE'),
+  waWorkspace:Deno.env.get('WOW_WHATSAPP_WORKSPACE')
+}});
 const storageMaintenance=createStorageMaintenance(remote);
 const maintenance=async()=>{
-  const results=await Promise.allSettled([storageMaintenance(),communications.process()]);
+  const results=await Promise.allSettled([storageMaintenance(),communications.process(),statements.process()]);
   if(results.some(result=>result.status==='rejected'))throw new Error('MAINTENANCE_DEFERRED');
 };
-const moduleActions={...createGalleryActions(remote),...createChatActions({...remote,voiceTurn:{url:Deno.env.get('WOW_TURN_URL'),urls:Deno.env.get('WOW_TURN_URLS'),secret:Deno.env.get('WOW_TURN_SHARED_SECRET')}}),...createFilesActions(remote),
+const voiceTurn={url:Deno.env.get('WOW_TURN_URL'),urls:Deno.env.get('WOW_TURN_URLS'),secret:Deno.env.get('WOW_TURN_SHARED_SECRET')};
+const relay=turnConfiguration(voiceTurn);
+const moduleActions={...statements.actions,...createPlatformActions(remote),...createGalleryActions(remote),...createChatActions({...remote,voiceTurn}),...createFilesActions(remote),
   ...customerAuth.actions,...ownerActivation.actions,...createPublicShareActions(publicShareOptions),...communications.actions,
   ...createFinanceActions({...remote,quoteProvider:createQuoteProvider({goldApiKey:Deno.env.get('GOLDAPI_KEY')})}),
   ...createOperationsActions({...remote,configuration:{aiConfigured:assistantProvider.configured===true}}),
@@ -63,7 +75,7 @@ Deno.serve(async(req:Request)=>{
     try{
       const state=await remote.health();
       if(state?.ok!==true)throw new Error('UNAVAILABLE');
-      return Response.json({ok:true,service:'mark-robot',checkedAt:state.checkedAt},{headers:{'Cache-Control':'no-store'}});
+      return Response.json({ok:true,service:'mark-robot',checkedAt:state.checkedAt,turnConfigured:!!relay.secret&&relay.urls.length>0},{headers:{'Cache-Control':'no-store'}});
     }catch(_){return Response.json({ok:false,service:'mark-robot'},{status:503,headers:{'Cache-Control':'no-store'}});}
   }
   if(new URL(req.url).pathname.endsWith('/push-worker')){

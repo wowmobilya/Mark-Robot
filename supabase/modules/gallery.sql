@@ -151,10 +151,17 @@ language sql stable set search_path='' as $$
  'customPrice',g.price_minor is not null,'published',coalesce(g.published,false),'stock',coalesce(g.stock,0),'version',coalesce(g.version,0),'specs',coalesce(g.specs,'{}'::jsonb),
  'hasImage',p.payload->>'image' like 'wfmedia:%',
  'dims',coalesce((select jsonb_agg(jsonb_build_object('name',left(coalesce(x->>'name',x->>'label',''),80),
- 'l',left(x->>'l',24),'w',left(x->>'w',24),'h',left(x->>'h',24),'weight',left(coalesce(x->>'weight',x->>'kg'),24)) order by n)
- from jsonb_array_elements(case when jsonb_typeof(p.payload->'dims')='array' then p.payload->'dims' else '[]' end) with ordinality d(x,n) where n<=50),'[]'::jsonb),
+ 'l',left(x->>'l',24),'w',left(x->>'w',24),'h',left(x->>'h',24),'weight',left(coalesce(x->>'weight',x->>'kg'),24),
+ 'specs',coalesce((select jsonb_object_agg(f->>'id',x->'specs'->(f->>'id'))
+   from jsonb_array_elements(presentation.value->'fields') f
+   where f->'visible'='true' and jsonb_typeof(x->'specs'->(f->>'id'))='number'),'{}'::jsonb)) order by n)
+ from jsonb_array_elements(case when jsonb_typeof(p.payload->'dims')='array' and p.payload->'dims'<>'[]' then p.payload->'dims'
+   when coalesce(p.payload->>'dimL',p.payload->>'dimW',p.payload->>'dimH') is not null
+   then jsonb_build_array(jsonb_build_object('l',p.payload->'dimL','w',p.payload->'dimW','h',p.payload->'dimH'))
+   else '[]' end) with ordinality d(x,n) where n<=50),'[]'::jsonb),
  'weight',left(coalesce(p.payload->>'totalWeight',p.payload->>'weight',''),24))
  from public.wow_records p left join public.wow_gallery_listings g on g.workspace_id=p.workspace_id and g.product_id=p.record_id
+ left join public.wow_gallery_presentation presentation on presentation.workspace_id=p.workspace_id
  where p.workspace_id=wid and p.store='products' and p.record_id=pid and p.deleted_at is null
 $$;
 create or replace function public.wow_gallery_order_json(o public.wow_gallery_orders,own_view boolean,staff_view boolean) returns jsonb

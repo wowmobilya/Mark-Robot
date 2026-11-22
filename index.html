@@ -35,7 +35,7 @@ const wfTakeOwnerActivation=(()=>{
   return take;
 })();
 </script>
-<script src="./modules/customer-auth/workspace.js?v=2"></script>
+<script src="./modules/customer-auth/workspace.js?v=3"></script>
 <link rel="stylesheet" href="./modules/customer-auth/styles.css?v=1">
 <!-- WOW V22: read-only statement model and scoped UI; no database migration. -->
 <link rel="stylesheet" href="./account-statement.css?v=25">
@@ -73,10 +73,10 @@ const wfTakeOwnerActivation=(()=>{
 <title>Mark Robot</title>
 
 <!-- ربط ملف الـ Manifest -->
-<link rel="manifest" href="manifest.json?v=7">
+<link rel="manifest" href="manifest.json?v=8">
 <meta name="application-name" content="Mark Robot">
 <meta name="apple-mobile-web-app-title" content="Mark Robot">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=212">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=221">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -87,7 +87,7 @@ const wfTakeOwnerActivation=(()=>{
 <!-- Preload Google Identity Services so activation opens immediately on tablet -->
 <script src="https://accounts.google.com/gsi/client" async defer data-wf-google-identity="1"></script>
 <!-- أيقونة أجهزة آبل (iOS) -->
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=212">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=221">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -6467,14 +6467,14 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=34">
-     <link rel="stylesheet" href="accounts-access.css?v=1">
+     <link rel="stylesheet" href="accounts-access.css?v=2">
 <link rel="stylesheet" href="accounts-settings.css?v=1">
 <script src="accounts-policy.js?v=2" defer></script>
 <script src="accounts-data-policy.js?v=1" defer></script>
 <script src="accounts-core.js?v=3" defer></script>
 <script src="accounts-local-provider.js?v=1" defer></script>
 <script src="modules/platform/cloud/wow-cloud-config.js?v=2" defer></script>
-<script src="modules/platform/cloud/wow-cloud-client.js?v=5" defer></script>
+<script src="modules/platform/cloud/wow-cloud-client.js?v=6" defer></script>
 <script src="modules/platform/cloud/wow-cloud-sync.js?v=1" defer></script>
 <script src="accounts-access.js?v=6" defer></script>
 <script src="cart-page.js?v=1" defer></script>
@@ -6486,16 +6486,16 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
      <script src="ui-logo.js?v=3" defer></script>
 <script src="ui-settings.js?v=2" defer></script>
 <script src="product-categories.js?v=4" defer></script>
-<script src="install-identity.js?v=3" defer></script>
-<script src="app-identity.js?v=4" defer></script>
+<script src="install-identity.js?v=4" defer></script>
+<script src="app-identity.js?v=5" defer></script>
 <script src="voice-loudness.js?v=1" defer></script>
-<script src="offline-voice.js?v=11" defer></script>
+<script src="offline-voice.js?v=12" defer></script>
 <script src="reference-voice-assets.js?v=1" defer></script>
 <script src="reference-voice.js?v=5" defer></script>
 <script src="robot-settings.js?v=12" defer></script>
-<script src="smart-card-settings.js?v=2" defer></script>
+<script src="smart-card-settings.js?v=3" defer></script>
 <script src="accounts-settings.js?v=4" defer></script>
-<script src="modules/platform/cloud/wow-cloud-settings.js?v=2" defer></script>
+<script src="modules/platform/cloud/wow-cloud-settings.js?v=3" defer></script>
 <link rel="stylesheet" href="modules/platform/cloud/wow-cloud-settings.css?v=1">
 <script src="settings-navigation.js?v=21" defer></script>
 <script src="branding-settings.js?v=4" defer></script>
@@ -6535,38 +6535,42 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="global-search.js?v=2" defer></script>
 <script src="business-workspace.js?v=1" defer></script>
 <script src="topbar-dock.js?v=6" defer></script>
-<script src="arabic-report-speech.js?v=3" defer></script>
+<script src="arabic-report-speech.js?v=4" defer></script>
 <script src="turkish-report-speech.js?v=1" defer></script>
 <script src="robot-report.js?v=10" defer></script>
-<script src="robot-face.js?v=14" defer></script>
+<script src="robot-expression.js?v=1" defer></script>
+<script src="robot-face.js?v=15" defer></script>
 <script src="program-speech.js?v=5" defer></script>
 <script src="notifications-workspace.js?v=2" defer></script>
-<script src="modules/platform/push/wow-push-device.js?v=3" defer></script>
-<script src="modules/platform/push/wow-push-client.js?v=2" defer></script>
-<script src="modules/platform/push/wow-push-settings.js?v=2" defer></script>
-<link rel="stylesheet" href="modules/platform/push/wow-push-settings.css?v=1">
+<script src="modules/platform/push/wow-push-device.js?v=4" defer></script>
+<script src="modules/platform/push/wow-push-client.js?v=3" defer></script>
+<script src="modules/platform/push/wow-device-feedback.js?v=1" defer></script>
+<script src="modules/platform/push/wow-push-chat.js?v=1" defer></script>
+<script src="modules/platform/push/wow-push-settings.js?v=3" defer></script>
+<link rel="stylesheet" href="modules/platform/push/wow-push-settings.css?v=2">
 <!-- Modular Mark Robot sections: one shared identity, local cache and API. -->
 <script src="modules/platform/delta.js?v=1" defer></script>
 <script src="modules/platform/offline/store.js?v=1" defer></script>
 <script src="modules/platform/offline/grant.js?v=1" defer></script>
 <script src="modules/platform/offline/transport.js?v=1" defer></script>
-<script src="modules/platform/offline/status.js?v=1" defer></script>
+<script src="modules/platform/offline/status.js?v=3" defer></script>
 <link rel="stylesheet" href="modules/platform/offline/styles.css?v=1">
-<script src="modules/platform/registry.js?v=3" defer></script>
-<link rel="stylesheet" href="modules/platform/styles.css?v=1">
+<script src="modules/platform/registry.js?v=4" defer></script>
+<link rel="stylesheet" href="modules/platform/styles.css?v=3">
 <script src="modules/files/core.js?v=1" defer></script>
 <script src="modules/chat/core.js?v=1" defer></script>
-<script src="modules/gallery/core.js?v=2" defer></script>
-<script src="modules/gallery/exports.js?v=1" defer></script>
+<script src="modules/gallery/core.js?v=3" defer></script>
+<script src="modules/gallery/exports.js?v=2" defer></script>
 <script src="modules/gallery/public-share.js?v=1" defer></script>
 <script src="modules/gallery/music.js?v=1" defer></script>
-<script src="modules/gallery/workspace.js?v=3" defer></script>
-<link rel="stylesheet" href="modules/gallery/styles.css?v=2">
+<script src="modules/gallery/legacy-layout.js?v=1" defer></script>
+<script src="modules/gallery/workspace.js?v=6" defer></script>
+<link rel="stylesheet" href="modules/gallery/styles.css?v=5">
 <script src="modules/files/workspace.js?v=1" defer></script>
 <link rel="stylesheet" href="modules/files/styles.css?v=1">
 <script src="modules/chat/realtime-channel.js?v=1" defer></script>
- <script src="modules/chat/call-manager.js?v=1" defer></script>
- <script src="modules/chat/call-ui.js?v=1" defer></script>
+ <script src="modules/chat/call-manager.js?v=2" defer></script>
+ <script src="modules/chat/call-ui.js?v=2" defer></script>
  <script src="modules/chat/workspace.js?v=3" defer></script>
 <link rel="stylesheet" href="modules/chat/styles.css?v=1">
  <link rel="stylesheet" href="modules/chat/call-ui.css?v=1">
@@ -6585,14 +6589,18 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="screen-awake.js?v=2" defer></script>
 <script src="speech-media.js?v=2" defer></script>
 <script src="speech-controls.js?v=5" defer></script>
-<script src="greeting-carousel.js?v=19" defer></script>
+<script src="vendor/adhan/adhan.umd.min.js?v=1" defer></script>
+<script src="vendor/tz-lookup/tz.js?v=1" defer></script>
+<link rel="stylesheet" href="prayer-card.css?v=1">
+<script src="prayer-card.js?v=1" defer></script>
+<script src="greeting-carousel.js?v=20" defer></script>
 <script src="home-layout.js?v=2" defer></script>
 <script src="home-dock.js?v=2" defer></script>
 <script src="home-customizer.js?v=4" defer></script>
 <script src="invoice-workspace.js?v=1" defer></script>
 <script src="invoice-preview.js?v=1" defer></script>
 <script src="barcode-workspace.js?v=1" defer></script>
-<script src="touch-keyboard.js?v=3" defer></script>
+<script src="touch-keyboard.js?v=4" defer></script>
 <script src="developer-profile.js?v=2" defer></script>
 <script src="app-updates.js?v=4" defer data-release="221"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
@@ -6603,7 +6611,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="topbar-dock.css?v=7">
 <link rel="stylesheet" href="context-nav.css?v=6">
 <link rel="stylesheet" href="workspace-surfaces.css?v=37">
-<link rel="stylesheet" href="robot-face.css?v=9">
+<link rel="stylesheet" href="robot-face.css?v=10">
 <link rel="stylesheet" href="dialog-surfaces.css?v=2">
 <link rel="stylesheet" href="product-categories.css?v=1">
 <link rel="stylesheet" href="branding-settings.css?v=1">
@@ -6632,8 +6640,8 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <link rel="stylesheet" href="home-customizer.css?v=5">
 <link rel="stylesheet" href="invoice-workspace.css?v=1">
 <link rel="stylesheet" href="barcode-workspace.css?v=1">
-<link rel="stylesheet" href="touch-keyboard.css?v=1">
-<link rel="stylesheet" href="notifications-workspace.css?v=1">
+<link rel="stylesheet" href="touch-keyboard.css?v=2">
+<link rel="stylesheet" href="notifications-workspace.css?v=2">
 <link rel="stylesheet" href="unified-workspaces.css?v=1">
 <link rel="stylesheet" href="operations-workspace.css?v=3">
 <link rel="stylesheet" href="product-costs.css?v=3">
@@ -6808,7 +6816,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <aside class="sidebar" id="sidebar" inert aria-labelledby="wf-nav-nav_main">
     <button type="button" id="wfSidebarClose" aria-controls="sidebar" onclick="wfToggleDesktopSidebar()">×</button>
   <div class="wf-sidebar-brand" id="wfSidebarBrand">
-    <img id="wfSidebarLogo" src="app-icon-192.png?v=212" alt="">
+    <img id="wfSidebarLogo" src="app-icon-192.png?v=221" alt="">
     <strong dir="ltr">WOW <span>Furniture</span></strong>
 
   </div>
@@ -13576,6 +13584,7 @@ function showToast(msg,type='ok'){
   box.style.top=(onPage?Math.max(12,Math.max(navBottom,dockBottom)+10):12)+'px';
   while(box.children.length>=2)box.firstElementChild.remove();
   const el=document.createElement('div');el.className=`toast ${['ok','er','err','in'].includes(type)?type:'in'}`;
+  const mark=window.WFRobotExpression?.avatar(document,msg,type,0);if(mark)el.appendChild(mark);
   const text=document.createElement('span');text.dataset.wfToastCopy=msg;text.textContent=wfUiText(msg);el.appendChild(text);
   const close=document.createElement('button');close.type='button';close.className='toast-close';close.textContent='×';close.setAttribute('aria-label',wfUiText('Close'));close.onclick=()=>el.remove();el.appendChild(close);
   const duration=type==='er'||type==='err'?6000:4000;el.style.setProperty('--toast-delay',(duration-250)+'ms');
@@ -15842,6 +15851,7 @@ function removePrDimRow(i) {
 /* ── تحديث المصفوفة عند الكتابة ── */
 function onPrDimRowInput(i) {
   S.prDims[i] = {
+    ...S.prDims[i],
     l: parseFloat(document.getElementById(`prDimL_${i}`)?.value) || 0,
     w: parseFloat(document.getElementById(`prDimW_${i}`)?.value) || 0,
     h: parseFloat(document.getElementById(`prDimH_${i}`)?.value) || 0,
@@ -15857,7 +15867,7 @@ function onPrDimAllInput() {
 
 /* ── قراءة الأبعاد عند الحفظ ── */
 function getPrDimsValue() {
-  return (S.prDims||[]).map(d=>({l:Number(d.l)||0,w:Number(d.w)||0,h:Number(d.h)||0}));
+  return (S.prDims||[]).map(d=>({...d,l:Number(d.l)||0,w:Number(d.w)||0,h:Number(d.h)||0}));
 }
 
 // Legacy dimL/W/H are physical dimensions; package rows are never a fallback.
@@ -16305,7 +16315,7 @@ function editPr(id){
 
     // ── تحميل الأبعاد في النظام الديناميكي
     if (p.dims && p.dims.length) {
-      S.prDims = p.dims.map(d => ({ l: d.l||0, w: d.w||0, h: d.h||0 }));
+      S.prDims = p.dims.map(d => ({ ...d, l: d.l||0, w: d.w||0, h: d.h||0 }));
     } else if (p.dimL || p.dimW || p.dimH) {
       // دعم البيانات القديمة
       S.prDims = [{ l: p.dimL||0, w: p.dimW||0, h: p.dimH||0 }];
@@ -27797,7 +27807,7 @@ function wf11Text(key){
     tr:{title:'Faturayı paylaş / kaydet',sub:'PDF doğrudan paylaşılır — Excel cihaza indirilir',pdfDesc:'Orijinal PDF — cihaz paylaşım penceresiyle doğrudan paylaşım',pdfPrep:'PDF hazırlanıyor…',pdfReady:'Paylaşıma hazır',pdfFail:'Bu cihazda PDF paylaşımı açılamadı',excelDesc:'Düzenlenebilir gerçek XLSX — doğrudan indirme',excelReady:'Downloads klasörüne indirmek için dokunun',excelPrep:'Büyük Excel dosyası hazırlanıyor…',excelDone:'Excel dosyası Downloads klasörüne indirildi',note:'Büyük Excel dosyasının bilgisayar, tablet ve telefonda güvenilir olması için gerçek XLSX doğrudan indirilir. PDF sistem paylaşımıyla açılır.',noInvoice:'Hazır fatura yok.',downloadToast:'Excel dosyası Downloads klasörüne indirildi. İlk sayfada WOW resmî bilgi notu vardır; fatura sonraki çalışma sayfasından başlar.',excelFail:'Excel dosyası indirilemedi.'},
     en:{title:'Share / Save invoice',sub:'PDF shares directly — Excel downloads to the device',pdfDesc:'Original PDF — direct system share',pdfPrep:'Preparing PDF…',pdfReady:'Ready to share',pdfFail:'PDF sharing is unavailable on this device',excelDesc:'Editable real XLSX — direct download',excelReady:'Tap to download to Downloads',excelPrep:'Preparing the large Excel file…',excelDone:'Excel downloaded to the Downloads folder',note:'For reliable use of the large Excel file on desktop, tablet and phone, the real XLSX is downloaded directly. PDF continues to use the system share sheet.',noInvoice:'No invoice is ready.',downloadToast:'Excel was downloaded to the Downloads folder. The first worksheet contains the WOW official notice; the editable invoice starts on the next worksheet.',excelFail:'Excel could not be downloaded.'}
   ,
-  fr: {title:"Partager / enregistrer la facture",sub:"Partage direct du PDF — téléchargement d’Excel sur l’appareil",pdfDesc:"PDF original — partage système direct",pdfPrep:"Préparation du PDF…",pdfReady:"Prêt à partager",pdfFail:"Partage de PDF indisponible sur cet appareil",excelDesc:"Véritable XLSX modifiable — téléchargement direct",excelReady:"Appuyez pour télécharger dans Téléchargements",excelPrep:"Préparation du fichier Excel volumineux…",excelDone:"Excel enregistré dans Téléchargements",note:"Pour un fonctionnement fiable sur ordinateur, tablette et téléphone, le véritable XLSX est téléchargé directement. Le PDF utilise le partage système.",noInvoice:"Aucune facture prête.",downloadToast:"Excel enregistré dans Téléchargements. La première feuille contient l’avis officiel WOW ; la facture modifiable commence sur la suivante.",excelFail:"Téléchargement d’Excel impossible."},
+  fr: {title:"Partager / enregistrer la facture",sub:"Partage direct du PDF — téléchargement d’Excel sur l’appareil",pdfDesc:"PDF original — partage système direct",pdfPrep:"Préparation du PDF…",pdfReady:"Prêt à partager",pdfFail:"Partage de PDF indisponible sur cet appareil",excelDesc:"Partager le classeur Excel modifiable direct",excelReady:"Appuyez pour télécharger dans Téléchargements",excelPrep:"Préparation du fichier Excel volumineux…",excelDone:"Excel enregistré dans Téléchargements",note:"Pour un fonctionnement fiable sur ordinateur, tablette et téléphone, le véritable XLSX est téléchargé directement. Le PDF utilise le partage système.",noInvoice:"Aucune facture prête.",downloadToast:"Excel enregistré dans Téléchargements. La première feuille contient l’avis officiel WOW ; la facture modifiable commence sur la suivante.",excelFail:"Téléchargement d’Excel impossible."},
   ru: {title:"Отправить / сохранить счёт",sub:"PDF отправляется напрямую — Excel скачивается на устройство",pdfDesc:"Исходный PDF — прямая отправка через систему",pdfPrep:"Подготовка PDF…",pdfReady:"Готово к отправке",pdfFail:"Отправка PDF недоступна на этом устройстве",excelDesc:"Настоящий редактируемый XLSX — прямое скачивание",excelReady:"Нажмите для сохранения в «Загрузки»",excelPrep:"Подготовка большого файла Excel…",excelDone:"Excel скачан в папку «Загрузки»",note:"Для надёжной работы на компьютере, планшете и телефоне XLSX скачивается напрямую. PDF отправляется через системное окно.",noInvoice:"Нет готового счёта.",downloadToast:"Excel скачан в «Загрузки». Первый лист содержит официальное уведомление WOW, редактируемый счёт начинается со следующего листа.",excelFail:"Не удалось скачать Excel."}
 };
   const L=D[wf11Lang()]||D.ar;return L[key]||key;
@@ -27946,7 +27956,7 @@ window.WF_EXCEL_NOTICE_V12=true;
 'use strict';
 if(typeof wfBuildPageSet!=='function'||typeof wfMakePdf!=='function'||typeof wfRasterizePage!=='function')return;
 
-const WF13={token:0,pdfOriginal:null,pdfReview:null,busyPdf:false,busyExcel:false,excelReview:false};
+const WF13={excelFiles:new Map(),token:0,pdfOriginal:null,pdfReview:null,busyPdf:false,busyExcel:false,excelReview:false};
 const _wf13ExcelBuilder=(typeof wfMakeExcelLayoutWorkbook==='function')?wfMakeExcelLayoutWorkbook:null;
 
 function q(id){return document.getElementById(id)}
@@ -27966,12 +27976,12 @@ function uiLang(){
 }
 function copy(L){
   const D={
-    ar:{title:'إرسال الفاتورة',sub:'اختر النسخة الأصلية أو نسخة المراجعة قبل الاعتماد',pdfDesc:'مشاركة مباشرة من نافذة الجهاز',xlsDesc:'ملف XLSX حقيقي قابل للتعديل — تنزيل',original:'النسخة الأصلية',originalSubPdf:'نهائية ونظيفة',originalSubXls:'بدون علامة مراجعة',review:'نسخة للمراجعة',reviewSub:'بعلامة شفافة — غير نهائية',reviewMark:'نسخة للمراجعة',notFinal:'غير نهائية',reviewOnly:'للمراجعة فقط قبل الاعتماد',preparing:'جاري التجهيز…',ready:'جاهز',share:'مشاركة',download:'تنزيل',downloading:'جاري تجهيز Excel…',downloaded:'تم تنزيل الملف إلى Downloads',pdfFail:'تعذر فتح مشاركة PDF على هذا الجهاز',excelFail:'تعذر إنشاء ملف Excel',noInvoice:'لا توجد فاتورة جاهزة.',note:'أرسل نسخة المراجعة للمشتري أولاً عند الحاجة إلى تصحيح سعر أو صورة أو بيانات، ثم أرسل النسخة الأصلية بعد الاعتماد.'},
-    tr:{title:'Faturayı gönder',sub:'Onaydan önce orijinal veya kontrol kopyasını seçin',pdfDesc:'Cihazın paylaşım penceresiyle doğrudan paylaşım',xlsDesc:'Gerçek ve düzenlenebilir XLSX — indirme',original:'ORİJİNAL',originalSubPdf:'Temiz nihai kopya',originalSubXls:'Kontrol işareti yok',review:'KONTROL KOPYASI',reviewSub:'Şeffaf işaretli — nihai değildir',reviewMark:'KONTROL KOPYASI',notFinal:'NİHAİ DEĞİLDİR',reviewOnly:'ONAY ÖNCESİ KONTROL İÇİNDİR',preparing:'Hazırlanıyor…',ready:'Hazır',share:'Paylaş',download:'İndir',downloading:'Excel hazırlanıyor…',downloaded:'Dosya Downloads klasörüne indirildi',pdfFail:'Bu cihazda PDF paylaşımı açılamadı',excelFail:'Excel dosyası oluşturulamadı',noInvoice:'Hazır fatura yok.',note:'Fiyat, görsel veya veri düzeltmeleri gerekiyorsa önce kontrol kopyasını alıcıya gönderin; onaydan sonra orijinal kopyayı gönderin.'},
-    en:{title:'Send invoice',sub:'Choose the original or a review copy before approval',pdfDesc:'Direct share through the device share sheet',xlsDesc:'Real editable XLSX — download',original:'ORIGINAL',originalSubPdf:'Clean final copy',originalSubXls:'No review watermark',review:'REVIEW COPY',reviewSub:'Transparent mark — not final',reviewMark:'REVIEW COPY',notFinal:'NOT FINAL',reviewOnly:'FOR REVIEW BEFORE APPROVAL',preparing:'Preparing…',ready:'Ready',share:'Share',download:'Download',downloading:'Preparing Excel…',downloaded:'File downloaded to Downloads',pdfFail:'PDF sharing is unavailable on this device',excelFail:'Excel file could not be created',noInvoice:'No invoice is ready.',note:'Send the review copy first when the buyer may request changes to price, images or data; send the clean original after approval.'}
+    ar:{title:'إرسال الفاتورة',sub:'اختر النسخة الأصلية أو نسخة المراجعة قبل الاعتماد',pdfDesc:'مشاركة مباشرة من نافذة الجهاز',xlsDesc:'ملف Excel قابل للتعديل والمشاركة',original:'النسخة الأصلية',originalSubPdf:'نهائية ونظيفة',originalSubXls:'بدون علامة مراجعة',review:'نسخة للمراجعة',reviewSub:'بعلامة شفافة — غير نهائية',reviewMark:'نسخة للمراجعة',notFinal:'غير نهائية',reviewOnly:'للمراجعة فقط قبل الاعتماد',preparing:'جاري التجهيز…',ready:'جاهز',share:'مشاركة',download:'تنزيل',downloading:'جاري تجهيز Excel…',downloaded:'تم تنزيل الملف إلى Downloads',pdfFail:'تعذر فتح مشاركة PDF على هذا الجهاز',excelFail:'تعذر إنشاء ملف Excel',noInvoice:'لا توجد فاتورة جاهزة.',note:'أرسل نسخة المراجعة للمشتري أولاً عند الحاجة إلى تصحيح سعر أو صورة أو بيانات، ثم أرسل النسخة الأصلية بعد الاعتماد.'},
+    tr:{title:'Faturayı gönder',sub:'Onaydan önce orijinal veya kontrol kopyasını seçin',pdfDesc:'Cihazın paylaşım penceresiyle doğrudan paylaşım',xlsDesc:'Düzenlenebilir Excel dosyasını paylaş',original:'ORİJİNAL',originalSubPdf:'Temiz nihai kopya',originalSubXls:'Kontrol işareti yok',review:'KONTROL KOPYASI',reviewSub:'Şeffaf işaretli — nihai değildir',reviewMark:'KONTROL KOPYASI',notFinal:'NİHAİ DEĞİLDİR',reviewOnly:'ONAY ÖNCESİ KONTROL İÇİNDİR',preparing:'Hazırlanıyor…',ready:'Hazır',share:'Paylaş',download:'İndir',downloading:'Excel hazırlanıyor…',downloaded:'Dosya Downloads klasörüne indirildi',pdfFail:'Bu cihazda PDF paylaşımı açılamadı',excelFail:'Excel dosyası oluşturulamadı',noInvoice:'Hazır fatura yok.',note:'Fiyat, görsel veya veri düzeltmeleri gerekiyorsa önce kontrol kopyasını alıcıya gönderin; onaydan sonra orijinal kopyayı gönderin.'},
+    en:{title:'Send invoice',sub:'Choose the original or a review copy before approval',pdfDesc:'Direct share through the device share sheet',xlsDesc:'Share an editable Excel file',original:'ORIGINAL',originalSubPdf:'Clean final copy',originalSubXls:'No review watermark',review:'REVIEW COPY',reviewSub:'Transparent mark — not final',reviewMark:'REVIEW COPY',notFinal:'NOT FINAL',reviewOnly:'FOR REVIEW BEFORE APPROVAL',preparing:'Preparing…',ready:'Ready',share:'Share',download:'Download',downloading:'Preparing Excel…',downloaded:'File downloaded to Downloads',pdfFail:'PDF sharing is unavailable on this device',excelFail:'Excel file could not be created',noInvoice:'No invoice is ready.',note:'Send the review copy first when the buyer may request changes to price, images or data; send the clean original after approval.'}
   ,
-  fr: {title:"Envoyer la facture",sub:"Choisissez l’original ou une copie de vérification avant validation",pdfDesc:"Partage direct via la fenêtre système de l’appareil",xlsDesc:"Véritable XLSX modifiable — téléchargement",original:"ORIGINAL",originalSubPdf:"Copie finale sans filigrane",originalSubXls:"Sans filigrane de vérification",review:"COPIE POUR VÉRIFICATION",reviewSub:"Filigrane transparent — non définitif",reviewMark:"COPIE POUR VÉRIFICATION",notFinal:"NON DÉFINITIF",reviewOnly:"POUR VÉRIFICATION AVANT VALIDATION",preparing:"Préparation…",ready:"Prêt",share:"Partager",download:"Télécharger",downloading:"Préparation d’Excel…",downloaded:"Fichier enregistré dans Téléchargements",pdfFail:"Partage de PDF indisponible sur cet appareil",excelFail:"Création d’Excel impossible",noInvoice:"Aucune facture prête.",note:"Envoyez d’abord la copie de vérification si l’acheteur peut demander des modifications de prix, d’images ou de données ; envoyez l’original après validation."},
-  ru: {title:"Отправить счёт",sub:"Выберите оригинал или копию для проверки до утверждения",pdfDesc:"Прямая отправка через системное окно устройства",xlsDesc:"Настоящий редактируемый XLSX — скачивание",original:"ОРИГИНАЛ",originalSubPdf:"Чистовая копия",originalSubXls:"Без отметки проверки",review:"КОПИЯ ДЛЯ ПРОВЕРКИ",reviewSub:"Прозрачная отметка — не окончательный вариант",reviewMark:"КОПИЯ ДЛЯ ПРОВЕРКИ",notFinal:"НЕ ОКОНЧАТЕЛЬНЫЙ ВАРИАНТ",reviewOnly:"ДЛЯ ПРОВЕРКИ ДО УТВЕРЖДЕНИЯ",preparing:"Подготовка…",ready:"Готово",share:"Поделиться",download:"Скачать",downloading:"Подготовка Excel…",downloaded:"Файл скачан в «Загрузки»",pdfFail:"Отправка PDF недоступна на этом устройстве",excelFail:"Не удалось создать файл Excel",noInvoice:"Нет готового счёта.",note:"Сначала отправьте копию для проверки, если покупатель может изменить цены, изображения или данные; после утверждения отправьте оригинал."}
+  fr: {title:"Envoyer la facture",sub:"Choisissez l’original ou une copie de vérification avant validation",pdfDesc:"Partage direct via la fenêtre système de l’appareil",xlsDesc:"Partager le classeur Excel modifiable",original:"ORIGINAL",originalSubPdf:"Copie finale sans filigrane",originalSubXls:"Sans filigrane de vérification",review:"COPIE POUR VÉRIFICATION",reviewSub:"Filigrane transparent — non définitif",reviewMark:"COPIE POUR VÉRIFICATION",notFinal:"NON DÉFINITIF",reviewOnly:"POUR VÉRIFICATION AVANT VALIDATION",preparing:"Préparation…",ready:"Prêt",share:"Partager",download:"Télécharger",downloading:"Préparation d’Excel…",downloaded:"Fichier enregistré dans Téléchargements",pdfFail:"Partage de PDF indisponible sur cet appareil",excelFail:"Création d’Excel impossible",noInvoice:"Aucune facture prête.",note:"Envoyez d’abord la copie de vérification si l’acheteur peut demander des modifications de prix, d’images ou de données ; envoyez l’original après validation."},
+  ru: {title:"Отправить счёт",sub:"Выберите оригинал или копию для проверки до утверждения",pdfDesc:"Прямая отправка через системное окно устройства",xlsDesc:"Поделиться редактируемой книгой Excel",original:"ОРИГИНАЛ",originalSubPdf:"Чистовая копия",originalSubXls:"Без отметки проверки",review:"КОПИЯ ДЛЯ ПРОВЕРКИ",reviewSub:"Прозрачная отметка — не окончательный вариант",reviewMark:"КОПИЯ ДЛЯ ПРОВЕРКИ",notFinal:"НЕ ОКОНЧАТЕЛЬНЫЙ ВАРИАНТ",reviewOnly:"ДЛЯ ПРОВЕРКИ ДО УТВЕРЖДЕНИЯ",preparing:"Подготовка…",ready:"Готово",share:"Поделиться",download:"Скачать",downloading:"Подготовка Excel…",downloaded:"Файл скачан в «Загрузки»",pdfFail:"Отправка PDF недоступна на этом устройстве",excelFail:"Не удалось создать файл Excel",noInvoice:"Нет готового счёта.",note:"Сначала отправьте копию для проверки, если покупатель может изменить цены, изображения или данные; после утверждения отправьте оригинал."}
 };
   return D[L]||D.en;
 }
@@ -28005,7 +28015,7 @@ function buildModal(inv){
         <button type="button" class="wf13-action" id="wf13ExcelOriginal" onclick="wf13ExportAction('excel-original')"><strong>${T.original}</strong><small>${T.originalSubXls}</small></button>
         <button type="button" class="wf13-action preview" id="wf13ExcelReview" onclick="wf13ExportAction('excel-review')"><strong>${T.review}</strong><small>${T.reviewSub}</small></button>
       </div>
-      <div class="wf13-format-state" id="wf13ExcelState">${T.ready} · ${T.download}</div>
+      <div class="wf13-format-state" id="wf13ExcelState">${T.ready}</div>
     </div>`;
   const note=q('wfShareNote');if(note){note.className='wf-share-note wf13-review-key';note.innerHTML='<b>'+T.reviewMark+' — '+T.notFinal+'</b><br>'+T.note;}
 }
@@ -28070,7 +28080,7 @@ window.openUnifiedShareModal=function(e){
 
   try{e?.preventDefault?.();e?.stopPropagation?.()}catch(_){ }
   const inv=invoice();if(!inv){if(typeof showToast==='function')showToast(copy(uiLang()).noInvoice,'er');return false;}
-  WF13.token++;WF13.pdfOriginal=null;WF13.pdfReview=null;WF13.busyPdf=false;WF13.busyExcel=false;const token=WF13.token;
+  WF13.excelFiles.clear();WF13.token++;WF13.pdfOriginal=null;WF13.pdfReview=null;WF13.busyPdf=false;WF13.busyExcel=false;const token=WF13.token;
   buildModal(inv);show();preparePdfs(token);return true;
 };
 window.closeUnifiedShareModal=function(){hide();return true};
@@ -28094,7 +28104,17 @@ window.wf13ExportAction=async function(kind){
   }
   if(WF13.busyExcel)return false;WF13.busyExcel=true;setDisabled('wf13ExcelOriginal',true);setDisabled('wf13ExcelReview',true);setState('wf13ExcelState',T.downloading);
   try{
-    const file=kind==='excel-review'?await createReviewExcelFile():await createInvoiceExcelFile();
+    const token=WF13.token, cached=WF13.excelFiles.get(kind);
+    const file=cached||(kind==='excel-review'?await createReviewExcelFile():await createInvoiceExcelFile());
+    if(token!==WF13.token||invoice()!==inv||q('wfUnifiedShareOverlay')?.getAttribute('aria-hidden')==='true'||window.WFAccountAccess&&!window.WFAccountAccess.allow('invoices.export'))return false;
+    if(canShare(file)){
+      WF13.excelFiles.set(kind,file);
+      if(!cached && navigator.userActivation?.isActive===false){
+        setState('wf13ExcelState',T.ready+' · '+T.share);return true;
+      }
+      try{await navigator.share({files:[file]});hide();return true;}
+      catch(error){if(error.name==='AbortError')return false;throw error;}
+    }
     triggerExcelFileDownload(file);setState('wf13ExcelState',T.downloaded);if(typeof showToast==='function')showToast(T.downloaded,'ok');setTimeout(()=>hide(),950);return true;
   }catch(e){console.error('WOW V13 Excel',e);setState('wf13ExcelState',T.excelFail);if(typeof showToast==='function')showToast(T.excelFail,'er');return false;}
   finally{WF13.busyExcel=false;setDisabled('wf13ExcelOriginal',false);setDisabled('wf13ExcelReview',false);}

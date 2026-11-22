@@ -76,6 +76,11 @@ jobs:
         timeout-minutes: 2
         # Loopback server and DevTools events only; no push provider or credentials.
         run: node tests/wow-push.browser.cjs
+      - name: Verify integrated WOW mobile RTL workspaces
+        if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
+        timeout-minutes: 2
+        # Local synthetic DOM and repository CSS; no customer requests.
+        run: node tests/integrated-workspaces.browser.cjs
       - name: Verify native gallery music playback and lifecycle
         if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
         timeout-minutes: 2

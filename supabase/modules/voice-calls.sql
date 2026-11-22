@@ -56,6 +56,10 @@ begin
   when c.started_at is not null then 'completed' else 'missed' end,ended_at=now()
  where c.workspace_id=wid and c.status in ('ringing','active') and c.expires_at<=now();
 
+ update wow_voice.participants p set status='left',left_at=now()
+ from wow_voice.calls c where c.id=p.call_id and c.workspace_id=wid
+   and c.status='active' and c.ring_until<=now() and p.status='invited';
+
  if p_action='start' then
    rid:=(p_data->>'roomId')::uuid;requested:=p_data->>'kind';
    if rid is null or requested not in ('audio','video') then
@@ -209,6 +213,7 @@ begin
   join auth.sessions z on z.id=principal_session and z.user_id=a.id and (z.not_after is null or z.not_after>now())
   where a.id=principal_id and a.status='active' and a.deleted_at is null
    and (a.expires_at is null or a.expires_at>now())
+   and (a.role='owner' or (s.started_at>now()-interval '8 hours' and s.last_active_at>now()-interval '30 minutes'))
    and (a.role='owner' or ('chat.view'=any(a.permissions) and 'chat.edit'=any(a.permissions))))
    then return false;end if;
  if left(current_topic,14)='wow-call-room:' then

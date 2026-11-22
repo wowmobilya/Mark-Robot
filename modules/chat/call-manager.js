@@ -32,7 +32,6 @@
   const callValid=c=>c&&valid(c.id)&&valid(c.roomId)&&['ringing','active'].includes(c.status);
   function accepted(c){return c?.participants?.filter(p=>p.status==='joined'&&valid(p.id))||[];}
   function incoming(c){return c?.callerId!==me&&!c.participants?.some(p=>p.id===me&&p.status==='joined');}
-  function same(c){return !!call&&call.id===c?.id;}
   async function fetchHistory(){
    if(!room||!alive)return;const id=room.id;
    try{const response=await request('history',{roomId:id});if(alive&&room?.id===id)onHistory(response.history||[]);}catch(_){}
@@ -76,14 +75,18 @@
    if(peers.has(peerId))return peers.get(peerId);
    if(peers.size>=3)throw fail('VOICE_GROUP_LIMIT');
    if(!accepted(call).some(p=>p.id===peerId))return null;
-   if(!ice)ice=await request('ice',{callId:call.id});
+   const token=mediaToken,callId=call.id;
+   const result=ice||await request('ice',{callId});
+   if(!alive||token!==mediaToken||call?.id!==callId||!accepted(call).some(p=>p.id===peerId))return null;
+   if(peers.has(peerId))return peers.get(peerId);
+   ice=result;
    const conf={iceServers:ice.iceServers||[]};
    const pc=new root.RTCPeerConnection(conf);
    const peer={pc,polite:me.localeCompare(peerId)>0,makingOffer:false,ignoreOffer:false,
     answerPending:false,pending:[],retry:false,ready:false};
    peers.set(peerId,peer);
    pc.onicecandidate=event=>{
-    if(!event.candidate||!same(call))return;
+    if(!event.candidate||token!==mediaToken||call?.id!==callId)return;
     sendSignal(peerId,{candidate:event.candidate.toJSON()}).catch(message);
    };
    pc.ontrack=event=>{if(!alive||!call)return;
@@ -173,7 +176,7 @@
    }catch(error){cleanup();message(error);throw error;}
   }
   async function accept(){
-   if(!call||call.status!=='ringing'||busy)return;
+   if(!callValid(call)||!call.participants?.some(p=>p.id===me&&p.status==='invited')||busy)return;
    if(!root.isSecureContext)throw fail('CALLS_HTTPS_REQUIRED');
    busy=true;const cid=call.id,token=++mediaToken;emit();
    try{
@@ -196,10 +199,10 @@
    try{
     const row=await request('status',{callId:cid});
     if(!alive||call?.id!==cid)return;
-    if(!callValid(row)){cleanup();fetchHistory();return;}
+    if(!callValid(row)||!row.participants?.some(p=>p.id===me&&['invited','joined'].includes(p.status))){cleanup();fetchHistory();return;}
     call=row;emit();
     if(call.status==='active'&&local)await openCallChannel();
-    if(call.status==='active'&&Date.now()-heartAt>14000){
+    if(local&&call.status==='active'&&Date.now()-heartAt>14000){
      heartAt=Date.now();request('heartbeat',{callId:cid}).catch(message);
     }
    }catch(error){message(error);}
@@ -232,8 +235,9 @@
     track.enabled=false;emit();return false;
    }
    if(track&&track.readyState!=='ended'){track.enabled=true;emit();return true;}
+   const token=mediaToken;
    const stream=await root.navigator.mediaDevices.getUserMedia({video:videoLimits,audio:false});
-   if(!alive||!call){stream.getTracks().forEach(t=>t.stop());throw fail('CALL_CANCELLED');}
+   if(!alive||!call||token!==mediaToken){stream.getTracks().forEach(t=>t.stop());throw fail('CALL_CANCELLED');}
    const next=stream.getVideoTracks()[0];local.addTrack(next);
    for(const p of peers.values()){
     const sender=p.pc.getSenders().find(s=>s.track?.kind==='video');
