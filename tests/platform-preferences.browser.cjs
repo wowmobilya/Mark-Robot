@@ -25,8 +25,9 @@ test('admin preferences inherit WOW settings, persist languages and follow syste
     assert.deepEqual(errors,[]);assert.equal(await locale.count(),1,await settings.innerHTML());await settings.getByLabel('Görünüm').waitFor();
     const reading=()=>page.evaluate(()=>[document.documentElement.lang,document.documentElement.dir,document.documentElement.dataset.theme]);
     assert.deepEqual(await reading(),['tr','ltr','dark']);assert.equal(await theme.inputValue(),'dark');
-    // The native select remains the state bridge, while both visible entry points use one flag dialog.
-    const languageButton=page.locator('#platformLanguageOpen');
+    // Language is no longer in the header. The original five-language picker stays in Settings.
+    assert.equal(await page.locator('#platformLanguageOpen').count(),0);
+    const languageButton=settings.locator('[data-admin-language-trigger]');
     await languageButton.click();
     let dialog=page.getByRole('dialog',{name:'Dilini seç'});
     assert.equal(await dialog.locator('[data-lang-choice]').count(),5);
@@ -34,9 +35,8 @@ test('admin preferences inherit WOW settings, persist languages and follow syste
     assert.match(await dialog.locator('[data-lang-choice=ar]').innerText(),/العربية/);
     await dialog.locator('[data-lang-choice=ru]').click();
     assert.deepEqual(await reading(),['ru','ltr','dark']);
-    assert.equal(await languageButton.locator('.platform-language-flag').innerText(),'🇷🇺');
-    assert.equal(await languageButton.locator('.platform-language-code').innerText(),'RU');
-    await settings.locator('[data-admin-language-trigger]').click();
+    assert.match(await languageButton.innerText(),/Русский/);
+    await languageButton.click();
     dialog=page.getByRole('dialog',{name:'Выберите язык'});
     await dialog.locator('[data-lang-choice=ar]').click();
     assert.deepEqual(await reading(),['ar','rtl','dark']);
