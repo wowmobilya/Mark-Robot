@@ -945,7 +945,7 @@ html[data-theme=dark] .platform-pricing-card .platform-plan-label[data-saved=tru
 .platform-pricing-card .platform-plan-benefits-note{font-size:.71rem;line-height:1.45;color:var(--muted)}
 .platform-subscription>form{min-inline-size:0;max-inline-size:100%}
 .platform-subscription>form .platform-addon-toggle{
- display:flex;align-items:center;gap:.65rem;min-inline-size:0;flex-wrap:wrap;
+ display:flex;align-items:center;gap:.65rem;min-inline-size:0;min-block-size:44px;flex-wrap:wrap;cursor:pointer;
  padding:.65rem .75rem;border:1px solid var(--border);border-radius:13px;
  background:var(--card);font-size:.88rem;font-weight:700}
 .platform-subscription>form .platform-addon-toggle input[type=checkbox]{
