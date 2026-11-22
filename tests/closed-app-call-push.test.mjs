@@ -53,7 +53,7 @@ test('incoming call queues an opt-in push, not an artificial text message',async
  assert.equal(payload.kind,'call');assert.equal(payload.route,'chat');
  assert.deepEqual(payload.params,{roomId:room,callId:call.id});
  assert.match(payload.title,/فيديو/);
- assert.deepEqual(device.target(payload),{route:'chat',permission:'chat.view',
+ assert.deepEqual(device.create(null).target(payload),{route:'chat',permission:'chat.view',
   params:{roomId:room,callId:call.id}});
  assert.equal((await db.query('select count(*)::int n from wow_collab.messages')).rows[0].n,0);
  await db.query("select public.wow_voice_service('accept',$1::jsonb)",
@@ -74,8 +74,8 @@ test('without an opted-in device, the application does not fabricate push delive
 test('notification navigation rejects arbitrary routes and forged call identifiers',()=>{
  const room=randomUUID(),callId=randomUUID();
  const base={kind:'call',route:'chat',params:{roomId:room,callId}};
- assert.equal(device.target(base).params.callId,callId);
- assert.equal(device.target({...base,route:'settings'}),null);
- assert.equal(device.target({...base,params:{roomId:room,callId:'../../settings'}}),null);
- assert.equal(device.target({...base,params:{roomId:'bogus',callId}}),null);
+ assert.equal(device.create(null).target(base).params.callId,callId);
+ assert.equal(device.create(null).target({...base,route:'settings'}),null);
+ assert.equal(device.create(null).target({...base,params:{roomId:room,callId:'../../settings'}}),null);
+ assert.equal(device.create(null).target({...base,params:{roomId:'bogus',callId}}),null);
 });
