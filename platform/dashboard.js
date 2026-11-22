@@ -351,6 +351,42 @@
     fr:['Réglages','Préférences de cet appareil','Compte fondateur','Paramètres du compte'],
     ru:['Настройки','Настройки устройства','Аккаунт основателя','Настройки аккаунта']
   };
+  const passwordWords={
+    ar:['تغيير كلمة المرور','كلمة المرور الحالية','كلمة المرور الجديدة (12–128 حرفاً)','تأكيد كلمة المرور الجديدة','كلمتا المرور غير متطابقتين.','كلمة المرور الحالية غير صحيحة.','تغيّرت كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.'],
+    en:['Change password','Current password','New password (12–128 characters)','Confirm new password','The new passwords do not match.','The current password is incorrect.','Password changed. Sign in with your new password.'],
+    tr:['Parolayı değiştir','Mevcut parola','Yeni parola (12–128 karakter)','Yeni parolayı doğrula','Yeni parolalar eşleşmiyor.','Mevcut parola yanlış.','Parola değiştirildi. Yeni parolanızla giriş yapın.'],
+    fr:['Modifier le mot de passe','Mot de passe actuel','Nouveau mot de passe (12–128 caractères)','Confirmer le nouveau mot de passe','Les nouveaux mots de passe ne correspondent pas.','Le mot de passe actuel est incorrect.','Mot de passe modifié. Connectez-vous avec votre nouveau mot de passe.'],
+    ru:['Изменить пароль','Текущий пароль','Новый пароль (12–128 символов)','Подтвердите новый пароль','Новые пароли не совпадают.','Неверный текущий пароль.','Пароль изменён. Войдите с новым паролем.']
+  };
+  function passwordSettings(account){
+    const words=passwordWords[lang.value],section=el('details'),toggle=el('summary',words[0]),form=el('form'),note=el('p');
+    section.className='platform-password-settings';note.setAttribute('role','status');
+    const current=namedField(form,words[1],'password'),next=namedField(form,words[2],'password'),confirm=namedField(form,words[3],'password');
+    current.autocomplete='current-password';next.autocomplete=confirm.autocomplete='new-password';
+    for(const input of [current,next,confirm]){input.required=true;input.dir='auto';}
+    const save=el('button',words[0]);save.type='submit';form.append(save,note);section.append(toggle,form);account.append(section);
+    section.addEventListener('toggle',()=>{if(!section.open){form.reset();note.textContent='';}});
+    form.onsubmit=async event=>{
+      event.preventDefault();if(save.disabled||!token)return;
+      if(Array.from(next.value).length<12||Array.from(next.value).length>128){note.textContent=words[2];next.focus();return;}
+      if(next.value!==confirm.value){note.textContent=words[4];confirm.focus();return;}
+      const active=token,epoch=authEpoch,remember=rememberedId;save.disabled=true;note.textContent='';
+      try{
+        const reply=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',
+          headers:{'Content-Type':'application/json',apikey:config.publishableKey,Authorization:'Bearer '+active},
+          body:JSON.stringify({action:'accounts.changePassword',founderOnly:true,reauthenticate:true,currentPassword:current.value,newPassword:next.value})});
+        const result=await reply.json();
+        if(epoch!==authEpoch||active!==token)return;
+        if(reply.status===401){forget(remember);clear();login();throw failure(4);}
+        if(reply.status===429)throw failure(1);
+        if(result.error?.code==='CURRENT_PASSWORD_INCORRECT'){current.value='';note.textContent=words[5];current.focus();return;}
+        if(!reply.ok||result.ok!==true)throw Error();
+        form.reset();forget(remember);clear();login();status.textContent=words[6];content.querySelector('[autocomplete=username]')?.focus();
+      }catch(error){if(save.isConnected)note.textContent=error.index==null?t(15):word(error.index);else if(error.index===4)fail(error);}
+      finally{save.disabled=false;}
+    };
+    return section;
+  }
   const pageFromUrl=()=>['plans','support','calls','settings'].includes(location.hash.slice(1))?location.hash.slice(1):'companies';
   window.addEventListener('hashchange',()=>showDestination?.());
   async function list(){
@@ -379,6 +415,7 @@
     let lastPage=null,loadingPlans=false;
     showDestination=()=>{
       const id=pageFromUrl(),changed=id!==lastPage;
+      if(changed&&lastPage==='settings'){const details=panels.settings.querySelector('.platform-password-settings');if(details)details.open=false;}
       home.hidden=id==='companies';inbox.hidden=id==='support';
       for(const key of ids){
         panels[key].hidden=key!==id;
@@ -408,14 +445,13 @@
       await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
         headers:{apikey:config.publishableKey,'Content-Type':'application/json',Authorization:'Bearer '+previous},
         body:JSON.stringify({action:'auth.signOut'})}).then(reply=>{if(!reply.ok)throw failure(2);});});
-    const preferences=el('section'),account=el('section'),settings=el('a',settingsText[3]);
+    const preferences=el('section'),account=el('section');
     preferences.className=account.className='platform-settings-group';
     const preferred=el('div');preferred.className='platform-settings-preferences';
     preferences.append(el('h3',settingsText[1]),preferred);
     window.WFPlatformPreferences?.mount(preferred);
     preferences.hidden=!preferred.childElementCount;
-    const settingsUrl=new URL('../',location.href);settingsUrl.searchParams.set('wf-cloud','employee');settingsUrl.searchParams.set('workspace',config.workspaceId);settingsUrl.searchParams.set('wf-accounts','cloud');settingsUrl.hash='settings';settings.href=settingsUrl.href;
-    account.append(el('h3',settingsText[2]));if(verifiedName)account.append(el('bdi',verifiedName));account.append(settings);
+    account.append(el('h3',settingsText[2]));if(verifiedName)account.append(el('bdi',verifiedName));passwordSettings(account);
     panels.settings.append(preferences,account);
     supportInbox?.dispose();
     supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts});

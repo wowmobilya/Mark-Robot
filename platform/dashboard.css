@@ -193,3 +193,8 @@ main>header>.platform-brand{margin-inline-end:auto}
   width:44px;height:44px;border-radius:50%;background:var(--ui-accent);border:3px solid var(--card);z-index:-1;transform:translate(-50%,-40%)}
  html[dir=rtl] .platform-section-link[href="#companies"]::after{transform:translate(50%,-40%)}
 }
+.platform-password-settings{inline-size:min(100%,32rem)}
+.platform-password-settings summary{display:list-item;cursor:pointer;min-height:44px;padding:.55rem 0;color:var(--ui-accent);font-weight:600}
+.platform-password-settings form{display:grid;gap:.65rem;align-items:start;margin:.35rem 0}
+.platform-password-settings form button{justify-self:start}
+.platform-password-settings form [role=status]{margin:0}

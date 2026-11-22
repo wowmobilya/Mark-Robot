@@ -14,6 +14,26 @@ const owner={id:userId,name:'Owner',role:'owner',permissions:policy.presets('own
 const request=(body,token=jwt)=>new Request('https://edge.test/functions/v1/wow-cloud',{
   method:'POST',headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},body:JSON.stringify(body)});
 
+test('founder password change verifies the current password and acknowledges provider-revoked sessions',async()=>{
+  let allowed=false,rotated=false,temporarySignedOut=0;
+  const temporary='proof.'+jwt.split('.')[1]+'.token';
+  const handler=createHandler({...deps,requirePlatformFounder:async()=>{if(!allowed)throw Object.assign(new Error(),{code:'ACCESS_DENIED',status:403});},
+    auth:{getUser:async token=>{assert(!rotated);assert([jwt,temporary].includes(token));return {id:userId};},
+      signIn:async(email,value)=>{assert.equal(email,'fixture@example.test');if(value!=='test-current-secret')throw Object.assign(new Error(),{status:401});return {access_token:temporary};},
+      signOut:async token=>{assert.equal(token,temporary);temporarySignedOut++;},
+      updatePassword:async(uid,value)=>{assert.equal(uid,userId);assert.equal(value,'test-replacement-secret');rotated=true;}},
+    rpc:async(action)=>{
+      if(action==='session.snapshot'){assert(!rotated);return {identity:{currentAccount:owner}};}
+      if(action==='account.credentials')return {email:'fixture@example.test'};
+      assert.equal(action,'accounts.passwordBegin');assert.equal(temporarySignedOut,1);return {};
+    }});
+  const data={action:'accounts.changePassword',founderOnly:true,reauthenticate:true,currentPassword:'test-current-secret',newPassword:'test-replacement-secret'};
+  assert.equal((await handler(request(data))).status,403);
+  allowed=true;assert.equal((await (await handler(request({...data,currentPassword:'wrong'}))).json()).error.code,'CURRENT_PASSWORD_INCORRECT');
+  assert.equal(rotated,false);
+  assert.deepEqual(await (await handler(request(data))).json(),{ok:true,reauthenticate:true});assert(rotated);
+});
+
 test('server-only module actions require a verified actor and cannot replace public or core actions',async()=>{
   let called=0;
   const handler=createHandler({...deps,moduleActions:{'chat.rooms':async({body,actor})=>{
