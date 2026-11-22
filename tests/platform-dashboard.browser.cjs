@@ -108,13 +108,13 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     }
     for(const width of [320,768,1280,390]){
       await page.setViewportSize({width,height:844});
-      await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash===(matchMedia('(max-width:620px) and (min-height:521px)').matches?'#plans':'#companies'));
+      await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash==='#companies');
       const metrics=await menu.evaluate(element=>({position:getComputedStyle(element).position,bottom:element.getBoundingClientRect().bottom,
         links:[...element.querySelectorAll('a')].map(a=>({height:a.getBoundingClientRect().height,width:a.getBoundingClientRect().width,path:a.hash})),
         overflow:document.documentElement.scrollWidth>innerWidth}));
       assert(!metrics.overflow);
       assert(metrics.links.every(link=>link.height>=44&&link.width>=44));
-      if(width<=620){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[2].path,'#companies');}
+      if(width<=620){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[0].path,'#companies');assert.equal(metrics.links[2].path,'#support');}
       else if(width>900){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[0].path,'#companies');}
     }
     await menu.getByRole('link',{name:'Companies'}).click();
