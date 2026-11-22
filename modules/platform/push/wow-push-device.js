@@ -12,7 +12,7 @@
   const finance = new Set(['proforma','payment','expense','receipt']);
   const routes = {
     'support.ticket':['founder-support',null],'support.reply':['member-support',null],
-    chat:['chat','chat.view'], call:['chat','chat.view'], 'order.created':['gallery-orders','orders.view'], 'order.updated':['my-orders','myorders.view'],
+    chat:['chat','chat.view'], call:['chat','chat.view'], 'call.missed':['chat','chat.view'], 'order.created':['gallery-orders','orders.view'], 'order.updated':['my-orders','myorders.view'],
     'stock.updated':['gallery','gallery.view'], operations:['server-admin','server.view']
   };
   // Only these module identifiers and typed parameters can cross a notification click.
@@ -24,6 +24,9 @@
     if (entry.kind === 'chat') {
       if (!uuid(params.roomId) || typeof params.messageId !== 'string' || !/^[1-9]\d{0,18}$/.test(params.messageId) || BigInt(params.messageId)>9223372036854775807n) return null;
       safe = {roomId:params.roomId,messageId:params.messageId};
+    } else if(entry.kind==='call.missed'){
+      if(!uuid(params.roomId))return null;
+      safe={roomId:params.roomId};
     } else if (entry.kind === 'call') {
       // The call is not accepted in a service worker. Only a validated room
       // deep link crosses into the live authenticated chat UI.

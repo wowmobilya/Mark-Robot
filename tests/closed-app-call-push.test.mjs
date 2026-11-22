@@ -39,13 +39,21 @@ test('incoming call queues an opt-in push, not an artificial text message',async
  assert.equal(active,1);
  const call=await makeCall(db,owner,ownerSid,room,'video');
  assert.equal(call.status,'ringing');
+ const missed=await db.query("select j.next_attempt_at=c.ring_until as delayed from public.wow_push_events e join public.wow_push_jobs j on j.event_id=e.id join wow_voice.calls c on c.id=(e.record_id->>'id')::uuid where e.kind='call.missed' and e.recipient_id=$1",[customer]);
+ assert.deepEqual(missed.rows,[{delayed:true}]);
+ const getMissed=async()=>(await db.query("select wow_notify.payload('call.missed',$1,$2,$3) body",[call.id,workspace,customer])).rows[0].body;
+ assert.equal(await getMissed(),null);
+ await db.query("update wow_voice.calls set ring_until=now()-interval '1 second' where id=$1",[call.id]);
+ const missedDetails=await getMissed();assert.equal(missedDetails.callId,call.id);
+ const message=formatPushPayload({id:randomUUID(),kind:'call.missed',details:missedDetails,createdAt:Date.now()},{language:'en'});
+ assert.equal(message.title,'Missed call');assert.deepEqual(device.create(null).target(message),{route:'chat',permission:'chat.view',params:{roomId:room}});
+ await db.query("update wow_voice.calls set ring_until=now()+interval '40 seconds' where id=$1",[call.id]);
  const events=(await db.query("select * from public.wow_push_events where kind='call'")).rows;
  assert.equal(events.length,1);assert.equal(events[0].record_store,'voice');assert.equal(events[0].recipient_id,customer);
  const jobs=(await db.query('select * from public.wow_push_jobs where event_id=$1',[events[0].id])).rows;
  assert.equal(jobs.length,1);assert.equal(jobs[0].subscription_id,subId);
  const details=(await db.query("select wow_notify.payload('call',$1,$2,$3) body",
   [call.id,workspace,customer])).rows[0].body;
- // Another invitee can already have answered a group. The pending recipient still gets the invitation.
  await db.query("update wow_voice.calls set status='active' where id=$1",[call.id]);
  const pendingInvite=(await db.query("select wow_notify.payload('call',$1,$2,$3) body",[call.id,workspace,customer])).rows[0].body;
  assert.equal(pendingInvite.callId,call.id);
@@ -67,6 +75,8 @@ test('incoming call queues an opt-in push, not an artificial text message',async
  const stale=(await db.query("select wow_notify.payload('call',$1,$2,$3) body",
   [call.id,workspace,customer])).rows[0].body;
  assert.equal(stale,null);
+ await db.query("update wow_voice.calls set ring_until=now()-interval '1 second' where id=$1",[call.id]);
+ assert.equal(await getMissed(),null);
 });
 
 test('without an opted-in device, the application does not fabricate push delivery',async t=>{

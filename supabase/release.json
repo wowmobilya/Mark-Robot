@@ -32,7 +32,8 @@
     "modules/platform-support-push.sql",
     "modules/platform-relay.sql",
     "modules/group-call-push.sql",
-    "modules/account-installations.sql"
+    "modules/account-installations.sql",
+    "modules/missed-call-push.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",

@@ -2,11 +2,11 @@
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) { module.exports = factory; return; }
-  root.importScripts('./modules/platform/push/wow-push-device.js?v=5');
+  root.importScripts('./modules/platform/push/wow-push-device.js?v=6');
   factory(root, root.WFPushDevice.create(root.indexedDB));
 })(typeof self === 'object' ? self : globalThis, function installPush(root, store) {
   'use strict';
-  const kinds = new Set(['proforma', 'payment', 'expense', 'receipt', 'test','chat','order.created','order.updated','stock.updated','operations','call','support.ticket','support.reply']);
+  const kinds = new Set(['proforma', 'payment', 'expense', 'receipt', 'test','chat','order.created','order.updated','stock.updated','operations','call','call.missed','support.ticket','support.reply']);
   const generic = {
     ar: 'افتح WOW للاطّلاع على إشعاراتك.', en: 'Open WOW to check your notifications.',
     tr: 'Bildirimlerinizi görmek için WOW uygulamasını açın.', fr: 'Ouvrez WOW pour consulter vos notifications.',
@@ -48,6 +48,10 @@
       renotify: false, data};
     // A call can wake a stopped service worker on a push-capable device, but a
     // browser cannot promise native full-screen ringing or bypass OS policies.
+    const callId=parsed?.scope?.params?.callId;
+    if(match&&['call','call.missed'].includes(entry.kind)&&typeof callId==='string'&&/^[0-9a-f-]{36}$/i.test(callId)){
+      options.tag='wow-push/'+match.deviceId+'/call/'+callId;
+    }
     if (entry?.kind === 'call' && !match?.duplicate) {
       options.requireInteraction = true;
       const labels={ar:'فتح المكالمة',en:'Open call',tr:'Aramayı aç',fr:'Ouvrir l’appel',ru:'Открыть вызов'};
@@ -64,9 +68,11 @@
     }
     if(match)await Promise.resolve(match.unread?root.navigator?.setAppBadge?.(match.unread):root.navigator?.clearAppBadge?.()).catch(()=>{});
     if (entry) options.timestamp = entry.timestamp;
-    if (match?.duplicate) options.silent = true;
+    if (match?.duplicate || !entry&&parsed?.scope?.kind==='call'){
+      options.silent=true;delete options.vibrate;
+    }
     await root.registration.showNotification(entry?.title || 'WOW FURNITURE', options);
-    if (match) await tellWindows({type: 'wf-push-changed',audible:!match.duplicate}).catch(() => {});
+    if (match) await tellWindows({type: 'wf-push-changed',audible:!match.duplicate&&entry.kind!=='call.missed'}).catch(() => {});
   }
   function destination(binding) {
     const url = new URL(base.href);
