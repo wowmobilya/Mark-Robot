@@ -497,3 +497,8 @@ html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-
 }
 .wf-founder-check,.wf-account-session .wf-founder-check{display:inline-grid;place-items:center;flex:none;inline-size:1.25rem;block-size:1.25rem;margin-inline-start:.4rem;border-radius:50%;background:#176a43;color:#fff;font:700 .85rem/1 system-ui}
 .wf-founder-check[hidden]{display:none!important}
+.wf-owner-invite{margin-block:1rem 0;border-block-start:1px solid var(--border);padding-block-start:.65rem}
+.wf-owner-invite summary{color:var(--text);cursor:pointer;font-weight:650;min-block-size:44px;align-content:center}
+.wf-owner-invite>div{display:grid;gap:.75rem;max-width:29rem}
+.wf-owner-invite label{display:grid;gap:.3rem}.wf-owner-invite input,.wf-owner-invite button{font:inherit;min-block-size:44px;border:1px solid var(--border);border-radius:var(--ui-control,10px);background:var(--input);color:var(--text);padding:.5rem .7rem;min-width:0}
+.wf-owner-invite video{max-inline-size:100%;inline-size:100%;max-height:15rem;object-fit:contain;background:#16191b;border-radius:.65rem}.wf-owner-invite [hidden]{display:none!important}

@@ -12,3 +12,8 @@ output{padding:.75rem;background:var(--ui-soft);border-radius:var(--ui-control)}
 .platform-inline-editor strong{flex-basis:100%}.platform-inline-editor input{inline-size:100%;min-inline-size:0}
 
 .platform-setup-qr{display:block;inline-size:min(100%,220px);block-size:auto}
+
+#content>.platform-login{display:grid;max-inline-size:28rem;margin:0 auto;gap:.65rem}
+.platform-login+.wf-owner-invite{max-inline-size:28rem;margin-inline:auto}
+.platform-password{display:flex;gap:.5rem;align-items:stretch}.platform-password input{flex:1;min-inline-size:0}
+.platform-invite-card{display:grid;gap:.5rem;justify-items:start;border:1px solid var(--border);padding:1rem;border-radius:var(--ui-radius);background:var(--ui-soft)}.platform-invite-card p{margin:0}.platform-invite-card output{max-inline-size:100%}

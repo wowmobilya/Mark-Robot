@@ -7,6 +7,7 @@
     folders:['Folders','المجلدات','Klasörler','Dossiers','Папки'],allFolders:['All folders','كل المجلدات','Tüm klasörler','Tous les dossiers','Все папки'],
     unfiled:['Without folder','بلا مجلد','Klasörsüz','Sans dossier','Без папки'],newFolder:['New folder','مجلد جديد','Yeni klasör','Nouveau dossier','Новая папка'],
     search:['Search files','بحث في الملفات','Dosya ara','Rechercher un fichier','Поиск файлов'],kind:['File type','نوع الملف','Dosya türü','Type de fichier','Тип файла'],
+    layout:['Layout','طريقة العرض','Görünüm','Affichage','Вид'],dense:['Compact grid','شبكة مدمجة','Sık ızgara','Grille compacte','Компактная сетка'],
     any:['All types','كل الأنواع','Tüm türler','Tous les types','Все типы'],sort:['Sort','الترتيب','Sırala','Tri','Сортировка'],
     new:['Newest first','الأحدث أولًا','En yeni','Plus récents','Сначала новые'],old:['Oldest first','الأقدم أولًا','En eski','Plus anciens','Сначала старые'],
     name:['Name','الاسم','Ad','Nom','Название'],nameDesc:['Name Z–A','الاسم تنازليًا','Ad Z–A','Nom Z–A','Название Я–А'],small:['Smallest first','الأصغر أولًا','En küçük','Plus petits','Сначала маленькие'],
@@ -89,8 +90,10 @@
       const type=options([['',t('any')],...kinds.map(k=>[k,kindLabel(k)])],filters.kind);type.onchange=()=>resetFilter({kind:type.value||null});
       const sort=options(['new','old','name','nameDesc','small','large'].map(k=>[k,t(k)]),filters.sort);sort.onchange=()=>resetFilter({sort:sort.value});
       const arch=options([['0',t('all')],['1',t('archive')]],filters.archived?'1':'0');arch.onchange=()=>resetFilter({archived:arch.value==='1'});
+      const layout=options(['grid','dense','list'].map(key=>[key,t(key)]),view);
+      layout.onchange=()=>{view=layout.value;draw();};
       tools.append(search,field(t('folders'),folderSelect),field(t('kind'),type),field(t('sort'),sort),arch,
-        act(t(view==='grid'?'list':'grid'),()=>{view=view==='grid'?'list':'grid';toolbar();draw();}));
+        field(t('layout'),layout));
       arch.setAttribute('aria-label',t('archive'));drop.replaceChildren(el('span',t('drop')));drop.hidden=!canEdit();
     }
     function nameDialog(action,row){

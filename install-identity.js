@@ -8,9 +8,9 @@
   const MAX_IMAGE=2100000;
   const ICON_PATHS=new Set(['/app-icon-192.png','/app-icon-512.png','/app-icon-maskable-512.png','/apple-touch-icon.png']);
   const DEFAULTS={name:'Mark Robot',id:'/',start_url:'/',scope:'/',display:'standalone',display_override:['standalone','minimal-ui'],background_color:'#f3f7fa',theme_color:'#153847',icons:[
-    {src:'/app-icon-192.png?v=222',sizes:'192x192',type:'image/png',purpose:'any'},
-    {src:'/app-icon-512.png?v=222',sizes:'512x512',type:'image/png',purpose:'any'},
-    {src:'/app-icon-maskable-512.png?v=222',sizes:'512x512',type:'image/png',purpose:'maskable'}
+    {src:'/app-icon-192.png?v=223',sizes:'192x192',type:'image/png',purpose:'any'},
+    {src:'/app-icon-512.png?v=223',sizes:'512x512',type:'image/png',purpose:'any'},
+    {src:'/app-icon-maskable-512.png?v=223',sizes:'512x512',type:'image/png',purpose:'maskable'}
   ]};
   function cleanImage(value){
     return typeof value==='string'&&value.length<=MAX_IMAGE&&/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/.test(value)?value:'';
@@ -111,11 +111,11 @@
   const origin=window.location.origin;
   const store=window.caches?createStore({caches:window.caches,origin}):null;
   const initialManifest=document.querySelector('link[rel~="manifest"]')?.getAttribute('href')||'/manifest.json';
-  const initialApple=document.querySelector('link[rel~="apple-touch-icon"]')?.getAttribute('href')||'/apple-touch-icon.png?v=222';
+  const initialApple=document.querySelector('link[rel~="apple-touch-icon"]')?.getAttribute('href')||'/apple-touch-icon.png?v=223';
   const device=platform(navigator);
   let generation=0,lastKey='',pending=Promise.resolve(),lastSettings={},prepared=false;
   let deferredPrompt=null,installationObserved=false,installing=false,preparing=false;
-  let downloadSource='/app-icon-512.png?v=222',downloadBlob=null;
+  let downloadSource='/app-icon-512.png?v=223',downloadBlob=null;
   let current={mode:'default',reason:'public-default',personalization:'public',custom:false,name:DEFAULTS.name,platform:device};
   function installed(){return installationObserved||navigator.standalone===true||!!window.matchMedia?.('(display-mode: standalone)').matches;}
   function status(){return {...current,installed:installed(),preparing,canInstall:!installed()&&!preparing&&!installing&&(typeof navigator.install==='function'||!!deferredPrompt),canDownloadIcon:true};}
@@ -169,7 +169,7 @@
       try{
         if(!identity.custom){
           if(store)await store.clear(isCurrent);if(!isCurrent())return status();
-          downloadSource='/app-icon-512.png?v=222';downloadBlob=null;apple(initialApple);
+          downloadSource='/app-icon-512.png?v=223';downloadBlob=null;apple(initialApple);
           if(prepared)refreshManifest();prepared=true;current={...current,mode:'default',reason:'public-default',personalization:'public'};
         }else{
           if(!store||!window.isSecureContext)throw new Error('local-storage-unavailable');
@@ -178,7 +178,7 @@
           const manifestIcons=icons.filter(icon=>icon.path!=='/apple-touch-icon.png').map(icon=>({src:icon.url,sizes:`${icon.size}x${icon.size}`,type:'image/png',purpose:icon.path.includes('maskable')?'maskable':'any'}));
           const manifest=buildManifest(base,identity,manifestIcons);
           const committed=await store.publish(manifest,icons,isCurrent);if(!committed||!isCurrent())return status();
-          downloadSource=identity.source||'/app-icon-512.png?v=222';downloadBlob=icons.find(icon=>icon.path==='/app-icon-512.png')?.blob||null;
+          downloadSource=identity.source||'/app-icon-512.png?v=223';downloadBlob=icons.find(icon=>icon.path==='/app-icon-512.png')?.blob||null;
           const check=new URL(initialManifest,origin);check.searchParams.set('wf-install-check',String(version));
           let available=false;
           if(navigator.serviceWorker?.controller){try{const response=await fetch(check.href,{cache:'no-cache',credentials:'same-origin'});available=response.headers.get('X-WF-Install-Identity')==='local';}catch(_){}}
@@ -194,7 +194,7 @@
         if(isCurrent()){
           try{await store?.clear(isCurrent);}catch(_){}
           if(!isCurrent())return status();
-          apple(initialApple);downloadSource=identity.source||'/app-icon-512.png?v=222';downloadBlob=null;
+          apple(initialApple);downloadSource=identity.source||'/app-icon-512.png?v=223';downloadBlob=null;
           current={...current,mode:'static-fallback',reason:error?.message||'unavailable',personalization:'best-effort'};
           if(prepared)refreshManifest();
         }

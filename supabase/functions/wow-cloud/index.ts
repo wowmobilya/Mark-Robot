@@ -1,3 +1,4 @@
+import {createFounderActivation} from './modules/founder-activation.mjs';
 import {createOrderSms} from './modules/order-sms.mjs';
 import {createStatementDelivery} from './modules/statement-delivery.mjs';
 import {createPlatformActions} from './modules/platform-companies.mjs';
@@ -51,6 +52,7 @@ const statements=createStatementDelivery({...remote,config:{
   waTemplate:Deno.env.get('WOW_WHATSAPP_TEMPLATE'),waLocale:Deno.env.get('WOW_WHATSAPP_TEMPLATE_LANGUAGE'),
   waWorkspace:Deno.env.get('WOW_WHATSAPP_WORKSPACE')
 }});
+const founderActivation=createFounderActivation({...remote,origin:origins[0],enabled:Deno.env.get('WOW_OWNER_RECOVERY_EMAIL_ENABLED')==='true'});
 const orderSms=createOrderSms({...remote,config:{enabled:Deno.env.get('WOW_NETGSM_ENABLED')==='true',tenants:Deno.env.get('WOW_NETGSM_TENANTS'),signingKey:Deno.env.get('WOW_ORDER_LINK_SIGNING_KEY'),projectUrl:Deno.env.get('SUPABASE_URL')}});
 const storageMaintenance=createStorageMaintenance(remote);
 const maintenance=async()=>{
@@ -59,7 +61,7 @@ const maintenance=async()=>{
 };
 const voiceTurn={url:Deno.env.get('WOW_TURN_URL'),urls:Deno.env.get('WOW_TURN_URLS'),secret:Deno.env.get('WOW_TURN_SHARED_SECRET')};
 const relay=turnConfiguration(voiceTurn);
-const moduleActions={...orderSms.actions,...statements.actions,...createPlatformActions(remote),...createGalleryActions(remote),...createChatActions({...remote,voiceTurn}),...createFilesActions(remote),
+const moduleActions={...founderActivation.actions,...orderSms.actions,...statements.actions,...createPlatformActions(remote),...createGalleryActions(remote),...createChatActions({...remote,voiceTurn}),...createFilesActions(remote),
   ...customerAuth.actions,...ownerActivation.actions,...createPublicShareActions(publicShareOptions),...communications.actions,
   ...createFinanceActions({...remote,quoteProvider:createQuoteProvider({goldApiKey:Deno.env.get('GOLDAPI_KEY')})}),
   ...createOperationsActions({...remote,configuration:{aiConfigured:assistantProvider.configured===true}}),
@@ -67,7 +69,7 @@ const moduleActions={...orderSms.actions,...statements.actions,...createPlatform
   ...createOfflineGrantActions({rpc:remote.rpc,origins,permissionKeys:policy.permissionKeys,
     endpoint:(Deno.env.get('SUPABASE_URL')||'').replace(/\/$/,'')+'/functions/v1/wow-cloud',
     signingKey:Deno.env.get('WOW_OFFLINE_OWNER_SIGNING_JWK'),loadSigningKey:remote.offlineSigningKey})};
-const app=createHandler({...remote,origins,moduleActions,publicActions:{...customerAuth.publicActions,...ownerActivation.publicActions},policy,dataPolicy:globals.WFAccountDataPolicy,costCore:globals.WFCostCore});
+const app=createHandler({...remote,origins,moduleActions,publicActions:{...founderActivation.publicActions,...customerAuth.publicActions,...ownerActivation.publicActions},policy,dataPolicy:globals.WFAccountDataPolicy,costCore:globals.WFCostCore});
 let worker: ((req:Request)=>Promise<Response>)|undefined;
 Deno.serve(async(req:Request)=>{
   if(/^\/(?:functions\/v1\/)?wow-cloud\/order-download\//.test(new URL(req.url).pathname)||new URL(req.url).pathname.startsWith('/order-download/'))return orderSms.download(req);

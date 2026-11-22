@@ -43,6 +43,8 @@ create table if not exists wow_collab.messages (
  deleted boolean not null default false, created_at timestamptz not null default now(), edited_at timestamptz, expires_at timestamptz,
  unique(author_id,request_id)
 );
+-- The original file remains the sole owner of its bytes and lifecycle.
+alter table wow_collab.messages add column if not exists native_file_id uuid;
 create index if not exists chat_messages_feed on wow_collab.messages(room_id,id desc) where not deleted;
 create index if not exists chat_messages_expiry on wow_collab.messages(expires_at) where not deleted and expires_at is not null;
 create index if not exists chat_messages_asset on wow_collab.messages(asset_id) where asset_id is not null and not deleted;
@@ -111,11 +113,25 @@ $$;
 create or replace function wow_collab.visible(m wow_collab.messages,cutoff bigint,viewer uuid) returns boolean language sql stable set search_path='' as $$
  select m.id>cutoff and not m.deleted and (m.expires_at is null or m.expires_at>now()) and not exists(select from wow_collab.hidden h where h.account_id=viewer and h.message_id=m.id)
 $$;
+create or replace function wow_collab.shared_file(fid uuid,author uuid,wid uuid) returns jsonb
+language plpgsql stable set search_path='' as $$
+declare result jsonb;
+begin
+ if fid is null or to_regclass('wow_collab.files') is null then return null; end if;
+ select jsonb_build_object('id',f.id,'kind',f.kind,'name',f.name,'mime',f.mime,'bytes',f.bytes,
+   'source','files','path',wow_collab.file_path(f)) into result
+ from wow_collab.files f join public.wow_accounts a on a.id=f.owner_id and a.workspace_id=f.workspace_id
+ where f.id=fid and f.workspace_id=wid and f.owner_id=author and f.state='ready' and not f.archived
+ and a.deleted_at is null and wow_collab.eligible(a)
+ and (a.role='owner' or array['files.view','files.export']::text[] <@ a.permissions);
+ return result;
+end $$;
+revoke all on function wow_collab.shared_file(uuid,uuid,uuid) from public,anon,authenticated;
 create or replace function wow_collab.message_json(m wow_collab.messages,uid uuid,cutoff bigint) returns jsonb language sql stable set search_path='' as $$
  select jsonb_build_object('id',m.id::text,'roomId',m.room_id,'authorId',m.author_id,'author',(select wow_collab.person(a)->>'name' from public.wow_accounts a where a.id=m.author_id),
-  'requestId',case when m.author_id=uid then m.request_id end,'text',m.text_body,'asset',(select wow_collab.asset_meta(b) from wow_collab.chat_assets b where b.id=m.asset_id and b.state='ready'),
+  'requestId',case when m.author_id=uid then m.request_id end,'text',m.text_body,'asset',coalesce((select wow_collab.asset_meta(b) from wow_collab.chat_assets b where b.id=m.asset_id and b.state='ready'),case when m.native_file_id is not null then wow_collab.shared_file(m.native_file_id,m.author_id,(select r.workspace_id from wow_collab.rooms r where r.id=m.room_id))-'path' end),
   'createdAt',m.created_at,'editedAt',m.edited_at,'expiresAt',m.expires_at,'forwarded',m.forwarded,'event',m.event,'mentions',m.mentions,
-  'reply',(select jsonb_build_object('id',q.id::text,'text',left(q.text_body,160),'author',wow_collab.person(a)->>'name','attachment',q.asset_id is not null,'expiresAt',q.expires_at)
+  'reply',(select jsonb_build_object('id',q.id::text,'text',left(q.text_body,160),'author',wow_collab.person(a)->>'name','attachment',q.asset_id is not null or q.native_file_id is not null,'expiresAt',q.expires_at)
    from wow_collab.messages q join public.wow_accounts a on a.id=q.author_id where q.id=m.reply_id and q.room_id=m.room_id and wow_collab.visible(q,cutoff,uid)),
   'starred',exists(select from wow_collab.stars s where s.message_id=m.id and s.account_id=uid),
   'myReaction',(select e.emoji from wow_collab.reactions e where e.message_id=m.id and e.account_id=uid),
@@ -147,7 +163,7 @@ declare
  rid uuid:=(p_data->>'roomId')::uuid; target uuid:=(p_data->>'targetId')::uuid; aid uuid:=(p_data->>'assetId')::uuid;
  mid bigint:=(p_data->>'messageId')::bigint; room wow_collab.rooms; member wow_collab.members; other wow_collab.members; acct public.wow_accounts;
  msg wow_collab.messages; parent_msg wow_collab.messages; source_msg wow_collab.messages; asset wow_collab.chat_assets;
- items jsonb; people jsonb; prefs jsonb; result jsonb; term text:=coalesce(p_data->>'query','');
+ file_ref uuid:=(p_data->>'fileId')::uuid; shared_file jsonb; items jsonb; people jsonb; prefs jsonb; result jsonb; term text:=coalesce(p_data->>'query','');
  expiry timestamptz; key_id uuid:=(p_data->>'requestId')::uuid; cutoff bigint; mentioned_ids uuid[]; targets uuid[];
  digest text; txt text:=coalesce(p_data->>'text',''); ev text; n integer; used bigint; personal bigint; cursor_id bigint; ttl integer:=60;
 begin
@@ -183,7 +199,7 @@ begin
     'emoji',r.emoji,'description',r.description,'avatar',r.avatar,'peer',peer.person,'role',m.role,'muted',m.muted,'archived',m.archived,
     'unread',(select count(*) from wow_collab.messages x where x.room_id=r.id and x.author_id<>uid and x.id>m.read_id and wow_collab.visible(x,m.cleared_id,uid)),
     'last',case when last_msg.id is not null then jsonb_build_object('id',last_msg.id::text,'text',left(last_msg.text_body,140),'event',last_msg.event,
-    'attachment',last_msg.asset_id is not null,'at',last_msg.created_at,'expiresAt',last_msg.expires_at) end) obj
+    'attachment',last_msg.asset_id is not null or last_msg.native_file_id is not null,'at',last_msg.created_at,'expiresAt',last_msg.expires_at) end) obj
    from wow_collab.members m join wow_collab.rooms r on r.id=m.room_id
    left join lateral (select wow_collab.person(a) person from wow_collab.members p join public.wow_accounts a on a.id=p.account_id
     where r.kind='direct' and p.room_id=r.id and p.account_id<>uid limit 1) peer on true
@@ -265,6 +281,11 @@ begin
    aid:=msg.asset_id;
    if msg.expires_at is not null then ttl:=least(ttl,floor(extract(epoch from msg.expires_at-clock_timestamp()))::integer); end if;
   end if;
+  if msg.native_file_id is not null then
+   shared_file:=wow_collab.shared_file(msg.native_file_id,msg.author_id,wid);
+   if shared_file is null or ttl<1 then raise exception using message='ACCESS_DENIED'; end if;
+   return shared_file||jsonb_build_object('ttl',ttl);
+  end if;
   select * into asset from wow_collab.chat_assets b where b.id=aid and b.workspace_id=wid and b.state='ready';
   if asset.id is null or ttl<1 then raise exception using message='ACCESS_DENIED'; end if;
   return jsonb_build_object('path',wow_collab.asset_path(asset),'mime',asset.mime,'name',asset.name,'ttl',ttl);
@@ -278,7 +299,7 @@ begin
    and (p_data->>'before' is null or x.id<(p_data->>'before')::bigint) and (term='' or strpos(lower(x.text_body),lower(term))>0 or strpos(lower(b.name),lower(term))>0)
    and (not coalesce((p_data->>'starred')::boolean,false) or exists(select from wow_collab.stars s where s.message_id=x.id and s.account_id=uid))
    and (not coalesce((p_data->>'mentioned')::boolean,false) or uid=any(x.mentions))
-   and (p_data->>'kind' is null or b.kind=p_data->>'kind' or (p_data->>'kind'='files' and b.kind in ('document','archive','other','pdf')) or (p_data->>'kind'='links' and x.text_body ~* 'https?://'))
+   and (p_data->>'kind' is null or coalesce(b.kind,wow_collab.shared_file(x.native_file_id,x.author_id,wid)->>'kind')=p_data->>'kind' or (p_data->>'kind'='files' and coalesce(b.kind,wow_collab.shared_file(x.native_file_id,x.author_id,wid)->>'kind') in ('document','archive','other','pdf')) or (p_data->>'kind'='links' and x.text_body ~* 'https?://'))
    order by x.id desc limit 51),
    shown as (select id from page order by id desc limit 50)
   select jsonb_build_object('messages',coalesce((select jsonb_agg(wow_collab.message_json(m,uid,member.cleared_id) order by m.id)
@@ -347,18 +368,19 @@ begin
    select * into source_msg from wow_collab.messages x where x.id=mid and x.room_id=(p_data->>'sourceRoomId')::uuid and x.event is null and exists(
     select from wow_collab.members sm join wow_collab.rooms sr on sr.id=sm.room_id where sm.room_id=x.room_id and sm.account_id=uid and sm.state='active'
      and sr.active and sr.workspace_id=wid and wow_collab.room_allowed(uid,ctx#>>'{account,role}',sr) and wow_collab.visible(x,sm.cleared_id,uid));
-   if source_msg.id is null then raise exception using message='ACCESS_DENIED'; end if;
+   if source_msg.id is null or source_msg.native_file_id is not null then raise exception using message='ACCESS_DENIED'; end if;
    aid:=source_msg.asset_id; txt:=source_msg.text_body; expiry:=least(expiry,source_msg.expires_at);
   else
    if mid is not null then select * into parent_msg from wow_collab.messages x where x.room_id=rid and x.id=mid and wow_collab.visible(x,member.cleared_id,uid);
     if parent_msg.id is null then raise exception using message='ACCESS_DENIED'; end if; end if;
    if aid is not null and not exists(select from wow_collab.chat_assets b where b.id=aid and b.owner_id=uid and b.room_id=rid and b.purpose='message' and b.state='ready' and not b.linked) then raise exception using message='ACCESS_DENIED'; end if;
   end if;
-  if txt='' and aid is null then raise exception using message='INVALID_MESSAGE'; end if;
+  if file_ref is not null and (p_action<>'send' or aid is not null or wow_collab.shared_file(file_ref,uid,wid) is null) then raise exception using message='ACCESS_DENIED'; end if;
+  if txt='' and aid is null and file_ref is null then raise exception using message='INVALID_MESSAGE'; end if;
   select coalesce(array_agg(a.id),'{}') into mentioned_ids from public.wow_accounts a join wow_collab.members m on a.id=m.account_id where
     m.room_id=rid and m.state='active' and wow_collab.eligible(a) and a.username=any(array(select hit[2] from regexp_matches(lower(txt),'(^|[^[:alnum:]_.-])@([[:alnum:]_.-]+)','g') hit));
-  insert into wow_collab.messages(room_id,author_id,request_id,request_hash,text_body,asset_id,reply_id,forwarded,expires_at,mentions)
-   values(rid,uid,key_id,digest,txt,aid,parent_msg.id,p_action='forward',expiry,mentioned_ids) returning * into msg;
+  insert into wow_collab.messages(room_id,author_id,request_id,request_hash,text_body,asset_id,native_file_id,reply_id,forwarded,expires_at,mentions)
+   values(rid,uid,key_id,digest,txt,aid,file_ref,parent_msg.id,p_action='forward',expiry,mentioned_ids) returning * into msg;
   update wow_collab.chat_assets b set linked=true where b.id=aid;
   update wow_collab.members m set draft=case when m.draft=txt then '' else m.draft end,typing_until=null where m.room_id=rid and m.account_id=uid and p_action='send';
   insert into wow_collab.chat_notifications(workspace_id,room_id,message_id,recipient_id)
@@ -372,7 +394,7 @@ begin
   update wow_collab.members m set read_id=mid,read_at=now() where m.room_id=rid and m.account_id=uid and m.read_id<mid;
  elsif p_action='edit' then
   if msg.author_id<>uid or msg.event is not null or msg.forwarded or (member.role='member' and msg.created_at<now()-interval '30 minutes') then raise exception using message='ACCESS_DENIED'; end if;
-  if txt='' and msg.asset_id is null then raise exception using message='INVALID_MESSAGE'; end if;
+  if txt='' and msg.asset_id is null and msg.native_file_id is null then raise exception using message='INVALID_MESSAGE'; end if;
   select coalesce(array_agg(a.id),'{}') into mentioned_ids from public.wow_accounts a join wow_collab.members m on a.id=m.account_id where
     m.room_id=rid and m.state='active' and wow_collab.eligible(a) and a.username=any(array(select hit[2] from regexp_matches(lower(txt),'(^|[^[:alnum:]_.-])@([[:alnum:]_.-]+)','g') hit));
   update wow_collab.messages set text_body=txt,mentions=mentioned_ids,edited_at=now() where id=mid;
