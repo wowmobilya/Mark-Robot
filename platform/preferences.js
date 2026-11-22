@@ -34,7 +34,9 @@
   function read(name){try{return localStorage.getItem(name);}catch{return null;}}
   function save(name,value){try{localStorage.setItem(name,value);}catch{/* The selected value still applies for this visit. */}}
   const savedLanguage=read('wf_lang');
-  let locale=Object.hasOwn(options,savedLanguage)?savedLanguage:'ar';
+  const deviceLanguage=([...(navigator.languages||[]),navigator.language||''].filter(Boolean)
+    .map(value=>String(value).toLowerCase().split('-')[0]).find(value=>Object.hasOwn(options,value)))||'en';
+  let locale=Object.hasOwn(options,savedLanguage)?savedLanguage:deviceLanguage;
   const primaryTheme=read('wf_theme'),savedTheme=read(key);
   let theme=themes.includes(savedTheme)?savedTheme:['light','dark'].includes(primaryTheme)?primaryTheme:'system';
   function sync(){
@@ -120,16 +122,8 @@
     languageButtons.get(locale)?.focus();
   }
   function buildDialog(){
-    const header=doc.querySelector('.platform-preferences');
-    if(!header)return;
-    headerTrigger=make('button','platform-language-open');
-    headerTrigger.type='button';headerTrigger.id='platformLanguageOpen';
-    headerTrigger.setAttribute('aria-haspopup','dialog');headerTrigger.setAttribute('aria-controls','platform-language-dialog');
-    const flag=make('span','platform-language-flag'),code=make('span','platform-language-code');
-    flag.setAttribute('aria-hidden','true');headerTrigger.append(flag,code,make('span','platform-language-chevron','⌄'));
-    headerTrigger.addEventListener('click',()=>openDialog(headerTrigger));
-    header.insertBefore(headerTrigger,language);
-    language.classList.add('platform-language-native');language.tabIndex=-1;language.setAttribute('aria-hidden','true');
+    // Language is configured from Settings; no duplicate header trigger.
+    language.classList.add('platform-language-native');language.tabIndex=-1;language.setAttribute('aria-hidden','true');language.hidden=true;language.style.display='none';
     languageDialog=make('dialog','platform-language-dialog');languageDialog.id='platform-language-dialog';
     languageDialog.setAttribute('aria-labelledby','platform-language-title');
     languageDialog.setAttribute('aria-describedby','platform-language-description');
