@@ -38,7 +38,7 @@ create or replace function public.wow_voice_service(p_action text,p_data jsonb d
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare
  uid uuid; sid uuid; wid uuid; ctx jsonb; rid uuid; cid uuid; cal wow_voice.calls;
- requested text; member_role text; role text; n integer; items jsonb; participants jsonb;
+ requested text; member_role text; actor_role text; n integer; items jsonb; participants jsonb;
 begin
  if jsonb_typeof(p_data)<>'object' or p_action not in
  ('start','inbox','status','accept','decline','leave','end','heartbeat','connected','history') then
@@ -47,8 +47,8 @@ begin
  uid:=(p_data->>'userId')::uuid;sid:=(p_data->>'sessionId')::uuid;
  if uid is null or sid is null then raise exception using message='AUTH_REQUIRED',errcode='P0001';end if;
  ctx:=public.wow_actor(uid,sid,null,false,false);wid:=(ctx->>'workspaceId')::uuid;
- role:=ctx#>>'{account,role}';
- if role<>'owner' and not ((ctx#>'{account,permissions}') ? 'chat.view'
+ actor_role:=ctx#>>'{account,role}';
+ if actor_role<>'owner' and not ((ctx#>'{account,permissions}') ? 'chat.view'
   and (ctx#>'{account,permissions}') ? 'chat.edit') then
    raise exception using message='ACCESS_DENIED',errcode='P0001';end if;
  -- Server expiration is independent of open browsers and never deletes call history.
@@ -63,8 +63,8 @@ begin
    select r.kind,m.role into requested,member_role
    from wow_collab.rooms r join wow_collab.members m on m.room_id=r.id and m.account_id=uid and m.state='active'
    where r.id=rid and r.workspace_id=wid and r.active and r.kind in ('direct','group')
-     and wow_collab.room_allowed(uid,role,r);
-   if requested is null or (requested='group' and role='customer') then
+     and wow_collab.room_allowed(uid,actor_role,r);
+   if requested is null or (requested='group' and actor_role='customer') then
      raise exception using message='ACCESS_DENIED',errcode='P0001';end if;
    -- Only all currently eligible chat members may be invited; limit mesh calls.
    select count(*) into n from wow_collab.members m join public.wow_accounts a on a.id=m.account_id
@@ -96,7 +96,7 @@ begin
      join wow_collab.rooms r on r.id=c.room_id and r.active and r.workspace_id=wid
      join wow_collab.members m on m.room_id=r.id and m.account_id=uid and m.state='active'
      where c.workspace_id=wid and p.account_id=uid and p.status in ('invited','joined')
-      and c.status in ('ringing','active') and wow_collab.room_allowed(uid,role,r)
+      and c.status in ('ringing','active') and wow_collab.room_allowed(uid,actor_role,r)
      order by c.created_at desc limit 4
    ) v;
    return jsonb_build_object('calls',items);
@@ -104,7 +104,7 @@ begin
    rid:=(p_data->>'roomId')::uuid;
    if not exists(select from wow_collab.rooms r join wow_collab.members m
     on m.room_id=r.id and m.account_id=uid and m.state='active'
-    where r.id=rid and r.workspace_id=wid and r.active and wow_collab.room_allowed(uid,role,r))
+    where r.id=rid and r.workspace_id=wid and r.active and wow_collab.room_allowed(uid,actor_role,r))
     then raise exception using message='ACCESS_DENIED',errcode='P0001';end if;
    select coalesce(jsonb_agg(j.item order by j.created_at),'[]') into items from (
     select c.created_at,jsonb_build_object('id',c.id,'roomId',c.room_id,'kind',c.kind,
@@ -128,7 +128,7 @@ begin
  if cal.id is null or not exists(
     select from wow_collab.rooms r join wow_collab.members m on m.room_id=r.id
     where r.id=cal.room_id and r.active and r.workspace_id=wid
-      and m.account_id=uid and m.state='active' and wow_collab.room_allowed(uid,role,r))
+      and m.account_id=uid and m.state='active' and wow_collab.room_allowed(uid,actor_role,r))
   then raise exception using message='ACCESS_DENIED',errcode='P0001';end if;
  if p_action in ('accept','decline') then
    if not exists(select from wow_voice.participants p where p.call_id=cid and p.account_id=uid and p.status='invited')
