@@ -102,10 +102,10 @@ test('remote database selection refuses unauthenticated access before opening an
   await assert.rejects(context.initDB(),/AUTH_REQUIRED/);assert.deepEqual(opened,[]);
 });
 test('remote owner startup skips legacy Drive recovery while local owner keeps onboarding',async()=>{
-  for(const remote of [true,false]){
+  for(const [remote,hash] of [[true,"#dashboard"],[false,"#dashboard"],[false,"#chat"]]){
     const opened=[];let autoBackup=0;
     const context=vm.createContext({console,URLSearchParams,Date,S:{settings:{}},
-      location:{hash:'#dashboard',search:remote?'?wf-cloud=owner&workspace=fixture':''},history:{replaceState(){}},
+      location:{hash,search:remote?'?wf-cloud=owner&workspace=fixture':''},history:{replaceState(){}},
       localStorage:{getItem:()=>null},document:{querySelectorAll:()=>[],querySelector:()=>null,getElementById:()=>null},
       WFCloudClient:{isRemoteMode:()=>remote},WFAccountAccess:{beforeInit:async()=>{},projectRead:(_store,value)=>value,initialRoute:value=>value,can:()=>true},
       WFCurrencySources:{initialRates:()=>({})},WF_CLOUD_REFRESH_STORES:new Set(),WF_CLOUD_BOOT_READY:false,
@@ -117,7 +117,7 @@ test('remote owner startup skips legacy Drive recovery while local owner keeps o
     context.window=context;
     vm.runInContext(extract('wfRecoveryHasData')+'\n'+extract('wfDriveInitOnboarding')+'\n'+extract('init'),context);
     await context.init();
-    assert.deepEqual(opened,remote?[]:['welcome'],'only local startup offers the legacy Drive recovery dialog');
+    assert.deepEqual(opened,remote||hash==='#chat'?[]:['welcome'],'only local startup offers the legacy Drive recovery dialog');
     assert.equal(autoBackup,remote?0:1,'remote projections must not start local Drive backup scheduling');
     assert.equal(context.WF_CLOUD_BOOT_READY,true,'the application completes startup in either mode');
   }

@@ -363,7 +363,7 @@
     button.type='button';
     const caption=group.querySelector('.side-sec');
     const label=document.createElement('span');
-    if(caption){label.dataset.i18n=caption.dataset.i18n;label.textContent=caption.textContent;}
+    if(caption){if(caption.dataset.i18n)label.dataset.i18n=caption.dataset.i18n;label.textContent=caption.textContent;}
     else {label.dataset.i18n='settings';label.textContent=group.querySelector('[data-i18n="settings"]').textContent;}
     const controls=[...group.querySelectorAll('.nav-item')];
     controls.forEach((item,i)=>item.id||=('wf-destination-'+index+'-'+i));
