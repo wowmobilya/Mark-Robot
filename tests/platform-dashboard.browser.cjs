@@ -86,6 +86,35 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.getByText('No support messages.',{exact:true}).waitFor();
     const menu=page.getByRole('navigation',{name:'Administration sections'});
     assert.equal(await menu.getByRole('link',{name:'Support'}).getAttribute('aria-current'),'page');
+    const settingsLink=menu.getByRole('link',{name:'Settings'});
+    await settingsLink.click();
+    const settingsPage=page.locator('#platform-page-settings');
+    await settingsPage.getByRole('heading',{name:'Founder account'}).waitFor();
+    assert.equal(await settingsLink.getAttribute('aria-current'),'page');
+    assert.equal(await settingsPage.getByRole('link',{name:'Account settings'}).evaluate(a=>new URL(a.href).hash),'#settings');
+    assert.equal(await settingsPage.getByRole('heading',{name:'Settings',exact:true}).evaluate(h=>h===document.activeElement),true);
+    await page.locator('.platform-header-actions').getByRole('link',{name:'Support inbox'}).click();
+    await page.locator('#platform-page-support').waitFor();
+    await page.locator('.platform-header-actions').getByRole('link',{name:'Back to companies'}).click();
+    await page.locator('#platform-page-companies').waitFor();
+    await settingsLink.click();
+    for(const [code,title] of [['ar','الإعدادات'],['tr','Ayarlar'],['fr','Réglages'],['ru','Настройки'],['en','Settings']]){
+      await page.locator('#lang').selectOption(code);
+      await settingsPage.getByRole('heading',{name:title,exact:true}).waitFor();
+      assert.equal(await page.locator('html').getAttribute('dir'),code==='ar'?'rtl':'ltr');
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    }
+    for(const width of [320,768,1280,390]){
+      await page.setViewportSize({width,height:844});
+      await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash===(matchMedia('(max-width:620px) and (min-height:521px)').matches?'#plans':'#companies'));
+      const metrics=await menu.evaluate(element=>({position:getComputedStyle(element).position,bottom:element.getBoundingClientRect().bottom,
+        links:[...element.querySelectorAll('a')].map(a=>({height:a.getBoundingClientRect().height,width:a.getBoundingClientRect().width,path:a.hash})),
+        overflow:document.documentElement.scrollWidth>innerWidth}));
+      assert(!metrics.overflow);
+      assert(metrics.links.every(link=>link.height>=44&&link.width>=44));
+      if(width<=620){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[2].path,'#companies');}
+      else if(width>900){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[0].path,'#companies');}
+    }
     await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByText('No companies yet.').waitFor();
     await menu.getByRole('link',{name:'Calls'}).click();

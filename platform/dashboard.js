@@ -104,6 +104,7 @@
   }
   function submit(form,index,fn){const b=el('button',t(index));b.type='submit';form.append(b);form.onsubmit=async e=>{e.preventDefault();if(b.disabled)return;b.disabled=true;try{await fn();}catch(reason){fail(reason);}finally{b.disabled=false;}};}
   function login(){
+    headerActions.hidden=true;headerActions.replaceChildren();
     scanner?.dispose();content.replaceChildren();const form=el('form'),email=field(form,1,'text'),pass=field(form,2,'password');
     form.className='platform-login';
     const visibility={ar:['إظهار','إخفاء'],en:['Show','Hide'],tr:['Göster','Gizle'],fr:['Afficher','Masquer'],ru:['Показать','Скрыть']}[lang.value];
@@ -326,26 +327,58 @@
   }
   const companyMenu={ar:'إدارة الشركة',en:'Manage company',tr:'Şirketi yönet',fr:'Gérer la société',ru:'Управление компанией'};
   let showDestination=null,expandedCompany=null;
-  const pageFromUrl=()=>['plans','support','calls'].includes(location.hash.slice(1))?location.hash.slice(1):'companies';
+  const header=document.querySelector('main > header'),headerActions=el('div');
+  headerActions.className='platform-header-actions';headerActions.hidden=true;header.append(headerActions);
+  const compactMenu=matchMedia('(max-width:620px) and (min-height:521px)');
+  function arrangeMenu(){
+    const menu=content.querySelector('.platform-section-menu');if(!menu)return;
+    const order=compactMenu.matches?['plans','calls','companies','support','settings']:['companies','plans','support','calls','settings'];
+    const focused=menu.contains(document.activeElement)?document.activeElement:null;
+    for(const key of order){const link=menu.querySelector('a[href="#'+key+'"]');if(link)menu.append(link);}
+    focused?.focus({preventScroll:true});
+  }
+  compactMenu.addEventListener?.('change',arrangeMenu);
+  const topLabels={
+    ar:['العودة إلى الشركات','صندوق رسائل الدعم'],en:['Back to companies','Support inbox'],
+    tr:['Şirketlere dön','Destek gelen kutusu'],fr:['Retour aux sociétés','Boîte de réception du support'],
+    ru:['Вернуться к компаниям','Обращения в поддержку']
+  };
+  const settingsWords={
+    ar:['الإعدادات','تفضيلات هذا الجهاز','حساب المؤسس','إعدادات الحساب'],
+    en:['Settings','Device preferences','Founder account','Account settings'],
+    tr:['Ayarlar','Cihaz tercihleri','Kurucu hesabı','Hesap ayarları'],
+    fr:['Réglages','Préférences de cet appareil','Compte fondateur','Paramètres du compte'],
+    ru:['Настройки','Настройки устройства','Аккаунт основателя','Настройки аккаунта']
+  };
+  const pageFromUrl=()=>['plans','support','calls','settings'].includes(location.hash.slice(1))?location.hash.slice(1):'companies';
   window.addEventListener('hashchange',()=>showDestination?.());
   async function list(){
     const ticket=++generation,state=await request('company.list',{offset});if(ticket!==generation)return;
     scanner?.dispose();scanner=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
-    const labels=destinations[lang.value],ids=['companies','plans','support','calls'],panels={},links={};
+    const labels=destinations[lang.value],settingsText=settingsWords[lang.value];
+    const ids=['companies','plans','support','calls','settings'],titles=[labels[0],labels[1],labels[2],labels[5],settingsText[0]],panels={},links={};
     nav.className='platform-account-bar';menu.className='platform-section-menu';menu.setAttribute('aria-label',labels[3]);
+    headerActions.hidden=false;headerActions.replaceChildren();
+    const home=el('a'),inbox=el('a');
+    for(const [link,id,description] of [[home,'companies',topLabels[lang.value][0]],[inbox,'support',topLabels[lang.value][1]]]){
+      link.href='#'+id;link.className='platform-header-link';link.setAttribute('aria-label',description);link.title=description;
+      headerActions.append(link);
+    }
     content.append(nav,menu);
     for(const [i,id] of ids.entries()){
-      const link=el('a'),panel=el('section'),title=el('h2',labels[id==='calls'?5:i]);
+      const link=el('a'),panel=el('section'),title=el('h2',titles[i]);
       title.tabIndex=-1;title.id='platform-title-'+id;
       link.className='platform-section-link';link.href='#'+id;link.append(el('span',title.textContent));
       panel.className='platform-page';panel.id='platform-page-'+id;panel.hidden=true;
       panel.setAttribute('aria-labelledby',title.id);panel.append(title);content.append(panel);
       link.setAttribute('aria-controls',panel.id);menu.append(link);panels[id]=panel;links[id]=link;
     }
+    arrangeMenu();
     const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);companies.append(form);
     let lastPage=null,loadingPlans=false;
     showDestination=()=>{
       const id=pageFromUrl(),changed=id!==lastPage;
+      home.hidden=id==='companies';inbox.hidden=id==='support';
       for(const key of ids){
         panels[key].hidden=key!==id;
         if(key===id)links[key].setAttribute('aria-current','page');else links[key].removeAttribute('aria-current');
@@ -362,7 +395,7 @@
         }).finally(()=>{loadingPlans=false;});
       }
       if(changed&&lastPage!==null){
-        panels[id].querySelector('h2').focus({preventScroll:true});menu.scrollIntoView({block:'nearest'});
+        const heading=panels[id].querySelector('h2');heading.focus({preventScroll:true});heading.scrollIntoView({block:'nearest'});
       }
       lastPage=id;
     };
@@ -374,8 +407,15 @@
       await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
         headers:{apikey:config.publishableKey,'Content-Type':'application/json',Authorization:'Bearer '+previous},
         body:JSON.stringify({action:'auth.signOut'})}).then(reply=>{if(!reply.ok)throw failure(2);});});
-    const settings=el('a',{ar:'إعدادات الحساب',en:'Account settings',tr:'Hesap ayarları',fr:'Paramètres du compte',ru:'Настройки аккаунта'}[lang.value]);
-    const settingsUrl=new URL('../',location.href);settingsUrl.searchParams.set('wf-cloud','employee');settingsUrl.searchParams.set('workspace',config.workspaceId);settingsUrl.searchParams.set('wf-accounts','cloud');settingsUrl.hash='settings';settings.href=settingsUrl.href;nav.append(settings);
+    const preferences=el('section'),account=el('section'),settings=el('a',settingsText[3]);
+    preferences.className=account.className='platform-settings-group';
+    const preferred=el('div');preferred.className='platform-settings-preferences';
+    preferences.append(el('h3',settingsText[1]),preferred);
+    window.WFPlatformPreferences?.mount(preferred);
+    preferences.hidden=!preferred.childElementCount;
+    const settingsUrl=new URL('../',location.href);settingsUrl.searchParams.set('wf-cloud','employee');settingsUrl.searchParams.set('workspace',config.workspaceId);settingsUrl.searchParams.set('wf-accounts','cloud');settingsUrl.hash='settings';settings.href=settingsUrl.href;
+    account.append(el('h3',settingsText[2]));if(verifiedName)account.append(el('bdi',verifiedName));account.append(settings);
+    panels.settings.append(preferences,account);
     supportInbox?.dispose();
     supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts});
     showDestination();
