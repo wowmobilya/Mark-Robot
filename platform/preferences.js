@@ -63,6 +63,7 @@
       trigger.textContent=current.flag+'  '+current.name;
       trigger.setAttribute('aria-label',dialogLabels[locale][0]+': '+current.name);
     }
+    doc.dispatchEvent(new CustomEvent('wf-platform-appearance-changed',{detail:{theme,effective}}));
     if(languageDialog){
       languageDialog.querySelector('#platform-language-title').textContent=dialogLabels[locale][1];
       languageDialog.querySelector('#platform-language-description').textContent=dialogLabels[locale][2];
@@ -166,5 +167,7 @@
     doc.body.append(languageDialog);
   }
   buildDialog();
-  window.WFPlatformPreferences=Object.freeze({mount,openLanguageDialog:openDialog});sync();
+  function getAppearance(){return {mode:theme,effective:theme==='system'?(media.matches?'dark':'light'):theme};}
+  function toggleTheme(){changeTheme(getAppearance().effective==='dark'?'light':'dark');}
+  window.WFPlatformPreferences=Object.freeze({mount,openLanguageDialog:openDialog,setTheme:changeTheme,toggleTheme,getAppearance});sync();
 })();
