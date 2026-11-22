@@ -1119,3 +1119,22 @@ html[data-theme=dark] .platform-sales-contact-links .platform-sales-whatsapp{
 
 /* Six horizontal tabs on phones; full-width vertical navigation on desktop. */
 @media(min-width:1025px){.platform-section-menu{grid-template-columns:minmax(0,1fr)}}
+
+
+/* WOW 234: founder sign-out is deliberately available only in settings / drawer. */
+.platform-signout-settings,.platform-drawer-signout{display:inline-flex;justify-content:center;align-items:center;min-height:44px;border:1px solid var(--border);border-radius:var(--ui-control);padding:.65rem 1rem;background:var(--input);color:var(--text);font-weight:750;cursor:pointer}
+.platform-signout-settings{margin-block-start:.8rem}
+.platform-drawer-footer{margin-block-start:auto;padding:1rem .55rem calc(1rem + env(safe-area-inset-bottom,0px));border-block-start:1px solid var(--border);display:flex}
+.platform-drawer-footer .platform-drawer-signout{width:100%;text-align:center}
+.platform-drawer-signout:hover,.platform-signout-settings:hover{color:var(--ui-accent);background:var(--ui-soft)}
+/* Keep five primary destinations on phones; Settings remains in the drawer and Home is geometric center. */
+@media(max-width:1024px){
+  #content .platform-section-menu{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important}
+  #content .platform-section-menu>.platform-section-link[href="#settings"]{display:none!important}
+  #content .platform-section-menu>.platform-section-link[href="#companies"]{order:1}
+  #content .platform-section-menu>.platform-section-link[href="#plans"]{order:2}
+  #content .platform-section-menu>.platform-section-link[href="#home"]{order:3}
+  #content .platform-section-menu>.platform-section-link[href="#support"]{order:4}
+  #content .platform-section-menu>.platform-section-link[href="#calls"]{order:5}
+  #content .platform-section-menu>.platform-nav-orbit{order:6}
+}
