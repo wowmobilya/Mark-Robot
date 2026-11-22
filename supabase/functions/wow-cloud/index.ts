@@ -45,7 +45,7 @@ const maintenance=async()=>{
   const results=await Promise.allSettled([storageMaintenance(),communications.process()]);
   if(results.some(result=>result.status==='rejected'))throw new Error('MAINTENANCE_DEFERRED');
 };
-const moduleActions={...createGalleryActions(remote),...createChatActions(remote),...createFilesActions(remote),
+const moduleActions={...createGalleryActions(remote),...createChatActions({...remote,voiceTurn:{url:Deno.env.get('WOW_TURN_URL'),secret:Deno.env.get('WOW_TURN_SHARED_SECRET')}}),...createFilesActions(remote),
   ...customerAuth.actions,...ownerActivation.actions,...createPublicShareActions(publicShareOptions),...communications.actions,
   ...createFinanceActions({...remote,quoteProvider:createQuoteProvider({goldApiKey:Deno.env.get('GOLDAPI_KEY')})}),
   ...createOperationsActions({...remote,configuration:{aiConfigured:assistantProvider.configured===true}}),
