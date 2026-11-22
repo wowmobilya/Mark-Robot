@@ -70,7 +70,8 @@ test('real WOW settings directory opens support from its card and the push entry
     }
     try{return await route.fulfill({path:file});}catch{return route.fulfill({status:404,body:''});}
   });
-  await page.goto('https://settings.test/');await page.waitForFunction(()=>window.WFPlatformSupport&&window.fixtureNotify&&document.querySelector('#wf-settings-description-support'));
+  await page.goto('https://settings.test/#settings');
+  await page.waitForFunction(()=>typeof WF_CLOUD_BOOT_READY!=='undefined' && WF_CLOUD_BOOT_READY && window.WFPlatformSupport&&window.fixtureNotify&&history.state?.page==='settings'&&document.querySelector('#wf-settings-description-support'));
   await page.evaluate(()=>{window.setLang('en');window.showPage('settings');});
   const tab=page.locator('#wf-settings-tab-support'),modal=page.locator('#wfSettingsDialog');
   await tab.click();await modal.locator('#stab-support').getByText('No complaints yet.').waitFor();
@@ -83,3 +84,5 @@ test('real WOW settings directory opens support from its card and the push entry
   await page.evaluate(()=>window.WFPlatformSupport.open());const personal=page.locator('dialog.wf-app-dialog[open]');await personal.getByText('Aucune réclamation.').waitFor();
   assert.equal(await modal.isVisible(),false);assert.equal(await page.evaluate(()=>window.fixtureDenials),0);
 });
+
+
