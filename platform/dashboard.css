@@ -920,3 +920,53 @@ html[data-theme=dark] .platform-pricing-card .platform-plan-label[data-saved=tru
 
 /* Touch target regression: refresh must remain at least 44 px on small phones. */
 .platform-company-refresh{inline-size:44px!important;block-size:44px!important;min-inline-size:44px!important;min-block-size:44px!important;min-width:44px!important;min-height:44px!important}
+
+
+/* Subscription entitlement badges and editable add-on controls. */
+.platform-pricing-card .platform-plan-features{display:grid;grid-template-columns:minmax(0,1fr);
+ gap:.35rem;min-inline-size:0;max-inline-size:100%;padding:.65rem 0;
+ margin:.35rem 0 0;border-block:1px solid var(--border);list-style:none}
+.platform-pricing-card .platform-plan-feature{display:flex;align-items:center;gap:.46rem;
+ min-height:27px;min-inline-size:0;font-size:clamp(.74rem,1vw,.83rem);line-height:1.45;
+ font-weight:600;color:var(--text2)}
+.platform-pricing-card .platform-plan-feature>span:last-child{min-inline-size:0;overflow-wrap:anywhere}
+.platform-pricing-card .platform-plan-feature-icon{display:grid;place-items:center;inline-size:28px;
+ block-size:28px;flex:0 0 28px;border-radius:9px;background:var(--ui-soft);color:var(--ui-accent)}
+.platform-pricing-card .platform-plan-feature-icon::before{content:"";display:block;
+ inline-size:16px;block-size:16px;background:currentColor;mask:var(--feature-icon) center/contain no-repeat}
+.platform-pricing-card [data-feature=phone]{--feature-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%226%22%20y%3D%222%22%20width%3D%2212%22%20height%3D%2220%22%20rx%3D%222%22%2F%3E%3Cpath%20d%3D%22M11%2018h2%22%2F%3E%3C%2Fsvg%3E")}
+.platform-pricing-card [data-feature=storage]{--feature-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%2017a4%204%200%200%201%201.3-7.8%207%207%200%200%201%2013.4%201.6A4%204%200%201%201%2019%2019H8%22%2F%3E%3Cpath%20d%3D%22M12%2012v8m-3-3%203%203%203-3%22%2F%3E%3C%2Fsvg%3E")}
+.platform-pricing-card [data-feature=voice]{--feature-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2013v-2M7%2017V7M11%2020V4M15%2017V7M19%2013v-2%22%2F%3E%3C%2Fsvg%3E")}
+.platform-pricing-card [data-feature=video]{--feature-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%225%22%20width%3D%2215%22%20height%3D%2214%22%20rx%3D%223%22%2F%3E%3Cpath%20d%3D%22m18%2010%204-3v10l-4-3%22%2F%3E%3C%2Fsvg%3E")}
+.platform-pricing-card [data-feature=addon-phone]{--feature-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Cpath%20d%3D%22M12%208v8M8%2012h8%22%2F%3E%3C%2Fsvg%3E")}
+.platform-pricing-card [data-feature=addon-double]{--feature-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%2210%22%20height%3D%2218%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%2213%22%20y%3D%223%22%20width%3D%229%22%20height%3D%2218%22%20rx%3D%222%22%2F%3E%3Cpath%20d%3D%22M6%209h3M6%2013h3M16%209h3M16%2013h3%22%2F%3E%3C%2Fsvg%3E")}
+.platform-pricing-card [data-feature^=addon] .platform-plan-feature-icon{
+ color:#ba873f;background:color-mix(in srgb,#ba873f 12%,var(--card))}
+.platform-pricing-card .platform-plan-benefits-note{font-size:.71rem;line-height:1.45;color:var(--muted)}
+.platform-subscription>form{min-inline-size:0;max-inline-size:100%}
+.platform-subscription>form .platform-addon-toggle{
+ display:flex;align-items:center;gap:.65rem;min-inline-size:0;flex-wrap:wrap;
+ padding:.65rem .75rem;border:1px solid var(--border);border-radius:13px;
+ background:var(--card);font-size:.88rem;font-weight:700}
+.platform-subscription>form .platform-addon-toggle input[type=checkbox]{
+ inline-size:20px;block-size:20px;min-inline-size:20px;min-block-size:20px;max-inline-size:20px;
+ accent-color:var(--ui-accent);margin:0;padding:0}
+.platform-subscription>form>small{grid-column:1/-1;color:var(--text2);
+ font-size:.79rem;line-height:1.5;overflow-wrap:anywhere}
+.platform-subscription>form>.platform-addon-price{
+ display:block;grid-column:1/-1;min-inline-size:0;max-inline-size:100%;padding:.8rem;
+ border:1px solid var(--border);border-radius:13px;background:var(--card);
+ font-size:.91rem;font-weight:750;color:var(--ui-accent);overflow-wrap:anywhere}
+.platform-plan-editor label:has(input[type=number]){min-inline-size:0}
+.platform-plan-editor label input{min-inline-size:0;width:100%;font-variant-numeric:tabular-nums}
+@media(max-width:620px){
+ .platform-pricing-card .platform-plan-features,.platform-pricing-card .platform-plan-benefits-note{
+   grid-column:1/-1}
+ .platform-pricing-card .platform-plan-features{grid-template-columns:repeat(2,minmax(0,1fr));gap:.28rem .6rem}
+ .platform-pricing-card .platform-plan-feature{min-height:30px;font-size:.73rem}
+ .platform-pricing-card .platform-plan-feature-icon{inline-size:26px;block-size:26px;flex-basis:26px}
+}
+@media(max-width:360px){
+ .platform-pricing-card .platform-plan-features{grid-template-columns:minmax(0,1fr)}
+ .platform-pricing-card .platform-plan-feature{font-size:.76rem}
+}
