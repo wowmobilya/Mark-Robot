@@ -51,22 +51,32 @@ function onlyFields(row){
    modelCode:code(row.title),hasPrice:row.price!=null,asset:classifyAsset(row)};
 }
 export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
- if(!object(legacy)||legacy.projectRef!==projectRef||!Array.isArray(legacy.inventory)||
-   !Number.isSafeInteger(legacy.count)||legacy.count!==legacy.inventory.length)throw Error('LEGACY_INVENTORY_COUNT_MISMATCH');
- if(!object(primary)||!uuid.test(primary.workspaceId)||!Array.isArray(primary.products)||
-   !Array.isArray(primary.listings)||!Number.isSafeInteger(primary.dataRevision)||primary.dataRevision<0)
+ const inventory=legacy?.inventory??legacy?.tables?.inventory;
+ const sourceCount=legacy?.count??legacy?.counts?.inventory;
+ if(!object(legacy)||legacy.projectRef!==projectRef||!Array.isArray(inventory)||
+   !Number.isSafeInteger(sourceCount)||sourceCount!==inventory.length)throw Error('LEGACY_INVENTORY_COUNT_MISMATCH');
+ const inputProducts=primary?.products??primary?.records?.filter(row=>row.store==='products'&&!row.deleted_at);
+ const inputListings=primary?.listings;
+ if(!object(primary)||!uuid.test(primary.workspaceId)||!Array.isArray(inputProducts)||
+   !Array.isArray(inputListings)||!Number.isSafeInteger(primary.dataRevision)||primary.dataRevision<0)
    throw Error('PRIMARY_SNAPSHOT_REQUIRED');
  if(!object(mapping)||!Array.isArray(mapping.products||[])||!Array.isArray(mapping.confirmedAssetDigests||[]))
    throw Error('INVALID_MAPPING');
  if(mapping.workspaceId&&mapping.workspaceId!==primary.workspaceId)throw Error('WRONG_WORKSPACE');
+ // Work directly from either WOW's native product records or a sanitized
+ // product snapshot. Do not let legacy replace any primary payload field.
+ const primaryProducts=inputProducts.map(row=>row.record_id!==undefined?
+   {id:row.record_id,name:row.payload?.name??'',code:row.payload?.code??'',revision:row.revision}:row);
+ const primaryListings=inputListings.map(row=>row.product_id!==undefined?
+   {productId:row.product_id,version:row.version,stock:row.stock,published:row.published}:row);
  const targets=new Map(),byCode=new Map(),listings=new Map();
- for(const item of primary.products){
+ for(const item of primaryProducts){
    validTarget(item);const key=id(item.id);if(targets.has(key))throw Error('DUPLICATE_PRIMARY_ID');
    targets.set(key,item);
    const model=code(item.code)||code(item.name);
    if(model){const group=byCode.get(model)||[];group.push(item);byCode.set(model,group);}
  }
- for(const entry of primary.listings){
+ for(const entry of primaryListings){
    if(!object(entry))throw Error('INVALID_LISTING');
    const key=id(entry.productId);if(listings.has(key))throw Error('DUPLICATE_PRIMARY_LISTING');
    if(!targets.has(key))throw Error('ORPHAN_PRIMARY_LISTING');
@@ -82,7 +92,7 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
    explicit.set(source,target);
  }
  const sourceIds=new Set(),sourcesByCode=new Map();
- for(const row of legacy.inventory){
+ for(const row of inventory){
    validRow(row);const key=id(row.id);if(sourceIds.has(key))throw Error('DUPLICATE_LEGACY_MODEL');
    sourceIds.add(key);const model=code(row.title);
    if(model)sourcesByCode.set(model,(sourcesByCode.get(model)||0)+1);
@@ -91,7 +101,7 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
  // Compute the entire prospective assignment first: one primary product must
  // never silently consume two legacy models, even if one was auto-matched.
  const proposedTargets=new Map();
- for(const row of legacy.inventory){
+ for(const row of inventory){
    const sourceKey=id(row.id),model=code(row.title),candidate=byCode.get(model)||[];
    const target=explicit.has(sourceKey)?explicit.get(sourceKey):
      model&&candidate.length===1&&sourcesByCode.get(model)===1?id(candidate[0].id):null;
@@ -99,7 +109,7 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
  }
  const decisions=[],warnings=[];
  const synced=primary.fullPrimarySyncVerified===true;
- for(const row of [...legacy.inventory].sort((a,b)=>id(a.id).localeCompare(id(b.id),'en'))){
+ for(const row of [...inventory].sort((a,b)=>id(a.id).localeCompare(id(b.id),'en'))){
    const legacyId=id(row.id),model=code(row.title),mapped=explicit.get(legacyId);
    const candidates=model?byCode.get(model)||[]:[];
    const matching=explicit.has(legacyId)?targets.get(mapped):candidates.length===1&&sourcesByCode.get(model)===1?candidates[0]:null;
@@ -145,8 +155,8 @@ export function buildModelTransferPlan({legacy,primary,mapping={}}={}){
    workspaceId:primary.workspaceId,primaryDataRevision:primary.dataRevision,fullPrimarySyncVerified:synced,
    applyReady:false,summary,decisions,warnings,
    // Keep an immutable local comparison indicator, not a bearer credential.
-   evidenceDigest:sha({source:legacy.inventory.map(onlyFields),primary:primary.products.map(x=>[x.id,x.revision,x.name,x.code]),
-     listings:primary.listings.map(x=>[x.productId,x.version,x.stock]),workspaceId:primary.workspaceId,dataRevision:primary.dataRevision}),
+   evidenceDigest:sha({source:inventory.map(onlyFields),primary:primaryProducts.map(x=>[x.id,x.revision,x.name,x.code]),
+     listings:primaryListings.map(x=>[x.productId,x.version,x.stock]),workspaceId:primary.workspaceId,dataRevision:primary.dataRevision}),
    nextGate:'AUTHENTICATED_OWNER_MIGRATION_WITH_TRANSACTIONAL_RECHECK_AND_MEDIA_BYTES'};
 }
 async function input(file){
