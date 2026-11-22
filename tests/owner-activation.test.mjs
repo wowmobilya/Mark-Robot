@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {createProviderTestDatabase} from '../supabase/testing/provider-fixtures.mjs';
@@ -11,6 +12,8 @@ const origin='https://owner-activation.example',project='https://owner-provider.
 const jwt=id=>'fixture.'+Buffer.from(JSON.stringify({session_id:id})).toString('base64url')+'.fixture';
 
 async function application(db){
+  for(const name of ['platform-companies','account-installations'])await db.exec(await readFile(new URL('../supabase/modules/'+name+'.sql',import.meta.url),'utf8'));
+  const deviceProof='a'.repeat(64);
   const workspaceId=randomUUID(),otherWorkspace=randomUUID(),ownerId=randomUUID(),workerId=randomUUID();
   await db.query("insert into public.wow_workspaces(id,name) values($1,'Owner activation'),($2,'Other workspace')",[workspaceId,otherWorkspace]);
   for(const [id,role]of [[ownerId,'owner'],[workerId,'sales']]){
@@ -28,6 +31,7 @@ async function application(db){
     const url=new URL(raw),body=options.body?JSON.parse(options.body):{};
     assert.equal(options.headers.apikey,'sb_secret_owner_fixture');
     try{
+      if(url.pathname==='/rest/v1/rpc/wow_device_session')return Response.json((await db.query('select public.wow_device_session($1,$2::jsonb) result',[body.p_action,JSON.stringify(body.p_data)])).rows[0].result);
       if(url.pathname==='/rest/v1/rpc/wow_service')return Response.json((await db.query('select public.wow_service($1,$2::jsonb) result',[body.p_action,JSON.stringify(body.p_data)])).rows[0].result);
       if(url.pathname==='/auth/v1/admin/generate_link'){
         assert.equal(options.headers.authorization,undefined);assert.equal(options.redirect,'error');
@@ -56,11 +60,13 @@ async function application(db){
     }catch(error){if(error.code==='P0001')return Response.json({code:error.code,message:error.message},{status:400});throw error;}
   }});
   const ownerSession=await session(ownerId),workerSession=await session(workerId);
-  for(const value of [ownerSession,workerSession])await remote.rpc('session.open',sessions.get(value.access_token));
+  for(const value of [ownerSession,workerSession]){
+    const actor=sessions.get(value.access_token);await remote.deviceSession('session.open',{...actor,installationHash:await sha256(actor.userId+':'+deviceProof)});
+  }
   const activation=createOwnerActivationActions({...remote,origins:[origin],productionOrigin:origin});
   const handler=createHandler({...remote,policy,origins:[origin],moduleActions:activation.actions,publicActions:activation.publicActions});
   async function api(action,payload={},access,requestOrigin=origin){
-    const response=await handler(new Request(project+'/functions/v1/wow-cloud',{method:'POST',headers:{Origin:requestOrigin,'content-type':'application/json',...(access?{Authorization:'Bearer '+access}:{})},body:JSON.stringify({action,...payload})}));
+    const response=await handler(new Request(project+'/functions/v1/wow-cloud',{method:'POST',headers:{Origin:requestOrigin,'content-type':'application/json',...(access?{Authorization:'Bearer '+access}:{})},body:JSON.stringify({action,...action==='auth.activateOwner'?{installationProof:deviceProof}:{},...payload})}));
     return {status:response.status,...await response.json()};
   }
   async function link(){const result=await api('auth.ownerActivationLink',{},ownerSession.access_token);assert.equal(result.status,200);return result;}

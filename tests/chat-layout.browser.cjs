@@ -21,10 +21,12 @@ test('chat shell keeps the composer above the dock and gives the room list and h
       await page.evaluate((dir)=>{
         const me={id:'00000000-0000-4000-8000-000000000001',role:'owner'};
         const room={id:'00000000-0000-4000-8000-000000000002',kind:'team',name:'Workshop'};
+        const group={...room,id:'00000000-0000-4000-8000-000000000003',kind:'group',name:'Support',unread:2};
+        const privateRoom={...room,id:'00000000-0000-4000-8000-000000000004',kind:'direct',name:'Service'};
         const api={can:()=>true,getSession:()=>({currentAccount:me}),async request(action){
           switch(action){
             case 'chat.init':return {me};
-            case 'chat.rooms':return {rooms:[room]};
+            case 'chat.rooms':return {rooms:[room,group,privateRoom]};
             case 'chat.members':return {members:[]};
             case 'chat.feed':return {messages:Array.from({length:50},(_,i)=>({id:String(i+1),roomId:room.id,authorId:me.id,author:'A',text:'Item '+i,createdAt:new Date(i*60000).toISOString()})),prefs:{wallpaper:'plain',readId:'0'},readByPeer:'0'};
             default:return {};
@@ -56,6 +58,13 @@ test('chat shell keeps the composer above the dock and gives the room list and h
       const inbox=page.locator('.wf-chat-sidebar-tools .wf-calling-picker .wf-calling-label-text');
       assert.equal(await inbox.count(),2,'Inbox contains both named call actions');
       for(const label of await inbox.all()){const box=await label.boundingBox();assert(box&&box.width>16&&box.x>=0&&box.x+box.width<=width);}
+      const rows=page.locator('.wf-chat-rooms .wf-chat-room'),filters=page.locator('.wf-chat-filters button');
+      const search=page.locator('.wf-chat-sidebar-tools input[type=search]');
+      await filters.nth(1).click();assert.equal(await rows.count(),1);assert.match(await rows.first().innerText(),/Support/);
+      await filters.nth(2).click();assert.equal(await rows.count(),2);
+      await search.fill('sup');assert.equal(await rows.count(),1);
+      await search.fill('nothing');assert.equal(await rows.count(),0);assert(await page.locator('.wf-chat-empty').isVisible());
+      await search.fill('');await filters.first().click();assert.equal(await rows.count(),3);
       await page.close();
     }
   }finally{await browser.close();}

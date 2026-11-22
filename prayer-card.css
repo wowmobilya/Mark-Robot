@@ -27,3 +27,9 @@
 /* Fit all six page targets and playback inside the current card height. */
 html body #mainContent #page-dashboard .wf-smart-pager:has([aria-controls="wfPrayer"]){max-block-size:100%;grid-template-rows:repeat(var(--wf-smart-pages),minmax(22px,26px)) 28px}
 html body #mainContent #page-dashboard .wf-smart-pager:has([aria-controls="wfPrayer"]) .wf-smart-page{block-size:26px;min-block-size:22px}
+
+.wf-prayer-remaining{color:var(--text2);font-variant-numeric:tabular-nums;font-size:.86rem}
+.wf-prayer-remaining:empty,.wf-prayer-progress[hidden]{display:none}
+.wf-prayer-progress{height:4px;width:min(12rem,85%);border:0;border-radius:3px;overflow:hidden;accent-color:var(--brand-primary);background:var(--border)}
+.wf-prayer-progress::-webkit-progress-bar{background:var(--border)}
+.wf-prayer-progress::-webkit-progress-value{background:var(--brand-primary)}

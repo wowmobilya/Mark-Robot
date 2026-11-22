@@ -183,9 +183,15 @@ export function createHandler(deps) {
     requireValue(user && typeof user.id==='string' && user.is_anonymous!==true,'AUTH_REQUIRED',401);
     return {userId:user.id,sessionId:jwtSession(token)};
   }
-  async function authenticatedResult(session,open) {
+  async function authenticatedResult(session,open,input={}) {
     const clean=sessionResult(session),actor=await verifyToken(clean.access_token);
-    const state=await rpc(open?'session.open':'session.snapshot',actor);
+    const action=open?'session.open':'session.snapshot';
+    let state;
+    if(deps.deviceSession){
+      const installationHash=/^[0-9a-f]{64}$/.test(input.installationProof||'')?await sha256(actor.userId+':'+input.installationProof):null;
+      try{state=await deps.deviceSession(action,{...actor,installationHash,founderOnly:input.founderOnly===true,activationWorkspace:input.activationWorkspace});}
+      catch(error){if(open&&!input.activationWorkspace)await auth.signOut(clean.access_token).catch(()=>{});throw error;}
+    }else state=await rpc(action,actor);
     return {ok:true,session:clean,workspaceId:state.workspaceId,identity:state.identity};
   }
   async function resolveMedia(actor,context,ids) {
@@ -261,8 +267,12 @@ export function createHandler(deps) {
   }
   async function run(body,request) {
     const {action}=body;requireValue(knownAction(action),'UNKNOWN_ACTION',400);
-    if(publicActions.has(action))return {ok:true,...await publicActions.get(action)({body,request,verifyToken,authenticate:session=>authenticatedResult(session,true)})};
+    if(publicActions.has(action)){
+      const {installationProof,...publicBody}=body;
+      return {ok:true,...await publicActions.get(action)({body:publicBody,request,verifyToken,authenticate:session=>authenticatedResult(session,true,{installationProof,activationWorkspace:action==='auth.activateOwner'?body.workspaceId:undefined})})};
+    }
     if(action==='auth.enrollOwner') {
+      if(deps.deviceSession)requireValue(/^[0-9a-f]{64}$/.test(body.installationProof||''),'DEVICE_PROOF_REQUIRED',403);
       requireValue(typeof body.setupToken==='string' && body.setupToken.length>=32 && body.setupToken.length<=256,'SETUP_PROOF_REQUIRED',403);
       const profile=normalizeProfile({...body,role:'owner',expiresAt:null},policy),pass=password(body.password),claimHash=await sha256(body.setupToken);
       const setup=await rpc('setup.inspect',{claimHash});
@@ -273,7 +283,7 @@ export function createHandler(deps) {
         requireValue(created?.id,'SERVICE_UNAVAILABLE',503);
         await rpc('setup.claim',{claimHash,userId:created.id,email,profile,workspaceId:setup.workspaceId});
       } catch(error) { if(created?.id)try{await auth.deleteUser(created.id);}catch(_){} throw error; }
-      return authenticatedResult(await auth.signIn(email,pass),true);
+      return authenticatedResult(await auth.signIn(email,pass),true,body);
     }
     if(action==='auth.signIn') {
       const username=normalizeUsername(body.username);requireValue(typeof body.password==='string'&&body.password.length<=512,'AUTH_REQUIRED',401);
@@ -282,14 +292,14 @@ export function createHandler(deps) {
       try { session=await auth.signIn(login.email||'unknown@wow.invalid',body.password); }
       catch(error) { if(error?.status>=500||error?.status===429)throw error;await rpc('auth.failed',{attemptId:login.attemptId}); throw failure('AUTH_REQUIRED',401); }
       if(!login.email || session.user?.id && session.user.id!==login.userId) throw failure('AUTH_REQUIRED',401);
-      const result=await authenticatedResult(session,true);
+      const result=await authenticatedResult(session,true,{installationProof:body.installationProof,founderOnly:body.founderOnly===true});
       await rpc('auth.succeeded',{attemptId:login.attemptId,userId:login.userId});
       return result;
     }
     if(action==='auth.refresh') {
       requireValue(typeof body.refreshToken==='string'&&body.refreshToken.length>0&&body.refreshToken.length<=4096,'AUTH_REQUIRED',401);
       let session;try{session=await auth.refresh(body.refreshToken);}catch(error){if(error?.status>=500||error?.status===429)throw error;throw failure('AUTH_REQUIRED',401);}
-      return authenticatedResult(session,false); // Refresh is never employee activity.
+      return authenticatedResult(session,false,body); // Refresh is never employee activity.
     }
     const token=(request.headers.get('authorization')||'').match(/^Bearer\s+(.+)$/i)?.[1];
     const actor=await verifyToken(token);

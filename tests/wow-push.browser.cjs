@@ -86,23 +86,29 @@ async function main() {
     await bounded(cdp.send('ServiceWorker.stopAllWorkers'),10000,'stopping workers');
     const details = {...binding,validUntil:new Date(Date.now()+60000).toISOString(),kind:'payment',eventId:'payment-1-created',title:'دفعة فاتورة',body:'الفاتورة 5001\nالمبلغ ١٢٠ دولارًا',timestamp:Date.now()};
     await bounded(cdp.send('ServiceWorker.deliverPushMessage',{origin,registrationId,data:JSON.stringify(details)}),10000,'DevTools push delivery');
+    const ring={...binding,validUntil:new Date(Date.now()+40000).toISOString(),kind:'call',eventId:'video-ring-1',
+      title:'مكالمة فيديو واردة',body:'اتصال وارد',timestamp:Date.now(),route:'chat',
+      params:{roomId:'00000000-0000-4000-8000-000000000002',callId:'00000000-0000-4000-8000-000000000003'}};
+    await bounded(cdp.send('ServiceWorker.deliverPushMessage',{origin,registrationId,data:JSON.stringify(ring)}),10000,'DevTools call delivery');
     // The worker's own transaction and system notification finish before any owner app window is created again.
     const deadline = Date.now() + 10000;
     let outstanding = [];
     while (Date.now() < deadline) {
       const worker = context.serviceWorkers().find(w => w.url() === origin + '/sw.js');
-      if (worker) try { outstanding = await bounded(worker.evaluate(async () => (await registration.getNotifications()).map(n => ({title:n.title,body:n.body,tag:n.tag,icon:n.icon,badge:n.badge}))),2000,'native notification inspection'); } catch (_) {}
-      if (outstanding.length) break;
+      if (worker) try { outstanding = await bounded(worker.evaluate(async () => (await registration.getNotifications()).map(n => ({title:n.title,body:n.body,tag:n.tag,icon:n.icon,badge:n.badge,actions:n.actions?.map(a=>a.action),requireInteraction:n.requireInteraction}))),2000,'native notification inspection'); } catch (_) {}
+      if (outstanding.length===2) break;
       await new Promise(resolve => setTimeout(resolve,50));
     }
-    assert.equal(outstanding.length,1,'native notification must be posted while the app is closed'); assert.equal(outstanding[0].body, details.body);
-    assert.equal(outstanding[0].icon,origin+'/app-icon-192.png?v=224');assert.equal(outstanding[0].badge,origin+'/assets/mark-robot-badge.png?v=224');
+    assert.equal(outstanding.length,2,'both notifications must be posted while the app is closed');
+    const payment=outstanding.find(n=>n.body===details.body),call=outstanding.find(n=>n.body===ring.body);
+    assert(payment);assert.equal(call.title,ring.title);assert.equal(call.requireInteraction,true);assert.deepEqual(call.actions,['open-call']);
+    assert.equal(payment.icon,origin+'/app-icon-192.png?v=224');assert.equal(payment.badge,origin+'/assets/mark-robot-badge.png?v=224');
     phase='checking the reopened Arabic device inbox';
     const reopened = await context.newPage(); await reopened.goto(origin);assert.equal(await reopened.evaluate(()=>document.characterSet),'UTF-8');
     await reopened.getByText(details.body,{exact:true}).waitFor();
-    assert.equal(await reopened.locator('.wf-push-inbox li').count(),1); assert.equal(await reopened.getByText(details.title,{exact:true}).count(),1);
+    assert.equal(await reopened.locator('.wf-push-inbox li').count(),2); assert.equal(await reopened.getByText(details.title,{exact:true}).count(),1);
     assert.deepEqual(pageErrors,[]);assert.deepEqual(serverErrors,[]);
-    console.log('PASS: native Chromium notification after closing all WOW windows and stopping its worker; Arabic inbox and both mobile controls verified. Provider transport was simulated.');
+    console.log('PASS: native Chromium call and payment notifications after closing all WOW windows and stopping its worker; Arabic inbox and both mobile controls verified. Provider transport was simulated.');
   }catch(error){
     let pages;
     try{pages=await bounded(Promise.all((context?.pages()||[]).filter(page=>!page.isClosed()).map(page=>page.evaluate(()=>({

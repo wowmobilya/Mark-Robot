@@ -2,11 +2,11 @@
 // Only a plain, public launch gets an offline explanation. Private requests,
 // recovery callbacks and database responses never enter Cache Storage.
 const offlineCopy={
-  ar:['إدارة الشركات','تحتاج لوحة الإدارة إلى الإنترنت. أعد الاتصال ثم أعد المحاولة.','إعادة المحاولة','العودة إلى WOW'],
-  en:['Company administration','The admin app needs internet access. Reconnect and try again.','Try again','Return to WOW'],
-  tr:['Şirket yönetimi','Yönetim için internet gerekir. Bağlanıp yeniden deneyin.','Yeniden dene','WOW’a dön'],
-  fr:['Administration des sociétés','Une connexion Internet est nécessaire. Reconnectez-vous et réessayez.','Réessayer','Retour à WOW'],
-  ru:['Управление компаниями','Для управления нужен интернет. Подключитесь и повторите попытку.','Повторить','Вернуться в WOW']
+  ar:['إدارة الشركات','تحتاج لوحة الإدارة إلى الإنترنت. أعد الاتصال ثم أعد المحاولة.','إعادة المحاولة'],
+  en:['Company administration','The admin app needs internet access. Reconnect and try again.','Try again'],
+  tr:['Şirket yönetimi','Yönetim için internet gerekir. Bağlanıp yeniden deneyin.','Yeniden dene'],
+  fr:['Administration des sociétés','Une connexion Internet est nécessaire. Reconnectez-vous et réessayez.','Réessayer'],
+  ru:['Управление компаниями','Для управления нужен интернет. Подключитесь и повторите попытку.','Повторить']
 };
 self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));
 self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
@@ -16,8 +16,8 @@ self.addEventListener('fetch',event=>{
     url.search||![base.pathname,base.pathname+'index.html'].includes(url.pathname))return;
   event.respondWith(fetch(request,{cache:'no-store'}).catch(()=>{
     const lang=(request.headers.get('Accept-Language')||self.navigator.language||'ar').slice(0,2);
-    const locale=Object.hasOwn(offlineCopy,lang)?lang:'ar',[title,body,retry,back]=offlineCopy[locale];
-    const html='<!doctype html><html lang="'+locale+'" dir="'+(locale==='ar'?'rtl':'ltr')+'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><style>:root{color-scheme:light dark;font:100%/1.7 system-ui}main{max-width:28rem;margin:12vh auto;padding:1.3rem;border:1px solid #7694a0;border-radius:1rem}a{display:inline-block;padding:.65rem;color:inherit}a:first-of-type{background:#30667c;color:white;border-radius:.65rem}</style><main><h1>'+title+'</h1><p>'+body+'</p><a href="./">'+retry+'</a> <a href="../">'+back+'</a></main></html>';
+    const locale=Object.hasOwn(offlineCopy,lang)?lang:'ar',[title,body,retry]=offlineCopy[locale];
+    const html='<!doctype html><html lang="'+locale+'" dir="'+(locale==='ar'?'rtl':'ltr')+'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><style>:root{color-scheme:light dark;font:100%/1.7 system-ui}main{max-width:28rem;margin:12vh auto;padding:1.3rem;border:1px solid #7694a0;border-radius:1rem}a{display:inline-block;padding:.65rem;color:inherit}a:first-of-type{background:#30667c;color:white;border-radius:.65rem}</style><main><h1>'+title+'</h1><p>'+body+'</p><a href="./">'+retry+'</a></main></html>';
     return new Response(html,{headers:{'Content-Type':'text/html;charset=UTF-8','Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
   }));
 });

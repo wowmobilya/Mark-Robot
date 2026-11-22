@@ -3,6 +3,9 @@
   const C=root.WFFileCore,H=root.WFChatCore;if(!C||!H)return;
   const {el,button,field,input,options}=C,title={en:'Chat',ar:'الدردشة',tr:'Sohbet',fr:'Discussion',ru:'Чат'};
   const words={...C.errors,
+    allChats:['All','الكل','Tümü','Toutes','Все'],groups:['Groups','المجموعات','Gruplar','Groupes','Группы'],
+    searchRooms:['Search conversations','بحث في المحادثات','Sohbetlerde ara','Rechercher une discussion','Поиск чатов'],
+    noRoomMatch:['No matching conversations','لا توجد محادثات مطابقة','Eşleşen sohbet yok','Aucune discussion correspondante','Нет подходящих чатов'],
     fullscreen:['Full screen','ملء الشاشة','Tam ekran','Plein écran','На весь экран'],
     hide:['Delete for me','حذف لديّ','Benden sil','Supprimer pour moi','Удалить у меня'],
     removePhoto:['Remove photo','إزالة الصورة','Fotoğrafı kaldır','Supprimer la photo','Убрать фото'],previous:['Previous','السابق','Önceki','Précédent','Назад'],next:['Next','التالي','Sonraki','Suivant','Далее'],
@@ -68,6 +71,7 @@
   function mount({container,api,lang,params={}}){
     let language=lang||'en',me=null,rooms=[],room=null,feed=null,members=[],generation=0,feedSeq=0,roomSeq=0,alive=true,polling=false;
     let filter='',query='',before=null,stack=[],archived=false,screen='rooms',selected=new Map(),lastFeed='',roomsView='',matchAt=0;
+    let roomFilter='allChats',roomSearch='';
     let reportedRead='0',reportingRead=null,pendingIncoming=0;
     let reply=null,editing=null,attached=null,sending=false,recording=null,requestingCapture=false,recordRequest=0,lastTyping=0,draftTimer,searchTimer,expiryTimer,written=false;
     const retrySends=new Map(),durable=new Map(),drafts=new Map(),thumbs=new Map(),inflightThumbs=new Set(),ui=C.surface(container,api,()=>language,words),{t,run,dialog}=ui;
@@ -100,7 +104,7 @@
     const picker=el('input');picker.type='file';picker.hidden=true;composer.append(picker);
     // Calls never start automatically: only a user tap requests the microphone.
     // Owner/customer/staff identity and chat membership remain server-authoritative.
-    const callUI=root.WFChatCallUI?.mount?.({container:app,historyContainer:feedBox,api,lang:()=>language});
+    const callUI=root.WFChatCallUI?.mount?.({container:app,historyContainer:feedBox,api,lang:()=>language,invitation:params.callId?{roomId:params.roomId,callId:params.callId}:null});
     const roomName=r=>r?.kind==='team'&&!r.name?t('team'):(r?.name||t('direct'));
     const roomNow=id=>alive&&room?.id===id;
     function closeDialogs(){for(const d of container.querySelectorAll('dialog[open]'))d.close();}
@@ -152,10 +156,23 @@
       }
       sideTools.append(controls);
       if(edit()&&callUI)sideTools.append(callUI.controls(null,pickCallRecipient));
+      const search=input(roomSearch,120);search.type='search';search.placeholder=t('searchRooms');search.setAttribute('aria-label',t('searchRooms'));
+      search.oninput=()=>{roomSearch=search.value;drawRooms();};
+      const filters=el('div',null,'wf-chat-filters');filters.setAttribute('role','group');filters.setAttribute('aria-label',t('rooms'));
+      for(const key of ['allChats','unread','groups']){
+        const choice=button(t(key),()=>{roomFilter=key;for(const b of filters.children)b.setAttribute('aria-pressed',String(b===choice));drawRooms();});
+        choice.setAttribute('aria-pressed',String(key===roomFilter));filters.append(choice);
+      }
+      sideTools.append(search,filters);
     }
     function drawRooms(){
-      const signature=JSON.stringify([rooms,rooms.filter(r=>r.last?.expiresAt&&Date.parse(r.last.expiresAt)<=Date.now()).map(r=>r.id),room?.id,language,archived]);if(roomsView===signature)return;roomsView=signature;roomList.replaceChildren();
-      for(const r of rooms.filter(x=>!!x.archived===archived)){
+      const signature=JSON.stringify([rooms,rooms.filter(r=>r.last?.expiresAt&&Date.parse(r.last.expiresAt)<=Date.now()).map(r=>r.id),room?.id,language,archived,roomSearch,roomFilter]);if(roomsView===signature)return;roomsView=signature;roomList.replaceChildren();
+      const needle=roomSearch.trim().toLocaleLowerCase(language);
+      const matches=rooms.filter(r=>!!r.archived===archived&&
+        (roomFilter!=='unread'||Number(r.unread)>0)&&(roomFilter!=='groups'||['group','team'].includes(r.kind))&&
+        [roomName(r),r.peer?.name,r.peer?.username].some(value=>value&&value.toLocaleLowerCase(language).includes(needle)));
+      if(!matches.length&&(needle||roomFilter!=='allChats'))roomList.append(el('p',t('noRoomMatch'),'wf-chat-empty'));
+      for(const r of matches){
         const b=act('',()=>openRoom(r.id),'wf-chat-room'+(room?.id===r.id?' active':''));b.setAttribute('aria-current',room?.id===r.id?'page':'false');addAvatar(b,r);
         const description=el('span',null,'wf-chat-room-label'),last=r.last?.expiresAt&&Date.parse(r.last.expiresAt)<=Date.now()?null:r.last;
         description.append(el('strong',roomName(r)),el('small',last?.event?t(last.event):last?.text||(last?.attachment?t('attachment'):r.description||'')));b.append(description);

@@ -6,6 +6,9 @@
   const remoteMode=!!root.WFCloudClient?.isRemoteMode?.()||/(?:^|[?&])wf-cloud=(?:employee|owner)(?:&|$)/.test(root.location?.search||'');
   const locales=['ar','en','tr','fr','ru'];
   const words={
+    rememberMember:['تذكّر حساب الموظف على هذا الجهاز ضمن مدة الجلسة','Remember this employee account for the session','Oturum süresince bu çalışanı hatırla','Mémoriser ce compte employé pour la durée de la session','Запомнить сотрудника на время сеанса'],
+    deviceLock:['هذا الحساب مرتبط بجهاز آخر أو أوقف المسؤول جهازه. تواصل مع مسؤول الشركة.','This account is linked to another device or its device is blocked. Contact your company administrator.','Hesap başka bir cihaza bağlı veya cihaz engelli. Şirket yöneticinize başvurun.','Ce compte est associé à un autre appareil ou son appareil est bloqué. Contactez votre administrateur.','Аккаунт привязан к другому устройству или его устройство заблокировано. Обратитесь к администратору.'],
+    deviceStorage:['حدّث التطبيق واسمح بالتخزين على هذا الجهاز، ثم أعد المحاولة.','Update WOW and allow device storage, then try again.','WOW’u güncelleyin ve cihaz depolamasına izin verip tekrar deneyin.','Mettez WOW à jour et autorisez le stockage sur cet appareil, puis réessayez.','Обновите WOW и разрешите хранение данных на этом устройстве, затем повторите попытку.'],
     title:['تسجيل الدخول','Sign in','Giriş yap','Connexion','Вход'],
     intro:['ادخل بحسابك لفتح مساحة العمل المسموحة لك.','Use your account to open your permitted workspace.','İzin verilen çalışma alanını açmak için hesabınızla giriş yapın.','Connectez-vous pour ouvrir votre espace autorisé.','Войдите, чтобы открыть разрешённые разделы.'],
     username:['اسم الدخول','Username','Kullanıcı adı','Identifiant','Имя пользователя'],
@@ -37,6 +40,7 @@
   let service,ready,booted=false,checking=true,refreshing=null,reloading=false,loginBusy=false,loginResolve,loginWait;
   let explicitLockPending=false,resumeChecking=false;
   let lockSurface,loginForm,username,password,submit,status,showPassword,loginTitle,loginIntro,localNote,sessionNote,langSelect,sessionButton;
+  let rememberMember,rememberCaption;
   let ownerInvite,companyJoin,customerAuthSurface,founderBadge,founderScope='',founderVerified=false,founderGeneration=0;
   function badgeScope(state){
     if(!remoteMode||root.navigator?.onLine===false||!state?.authenticated||state.offlineVerified||state.connection!=='online'||!state.currentAccount)return '';
@@ -83,6 +87,7 @@
     }
     if(!lockSurface)return;
     lockSurface.dir=locale()==='ar'?'rtl':'ltr';lockSurface.lang=locale();
+    if(rememberCaption)rememberCaption.textContent=text('rememberMember');
     loginTitle.textContent=text('title');loginIntro.textContent=text('intro');
     username.previousElementSibling.textContent=text('username');
     password.parentElement.previousElementSibling.textContent=text('password');
@@ -115,7 +120,12 @@
     status=make('p','wf-account-login-status');status.id='wfAccountLoginStatus';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     password.setAttribute('aria-describedby',status.id);sessionNote=make('p');localNote=make('small','wf-account-login-local');
     const header=make('header','wf-account-login-header');header.append(brand,languages);
-    loginForm.append(userLabel,passwordLabel,submit);card.append(header,loginTitle,loginIntro,loginForm,status,sessionNote,localNote);lockSurface.append(card);doc.body.append(lockSurface);
+    loginForm.append(userLabel,passwordLabel);
+    if(remoteMode&&root.WFCloudClient?.getClient?.()?.canRememberMember?.()){
+      const label=make('label','wf-account-remember');rememberMember=make('input');rememberMember.type='checkbox';
+      rememberCaption=make('span');label.append(rememberMember,rememberCaption);loginForm.append(label);
+    }
+    loginForm.append(submit);card.append(header,loginTitle,loginIntro,loginForm,status,sessionNote,localNote);lockSurface.append(card);doc.body.append(lockSurface);
     ownerInvite=root.WFOwnerInvite?.mount(card,new URL('./',root.location.href),locale());
     if(root.WFCompanyJoin){
       const cloud=root.WFCloudClient?.getClient?.(),base=new URL('./',root.location.href);
@@ -129,8 +139,8 @@
       event.preventDefault();if(loginBusy||!loginForm.reportValidity())return;
       loginBusy=true;submit.disabled=true;status.textContent='';translateLock();
       const value=password.value;password.value='';password.type='password';showPassword.setAttribute('aria-pressed','false');
-      try{await service.signIn({username:username.value,password:value});const account=snapshot().currentAccount;if(!policy.safeHome(account)){status.textContent=text('noAccess');await service.signOut();}else{setLocked(false);loginResolve?.();loginResolve=null;}}
-      catch(error){status.textContent=text(error?.code==='NETWORK'?'network':error?.code==='CLOUD_UNCONFIGURED'?'cloudUnavailable':['IDENTITY_STORAGE','STORAGE_ERROR','IDENTITY_STATE_INVALID','CONFLICT'].includes(error?.code)?'storage':'failed');password.focus();}
+      try{await service.signIn({username:username.value,password:value,...(rememberMember?.checked?{rememberDevice:true}:{})});if(rememberMember)rememberMember.checked=false;const account=snapshot().currentAccount;if(!policy.safeHome(account)){status.textContent=text('noAccess');await service.signOut();}else{setLocked(false);loginResolve?.();loginResolve=null;}}
+      catch(error){status.textContent=text(['DEVICE_ALREADY_BOUND','DEVICE_BLOCKED'].includes(error?.code)?'deviceLock':error?.code==='DEVICE_PROOF_REQUIRED'?'deviceStorage':error?.code==='NETWORK'?'network':error?.code==='CLOUD_UNCONFIGURED'?'cloudUnavailable':['IDENTITY_STORAGE','STORAGE_ERROR','IDENTITY_STATE_INVALID','CONFLICT'].includes(error?.code)?'storage':'failed');password.focus();}
       finally{loginBusy=false;submit.disabled=false;translateLock();}
     });
     translateLock();

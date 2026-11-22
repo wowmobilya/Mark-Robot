@@ -5,7 +5,7 @@ const policy = require('../accounts-policy.js');
 
 // Exercise the actual settings controller with event-driven controls. The
 // service fixture deliberately publishes snapshots while forms are being used.
-function fixture({configured = true} = {}) {
+function fixture({configured = true,cloud=false} = {}) {
   const pending = [], observers = [], calls = [], guards = new Map();
   let document, callback, barrier, fail, clock = 0;
   class Event {
@@ -67,6 +67,7 @@ function fixture({configured = true} = {}) {
   const root=new Element('window');root.document=document;root.CustomEvent=Event;
   root.MutationObserver=class{constructor(fn){this.fn=fn;observers.push(this);}observe(){}};
   root.WFAppUpdates={registerGuard:(name,guard)=>guards.set(name,guard)};
+  if(cloud)root.WFCloudClient={isRemoteMode:()=>true};
   root.WFAccountPolicy=policy;root.switchTab=()=>{};root.showPage=()=>{};
   let snapshot={configured,revision:0,currentAccount:null,accounts:[],audit:[]};
   const account=(id,name,role)=>({id,name,username:id,role,permissions:policy.presets(role),department:'',note:'',expiresAt:null,status:'active',
@@ -94,6 +95,9 @@ function fixture({configured = true} = {}) {
     setPassword:(id,password)=>run('setPassword',[id,password],()=>{}),
     setStatus:(id,status,reason)=>run('status',[id,status,reason],()=>{snapshot.accounts.find(row=>row.id===id).status=status;}),
     restoreAccount:id=>run('restore',[id],()=>{snapshot.accounts.find(row=>row.id===id).status='suspended';}),
+    devices:async accountId=>({devices:[{accountId,blocked:false}]}),
+    deviceStatus:(id,blocked)=>run('deviceStatus',[id,blocked],()=>{}),
+    releaseDevice:id=>run('releaseDevice',[id],()=>{}),
     revokeSessions:id=>run('revokeSessions',[id],()=>{snapshot.accounts.find(row=>row.id===id).sessionVersion++;})
   };
   root.WFAccountAccess={ready:Promise.resolve(),service,requestLock:()=>calls.push({kind:'lock'})};
@@ -207,4 +211,17 @@ test('losing the owner session during a pending action clears secrets and replac
   assert.equal(f.byId('wfAccountPasswordEditor'),null);
   assert(f.byId('stab-accounts').textContent.includes('Sign in to manage accounts'));
   assert.equal(f.api.getSettingsActions(),null);
+});
+
+test('only the cloud company owner may confirm an employee device release',async()=>{
+  const local=fixture();await local.open();local.openDetail('worker-1');
+  assert.equal(local.byId('wfAccountReleaseDevice'),null);
+  const f=fixture({cloud:true});await f.open();f.openDetail('owner-1');assert.equal(f.byId('wfAccountReleaseDevice'),null);
+  f.byId('wfAccountEdit').parentElement.querySelector('button').click();f.openDetail('worker-1');
+  f.byId('wfAccountViewDevice').click();await f.settle();
+  f.byId('wfAccountDeviceStatus').click();f.byId('wfAccountConfirm').click();await f.settle();
+  assert.equal(f.byId('wfAccountReleaseDevice'),null);
+  f.byId('wfAccountDeviceStatus').click();f.byId('wfAccountConfirm').click();await f.settle();
+  f.byId('wfAccountReleaseDevice').click();assert.equal(f.calls.length,2);assert.equal(f.byId('wfAccountReason'),null);
+  f.byId('wfAccountConfirm').click();await f.settle();assert.deepEqual(f.calls,[{kind:'deviceStatus',args:['worker-1',true]},{kind:'deviceStatus',args:['worker-1',false]},{kind:'releaseDevice',args:['worker-1']}]);
 });

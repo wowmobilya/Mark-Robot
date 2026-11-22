@@ -4,6 +4,7 @@
   if (!push || !doc) return;
   const languages = ['ar', 'en', 'tr', 'fr', 'ru'];
   const words = {
+    callDelivery:['للمكالمات عند قفل الشاشة، اسمح بتنبيهات WOW على شاشة القفل من إعدادات الهاتف. يتحكم النظام بالصوت والتركيز وتوفير الطاقة. يمكنك إرسال إشعار اختبار إلى هذا الجهاز.','For calls while locked, allow WOW notifications on the lock screen in device settings. Sound, Focus and battery restrictions are controlled by your phone. You can send a test alert to this device.','Kilitliyken aramalar için cihaz ayarlarında WOW kilit ekranı bildirimlerine izin verin. Ses, odak ve pil sınırlamalarını telefon yönetir. Bu cihaza test bildirimi gönderebilirsiniz.','Pour les appels sur écran verrouillé, autorisez les notifications WOW sur cet écran dans les réglages du téléphone. Le son, la concentration et la batterie dépendent du système. Vous pouvez tester cet appareil.','Для вызовов при блокировке разрешите уведомления WOW на экране блокировки в настройках телефона. Звук, фокусирование и энергосбережение зависят от устройства. Можно прислать тестовое уведомление.'],
     title: ['إشعارات هذا الجهاز','Notifications on this device','Bu cihazın bildirimleri','Notifications sur cet appareil','Уведомления на этом устройстве'],
     intro: ['استلم تفاصيل البروفرما والدفعات ومصروفات الصندوق حتى عندما يكون WOW مغلقًا. قد تظهر المبالغ والأسماء على شاشة القفل.','Receive proforma, payment and cash expense details even when WOW is closed. Amounts and names may appear on your lock screen.','WOW kapalıyken de proforma, ödeme ve kasa giderlerinin ayrıntılarını alın. Tutarlar ve adlar kilit ekranında görünebilir.','Recevez les détails des pro forma, des paiements et des dépenses de caisse même quand WOW est fermé. Les montants et les noms peuvent apparaître sur l’écran verrouillé.','Получайте сведения о проформах, платежах и расходах кассы, даже когда WOW закрыт. Суммы и имена могут отображаться на экране блокировки.'],
     account: ['سجّل الدخول بحساب سحابي مخوّل لتفعيل إشعاراته على هذا الجهاز.','Sign in with an eligible cloud account to enable notifications on this device.','Bu cihazda bildirimleri açmak için yetkili bir bulut hesabıyla giriş yapın.','Connectez-vous avec un compte cloud autorisé pour activer les notifications sur cet appareil.','Войдите в облачную учётную запись с доступом к уведомлениям.'],
@@ -36,6 +37,7 @@
   };
   const locale = () => { const lang = doc.documentElement.lang?.toLowerCase().split(/[-_]/)[0]; return languages.includes(lang) ? lang : 'ar'; };
   const text = key => words[key]?.[languages.indexOf(locale())] || '';
+  root.WFCallPushStatus=Object.freeze({describe:state=>text(state?.status)});
   function node(tag, className) { const el = doc.createElement(tag); if (className) el.className = className; return el; }
   function mount(host, inbox) {
     const section = node('section', 'wf-push-card'), title = node(inbox ? 'h2' : 'h3'), intro = node('p'), status = node('p','wf-push-status');
@@ -47,13 +49,14 @@
     }
     action('enable', push.enable, true); action('test', push.test); action('disable', push.disable); action('retry', push.refresh);
     if (inbox) action('connect', () => root.WFCloudSettings?.open());
-    section.append(title, intro, status, bar); host.append(section);root.WFDeviceFeedback?.mount(section,locale);
+    const calls=node('p');section.append(title, intro, status, calls, bar); host.append(section);root.WFDeviceFeedback?.mount(section,locale);
     let history, heading, list, empty, previous;const chatViews=[];
     if (inbox) {
       history = node('section', 'wf-push-inbox'); heading = node('h2'); heading.id = 'wfPushInboxTitle'; history.setAttribute('aria-labelledby', heading.id);
       list = node('ol'); empty = node('p'); history.append(heading, empty, list); host.append(history);
     }
     return state => {
+      calls.textContent=text('callDelivery');calls.hidden=state.status!=='enabled';
       title.textContent = text('title'); intro.textContent = text(state.owner?'intro':'shared'); status.textContent = [text(state.status), text(state.feedback)].filter(Boolean).join(' ');
       const visible = {enable: state.status === 'ready', test: state.status === 'enabled', disable: state.bound || state.status === 'keyChanged',
         retry: ['denied','updating','offline','unavailable','error'].includes(state.status), connect: state.status === 'account' && !!root.WFCloudSettings && (!root.WFAccountAccess?.hasAccounts?.() || root.WFAccountAccess.can('settings.view'))};

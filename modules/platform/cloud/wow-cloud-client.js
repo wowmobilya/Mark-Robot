@@ -70,9 +70,87 @@
     }
     const savedOwner=configured&&(explicitOwner||ordinaryEntry)?readOwner():null;
     const automaticOwner=ordinaryEntry&&!!savedOwner;
-    const mode=options.mode==='remote'||!options.mode&&(remoteRequest(root.location?.search)||automaticOwner)?'remote':'local';
+    const memberHome='wf_wow_employee_home_v1:'+config.endpoint;
+    let automaticMember=false;
+    if(configured&&ordinaryEntry&&!automaticOwner&&!new URLSearchParams(root.location?.search||'').has('workspace')){
+      try{const last=root.localStorage?.getItem(memberHome);if(uuid(last)){workspaceHint=last;automaticMember=true;}}catch{}
+    }
+    const mode=options.mode==='remote'||!options.mode&&(remoteRequest(root.location?.search)||automaticOwner||automaticMember)?'remote':'local';
     const ownerEntry=mode==='remote'&&(explicitOwner||automaticOwner);
     if(ownerEntry&&savedOwner){remoteContinuation=savedOwner.value;remoteSource=savedOwner.source;}
+    const memberKey='wf_wow_member_v1:'+JSON.stringify([config.endpoint,workspaceHint]);
+    const employeeEntry=mode==='remote'&&!ownerEntry&&uuid(workspaceHint);
+    let memberTag=null,memberRecovery=null;
+    function canRememberMember(){try{return employeeEntry&&!!root.navigator?.locks?.request&&!!root.localStorage&&!!root.crypto?.randomUUID;}catch{return false;}}
+    function readMember(){
+      try{
+        const raw=root.localStorage?.getItem(memberKey);if(!raw)return null;
+        const row=JSON.parse(raw);
+        if(row?.kind==='member'&&uuid(row.tag)&&uuid(row.userId)&&roles.has(row.role)&&row.role!=='owner'&&
+          Number.isSafeInteger(row.cloudVersion)&&row.cloudVersion>0&&typeof row.refreshToken==='string'&&row.refreshToken.length>0&&row.refreshToken.length<=4096&&
+          Number.isSafeInteger(row.started)&&row.started<=row.active&&Number.isSafeInteger(row.active)&&row.active<=now()&&
+          now()-row.started<SESSION_MS&&now()-row.active<IDLE_MS)return row;
+        root.localStorage.removeItem(memberKey);
+      }catch{}
+      return null;
+    }
+    function clearMember(){
+      const tag=memberTag;memberTag=null;
+      if(!tag)return;
+      try{if(readMember()?.tag===tag)root.localStorage.removeItem(memberKey);}catch{}
+    }
+    function reconcileMember(){
+      if(!memberTag)return;
+      const saved=readMember();
+      if(saved?.tag!==memberTag){invalidateSession('SESSION_REVOKED');return;}
+      if(session)lastActiveAt=Math.max(lastActiveAt,saved.active);
+    }
+    function saveMemberLogin(){
+      if(!session||!canRememberMember()||workspaceId!==workspaceHint||identity.currentAccount?.role==='owner')return;
+      const account=identity.currentAccount,tag=root.crypto.randomUUID();
+      try{
+        root.localStorage.setItem(memberKey,JSON.stringify({kind:'member',tag,userId:account.id,role:account.role,cloudVersion:account.sessionVersion,
+          refreshToken:session.refresh_token,started:signedAt,active:lastActiveAt}));
+        memberTag=tag;root.localStorage.setItem(memberHome,workspaceHint);
+      }catch{}
+    }
+    // Only real acknowledged activity moves the idle clock; reopening never issues session.touch.
+    function saveMemberActivity(){
+      if(!memberTag)return;
+      try{const row=readMember();if(row?.tag===memberTag&&row.active<lastActiveAt)root.localStorage.setItem(memberKey,JSON.stringify({...row,active:lastActiveAt}));}catch{}
+    }
+    async function rotateMember(expected){
+      return root.navigator.locks.request(memberKey,async()=>{
+        checkGeneration(expected);
+        const row=readMember();if(!memberTag||row?.tag!==memberTag)throw failure('AUTH_REQUIRED',401);
+        const result=await transport('auth.refresh',{refreshToken:row.refreshToken});
+        checkGeneration(expected);
+        const latest=readMember(),account=safeIdentity(result.identity).currentAccount,next=result.session;
+        if(!latest||latest.tag!==row.tag||result.workspaceId!==workspaceHint||account.id!==row.userId||account.role!==row.role||
+          account.sessionVersion!==row.cloudVersion||typeof next?.refresh_token!=='string'||!next.refresh_token||next.refresh_token.length>4096)
+          throw failure('SESSION_REVOKED',401);
+        try{root.localStorage.setItem(memberKey,JSON.stringify({...latest,refreshToken:next.refresh_token}));}catch{throw failure('AUTH_REQUIRED',401);}
+        const active=session?Math.max(latest.active,lastActiveAt):latest.active,pending=pendingActivity;
+        const value=adopt(result,expected,{authentication:true,memberClock:{...latest,active}});
+        pendingActivity=pending;return value;
+      });
+    }
+    function recoverMember(){
+      if(memberRecovery||session)return memberRecovery||Promise.resolve(snapshot());
+      if(!canRememberMember())return Promise.resolve(snapshot());
+      const row=readMember();if(!row)return Promise.resolve(snapshot());
+      memberTag=row.tag;
+      if(root.navigator?.onLine===false){connection='offline';return Promise.resolve(snapshot());}
+      const expected=generation;
+      const task=rotateMember(expected).catch(error=>{
+        if(expected===generation){
+          if(temporary(error)){connection=error.code==='NETWORK'?'offline':'error';lastError=error.code;emit();}
+          else invalidateSession(error.code);
+        }
+        return snapshot();
+      }).finally(()=>{if(memberRecovery===task)memberRecovery=null;});
+      memberRecovery=task;return task;
+    }
     const empty=()=>({configured:true,revision:0,currentAccount:null,accounts:[],audit:[]});
     let identity=empty(),session=null,workspaceId='',link=null,generation=0,connection=configured?'idle':'unconfigured',lastError='',refreshing=null;
     let signedAt=0,lastActiveAt=0,pendingActivity=false,lastVerifiedAt=0,storeUsable=true,linkedRecovering=null;
@@ -183,10 +261,10 @@
     function emit(){const state=snapshot();for(const listener of listeners){try{listener(state);}catch(_){}}
       try{if(root.dispatchEvent&&root.CustomEvent)root.dispatchEvent(new root.CustomEvent('wf-cloud-session-change',{detail:state}));}catch(_){}return state;}
     function invalidateSession(reason='AUTH_REQUIRED'){
-      generation++;refreshing=null;linkedRecovering=null;session=null;identity=empty();pendingActivity=false;lastVerifiedAt=0;lastError=String(reason);connection=configured?'signed-out':'unconfigured';clearStored();if(mode==='remote')clearRemoteStored();return emit();
+      clearMember();generation++;refreshing=null;linkedRecovering=null;session=null;identity=empty();pendingActivity=false;lastVerifiedAt=0;lastError=String(reason);connection=configured?'signed-out':'unconfigured';clearStored();if(mode==='remote')clearRemoteStored();return emit();
     }
-    function expire(){reconcileLocal();reconcileRemote();if(session&&identity.currentAccount?.role!=='owner'&&(now()<signedAt||now()<lastActiveAt||now()-signedAt>=SESSION_MS||now()-lastActiveAt>=IDLE_MS)){invalidateSession('SESSION_EXPIRED');}}
-    function checkGeneration(expected){reconcileLocal();reconcileRemote();if(expected!==generation||mode==='local'&&(!localChecked||!localScope))throw failure('AUTH_REQUIRED',401);}
+    function expire(){reconcileLocal();reconcileRemote();reconcileMember();if(session&&identity.currentAccount?.role!=='owner'&&(now()<signedAt||now()<lastActiveAt||now()-signedAt>=SESSION_MS||now()-lastActiveAt>=IDLE_MS)){invalidateSession('SESSION_EXPIRED');}}
+    function checkGeneration(expected){reconcileLocal();reconcileRemote();reconcileMember();if(expected!==generation||mode==='local'&&(!localChecked||!localScope))throw failure('AUTH_REQUIRED',401);}
     function safeIdentity(value){
       const account=value?.currentAccount;
       if(!value||!account||typeof account.id!=='string'||!account.id||!roles.has(account.role)||account.status!=='active'||
@@ -235,7 +313,7 @@
         cloudVersion:identity.currentAccount.sessionVersion,localOwnerId:localScope.ownerId,localVersion:localScope.version,refreshToken:session.refresh_token});}
       catch(_){clearStored();storeUsable=false;}
     }
-    function adopt(result,expected,{authentication=false,allowEpochChange=false,restoreOwner=false}={}){
+    function adopt(result,expected,{authentication=false,allowEpochChange=false,restoreOwner=false,memberClock=null}={}){
       checkGeneration(expected);
       const next=safeIdentity(result.identity);
       if(typeof result.workspaceId!=='string'||!result.workspaceId)throw failure('INVALID_RESPONSE',502);
@@ -249,17 +327,23 @@
         const value=result.session;
         if(!value||typeof value.access_token!=='string'||!value.access_token||typeof value.refresh_token!=='string'||!value.refresh_token||!Number.isFinite(value.expires_at))throw failure('INVALID_RESPONSE',502);
         session={access_token:value.access_token,refresh_token:value.refresh_token,expires_at:value.expires_at};
-        signedAt=lastActiveAt=now();pendingActivity=false;
+        signedAt=memberClock?.started??now();lastActiveAt=memberClock?.active??signedAt;pendingActivity=false;
       }
       identity=next;workspaceId=result.workspaceId;lastVerifiedAt=now();connection='online';lastError='';
       if(mode==='local'&&next.currentAccount.role==='owner')link={workspaceId,userId:next.currentAccount.id};
       rememberOwner();return emit();
     }
-    function terminalAuth(error){return error?.status===401||['AUTH_REQUIRED','SESSION_REVOKED','SESSION_EXPIRED','ACCOUNT_UNAVAILABLE','ACCOUNT_REVOKED','ACCOUNT_SUSPENDED','ACCOUNT_DELETED'].includes(error?.code);}
+    function terminalAuth(error){return error?.status===401||['DEVICE_ALREADY_BOUND','DEVICE_BLOCKED','AUTH_REQUIRED','SESSION_REVOKED','SESSION_EXPIRED','ACCOUNT_UNAVAILABLE','ACCOUNT_REVOKED','ACCOUNT_SUSPENDED','ACCOUNT_DELETED'].includes(error?.code);}
     function temporary(error){return error?.code==='NETWORK'||[408,425,429].includes(error?.status)||error?.status>=500;}
     async function transport(action,payload={},token,{quiet=false}={}){
       if(!configured||typeof fetcher!=='function')throw failure('CLOUD_UNCONFIGURED');
       const sentGeneration=generation;
+      const installation=options.installation||root.WFInstallation;
+      if(['auth.signIn','auth.enrollOwner','auth.refresh','auth.activateOwner'].includes(action)&&installation){
+        const proof=await installation.proof();
+        if(!proof)throw failure('DEVICE_PROOF_REQUIRED',403);
+        checkGeneration(sentGeneration);payload={...payload,installationProof:proof};
+      }
       const headers={'Content-Type':'application/json',apikey:config.publishableKey};if(token)headers.Authorization='Bearer '+token;
       const controller=typeof root.AbortController==='function'?new root.AbortController():null;
       const timeout=controller?setTimeout(()=>controller.abort(),15000):null;
@@ -361,7 +445,7 @@
       expire();if(!session||!identity.currentAccount)throw failure('AUTH_REQUIRED',401);
       if(session.expires_at*1000-now()>30000)return;
       if(!refreshing){const expected=generation,token=session.refresh_token;
-        const task=(ownerEntry?ownerRefresh(expected):refreshToken(token,expected)).catch(error=>{if(expected===generation&&terminalAuth(error))invalidateSession(error.code);throw error;})
+        const task=(ownerEntry?ownerRefresh(expected):memberTag?rotateMember(expected):refreshToken(token,expected)).catch(error=>{if(expected===generation&&terminalAuth(error))invalidateSession(error.code);throw error;})
           .finally(()=>{if(refreshing===task)refreshing=null;});refreshing=task;}
       await refreshing;expire();if(!session)throw failure('AUTH_REQUIRED',401);
     }
@@ -387,7 +471,7 @@
       catch(error){if(expected===generation&&!error?.local){if(terminalAuth(error))invalidateSession(error.code);else{lastError=error.code||'CLOUD_ERROR';emit();}}throw error;}
     }
     async function authenticate(action,input){
-      await ready;checkGeneration(generation);invalidateSession('');const expected=generation;connection='checking';emit();
+      await ready;expire();checkGeneration(generation);invalidateSession('');const expected=generation;connection='checking';emit();
       try{return adopt(await transport(action,input),expected,{authentication:true});}
       catch(error){if(expected===generation){invalidateSession(error.code);if(error.code==='NETWORK'){connection='offline';emit();}}throw error;}
     }
@@ -409,7 +493,16 @@
         return snapshot();
       }finally{proof=null;result=null;}
     }
-    async function signIn({username,password,workspaceId:requestedWorkspace}={}){return authenticate('auth.signIn',{workspaceId:requestedWorkspace||workspaceHint||link?.workspaceId||undefined,username,password});}
+    async function signIn({username,password,workspaceId:requestedWorkspace,rememberDevice=false}={}){
+      const state=await authenticate('auth.signIn',{workspaceId:requestedWorkspace||workspaceHint||link?.workspaceId||undefined,username,password});
+      if(state.authGeneration===generation&&state.authenticated&&employeeEntry){
+        // Explicit switching to a different account also cancels the old device continuation.
+        if(canRememberMember()){const old=readMember();if(old){memberTag=old.tag;clearMember();}}
+        if(rememberDevice===true)saveMemberLogin();
+        else try{if(root.localStorage?.getItem(memberHome)===workspaceHint)root.localStorage.removeItem(memberHome);}catch{}
+      }
+      return state;
+    }
     async function enrollOwner(input={}){if(typeof input.setupToken!=='string'||!input.setupToken.trim())throw failure('SETUP_PROOF_REQUIRED');return authenticate('auth.enrollOwner',{setupToken:input.setupToken.trim(),name:input.name,username:input.username,password:input.password});}
     async function customerAuth(action,input={}){
       await ready;if(mode!=='remote')throw failure('REMOTE_MODE_REQUIRED',403);
@@ -431,9 +524,9 @@
       return snapshot();
     }
     async function refresh(){
-      await ready;expire();if(!session)return ownerEntry?recoverOwner():mode==='local'?recoverLinkedOwner():snapshot();
+      await ready;expire();if(!session)return ownerEntry?recoverOwner():mode==='local'?recoverLinkedOwner():recoverMember();
       const expected=generation,touched=pendingActivity;pendingActivity=false;
-      try{return adopt(await request(touched?'session.touch':'session.snapshot'),expected);}
+      try{const value=adopt(await request(touched?'session.touch':'session.snapshot'),expected);if(touched)saveMemberActivity();return value;}
       catch(error){if(expected===generation){if(touched)pendingActivity=true;if(terminalAuth(error))invalidateSession(error.code);}throw error;}
     }
     async function command(action,payload={},allowEpochChange=false){
@@ -459,7 +552,7 @@
       if(mode==='remote'){
         clearStored();
         if(activation){const proof=activation;activation=null;return activateOwner(proof);}
-        if(!ownerEntry){clearRemoteStored(true);return snapshot();}
+        if(!ownerEntry){clearRemoteStored(true);return configured?recoverMember():snapshot();}
         if(!configured)return snapshot();
         return recoverOwner();
       }
@@ -476,6 +569,9 @@
       root.addEventListener?.('storage',event=>{
         if(event.key===REMOTE_OWNER_KEY||event.key===null||event.key===ownerRetirementKey(remoteContinuation))reconcileRemote();
       });
+    }else if(employeeEntry){
+      root.addEventListener?.('storage',event=>{if(event.key===memberKey||event.key===null)reconcileMember();});
+      root.addEventListener?.('online',()=>ready.then(()=>{if(!session&&memberTag)return recoverMember();}).catch(()=>{}));
     }else if(mode==='local'){
       const resume=()=>{if(root.navigator?.onLine===false||root.document?.visibilityState==='hidden')return;
         return ready.then(()=>{expire();if(!session)return recoverLinkedOwner();}).catch(()=>{});};
@@ -483,7 +579,7 @@
       root.document?.addEventListener?.('visibilitychange',resume);
     }
     return Object.freeze({ready,request,realtimeCredentials,getSnapshot:snapshot,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
-      isConfigured:()=>configured,isRemote:()=>mode==='remote',isRemoteMode:()=>mode==='remote',isLinkedOwner:()=>mode==='local'&&!!link,
+      canRememberMember,isConfigured:()=>configured,isRemote:()=>mode==='remote',isRemoteMode:()=>mode==='remote',isLinkedOwner:()=>mode==='local'&&!!link,
       localIdentityChanged,lockLocalAccess,invalidateSession,cacheName,entryUrl,can,touch,refresh,signIn,signOut,enrollOwner,bootstrapOwner:enrollOwner,
       customerAuthOptions:()=>customerAuth('auth.customerOptions'),
       customerRegister:input=>customerAuth('auth.customerRegister',input),
@@ -495,6 +591,9 @@
       restoreAccount:accountId=>command('accounts.restore',{accountId,expectedRevision:identity.revision}),
       setPassword:(accountId,password)=>command('accounts.setPassword',{accountId,password}),
       changePassword:(currentPassword,newPassword)=>command('accounts.changePassword',{currentPassword,newPassword},true),
+      devices:accountId=>request('accounts.devices',{accountId,offset:0}),
+      deviceStatus:(accountId,blocked,expectedBoundAt)=>request('accounts.deviceStatus',{accountId,blocked,expectedBoundAt,confirmed:true}),
+      releaseDevice:(accountId,expectedBoundAt)=>request('accounts.releaseDevice',{accountId,expectedBoundAt,confirmed:true}),
       revokeSessions:accountId=>command('accounts.revokeSessions',{accountId}),
       assertPermission:permission=>request('permissions.assert',{permission}).then(()=>true),
       recordActivity:payload=>command('activity.record',{payload}),

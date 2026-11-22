@@ -83,6 +83,13 @@ function sharedNotice(kind,d,language){
     };
     const [title,body]=labels[language];return {title,body,route,params:{}};
   }
+  if(kind==='call.missed'){
+    const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+    if(!uuid.test(d.roomId)||!uuid.test(d.callId))invalidNotice();
+    const labels={ar:['مكالمة فائتة','افتح المحادثة لمراجعة المكالمة.'],en:['Missed call','Open the conversation to review the call.'],
+      tr:['Cevapsız arama','Aramayı görmek için sohbeti açın.'],fr:['Appel manqué','Ouvrez la conversation pour consulter l’appel.'],ru:['Пропущенный звонок','Откройте чат, чтобы посмотреть звонок.']};
+    const [title,body]=labels[language];return {title,body,route:'chat',params:{roomId:d.roomId,callId:d.callId}};
+  }
   if(kind==='call'){
     const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
     if(!uuid.test(d.roomId)||!uuid.test(d.callId)||!['audio','video'].includes(d.mediaKind)||

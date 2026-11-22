@@ -12,7 +12,10 @@ test('phone inbox and team pick a real peer before calling, while group and dire
   const me={id:crypto.randomUUID(),name:'Owner',username:'owner',owner:true},other={id:crypto.randomUUID(),name:'Coworker',username:'coworker'};
   const team={id:crypto.randomUUID(),kind:'team',name:'Team'},group={id:crypto.randomUUID(),kind:'group',name:'Group'},direct={id:crypto.randomUUID(),kind:'direct',name:other.name,peer:other};
   window.calls=[];window.pair=false;window.directRoom=false;window.allow=true;
-  window.WFCallManager={create:()=>({start:async(r,k)=>calls.push([r.kind,k]),poll:async()=>{},selectRoom:async()=>{},stop(){}})};
+  window.WFDialog={confirm:async()=>window.approveCallback===true};
+  window.WFPush={getSnapshot:()=>({status:'denied',canEnable:false}),subscribe:()=>()=>{}};
+  window.showPage=id=>{window.visitedPage=id;};
+  window.WFCallManager={create:hooks=>({start:async(r,k)=>calls.push([r.kind,k]),poll:async()=>{},selectRoom:async room=>hooks.onHistory(room?.kind==='direct'?[{id:crypto.randomUUID(),roomId:room.id,status:'missed',callerId:other.id,kind:'video',createdAt:new Date().toISOString()}]:[]),stop(){}})};
   const api={can:()=>allow,getSession:()=>({userId:me.id,role:'owner'}),request:async(a,p)=>{
    switch(a){
     case 'chat.init':return {me};
@@ -35,10 +38,14 @@ test('phone inbox and team pick a real peer before calling, while group and dire
  await dialog().getByRole('button',{name:'تحديد'}).click();
  await dialog().getByRole('button',{name:'اتصال فيديو'}).waitFor();assert.deepEqual(await page.evaluate(()=>calls),[]);
  await dialog().getByRole('button',{name:'اتصال فيديو'}).click();assert.deepEqual(await page.evaluate(()=>calls),[['direct','video']]);
+ const alerts=head.locator('[data-call-alerts]');await alerts.click();assert.equal(await page.evaluate(()=>visitedPage),'notifications');
+ const callback=page.locator('.wf-chat-call-chip').getByRole('button',{name:/معاودة الاتصال/});
+ await callback.click();assert.equal(await page.evaluate(()=>calls.length),1);
+ await page.evaluate(()=>window.approveCallback=true);await callback.click();assert.equal(await page.evaluate(()=>calls.length),2);
  await head.locator('.wf-calling-shortcuts').getByRole('button',{name:'اتصال صوتي'}).click();
  await page.locator('.wf-chat-room').filter({hasText:'Group'}).click();
  await head.locator('.wf-calling-shortcuts').getByRole('button',{name:'اتصال فيديو'}).click();
- assert.deepEqual(await page.evaluate(()=>calls),[['direct','video'],['direct','audio'],['group','video']]);
+ assert.deepEqual(await page.evaluate(()=>calls),[['direct','video'],['direct','video'],['direct','audio'],['group','video']]);
  await page.evaluate(()=>{app.dispose();allow=false;app=mountFixture();});await page.locator('.wf-chat-room').first().waitFor();
  assert.equal(await page.locator('.wf-calling-shortcuts button').count(),0);
 });

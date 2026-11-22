@@ -15,7 +15,65 @@
   const el=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   let token='',verifiedName='',offset=0,generation=0,expiryTimer,setup=null,draft=null;
   let scanner=null,supportInbox=null,supportAlerts={enabled:false,seen:new Set()};
-  function clear(){supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  const trustKey='wow.platform.remember.v1:'+config.endpoint+':'+config.workspaceId;
+  const retention=7*86400000;
+  let authEpoch=0,rememberedId='',resuming=null;
+  function saved(){
+    try{
+      const raw=localStorage.getItem(trustKey);if(!raw)return null;
+      const entry=JSON.parse(raw);
+      if(typeof entry.id==='string'&&entry.id&&typeof entry.userId==='string'&&entry.userId&&Number.isInteger(entry.version)&&
+        typeof entry.refresh==='string'&&entry.refresh.length>0&&entry.refresh.length<=4096&&
+        Number.isFinite(entry.until)&&entry.until>Date.now()&&entry.until<=Date.now()+retention)return entry;
+      localStorage.removeItem(trustKey);
+    }catch{}
+    return null;
+  }
+  function forget(id=rememberedId){
+    try{if(id&&saved()?.id===id)localStorage.removeItem(trustKey);}catch{}
+    if(rememberedId===id)rememberedId='';
+  }
+  function canRemember(){try{return isSecureContext&&!!navigator.locks?.request&&!!window.localStorage;}catch{return false;}}
+  function stampSession(result){
+    const account=result.identity?.currentAccount,session=result.session;
+    return result.workspaceId===config.workspaceId&&account?.status==='active'&&account.id&&Number.isInteger(account.sessionVersion)&&
+      typeof session?.refresh_token==='string'&&session.refresh_token.length>0&&session.refresh_token.length<=4096
+      ?{userId:account.id,version:account.sessionVersion,refresh:session.refresh_token}:null;
+  }
+  function schedule(session){
+    clearTimeout(expiryTimer);
+    const expiry=session.expires_at*1000;
+    // Rotate shortly before expiry so edits have a usable bearer. sign-in without opt-in keeps its original lifetime.
+    const deadline=rememberedId?Math.min(saved()?.until||0,expiry-30000):expiry;
+    expiryTimer=setTimeout(()=>{clear();login();if(saved())resume().catch(fail);else fail(failure(4));},
+      Math.max(0,Math.min(3600000,deadline-Date.now())));
+  }
+  async function resume(){
+    if(resuming||token||!canRemember()||navigator.onLine===false||new URL(location.href).searchParams.has('setup'))return;
+    const entry=saved();if(!entry)return;
+    const epoch=authEpoch;
+    const current=()=>authEpoch===epoch&&navigator.onLine!==false&&saved()?.id===entry.id;
+    const task=navigator.locks.request(trustKey,async()=>{
+      if(!current())return;
+      const reply=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',
+        headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.refresh',refreshToken:saved().refresh})});
+      if(!current())return;
+      if([401,403].includes(reply.status)){forget(entry.id);throw failure(4);}
+      if(!reply.ok)throw failure(reply.status===429?1:2);
+      const data=await reply.json(),stamp=stampSession(data);
+      if(!current())return;
+      if(!stamp||stamp.userId!==entry.userId||stamp.version!==entry.version||!data.session.access_token){
+        forget(entry.id);throw failure(4);
+      }
+      // Save rotation before a transient list failure; lists still require live founder authorization.
+      localStorage.setItem(trustKey,JSON.stringify({...entry,...stamp}));rememberedId=entry.id;
+      token=data.session.access_token;verifiedName=data.identity.currentAccount.name;
+      try{await list();if(current()&&token)schedule(data.session);}
+      catch(error){if(authEpoch===epoch){clear();login();}throw error;}
+    });
+    resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
+  }
+  function clear(){authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -34,10 +92,10 @@
     const active=token,reply=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{'Content-Type':'application/json',apikey:config.publishableKey,Authorization:'Bearer '+active},body:JSON.stringify({action:'platform.'+action,...params})});
     if(active!==token)throw failure(-1);
     if(reply.status===429)throw failure(1);
-    if(reply.status===401){clear();login();throw failure(4);}
+    if(reply.status===401){forget();clear();login();throw failure(4);}
     if(reply.status===403&&action==='company.list'){
       const reason=await reply.json().catch(()=>({}));
-      clear();login();throw (reason.code==='ACCESS_DENIED'||reason.error==='ACCESS_DENIED'||reason.error?.code==='ACCESS_DENIED')?failure(3):new Error();
+      forget();clear();login();throw (reason.code==='ACCESS_DENIED'||reason.error==='ACCESS_DENIED'||reason.error?.code==='ACCESS_DENIED')?failure(3):new Error();
     }
     const result=await reply.json();if(!reply.ok||result.ok!==true)throw Error();return result;
   }
@@ -59,14 +117,30 @@
     toggle.onclick=()=>{const show=pass.type==='password';pass.type=show?'text':'password';
       toggle.setAttribute('aria-pressed',String(show));toggle.textContent=visibility[show?1:0];toggle.setAttribute('aria-label',toggle.textContent+' '+t(2));};
     email.required=pass.required=true;email.autocomplete='username';pass.autocomplete='current-password';content.append(form);
+    const remember=el('input');remember.type='checkbox';
+    if(canRemember()){
+      const names={ar:'تذكّرني على هذا الجهاز لمدة ٧ أيام',en:'Remember me on this device for 7 days',tr:'Bu cihazda beni 7 gün hatırla',fr:'Se souvenir de moi sur cet appareil pendant 7 jours',ru:'Запомнить меня на этом устройстве на 7 дней'};
+      const label=el('label');label.className='platform-remember';label.append(remember,document.createTextNode(names[lang.value]));form.append(label);
+    }
     scanner=window.WFOwnerInvite?.mount(content,new URL('../',location.href),lang.value);
     submit(form,3,async()=>{
-      const result=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.signIn',workspaceId:config.workspaceId,username:email.value.trim(),password:pass.value})});
-      pass.value='';if(pass.type!=='password')toggle.click();if(!form.isConnected)return;
+      const epoch=++authEpoch;
+      const result=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.signIn',founderOnly:true,workspaceId:config.workspaceId,username:email.value.trim(),password:pass.value})});
+      pass.value='';if(pass.type!=='password')toggle.click();if(!form.isConnected||epoch!==authEpoch||navigator.onLine===false)return;
       if(result.status===401)throw failure(0);
+      if(result.status===403)throw failure(3);
       if(result.status===429)throw failure(1);
-      if(!result.ok)throw Error();const {session,identity}=await result.json();token=session.access_token;verifiedName=identity?.currentAccount?.name||'';
-      expiryTimer=setTimeout(()=>{clear();login();fail(failure(4));},Math.min(3600000,session.expires_at*1000-Date.now()));await list();
+      if(!result.ok)throw Error();const data=await result.json(),{session,identity}=data;
+      if(epoch!==authEpoch||!form.isConnected)return;
+      forget(saved()?.id);token=session.access_token;verifiedName=identity?.currentAccount?.name||'';
+      try{await list();}catch(error){if(epoch===authEpoch){clear();login();}throw error;}
+      if(epoch!==authEpoch||!token)return;
+      const stamp=stampSession(data);
+      if(remember.checked&&stamp&&canRemember()){
+        const entry={...stamp,id:crypto.randomUUID(),until:Date.now()+retention};
+        try{localStorage.setItem(trustKey,JSON.stringify(entry));rememberedId=entry.id;}catch{}
+      }
+      schedule(session);
     });
   }
   const salesWords={
@@ -185,19 +259,129 @@
       });form.querySelector('button[type=submit]').textContent=w[recovering?6:5];cancel.focus();
     };
   }
+  const destinations={
+    ar:['الشركات','الباقات','الدعم','أقسام الإدارة','لا توجد شركات بعد.','المكالمات'],
+    en:['Companies','Plans','Support','Administration sections','No companies yet.','Calls'],
+    tr:['Şirketler','Paketler','Destek','Yönetim bölümleri','Henüz şirket yok.','Aramalar'],
+    fr:['Sociétés','Formules','Support','Sections d’administration','Aucune société pour le moment.','Appels'],
+    ru:['Компании','Тарифы','Поддержка','Разделы управления','Компаний пока нет.','Звонки']
+  };
+  const deviceWords={
+    ar:['الأجهزة المرتبطة','لا توجد أجهزة مرتبطة بهذه الشركة.','فك الارتباط','بعد التأكيد يستطيع صاحب هذا الحساب ربط جهاز آخر بتسجيل الدخول. تحقق من هوية صاحب الطلب.','تأكيد فك الارتباط','تاريخ الربط','مالك الشركة','تم فك ربط الجهاز.'],
+    en:['Linked devices','This company has no linked devices.','Release device','After confirmation, this account can link a different device by signing in. Verify who requested the change.','Confirm release','Linked on','Company owner','Device released.'],
+    tr:['Bağlı cihazlar','Bu şirkete bağlı cihaz yok.','Cihazı ayır','Onaydan sonra hesap sahibi giriş yaparak başka bir cihaz bağlayabilir. İsteği yapan kişiyi doğrulayın.','Ayırmayı onayla','Bağlanma tarihi','Şirket sahibi','Cihaz bağlantısı kaldırıldı.'],
+    fr:['Appareils associés','Aucun appareil associé à cette société.','Dissocier','Après confirmation, ce compte pourra associer un autre appareil en se connectant. Vérifiez l’identité du demandeur.','Confirmer la dissociation','Date d’association','Propriétaire','Appareil dissocié.'],
+    ru:['Привязанные устройства','У компании нет привязанных устройств.','Отвязать устройство','После подтверждения владелец сможет привязать другое устройство при входе. Проверьте, кто запросил изменение.','Подтвердить отвязку','Дата привязки','Владелец компании','Устройство отвязано.']
+  };
+  const blockWords={
+    ar:['حظر الجهاز','رفع الحظر','جهاز محظور','سيُمنع الجهاز من دخول حساب هذه الشركة حتى ترفع الحظر. سيبقى مرتبطًا بالحساب.','سيُسمح للجهاز المرتبط بتسجيل الدخول مجددًا ضمن صلاحيات الحساب.'],
+    en:['Block device','Unblock device','Device blocked','This device will be denied cloud access to this company account until you unblock it. It stays linked.','The linked device may sign in again with the account’s permissions.'],
+    tr:['Cihazı engelle','Engeli kaldır','Cihaz engellendi','Engeli kaldırana kadar cihaz bu şirket hesabına giriş yapamaz. Bağlantısı sürer.','Bağlı cihaz hesap izinleriyle yeniden giriş yapabilir.'],
+    fr:['Bloquer l’appareil','Débloquer l’appareil','Appareil bloqué','Cet appareil ne pourra plus accéder au compte cloud de cette société jusqu’au déblocage. Il reste associé.','L’appareil associé pourra se reconnecter avec les droits du compte.'],
+    ru:['Заблокировать','Разблокировать','Устройство заблокировано','Доступ устройства к облачному аккаунту компании будет закрыт до снятия запрета. Привязка сохранится.','Привязанное устройство снова сможет войти с правами аккаунта.']
+  };
+  async function companyDevices(host,workspaceId,offset=0){
+    const w=deviceWords[lang.value],result=await request('company.devices',{workspaceId,offset});
+    if(!host.isConnected)return;
+    if(!Array.isArray(result.devices)||!Number.isSafeInteger(result.total))throw Error();
+    if(!result.devices.length&&offset>0)return companyDevices(host,workspaceId,Math.max(0,offset-30));
+    host.replaceChildren(el('h3',w[0]));
+    if(!result.devices.length)host.append(el('p',w[1]));
+    for(const device of result.devices){
+      const card=el('div'),identity=el('strong',device.name||device.username);
+      card.className='platform-linked-device';identity.dir='auto';card.append(identity);
+      if(device.username&&device.name!==device.username)card.append(el('bdi',device.username));
+      if(device.role==='owner')card.append(el('small',w[6]));
+      const date=new Date(device.boundAt);if(device.boundAt&&Number.isFinite(date.valueOf())){
+        const linked=el('time',w[5]+' · '+date.toLocaleString(lang.value));linked.dateTime=date.toISOString();card.append(linked);
+      }
+      const options=el('div'),b=blockWords[lang.value];
+      if(device.blocked)card.append(el('small',b[2]));
+      card.append(options);host.append(card);options.className='platform-device-options';
+      for(const action of device.blocked?['unblock']:['block','release']){
+        const releasing=action==='release',blocking=action==='block',actionName=releasing?w[2]:b[blocking?0:1];
+        const trigger=el('button',actionName);trigger.type='button';options.append(trigger);
+        trigger.onclick=()=>{
+          options.hidden=true;
+          const form=el('form'),cancel=el('button',word(5)),confirm=el('button',releasing?w[4]:actionName);form.className='platform-device-confirm';
+          form.setAttribute('aria-label',actionName+' · '+identity.textContent);cancel.type='button';confirm.type='submit';
+          const close=()=>{form.remove();options.hidden=false;trigger.focus();};
+          cancel.onclick=close;form.onkeydown=e=>{if(e.key==='Escape'&&!confirm.disabled){e.preventDefault();close();}};
+          form.append(el('strong',identity.textContent),el('p',releasing?w[3]:b[blocking?3:4]),cancel,confirm);card.append(form);cancel.focus();
+          form.onsubmit=async e=>{
+            e.preventDefault();if(confirm.disabled)return;confirm.disabled=cancel.disabled=true;
+            try{
+              const target={workspaceId,accountId:device.accountId,expectedBoundAt:device.boundAt,confirmed:true};
+              const saved=await request(releasing?'company.releaseDevice':'company.deviceStatus',releasing?target:{...target,blocked:blocking});
+              if(!host.isConnected)return;if(releasing&&saved.released!==true)throw Error();
+              if(releasing)status.textContent=w[7];
+              await companyDevices(host,workspaceId,offset);
+            }catch(reason){fail(reason);}
+            finally{confirm.disabled=cancel.disabled=false;}
+          };
+        };
+      }
+    }
+    const pages=el('nav');
+    if(offset>0)btn(pages,11,()=>companyDevices(host,workspaceId,Math.max(0,offset-30)));
+    if(offset+result.devices.length<result.total)btn(pages,12,()=>companyDevices(host,workspaceId,offset+30));
+    if(pages.childElementCount)host.append(pages);
+  }
+  const companyMenu={ar:'إدارة الشركة',en:'Manage company',tr:'Şirketi yönet',fr:'Gérer la société',ru:'Управление компанией'};
+  let showDestination=null,expandedCompany=null;
+  const pageFromUrl=()=>['plans','support','calls'].includes(location.hash.slice(1))?location.hash.slice(1):'companies';
+  window.addEventListener('hashchange',()=>showDestination?.());
   async function list(){
     const ticket=++generation,state=await request('company.list',{offset});if(ticket!==generation)return;
-    scanner?.dispose();scanner=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('nav'),form=el('form');content.append(nav,form);
+    scanner?.dispose();scanner=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
+    const labels=destinations[lang.value],ids=['companies','plans','support','calls'],panels={},links={};
+    nav.className='platform-account-bar';menu.className='platform-section-menu';menu.setAttribute('aria-label',labels[3]);
+    content.append(nav,menu);
+    for(const [i,id] of ids.entries()){
+      const link=el('a'),panel=el('section'),title=el('h2',labels[id==='calls'?5:i]);
+      title.tabIndex=-1;title.id='platform-title-'+id;
+      link.className='platform-section-link';link.href='#'+id;link.append(el('span',title.textContent));
+      panel.className='platform-page';panel.id='platform-page-'+id;panel.hidden=true;
+      panel.setAttribute('aria-labelledby',title.id);panel.append(title);content.append(panel);
+      link.setAttribute('aria-controls',panel.id);menu.append(link);panels[id]=panel;links[id]=link;
+    }
+    const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);companies.append(form);
+    let lastPage=null,loadingPlans=false;
+    showDestination=()=>{
+      const id=pageFromUrl(),changed=id!==lastPage;
+      for(const key of ids){
+        panels[key].hidden=key!==id;
+        if(key===id)links[key].setAttribute('aria-current','page');else links[key].removeAttribute('aria-current');
+      }
+      if(id==='calls'&&!panels.calls.querySelector('.platform-relay')){
+        const host=el('div');host.className='platform-relay';panels.calls.append(host);
+        window.WFPlatformRelay.mount(host,lang.value,request);
+      }
+      if(id==='plans'&&!plansBox.children.length&&!loadingPlans){
+        loadingPlans=true;
+        planEditor(plansBox).catch(error=>{
+          if(!plansBox.isConnected)return;fail(error);
+          const retry=el('button',labels[1]);retry.onclick=()=>{plansBox.replaceChildren();showDestination?.();};plansBox.append(retry);
+        }).finally(()=>{loadingPlans=false;});
+      }
+      if(changed&&lastPage!==null){
+        panels[id].querySelector('h2').focus({preventScroll:true});menu.scrollIntoView({block:'nearest'});
+      }
+      lastPage=id;
+    };
     const label={ar:'مدير المنصة الموثّق',en:'Verified platform administrator',tr:'Doğrulanmış platform yöneticisi',fr:'Administrateur de plateforme vérifié',ru:'Подтверждённый администратор платформы'}[lang.value];
     const founder=el('strong',verifiedName),badge=el('span','✓');
     badge.className='wf-founder-check';badge.setAttribute('role','img');badge.setAttribute('aria-label',label);badge.title=label;
     badge.hidden=navigator.onLine===false;founder.append(badge);nav.append(founder);
-    btn(nav,4,async()=>{const previous=token;clear();login();await fetch(config.projectUrl+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:config.publishableKey,Authorization:'Bearer '+previous},credentials:'omit'});});
+    btn(nav,4,async()=>{const previous=token;forget();clear();login();
+      await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
+        headers:{apikey:config.publishableKey,'Content-Type':'application/json',Authorization:'Bearer '+previous},
+        body:JSON.stringify({action:'auth.signOut'})}).then(reply=>{if(!reply.ok)throw failure(2);});});
     const settings=el('a',{ar:'إعدادات الحساب',en:'Account settings',tr:'Hesap ayarları',fr:'Paramètres du compte',ru:'Настройки аккаунта'}[lang.value]);
     const settingsUrl=new URL('../',location.href);settingsUrl.searchParams.set('wf-cloud','employee');settingsUrl.searchParams.set('workspace',config.workspaceId);settingsUrl.searchParams.set('wf-accounts','cloud');settingsUrl.hash='settings';settings.href=settingsUrl.href;nav.append(settings);
     supportInbox?.dispose();
-    supportInbox=window.WFPlatformSupport?.mount({nav,container:content,request,lang:lang.value,alerts:supportAlerts});
-    const plansBox=el('section');content.append(plansBox);btn(nav,22,()=>planEditor(plansBox));
+    supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts});
+    showDestination();
     const name=field(form,5);name.required=true;name.maxLength=100;
     submit(form,6,async()=>{
       const company=name.value.trim();if(!company)return;
@@ -208,7 +392,7 @@
     if(setup){
       const link=el('a',setupLabels[lang.value][5]),url=new URL(location.pathname,location.origin);
       url.searchParams.set('setup',setup.workspace);url.hash='invite='+setup.code;link.href=url.href;
-      const invitation=el('section');invitation.className='platform-invite-card';invitation.append(link,el('p',t(14)),el('output',setup.code));content.append(invitation);
+      const invitation=el('section');invitation.className='platform-invite-card';invitation.append(link,el('p',t(14)),el('output',setup.code));companies.append(invitation);
       if(window.ZXingBrowser?.BrowserQRCodeSvgWriter){const qr=new window.ZXingBrowser.BrowserQRCodeSvgWriter().write(url.href,660,660,new Map([[0,'M']]));qr.classList.add('platform-setup-qr');qr.setAttribute('shape-rendering','crispEdges');qr.style.background='white';qr.setAttribute('role','img');qr.setAttribute('aria-label',setupLabels[lang.value][5]);invitation.append(qr);}
     }
     for(const company of state.companies){
@@ -216,8 +400,15 @@
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',company.id);
       link.href=url.href;
       row.append(el('strong',company.name),el('span',t(active?7:8)),el('span',t(13)+' · '+company.accounts),link);
+      const details=el('details'),summary=el('summary',companyMenu[lang.value]),tools=el('div');
+      details.className='platform-company-tools';details.open=expandedCompany===company.id;
+      details.ontoggle=()=>{
+        if(!details.isConnected)return;
+        if(details.open)expandedCompany=company.id;else if(expandedCompany===company.id)expandedCompany=null;
+      };
+      details.append(summary,tools);row.append(details);
       const accounts=el('a',sale(12)),accountsUrl=new URL(url);
-      accountsUrl.searchParams.set('wf-accounts','cloud');accountsUrl.hash='settings';accounts.href=accountsUrl.href;row.append(accounts);
+      accountsUrl.searchParams.set('wf-accounts','cloud');accountsUrl.hash='settings';accounts.href=accountsUrl.href;tools.append(accounts);
       const editArea=el('section');editArea.className='platform-inline-editor';
       function editCompany(trigger,renaming){
         const editor=el('form'),title=el('strong',renaming?word(6):t(17)),cancel=el('button',word(5));
@@ -237,12 +428,15 @@
         });
         (input||cancel).focus();
       }
-      const statusBtn=btn(row,active?9:10,()=>editCompany(statusBtn,false));
-      const rename=btn(row,5,()=>editCompany(rename,true));rename.textContent=word(6);
-      const activationBox=el('section'),activation=btn(row,6,()=>ownerSetup(activationBox,company));activation.textContent=activationWords[lang.value][0];
-      const limitsBox=el('section');btn(row,18,()=>subscription(limitsBox,company));content.append(row,editArea,activationBox,limitsBox);
+      const statusBtn=btn(tools,active?9:10,()=>editCompany(statusBtn,false));
+      const rename=btn(tools,5,()=>editCompany(rename,true));rename.textContent=word(6);
+      const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company));activation.textContent=activationWords[lang.value][0];
+      const devicesBox=el('section'),devicesToggle=btn(tools,21,()=>companyDevices(devicesBox,company.id));
+      devicesToggle.textContent=deviceWords[lang.value][0];devicesBox.className='platform-company-devices';
+      const limitsBox=el('section');btn(tools,18,()=>subscription(limitsBox,company));details.append(editArea,activationBox,limitsBox,devicesBox);companies.append(row);
     }
-    const pages=el('nav');content.append(pages);
+    if(!state.companies.length)companies.append(el('p',labels[4]));
+    const pages=el('nav');companies.append(pages);
     if(offset)btn(pages,11,async()=>{offset=Math.max(0,offset-50);await list();});
     if(offset+50<state.total)btn(pages,12,async()=>{offset+=50;await list();});
   }
@@ -264,18 +458,21 @@
     });
     if(/^[a-f0-9]{64}$/.test(invite))inputs[0].value=invite;inputs[3].minLength=12;submit(form,6,async()=>{
       const [code,name,user,pass]=inputs;
-      const reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.enrollOwner',workspaceId:workspace,setupToken:code.value.trim(),name:name.value.trim(),username:user.value.trim(),password:pass.value})});
+      const reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.enrollOwner',installationProof:await window.WFInstallation?.proof(),workspaceId:workspace,setupToken:code.value.trim(),name:name.value.trim(),username:user.value.trim(),password:pass.value})});
       if(!reply.ok)throw Error();
       const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',workspace);location.replace(url.href);
     });form.querySelector('button').textContent=labels[4];
   }
   function render(){document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);const ws=new URLSearchParams(location.search).get('setup');if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws))enroll(ws);else if(token)list().catch(fail);else login();}
   function lockDisconnected(){
-    if(!token)return;
-    clear();login();status.textContent=word(2);
+    clear();if(!new URL(location.href).searchParams.has('setup'))login();status.textContent=word(2);
   }
   window.addEventListener('offline',lockDisconnected);
-  window.addEventListener('pagehide',()=>{if(token){clear();login();}});
-  window.addEventListener('online',()=>{if(token)list().catch(fail);});
-  lang.onchange=()=>{if(failureIndex!=null)status.textContent=word(failureIndex);render();};render();
+  window.addEventListener('pagehide',()=>{clear();});
+  window.addEventListener('pageshow',event=>{if(event.persisted){render();resume().catch(fail);}});
+  window.addEventListener('storage',event=>{
+    if((event.key===trustKey||event.key===null)&&rememberedId&&saved()?.id!==rememberedId){clear();login();}
+  });
+  window.addEventListener('online',()=>{if(token)list().catch(fail);else resume().catch(fail);});
+  lang.onchange=()=>{if(failureIndex!=null)status.textContent=word(failureIndex);render();};render();resume().catch(fail);
 })();

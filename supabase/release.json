@@ -1,5 +1,5 @@
 {
-  "version": 226,
+  "version": 227,
   "name": "مارك ربوت",
   "projectRef": "sldthbnigivpsqixccah",
   "productionOrigin": "https://markrobot.wowfurniture.com.tr",
@@ -29,7 +29,11 @@
     "modules/order-sms.sql",
     "modules/tenant-seats.sql",
     "modules/platform-support.sql",
-    "modules/platform-support-push.sql"
+    "modules/platform-support-push.sql",
+    "modules/platform-relay.sql",
+    "modules/group-call-push.sql",
+    "modules/account-installations.sql",
+    "modules/missed-call-push.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",
