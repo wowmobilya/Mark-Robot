@@ -65,7 +65,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
       if(f==='vendor/zxing-browser.min.js')qrDownloads++;
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/analytics.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/analytics.js','platform/admin-audio.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
     await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');
@@ -132,6 +132,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     const settingsPage=page.locator('#platform-page-settings');
     await settingsPage.getByRole('heading',{name:'Founder account'}).waitFor();
     assert.equal(await settingsLink.getAttribute('aria-current'),'page');
+    // Sounds share the original WOW media. Buttons remain muted until opt-in.
+    const audio=page.locator('.platform-audio-widget');
+    await audio.waitFor();
+    assert.equal(await audio.locator('.platform-audio-feedback').getAttribute('aria-pressed'),'false');
+    await audio.locator('.platform-audio-feedback').click();
+    assert.equal(await audio.locator('.platform-audio-feedback').getAttribute('aria-pressed'),'true');
+    await audio.locator('.platform-audio-feedback').click();
+    assert.equal(await audio.locator('.platform-audio-feedback').getAttribute('aria-pressed'),'false');
     assert.equal(await settingsPage.locator('.platform-password-settings summary').innerText(),'Change password');
     assert.equal(await settingsPage.getByRole('heading',{name:'Settings',exact:true}).evaluate(h=>h===document.activeElement),true);
     await page.locator('.platform-header-actions').getByRole('link',{name:'Support inbox'}).click();
@@ -145,7 +153,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       assert.equal(await page.locator('html').getAttribute('dir'),code==='ar'?'rtl':'ltr');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     }
-    for(const width of [320,768,1024,1280,390]){
+    for(const width of [320,360,375,390,430,768,820,1024,1180,1280,1440]){
       await page.setViewportSize({width,height:844});
       await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash==='#companies');
       const metrics=await menu.evaluate(element=>({position:getComputedStyle(element).position,bottom:element.getBoundingClientRect().bottom,
@@ -156,6 +164,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       if(width<=1024){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[0].path,'#companies');assert.equal(metrics.links[2].path,'#support');}
       else if(width>1024){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[0].path,'#companies');}
     }
+    // iPhone/iPad/Android/tablet/desktop breakpoints and orientation changes.
     await page.setViewportSize({width:863,height:388});
     const landscape=await page.evaluate(()=>({
       bottom:document.querySelector('.platform-section-menu').getBoundingClientRect().bottom,
@@ -329,7 +338,7 @@ test('trusted founder device rotates, revalidates founder access and forgets log
         return route.fulfill({json:{ok:true,cases:[],unreadCases:0}});
       }
       if(file==='platform/'||file==='platform/index.html')return route.fulfill({path:path.join(__dirname,'../platform/index.html')});
-      if(['platform/dashboard.js','platform/dashboard.css','platform/admin-shell.js','platform/analytics.js','platform/qr-invite.js','platform/preferences.js','platform/support.js','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
+      if(['platform/dashboard.js','platform/dashboard.css','platform/admin-shell.js','platform/analytics.js','platform/qr-invite.js','platform/admin-audio.js','platform/preferences.js','platform/support.js','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
       return route.abort();
     });
     const signin=async trusted=>{
