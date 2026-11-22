@@ -6,6 +6,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
   try{
     const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true});
     const linked=[{accountId:randomUUID(),name:'Fixture employee',username:'test.employee',role:'sales',boundAt:new Date().toISOString()},{accountId:randomUUID(),name:'Fixture owner',username:'test.owner',role:'owner',boundAt:new Date().toISOString()}];
+    let qrDownloads=0;
     let relayConfigured=false,relayEnabled=false,serverHealthy=true;const relayWrites=[];
     const events=[],wid=randomUUID(),scope='https://platform.test';let plans=[],assigned=null,expiresAt=null,created=false,rejection='wrong',companyName='Test',companyStatus='active',activation='pending',canRecover=false;
     await page.route('**/*',async route=>{
@@ -62,11 +63,12 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       }
       if(u.pathname.endsWith('wow-cloud-config.js'))return route.fulfill({contentType:'application/javascript',body:"window.WOW_CLOUD_CONFIG={workspaceId:'scope',endpoint:'/service',publishableKey:'local'}"});
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
+      if(f==='vendor/zxing-browser.min.js')qrDownloads++;
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/support.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/dashboard.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
-    await page.goto(scope+'/platform/#support');await page.locator('#lang').selectOption('en');
+    await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');await page.locator('#lang').selectOption('en');
     const founderInput=page.getByLabel('Founder username');await founderInput.tap();
     assert.equal(await founderInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);
     await founderInput.pressSequentially('fixture');
@@ -86,6 +88,35 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.getByText('No support messages.',{exact:true}).waitFor();
     const menu=page.getByRole('navigation',{name:'Administration sections'});
     assert.equal(await menu.getByRole('link',{name:'Support'}).getAttribute('aria-current'),'page');
+    const settingsLink=menu.getByRole('link',{name:'Settings'});
+    await settingsLink.click();
+    const settingsPage=page.locator('#platform-page-settings');
+    await settingsPage.getByRole('heading',{name:'Founder account'}).waitFor();
+    assert.equal(await settingsLink.getAttribute('aria-current'),'page');
+    assert.equal(await settingsPage.locator('.platform-password-settings summary').innerText(),'Change password');
+    assert.equal(await settingsPage.getByRole('heading',{name:'Settings',exact:true}).evaluate(h=>h===document.activeElement),true);
+    await page.locator('.platform-header-actions').getByRole('link',{name:'Support inbox'}).click();
+    await page.locator('#platform-page-support').waitFor();
+    await page.locator('.platform-header-actions').getByRole('link',{name:'Back to companies'}).click();
+    await page.locator('#platform-page-companies').waitFor();
+    await settingsLink.click();
+    for(const [code,title] of [['ar','الإعدادات'],['tr','Ayarlar'],['fr','Réglages'],['ru','Настройки'],['en','Settings']]){
+      await page.locator('#lang').selectOption(code);
+      await settingsPage.getByRole('heading',{name:title,exact:true}).waitFor();
+      assert.equal(await page.locator('html').getAttribute('dir'),code==='ar'?'rtl':'ltr');
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    }
+    for(const width of [320,768,1280,390]){
+      await page.setViewportSize({width,height:844});
+      await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash===(matchMedia('(max-width:620px) and (min-height:521px)').matches?'#plans':'#companies'));
+      const metrics=await menu.evaluate(element=>({position:getComputedStyle(element).position,bottom:element.getBoundingClientRect().bottom,
+        links:[...element.querySelectorAll('a')].map(a=>({height:a.getBoundingClientRect().height,width:a.getBoundingClientRect().width,path:a.hash})),
+        overflow:document.documentElement.scrollWidth>innerWidth}));
+      assert(!metrics.overflow);
+      assert(metrics.links.every(link=>link.height>=44&&link.width>=44));
+      if(width<=620){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links[2].path,'#companies');}
+      else if(width>900){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[0].path,'#companies');}
+    }
     await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByText('No companies yet.').waitFor();
     await menu.getByRole('link',{name:'Calls'}).click();
@@ -186,14 +217,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.waitForFunction(()=>window.cameraTrack?.readyState==='live');await page.getByRole('button',{name:'Stop camera'}).click();
     assert.equal(await page.evaluate(()=>window.cameraTrack.readyState),'ended');
     await page.evaluate(()=>{window.scanEnabled=true;});await page.getByRole('button',{name:'Scan the QR code with camera'}).click();
-    await page.getByLabel('رمز الإعداد').waitFor();assert.equal(new URL(page.url()).hash,'');assert.equal((await page.getByLabel('رمز الإعداد').inputValue()).length,64);
+    await page.getByLabel('Setup code').waitFor();assert.equal(new URL(page.url()).hash,'');assert.equal((await page.getByLabel('Setup code').inputValue()).length,64);
   }finally{await browser.close();}
 });
 test('trusted founder device rotates, revalidates founder access and forgets logout across tabs',async()=>{
   const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true});
   try{
     const context=await browser.newContext(),page=await context.newPage();
-    let refresh='',revision=0,permitted=true,revoked=false;
+    let refresh='',revision=0,permitted=true,revoked=false,password='not-a-real-password';
     const workspace=randomUUID(),founder=randomUUID(),events=[];
     const endpoint='https://founder.test';
     await context.route('**/*',async route=>{
@@ -201,6 +232,12 @@ test('trusted founder device rotates, revalidates founder access and forgets log
       if(file.endsWith('wow-cloud-config.js'))return route.fulfill({contentType:'text/javascript',body:'window.WOW_CLOUD_CONFIG='+JSON.stringify({endpoint:endpoint+'/api',workspaceId:workspace,publishableKey:'fixture'})});
       if(file==='api'){
         const body=route.request().postDataJSON();events.push(body.action);
+        if(body.action==='accounts.changePassword'){
+          assert.equal(body.founderOnly,true);assert.equal(body.reauthenticate,true);
+          if(body.currentPassword!==password)return route.fulfill({status:403,json:{ok:false,error:{code:'CURRENT_PASSWORD_INCORRECT'}}});
+          password=body.newPassword;refresh='';return route.fulfill({json:{ok:true,reauthenticate:true}});
+        }
+        if(body.action==='auth.signIn'&&body.password!==password)return route.fulfill({status:401,json:{ok:false}});
         if(body.action==='auth.refresh'&&(revoked||body.refreshToken!==refresh))return route.fulfill({status:401,json:{ok:false}});
         if(['auth.refresh','auth.signIn'].includes(body.action)){
           refresh=randomUUID();revision++;
@@ -216,7 +253,7 @@ test('trusted founder device rotates, revalidates founder access and forgets log
     });
     const signin=async trusted=>{
       await page.getByLabel('Founder username').fill('local-fixture');
-      await page.getByLabel('Password',{exact:true}).fill('not-a-real-password');
+      await page.getByLabel('Password',{exact:true}).fill(password);
       if(trusted)await page.getByRole('checkbox').check();
       await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.locator('.wf-founder-check').waitFor();
     };
@@ -233,5 +270,18 @@ test('trusted founder device rotates, revalidates founder access and forgets log
     await signin(true);permitted=false;await page.reload();await page.locator('.platform-login').waitFor();await page.waitForFunction(()=>!Object.keys(localStorage).some(k=>k.startsWith('wow.platform.remember')));
     assert.equal(await page.locator('.wf-founder-check').count(),0);permitted=true;
     await page.locator('#lang').selectOption('en');await signin(true);revoked=true;await page.reload();await page.waitForFunction(()=>!Object.keys(localStorage).some(k=>k.startsWith('wow.platform.remember')));assert.equal(await page.locator('.wf-founder-check').count(),0);
+    revoked=false;await open();await signin(true);await page.getByRole('link',{name:'Settings',exact:true}).click();
+    const secret=page.locator('.platform-password-settings'),nextSecret=randomUUID();
+    await secret.locator('summary').click();await secret.getByLabel('Current password').fill(randomUUID());
+    await secret.getByLabel('New password (12–128 characters)',{exact:true}).fill(nextSecret);await secret.getByLabel('Confirm new password').fill(randomUUID());
+    await secret.getByRole('button',{name:'Change password'}).click();await secret.getByText('The new passwords do not match.').waitFor();
+    assert(!events.includes('accounts.changePassword'));
+    await secret.getByLabel('Confirm new password').fill(nextSecret);await secret.getByRole('button',{name:'Change password'}).click();
+    await secret.getByText('The current password is incorrect.').waitFor();assert.equal(await secret.getByLabel('Current password').inputValue(),'');
+    await secret.getByLabel('Current password').fill(password);await secret.getByRole('button',{name:'Change password'}).click();
+    await page.getByText('Password changed. Sign in with your new password.').waitFor();
+    const retained=await page.evaluate(()=>[Object.keys(localStorage),Object.values(localStorage).join(),Object.values(sessionStorage).join()]);
+    assert(!retained[0].some(key=>key.startsWith('wow.platform.remember')));assert(!retained.slice(1).join().includes(nextSecret));
+    assert.equal(new URL(page.url()).pathname,'/platform/');await signin(false);
   }finally{await browser.close();}
 });

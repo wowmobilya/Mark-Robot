@@ -400,6 +400,7 @@ export function createHandler(deps) {
       return {ok:true,...await rpc('activity.record',{...actor,event,expectedSessionVersion:account.sessionVersion})};
     }
     if(action==='accounts.changePassword') {
+      if(body.founderOnly===true)await deps.requirePlatformFounder(actor);
       const newPassword=password(body.newPassword);requireValue(typeof body.currentPassword==='string','INVALID_PASSWORD');
       const target=await rpc('account.credentials',actor);
       let check;try{check=await auth.signIn(target.email,body.currentPassword);}catch(error){if(error?.status>=500||error?.status===429)throw error;throw failure('CURRENT_PASSWORD_INCORRECT',403);}
@@ -407,6 +408,9 @@ export function createHandler(deps) {
       finally {if(check?.access_token)try{await auth.signOut(check.access_token);}catch(_){}}
       await rpc('accounts.passwordBegin',{...actor,accountId:account.id,keepCurrent:true,expectedSessionVersion:account.sessionVersion});
       await auth.updatePassword(account.id,newPassword);
+      // The provider can retire the caller's session during the password update.
+      // A client explicitly requiring reauthentication needs only that acknowledgement.
+      if(body.reauthenticate===true)return {ok:true,reauthenticate:true};
       return {ok:true,...await snapshot(actor)};
     }
     requireValue(account.role==='owner','ACCESS_DENIED',403);

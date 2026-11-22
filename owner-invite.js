@@ -7,6 +7,20 @@
     fr:['Invitation du propriétaire','Scanner le code QR avec la caméra','Lien d’invitation du propriétaire','Ouvrir l’invitation','Arrêter la caméra','Vérifiez le lien WOW et le code de configuration.','Caméra indisponible. Vérifiez l’autorisation ou collez le lien.'],
     ru:['Приглашение владельца','Сканировать QR-код камерой','Ссылка-приглашение владельца','Открыть приглашение','Остановить камеру','Проверьте ссылку WOW и код настройки.','Камера недоступна. Проверьте разрешение или вставьте ссылку.']
   };
+  const scriptUrl=root.document?.currentScript?.src;
+  let decoderLoad;
+  function decoder(){
+    if(root.ZXingBrowser)return Promise.resolve(root.ZXingBrowser);
+    if(root.qblLoadFallback)return root.qblLoadFallback();
+    if(!decoderLoad)decoderLoad=new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.src=new URL('vendor/zxing-browser.min.js?v=26',scriptUrl).href;
+      const fail=()=>{script.remove();decoderLoad=null;reject(new Error('SCANNER_UNAVAILABLE'));};
+      script.onload=()=>root.ZXingBrowser?resolve(root.ZXingBrowser):fail();
+      script.onerror=fail;document.head.append(script);
+    });
+    return decoderLoad;
+  }
   function parse(value,base){
     try{
       const url=new URL(value),target=new URL('platform/',base);
@@ -44,7 +58,7 @@
           const supported=await root.BarcodeDetector.getSupportedFormats?.();
           if(!supported||supported.includes('qr_code'))native=new root.BarcodeDetector({formats:['qr_code']});
         }catch{}
-        const reader=native?null:new (root.ZXingBrowser||await root.qblLoadFallback()).BrowserQRCodeReader();
+        const reader=native?null:new (await decoder()).BrowserQRCodeReader();
         async function scan(){
           if(ticket!==generation)return;
           let raw;
@@ -62,5 +76,5 @@
     container.append(details);translate(lang);
     return {updateLanguage:translate,stop:end,dispose(){end();root.removeEventListener('pagehide',end);doc.removeEventListener('visibilitychange',hide);details.remove();}};
   }
-  root.WFOwnerInvite={mount,parse};
+  root.WFOwnerInvite={mount,parse,loadQrTools:decoder};
 })(globalThis);
