@@ -9,6 +9,11 @@
   };
   const key='wow.platform.approval-push';
   const read=()=>{try{return JSON.parse(localStorage.getItem(key));}catch{return null;}};
+  const preferenceKey=userId=>key+'.off:'+userId;
+  const optedOut=userId=>{try{return localStorage.getItem(preferenceKey(userId))==='1';}catch{return false;}};
+  const savePreference=(userId,off)=>{
+    try{if(off)localStorage.setItem(preferenceKey(userId),'1');else localStorage.removeItem(preferenceKey(userId));}catch{}
+  };
   const getReg=async()=>{
     const reg=await navigator.serviceWorker.getRegistration(location.href);
     if(!reg?.active||reg.scope!==new URL('./',location.href).href||!reg.pushManager)throw Error();
@@ -34,14 +39,17 @@
       if(!alive||!prepared)return;
       const {deviceId}=prepared;
       // A retry after a lost server response must reuse the original device identifier.
-      localStorage.setItem(key,JSON.stringify({userId,deviceId}));
+      try{localStorage.setItem(key,JSON.stringify({userId,deviceId}));}catch{}
       const result=await request('push.subscribe',{deviceId,language,subscription:sub.toJSON()});
       if(!alive)return;
       if(result.subscribed!==true)throw Error();
       enabled=true;
     }
+    function subscribe(){
+      return prepared.reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:prepared.serverKey});
+    }
     async function prepare(){
-      if(!alive||busy||prepared||problem()||!userId)return;
+      if(!alive||busy||enabled||problem()||!userId||(prepared&&Notification.permission!=='granted'))return;
       busy=true;render();let reason=0;
       try{
         const [reg,config]=await Promise.all([getReg(),request('push.config')]);
@@ -52,12 +60,15 @@
         let sub=await reg.pushManager.getSubscription();if(!alive)return;
         const oldKey=sub?.options?.applicationServerKey&&new Uint8Array(sub.options.applicationServerKey);
         const keyChanged=oldKey&&(oldKey.length!==serverKey.length||serverKey.some((value,index)=>oldKey[index]!==value));
-        if(sub&&(!same||keyChanged)){
+        if(sub&&(!same||keyChanged||optedOut(userId))){
           if(!await sub.unsubscribe())throw Error();sub=null;
         }
         if(!alive)return;
         prepared={reg,serverKey,deviceId:same?saved.deviceId:'admin-approval-'+crypto.randomUUID()};
-        if(sub&&same&&Notification.permission==='granted')await bind(sub);
+        if(!optedOut(userId)&&Notification.permission==='granted'){
+          sub=sub||await subscribe();
+          await bind(sub);
+        }
       }catch{reason=5;}finally{busy=false;render(reason||(enabled?6:0));}
     }
     const toggle=()=>{if(box.open)prepare();};
@@ -70,18 +81,27 @@
           const sub=await prepared.reg.pushManager.getSubscription();if(!alive)return;
           if(sub){await request('push.unsubscribe',{deviceId:prepared.deviceId,endpoint:sub.endpoint});if(!await sub.unsubscribe())throw Error();}
           if(!alive)return;
-          localStorage.removeItem(key);enabled=false;
+          savePreference(userId,true);enabled=false;
         }else{
           // Subscribe on the click stack so the installed iOS app receives a native permission prompt.
-          const sub=await prepared.reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:prepared.serverKey});
-          await bind(sub);
+          const sub=await subscribe();
+          if(alive){savePreference(userId,false);await bind(sub);}
         }
       }catch(error){reason=error?.name==='NotAllowedError'?2:5;}
       finally{busy=false;render(reason||(enabled?6:0));}
     };
     render();
-    if(read()?.userId===userId)prepare();
-    return {dispose(){alive=false;box.removeEventListener('toggle',toggle);},detach(){
+    const foreground=()=>{if(!document.hidden)prepare();};
+    navigator.serviceWorker?.addEventListener('controllerchange',foreground);
+    document.addEventListener('visibilitychange',foreground);
+    window.addEventListener('online',foreground);
+    prepare();
+    return {dispose(){
+      alive=false;box.removeEventListener('toggle',toggle);
+      navigator.serviceWorker?.removeEventListener('controllerchange',foreground);
+      document.removeEventListener('visibilitychange',foreground);
+      window.removeEventListener('online',foreground);
+    },detach(){
       if(read()?.userId===userId){localStorage.removeItem(key);unlink().catch(()=>{});}
     }};
   }

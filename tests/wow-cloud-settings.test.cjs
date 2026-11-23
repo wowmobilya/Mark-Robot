@@ -55,6 +55,8 @@ test('owner enrollment submits explicit setup proof and clears it after failure'
 test('a locally linked owner keeps the explicit same-tab remote account administration link',async()=>{
   const h=fixture();await h.client.signIn({});await h.settle();const link=h.panel.querySelectorAll('a').find(link=>link.textContent==='Manage cloud accounts');assert(link);
   const url=new URL(link.href);assert.equal(url.searchParams.get('wf-cloud'),'employee');assert.equal(url.searchParams.get('wf-accounts'),'cloud');assert.equal(url.searchParams.get('workspace'),'space-1');assert.equal(link.target,undefined);
+  const deviceLink=h.panel.querySelectorAll('a').find(link=>link.textContent==='Add another device');
+  const deviceUrl=new URL(deviceLink.href);assert.equal(deviceUrl.searchParams.get('wf-device'),'add');assert.equal(deviceUrl.searchParams.get('workspace'),'space-1');
 });
 
 test('a remote owner opens the existing accounts editor without entering the employee route',async()=>{
@@ -62,6 +64,13 @@ test('a remote owner opens the existing accounts editor without entering the emp
   const action=h.panel.querySelectorAll('button,a').find(node=>node.textContent==='Manage cloud accounts');assert(action);action.click();await h.settle();
   const accounts=h.doc.getElementById('stab-accounts');assert.equal(accounts.style.display,'block');assert(accounts.textContent.includes('Owner'));
   assert.equal(h.panel.style.display,'none');assert.equal(h.root.location.href,location);assert.equal(h.client.getSnapshot().authenticated,true);assert.equal(h.client.getSnapshot().currentAccount.id,'owner');
+});
+
+test('a remote owner can open the device account form from company settings',async()=>{
+  const h=fixture({mode:'remote',accounts:true});await h.client.signIn({});await h.settle();
+  h.button('Add another device').click();await h.settle();
+  assert(h.doc.getElementById('wfAccountEditor'));assert.equal(h.root.WFAccounts.getSettingsActions().save.textContent,'Create device account');
+  assert.equal(h.client.getSnapshot().currentAccount.id,'owner');
 });
 
 test('returning to local device accounts explicitly opts out of automatic owner continuation',async()=>{

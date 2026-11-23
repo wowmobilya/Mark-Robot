@@ -12,10 +12,10 @@ test('owner inbox identifies applicant, opens scoped settings, and asks for push
     for(const name of ['owner-alert-device.js','owner-alerts.js'])await page.addScriptTag({path:path.join(__dirname,'../platform',name)});
     const id='adb5b000-9c21-49b4-92ec-0eb273230ab4';
     await page.evaluate(id=>{
-      window.prompts=0;window.subscribed=0;window.pending=true;
+      window.prompts=0;window.subscribed=0;window.pending=true;window.workerActive=true;
       let permission='default',subscription;
       Object.defineProperty(window,'Notification',{value:{get permission(){return permission;},requestPermission:async()=>{prompts++;return permission='granted';}}});
-      Object.defineProperty(navigator.serviceWorker,'getRegistration',{value:async()=>({active:true,scope:location.href,pushManager:{
+      Object.defineProperty(navigator.serviceWorker,'getRegistration',{value:async()=>({active:workerActive,scope:location.href,pushManager:{
         getSubscription:async()=>subscription,subscribe:async()=>{if(permission!=='granted'){await Notification.requestPermission();}return subscription={toJSON:()=>({endpoint:'test'}),unsubscribe:async()=>{subscription=null;return true;}};}
       }})});
       const request=async(action,data)=>{
@@ -24,7 +24,12 @@ test('owner inbox identifies applicant, opens scoped settings, and asks for push
         if(action==='push.unsubscribe'){subscribed--;return {};}
         return {total:pending?1:0,requests:pending?[{workspaceId:id,company:'شركة الأثاث',applicant:'أحمد علي',username:'ahmad'}]:[]};
       };
-      window.handle=window.WFPlatformOwnerAlerts.mount({nav:document.querySelector('nav'),request,language:'ar',userId:'test-user'});
+      window.remount=()=>{
+        window.handle?.dispose();
+        window.handle=window.WFPlatformOwnerAlerts.mount({nav:document.querySelector('nav'),request,language:'ar',userId:'test-user'});
+      };
+      window.expire=()=>{subscription=null;subscribed=0;};
+      remount();
     },id);
     await page.locator('summary').click();
     const request=page.getByRole('link',{name:/شركة الأثاث/});
@@ -34,8 +39,21 @@ test('owner inbox identifies applicant, opens scoped settings, and asks for push
     await page.getByRole('button',{name:'تفعيل إشعارات هذا الجهاز'}).click();
     await page.getByText('إشعارات طلبات التفعيل مفعّلة.').waitFor();
     assert.deepEqual(await page.evaluate(()=>[prompts,subscribed]),[1,1]);
+    await page.evaluate(()=>{expire();workerActive=false;remount();});
+    await page.waitForFunction(()=>document.querySelector('.platform-owner-alerts button')?.disabled===false);
+    await page.evaluate(()=>{
+      workerActive=true;
+      navigator.serviceWorker.dispatchEvent(new Event('controllerchange'));
+    });
+    await page.waitForFunction(()=>subscribed===1);
+    assert.equal(await page.evaluate(()=>prompts),1);
+    await page.locator('summary').click();
     await page.getByRole('button',{name:'إيقاف إشعارات هذا الجهاز'}).click();
-    assert.equal(await page.evaluate(()=>subscribed),0);
+    await page.waitForFunction(()=>subscribed===0);
+    await page.evaluate(()=>remount());
+    await page.locator('summary').click();
+    await page.getByRole('button',{name:'تفعيل إشعارات هذا الجهاز'}).waitFor();
+    assert.deepEqual(await page.evaluate(()=>[prompts,subscribed]),[1,0]);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     await request.click();assert.equal(new URL(page.url()).hash,'#company/'+id+'/activation');
     await page.evaluate(()=>{pending=false;window.dispatchEvent(new Event('wow-owner-approval-changed'));});

@@ -79,6 +79,7 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     consumeOwnerRecovery:(id,owner,email)=>call('/rest/v1/rpc/wow_owner_recovery_consume',{body:{p_request:id,p_owner:owner,p_email:email},kind:'rpc'}),
     offlineSigningKey:()=>call('/rest/v1/rpc/wow_offline_owner_signing_key',{body:{},kind:'rpc'}),
     supportRpc:(actor,action,data)=>call('/rest/v1/rpc/wow_support_service',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
+    announcementRpc:(actor,action,data)=>call('/rest/v1/rpc/wow_announcement_service',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
     requirePlatformFounder:actor=>call('/rest/v1/rpc/wow_platform_require',{body:{p_user:actor.userId,p_session:actor.sessionId},kind:'rpc'}),
     inspectCompany:(actor,workspaceId,section,offset)=>call('/rest/v1/rpc/wow_platform_inspect',{
       body:{p_user:actor.userId,p_session:actor.sessionId,p_workspace:workspaceId,p_section:section,p_offset:offset},kind:'rpc'}),

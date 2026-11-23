@@ -14,13 +14,13 @@
     fr:['Activer les alertes tant que l’administration est ouverte','Désactiver les alertes de support','Votre boîte de support a été mise à jour.','Les notifications de l’appareil ne sont pas autorisées.','Voir les messages précédents'],
     ru:['Включить уведомления, пока управление открыто','Отключить уведомления поддержки','В обращениях есть обновление.','Уведомления устройства не разрешены.','Показать предыдущие сообщения']
   };
-  function mount({nav,container,routeLink,request,lang,alerts={enabled:false,seen:new Set()}}){
+  function mount({nav,container,routeLink,request,lang,alerts={enabled:false,seen:new Set()},userId}){
     const notices=alertCopy[lang]||alertCopy.ar;
     const strings=copy[lang]||copy.ar;
     const make=(tag,text)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;return e;};
     const button=(text,fn)=>{const e=make('button',text);e.type='button';e.onclick=fn;return e;};
     const date=value=>{const d=new Date(value);return Number.isFinite(d.valueOf())?d.toLocaleString(lang):'';};
-    let serial=0,countSeq=0,alive=true,view='closed',rows=[],next=null;
+    let serial=0,countSeq=0,alive=true,view='closed',rows=[],next=null,syncAlertControl;
     const toggle=routeLink||button(strings[0],()=>view==='closed'?list():close()),badge=make('span');
     badge.className='platform-support-count';badge.hidden=true;badge.setAttribute('aria-live','polite');toggle.append(badge);if(!routeLink)nav.append(toggle);
     const panel=make('section'),body=make('div'),status=make('p');panel.className='platform-support';panel.hidden=true;
@@ -29,22 +29,34 @@
     const current=key=>alive&&panel.isConnected&&key===serial;
     function showCount(value){if(!Number.isSafeInteger(value)||value<0)return;badge.hidden=!value;badge.textContent=value?(routeLink?(value>99?'99+':String(value)):' · '+strings[1]+' '+value):'';if(routeLink)routeLink.setAttribute('aria-label',routeLink.firstChild.textContent+(value?' · '+strings[1]+' '+value:''));}
     const available=window.isSecureContext&&'Notification' in window&&'serviceWorker' in navigator;
+    const preferenceKey=userId&&'wow.platform.support-alerts.off:'+userId;
+    const enabled=()=>{
+      if(!available||Notification.permission!=='granted')return false;
+      if(preferenceKey){try{return localStorage.getItem(preferenceKey)!=='1';}catch{}}
+      return alerts.enabled;
+    };
+    const setEnabled=value=>{
+      alerts.enabled=value;
+      if(preferenceKey){try{if(value)localStorage.removeItem(preferenceKey);else localStorage.setItem(preferenceKey,'1');}catch{}}
+    };
     const signature=row=>row.id+'|'+(row.updatedAt||row.createdAt||'');
     function remember(items){for(const row of items)alerts.seen.add(signature(row));while(alerts.seen.size>512)alerts.seen.delete(alerts.seen.values().next().value);}
     async function signal(result){
-      if(!alerts.enabled||!available||Notification.permission!=='granted')return;
+      syncAlertControl?.();
+      if(!enabled())return;
       const unread=(result.cases||[]).filter(row=>row.unread);
+      if(!alerts.baselined){remember(unread);alerts.baselined=true;return;}
       if(!unread.some(row=>!alerts.seen.has(signature(row))))return;
       const registration=await navigator.serviceWorker.getRegistration(location.href);
-      if(!alive||!alerts.enabled||registration?.scope!==new URL('./',location.href).href)return;
+      if(!alive||!enabled()||registration?.scope!==new URL('./',location.href).href)return;
       remember(unread);
       await registration.showNotification('WOW Admin',{body:notices[2],tag:'wow-platform-support',icon:new URL('./admin-icon-192.png',location.href).href});
     }
     async function refreshCount(){const seq=++countSeq;try{const result=await request('support.list',{});if(alive&&seq===countSeq){showCount(result.unreadCases);await signal(result);}}catch{/* Opening the inbox exposes a retry on errors. */}}
     function alertControl(){
       if(!available)return;
-      const control=button(notices[alerts.enabled?1:0],async()=>{
-        if(alerts.enabled){alerts.enabled=false;alerts.seen.clear();control.textContent=notices[0];control.setAttribute('aria-pressed','false');return;}
+      const control=button(notices[enabled()?1:0],async()=>{
+        if(control.getAttribute('aria-pressed')==='true'){setEnabled(false);alerts.seen.clear();alerts.baselined=false;sync();return;}
         control.disabled=true;
         try{
           const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
@@ -53,11 +65,12 @@
           const baseline=await request('support.list',{});if(!alive)return;
           const reg=await navigator.serviceWorker.getRegistration(location.href);
           if(!reg||reg.scope!==new URL('./',location.href).href){status.textContent=strings[14];return;}
-          if(!alive)return;alerts.seen.clear();remember(baseline.cases||[]);alerts.enabled=true;
-          control.textContent=notices[1];control.setAttribute('aria-pressed','true');
+          if(!alive)return;alerts.seen.clear();remember(baseline.cases||[]);alerts.baselined=true;setEnabled(true);sync();
         }catch{if(alive)status.textContent=strings[14];}finally{control.disabled=false;}
       });
-      control.setAttribute('aria-pressed',String(alerts.enabled));body.append(control);
+      const sync=()=>{const on=enabled();control.textContent=notices[on?1:0];control.setAttribute('aria-pressed',String(on));};
+      syncAlertControl=sync;
+      sync();body.append(control);
     }
     function close(){++serial;view='closed';rows=[];next=null;body.replaceChildren();status.textContent='';panel.hidden=true;toggle.setAttribute('aria-expanded','false');toggle.focus();}
     function heading(title){if(routeLink&&view==='list')return;const h=make('h2',title);h.tabIndex=-1;body.append(h);h.focus({preventScroll:true});}
@@ -66,7 +79,8 @@
       if(!append){rows=[];next=null;body.replaceChildren();heading(strings[0]);}
       try{
         const seq=++countSeq,result=await request('support.list',append&&next?{cursor:next}:{});
-        if(!current(key))return;if(seq===countSeq)showCount(result.unreadCases);
+        if(!current(key))return;if(seq===countSeq){showCount(result.unreadCases);await signal(result).catch(()=>{});}
+        if(!current(key))return;
         const seen=new Set(rows.map(item=>item.id));rows.push(...(result.cases||[]).filter(item=>!seen.has(item.id)));next=result.nextCursor||null;
         body.replaceChildren();heading(strings[0]);body.append(button(strings[3],()=>list()));if(!routeLink)body.append(button(strings[16],close));alertControl();
         if(!rows.length)body.append(make('p',strings[4]));

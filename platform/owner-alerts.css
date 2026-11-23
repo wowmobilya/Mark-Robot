@@ -9,3 +9,8 @@
 .platform-owner-alerts li a{display:flex;flex-direction:column;align-items:start;justify-content:center;gap:.1rem;border:1px solid var(--border);border-radius:var(--ui-radius);padding:.5rem .75rem;color:inherit;overflow-wrap:anywhere;text-decoration:none}
 .platform-owner-alerts small{color:var(--muted);font-size:.85em}
 .platform-owner-alerts button+button{margin-inline-start:.5rem}
+.platform-owner-alerts summary{display:flex;align-items:center;gap:.55rem;border:1px solid var(--border);border-radius:14px;background:var(--card);font-weight:750;text-wrap:balance}
+.platform-owner-alerts summary::before{content:"";inline-size:16px;block-size:16px;flex:none;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4'/%3E%3C/svg%3E") center / contain no-repeat}
+.platform-owner-alerts[open]{padding:.75rem;border:1px solid var(--border);border-radius:18px;background:var(--card)}
+.platform-owner-alerts[open] summary{border-color:transparent;padding-inline:.25rem}
+.platform-owner-alerts li a:hover,.platform-owner-alerts li a:focus-visible{border-color:var(--ui-accent,var(--accent))}

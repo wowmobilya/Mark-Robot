@@ -25,6 +25,11 @@
   .wf-account-notice[data-error="true"] { border-inline-start-color:var(--red,var(--text)); }
   .wf-account-muted { display:block; color:var(--text2); font-size:12px; line-height:1.7; }
   .wf-account-toolbar { display:grid; grid-template-columns:minmax(180px,1fr) minmax(140px,.48fr) auto; align-items:end; gap:12px; }
+  .wf-account-device-card { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; margin-block:16px; padding:16px; border:1px solid var(--border); border-radius:15px; background:var(--card); }
+  .wf-account-device-card h3,.wf-account-device-card p { margin:0; }
+  .wf-account-device-card h3 { margin-block-end:4px; }
+  .wf-account-device-handoff > p,.wf-account-device-handoff > [role="status"] { grid-column:1/-1; }
+  .wf-account-device-handoff { align-items:end; }
   .wf-account-field { display:flex; flex-direction:column; gap:7px; min-inline-size:0; margin:0; color:var(--text2); font-size:13px; font-weight:600; line-height:1.5; }
   .wf-account-field > small { font-weight:400; }
   .wf-account-wide { grid-column:1/-1; }
@@ -135,6 +140,7 @@
   @media (max-width:480px) {
     .wf-account-scope { padding:11px; }
     .wf-account-toolbar,.wf-account-form-grid,.wf-account-facts { grid-template-columns:minmax(0,1fr); }
+    .wf-account-device-card { grid-template-columns:minmax(0,1fr); padding:13px; }
     .wf-account-toolbar > .btn { justify-self:stretch; }
     .wf-account-field { gap:6px; }
     .wf-account-row { gap:10px; padding:13px; }
