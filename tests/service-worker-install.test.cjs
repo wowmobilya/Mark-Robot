@@ -45,16 +45,21 @@ test('offline installation bounds network work and activates only after the requ
   assert.equal(f.calls.filter(value=>value===url('./')||value===url('./index.html')).length,1,'fetch the HTML once for both cache aliases');
   for(const asset of ['wow-dialog.js?v=1','wow-dialog.css?v=1','touch-keyboard.js?v=5','touch-keyboard.css?v=3','platform/dashboard.js?v=228','platform/dashboard.css?v=228','purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=9','accounts-settings.css?v=1','modules/platform/cloud/wow-cloud-client.js?v=9','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/cloud/wow-cloud-settings.js?v=6','modules/platform/push/wow-push-device.js?v=7','modules/platform/push/wow-push-client.js?v=5','modules/platform/push/wow-push-settings.js?v=4','modules/platform/push/wow-push-sw.js?v=9'])assert(stored.has(url('./'+asset)),asset+' missing from precache');
 });
-test('updates reuse unmodified versioned assets and force fresh bytes only for the chat hotfix',async()=>{
+test('updates reuse exactly versioned prior assets and fetch fresh unversioned configuration and HTML',async()=>{
   const f=fixture({seed:true});await f.install();
-  const patched=['./modules/chat/call-manager.js?v=5','./modules/chat/call-ui.js?v=7',
-    './modules/chat/workspace.js?v=8','./modules/chat/styles.css?v=6','./modules/chat/call-ui.css?v=3'];
-  const fresh=f.calls.filter(value=>/[?&]v=/.test(value)).sort();
-  assert.deepEqual(fresh,patched.map(url).sort(),'only explicitly modified chat assets refresh when shell identity stays the same');
+  assert.equal(f.calls.some(value=>/[?&]v=/.test(value)),false,'unchanged versioned assets do not download twice');
   assert(f.calls.includes(url('./index.html')));assert(f.calls.includes(url('./google-drive-config.js')));
   const stored=f.stores.get(f.context.qa.CACHE_NAME);
   assert.match(stored.get(url('./package-labels.js?v=8')).tag,/^previous:/);
-  for(const asset of patched)assert.match(stored.get(url(asset)).tag,/^network:/,asset+' requires new bytes');
+});
+test('a release 236 installation downloads the changed chat assets once for release 237',async()=>{
+  const before=['./modules/chat/call-manager.js?v=5','./modules/chat/call-ui.js?v=7',
+    './modules/chat/workspace.js?v=8','./modules/chat/styles.css?v=6','./modules/chat/call-ui.css?v=3'];
+  const after=['./modules/chat/call-manager.js?v=6','./modules/chat/call-ui.js?v=8',
+    './modules/chat/workspace.js?v=9','./modules/chat/styles.css?v=7','./modules/chat/call-ui.css?v=4'];
+  const f=fixture({seed:before});await f.install();
+  for(const asset of after)assert(f.calls.includes(url(asset)),asset+' must download a fresh version');
+  for(const asset of before)assert.equal(f.calls.includes(url(asset)),false,'old code must not be downloaded');
 });
 test('a required script failure retains the old worker, while optional audio failure does not block the shell',async()=>{
   const required=fixture({fail:value=>value.includes('/purchase-planner.js')});
