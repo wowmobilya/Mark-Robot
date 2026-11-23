@@ -119,7 +119,7 @@
       const Audio=root.AudioContext||root.webkitAudioContext;
       if(!Audio)return;
       try{if(!context)context=new Audio();unlockPending=true;
-        Promise.resolve(context.resume()).then(()=>{unlockPending=false;if(active)pulse();render();})
+        Promise.resolve(context.resume()).then(()=>{unlockPending=false;if(active)pulse();})
           .catch(()=>{unlockPending=false;});
       }catch(_){unlockPending=false;}
     }
