@@ -8,7 +8,7 @@
     inline-size: min(100%,840px) !important; margin-block: 0 16px !important; gap: 8px;
   }
   html body #mainContent #page-quick-barcode .qbl-view {
-    height: clamp(200px,calc(100dvh - 310px),430px) !important;
+    height: clamp(190px,calc(100dvh - 390px),360px) !important;
     min-block-size: 0; isolation: isolate;
   }
   html body #mainContent #page-quick-barcode #qblDropdown { min-block-size: 0; }
@@ -57,4 +57,17 @@
     html body #mainContent #page-quick-barcode #qblDdTabs .wf-category-photo { display: none; }
     html body #mainContent #page-quick-barcode #qblDdTabs .wf-category-barcode-tab { grid-template-columns: minmax(0,1fr); }
   }
+}
+
+/* WOW 238: keep on-screen scanner and barcode previews compact; printing is unchanged. */
+@media screen {
+ #page-quick-barcode :is(.qbl-view,.qbl-panel,.qbl-workbench){min-inline-size:0;max-inline-size:100%}
+ #page-quick-barcode .qbl-view :is(video,canvas){max-inline-size:100%;max-block-size:100%;object-fit:contain}
+ #page-quick-barcode :is(#qblPhase3,#qblTierCard) :is(svg[role=img],img[alt*=barcode i]){
+   display:block;inline-size:auto;max-inline-size:min(100%,320px);max-block-size:180px;
+   block-size:auto;object-fit:contain;margin-inline:auto;
+ }
+ @media(max-width:600px){
+  #page-quick-barcode .qbl-view{height:clamp(190px,38dvh,315px)!important}
+ }
 }
