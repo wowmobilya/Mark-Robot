@@ -32,6 +32,13 @@ test('applicant gets a non-authorizing request QR and owner explicitly reviews a
     }};
    window.visitor=WFCompanyJoin.mountApplicant({container:document.querySelector('main'),client,base,workspace,lang:'en'});
   },{workspace,base});
+  // Realistic iPhone SE, Android phone, tablet and desktop widths must not scroll horizontally.
+  for(const viewport of [{width:320,height:568},{width:390,height:844},{width:768,height:1024},{width:1280,height:800}]){
+    await page.setViewportSize(viewport);
+    const width=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
+    assert(width.scroll<=width.viewport,JSON.stringify({viewport,width}));
+  }
+  await page.setViewportSize({width:390,height:844});
   await page.getByLabel('Name',{exact:true}).fill('Fixture');await page.getByLabel('Username',{exact:true}).fill('fixture');
   await page.getByLabel('Password',{exact:true}).fill(pw);await page.getByRole('button',{name:'Send join request'}).click();
   await page.getByText('Waiting for approval').waitFor();
