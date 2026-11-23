@@ -12,6 +12,7 @@
   const el=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   let token='',adminUserId='',verifiedName='',offset=0,generation=0,expiryTimer,setup=null,draft=null;
   let ownerAlerts=null;
+  let serverRobot=null;
   let scanner=null,supportInbox=null,supportAlerts={enabled:false,seen:new Set()};
   const trustKey='wow.platform.remember.v1:'+config.endpoint+':'+config.workspaceId;
   const retention=7*86400000;
@@ -72,7 +73,7 @@
     resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
   }
   let brandList=null,subscriptionClocks=null,remoteClock=null,companyProfilePanel=null;
-  function clear(){ownerAlerts?.dispose();ownerAlerts=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;companyProfilePanel?.close();companyProfilePanel=null;window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';adminUserId='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  function clear(){serverRobot?.dispose();serverRobot=null;ownerAlerts?.dispose();ownerAlerts=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;companyProfilePanel?.close();companyProfilePanel=null;window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';adminUserId='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -606,6 +607,7 @@
   async function list(){
     const ticket=++generation,result=await request('company.list',{offset});if(ticket!==generation)return;
     const state={...result,companies:result.companies.slice(0,directoryPageSize)};
+    serverRobot?.dispose();serverRobot=null;
     scanner?.dispose();scanner=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;
     companyProfilePanel?.close();companyProfilePanel=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
     const labels=destinations[lang.value],settingsText=settingsWords[lang.value],homepage=homeWords[lang.value];
@@ -633,28 +635,7 @@
     const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);
     const hero=el('section'),heroTitle=el('h3',homepage.heading),heroLead=el('p',homepage.caption);
     hero.className='platform-home-hero';hero.append(heroTitle,heroLead);
-    const serverWords={
-      ar:['خادم مارك روبوت','استجاب الخادم','تعذّر الوصول إلى الخادم','آخر تحقق','تحقّق الآن','جارٍ التحقق'],
-      en:['Mark Robot server','Server responded','Server unreachable','Last check','Check now','Checking'],
-      tr:['Mark Robot sunucusu','Sunucu yanıt verdi','Sunucuya ulaşılamıyor','Son kontrol','Şimdi kontrol et','Kontrol ediliyor'],
-      fr:['Serveur Mark Robot','Le serveur a répondu','Serveur inaccessible','Dernière vérification','Vérifier','Vérification en cours'],
-      ru:['Сервер Mark Robot','Сервер ответил','Сервер недоступен','Последняя проверка','Проверить','Проверка']
-    }[lang.value];
-    const server=el('section'),serverInfo=el('div'),serverStatus=el('p'),serverTime=el('time'),serverRefresh=el('button',serverWords[4]);
-    server.className='platform-server-check';serverStatus.setAttribute('role','status');serverRefresh.type='button';
-    const showServerCheck=(message,state)=>{
-      const checked=new Date();server.dataset.state=state;serverStatus.textContent=message;
-      serverTime.dateTime=checked.toISOString();
-      serverTime.textContent=serverWords[3]+' · '+new Intl.DateTimeFormat(lang.value,{hour:'numeric',minute:'2-digit',second:'2-digit'}).format(checked);
-    };
-    showServerCheck(serverWords[1],'ready');
-    serverRefresh.onclick=async()=>{
-      serverRefresh.disabled=true;serverStatus.textContent=serverWords[5];server.dataset.state='checking';
-      try{await request('company.list',{offset});showServerCheck(serverWords[1],'ready');}
-      catch{showServerCheck(serverWords[2],'unreachable');}
-      finally{serverRefresh.disabled=false;}
-    };
-    serverInfo.append(el('h4',serverWords[0]),serverStatus,serverTime);server.append(serverInfo,serverRefresh);hero.append(server);
+    serverRobot=window.WFPlatformServerRobot?.mount({host:hero,state:{...result,offset},request,language:lang.value,endpoint:config.endpoint});
     const quickHeading=el('h3',homepage.quick),quick=el('nav');
     quick.className='platform-home-quick';quick.setAttribute('aria-label',homepage.quick);
     const shortcuts=[
