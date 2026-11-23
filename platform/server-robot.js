@@ -87,7 +87,7 @@
       </g>
     </g>`).join('');
     face.innerHTML=`<svg viewBox="86 60 428 234" focusable="false">${eyes}
-      <path class="platform-robot-mouth" d="M 274 252.72 Q 300 273.72 326 252.72"/>
+      <path class="platform-robot-nose" d="M 300 198 Q 292 219 300 220 Q 308 219 300 198"/>\n      <path class="platform-robot-mouth" d="M 274 252.72 Q 300 273.72 326 252.72"/>
     </svg>`;
     return face;
   }
