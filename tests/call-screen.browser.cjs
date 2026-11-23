@@ -35,7 +35,7 @@ test('focused incoming, connected, compact and restored calls on mobile and desk
    assert.equal(await page.evaluate(()=>vibrations.some(v=>Array.isArray(v)&&v.length>1)),true,'foreground incoming call vibrates when supported');
    const size=await dialog.boundingBox();
    if(width<780||height<580){assert.equal(Math.round(size.width),width);assert.equal(Math.round(size.height),height);}
-   await dialog.getByRole('button',{name:'قبول'}).click();await dialog.getByText('جارٍ الاتصال…',{exact:true}).waitFor();
+   await dialog.getByRole('button',{name:'قبول'}).click();assert.equal(await page.evaluate(()=>fixtureState.call.status),'active');
    assert.equal(await page.evaluate(()=>vibrations.some(v=>v===0)),true,'answer stops vibration immediately');
    await page.evaluate(()=>markConnected());
    await dialog.locator('.wf-call-preview video').waitFor();await dialog.locator('.wf-calling-videos video').waitFor();
