@@ -24,10 +24,17 @@ export function createPlatformActions({platformRpc,requirePlatformFounder,manage
       !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id)))throw failure('INVALID_REQUEST',422);
     return subscriptionSummaries(actor,ids);
   };
-  for(const action of ['company.list','company.rename','company.audit','company.status','company.create','limits.get','limits.set','plans.list','plans.save']){
+  for(const action of ['company.list','company.rename','company.audit','company.status','company.create','company.deletePreview','company.deleteEmpty','limits.get','limits.set','plans.list','plans.save']){
     handlers['platform.'+action]=async({actor,body})=>{
       let data={...body};
       delete data.action;
+      if(['company.deletePreview','company.deleteEmpty'].includes(action)){
+        const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+        if(typeof body.workspaceId!=='string'||!uuid.test(body.workspaceId))throw failure('INVALID_REQUEST',422);
+        if(action==='company.deleteEmpty' && (body.confirmed!==true||typeof body.confirmName!=='string'||body.confirmName.length>100||
+          !Number.isSafeInteger(body.expectedRevision)||body.expectedRevision<0))throw failure('CONFIRMATION_REQUIRED',422);
+        data={workspaceId:body.workspaceId,...(action==='company.deleteEmpty'?{confirmed:true,confirmName:body.confirmName,expectedRevision:body.expectedRevision}:{})};
+      }
       if(action==='company.create'){
         if(typeof body.setupToken!=='string'||!/^[a-f0-9]{64}$/.test(body.setupToken))throw failure('INVALID_REQUEST',422);
         data={name:body.name,claimHash:await sha256(body.setupToken),expiresAt:new Date(Date.now()+3600000).toISOString()};
