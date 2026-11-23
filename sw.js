@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=5');
 importScripts('./modules/platform/push/wow-push-sw.js?v=9');
-const CACHE_NAME = 'wow-furniture-v236-cloud';
+const CACHE_NAME = 'wow-furniture-v237-cloud';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -25,11 +25,11 @@ const urlsToCache = [
   './modules/files/workspace.js?v=2',
   './modules/files/styles.css?v=2',
   './modules/chat/realtime-channel.js?v=1',
-  './modules/chat/call-manager.js?v=5',
-  './modules/chat/call-ui.js?v=7',
-  './modules/chat/workspace.js?v=8',
-  './modules/chat/styles.css?v=6',
-  './modules/chat/call-ui.css?v=3',
+  './modules/chat/call-manager.js?v=6',
+  './modules/chat/call-ui.js?v=8',
+  './modules/chat/workspace.js?v=9',
+  './modules/chat/styles.css?v=7',
+  './modules/chat/call-ui.css?v=4',
   './modules/communications/core.js?v=1',
   './modules/communications/workspace.js?v=1',
   './modules/communications/styles.css?v=1',
@@ -380,16 +380,6 @@ async function wfLoadGalleryMusic() {
   try { return await pending; }
   finally { if (galleryMusicLoad === pending) galleryMusicLoad = null; }
 }
-// The 237 chat patch keeps the existing page release identifier until the
-// large main HTML shell can be rebuilt. Force fresh bytes for these same-URL
-// chat modules when this updated worker installs, even over a v236 cache.
-const WOW_CHAT_UPDATED_ASSETS = new Set([
-  './modules/chat/call-manager.js?v=5',
-  './modules/chat/call-ui.js?v=7',
-  './modules/chat/workspace.js?v=8',
-  './modules/chat/styles.css?v=6',
-  './modules/chat/call-ui.css?v=3'
-]);
 async function wfPrecacheShell() {
   const cache = await caches.open(CACHE_NAME);
   const priorNames = (await caches.keys()).filter(name => name !== CACHE_NAME && name.startsWith('wow-furniture-'));
@@ -406,7 +396,7 @@ async function wfPrecacheShell() {
         return;
       }
       let cached;
-      if (/[?&]v=/.test(url) && !WOW_CHAT_UPDATED_ASSETS.has(url)) {
+      if (/[?&]v=/.test(url)) {
         for (const previous of prior) {
           cached = await previous.match(request);
           if (cached?.ok) break;
