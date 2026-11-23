@@ -1357,14 +1357,6 @@ main>header .platform-header-link[href="#support"]:not([aria-label*="0"]):focus-
 .platform-announcement-form button{min-height:44px}
 .platform-announcement-review [data-actions]{display:flex;flex-wrap:wrap;gap:.5rem}
 .platform-announcement-form [role=status]:empty{display:none}
-.platform-server-check{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem;margin-block-start:.7rem;padding:.8rem 1rem;border:1px solid var(--border);border-radius:14px;background:var(--card);max-inline-size:42rem}
-.platform-server-check h4{margin:0 0 .32rem;font-size:.94rem}
-.platform-server-check p{display:flex;gap:.44rem;align-items:center;font-weight:700}
-.platform-server-check p::before{content:"";inline-size:.46rem;block-size:.46rem;border-radius:50%;background:currentColor;flex:none}
-.platform-server-check[data-state=ready] p{color:var(--success,#23765b)}
-.platform-server-check[data-state=unreachable] p{color:var(--danger,#b13748)}
-.platform-server-check time{display:block;margin-block-start:.26rem;color:var(--muted,var(--text2));font-size:.78rem}
-.platform-server-check button{min-block-size:44px}
 .platform-server-startup{display:grid;justify-items:center;gap:1rem;margin:clamp(2rem,10vh,6rem) auto;padding:1.5rem;max-inline-size:28rem;text-align:center;border:1px solid var(--border);border-radius:22px;background:var(--card);color:var(--text)}
 .platform-server-rack{display:grid;gap:4px;inline-size:58px;color:var(--ui-accent,var(--accent))}
 .platform-server-rack i{block-size:12px;border:1px solid currentColor;border-radius:5px;display:flex;align-items:center;padding-inline:6px}
