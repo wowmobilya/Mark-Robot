@@ -1260,3 +1260,38 @@ main>header .platform-header-link[href="#support"]:not([aria-label*="0"]):focus-
   background:currentColor;mask:var(--company-action-icon) center/contain no-repeat;
 }
 .platform-company-page-link::after{margin-inline-start:auto}
+
+/* WOW 238: destructive company action is isolated and cannot be mistaken for suspend. */
+.platform-tool-delete {
+ --platform-tool-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%206h18M8%206V4h8v2m3%200-1%2014H6L5%206M10%2010v7m4-7v7%22%2F%3E%3C%2Fsvg%3E");
+ color:#9d3039!important;border-color:color-mix(in srgb,#b4444c 30%,var(--border))!important;
+}
+.platform-company-delete-panel:not(:empty){grid-column:1/-1;min-inline-size:0;inline-size:100%;
+ margin-block:.6rem 0;padding:clamp(.75rem,2vw,1rem);
+ border:1px solid color-mix(in srgb,#a9444f 38%,var(--border));
+ border-radius:16px;background:var(--ui-soft,var(--card));box-sizing:border-box}
+.platform-company-delete-panel>p{margin:0;line-height:1.6;overflow-wrap:anywhere}
+.platform-delete-form{display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+ gap:.7rem;align-items:stretch;max-inline-size:100%;margin:0!important;padding:0!important;
+ border:0!important;background:transparent!important}
+.platform-delete-form>strong{font-size:1rem;font-weight:800}
+.platform-delete-form>p{margin:0;font-size:.88rem;line-height:1.55;overflow-wrap:anywhere}
+.platform-delete-form>label:not(.platform-delete-checkbox){display:grid;gap:.35rem;min-inline-size:0;font-weight:700}
+.platform-delete-form input[type=text]{inline-size:100%;min-inline-size:0;box-sizing:border-box;
+ font-size:16px;min-block-size:46px}
+.platform-delete-checkbox{display:flex!important;align-items:flex-start;gap:.55rem;font-weight:600;
+ line-height:1.5;min-inline-size:0}
+.platform-delete-checkbox input[type=checkbox]{flex:0 0 21px;inline-size:21px;block-size:21px;
+ min-block-size:21px;margin:.15rem 0 0;accent-color:var(--ui-accent,#3f7c94)}
+.platform-delete-actions{display:flex;flex-wrap:wrap;gap:.55rem;align-items:stretch}
+.platform-delete-actions>button{flex:1 1 150px;min-block-size:46px}
+.platform-delete-confirm:not(:disabled){background:#9d3039!important;color:#fff!important;border-color:#9d3039!important}
+.platform-delete-actions>button:disabled{opacity:.5}
+@media(max-width:520px){
+ .platform-company-delete-panel{padding:.75rem}
+ .platform-delete-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .platform-delete-actions>button{inline-size:100%;min-inline-size:0}
+}
+@media screen and (max-width:620px){
+ .platform-setup-qr{max-inline-size:min(100%,196px);block-size:auto}
+}
