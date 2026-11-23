@@ -1,0 +1,124 @@
+/* WOW Admin 241 — immersive, accessible server sign-in without altering authentication. */
+body:has(#content>.platform-login){
+  background:
+    radial-gradient(ellipse 72% 42% at 50% -10%,color-mix(in srgb,var(--ui-accent,#3f7c94) 22%,transparent),transparent 78%),
+    radial-gradient(ellipse 45% 55% at 98% 80%,color-mix(in srgb,var(--ui-accent,#3f7c94) 11%,transparent),transparent 85%),
+    var(--bg);
+}
+body:has(#content>.platform-login)::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.12;
+  background-image:linear-gradient(to right,var(--border) 1px,transparent 1px),
+                   linear-gradient(to bottom,var(--border) 1px,transparent 1px);
+  background-size:46px 46px;
+  mask-image:linear-gradient(to bottom,transparent 0%,#000 25%,#000 75%,transparent 100%);
+}
+body:has(#content>.platform-login) main{
+  position:relative;z-index:1;max-inline-size:76rem;min-block-size:100svh;
+  display:flex;flex-direction:column;box-sizing:border-box;
+  padding-block:max(.65rem,env(safe-area-inset-top)) max(.65rem,env(safe-area-inset-bottom));
+}
+body:has(#content>.platform-login) main>header{flex:none}
+body:has(#content>.platform-login) #content{flex:1;display:grid;align-content:center;gap:.5rem;margin:0;min-block-size:0}
+body:has(#content>.platform-login) .platform-app-actions{flex:none}
+#content>.platform-login{
+  isolation:isolate;position:relative;overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--ui-accent) 24%,var(--border));
+  border-radius:24px;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--card) 94%,var(--ui-accent) 6%),var(--card) 72%);
+  box-shadow:0 20px 65px rgb(7 33 49 / .12),inset 0 1px color-mix(in srgb,var(--card) 80%,white 20%);
+}
+#content>.platform-login::before{
+  content:"";position:absolute;inset:0 0 auto;block-size:2px;
+  background:linear-gradient(90deg,transparent,var(--ui-accent),transparent);
+  opacity:.67;pointer-events:none;
+}
+#content>.platform-login .platform-login-scene{
+  position:relative;display:grid;justify-items:center;gap:.18rem;
+  padding:0 0 .9rem;margin:0 0 .4rem;min-inline-size:0;
+  border-block-end:1px solid var(--border);text-align:center;
+}
+.platform-login-scene .platform-login-stage{
+  position:relative;display:grid;place-items:center;inline-size:min(100%,238px);block-size:125px;
+  background:transparent;overflow:visible;color:var(--ui-accent);
+}
+.platform-login-stage::before{
+  content:"";position:absolute;inline-size:140px;block-size:100px;border-radius:50%;
+  background:radial-gradient(ellipse,color-mix(in srgb,var(--ui-accent) 16%,transparent),transparent 72%);
+  filter:blur(9px);animation:wow241-halo 4.5s ease-in-out infinite;pointer-events:none;
+}
+.platform-login-face{position:relative;display:block;inline-size:200px;block-size:120px;
+  background:transparent;border:0;box-shadow:none;animation:wow241-float 4.2s ease-in-out infinite}
+.platform-login-face svg{inline-size:100%;block-size:100%;overflow:visible;display:block}
+.platform-login-face .wow241-eye{fill:currentColor;transform-box:fill-box;transform-origin:center;animation:wow241-blink 5.6s ease-in-out infinite}
+.platform-login-face .wow241-glint{fill:var(--card)}
+.platform-login-face .wow241-brow,.platform-login-face .wow241-mouth,.platform-login-face .wow241-nose{
+  fill:none;stroke:currentColor;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+.platform-login-face .wow241-brow{transform-box:fill-box;transform-origin:center;transition:transform .24s ease}
+.platform-login-face .wow241-mouth-busy{opacity:0}
+.platform-login-face .wow241-pupil{transform-box:fill-box;transform-origin:center;animation:wow241-look 7s ease-in-out infinite}
+.platform-login-stage .wow241-signal{
+  position:absolute;inset-block-end:7px;inline-size:5px;block-size:5px;
+  border-radius:50%;background:var(--ui-accent);opacity:.6;box-shadow:0 0 15px var(--ui-accent);
+  animation:wow241-beacon 2s ease-in-out infinite;
+}
+.platform-login-scene .platform-login-eyebrow{font:800 .67rem/1.4 system-ui,sans-serif;letter-spacing:.2em;color:var(--ui-accent);direction:ltr}
+.platform-login-scene h2{margin:.15rem 0;font-size:clamp(1.13rem,3.4vw,1.55rem);line-height:1.4;
+  color:var(--text);font-weight:850;overflow-wrap:anywhere}
+.platform-login-scene .platform-login-subtitle{margin:.05rem 0 .35rem;color:var(--text2);font-size:.81rem;line-height:1.55}
+.platform-login-connection{display:flex;align-items:center;justify-content:center;gap:.4rem;min-height:20px;
+  color:var(--text2);font-size:.76rem;font-weight:650;line-height:1.4}
+.platform-login-connection::before{content:"";inline-size:7px;block-size:7px;flex:none;
+  border-radius:50%;background:var(--ui-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--ui-accent) 14%,transparent)}
+.platform-login-connection .wow241-connecting{display:none}
+#content>.platform-login:has(>button[data-phase="busy"]) .wow241-idle{display:none}
+#content>.platform-login:has(>button[data-phase="busy"]) .wow241-connecting{display:inline}
+#content>.platform-login:has(>button[data-phase="busy"]) .platform-login-connection::before,
+#content>.platform-login:has(>button[data-phase="busy"]) .wow241-signal{animation:wow241-beacon .6s ease-in-out infinite}
+#content>.platform-login:has(>button[data-phase="busy"]) .wow241-mouth-idle{opacity:0}
+#content>.platform-login:has(>button[data-phase="busy"]) .wow241-mouth-busy{opacity:1}
+#content>.platform-login:has(>button[data-phase="busy"]) .wow241-brow{transform:translateY(-6px)}
+#content>.platform-login label:not(.platform-remember){font-weight:700}
+#content>.platform-login input:not([type="checkbox"]):focus-visible{outline-color:var(--ui-accent)}
+#content>.platform-login button[type="submit"]{
+  background:linear-gradient(110deg,var(--ui-accent),color-mix(in srgb,var(--ui-accent) 76%,#071f2b));
+  box-shadow:0 5px 14px color-mix(in srgb,var(--ui-accent) 24%,transparent);
+  transition:transform .2s ease,box-shadow .2s ease;
+}
+#content>.platform-login button[type="submit"]:not(:disabled):active{transform:scale(.985)}
+/* Same-color, borderless robot inside the real server report. */
+.platform-server-robot-face{border:0;background:transparent;box-shadow:none;border-radius:0}
+.platform-server-robot-face .platform-robot-nose{fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:5}
+/* Login and session-restore states remain scrollable on small/landscape phones. */
+.platform-server-startup{
+  border-radius:24px;border-color:color-mix(in srgb,var(--ui-accent) 20%,var(--border));
+  background:linear-gradient(145deg,color-mix(in srgb,var(--card) 95%,var(--ui-accent) 5%),var(--card));
+  box-shadow:0 12px 36px rgb(7 33 49 / .08);
+}
+.platform-server-startup .platform-server-rack{animation:wow241-float 2.8s ease-in-out infinite}
+@keyframes wow241-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes wow241-halo{0%,100%{opacity:.5;transform:scale(.94)}50%{opacity:1;transform:scale(1.14)}}
+@keyframes wow241-beacon{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes wow241-look{0%,20%,80%,100%{transform:translateX(0)}45%{transform:translateX(3px)}60%{transform:translateX(-2px)}}
+@keyframes wow241-blink{0%,42%,44%,87%,90%,100%{transform:scaleY(1)}43%,88%{transform:scaleY(.08)}}
+@media(max-height:620px){
+  body:has(#content>.platform-login) #content{align-content:start}
+  #content>.platform-login .platform-login-scene{gap:0;padding-block-end:.45rem;margin-block-end:0}
+  .platform-login-scene .platform-login-stage{block-size:68px}
+  .platform-login-face{inline-size:122px;block-size:70px}
+  .platform-login-scene .platform-login-subtitle{margin:0}
+  #content>.platform-login{gap:.43rem!important;padding:.65rem .9rem!important}
+}
+@media(max-width:390px){
+  #content>.platform-login{border-radius:18px}
+  .platform-login-scene .platform-login-stage{block-size:90px}
+  .platform-login-face{inline-size:153px;block-size:90px}
+}
+@media(prefers-reduced-motion:reduce){
+  .platform-login-face,.platform-login-stage::before,.wow241-eye,.wow241-pupil,
+  .platform-login-stage .wow241-signal,.platform-login-connection::before,
+  .platform-server-startup .platform-server-rack{animation:none!important;transition:none!important}
+}
+html[data-wf-motion="reduced"] .platform-login-face,
+html[data-wf-motion="reduced"] .platform-login-stage::before,
+html[data-wf-motion="reduced"] .wow241-eye,
+html[data-wf-motion="reduced"] .wow241-pupil{animation:none!important}
