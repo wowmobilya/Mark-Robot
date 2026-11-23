@@ -132,6 +132,35 @@
     headerActions.hidden=true;headerActions.replaceChildren();
     scanner?.dispose();content.replaceChildren();const form=el('form'),email=field(form,1,'text'),pass=field(form,2,'password');
     form.className='platform-login';
+    // Login scene is presentational only; authentication and founder permissions stay server enforced.
+    const sceneWords={
+      ar:['بوابة خادم WOW','دخول المؤسس وإدارة الشركات والأنظمة','النظام جاهز للاتصال','جارٍ الاتصال والتحقق من الهوية…'],
+      en:['WOW Server Portal','Founder access to company and server management','Ready for a secure connection','Connecting and verifying identity…'],
+      tr:['WOW Sunucu Portalı','Kurucu için şirket ve sunucu yönetimi','Güvenli bağlantıya hazır','Bağlanılıyor ve kimlik doğrulanıyor…'],
+      fr:['Portail serveur WOW','Gestion des sociétés et du serveur par le fondateur','Connexion sécurisée prête','Connexion et vérification de l’identité…'],
+      ru:['Серверный портал WOW','Управление компаниями и сервером для основателя','Готов к защищённому соединению','Подключение и проверка личности…']
+    }[lang.value]||['WOW Server','Founder sign-in','Ready','Connecting…'];
+    const scene=el('div'),stage=el('div'),face=el('div'),intro=el('div'),connection=el('div');
+    scene.className='platform-login-scene';stage.className='platform-login-stage';face.className='platform-login-face';
+    face.setAttribute('aria-hidden','true');
+    face.innerHTML=`<svg viewBox="0 0 260 150" focusable="false" aria-hidden="true">
+      <path class="wow241-brow" d="M 54 35 Q 80 23 106 35"/>
+      <path class="wow241-brow" d="M 154 35 Q 180 23 206 35"/>
+      <g class="wow241-eye"><ellipse cx="80" cy="73" rx="23" ry="31"/><ellipse class="wow241-glint" cx="71" cy="62" rx="8" ry="10"/><circle class="wow241-glint" cx="89" cy="86" r="3"/></g>
+      <g class="wow241-eye"><ellipse cx="180" cy="73" rx="23" ry="31"/><ellipse class="wow241-glint" cx="171" cy="62" rx="8" ry="10"/><circle class="wow241-glint" cx="189" cy="86" r="3"/></g>
+      <path class="wow241-nose" d="M 130 83 L 126 97 Q 130 102 134 97"/>
+      <path class="wow241-mouth wow241-mouth-idle" d="M 104 113 Q 130 137 156 113"/>
+      <path class="wow241-mouth wow241-mouth-busy" d="M 109 118 Q 130 125 151 118"/>
+    </svg>`;
+    stage.append(face,el('span'));stage.lastElementChild.className='wow241-signal';
+    intro.className='platform-login-scene-copy';
+    const eyebrow=el('span','WOW · SERVER'),heading=el('h2',sceneWords[0]),subheading=el('p',sceneWords[1]);
+    eyebrow.className='platform-login-eyebrow';subheading.className='platform-login-subtitle';
+    intro.append(eyebrow,heading,subheading);
+    connection.className='platform-login-connection';connection.setAttribute('role','status');connection.setAttribute('aria-live','polite');
+    const ready=el('span',sceneWords[2]),connecting=el('span',sceneWords[3]);
+    ready.className='wow241-idle';connecting.className='wow241-connecting';connection.append(ready,connecting);
+    scene.append(stage,intro,connection);form.prepend(scene);
     const visibility={ar:['إظهار','إخفاء'],en:['Show','Hide'],tr:['Göster','Gizle'],fr:['Afficher','Masquer'],ru:['Показать','Скрыть']}[lang.value];
     const row=el('div'),toggle=el('button',visibility[0]);row.className='platform-password';toggle.type='button';
     pass.id='platform-founder-password';const passLabel=pass.parentElement;
