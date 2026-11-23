@@ -396,6 +396,13 @@
     fr:['Sociétés','Formules','Support','Sections d’administration','Aucune société pour le moment.','Appels'],
     ru:['Компании','Тарифы','Поддержка','Разделы управления','Компаний пока нет.','Звонки']
   };
+  const deleteCompanyWords={
+    ar:{action:'حذف الشركة',heading:'حذف نهائي من الخادم',loading:'جارِ التحقق من بيانات الشركة…',warning:'لا يمكن استعادة الشركة بعد الحذف. لا يُسمح بالحذف إلا عندما تكون الشركة فارغة تماماً.',blocked:'هذه الشركة تحتوي على بيانات أو حسابات أو ملفات مرتبطة، لذا مُنع حذفها حمايةً للسجلات. يمكنك تعليق الشركة بدلاً من ذلك.',type:'اكتب اسم الشركة كما يظهر للتأكيد',check:'أؤكد أنني أريد حذف هذه الشركة الفارغة نهائياً',confirm:'تأكيد الحذف النهائي',cancel:'إلغاء',error:'تعذّر إتمام الحذف. لم تُحذف الشركة، ويمكن إعادة المحاولة بعد التحقق.'},
+    en:{action:'Delete company',heading:'Permanently delete from server',loading:'Checking company data…',warning:'This cannot be undone. Only completely empty companies can be deleted.',blocked:'This company has linked data, accounts or files. Deletion was blocked to preserve records. You may suspend it instead.',type:'Type the exact company name to confirm',check:'I confirm permanent deletion of this empty company',confirm:'Permanently delete',cancel:'Cancel',error:'Deletion could not be completed. The company was not deleted.'},
+    tr:{action:'Şirketi sil',heading:'Sunucudan kalıcı olarak sil',loading:'Şirket verileri denetleniyor…',warning:'Bu işlem geri alınamaz. Yalnızca tamamen boş şirketler silinebilir.',blocked:'Bu şirkete bağlı veriler veya hesaplar var. Kayıtları korumak için silme engellendi. Dilerseniz askıya alabilirsiniz.',type:'Onay için şirket adını aynen yazın',check:'Bu boş şirketin kalıcı olarak silinmesini onaylıyorum',confirm:'Kalıcı olarak sil',cancel:'İptal',error:'Silme tamamlanamadı. Şirket silinmedi.'},
+    fr:{action:'Supprimer la société',heading:'Suppression définitive du serveur',loading:'Vérification des données…',warning:'Action irréversible. Seules les sociétés entièrement vides peuvent être supprimées.',blocked:'Cette société possède des données ou des comptes. Suppression bloquée pour protéger les archives. Vous pouvez la suspendre.',type:'Saisissez exactement le nom de la société',check:'Je confirme la suppression définitive de cette société vide',confirm:'Supprimer définitivement',cancel:'Annuler',error:'Échec de la suppression. La société n’a pas été supprimée.'},
+    ru:{action:'Удалить компанию',heading:'Безвозвратное удаление с сервера',loading:'Проверка данных компании…',warning:'Операция необратима. Удаляются только полностью пустые компании.',blocked:'У компании есть данные или учётные записи. Удаление заблокировано для сохранения записей. Можно приостановить компанию.',type:'Введите точное название компании для подтверждения',check:'Подтверждаю окончательное удаление пустой компании',confirm:'Удалить навсегда',cancel:'Отмена',error:'Удаление не выполнено. Компания сохранена.'}
+  };
   const deviceWords={
     ar:['الأجهزة المرتبطة','لا توجد أجهزة مرتبطة بهذه الشركة.','فك الارتباط','بعد التأكيد يستطيع صاحب هذا الحساب ربط جهاز آخر بتسجيل الدخول. تحقق من هوية صاحب الطلب.','تأكيد فك الارتباط','تاريخ الربط','مالك الشركة','تم فك ربط الجهاز.'],
     en:['Linked devices','This company has no linked devices.','Release device','After confirmation, this account can link a different device by signing in. Verify who requested the change.','Confirm release','Linked on','Company owner','Device released.'],
@@ -870,7 +877,46 @@
       const devicesBox=el('section'),devicesToggle=btn(tools,21,()=>companyDevices(devicesBox,company.id));
       devicesToggle.textContent=deviceWords[lang.value][0];devicesToggle.className='platform-tool platform-tool-devices';devicesBox.className='platform-company-devices';
       const limitsBox=el('section'),limitButton=btn(tools,18,()=>subscription(limitsBox,company));limitButton.className='platform-tool platform-tool-subscription';
-      details.append(editArea,activationBox,limitsBox,devicesBox);
+      const deletion=el('section');deletion.className='platform-company-delete-panel';
+      const delCopy=deleteCompanyWords[lang.value]||deleteCompanyWords.en;
+      const deleteButton=el('button',delCopy.action);deleteButton.type='button';
+      deleteButton.className='platform-tool platform-tool-delete';tools.append(deleteButton);
+      deleteButton.onclick=async()=>{
+        if(deleteButton.disabled)return;
+        if(deletion.childElementCount){deletion.replaceChildren();deleteButton.focus();return;}
+        deleteButton.disabled=true;const info=el('p',delCopy.loading);info.setAttribute('role','status');deletion.replaceChildren(info);
+        try{
+          const preview=await request('company.deletePreview',{workspaceId:company.id});
+          if(!deletion.isConnected)return;
+          if(preview.workspaceId!==company.id||preview.name!==company.name||!Number.isSafeInteger(preview.revision))throw Error();
+          if(preview.allowed!==true){deletion.replaceChildren(el('strong',delCopy.heading),el('p',delCopy.blocked));return;}
+          const form=el('form'),title=el('strong',delCopy.heading),warning=el('p',delCopy.warning);
+          form.className='platform-delete-form';
+          const label=el('label',delCopy.type),input=el('input');input.type='text';input.autocomplete='off';
+          input.maxLength=100;input.required=true;label.append(input);
+          const checkLabel=el('label',delCopy.check),check=el('input');check.type='checkbox';checkLabel.prepend(check);
+          checkLabel.className='platform-delete-checkbox';
+          const actions=el('div'),cancel=el('button',delCopy.cancel),confirm=el('button',delCopy.confirm),message=el('p');
+          actions.className='platform-delete-actions';cancel.type='button';confirm.type='submit';
+          confirm.className='platform-delete-confirm';confirm.disabled=true;message.setAttribute('role','status');
+          const validate=()=>{confirm.disabled=input.value!==preview.name||!check.checked;};
+          input.addEventListener('input',validate);check.addEventListener('change',validate);
+          cancel.onclick=()=>{deletion.replaceChildren();deleteButton.focus();};
+          actions.append(cancel,confirm);form.append(title,warning,label,checkLabel,actions,message);
+          deletion.replaceChildren(form);input.focus();
+          form.onsubmit=async event=>{
+            event.preventDefault();validate();if(confirm.disabled)return;
+            confirm.disabled=true;cancel.disabled=true;message.textContent=delCopy.loading;
+            try{
+              const result=await request('company.deleteEmpty',{workspaceId:company.id,confirmName:preview.name,expectedRevision:preview.revision,confirmed:true});
+              if(result.workspaceId!==company.id||result.deleted!==true)throw Error();
+              await list();
+            }catch(error){message.textContent=delCopy.error+(error?.publicCode?' ('+error.publicCode+')':'');cancel.disabled=false;validate();}
+          };
+        }catch(error){if(deletion.isConnected)info.textContent=delCopy.error+(error?.publicCode?' ('+error.publicCode+')':'');}
+        finally{if(deleteButton.isConnected)deleteButton.disabled=false;}
+      };
+      details.append(editArea,activationBox,limitsBox,devicesBox,deletion);
       const brandEditor=details.querySelector('.platform-company-brand');if(brandEditor)details.append(brandEditor);
       if(inDirectory)companies.append(row);
       if(activationObserver)activationObserver.observe(row);
