@@ -52,8 +52,30 @@
 
 /* Founder device diagnostics: evidence is deliberately labelled advisory. */
 .wf-inspect-device-warning{margin:0;padding:.75rem .9rem;border:1px solid var(--border,#d8e1e5);border-radius:13px;background:var(--ui-soft,#e9f2f5);color:var(--text2,#64747e);font-size:.82rem;line-height:1.7}
-.wf-inspect-device-head{display:flex;align-items:center;gap:.65rem;margin-bottom:.75rem;min-width:0}
+.wf-inspect-device{display:grid;align-content:start;gap:.65rem}
+.wf-inspect-device-head{display:flex;align-items:center;gap:.65rem;min-width:0}
 .wf-inspect-device-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;background:var(--ui-soft,#e9f2f5);color:var(--ui-accent,#3f7c94);border-radius:12px;font-size:1.4rem}
+.wf-inspect-device-icon{
+ --device-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='5' width='14' height='14' rx='3'/%3E%3Cpath d='M12 9v.01m-1 3h1v3h1'/%3E%3C/svg%3E");
+}
+.wf-inspect-device-icon[data-device=phone]{
+ --device-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='7' y='2.5' width='10' height='19' rx='2.5'/%3E%3Cpath d='M11 18.5h2'/%3E%3C/svg%3E");
+}
+.wf-inspect-device-icon[data-device=tablet]{
+ --device-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.5' y='3' width='15' height='18' rx='2.5'/%3E%3Cpath d='M11 18h2'/%3E%3C/svg%3E");
+}
+.wf-inspect-device-icon[data-device=desktop]{
+ --device-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2.5' y='4' width='19' height='13' rx='2'/%3E%3Cpath d='M12 17v3m-4 0h8'/%3E%3C/svg%3E");
+}
+.wf-inspect-device-icon::before{content:'';inline-size:24px;block-size:24px;background:currentColor;mask:var(--device-icon) center/contain no-repeat}
 .wf-inspect-device-name{display:flex;flex-direction:column;gap:.15rem;min-width:0;overflow-wrap:anywhere}
 .wf-inspect-device-name strong{font-size:1rem}
 .wf-inspect-device-name small{color:var(--text2,#64747e);font-size:.76rem}
+.wf-inspect-provider-ip{direction:ltr;text-align:left!important;unicode-bidi:isolate;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.wf-inspect-inline{margin:0;min-inline-size:0;border:1px solid var(--border);border-radius:18px;background:var(--card);overflow:hidden}
+.wf-inspect-inline .wf-inspect-top{justify-content:space-between;flex-wrap:wrap;min-block-size:58px;min-inline-size:0;box-shadow:none}
+.wf-inspect-inline .wf-inspect-top h3{margin:0;font-size:1.03rem;overflow-wrap:anywhere}
+.wf-inspect-inline .wf-inspect-body{box-sizing:border-box;max-inline-size:none;overflow:visible}
+.wf-inspect-inline .wf-inspect-message:empty,.wf-inspect-inline .wf-inspect-pages:empty{display:none}
+.wf-inspect-inline .wf-inspect-device{background:var(--input,var(--card))}
+.wf-inspect-inline .wf-inspect-pages{flex-wrap:wrap;padding-inline:0}

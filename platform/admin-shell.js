@@ -30,7 +30,8 @@
   const drawer=create('aside','platform-side-drawer');drawer.id='platformSideDrawer';
   drawer.hidden=true;drawer.setAttribute('role','dialog');drawer.setAttribute('aria-modal','true');
   doc.body.append(backdrop,drawer);
-  const orbit=create('span','platform-nav-orbit');orbit.setAttribute('aria-hidden','true');
+  const orbit=create('span','platform-nav-orbit'),dockSurface=create('span','platform-nav-surface');
+  orbit.setAttribute('aria-hidden','true');dockSurface.setAttribute('aria-hidden','true');
   const setDensity=value=>{
     if(!['compact','comfortable'].includes(value))return;
     density=value;html.dataset.adminDensity=value;
@@ -148,9 +149,10 @@
   function positionOrbit(){
     if(!nav||!nav.isConnected)return;
     const active=nav.querySelector('.platform-section-link[aria-current="page"]');
-    if(!active)return;
-    const menuRect=nav.getBoundingClientRect(),rect=active.getBoundingClientRect();
-    if(menuRect.width<1)return;
+    const menuRect=nav.getBoundingClientRect(),rect=active?.getBoundingClientRect();
+    const visible=menuRect.width>0&&rect?.width>0&&matchMedia('(max-width:1024px)').matches;
+    nav.toggleAttribute('data-active-orbit',!!visible);orbit.hidden=!visible;
+    if(!visible)return;
     const center=rect.left+rect.width/2-menuRect.left;
     nav.style.setProperty('--admin-nav-x',Math.round(center*10)/10+'px');
     orbit.style.setProperty('--admin-orbit-icon',getComputedStyle(active).getPropertyValue('--section-icon'));
@@ -200,7 +202,7 @@
     close();
     navObserver?.disconnect();resizeObserver?.disconnect();
     nav=menu;
-    orbit.remove();nav.append(orbit);
+    orbit.hidden=true;nav.append(dockSurface,orbit);
     navObserver=new MutationObserver(queueOrbit);
     navObserver.observe(nav,{subtree:true,attributes:true,attributeFilter:['aria-current']});
     if(typeof ResizeObserver!=='undefined'){

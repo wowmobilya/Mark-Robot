@@ -39,19 +39,29 @@ test('read-only inbox polling never prompts, explicit alerts are generic, scoped
       window.sent=[];window.prompted=0;window.refresh=null;window.update='2026-01-01';window.setInterval=fn=>{window.refresh=fn;return 1;};
       Object.defineProperty(window,'Notification',{value:{permission:'default',async requestPermission(){prompted++;this.permission='granted';return 'granted';}}});
       navigator.serviceWorker.getRegistration=async()=>({scope:location.origin+'/platform/',async showNotification(title,options){sent.push({title,options});}});
-      WFPlatformSupport.mount({nav:document.querySelector('nav'),container:document.querySelector('main'),lang:'en',async request(){
-        return {cases:[{id:'case-secret',companyName:'Private company',text:'Private topic',unread:true,createdAt:'2026-01-01',updatedAt:window.update}],unreadCases:1};
-      }});
+      window.mountSupport=()=>{
+        window.supportHandle?.dispose();
+        window.supportHandle=WFPlatformSupport.mount({nav:document.querySelector('nav'),container:document.querySelector('main'),lang:'en',userId:'founder',async request(){
+          return {cases:[{id:'case-secret',companyName:'Private company',text:'Private topic',unread:true,createdAt:'2026-01-01',updatedAt:window.update}],unreadCases:1};
+        }});
+      };
+      mountSupport();
     });
     const opt=page.getByRole('button',{name:'Enable support alerts while admin is open'});await opt.waitFor();
     await page.evaluate(()=>refresh());assert.equal(await page.evaluate(()=>prompted),0);
     await opt.click();await page.getByRole('button',{name:'Turn off support alerts'}).waitFor();await page.evaluate(()=>refresh());
     assert.equal(await page.evaluate(()=>sent.length),0);
+    await page.evaluate(()=>mountSupport());
+    await page.getByRole('button',{name:'Turn off support alerts'}).waitFor();
+    assert.equal(await page.evaluate(()=>prompted),1);
     await page.evaluate(async()=>{update='2026-01-02';await refresh();await refresh();});
     const notifications=await page.evaluate(()=>sent);assert.equal(notifications.length,1);
     assert.equal(notifications[0].options.tag,'wow-platform-support');
     assert(!/Private company|Private topic|case-secret/.test(JSON.stringify(notifications)));
-    await page.getByRole('button',{name:'Turn off support alerts'}).click();await page.evaluate(async()=>{update='2026-01-03';await refresh();});
+    await page.getByRole('button',{name:'Turn off support alerts'}).click();
+    await page.evaluate(()=>mountSupport());
+    await opt.waitFor();
+    await page.evaluate(async()=>{update='2026-01-03';await refresh();});
     assert.equal(await page.evaluate(()=>sent.length),1);
   }finally{await browser.close();}
 });

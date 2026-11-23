@@ -7,7 +7,10 @@
   const locales=['ar','en','tr','fr','ru'];
   const words={
     rememberMember:['تذكّر حساب الموظف على هذا الجهاز ضمن مدة الجلسة','Remember this employee account for the session','Oturum süresince bu çalışanı hatırla','Mémoriser ce compte employé pour la durée de la session','Запомнить сотрудника на время сеанса'],
-    deviceLock:['هذا الحساب مرتبط بجهاز آخر أو أوقف المسؤول جهازه. تواصل مع مسؤول الشركة.','This account is linked to another device or its device is blocked. Contact your company administrator.','Hesap başka bir cihaza bağlı veya cihaz engelli. Şirket yöneticinize başvurun.','Ce compte est associé à un autre appareil ou son appareil est bloqué. Contactez votre administrateur.','Аккаунт привязан к другому устройству или его устройство заблокировано. Обратитесь к администратору.'],
+    deviceBound:['هذا الحساب مرتبط بجهاز آخر. اطلب من مالك الشركة إضافة حساب لهذا الجهاز أو فك ربط الجهاز السابق.','This account is linked to another device. Ask the company owner for an account for this device or to release the previous device.','Bu hesap başka bir cihaza bağlı. Şirket sahibinden bu cihaz için bir hesap açmasını veya önceki cihazın bağlantısını kaldırmasını isteyin.','Ce compte est associé à un autre appareil. Demandez au propriétaire un compte pour cet appareil ou la dissociation de l’ancien appareil.','Аккаунт привязан к другому устройству. Попросите владельца компании создать аккаунт для этого устройства или отвязать прежнее устройство.'],
+    deviceBlocked:['هذا الجهاز محظور. اطلب من مسؤول الشركة إلغاء الحظر.','This device is blocked. Ask your company administrator to unblock it.','Bu cihaz engellendi. Şirket yöneticinizden engeli kaldırmasını isteyin.','Cet appareil est bloqué. Demandez à votre administrateur de le débloquer.','Устройство заблокировано. Попросите администратора компании разблокировать его.'],
+    deviceLimit:['وصلت الشركة إلى الحد المسموح للأجهزة. اطلب من المالك إدارة الأجهزة المرتبطة أو زيادة سعة الباقة.','The company has reached its device limit. Ask the owner to manage linked devices or increase the plan limit.','Şirket cihaz sınırına ulaştı. Şirket sahibinden bağlı cihazları yönetmesini veya paket sınırını artırmasını isteyin.','La société a atteint sa limite d’appareils. Demandez au propriétaire de gérer les appareils associés ou d’augmenter la limite du forfait.','Компания достигла лимита устройств. Попросите владельца проверить связанные устройства или увеличить лимит тарифа.'],
+    subscriptionExpired:['انتهى اشتراك الشركة. اطلب من مسؤول الشركة تجديده لتفعيل هذا الجهاز.','The company subscription has expired. Ask your company administrator to renew it to activate this device.','Şirket aboneliği sona erdi. Bu cihazı etkinleştirmek için yöneticinizden aboneliği yenilemesini isteyin.','L’abonnement de la société a expiré. Demandez à votre administrateur de le renouveler pour activer cet appareil.','Подписка компании истекла. Попросите администратора продлить её, чтобы активировать устройство.'],
     deviceStorage:['حدّث التطبيق واسمح بالتخزين على هذا الجهاز، ثم أعد المحاولة.','Update WOW and allow device storage, then try again.','WOW’u güncelleyin ve cihaz depolamasına izin verip tekrar deneyin.','Mettez WOW à jour et autorisez le stockage sur cet appareil, puis réessayez.','Обновите WOW и разрешите хранение данных на этом устройстве, затем повторите попытку.'],
     title:['تسجيل الدخول','Sign in','Giriş yap','Connexion','Вход'],
     intro:['ادخل بحسابك لفتح مساحة العمل المسموحة لك.','Use your account to open your permitted workspace.','İzin verilen çalışma alanını açmak için hesabınızla giriş yapın.','Connectez-vous pour ouvrir votre espace autorisé.','Войдите, чтобы открыть разрешённые разделы.'],
@@ -33,6 +36,12 @@
     auditFailed:['حُفظ التغيير، لكن تعذّر تسجيل نشاط الحساب.','The change was saved, but account activity could not be recorded.','Değişiklik kaydedildi ancak hesap etkinliği kaydedilemedi.','La modification est enregistrée, mais pas l’activité du compte.','Изменение сохранено, но записать активность не удалось.']
   };
   const locale=()=>locales.includes(doc.documentElement.lang)?doc.documentElement.lang:'ar';
+  const signInErrors=new Map(Object.entries({
+    DEVICE_ALREADY_BOUND:'deviceBound',DEVICE_BLOCKED:'deviceBlocked',DEVICE_PROOF_REQUIRED:'deviceStorage',
+    DEVICE_LIMIT_REACHED:'deviceLimit',SUBSCRIPTION_EXPIRED:'subscriptionExpired',NETWORK:'network',
+    CLOUD_UNCONFIGURED:'cloudUnavailable',IDENTITY_STORAGE:'storage',STORAGE_ERROR:'storage',
+    IDENTITY_STATE_INVALID:'storage',CONFLICT:'storage'
+  }));
   const text=key=>words[key][locales.indexOf(locale())];
   const make=(tag,cls,caption)=>{const el=doc.createElement(tag);if(cls)el.className=cls;if(caption!==undefined)el.textContent=caption;return el;};
   const lockIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg>';
@@ -140,7 +149,7 @@
       loginBusy=true;submit.disabled=true;status.textContent='';translateLock();
       const value=password.value;password.value='';password.type='password';showPassword.setAttribute('aria-pressed','false');
       try{await service.signIn({username:username.value,password:value,...(rememberMember?.checked?{rememberDevice:true}:{})});if(rememberMember)rememberMember.checked=false;const account=snapshot().currentAccount;if(!policy.safeHome(account)){status.textContent=text('noAccess');await service.signOut();}else{setLocked(false);loginResolve?.();loginResolve=null;}}
-      catch(error){status.textContent=text(['DEVICE_ALREADY_BOUND','DEVICE_BLOCKED'].includes(error?.code)?'deviceLock':error?.code==='DEVICE_PROOF_REQUIRED'?'deviceStorage':error?.code==='NETWORK'?'network':error?.code==='CLOUD_UNCONFIGURED'?'cloudUnavailable':['IDENTITY_STORAGE','STORAGE_ERROR','IDENTITY_STATE_INVALID','CONFLICT'].includes(error?.code)?'storage':'failed');password.focus();}
+      catch(error){status.textContent=text(signInErrors.get(error?.code)||'failed');password.focus();}
       finally{loginBusy=false;submit.disabled=false;translateLock();}
     });
     translateLock();

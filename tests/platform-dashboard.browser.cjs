@@ -31,7 +31,16 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
             assert.equal(body.workspaceId,wid);
             response={readOnly:true,capturedAt:new Date().toISOString(),workspace:{id:wid,name:companyName,status:companyStatus},
               section:body.section,offset:body.offset,total:0,items:[],
-              summary:{recordsByType:{},accounts:0,registeredDevices:linked.length,unclosedSessions:0,galleryOrders:0,files:0}};break;
+              summary:{recordsByType:{},accounts:0,registeredDevices:linked.length,unclosedSessions:0,galleryOrders:0,files:0}};
+            if(body.section==='devices'){
+              const reportedAt=new Date().toISOString();
+              response.items=[
+                {name:'Fixture mobile session',username:'mobile',reportedDevice:'phone',reportedPlatform:'iOS',providerIp:'203.0.113.7',reportedAt},
+                {name:'Fixture desktop session',username:'desktop',reportedDevice:'desktop',reportedPlatform:'Windows',providerIp:'2001:db8::7',reportedAt}
+              ];
+              response.total=response.items.length;
+            }
+            break;
           case 'platform.company.create':assert.match(body.setupToken,/^[0-9a-f]{64}$/);created=true;response={workspaceId:wid};break;
           case 'platform.company.devices':
             assert.equal(body.workspaceId,wid);response={devices:linked,total:linked.length};break;
@@ -56,7 +65,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
           case 'platform.plans.list':response={plans};break;
           case 'platform.fx.get':response={available:true,source:'TCMB',rateType:'forex_selling',date:'2026-11-20',
             rates:{USD:50.4936,EUR:55.3970,TRY:1}};break;
-          case 'platform.limits.get':assert.equal(body.workspaceId,wid);response={usedUsers:3,usedBytes:500000000,usedDevices:1,planId:assigned?.id||null,plan:assigned,expiresAt,version:0,extraDevices:addonExtra,doubleBundle:addonDouble};break;
+          case 'platform.limits.get':assert.equal(body.workspaceId,wid);response={usedUsers:3,usedBytes:500000000,usedDevices:1,usedVoiceMinutes:12.34,usedVideoMinutes:0,effectiveVoiceMinutes:500,effectiveVideoMinutes:null,planId:assigned?.id||null,plan:assigned,expiresAt,version:0,extraDevices:addonExtra,doubleBundle:addonDouble};break;
           case 'platform.limits.set':
             assert.equal(body.workspaceId,wid);
             if(!assigned){assert.ok(Date.parse(body.expiresAt)>Date.now()+29*86400000);expiresAt=body.expiresAt.replace('00.000Z','13.072Z');}
@@ -158,6 +167,16 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.locator('#platform-page-support').waitFor();
     await menu.getByRole('link',{name:'Home'}).click();
     await page.locator('#platform-page-home').waitFor();
+    const dockGeometry=await menu.evaluate(element=>{
+      const orbit=element.querySelector('.platform-nav-orbit');
+      const surface=element.querySelector('.platform-nav-surface');
+      return {height:element.getBoundingClientRect().height,orbit:orbit.getBoundingClientRect().width,
+        mask:getComputedStyle(surface,'::before').maskImage,circle:getComputedStyle(orbit).backgroundColor};
+    });
+    assert.equal(dockGeometry.height,64);
+    assert.equal(dockGeometry.orbit,48);
+    assert.match(dockGeometry.mask,/4945/);
+    assert.equal(dockGeometry.circle,'rgb(63, 124, 148)');
     await sideButton.click();await drawer.getByRole('link',{name:'Settings'}).first().click();
     for(const [code,title] of [['ar','الإعدادات'],['tr','Ayarlar'],['fr','Réglages'],['ru','Настройки'],['en','Settings']]){
       await page.locator('#lang').selectOption(code,{force:true});
@@ -169,11 +188,12 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       await page.setViewportSize({width,height:844});
       await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash==='#companies');
       const metrics=await menu.evaluate(element=>({position:getComputedStyle(element).position,bottom:element.getBoundingClientRect().bottom,
+        height:element.getBoundingClientRect().height,orbit:element.querySelector('.platform-nav-orbit').getClientRects().length,
         links:[...element.querySelectorAll('a')].filter(a=>a.getClientRects().length).map(a=>({height:a.getBoundingClientRect().height,width:a.getBoundingClientRect().width,path:a.hash})), 
         overflow:document.documentElement.scrollWidth>innerWidth}));
       assert(!metrics.overflow);
       assert(metrics.links.every(link=>link.height>=44&&link.width>=44));
-      if(width<=1024){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.links.length,5);assert.equal(metrics.links[2].path,'#home');}
+      if(width<=1024){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.height,64);assert.equal(metrics.orbit,0);assert.equal(metrics.links.length,5);assert.equal(metrics.links[2].path,'#home');}
       else if(width>1024){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[2].path,'#home');}
     }
     // iPhone/iPad/Android/tablet/desktop breakpoints and orientation changes.
@@ -189,6 +209,11 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.setViewportSize({width:390,height:844});
     await menu.getByRole('link',{name:'Companies'}).click();
     await page.getByText('No companies yet.').waitFor();
+    await page.waitForFunction(()=>{
+      const menu=document.querySelector('.platform-section-menu'),orbit=menu.querySelector('.platform-nav-orbit');
+      const active=menu.querySelector('[aria-current="page"]'),center=element=>{const rect=element.getBoundingClientRect();return rect.left+rect.width/2;};
+      return active?.hash==='#companies'&&!orbit.hidden&&Math.abs(center(active)-center(orbit))<1;
+    });
     await menu.getByRole('link',{name:'Home'}).click();
     const stats=page.locator('.platform-analytics');
     await stats.getByRole('heading',{name:'Platform pulse'}).waitFor();
@@ -243,8 +268,23 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.locator('.platform-overview-status select').selectOption('all');
     assert.equal(await page.locator('.platform-company-card').isVisible(),true);
     await finder.fill('');
+    const sessionLink=page.getByRole('link',{name:'Devices & sessions · Test',exact:true});
+    assert.equal(await sessionLink.getAttribute('href'),'#company/'+wid+'/devices');
     await profileLink.click();
     await page.getByRole('heading',{name:'Company settings · Test'}).waitFor();
+    await page.getByRole('link',{name:'Devices & sessions',exact:true}).click();
+    await page.locator('.wf-inspect-inline .wf-inspect-device-icon[data-device=phone]').waitFor();
+    assert.equal(await page.locator('.wf-inspect-inline .wf-inspect-device-icon[data-device=desktop]').count(),1);
+    assert.deepEqual(await page.locator('.wf-inspect-inline .wf-inspect-provider-ip').allTextContents(),['203.0.113.7','2001:db8::7']);
+    await page.getByText(/Supabase IP may belong to the WOW relay server/).waitFor();
+    await page.getByRole('link',{name:'Company usage',exact:true}).click();
+    const usage=page.locator('.platform-company-usage');
+    const voice=usage.locator('dt').filter({hasText:'Monthly voice minutes'}).locator('xpath=following-sibling::dd[1]').locator('bdi');
+    const video=usage.locator('dt').filter({hasText:'Monthly video minutes'}).locator('xpath=following-sibling::dd[1]').locator('bdi');
+    await voice.first().waitFor();
+    assert.deepEqual(await voice.allTextContents(),['12.34','500','487.66']);
+    assert.deepEqual(await video.allTextContents(),['0','Unlimited','Unlimited']);
+    await page.getByRole('link',{name:'Overview',exact:true}).click();
     await page.getByRole('link',{name:'Back to companies'}).click();
     await profileLink.waitFor();
     await page.goBack();

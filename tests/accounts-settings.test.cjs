@@ -65,6 +65,7 @@ function fixture({configured = true,cloud=false} = {}) {
   const tabs=new Element();tabs.className='tabs';const content=new Element();content.className='wf-settings-content';workspace.append(tabs,content);
   const dialog=new Element('dialog');dialog.id='wfSettingsDialog';dialog.open=true;workspace.append(dialog);
   const root=new Element('window');root.document=document;root.CustomEvent=Event;
+  root.navigator={clipboard:{writeText:async value=>calls.push({kind:'copy',args:[value]})}};
   root.MutationObserver=class{constructor(fn){this.fn=fn;observers.push(this);}observe(){}};
   root.WFAppUpdates={registerGuard:(name,guard)=>guards.set(name,guard)};
   if(cloud)root.WFCloudClient={isRemoteMode:()=>true};
@@ -83,6 +84,7 @@ function fixture({configured = true,cloud=false} = {}) {
   }
   const service={
     getSnapshot:()=>structuredClone(snapshot),subscribe:fn=>{callback=fn;return()=>{callback=null;};},
+    entryUrl:()=> 'https://mark.example/?wf-cloud=employee&workspace=some-company#dashboard',
     refresh:async()=>publish(),
     bootstrapOwner:input=>run('bootstrap',[input],()=>{
       const row={...account('first-owner',input.name,'owner'),username:input.username};snapshot.accounts.push(row);snapshot.currentAccount=row;snapshot.configured=true;
@@ -128,6 +130,28 @@ test('owner bootstrap uses the shared settings actions and clears entered passwo
   assert.equal(f.calls[0].kind,'bootstrap');assert.equal(password.value,'');assert.equal(confirmation.value,'');
   assert.equal(f.snapshot().configured,true);assert.equal(f.api.view,'detail');assert.equal(f.api.getSettingsActions(),null);
   assert(!JSON.stringify(f.snapshot()).includes('long-password'));
+});
+
+test('an owner adds a scoped device account and copies only its company sign-in URL',async()=>{
+  const f=fixture({cloud:true});await f.open();
+  f.byId('wfAccountsAddDevice').click();
+  assert.equal(f.byId('wfAccount-role').value,'custom');
+  assert(!f.byId('wfAccount-role').options.some(option=>option.value==='owner'));
+  f.input('wfAccount-name','Workshop phone');f.input('wfAccount-username','workshop.phone');
+  const password=f.input('wfAccount-newPassword','new-device-12345');f.input('wfAccount-confirmPassword',password.value);
+  assert.equal(f.api.getSettingsActions().save.textContent,'Create device account');
+  f.api.getSettingsActions().save.click();await f.settle();
+  assert.equal(password.value,'');assert.equal(f.snapshot().currentAccount.id,'owner-1');
+  assert.deepEqual(f.calls[0].args[0].permissions,['gallery.view']);
+  const url=f.byId('wfAccountDeviceUrl').value;
+  assert.equal(url,'https://mark.example/?wf-cloud=employee&workspace=some-company#dashboard');
+  f.buttonText('Copy link').click();await f.settle();
+  assert.deepEqual(f.calls.at(-1),{kind:'copy',args:[url]});
+  assert(!JSON.stringify(f.snapshot()).includes('new-device-12345'));
+});
+
+test('a local account editor does not offer company device provisioning',async()=>{
+  const f=fixture();await f.open();assert.equal(f.byId('wfAccountsAddDevice'),null);
 });
 
 test('editable presets normalize dependencies and submit precisely the selected grants',async()=>{

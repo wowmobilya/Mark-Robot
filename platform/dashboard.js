@@ -71,8 +71,8 @@
     });
     resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
   }
-  let brandList=null,subscriptionClocks=null,remoteClock=null;
-  function clear(){ownerAlerts?.dispose();ownerAlerts=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';adminUserId='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  let brandList=null,subscriptionClocks=null,remoteClock=null,companyProfilePanel=null;
+  function clear(){ownerAlerts?.dispose();ownerAlerts=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;companyProfilePanel?.close();companyProfilePanel=null;window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';adminUserId='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -297,24 +297,53 @@
         extraDevices:select.value?Number(extras.value):0,doubleBundle:select.value&&doubled.checked,version:state.version});
       await subscription(container,company);status.textContent=sale(17);
     });
-    const usage=el('dl');
+    container.append(usageMetrics(state),form);
+  }
+  function usageMetrics(state){
+    const usage=el('dl'),number=new Intl.NumberFormat(lang.value,{maximumFractionDigits:2});
+    const numeric=value=>Number.isFinite(value)&&value>=0;
+    const capFor=(effective,base)=>Object.hasOwn(state,effective)?state[effective]:
+      state.plan&&Object.hasOwn(state.plan,base)?state.plan[base]:state.planId===null?null:undefined;
+    const formatNumber=value=>number.format(value);
     if(state.plan?.price!=null&&state.plan.currency)usage.append(el('dt',sale(3)),el('dd',String(state.plan.price)+' '+state.plan.currency));
     if(state.plan?.durationDays!=null)usage.append(el('dt',sale(5)),el('dd',state.plan.durationDays));
     for(const [title,used,limit,format] of [
-       [sale(7),state.usedUsers,state.plan?.userLimit,String],
-       [sale(8),state.usedBytes,state.effectiveStorageBytes??state.plan?.storageBytes,storageText],
-       [sale(9),state.usedDevices,state.effectiveDeviceLimit??state.plan?.deviceLimit,String],
-       [addon(0),state.usedVoiceMinutes,state.effectiveVoiceMinutes??state.plan?.voiceMinutes,String],
-       [addon(1),state.usedVideoMinutes,state.effectiveVideoMinutes??state.plan?.videoMinutes,String]
+       [sale(7),state.usedUsers,capFor('effectiveUserLimit','userLimit'),formatNumber],
+       [sale(8),state.usedBytes,capFor('effectiveStorageBytes','storageBytes'),storageText],
+       [sale(9),state.usedDevices,capFor('effectiveDeviceLimit','deviceLimit'),formatNumber],
+       [addon(0),state.usedVoiceMinutes,capFor('effectiveVoiceMinutes','voiceMinutes'),formatNumber],
+       [addon(1),state.usedVideoMinutes,capFor('effectiveVideoMinutes','videoMinutes'),formatNumber]
       ]){
-      const valid=Number.isSafeInteger(used);
+      const valid=numeric(used),limited=numeric(limit);
       const values=el('dd');
-      for(const [caption,value] of [[sale(10),valid?format(used):sale(15)],[sale(18),limit==null?sale(6):format(limit)],[sale(11),limit==null?sale(6):valid?format(Math.max(limit-used,0)):sale(15)]]){
+      const allowed=limit===null?sale(6):limited?format(limit):sale(15);
+      const remaining=limit===null?sale(6):limited&&valid?format(Math.max(limit-used,0)):sale(15);
+      for(const [caption,value] of [[sale(10),valid?format(used):sale(15)],[sale(18),allowed],[sale(11),remaining]]){
         const item=el('span');item.className='platform-usage-value';item.append(el('small',caption),el('bdi',value));values.append(item);
       }
       usage.append(el('dt',title),values);
     }
-    container.append(usage,form);
+    return usage;
+  }
+  function mountCompanyUsage(host,workspaceId,words){
+    const panel=el('section'),head=el('header'),title=el('h3',words[6]),reload=el('button',words[7]);
+    const note=el('p'),body=el('div');
+    panel.className='platform-company-usage';body.className='platform-subscription';
+    reload.type='button';note.setAttribute('role','status');head.append(title,reload);
+    panel.append(head,el('p',addon(9)),el('p',addon(4)),note,body);host.replaceChildren(panel);
+    let alive=true;
+    reload.onclick=async()=>{
+      if(reload.disabled)return;
+      reload.disabled=true;note.textContent=words[8];body.replaceChildren();
+      try{
+        const data=await request('limits.get',{workspaceId});
+        if(alive&&panel.isConnected){body.append(usageMetrics(data));note.textContent='';}
+      }catch{
+        if(alive&&panel.isConnected)note.textContent=words[9];
+      }finally{reload.disabled=false;}
+    };
+    reload.click();
+    return {close(){alive=false;panel.remove();}};
   }
   const activationWords={
     ar:['إعداد المالك','مالك نشط','دعوة بانتظار التفعيل','انتهت صلاحية الدعوة','لم تُصدر دعوة','إصدار دعوة جديدة','إرسال بريد استعادة الحساب','تأكيد إرسال رابط الاستعادة إلى البريد الموثّق للمالك','طُلب إرسال رابط الاستعادة.','تُلغي الدعوة الجديدة أي دعوة معلّقة لهذه الشركة.'],
@@ -563,13 +592,13 @@
     };
     return section;
   }
-  const companyRoute=()=>/^#company\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})(\/activation)?$/i.exec(location.hash);
+  const companyRoute=()=>/^#company\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})(?:\/(activation|devices|usage))?$/i.exec(location.hash);
   const companyPageWords={
-    ar:['صفحة الشركة','العودة إلى الشركات','إعدادات الشركة','إعادة المحاولة'],
-    en:['Company page','Back to companies','Company settings','Try again'],
-    tr:['Şirket sayfası','Şirketlere dön','Şirket ayarları','Yeniden dene'],
-    fr:['Page de la société','Retour aux sociétés','Paramètres de la société','Réessayer'],
-    ru:['Страница компании','К списку компаний','Настройки компании','Повторить']
+    ar:['صفحة الشركة','العودة إلى الشركات','إعدادات الشركة','إعادة المحاولة','نظرة عامة','الأجهزة والجلسات','استهلاك الشركة','تحديث الاستهلاك','جارِ قراءة الاستهلاك من الخادم…','تعذّر قراءة استهلاك الشركة.'],
+    en:['Company page','Back to companies','Company settings','Try again','Overview','Devices & sessions','Company usage','Refresh usage','Reading server usage…','Could not load company usage.'],
+    tr:['Şirket sayfası','Şirketlere dön','Şirket ayarları','Yeniden dene','Genel bakış','Cihazlar ve oturumlar','Şirket kullanımı','Kullanımı yenile','Sunucu kullanımı okunuyor…','Şirket kullanımı yüklenemedi.'],
+    fr:['Page de la société','Retour aux sociétés','Paramètres de la société','Réessayer','Vue d’ensemble','Appareils et sessions','Utilisation de la société','Actualiser l’utilisation','Lecture de l’utilisation du serveur…','Impossible de charger l’utilisation.'],
+    ru:['Страница компании','К списку компаний','Настройки компании','Повторить','Обзор','Устройства и сеансы','Расход ресурсов','Обновить расход','Чтение данных сервера…','Не удалось загрузить расход ресурсов.']
   };
   const pageFromUrl=()=>companyRoute()?'companies':['home','companies','plans','support','calls','settings'].includes(location.hash.slice(1))?location.hash.slice(1):'home';
   window.addEventListener('hashchange',()=>showDestination?.());
@@ -577,7 +606,8 @@
   async function list(){
     const ticket=++generation,result=await request('company.list',{offset});if(ticket!==generation)return;
     const state={...result,companies:result.companies.slice(0,directoryPageSize)};
-    scanner?.dispose();scanner=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
+    scanner?.dispose();scanner=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;
+    companyProfilePanel?.close();companyProfilePanel=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
     const labels=destinations[lang.value],settingsText=settingsWords[lang.value],homepage=homeWords[lang.value];
     const ids=['home','companies','plans','support','calls','settings'],titles=[homepage.heading,labels[0],labels[1],labels[2],labels[5],settingsText[0]],panels={},links={};
     nav.className='platform-account-bar';menu.className='platform-section-menu';menu.setAttribute('aria-label',labels[3]);
@@ -603,6 +633,28 @@
     const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);
     const hero=el('section'),heroTitle=el('h3',homepage.heading),heroLead=el('p',homepage.caption);
     hero.className='platform-home-hero';hero.append(heroTitle,heroLead);
+    const serverWords={
+      ar:['خادم مارك روبوت','استجاب الخادم','تعذّر الوصول إلى الخادم','آخر تحقق','تحقّق الآن','جارٍ التحقق'],
+      en:['Mark Robot server','Server responded','Server unreachable','Last check','Check now','Checking'],
+      tr:['Mark Robot sunucusu','Sunucu yanıt verdi','Sunucuya ulaşılamıyor','Son kontrol','Şimdi kontrol et','Kontrol ediliyor'],
+      fr:['Serveur Mark Robot','Le serveur a répondu','Serveur inaccessible','Dernière vérification','Vérifier','Vérification en cours'],
+      ru:['Сервер Mark Robot','Сервер ответил','Сервер недоступен','Последняя проверка','Проверить','Проверка']
+    }[lang.value];
+    const server=el('section'),serverInfo=el('div'),serverStatus=el('p'),serverTime=el('time'),serverRefresh=el('button',serverWords[4]);
+    server.className='platform-server-check';serverStatus.setAttribute('role','status');serverRefresh.type='button';
+    const showServerCheck=(message,state)=>{
+      const checked=new Date();server.dataset.state=state;serverStatus.textContent=message;
+      serverTime.dateTime=checked.toISOString();
+      serverTime.textContent=serverWords[3]+' · '+new Intl.DateTimeFormat(lang.value,{hour:'numeric',minute:'2-digit',second:'2-digit'}).format(checked);
+    };
+    showServerCheck(serverWords[1],'ready');
+    serverRefresh.onclick=async()=>{
+      serverRefresh.disabled=true;serverStatus.textContent=serverWords[5];server.dataset.state='checking';
+      try{await request('company.list',{offset});showServerCheck(serverWords[1],'ready');}
+      catch{showServerCheck(serverWords[2],'unreachable');}
+      finally{serverRefresh.disabled=false;}
+    };
+    serverInfo.append(el('h4',serverWords[0]),serverStatus,serverTime);server.append(serverInfo,serverRefresh);hero.append(server);
     const quickHeading=el('h3',homepage.quick),quick=el('nav');
     quick.className='platform-home-quick';quick.setAttribute('aria-label',homepage.quick);
     const shortcuts=[
@@ -624,16 +676,21 @@
     createPanel.append(createSummary,form);companies.append(createPanel);
     const profileWords=companyPageWords[lang.value],profile=el('section'),back=el('a',profileWords[1]);
     const profileTitle=el('h2',profileWords[2]),profileBody=el('div'),companyRows=new Map();
+    const profileNav=el('nav'),overviewTab=el('a',profileWords[4]),devicesTab=el('a',profileWords[5]),usageTab=el('a',profileWords[6]),profilePanel=el('div');
     profile.className='platform-page platform-company-page';profile.hidden=true;
+    profileNav.className='platform-company-profile-nav';profileNav.hidden=true;profileNav.setAttribute('aria-label',profileWords[2]);
+    overviewTab.className='platform-company-overview-tab';devicesTab.className='platform-company-device-tab';usageTab.className='platform-company-usage-tab';
+    profileNav.append(overviewTab,devicesTab,usageTab);profilePanel.hidden=true;
     profileTitle.id='platform-company-page-title';profileTitle.tabIndex=-1;
     profile.setAttribute('aria-labelledby',profileTitle.id);
     back.href='#companies';back.className='platform-company-back';
-    profile.append(back,profileTitle,profileBody);companies.after(profile);
+    profile.append(back,profileTitle,profileNav,profileBody,profilePanel);companies.after(profile);
     let shownCompany=null,routeTicket=0;
     function releaseCompany(){
       if(!shownCompany)return;
-      const {row,marker,hidden,detail}=shownCompany;
-      detail.hidden=true;row.querySelector('.platform-company-page-link').hidden=false;
+      const {row,marker,hidden,detail,shortcuts}=shownCompany;
+      companyProfilePanel?.close();companyProfilePanel=null;profilePanel.hidden=true;profileNav.hidden=true;
+      detail.hidden=true;shortcuts.hidden=false;
       if(marker){marker.replaceWith(row);row.hidden=hidden;}else row.remove();
       remoteClock?.dispose();remoteClock=null;
       const invite=profileBody.querySelector('.platform-invite-card');
@@ -641,7 +698,9 @@
       shownCompany=null;
     }
     async function enterCompany(route){
-      const sequence=++routeTicket,id=route[1].toLowerCase(),activate=!!route[2];
+      const sequence=++routeTicket,id=route[1].toLowerCase(),section=route[2]?.toLowerCase();
+      const activate=section==='activation',viewDevices=section==='devices',viewUsage=section==='usage',viewDetail=viewDevices||viewUsage;
+      const previousSection=shownCompany?.id===id?shownCompany.section:null;
       if(shownCompany?.id!==id){
         releaseCompany();profileTitle.textContent=profileWords[2];profileBody.replaceChildren();profileBody.setAttribute('aria-busy','true');
         try{
@@ -653,23 +712,38 @@
             entry=renderCompany({...reply.workspace,accounts:reply.summary.accounts},false);
             remote=true;
           }
-          const {row,detail,clock}=entry,hidden=row.hidden,marker=remote?null:document.createComment('company');
+          const {row,detail,clock,shortcuts}=entry,hidden=row.hidden,marker=remote?null:document.createComment('company');
           if(marker)row.replaceWith(marker);
-          row.hidden=false;detail.hidden=false;row.querySelector('.platform-company-page-link').hidden=true;
+          row.hidden=false;detail.hidden=viewDetail;shortcuts.hidden=true;
           profileBody.append(row);row.querySelector('.platform-company-tools').open=true;
           if(remote)remoteClock=window.WFPlatformSubscriptionClocks?.mount({cards:[clock],request,language:lang.value});
           if(setup?.workspace===id){const invite=companies.querySelector('.platform-invite-card');if(invite)profileBody.append(invite);}
           shownCompany={...entry,id,hidden,marker};
-          profileTitle.textContent=profileWords[2]+' · '+entry.name;
+          profileTitle.replaceChildren(profileWords[2]+' · ',el('bdi',entry.name));
           profileTitle.focus({preventScroll:true});
-          if(!activate)row.querySelector('.platform-company-refresh').click();
         }catch(error){
           if(sequence!==routeTicket||ticket!==generation)return;
           profileTitle.textContent=profileWords[2];const note=el('p',t(15)),retry=el('button',profileWords[3]);
           retry.type='button';retry.onclick=()=>enterCompany(route);profileBody.replaceChildren(note,retry);fail(error);
         }finally{if(sequence===routeTicket)profileBody.removeAttribute('aria-busy');}
       }
-      if(activate&&shownCompany?.id===id){
+      if(shownCompany?.id!==id)return;
+      shownCompany.section=section||'overview';
+      overviewTab.href='#company/'+id;devicesTab.href='#company/'+id+'/devices';usageTab.href='#company/'+id+'/usage';
+      overviewTab.setAttribute('aria-current',viewDetail?'false':'page');devicesTab.setAttribute('aria-current',viewDevices?'page':'false');
+      usageTab.setAttribute('aria-current',viewUsage?'page':'false');
+      profileNav.hidden=false;profilePanel.hidden=!viewDetail;shownCompany.detail.hidden=viewDetail;
+      if(previousSection!==shownCompany.section){companyProfilePanel?.close();companyProfilePanel=null;}
+      if(viewDevices){
+        companyProfilePanel||=window.WFPlatformCompanyInspector?.mountDevices({
+          host:profilePanel,company:{id,name:shownCompany.name},request,language:lang.value
+        });
+      }else if(viewUsage){
+        companyProfilePanel||=mountCompanyUsage(profilePanel,id,profileWords);
+      }else{
+        if(!activate&&previousSection!=='overview')shownCompany.row.querySelector('.platform-company-refresh').click();
+      }
+      if(activate){
         const action=shownCompany.row.querySelector('.platform-tool-activation');
         action.closest('details').open=true;action.focus();action.click();
       }
@@ -733,7 +807,8 @@
     ownerAlerts?.dispose();
     ownerAlerts=window.WFPlatformOwnerAlerts?.mount({nav,request,language:lang.value,userId:adminUserId});
     supportInbox?.dispose();
-    supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts});
+    supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts,userId:adminUserId});
+    window.WFPlatformAnnouncements?.mount({container:panels.support,request,language:lang.value});
     const name=field(form,5);name.required=true;name.maxLength=100;
     panels.home.querySelector('[data-shortcut=create]')?.addEventListener('click',()=>{
       createPanel.open=true;
@@ -786,10 +861,14 @@
       link.type='button';link.onclick=()=>window.WFPlatformCompanyInspector?.open({company,request,language:lang.value});
       const name=el('strong',company.name),stateLabel=el('span',t(active?7:8)),accountLabel=el('span',t(13)+' · '+company.accounts);
       const hero=el('div'),pills=el('div'),actions=el('div'),summaryLine=el('div');
-      const detail=el('div'),openPage=el('a',profileWords[0]);
+      const detail=el('div'),shortcuts=el('div'),openPage=el('a',profileWords[0]),openDevices=el('a',profileWords[5]);
       detail.className='platform-company-detail';detail.hidden=true;
+      shortcuts.className='platform-company-shortcuts';
       openPage.className='platform-company-page-link';openPage.href='#company/'+company.id;
       openPage.setAttribute('aria-label',profileWords[0]+' · '+company.name);
+      openDevices.className='platform-company-device-link';openDevices.href=openPage.getAttribute('href')+'/devices';
+      openDevices.setAttribute('aria-label',profileWords[5]+' · '+company.name);
+      shortcuts.append(openPage,openDevices);
       hero.className='platform-company-hero';pills.className='platform-company-pills';
       actions.className='platform-company-primary-actions';summaryLine.className='platform-company-connectivity';
       name.className='platform-company-name';name.dir='auto';
@@ -837,7 +916,7 @@
       actions.append(link);
       const subscriptionHost=el('div');subscriptionHost.className='platform-company-subscription';
       const clock={id:company.id,host:subscriptionHost};if(inDirectory)clockCards.push(clock);
-      detail.append(summaryLine,actions);row.append(hero,pills,subscriptionHost,openPage,detail);
+      detail.append(summaryLine,actions);row.append(hero,pills,subscriptionHost,shortcuts,detail);
       const details=el('details'),summary=el('summary',companyMenu[lang.value]),tools=el('div');
       details.className='platform-company-tools';tools.className='platform-company-actions-grid';details.open=expandedCompany===company.id;
       details.ontoggle=()=>{
@@ -946,7 +1025,7 @@
       if(inDirectory)companies.append(row);
       if(activationObserver)activationObserver.observe(row);
       else if(inDirectory)refresh.click();
-      return {row,detail,clock,name:company.name};
+      return {row,detail,clock,shortcuts,name:company.name};
     }
     for(const company of state.companies)companyRows.set(company.id,renderCompany(company,true));
     if(!state.companies.length){const empty=el('p',labels[4]);empty.className='platform-empty-state';companies.append(empty);}
@@ -1055,8 +1134,19 @@
       location.replace(entry.href);
     });button.textContent=copy[5];
   }
-  function render(){document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);const ws=new URLSearchParams(location.search).get('setup');if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws))enroll(ws);else if(token)list().catch(fail);else if(canRemember()&&saved()){content.replaceChildren(el('p',({ar:'يتم فتح إدارة WOW بأمان…',en:'Opening WOW Admin securely…',tr:'WOW yönetimi güvenle açılıyor…',fr:"Ouverture sécurisée de WOW Admin…",ru:'Безопасное открытие WOW Admin…'})[lang.value]));}
-    else login();}
+  function render(){
+    document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);
+    const ws=new URLSearchParams(location.search).get('setup');
+    if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws)){enroll(ws);return;}
+    if(token){list().catch(fail);return;}
+    if(navigator.onLine===false||!canRemember()||!saved()){
+      login();if(navigator.onLine===false)status.textContent=word(2);return;
+    }
+    const message={ar:'جارٍ الاتصال بالسيرفر والتحقق من الجلسة…',en:'Connecting to the server and verifying your session…',tr:'Sunucuya bağlanılıyor ve oturum doğrulanıyor…',fr:'Connexion au serveur et vérification de la session…',ru:'Подключение к серверу и проверка сеанса…'}[lang.value];
+    const loader=el('div'),servers=el('span');loader.className='platform-server-startup';loader.setAttribute('role','status');
+    servers.className='platform-server-rack';servers.setAttribute('aria-hidden','true');servers.append(el('i'),el('i'),el('i'));
+    loader.append(servers,el('strong',message));content.replaceChildren(loader);
+  }
   function lockDisconnected(){
     clear();if(!new URL(location.href).searchParams.has('setup'))login();status.textContent=word(2);
   }

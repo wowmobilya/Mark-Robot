@@ -146,6 +146,17 @@
     event_unknown:['نشاط الحساب','Account activity','Hesap işlemi','Activité du compte','Действие учётной записи']
   };
   const cloudCopy={
+    addLinkedDevice:['إضافة جهاز آخر','Add another device','Başka cihaz ekle','Ajouter un appareil','Добавить устройство'],
+    linkedDeviceTitle:['الأجهزة المرتبطة','Linked devices','Bağlı cihazlar','Appareils associés','Связанные устройства'],
+    addLinkedDeviceHint:['أنشئ حسابًا بصلاحيات محددة للجهاز الآخر. سيبقى جهازك الرئيسي متصلًا.','Create an account with its own permissions for the other device. Your main device stays connected.','Diğer cihaz için ayrı yetkileri olan bir hesap oluşturun. Ana cihazınız bağlı kalır.','Créez un compte avec ses propres droits pour l’autre appareil. Votre appareil principal reste connecté.','Создайте аккаунт со своими правами для другого устройства. Основное устройство останется подключённым.'],
+    devicePermissionsRequired:['حدّد قسمًا واحدًا على الأقل ليتمكّن الجهاز الآخر من فتح التطبيق.','Allow at least one section so the other device can open the app.','Diğer cihazın uygulamayı açabilmesi için en az bir bölüme izin verin.','Autorisez au moins une rubrique pour que l’autre appareil puisse ouvrir l’application.','Разрешите хотя бы один раздел, чтобы другое устройство могло открыть приложение.'],
+    prepareDevice:['إنشاء حساب للجهاز','Create device account','Cihaz hesabı oluştur','Créer le compte de l’appareil','Создать аккаунт устройства'],
+    deviceSignIn:['رابط تسجيل دخول الجهاز','Device sign-in link','Cihaz giriş bağlantısı','Lien de connexion de l’appareil','Ссылка для входа с устройства'],
+    deviceSignInHint:['افتح الرابط على الجهاز الآخر وسجّل الدخول باسم المستخدم هذا وكلمة المرور التي اخترتها. يربط الخادم الجهاز عند أول دخول ناجح.','Open the link on the other device and sign in with this username and the password you chose. The server links the device on its first successful sign-in.','Bağlantıyı diğer cihazda açıp bu kullanıcı adı ve seçtiğiniz parolayla giriş yapın. Sunucu ilk başarılı girişte cihazı bağlar.','Ouvrez le lien sur l’autre appareil et connectez-vous avec cet identifiant et le mot de passe choisi. Le serveur associe l’appareil à sa première connexion réussie.','Откройте ссылку на другом устройстве и войдите с этим именем и выбранным паролем. Сервер привяжет устройство при первом успешном входе.'],
+    deviceCopyLink:['نسخ الرابط','Copy link','Bağlantıyı kopyala','Copier le lien','Копировать ссылку'],
+    deviceLinkCopied:['تم نسخ الرابط.','Link copied.','Bağlantı kopyalandı.','Lien copié.','Ссылка скопирована.'],
+    deviceAccountLimit:['وصلت الشركة إلى الحد المسموح لحسابات الباقة.','The company has reached its plan’s account limit.','Şirket, paketindeki hesap sınırına ulaştı.','La société a atteint la limite de comptes de son forfait.','Компания достигла лимита аккаунтов по тарифу.'],
+    devicePlanExpired:['جدّد اشتراك الشركة قبل إنشاء حساب للجهاز.','Renew the company subscription before creating a device account.','Cihaz hesabı oluşturmadan önce şirket aboneliğini yenileyin.','Renouvelez l’abonnement de la société avant de créer un compte d’appareil.','Продлите подписку компании перед созданием аккаунта устройства.'],
     viewDevice:['عرض الجهاز المرتبط','View linked device','Bağlı cihazı göster','Voir l’appareil associé','Показать устройство'],
     noDevice:['لم يُربط جهاز بهذا الحساب.','No device is linked to this account.','Bu hesaba bağlı cihaz yok.','Aucun appareil associé à ce compte.','У этого аккаунта нет привязанного устройства.'],
     deviceAllowed:['جهاز مسموح','Device allowed','Cihaza izin verildi','Appareil autorisé','Устройство разрешено'],
@@ -206,11 +217,12 @@
   let loaded = false, loadFailed = false, busy = false, renderAfterOperation = false, view = 'list', selectedId = null, query = '', statusFilter = 'current';
   let draft = null, baseline = '', originalRecord = '', stale = false, message = '', error = false, form = null, formSave = null, formCancel = null;
   let fields = {}, secrets = [], notice = null, preview = null, permissionGrid = null, customLabel = null, confirmation = null, activityLimit = 20, listLimit = 30;
-  let deviceInfo=null;
+  let deviceInfo=null,addingDevice=false,deviceHandoffId=null;
   const disabledBeforeBusy = new Map();
   const find = id => snapshot.accounts?.find(account => account.id === id);
   const current = () => snapshot.currentAccount;
   const canManage = () => !!current() && (policy()?.can?.(current(), 'accounts.edit') ?? current().role === 'owner');
+  const canAddDevice = () => root.WFCloudClient?.isRemoteMode()&&current()?.role==='owner'&&typeof service?.entryUrl==='function';
   const canDelete = () => !!current() && (policy()?.can?.(current(), 'accounts.delete') ?? current().role === 'owner');
   const fingerprint = account => JSON.stringify(account ? {
     id:account.id,name:account.name,username:account.username,role:account.role,permissions:account.permissions,
@@ -233,7 +245,7 @@
       if(toggle)toggle.setAttribute('aria-label',t('showPassword')+' · '+t(input.dataset.passwordTitle||'password'));
     }
   }
-  function clearEditor() { clearSecrets(); draft = null; baseline = ''; originalRecord = ''; stale = false; fields = {}; secrets = []; form = null; formSave = null; formCancel = null; preview = null; permissionGrid = null; customLabel = null; }
+  function clearEditor() { clearSecrets(); draft = null; baseline = ''; originalRecord = ''; stale = false; addingDevice=false; fields = {}; secrets = []; form = null; formSave = null; formCancel = null; preview = null; permissionGrid = null; customLabel = null; }
   function date(value, empty = 'unknownActor') {
     if (!value) return t(empty);
     const parsed = new Date(value);
@@ -264,6 +276,7 @@
     INVALID_NAME:'invalidName',INVALID_USERNAME:'invalidUsername',INVALID_PASSWORD:'passwordLength',INVALID_ROLE:'invalidRole',
     CUSTOMER_PRINCIPAL_ROLE_FIXED:'customerPrincipalRoleFixed',
     INVALID_EXPIRY:'invalidExpiry',USERNAME_EXISTS:'duplicate',ALREADY_CONFIGURED:'conflict',AUTH_REQUIRED:'locked',
+    USER_LIMIT_REACHED:'deviceAccountLimit',SUBSCRIPTION_EXPIRED:'devicePlanExpired',
     PERMISSION_DENIED:'denied',ACCOUNT_NOT_FOUND:'missing',SELF_PROTECTION:'selfProtected',LAST_OWNER:'selfProtected',
     CONFLICT:'conflict',LOGIN_FAILED:'passwordIncorrect',CURRENT_PASSWORD_REQUIRED:'passwordIncorrect',INVALID_CURRENT_PASSWORD:'passwordIncorrect',CURRENT_PASSWORD_INCORRECT:'passwordIncorrect',
     INVALID_STATUS:'failed',INVALID_CHANGE:'failed',STORAGE_ERROR:'failed',CRYPTO_UNAVAILABLE:'cryptoUnavailable'
@@ -284,6 +297,12 @@
   }
   function renderList() {
     clearEditor(); view = 'list'; confirmation = null;
+    if(canAddDevice()){
+      const card=make('section','wf-account-device-card');
+      const prompt=make('div');prompt.append(label('h3','linkedDeviceTitle'),label('p','addLinkedDeviceHint','wf-account-muted'));
+      const addDevice=button('addLinkedDevice',()=>openEditor(null,true),true,'wfAccountsAddDevice');addDevice.prepend(symbol('plus'));
+      card.append(prompt,addDevice);panel.append(card);
+    }
     const toolbar = make('div', 'wf-account-toolbar');
     const search = make('input', 'fi'); search.id = 'wfAccountsSearch'; search.type = 'search'; search.autocomplete = 'off'; search.dir = 'auto'; search.value = query;
     const filter = make('select', 'fi'); filter.id = 'wfAccountsStatus';
@@ -376,12 +395,14 @@
     row.append(formCancel,formSave); form.append(row);
     form.addEventListener('submit',event => { event.preventDefault(); saveEditor(); });
   }
-  function openEditor(id = null) {
-    if (busy || !canManage()) return;
+  function openEditor(id = null, forDevice = false) {
+    if (busy || !canManage() || forDevice&&!canAddDevice()) return;
     const account=id?find(id):null; if (id&&!account) { setMessage('missing',true); return; }
     clearEditor(); message='';error=false;selectedId=id;view='edit';confirmation=null;
-    const role=account?.role || (roles().some(entry=>entry.id==='sales')?'sales':'custom');
-    draft={name:account?.name||'',username:account?.username||'',role,permissions:normalize(role,account?account.permissions:presets(role)),
+    addingDevice=forDevice;
+    const role=account?.role || (!forDevice&&roles().some(entry=>entry.id==='sales')?'sales':'custom');
+    const permissions=forDevice?['gallery.view']:presets(role);
+    draft={name:account?.name||'',username:account?.username||'',role,permissions:normalize(role,account?account.permissions:permissions),
       department:account?.department||'',note:account?.note||'',expiresAt:dateInput(account?.expiresAt)};
     baseline=JSON.stringify(draft); originalRecord=fingerprint(account);
     render(); fields.name?.focus({preventScroll:true}); announce();
@@ -390,11 +411,12 @@
     if (!draft) {
       draft={name:'',username:''}; baseline=JSON.stringify(draft); view='bootstrap';
     }
-    const head=make('header','wf-account-editor-head'); head.append(label('h3',bootstrap?'firstTitle':selectedId?'edit':'add'));
+    const head=make('header','wf-account-editor-head'); head.append(label('h3',bootstrap?'firstTitle':selectedId?'edit':addingDevice?'addLinkedDevice':'add'));
     if (bootstrap) head.append(label('p','firstHint','wf-account-muted'));
     else head.append(button(selectedId?'backDetails':'back',cancelEditor));
     panel.append(head); form=make('form','wf-account-editor'); form.id='wfAccountEditor'; form.autocomplete='on';
     const grid=make('div','wf-account-form-grid'); form.append(grid); panel.append(form);
+    if(addingDevice)grid.append(label('p','addLinkedDeviceHint','wf-account-muted wf-account-wide'));
     grid.append(field('name','name',{required:true,max:100,value:draft.name,autocomplete:'name'}),
       field('username','username',{required:true,max:64,value:draft.username,autocomplete:'username',hint:'usernameHint'}));
     fields.username.minLength=3; fields.username.autocapitalize='none'; fields.username.spellcheck=false;
@@ -405,6 +427,7 @@
     if (!bootstrap) {
       grid.append(field('role','role',{tag:'select',hint:'presetHint'}),field('department','department',{max:80,value:draft.department}));
       for (const role of roles()) {
+        if(addingDevice&&role.id==='owner')continue;
         const option=translatedPolicy('option',role,'','Role'); option.value=role.id; fields.role.append(option);
       }
       fields.role.value=draft.role;
@@ -425,7 +448,7 @@
     for (const key of bootstrap?['name','username']:['name','username','department','note','expiresAt']) {
       fields[key].addEventListener(key==='expiresAt'?'change':'input',() => { draft[key]=fields[key].value;changed(); });
     }
-    editorFooter(bootstrap?'createOwner':'save');
+    editorFooter(bootstrap?'createOwner':addingDevice?'prepareDevice':'save');
   }
   function changed() { if (message && !stale) { message='';error=false;noticeText(); } announce(); }
   function drawPermissions() {
@@ -527,9 +550,10 @@
     if (busy || !draft || !service || stale) { if(stale)setMessage('stale',true);return; }
     for(const key of ['name','username','department','note','expiresAt'])if(fields[key]&&Object.hasOwn(draft,key))draft[key]=fields[key].value;
     if (form?.reportValidity && !form.reportValidity()) return;
+    if (addingDevice&&!policy()?.safeHome?.(draft)) {setMessage('devicePermissionsRequired',true);return;}
     if (secrets.length&&!checkPasswords()) return;
     if (selectedId && fingerprint(find(selectedId))!==originalRecord) {stale=true;setMessage('stale',true);return;}
-    const operation=view,id=selectedId,username=draft.username;
+    const operation=view,id=selectedId,username=draft.username,forDevice=addingDevice;
     const payload=operation==='edit'?{name:draft.name,username:draft.username,role:draft.role,permissions:[...draft.permissions],
       department:draft.department,note:draft.note,expiresAt:expiryISO(draft.expiresAt)}:null;
     let password=fields.newPassword?.value || '',oldPassword=fields.currentPassword?.value || '';
@@ -539,7 +563,9 @@
         if (operation==='password') return id===current()?.id?service.changePassword(oldPassword,password):service.setPassword(id,password);
         return id?service.updateAccount(id,payload):service.createAccount({...payload,password});
       }, result=> {
-        selectedId=id || result.accounts?.find(account=>String(account.username).toLocaleLowerCase()===String(username).trim().toLocaleLowerCase())?.id || result.currentAccount?.id || null;
+        const createdId=result.accounts?.find(account=>String(account.username).toLocaleLowerCase()===String(username).trim().toLocaleLowerCase())?.id;
+        selectedId=id || createdId || result.currentAccount?.id || null;
+        if(forDevice)deviceHandoffId=createdId||null;
         clearEditor();view=selectedId?'detail':'list';message=operation==='password'?'passwordSaved':'saved';error=false;
       });
     } finally {password='';oldPassword='';clearSecrets();announce();}
@@ -594,6 +620,16 @@
     details.append(facts);
     if(account.note){const note=make('div','wf-account-admin-note');note.append(label('strong','note'),make('p','',account.note));note.lastElementChild.dir='auto';details.append(note);}
     panel.append(details);
+    if(deviceHandoffId===account.id&&canAddDevice()){
+      const section=make('section','wf-account-device-card wf-account-device-handoff');
+      const url=make('input','fi');url.id='wfAccountDeviceUrl';url.type='url';url.readOnly=true;url.dir='ltr';url.value=service.entryUrl();
+      const linkField=make('label','wf-account-field');linkField.append(label('span','deviceSignIn'),url);
+      const status=make('span','wf-account-muted');status.setAttribute('role','status');
+      section.append(label('p','deviceSignInHint','wf-account-muted'),linkField,button('deviceCopyLink',async()=>{
+        try{await root.navigator.clipboard.writeText(url.value);status.textContent=t('deviceLinkCopied');}
+        catch{url.focus();url.select();}
+      }),status);panel.append(section);
+    }
     const permissions=make('section','wf-account-preview');renderPermissionPreview(permissions,account.role,account.permissions);panel.append(permissions);
     const sessions=make('section','wf-account-sessions');sessions.append(label('h3','session'),label('p',account.id===current()?.id?'currentSession':'otherSession'),label('small','sessionHint','wf-account-muted'));
     sessions.append(label('p',account.role==='owner'?'ownerSessionHint':'employeeSessionHint'));
@@ -710,7 +746,7 @@
   function onSnapshot(next) {
     const previousActor=current()?.id,previousRevision=snapshot.revision; snapshot=next?.accounts?next:service.getSnapshot();
     if(previousActor===current()?.id&&previousRevision===snapshot.revision)return;
-    if(previousActor!==current()?.id && loaded){deviceInfo=null;clearEditor();confirmation=null;view='list';renderAfterOperation=true;}
+    if(previousActor!==current()?.id && loaded){deviceInfo=null;deviceHandoffId=null;clearEditor();confirmation=null;view='list';renderAfterOperation=true;}
     if(dirty() && selectedId && fingerprint(find(selectedId))!==originalRecord){stale=true;setMessage('stale',true);}
     if(!busy&&!dirty()&&isOpen())render();
   }
@@ -752,6 +788,7 @@
     else {joinAdmin?.dispose();joinAdmin=null;clearEditor();confirmation=null;view='list';message='';error=false;}
     announce();return result;
   };
+  const showAccounts = () => {root.showPage?.('settings');tab.click();};
   const api={
     getSettingsActions(){
       if(!isOpen()||!form||!draft)return null;
@@ -759,7 +796,14 @@
     },
     hasUnsavedChanges:()=>busy||dirty(),
     refresh,
-    open(){root.showPage?.('settings');tab.click();},
+    open(){
+      if(root.WFCloudClient?.isRemoteMode()&&new URLSearchParams(root.location?.search).get('wf-device')==='add'){
+        const entry=new URL(root.location.href);entry.searchParams.delete('wf-device');
+        root.history.replaceState(root.history.state,'',entry.href);void api.openDevice();return;
+      }
+      showAccounts();
+    },
+    async openDevice(){if(!loaded)await connect();if(canAddDevice()){showAccounts();openEditor(null,true);}},
     get view(){return view;}
   };
   root.WFAccounts=api;

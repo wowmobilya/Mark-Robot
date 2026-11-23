@@ -11,6 +11,7 @@
   const uuid = value => typeof value === 'string' && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
   const finance = new Set(['proforma','payment','expense','receipt']);
   const routes = {
+    'platform.announcement':['notifications',null],
     'owner.approval':['owner-approval',null],
     'support.ticket':['founder-support',null],'support.reply':['member-support',null],
     chat:['chat','chat.view'], call:['chat','chat.view'], 'call.missed':['chat','chat.view'], 'order.created':['gallery-orders','orders.view'], 'order.updated':['my-orders','myorders.view'],

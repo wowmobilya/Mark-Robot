@@ -66,6 +66,13 @@ const callCopy={
 };
 function invalidNotice(){throw Object.assign(Error('INVALID_NOTICE'),{code:'INVALID_NOTICE'});}
 function sharedNotice(kind,d,language){
+  if(kind==='platform.announcement'){
+    if(d.route!=='notifications')invalidNotice();
+    const bodies={ar:'لديك رسالة جديدة من إدارة WOW. افتح التطبيق لقراءتها.',en:'You have a new message from WOW Admin. Open the app to read it.',
+      tr:'WOW Yönetim’den yeni bir mesajınız var. Okumak için uygulamayı açın.',fr:'Vous avez un nouveau message de WOW Admin. Ouvrez l’application pour le lire.',
+      ru:'У вас новое сообщение от администрации WOW. Откройте приложение, чтобы прочитать его.'};
+    return {title:'WOW Admin',body:bodies[language],route:'notifications',params:{}};
+  }
   if(['order.created','order.updated','stock.updated'].includes(kind)){
     if(d.kind!==kind)invalidNotice();
     try {
@@ -124,7 +131,7 @@ export function formatPushPayload(event,recipient){
   const notice=sharedNotice(kind,d,language);
   const company=cleanPushText(recipient.companyName,60).replace(/\s+/g,' ').trim();
   const brandedTitle=title=>cleanPushText(company?company+' · '+title:title,120);
-  if(notice)return {...envelope,...notice,title:(kind.startsWith('support.')||kind==='owner.approval')?notice.title:brandedTitle(notice.title)};
+  if(notice)return {...envelope,...notice,title:(kind.startsWith('support.')||kind==='owner.approval'||kind==='platform.announcement')?notice.title:brandedTitle(notice.title)};
   if(!['test','proforma','payment','expense','receipt'].includes(kind))invalidNotice();
   const number=new Intl.NumberFormat(language==='ar'?'ar-u-nu-latn':language,{minimumFractionDigits:2,maximumFractionDigits:2});
   const money=(amount,code=d.currency)=>amount!==null&&Number.isFinite(Number(amount))?currency(code)+' '+number.format(Number(amount)):'';
