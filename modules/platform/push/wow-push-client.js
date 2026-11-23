@@ -237,6 +237,9 @@
     const dest=await store.takeOpen(binding,eventId);
     if(!dest || !same(identity,accountIdentity()))return false;
     if(dest.route==='member-support' && root.WFPlatformSupport?.open){await root.WFPlatformSupport.open();return true;}
+    if(dest.route==='owner-approval'){
+      root.location.assign(new URL('./platform/#company/'+dest.params.workspaceId+'/activation',root.location.href).href);return true;
+    }
     if(dest.route==='founder-support'){
       root.location.assign(new URL('./platform/#support',root.location.href).href);return true;
     }

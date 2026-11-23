@@ -29,7 +29,28 @@ self.addEventListener('fetch',event=>{
     return new Response(html.replace('</html>',applyPreferences+'</html>'),{headers:{'Content-Type':'text/html;charset=UTF-8','Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
   }));
 });
+self.addEventListener('push',event=>{
+  let data;try{data=event.data?.json();}catch{return;}
+  const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+  if(data?.kind!=='owner.approval'||data.route!=='owner-approval'||!uuid.test(data.params?.workspaceId)||
+    !Number.isFinite(Date.parse(data.validUntil))||Date.parse(data.validUntil)<=Date.now())return;
+  const body={ar:'طلب تفعيل مالك جديد في إدارة الشركات.',en:'A company owner is waiting for approval.',tr:'Bir şirket sahibi onay bekliyor.',
+    fr:'Un propriétaire attend votre approbation.',ru:'Владелец компании ожидает подтверждения.'}[data.language]||'A company owner is waiting for approval.';
+  event.waitUntil(self.registration.showNotification('WOW Admin',{body,tag:'wow-owner-approval/'+data.params.workspaceId,
+    icon:new URL('admin-icon-192.png',self.location.href).href,data:{workspaceId:data.params.workspaceId}}));
+});
 self.addEventListener('notificationclick',event=>{
+  const id=event.notification.data?.workspaceId;
+  if(/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id)&&event.notification.tag==='wow-owner-approval/'+id){
+    event.notification.close();
+    const target=new URL('./#company/'+id+'/activation',self.location.href);
+    event.waitUntil((async()=>{
+      const clients=await self.clients.matchAll({type:'window'});
+      const client=clients.find(c=>{const u=new URL(c.url);return u.origin===target.origin&&!u.search&&[target.pathname,target.pathname+'index.html'].includes(u.pathname);});
+      if(client){try{client.postMessage({type:'wow-platform-open-owner-request',workspaceId:id});await client.focus();return;}catch{}}
+      await self.clients.openWindow(target.href);
+    })());return;
+  }
   if(event.notification.tag!=='wow-platform-support')return;
   event.notification.close();
   event.waitUntil((async()=>{

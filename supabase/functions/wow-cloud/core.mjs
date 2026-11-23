@@ -275,13 +275,22 @@ export function createHandler(deps) {
       if(deps.deviceSession)requireValue(/^[0-9a-f]{64}$/.test(body.installationProof||''),'DEVICE_PROOF_REQUIRED',403);
       requireValue(typeof body.setupToken==='string' && body.setupToken.length>=32 && body.setupToken.length<=256,'SETUP_PROOF_REQUIRED',403);
       const profile=normalizeProfile({...body,role:'owner',expiresAt:null},policy),pass=password(body.password),claimHash=await sha256(body.setupToken);
-      const setup=await rpc('setup.inspect',{claimHash});
+      const enroll=deps.ownerEnrollment||rpc;
+      const setup=await enroll('setup.inspect',{claimHash,username:profile.username});
       if(body.workspaceId!=null&&body.workspaceId!==setup.workspaceId)throw failure('SETUP_PROOF_INVALID',403);
+      if(setup.enrolledUser){
+        const session=await auth.signIn(setup.email,pass);
+        if(!setup.pendingApproval&&session.user?.id===setup.enrolledUser)return authenticatedResult(session,true,body);
+        try{requireValue(session.user?.id===setup.enrolledUser,'SETUP_PROOF_INVALID',403);}
+        finally{await auth.signOut(session.access_token);}
+        return {ok:true,pendingApproval:true,workspaceId:setup.workspaceId};
+      }
       const email=crypto.randomUUID()+'@wow.invalid';let created;
       try {
         created=await auth.createUser({email,password:pass,email_confirm:true,user_metadata:{wow:true}});
         requireValue(created?.id,'SERVICE_UNAVAILABLE',503);
-        await rpc('setup.claim',{claimHash,userId:created.id,email,profile,workspaceId:setup.workspaceId});
+        const claim=await enroll('setup.claim',{claimHash,userId:created.id,email,profile,workspaceId:setup.workspaceId});
+        if(claim?.pendingApproval===true)return {ok:true,pendingApproval:true,workspaceId:setup.workspaceId};
       } catch(error) { if(created?.id)try{await auth.deleteUser(created.id);}catch(_){} throw error; }
       return authenticatedResult(await auth.signIn(email,pass),true,body);
     }

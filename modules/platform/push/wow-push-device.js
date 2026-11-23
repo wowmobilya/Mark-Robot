@@ -11,6 +11,7 @@
   const uuid = value => typeof value === 'string' && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
   const finance = new Set(['proforma','payment','expense','receipt']);
   const routes = {
+    'owner.approval':['owner-approval',null],
     'support.ticket':['founder-support',null],'support.reply':['member-support',null],
     chat:['chat','chat.view'], call:['chat','chat.view'], 'call.missed':['chat','chat.view'], 'order.created':['gallery-orders','orders.view'], 'order.updated':['my-orders','myorders.view'],
     'stock.updated':['gallery','gallery.view'], operations:['server-admin','server.view']
@@ -21,7 +22,10 @@
     const spec = Object.hasOwn(routes, entry.kind) && routes[entry.kind], params = entry.params;
     if (!spec || entry.route !== spec[0] || !params || typeof params !== 'object' || Array.isArray(params)) return null;
     let safe = {};
-    if (entry.kind === 'chat') {
+    if(entry.kind==='owner.approval'){
+      if(!uuid(params.workspaceId))return null;
+      safe={workspaceId:params.workspaceId};
+    }else if (entry.kind === 'chat') {
       if (!uuid(params.roomId) || typeof params.messageId !== 'string' || !/^[1-9]\d{0,18}$/.test(params.messageId) || BigInt(params.messageId)>9223372036854775807n) return null;
       safe = {roomId:params.roomId,messageId:params.messageId};
     } else if(entry.kind==='call.missed'){

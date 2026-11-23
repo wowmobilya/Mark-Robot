@@ -10,7 +10,8 @@
   const lang=document.querySelector('#lang'),content=document.querySelector('#content'),status=document.querySelector('#status');
   const config=window.WOW_CLOUD_CONFIG,t=i=>dict[lang.value][i];
   const el=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
-  let token='',verifiedName='',offset=0,generation=0,expiryTimer,setup=null,draft=null;
+  let token='',adminUserId='',verifiedName='',offset=0,generation=0,expiryTimer,setup=null,draft=null;
+  let ownerAlerts=null;
   let scanner=null,supportInbox=null,supportAlerts={enabled:false,seen:new Set()};
   const trustKey='wow.platform.remember.v1:'+config.endpoint+':'+config.workspaceId;
   const retention=7*86400000;
@@ -64,14 +65,14 @@
       }
       // Save rotation before a transient list failure; lists still require live founder authorization.
       localStorage.setItem(trustKey,JSON.stringify({...entry,...stamp}));rememberedId=entry.id;
-      token=data.session.access_token;verifiedName=data.identity.currentAccount.name;
+      adminUserId=data.identity.currentAccount.id;token=data.session.access_token;verifiedName=data.identity.currentAccount.name;
       try{await list();if(current()&&token)schedule(data.session);}
       catch(error){if(authEpoch===epoch){clear();login();}throw error;}
     });
     resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
   }
-  let brandList=null,subscriptionClocks=null;
-  function clear(){subscriptionClocks?.dispose();subscriptionClocks=null;window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  let brandList=null,subscriptionClocks=null,remoteClock=null;
+  function clear(){ownerAlerts?.dispose();ownerAlerts=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';adminUserId='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -82,12 +83,12 @@
   const word=i=>authWords[lang.value][i];
   let failureIndex=null;
   function failure(index){return Object.assign(new Error(),{index});}
-  function fail(error){if(error?.index===-1)return;failureIndex=error?.index??null;status.textContent=failureIndex==null?t(15):word(failureIndex);}
+  function fail(error){if(error?.index===-1)return;failureIndex=error?.index??null;status.textContent=(failureIndex==null?t(15):word(failureIndex))+(error?.publicCode?' ('+error.publicCode+')':'');}
   async function platformFetch(url,init){
     try{return await fetch(url,init);}catch{throw failure(2);}
   }
   async function request(action,params={}){
-    const active=token,reply=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{'Content-Type':'application/json',apikey:config.publishableKey,Authorization:'Bearer '+active},body:JSON.stringify({action:'platform.'+action,...params})});
+    const active=token,reply=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{'Content-Type':'application/json',apikey:config.publishableKey,Authorization:'Bearer '+active},body:JSON.stringify({...params,action:['push.config','push.subscribe','push.unsubscribe'].includes(action)?action:'platform.'+action})});
     if(active!==token)throw failure(-1);
     if(reply.status===429)throw failure(1);
     if(reply.status===401){forget();clear();login();throw failure(4);}
@@ -95,7 +96,12 @@
       const reason=await reply.json().catch(()=>({}));
       forget();clear();login();throw (reason.code==='ACCESS_DENIED'||reason.error==='ACCESS_DENIED'||reason.error?.code==='ACCESS_DENIED')?failure(3):new Error();
     }
-    const result=await reply.json();if(!reply.ok||result.ok!==true)throw Error();return result;
+    const result=await reply.json().catch(()=>null);
+    if(!reply.ok||result?.ok!==true){
+      const code=result?.error?.code;
+      throw Object.assign(new Error(),{publicCode:typeof code==='string'&&/^[A-Z][A-Z0-9_]{2,60}$/.test(code)?code:'HTTP '+reply.status});
+    }
+    return result;
   }
   function field(container,index,type='text'){
     const label=el('label',t(index)),input=el('input');input.type=type;label.append(input);container.append(label);return input;
@@ -152,7 +158,7 @@
       if(result.status===429)throw failure(1);
       if(!result.ok)throw Error();const data=await result.json(),{session,identity}=data;
       if(epoch!==authEpoch||!form.isConnected)return;
-      forget(saved()?.id);token=session.access_token;verifiedName=identity?.currentAccount?.name||'';
+      forget(saved()?.id);adminUserId=identity?.currentAccount?.id;token=session.access_token;verifiedName=identity?.currentAccount?.name||'';
       try{await list();}catch(error){if(epoch===authEpoch){clear();login();}throw error;}
       if(epoch!==authEpoch||!token)return;
       const stamp=stampSession(data);
@@ -317,11 +323,50 @@
     fr:['Configuration du propriétaire','Propriétaire actif','Invitation en attente','Invitation expirée','Aucune invitation','Émettre une invitation','Envoyer le courriel de récupération','Confirmer l’envoi du lien de récupération à l’adresse vérifiée du propriétaire','Courriel de récupération demandé.','La nouvelle invitation remplace celle en attente pour cette société.'],
     ru:['Настройка владельца','Владелец активен','Ожидается активация','Приглашение истекло','Приглашение не выдавалось','Создать приглашение','Отправить письмо для восстановления','Подтвердите отправку ссылки на проверенную почту владельца','Письмо для восстановления запрошено.','Новое приглашение заменит ожидающее приглашение этой компании.']
   };
+  const inactiveOwnerWords={
+    ar:['حساب المالك موقوف','انتهت صلاحية حساب المالك','حساب المالك غير متاح'],
+    en:['Owner account suspended','Owner account expired','Owner account unavailable'],
+    tr:['Sahip hesabı askıda','Sahip hesabının süresi doldu','Sahip hesabı kullanılamıyor'],
+    fr:['Compte propriétaire suspendu','Compte propriétaire expiré','Compte propriétaire indisponible'],
+    ru:['Аккаунт владельца приостановлен','Срок действия аккаунта владельца истёк','Аккаунт владельца недоступен']
+  };
+  const inactiveOwnerLabels=()=>{
+    const [owner_suspended,owner_expired,owner_unavailable]=inactiveOwnerWords[lang.value];
+    return {owner_suspended,owner_expired,owner_unavailable};
+  };
   const inviteCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toString(16).padStart(2,'0')).join('');
   async function ownerSetup(container,company,onVerified){
     const w=activationWords[lang.value],activation=await request('company.activation',{workspaceId:company.id});
     if(!container.isConnected)return;
     onVerified?.(activation);
+    if(activation.state==='awaiting_approval'){
+      const copy={
+        ar:['طلب تفعيل المالك','تفعيل حساب المالك','أعد تشغيل الشركة أولًا لتتمكن من تفعيل الحساب.'],
+        en:['Owner activation request','Activate owner account','Resume the company before activating this account.'],
+        tr:['Sahip etkinleştirme isteği','Sahip hesabını etkinleştir','Hesabı etkinleştirmeden önce şirketi yeniden etkinleştirin.'],
+        fr:['Demande d’activation du propriétaire','Activer le compte propriétaire','Réactivez la société avant d’activer ce compte.'],
+        ru:['Запрос на активацию владельца','Активировать аккаунт владельца','Сначала возобновите работу компании.']
+      }[lang.value];
+      const identity=el('p',activation.name+' · '+activation.username);identity.dir='auto';
+      container.replaceChildren(el('h3',copy[0]),identity);
+      if(!activation.canApprove){container.append(el('p',copy[2]));return;}
+      const approve=btn(container,19,async()=>{
+        const result=await request('company.approveOwner',{workspaceId:company.id,ownerId:activation.ownerId});
+        if(result.state!=='active')throw Error();
+        window.dispatchEvent(new Event('wow-owner-approval-changed'));
+        if(container.isConnected){
+          onVerified?.(result);
+          container.replaceChildren(el('p',w[1]));
+          container.firstChild.setAttribute('role','status');
+        }
+      });
+      approve.textContent=copy[1];return;
+    }
+    const inactive=inactiveOwnerLabels();
+    if(Object.hasOwn(inactive,activation.state)){
+      container.replaceChildren(el('h3',w[0]),el('p',inactive[activation.state]));
+      return;
+    }
     const i=['active','pending','expired','unissued'].indexOf(activation.state);
     if(i<0)throw Error();
     container.replaceChildren(el('h3',w[0]),el('p',w[i+1]));
@@ -416,13 +461,13 @@
   }
   const companyMenu={ar:'إدارة الشركة',en:'Manage company',tr:'Şirketi yönet',fr:'Gérer la société',ru:'Управление компанией'};
   const companyCardWords={
-    ar:['ربط البرنامج','جارِ التحقق من تفعيل المالك','المالك مفعّل','بانتظار تفعيل المالك','الدعوة منتهية','لم تصدر دعوة','تعذّر التحقق','تحديث حالة الربط','حالة الاتصال المباشر غير متوفرة','الحسابات','فتح برنامج الشركة'],
-    en:['Program link','Checking owner activation','Owner activated','Awaiting owner activation','Invitation expired','No invitation issued','Could not verify','Refresh link status','Live connection status unavailable','Accounts','Open company program'],
-    tr:['Program bağlantısı','Sahip etkinliği kontrol ediliyor','Sahip etkin','Sahip etkinleştirmesi bekleniyor','Davet süresi doldu','Davet oluşturulmadı','Kontrol edilemedi','Bağlantı durumunu yenile','Canlı bağlantı durumu mevcut değil','Hesaplar','Şirket programını aç'],
-    fr:['Lien au programme','Vérification de l’activation','Propriétaire activé','Activation en attente','Invitation expirée','Aucune invitation','Vérification impossible','Actualiser le statut','Connexion en direct indisponible','Comptes','Ouvrir le programme'],
-    ru:['Связь с программой','Проверка активации владельца','Владелец активен','Ожидается активация','Срок приглашения истёк','Приглашение не создано','Не удалось проверить','Обновить статус','Онлайн-статус недоступен','Аккаунты','Открыть программу']
+    ar:['ربط البرنامج','جارِ التحقق من تفعيل المالك','المالك مفعّل','بانتظار قبول الدعوة','الدعوة منتهية','لم تصدر دعوة','تعذّر التحقق','تحديث حالة الربط','حالة الاتصال المباشر غير متوفرة','الحسابات','فتح برنامج الشركة'],
+    en:['Program link','Checking owner activation','Owner activated','Awaiting invitation acceptance','Invitation expired','No invitation issued','Could not verify','Refresh link status','Live connection status unavailable','Accounts','Open company program'],
+    tr:['Program bağlantısı','Sahip etkinliği kontrol ediliyor','Sahip etkin','Davetin kabul edilmesi bekleniyor','Davet süresi doldu','Davet oluşturulmadı','Kontrol edilemedi','Bağlantı durumunu yenile','Canlı bağlantı durumu mevcut değil','Hesaplar','Şirket programını aç'],
+    fr:['Lien au programme','Vérification de l’activation','Propriétaire activé','Invitation en attente','Invitation expirée','Aucune invitation','Vérification impossible','Actualiser le statut','Connexion en direct indisponible','Comptes','Ouvrir le programme'],
+    ru:['Связь с программой','Проверка активации владельца','Владелец активен','Ожидается принятие приглашения','Срок приглашения истёк','Приглашение не создано','Не удалось проверить','Обновить статус','Онлайн-статус недоступен','Аккаунты','Открыть программу']
   };
-  let showDestination=null,expandedCompany=null,expandedCard=null;
+  let showDestination=null,expandedCompany=null;
   const header=document.querySelector('main > header'),headerActions=el('div');
   headerActions.className='platform-header-actions';headerActions.hidden=true;header.append(headerActions);
   // One predictable order across mobile and desktop, matching WOW's primary workspaces.
@@ -509,11 +554,21 @@
     };
     return section;
   }
-  const pageFromUrl=()=>['home','companies','plans','support','calls','settings'].includes(location.hash.slice(1))?location.hash.slice(1):'home';
+  const companyRoute=()=>/^#company\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})(\/activation)?$/i.exec(location.hash);
+  const companyPageWords={
+    ar:['صفحة الشركة','العودة إلى الشركات','إعدادات الشركة','إعادة المحاولة'],
+    en:['Company page','Back to companies','Company settings','Try again'],
+    tr:['Şirket sayfası','Şirketlere dön','Şirket ayarları','Yeniden dene'],
+    fr:['Page de la société','Retour aux sociétés','Paramètres de la société','Réessayer'],
+    ru:['Страница компании','К списку компаний','Настройки компании','Повторить']
+  };
+  const pageFromUrl=()=>companyRoute()?'companies':['home','companies','plans','support','calls','settings'].includes(location.hash.slice(1))?location.hash.slice(1):'home';
   window.addEventListener('hashchange',()=>showDestination?.());
+  const directoryPageSize=12;
   async function list(){
-    const ticket=++generation,state=await request('company.list',{offset});if(ticket!==generation)return;
-    scanner?.dispose();scanner=null;subscriptionClocks?.dispose();subscriptionClocks=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
+    const ticket=++generation,result=await request('company.list',{offset});if(ticket!==generation)return;
+    const state={...result,companies:result.companies.slice(0,directoryPageSize)};
+    scanner?.dispose();scanner=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
     const labels=destinations[lang.value],settingsText=settingsWords[lang.value],homepage=homeWords[lang.value];
     const ids=['home','companies','plans','support','calls','settings'],titles=[homepage.heading,labels[0],labels[1],labels[2],labels[5],settingsText[0]],panels={},links={};
     nav.className='platform-account-bar';menu.className='platform-section-menu';menu.setAttribute('aria-label',labels[3]);
@@ -558,6 +613,58 @@
     createPanel.className='platform-create-panel';createHint.className='platform-create-hint';
     form.className='platform-create-form';form.append(createHint);
     createPanel.append(createSummary,form);companies.append(createPanel);
+    const profileWords=companyPageWords[lang.value],profile=el('section'),back=el('a',profileWords[1]);
+    const profileTitle=el('h2',profileWords[2]),profileBody=el('div'),companyRows=new Map();
+    profile.className='platform-page platform-company-page';profile.hidden=true;
+    profileTitle.id='platform-company-page-title';profileTitle.tabIndex=-1;
+    profile.setAttribute('aria-labelledby',profileTitle.id);
+    back.href='#companies';back.className='platform-company-back';
+    profile.append(back,profileTitle,profileBody);companies.after(profile);
+    let shownCompany=null,routeTicket=0;
+    function releaseCompany(){
+      if(!shownCompany)return;
+      const {row,marker,hidden,detail}=shownCompany;
+      detail.hidden=true;row.querySelector('.platform-company-page-link').hidden=false;
+      if(marker){marker.replaceWith(row);row.hidden=hidden;}else row.remove();
+      remoteClock?.dispose();remoteClock=null;
+      const invite=profileBody.querySelector('.platform-invite-card');
+      if(invite)createPanel.after(invite);
+      shownCompany=null;
+    }
+    async function enterCompany(route){
+      const sequence=++routeTicket,id=route[1].toLowerCase(),activate=!!route[2];
+      if(shownCompany?.id!==id){
+        releaseCompany();profileTitle.textContent=profileWords[2];profileBody.replaceChildren();profileBody.setAttribute('aria-busy','true');
+        try{
+          let entry=companyRows.get(id),remote=false;
+          if(!entry){
+            const reply=await request('company.inspect',{workspaceId:id,section:'summary',offset:0});
+            if(sequence!==routeTicket||ticket!==generation)return;
+            if(reply.workspace?.id!==id||!reply.summary)throw Error();
+            entry=renderCompany({...reply.workspace,accounts:reply.summary.accounts},false);
+            remote=true;
+          }
+          const {row,detail,clock}=entry,hidden=row.hidden,marker=remote?null:document.createComment('company');
+          if(marker)row.replaceWith(marker);
+          row.hidden=false;detail.hidden=false;row.querySelector('.platform-company-page-link').hidden=true;
+          profileBody.append(row);row.querySelector('.platform-company-tools').open=true;
+          if(remote)remoteClock=window.WFPlatformSubscriptionClocks?.mount({cards:[clock],request,language:lang.value});
+          if(setup?.workspace===id){const invite=companies.querySelector('.platform-invite-card');if(invite)profileBody.append(invite);}
+          shownCompany={...entry,id,hidden,marker};
+          profileTitle.textContent=profileWords[2]+' · '+entry.name;
+          profileTitle.focus({preventScroll:true});
+          if(!activate)row.querySelector('.platform-company-refresh').click();
+        }catch(error){
+          if(sequence!==routeTicket||ticket!==generation)return;
+          profileTitle.textContent=profileWords[2];const note=el('p',t(15)),retry=el('button',profileWords[3]);
+          retry.type='button';retry.onclick=()=>enterCompany(route);profileBody.replaceChildren(note,retry);fail(error);
+        }finally{if(sequence===routeTicket)profileBody.removeAttribute('aria-busy');}
+      }
+      if(activate&&shownCompany?.id===id){
+        const action=shownCompany.row.querySelector('.platform-tool-activation');
+        action.closest('details').open=true;action.focus();action.click();
+      }
+    }
     let lastPage=null,loadingPlans=false;
     showDestination=()=>{
       const id=pageFromUrl(),changed=id!==lastPage;
@@ -567,6 +674,13 @@
         panels[key].hidden=key!==id;
         if(key===id)links[key].setAttribute('aria-current','page');else links[key].removeAttribute('aria-current');
       }
+      const route=companyRoute();profile.hidden=!route;
+      if(route){companies.hidden=true;void enterCompany(route);}
+      else {routeTicket++;const previous=shownCompany;releaseCompany();
+        if(id==='companies'&&previous){
+          const target=previous.marker&&!previous.hidden?previous.row.querySelector('.platform-company-page-link'):companies.querySelector('h2');
+          target?.focus();
+        }}
       if(id==='calls'&&!panels.calls.querySelector('.platform-relay')){
         const host=el('div');host.className='platform-relay';panels.calls.append(host);
         window.WFPlatformRelay.mount(host,lang.value,request);
@@ -578,7 +692,7 @@
           const retry=el('button',labels[1]);retry.onclick=()=>{plansBox.replaceChildren();showDestination?.();};plansBox.append(retry);
         }).finally(()=>{loadingPlans=false;});
       }
-      if(changed&&lastPage!==null){
+      if(changed&&lastPage!==null&&!route){
         const heading=panels[id].querySelector('h2');heading.focus({preventScroll:true});heading.scrollIntoView({block:'nearest'});
       }
       lastPage=id;
@@ -591,7 +705,7 @@
       tr:'Bu cihazda WOW yönetiminden çıkış yapılsın mı?',fr:'Se déconnecter de WOW Admin sur cet appareil ?',ru:'Выйти из WOW Admin на этом устройстве?'};
     window.WFPlatformLogout=async()=>{
       if(!token||!window.confirm(logoutWords[lang.value]))return;
-      const previous=token;forget();clear();login();
+      const previous=token;ownerAlerts?.detachDevice();forget();clear();login();
       try{await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
         headers:{apikey:config.publishableKey,'Content-Type':'application/json',Authorization:'Bearer '+previous},
         body:JSON.stringify({action:'auth.signOut'})}).then(reply=>{if(!reply.ok)throw failure(2);});}
@@ -607,9 +721,10 @@
     account.append(el('h3',settingsText[2]));if(verifiedName)account.append(el('bdi',verifiedName));passwordSettings(account);
     const signOut=btn(account,4,()=>window.WFPlatformLogout?.());signOut.className='platform-signout platform-signout-settings';
     panels.settings.append(preferences,account);
+    ownerAlerts?.dispose();
+    ownerAlerts=window.WFPlatformOwnerAlerts?.mount({nav,request,language:lang.value,userId:adminUserId});
     supportInbox?.dispose();
     supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts});
-    showDestination();
     const name=field(form,5);name.required=true;name.maxLength=100;
     panels.home.querySelector('[data-shortcut=create]')?.addEventListener('click',()=>{
       createPanel.open=true;
@@ -656,25 +771,16 @@
         }
       },{rootMargin:'100px 0px'}):null;
     const clockCards=[];
-    for(const company of state.companies){
+    function renderCompany(company,inDirectory){
       const row=el('article'),active=company.status==='active',link=el('button',t(16));
       row.className='platform-company-card platform-company-card-v2';link.className='platform-company-launch';
       link.type='button';link.onclick=()=>window.WFPlatformCompanyInspector?.open({company,request,language:lang.value});
       const name=el('strong',company.name),stateLabel=el('span',t(active?7:8)),accountLabel=el('span',t(13)+' · '+company.accounts);
       const hero=el('div'),pills=el('div'),actions=el('div'),summaryLine=el('div');
-      const companyFold=el('details'),companyFoldSummary=el('summary'),companyFoldBody=el('div');
-      const foldText=({ar:['عرض تفاصيل الشركة','إخفاء تفاصيل الشركة'],en:['Show company details','Hide company details'],
-        tr:['Şirket ayrıntılarını göster','Şirket ayrıntılarını gizle'],fr:['Afficher les détails','Masquer les détails'],
-        ru:['Детали компании','Скрыть детали']})[lang.value];
-      companyFold.className='platform-company-fold';companyFoldBody.className='platform-company-fold-body';
-      companyFoldSummary.className='platform-company-fold-summary';companyFoldSummary.textContent=foldText[0];
-      companyFold.open=expandedCard===company.id;
-      companyFold.append(companyFoldSummary,companyFoldBody);
-      companyFold.addEventListener('toggle',()=>{
-        if(!companyFold.isConnected)return;
-        if(companyFold.open){expandedCard=company.id;companyFoldSummary.textContent=foldText[1];}
-        else {if(expandedCard===company.id)expandedCard=null;companyFoldSummary.textContent=foldText[0];}
-      });
+      const detail=el('div'),openPage=el('a',profileWords[0]);
+      detail.className='platform-company-detail';detail.hidden=true;
+      openPage.className='platform-company-page-link';openPage.href='#company/'+company.id;
+      openPage.setAttribute('aria-label',profileWords[0]+' · '+company.name);
       hero.className='platform-company-hero';pills.className='platform-company-pills';
       actions.className='platform-company-primary-actions';summaryLine.className='platform-company-connectivity';
       name.className='platform-company-name';name.dir='auto';
@@ -688,11 +794,18 @@
       refresh.className='platform-company-refresh';refresh.type='button';refresh.title=refresh.getAttribute('aria-label')||cardWords[7];
       refresh.setAttribute('aria-label',cardWords[7]);refresh.setAttribute('aria-controls','company-health-'+company.id);
       summaryLine.id='company-health-'+company.id;
-      const states={active:cardWords[2],pending:cardWords[3],expired:cardWords[4],unissued:cardWords[5]};
+      const approvalLabel={ar:'بانتظار موافقة الإدارة',en:'Awaiting admin approval',tr:'Yönetici onayı bekleniyor',fr:'En attente de l’approbation administrateur',ru:'Ожидает одобрения администратора'}[lang.value];
+      const reviewLabel={ar:'مراجعة طلب التفعيل',en:'Review activation request',tr:'Etkinleştirme isteğini incele',fr:'Examiner la demande d’activation',ru:'Рассмотреть запрос на активацию'}[lang.value];
+      const states={...inactiveOwnerLabels(),awaiting_approval:approvalLabel,active:cardWords[2],pending:cardWords[3],expired:cardWords[4],unissued:cardWords[5]};
       const paintActivation=result=>{
         const nextState=result&&Object.hasOwn(states,result.state)?result.state:'unknown';
         linkState.dataset.linkState=nextState;
         linkState.textContent=states[nextState]||cardWords[6];
+        const awaiting=nextState==='awaiting_approval';
+        openPage.href='#company/'+company.id+(awaiting?'/activation':'');
+        openPage.dataset.action=awaiting?'review':'open';
+        openPage.textContent=awaiting?reviewLabel:profileWords[0];
+        openPage.setAttribute('aria-label',openPage.textContent+' · '+company.name);
       };
       refresh.onclick=()=>{
         if(refresh.disabled||!row.isConnected)return;
@@ -714,15 +827,15 @@
       summaryLine.append(health,live);
       actions.append(link);
       const subscriptionHost=el('div');subscriptionHost.className='platform-company-subscription';
-      clockCards.push({id:company.id,host:subscriptionHost});
-      companyFoldBody.append(summaryLine,actions);row.append(hero,pills,subscriptionHost,companyFold);
+      const clock={id:company.id,host:subscriptionHost};if(inDirectory)clockCards.push(clock);
+      detail.append(summaryLine,actions);row.append(hero,pills,subscriptionHost,openPage,detail);
       const details=el('details'),summary=el('summary',companyMenu[lang.value]),tools=el('div');
       details.className='platform-company-tools';tools.className='platform-company-actions-grid';details.open=expandedCompany===company.id;
       details.ontoggle=()=>{
         if(!details.isConnected)return;
         if(details.open)expandedCompany=company.id;else if(expandedCompany===company.id)expandedCompany=null;
       };
-      details.append(summary,tools);companyFoldBody.append(details);
+      details.append(summary,tools);detail.append(details);
       brandList?.attach(row,details,company);
       const accounts=el('button',sale(12));accounts.type='button';accounts.onclick=()=>window.WFPlatformCompanyInspector?.open({company,request,language:lang.value,section:'accounts'});accounts.className='platform-tool-link platform-tool-accounts';tools.append(accounts);
       const editArea=el('section');editArea.className='platform-inline-editor';
@@ -748,23 +861,37 @@
       const statusBtn=btn(tools,active?9:10,()=>editCompany(statusBtn,false));statusBtn.className='platform-tool platform-tool-status';
       statusBtn.dataset.action=active?'suspend':'activate';
       const rename=btn(tools,5,()=>editCompany(rename,true));rename.textContent=word(6);rename.className='platform-tool platform-tool-rename';
-      const activationBox=el('section'),activation=btn(tools,6,()=>ownerSetup(activationBox,company,paintActivation));activation.textContent=activationWords[lang.value][0];activation.className='platform-tool platform-tool-activation';
+      const activationBox=el('section'),activation=btn(tools,6,async()=>{
+        await ownerSetup(activationBox,company,paintActivation);
+        const heading=activationBox.querySelector('h3');
+        if(heading&&shownCompany?.row===row){heading.tabIndex=-1;heading.focus();}
+      });
+      activation.textContent=activationWords[lang.value][0];activation.className='platform-tool platform-tool-activation';
       const devicesBox=el('section'),devicesToggle=btn(tools,21,()=>companyDevices(devicesBox,company.id));
       devicesToggle.textContent=deviceWords[lang.value][0];devicesToggle.className='platform-tool platform-tool-devices';devicesBox.className='platform-company-devices';
       const limitsBox=el('section'),limitButton=btn(tools,18,()=>subscription(limitsBox,company));limitButton.className='platform-tool platform-tool-subscription';
-      details.append(editArea,activationBox,limitsBox,devicesBox);companies.append(row);
+      details.append(editArea,activationBox,limitsBox,devicesBox);
+      const brandEditor=details.querySelector('.platform-company-brand');if(brandEditor)details.append(brandEditor);
+      if(inDirectory)companies.append(row);
       if(activationObserver)activationObserver.observe(row);
-      else refresh.click();
+      else if(inDirectory)refresh.click();
+      return {row,detail,clock,name:company.name};
     }
+    for(const company of state.companies)companyRows.set(company.id,renderCompany(company,true));
     if(!state.companies.length){const empty=el('p',labels[4]);empty.className='platform-empty-state';companies.append(empty);}
-    const pages=el('nav');companies.append(pages);
-    if(offset)btn(pages,11,async()=>{offset=Math.max(0,offset-50);await list();});
-    if(offset+50<state.total)btn(pages,12,async()=>{offset+=50;await list();});
+    const pages=el('nav');pages.className='platform-directory-pagination';
+    if(state.total>directoryPageSize){
+      const range=el('bdi',(offset+1).toLocaleString(lang.value)+'–'+Math.min(offset+directoryPageSize,state.total).toLocaleString(lang.value)+' / '+state.total.toLocaleString(lang.value));
+      pages.append(range);companies.append(pages);
+    }
+    if(offset)btn(pages,11,async()=>{offset=Math.max(0,offset-directoryPageSize);await list();});
+    if(offset+directoryPageSize<state.total)btn(pages,12,async()=>{offset+=directoryPageSize;await list();});
     // Responsive chrome and local-only company filters reuse the authorized list,
     // without altering the authenticated data source or modifying server state.
     subscriptionClocks=window.WFPlatformSubscriptionClocks?.mount({cards:clockCards,request,language:lang.value})||null;
     window.WFPlatformShell?.mount({state,companies,menu,links,preferences:preferred});
     window.WFPlatformAnalytics?.mount({host:panels.home,state,request,language:lang.value});
+    showDestination();
   }
   let invite=new URLSearchParams(location.hash.slice(1)).get('invite');
   if(invite)history.replaceState(null,'',location.pathname+location.search);
@@ -777,17 +904,79 @@
   };
   function enroll(workspace){
     content.replaceChildren();const labels=setupLabels[lang.value];document.title=labels[0];document.querySelector('h1').textContent=labels[0];
-    const form=el('form');content.append(form);
-    const inputs=['password','text','text','password'].map((type,i)=>{
-      const label=el('label',i===3?t(2):labels[i+1]),input=el('input');input.type=type;input.required=true;
-      input.autocomplete=['off','name','username','new-password'][i];label.append(input);form.append(label);return input;
+    const language=['ar','en','tr','fr','ru'].indexOf(lang.value);
+    const copy={
+      ar:['بيانات حساب المالك','أدخل بياناتك لإرسال طلب التفعيل إلى أدمن برنامج التحكم.','تأكيد كلمة المرور','أعد كتابة كلمة المرور نفسها.','كلمتا المرور غير متطابقتين. أعد كتابة التأكيد.','إرسال طلب التفعيل','بيانات الدخول','هذا الحقل مطلوب.'],
+      en:['Owner account details','Enter your details to request activation from the administrator.','Confirm password','Enter the same password again.','Passwords do not match. Re-enter confirmation.','Request activation','Sign-in details','This field is required.'],
+      tr:['Sahip hesabı bilgileri','Etkinleştirme isteğini yöneticiye göndermek için bilgilerinizi girin.','Parolayı doğrulayın','Aynı parolayı tekrar girin.','Parolalar eşleşmiyor. Onayı yeniden girin.','Etkinleştirme iste','Giriş bilgileri','Bu alan zorunlu.'],
+      fr:['Compte propriétaire','Renseignez vos informations pour demander l’activation à l’administrateur.','Confirmer le mot de passe','Saisissez à nouveau le mot de passe.','Les mots de passe ne correspondent pas.','Demander l’activation','Identifiants de connexion','Ce champ est obligatoire.'],
+      ru:['Данные владельца','Введите данные для отправки заявки администратору.','Подтверждение пароля','Повторите пароль.','Пароли не совпадают. Введите подтверждение снова.','Запросить активацию','Данные для входа','Заполните это поле.']
+    }[lang.value];
+    const form=el('form'),intro=el('div'),grid=el('div');
+    form.className='platform-enrollment';form.noValidate=true;intro.className='owner-intro';
+    const logo=el('img');logo.src='../app-icon-192.png';logo.alt='';logo.width=logo.height=48;
+    intro.append(logo,el('h2',copy[0]),el('p',copy[1]));grid.className='owner-field-grid';form.append(intro,grid);content.append(form);
+    const fieldPaths=['M4 8h16v10H4z M8 8V6a4 4 0 0 1 8 0v2','M4 21v-2a7 7 0 0 1 14 0v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0','M16 8v7a3 3 0 0 0 5 0v-3a9 9 0 1 0-5 8 M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0','M5 10h14v11H5z M8 10V7a4 4 0 0 1 8 0v3 M12 14v3','M5 10h14v11H5z M8 10V7a4 4 0 0 1 8 0v3 M9 15l2 2 4-4'];
+    const hints=[];
+    const inputs=['password','text','text','password','password'].map((type,i)=>{
+      const label=el('label',i===4?copy[2]:i===3?t(2):labels[i+1]),input=el('input'),hint=el('small');
+      input.type=type;input.required=true;input.dir=i===0?'ltr':'auto';input.id='owner-field-'+i;hint.id=input.id+'-hint';hints.push(hint);
+      input.autocomplete=['off','name','username','new-password','new-password'][i];
+      const caption=el('span',label.textContent),ns='http://www.w3.org/2000/svg',icon=document.createElementNS(ns,'svg'),line=document.createElementNS(ns,'path');
+      icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');line.setAttribute('d',fieldPaths[i]);icon.append(line);caption.prepend(icon);
+      label.htmlFor=input.id;label.className='owner-field';label.replaceChildren(caption,input,hint);grid.append(label);return input;
     });
-    if(/^[a-f0-9]{64}$/.test(invite))inputs[0].value=invite;inputs[3].minLength=12;submit(form,6,async()=>{
-      const [code,name,user,pass]=inputs;
-      const reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.enrollOwner',installationProof:await window.WFInstallation?.proof(),workspaceId:workspace,setupToken:code.value.trim(),name:name.value.trim(),username:user.value.trim(),password:pass.value})});
-      if(!reply.ok)throw Error();
-      const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',workspace);location.replace(url.href);
-    });form.querySelector('button').textContent=labels[4];
+    const messages={
+      invalid:['تعذّر استخدام الدعوة. افتح آخر رابط أرسله الأدمن أو اطلب دعوة جديدة.','Open the latest invitation or ask the administrator for a new one.','Son daveti açın veya yöneticiden yenisini isteyin.','Ouvrez la dernière invitation ou demandez-en une nouvelle.','Откройте последнее приглашение или запросите новое.'],
+      username:['اسم المستخدم من 3 إلى 64 حرفًا أو رقمًا، ويقبل . _ @ - دون مسافات.','Use 3–64 letters, digits or . _ @ - without spaces.','Boşluksuz 3–64 harf, rakam veya . _ @ - kullanın.','Utilisez 3 à 64 lettres, chiffres ou . _ @ - sans espace.','Введите 3–64 буквы, цифры или . _ @ - без пробелов.'],
+      password:['أدخل كلمة مرور من 12 إلى 128 حرفًا.','Use a password of 12–128 characters.','12–128 karakterli parola girin.','Utilisez un mot de passe de 12 à 128 caractères.','Введите пароль длиной 12–128 символов.'],
+      name:['أدخل اسم المالك بما لا يتجاوز 100 حرف.','Enter an owner name of up to 100 characters.','En fazla 100 karakterlik sahip adı girin.','Saisissez un nom de 100 caractères maximum.','Введите имя до 100 символов.'],
+      storage:['تعذّر التحقق من الجهاز. اسمح بتخزين بيانات الموقع ثم أعد المحاولة.','Allow site storage and try again.','Site depolamasına izin verip tekrar deneyin.','Autorisez le stockage du site et réessayez.','Разрешите хранение данных сайта и повторите попытку.'],
+      taken:['اسم المستخدم مستخدم بالفعل. اختر اسمًا آخر.','Choose a different username.','Başka bir kullanıcı adı seçin.','Choisissez un autre identifiant.','Выберите другое имя пользователя.'],
+      configured:['يوجد حساب لهذه الشركة أو أن الشركة موقوفة. راجع أدمن برنامج التحكم.','An account exists or the company is suspended. Contact the administrator.','Hesap mevcut veya şirket askıda. Yöneticiye başvurun.','Un compte existe ou la société est suspendue. Contactez l’administrateur.','Аккаунт уже есть или компания приостановлена. Обратитесь к администратору.'],
+      pending:['وصل طلبك إلى لوحة تحكم الأدمن. بعد الموافقة، سجّل الدخول باسم المستخدم وكلمة المرور اللذين اخترتهما.','Your request is in the admin panel. After approval, sign in with your chosen credentials.','Talebiniz yönetim panelinde. Onaydan sonra seçtiğiniz bilgilerle giriş yapın.','Votre demande figure dans le panneau admin. Après approbation, connectez-vous avec vos identifiants.','Заявка поступила в панель администратора. После одобрения войдите со своими данными.']
+    };
+    hints[2].textContent=messages.username[language];hints[3].textContent=messages.password[language];hints[4].textContent=copy[3];
+    const note=el('p');note.id='owner-invite-feedback';note.setAttribute('role','alert');form.append(note);
+    const issues={INVALID_USERNAME:['username',2],INVALID_PASSWORD:['password',3],INVALID_NAME:['name',1],
+      USERNAME_TAKEN:['taken',2],SETUP_PROOF_INVALID:['invalid',0],SETUP_PROOF_REQUIRED:['invalid',0],
+      ALREADY_CONFIGURED:['configured'],DEVICE_PROOF_REQUIRED:['storage']};
+    function explain(code,http){
+      const [key,field]=issues[code]||[];
+      const detail=messages[key]?.[language]||(http===429?word(1):http===0?word(2):t(15));
+      const safeCode=typeof code==='string'&&/^[A-Z][A-Z0-9_]{2,60}$/.test(code)?code:'';
+      note.textContent=detail+(safeCode?' ('+safeCode+')':http?' (HTTP '+http+')':'');
+      if(field!==undefined){inputs[field].parentElement.hidden=false;inputs[field].setAttribute('aria-invalid','true');inputs[field].focus();}
+    }
+    for(const input of inputs){input.setAttribute('aria-describedby',input.id+'-hint '+note.id);input.oninput=()=>{input.removeAttribute('aria-invalid');note.textContent='';};}
+    if(/^[a-f0-9]{64}$/.test(invite)){inputs[0].value=invite;inputs[0].parentElement.hidden=true;}
+    const button=submit(form,6,async()=>{
+      const [code,name,user,pass,confirm]=inputs;note.textContent='';
+      for(const input of inputs)input.removeAttribute('aria-invalid');
+      const bad=(input,reason)=>{input.setAttribute('aria-invalid','true');note.textContent=reason;input.focus();};
+      for(const input of inputs)if(!input.value)return bad(input,copy[7]);
+      if(confirm.value!==pass.value)return bad(confirm,copy[4]);
+      const normalized=user.value.trim().normalize('NFC').toLowerCase().normalize('NFC');
+      if(!/^[\p{L}\p{N}._@-]{3,64}$/u.test(normalized))return explain('INVALID_USERNAME');
+      if(!name.value.trim()||Array.from(name.value.trim().normalize('NFC')).length>100)return explain('INVALID_NAME');
+      if(Array.from(pass.value).length<12||Array.from(pass.value).length>128)return explain('INVALID_PASSWORD');
+      const proof=await window.WFInstallation?.proof();
+      if(!proof)return explain('DEVICE_PROOF_REQUIRED');
+      let reply;
+      try{reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.enrollOwner',installationProof:proof,workspaceId:workspace,setupToken:code.value.trim(),name:name.value.trim(),username:user.value.trim(),password:pass.value})});}
+      catch{return explain(null,0);}
+      const result=await reply.json().catch(()=>null);
+      if(!form.isConnected)return;
+      if(!reply.ok||result?.ok!==true||result.workspaceId!==workspace)return explain(result?.error?.code,reply.status);
+      const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',workspace);
+      if(result.pendingApproval===true){
+        invite=null;code.value=pass.value=confirm.value='';const message=el('p',messages.pending[language]),link=el('a',t(3));
+        message.setAttribute('role','status');link.href=url.href;form.replaceChildren(message,link);link.focus();
+        window.dispatchEvent(new Event('wow-company-install-ready'));return;
+      }
+      if(!result.session?.access_token)return explain(null,reply.status);
+      location.replace(url.href);
+    });button.textContent=copy[5];
   }
   function render(){document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);const ws=new URLSearchParams(location.search).get('setup');if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws))enroll(ws);else if(token)list().catch(fail);else if(canRemember()&&saved()){content.replaceChildren(el('p',({ar:'يتم فتح إدارة WOW بأمان…',en:'Opening WOW Admin securely…',tr:'WOW yönetimi güvenle açılıyor…',fr:"Ouverture sécurisée de WOW Admin…",ru:'Безопасное открытие WOW Admin…'})[lang.value]));}
     else login();}

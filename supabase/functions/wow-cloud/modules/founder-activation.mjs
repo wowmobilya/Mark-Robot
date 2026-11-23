@@ -3,10 +3,14 @@ const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}
 export function createFounderActivation({founderActivation,auth,consumeOwnerRecovery,origin,enabled=false}){
  const configured=enabled===true&&typeof origin==='string'&&/^https:\/\/[A-Za-z0-9.-]+$/.test(origin);
  const actions={};
- for(const action of ['company.activation','company.reissue','company.recover']){
+ for(const action of ['company.activation','company.approveOwner','company.reissue','company.recover']){
   actions['platform.'+action]=async({actor,body})=>{
    if(!uuid(body.workspaceId))throw failure('INVALID_REQUEST',422);
    const data={workspaceId:body.workspaceId};
+   if(action==='company.approveOwner'){
+    if(!uuid(body.ownerId))throw failure('INVALID_REQUEST',422);
+    data.ownerId=body.ownerId;
+   }
    if(action==='company.reissue'){
     if(typeof body.setupToken!=='string'||!/^[a-f0-9]{64}$/.test(body.setupToken))throw failure('INVALID_REQUEST',422);
     Object.assign(data,{claimHash:await sha256(body.setupToken),expiresAt:new Date(Date.now()+3600000).toISOString()});
@@ -18,7 +22,7 @@ export function createFounderActivation({founderActivation,auth,consumeOwnerReco
    }
    const result=await founderActivation(actor,action,data);
    if(action==='company.activation')return {...result,canRecover:configured&&result.canRecover===true};
-   if(action==='company.reissue')return result;
+   if(action==='company.reissue'||action==='company.approveOwner')return result;
    const url=new URL('/platform/recover.html',origin);url.searchParams.set('request',result.requestId);
    await auth.ownerRecoveryMail(result.email,url.href);return {requested:true};
   };

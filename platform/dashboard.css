@@ -1143,16 +1143,6 @@ html[data-theme=dark] .platform-sales-contact-links .platform-sales-whatsapp{
 
 
 
-/* WOW v234: scoped, honest subscription deadline and folding company card. */
-.platform-company-fold{grid-column:1/-1;width:100%;min-width:0;margin:.35rem 0 0;border-top:1px solid var(--border)}
-.platform-company-fold-summary{display:flex;align-items:center;gap:.5rem;list-style:none;padding:.72rem .2rem;min-height:44px;color:var(--ui-accent);font-size:.83rem;font-weight:800;cursor:pointer}
-.platform-company-fold-summary::-webkit-details-marker{display:none}
-.platform-company-fold-summary::before{content:'⌄';display:grid;place-items:center;inline-size:24px;block-size:24px;border-radius:8px;background:var(--ui-soft);color:var(--ui-accent);transition:transform .18s ease}
-.platform-company-fold[open]>.platform-company-fold-summary::before{transform:rotate(180deg)}
-.platform-company-fold-summary:focus-visible{border-radius:8px;outline:2px solid var(--ui-accent);outline-offset:-2px}
-.platform-company-fold-body{display:grid;grid-template-columns:minmax(0,1fr);gap:.5rem;min-width:0;padding-bottom:.5rem}
-.platform-company-fold-body>.platform-company-tools{grid-column:1/-1}
-.platform-company-fold-body>.platform-company-connectivity{min-width:0}
 .platform-company-subscription{grid-column:1/-1;min-width:0}
 .wf-subscription-clock{display:grid;grid-template-columns:38px minmax(0,1fr);gap:.7rem;align-items:center;padding:.65rem .75rem;border:1px solid var(--border);border-radius:14px;background:var(--ui-soft);color:var(--text);min-height:70px}
 .wf-subscription-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--card);color:var(--ui-accent);box-shadow:0 1px 4px rgb(0 0 0 / .04)}
@@ -1205,3 +1195,68 @@ main>header .platform-header-link[href="#support"]:not([aria-label*="0"]):focus-
 .platform-drawer-developer-copy small{display:block;font-size:.7rem;color:var(--text2);font-weight:650}
 .platform-drawer-developer-copy b{display:block;color:var(--text);font-size:.87rem;font-weight:850;overflow-wrap:anywhere;line-height:1.35}
 
+
+/* The directory holds compact summaries. Management controls live on one company's page. */
+#platform-page-companies:not([hidden]){
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,17rem),1fr));
+  gap:clamp(.7rem,1.5vw,1.1rem);
+}
+#platform-page-companies>.platform-company-card-v2{
+  align-self:stretch;
+  grid-template-rows:auto auto 1fr auto;
+  align-content:start;
+  gap:.7rem!important;
+  height:auto;
+}
+#platform-page-companies .platform-company-name{
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
+}
+.platform-company-page-link,.platform-company-back{
+  display:inline-flex;align-items:center;gap:.65rem;min-height:44px;
+  color:var(--ui-accent);font-weight:750;text-decoration:none;
+}
+.platform-company-page-link{
+  grid-column:1/-1;justify-content:space-between;align-self:end;
+  margin-top:.15rem;padding:.55rem .75rem;border-radius:12px;
+  border:1px solid var(--border);background:var(--ui-soft);
+}
+.platform-company-page-link::after,.platform-company-back::before{
+  content:'';width:.47rem;height:.47rem;flex:none;
+  border-block-start:2px solid currentColor;border-inline-end:2px solid currentColor;
+  transform:rotate(45deg);
+}
+.platform-company-back::before{transform:rotate(-135deg)}
+[dir=rtl] .platform-company-page-link::after{transform:rotate(-45deg)}
+[dir=rtl] .platform-company-back::before{transform:rotate(135deg)}
+.platform-company-page-link:focus-visible,.platform-company-back:focus-visible{
+  outline:2px solid var(--ui-accent);outline-offset:2px;
+}
+.platform-company-page .platform-company-back{justify-self:start;padding-inline:.4rem}
+.platform-company-page .platform-company-card-v2{width:100%;margin:0}
+.platform-company-detail{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr);gap:.75rem}
+.platform-company-detail>.platform-company-tools{grid-column:1/-1!important}
+.platform-company-page [hidden],.platform-company-detail[hidden],.platform-company-page-link[hidden]{display:none!important}
+@media(min-width:760px){
+  .platform-company-page .platform-company-card-v2{
+    grid-template-columns:minmax(0,1fr) minmax(13rem,.6fr)!important;
+    padding:clamp(1rem,2vw,1.6rem)!important;
+  }
+  .platform-company-page .platform-company-subscription{grid-column:2;grid-row:1/span 2;align-self:center}
+  .platform-company-detail{grid-template-columns:minmax(0,1fr) minmax(13rem,.6fr);align-items:center}
+}
+.platform-directory-pagination{display:flex;align-items:center;justify-content:flex-end;gap:.55rem}
+.platform-directory-pagination bdi{margin-inline-end:auto;color:var(--text2);font-variant-numeric:tabular-nums}
+.platform-company-card-v2 .platform-company-link-pill[data-link-state=awaiting_approval]{color:var(--text);background:var(--ui-soft);border:1px solid var(--ui-accent)}
+
+.platform-company-page-link{
+  --company-action-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.65' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5'/%3E%3Cpath d='M3 9h18M10 9v11'/%3E%3C/svg%3E");
+  justify-content:flex-start;
+}
+.platform-company-page-link[data-action=review]{
+  --company-action-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.65' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 2 8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3Z'/%3E%3Cpath d='m8 12 3 3 5-6'/%3E%3C/svg%3E");
+}
+.platform-company-page-link::before{
+  content:'';flex:none;inline-size:1.16rem;block-size:1.16rem;
+  background:currentColor;mask:var(--company-action-icon) center/contain no-repeat;
+}
+.platform-company-page-link::after{margin-inline-start:auto}

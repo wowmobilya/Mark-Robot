@@ -1,0 +1,17 @@
+#content > form.platform-enrollment:only-child {
+  display: grid; max-width: 42rem; gap: 1.2rem; margin-inline: auto;
+}
+.owner-intro {display:grid;grid-template-columns:auto 1fr;column-gap:1rem;align-items:center;padding-block-end:1.1rem;border-bottom:1px solid var(--border);}
+.owner-intro img {grid-row:span 2;border-radius:var(--ui-control);align-self:start}
+.owner-intro h2 {margin:0;font-size:clamp(1.15rem,3vw,1.55rem)}
+.owner-intro p,.owner-field small {margin:0;color:var(--text2);font-weight:400}
+.owner-field-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;align-items:start}
+.owner-field {font-weight:650;display:grid;gap:.4rem}
+.owner-field[hidden],.owner-field small:empty,#owner-invite-feedback:empty {display:none}
+.owner-field:first-child {grid-column:1/-1}
+.owner-field input {min-width:0;width:100%;font-size:1rem}
+.owner-field input[aria-invalid=true] {border:2px solid var(--ui-danger,#b53e38)}
+#owner-invite-feedback:not(:empty) {margin:0;padding:.7rem 1rem;border-inline-start:3px solid var(--ui-danger,#b53e38);background:var(--ui-soft);border-radius:var(--ui-control)}
+@media(max-width:36rem){.owner-field-grid{grid-template-columns:minmax(0,1fr)}}
+.owner-field > span {display:flex;gap:.45rem;align-items:center}
+.owner-field svg {width:1.1em;height:1.1em;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}

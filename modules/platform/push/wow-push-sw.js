@@ -2,11 +2,11 @@
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) { module.exports = factory; return; }
-  root.importScripts('./modules/platform/push/wow-push-device.js?v=6');
+  root.importScripts('./modules/platform/push/wow-push-device.js?v=7');
   factory(root, root.WFPushDevice.create(root.indexedDB));
 })(typeof self === 'object' ? self : globalThis, function installPush(root, store) {
   'use strict';
-  const kinds = new Set(['proforma', 'payment', 'expense', 'receipt', 'test','chat','order.created','order.updated','stock.updated','operations','call','call.missed','support.ticket','support.reply']);
+  const kinds = new Set(['proforma', 'payment', 'expense', 'receipt', 'test','chat','order.created','order.updated','stock.updated','operations','call','call.missed','owner.approval','support.ticket','support.reply']);
   const generic = {
     ar: 'افتح WOW للاطّلاع على إشعاراتك.', en: 'Open WOW to check your notifications.',
     tr: 'Bildirimlerinizi görmek için WOW uygulamasını açın.', fr: 'Ouvrez WOW pour consulter vos notifications.',
