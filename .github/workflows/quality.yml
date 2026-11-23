@@ -74,7 +74,7 @@ jobs:
       - name: Verify founder navigation, preferences, company branding and deferred finance startup
         if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
         timeout-minutes: 2
-        run: node --test tests/platform-dashboard.browser.cjs tests/platform-brand.browser.cjs tests/platform-preferences.browser.cjs tests/finance-startup.browser.cjs tests/owner-alerts.browser.cjs tests/owner-enrollment.browser.cjs tests/company-invite-install.browser.cjs
+        run: node --test tests/platform-login-experience.browser.cjs tests/platform-dashboard.browser.cjs tests/platform-brand.browser.cjs tests/platform-preferences.browser.cjs tests/finance-startup.browser.cjs tests/owner-alerts.browser.cjs tests/owner-enrollment.browser.cjs tests/company-invite-install.browser.cjs
       - name: Verify synthetic closed-app push with a native service worker
         if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
         timeout-minutes: 2
