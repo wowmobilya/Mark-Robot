@@ -893,6 +893,7 @@
     window.WFPlatformAnalytics?.mount({host:panels.home,state,request,language:lang.value});
     showDestination();
   }
+  let submittedWorkspace='';
   let invite=new URLSearchParams(location.hash.slice(1)).get('invite');
   if(invite)history.replaceState(null,'',location.pathname+location.search);
   const setupLabels={
@@ -936,6 +937,13 @@
       configured:['يوجد حساب لهذه الشركة أو أن الشركة موقوفة. راجع أدمن برنامج التحكم.','An account exists or the company is suspended. Contact the administrator.','Hesap mevcut veya şirket askıda. Yöneticiye başvurun.','Un compte existe ou la société est suspendue. Contactez l’administrateur.','Аккаунт уже есть или компания приостановлена. Обратитесь к администратору.'],
       pending:['وصل طلبك إلى لوحة تحكم الأدمن. بعد الموافقة، سجّل الدخول باسم المستخدم وكلمة المرور اللذين اخترتهما.','Your request is in the admin panel. After approval, sign in with your chosen credentials.','Talebiniz yönetim panelinde. Onaydan sonra seçtiğiniz bilgilerle giriş yapın.','Votre demande figure dans le panneau admin. Après approbation, connectez-vous avec vos identifiants.','Заявка поступила в панель администратора. После одобрения войдите со своими данными.']
     };
+    const entry=new URL('../',location.href);entry.searchParams.set('wf-cloud','employee');entry.searchParams.set('workspace',workspace);
+    function showReceipt(){
+      const message=el('p',messages.pending[language]),link=el('a',t(3));
+      message.setAttribute('role','status');link.href=entry.href;form.replaceChildren(message,link);link.focus();
+      window.dispatchEvent(new Event('wow-company-install-ready'));
+    }
+    if(submittedWorkspace===workspace){showReceipt();return;}
     hints[2].textContent=messages.username[language];hints[3].textContent=messages.password[language];hints[4].textContent=copy[3];
     const note=el('p');note.id='owner-invite-feedback';note.setAttribute('role','alert');form.append(note);
     const issues={INVALID_USERNAME:['username',2],INVALID_PASSWORD:['password',3],INVALID_NAME:['name',1],
@@ -968,14 +976,12 @@
       const result=await reply.json().catch(()=>null);
       if(!form.isConnected)return;
       if(!reply.ok||result?.ok!==true||result.workspaceId!==workspace)return explain(result?.error?.code,reply.status);
-      const url=new URL('../',location.href);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',workspace);
       if(result.pendingApproval===true){
-        invite=null;code.value=pass.value=confirm.value='';const message=el('p',messages.pending[language]),link=el('a',t(3));
-        message.setAttribute('role','status');link.href=url.href;form.replaceChildren(message,link);link.focus();
-        window.dispatchEvent(new Event('wow-company-install-ready'));return;
+        submittedWorkspace=workspace;invite=null;code.value=pass.value=confirm.value='';
+        showReceipt();return;
       }
       if(!result.session?.access_token)return explain(null,reply.status);
-      location.replace(url.href);
+      location.replace(entry.href);
     });button.textContent=copy[5];
   }
   function render(){document.documentElement.lang=lang.value;document.documentElement.dir=lang.value==='ar'?'rtl':'ltr';document.title=t(0);document.querySelector('h1').textContent=t(0);const ws=new URLSearchParams(location.search).get('setup');if(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ws))enroll(ws);else if(token)list().catch(fail);else if(canRemember()&&saved()){content.replaceChildren(el('p',({ar:'يتم فتح إدارة WOW بأمان…',en:'Opening WOW Admin securely…',tr:'WOW yönetimi güvenle açılıyor…',fr:"Ouverture sécurisée de WOW Admin…",ru:'Безопасное открытие WOW Admin…'})[lang.value]));}
