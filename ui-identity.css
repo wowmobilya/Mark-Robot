@@ -508,3 +508,86 @@ html body #wfSidebarClose:hover{background:var(--ui-soft);border-color:var(--ui-
 .wf-join-qr svg{inline-size:min(100%,200px);block-size:auto;justify-self:center}
 .wf-join-request{padding-block:.75rem;border-block-end:1px solid var(--border);overflow-wrap:anywhere}
 .wf-join-request>div{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+
+
+/* WOW 238: compact, accessible owner invitation and multi-device join on all form factors.
+   Scoped to setup/join only; does not change printable label dimensions. */
+@media screen {
+ .wf-owner-invite {
+  box-sizing:border-box;inline-size:100%;max-inline-size:min(100%,42rem);
+  margin:1rem auto 0;padding:clamp(.75rem,2vw,1.1rem);
+  border:1px solid var(--border);border-radius:20px;
+  background:var(--card,var(--input));color:var(--text);
+  box-shadow:0 8px 26px rgba(18,42,54,.065);
+  overflow-wrap:anywhere;container-type:inline-size;
+ }
+ .wf-owner-invite>summary{
+  position:relative;display:flex;align-items:center;gap:.55rem;
+  padding:.25rem 1.6rem .25rem .35rem;min-block-size:44px;
+  border-radius:12px;list-style:none;line-height:1.45;
+  font-size:clamp(.94rem,2.2vw,1.04rem);font-weight:750;
+ }
+ .wf-owner-invite>summary::-webkit-details-marker{display:none}
+ .wf-owner-invite>summary::after{
+  content:'';position:absolute;inset-inline-end:.4rem;inline-size:.5rem;block-size:.5rem;
+  border-inline-end:2px solid currentColor;border-block-end:2px solid currentColor;
+  transform:rotate(45deg);transition:transform .18s ease;
+ }
+ .wf-owner-invite[open]>summary::after{transform:rotate(225deg)}
+ .wf-owner-invite>div{inline-size:100%;max-inline-size:100%;min-inline-size:0;gap:.75rem;padding-block-start:.55rem}
+ .wf-owner-invite label{min-inline-size:0;max-inline-size:100%;font-size:.89rem;font-weight:650}
+ .wf-owner-invite :is(input,button,.btn){box-sizing:border-box;max-inline-size:100%;min-block-size:44px;
+  border-radius:13px;font-size:16px;line-height:1.4}
+ .wf-owner-invite input{inline-size:100%;background:var(--input);padding:.68rem .8rem;
+  overflow:hidden;text-overflow:ellipsis;box-shadow:none}
+ .wf-owner-invite input[type=url]{direction:ltr;text-align:left;font:500 13px/1.5 system-ui;letter-spacing:0}
+ .wf-owner-invite :is(input,button):focus-visible{outline:2px solid var(--ui-accent,#3f7c94);outline-offset:2px}
+ .wf-owner-invite button{padding:.56rem .78rem;font-weight:700;white-space:normal;
+  text-align:center;overflow-wrap:anywhere;cursor:pointer}
+ .wf-owner-invite button.btn-p{background:var(--ui-accent,#3f7c94);border-color:transparent;
+  color:#fff;min-block-size:49px;box-shadow:0 5px 15px rgba(27,74,96,.14)}
+ .wf-owner-invite .wf-join-guidance{margin:0;padding:.7rem .8rem;
+  border-radius:12px;background:var(--ui-soft,var(--input));font-size:.84rem;
+  line-height:1.65;color:var(--text2,var(--text));max-inline-size:100%}
+ .wf-owner-invite.wf-company-join .wf-join-form{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:.72rem;
+  margin:0;min-inline-size:0;padding:.1rem 0 .3rem}
+ .wf-owner-invite.wf-company-join .wf-join-form>label:nth-of-type(3),
+ .wf-owner-invite.wf-company-join .wf-join-form>small,
+ .wf-owner-invite.wf-company-join .wf-join-form>button,
+ .wf-owner-invite.wf-company-join .wf-join-form>p{grid-column:1/-1}
+ .wf-owner-invite.wf-company-join .wf-join-form>small{line-height:1.5;color:var(--text2,var(--text))}
+ .wf-owner-invite.wf-company-join .wf-join-form>p[role=status]{margin:0;line-height:1.45}
+ .wf-owner-invite.wf-company-join .wf-join-qr{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:.6rem;
+  padding:.8rem;border:1px solid var(--border);border-radius:16px;
+  background:var(--ui-soft,var(--input));min-inline-size:0}
+ .wf-owner-invite.wf-company-join .wf-join-qr svg{
+  grid-column:1/-1;justify-self:center;inline-size:min(100%,190px);max-block-size:190px;
+  block-size:auto;padding:8px;border-radius:14px;background:#fff}
+ .wf-owner-invite.wf-company-join .wf-join-qr>button{align-self:end;max-inline-size:160px}
+ .wf-owner-invite.wf-company-join .wf-join-request{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.35rem .75rem;
+  padding:.8rem;border:1px solid var(--border);border-radius:14px;background:var(--ui-soft,var(--input))}
+ .wf-owner-invite.wf-company-join .wf-join-request>div{grid-column:1/-1}
+ .wf-owner-invite.wf-company-join .wf-join-request :is(strong,span,time,small){min-inline-size:0;overflow-wrap:anywhere}
+ .wf-owner-invite.wf-company-join .wf-owner-invite{
+  margin:.25rem 0;padding:.65rem;border-radius:14px;background:var(--ui-soft,var(--input));
+  box-shadow:none}
+ .wf-owner-invite.wf-company-join .wf-owner-invite video{
+  inline-size:100%;max-block-size:min(34dvh,240px);object-fit:contain}
+}
+@container (max-width:31rem){
+ .wf-owner-invite.wf-company-join .wf-join-form{grid-template-columns:minmax(0,1fr)}
+ .wf-owner-invite.wf-company-join .wf-join-form>label{grid-column:1}
+ .wf-owner-invite.wf-company-join .wf-join-qr{grid-template-columns:minmax(0,1fr)}
+ .wf-owner-invite.wf-company-join .wf-join-qr>button{max-inline-size:100%}
+}
+@media screen and (max-width:600px){
+ .wf-owner-invite{border-radius:16px;padding:.7rem;max-inline-size:100%}
+ .wf-owner-invite.wf-company-join .wf-join-form{grid-template-columns:minmax(0,1fr)}
+ .wf-owner-invite.wf-company-join .wf-join-form>label{grid-column:1}
+ .wf-owner-invite.wf-company-join .wf-join-qr{grid-template-columns:minmax(0,1fr)}
+ .wf-owner-invite.wf-company-join .wf-join-qr>button{max-inline-size:100%}
+}
+@media (prefers-reduced-motion:reduce){.wf-owner-invite>summary::after{transition:none}}
