@@ -17,15 +17,19 @@ html[data-theme=dark] .platform-server-robot:is([data-state=unavailable],[data-s
 }
 .platform-server-robot-face{
  display:grid;place-items:center;min-inline-size:0;min-block-size:62px;
- border:1px solid color-mix(in srgb,var(--robot-tone) 34%,var(--border));border-radius:14px;
- background:color-mix(in srgb,var(--robot-tone) 9%,var(--card));color:var(--robot-tone);
+ border:0;border-radius:0;background:transparent;color:var(--robot-tone);
+ animation:platform-robot-breathe 4.6s ease-in-out infinite;
 }
 .platform-server-robot-face svg{display:block;inline-size:100%;max-inline-size:90px;block-size:auto;overflow:visible;fill:currentColor}
 .platform-server-robot-face .platform-robot-glint{fill:var(--card)}
+.platform-server-robot-face .platform-robot-nose{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;opacity:.78}
 .platform-server-robot-face :is(.platform-robot-brow,.platform-robot-mouth){fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:8px}
 .platform-robot-blink{transform-box:fill-box;transform-origin:center;animation:platform-robot-blink .28s ease-in-out 3s 1 both}
 .platform-server-robot[data-state=checking] .platform-robot-blink{animation:platform-robot-blink .28s ease-in-out 0s 1 both}
 @keyframes platform-robot-blink{50%{transform:scaleY(.08)}}
+@keyframes platform-robot-breathe{50%{transform:translateY(-3px)}}
+.platform-server-robot[data-state=checking] .platform-server-robot-face{animation-duration:1.5s}
+.platform-server-robot:is([data-state=unreachable],[data-state=unavailable],[data-state=attention]) .platform-robot-brow{transform:translateY(8px)}
 .platform-server-robot-heading{min-inline-size:0}
 .platform-server-robot :is(h4,h5){margin:0 0 .25rem;color:var(--text);line-height:1.35;overflow-wrap:anywhere}
 .platform-server-robot h4{font-size:clamp(1rem,2.3vw,1.15rem)}
@@ -65,5 +69,5 @@ html[data-theme=dark] .platform-server-robot:is([data-state=unavailable],[data-s
  .platform-server-robot-head{grid-template-columns:76px minmax(0,1fr);gap:.52rem}
  .platform-server-robot-refresh{grid-column:1/-1;justify-self:stretch}
 }
-@media(prefers-reduced-motion:reduce){.platform-robot-blink{animation:none!important}}
-html[data-wf-motion=reduced] .platform-robot-blink{animation:none!important}
+@media(prefers-reduced-motion:reduce){.platform-robot-blink,.platform-server-robot-face{animation:none!important}}
+html[data-wf-motion=reduced] .platform-robot-blink,html[data-wf-motion=reduced] .platform-server-robot-face{animation:none!important}
