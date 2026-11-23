@@ -60,17 +60,18 @@ test('phone chat records and reviews media, attaches native files, and reads new
     await page.waitForFunction(()=>captureStreams.at(-1)?.getAudioTracks()[0]?.readyState==='live');
     if(tag==='video')await info.locator('video').waitFor();
     await page.waitForFunction(kind=>captureRuns.at(-1)?.kind===kind&&captureRuns.at(-1).bytes>0,tag,{timeout:18000});
-    await tools.getByRole('button',{name:'Finish recording',exact:true}).click();
-    await info.getByRole('button',{name:'Preview',exact:true}).click();
-    const dialog=page.getByRole('dialog'),media=dialog.locator(tag);
-    await media.evaluate(node=>node.play());
-    await page.waitForFunction(tag=>document.querySelector('dialog[open] '+tag)?.currentTime>0,tag);
+    await tools.getByRole('button',{name:tag==='audio'?'Send voice note':'Finish recording',exact:true}).click();
     assert.equal(await page.evaluate(()=>captureStreams.at(-1).getTracks().every(tr=>tr.readyState==='ended')),true);
-    await dialog.evaluate(node=>node.close());
     if(tag==='audio'){
-      await info.getByRole('button',{name:'Cancel',exact:true}).click();
-      assert.equal(await page.evaluate(()=>events.filter(([a])=>a==='chat.sendFile').length),0);
+      await page.waitForFunction(()=>events.filter(([a,p])=>a==='chat.sendFile'&&p.mime.startsWith('audio/')&&p.data.length>20).length===1);
+      assert.equal(await tools.getByRole('button',{name:'Send',exact:true}).count(),1,'voice sends once with no second Send tap');
+      assert.equal(await info.getByRole('button',{name:'Preview',exact:true}).count(),0);
     }else{
+      await info.getByRole('button',{name:'Preview',exact:true}).click();
+      const dialog=page.getByRole('dialog'),media=dialog.locator('video');
+      await media.evaluate(node=>node.play());
+      await page.waitForFunction(()=>document.querySelector('dialog[open] video')?.currentTime>0);
+      await dialog.evaluate(node=>node.close());
       await tools.getByRole('button',{name:'Send',exact:true}).click();
       await page.waitForFunction(()=>events.some(([a,p])=>a==='chat.sendFile'&&p.mime.startsWith('video/')&&p.data.length>20));
     }
