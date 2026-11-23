@@ -13,6 +13,7 @@
   let token='',adminUserId='',verifiedName='',offset=0,generation=0,expiryTimer,setup=null,draft=null;
   let ownerAlerts=null;
   let serverRobot=null;
+  let loginExperience=null;
   let scanner=null,supportInbox=null,supportAlerts={enabled:false,seen:new Set()};
   const trustKey='wow.platform.remember.v1:'+config.endpoint+':'+config.workspaceId;
   const retention=7*86400000;
@@ -73,7 +74,7 @@
     resuming=task;try{await task;}finally{if(resuming===task)resuming=null;}
   }
   let brandList=null,subscriptionClocks=null,remoteClock=null,companyProfilePanel=null;
-  function clear(){serverRobot?.dispose();serverRobot=null;ownerAlerts?.dispose();ownerAlerts=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;companyProfilePanel?.close();companyProfilePanel=null;window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';adminUserId='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
+  function clear(){loginExperience?.dispose();loginExperience=null;serverRobot?.dispose();serverRobot=null;ownerAlerts?.dispose();ownerAlerts=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;companyProfilePanel?.close();companyProfilePanel=null;window.WFPlatformCompanyInspector?.close();window.WFPlatformShell?.reset();brandList?.dispose();brandList=null;authEpoch++;rememberedId='';showDestination=null;expandedCompany=null;supportInbox?.dispose();supportInbox=null;supportAlerts={enabled:false,seen:new Set()};scanner?.dispose();scanner=null;failureIndex=null;generation++;clearTimeout(expiryTimer);token='';adminUserId='';verifiedName='';offset=0;setup=null;draft=null;content.replaceChildren();status.textContent='';}
   const authWords={
     ar:['تحقق من اسم المستخدم وكلمة المرور.','محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.','تعذّر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.','يحتاج هذا الحساب إلى صلاحية مؤسس المنصة لإدارة الشركات.','انتهت جلسة الدخول. سجّل الدخول مجددًا.','إلغاء','تعديل الاسم'],
     en:['Check your username and password.','Too many attempts. Wait a moment before trying again.','Could not reach the server. Check your network and try again.','This account needs platform founder access to manage companies.','Your session expired. Sign in again.','Cancel','Rename'],
@@ -128,6 +129,7 @@
     return b;
   }
   function login(){
+    loginExperience?.dispose();loginExperience=null;
     window.WFPlatformShell?.reset();
     headerActions.hidden=true;headerActions.replaceChildren();
     scanner?.dispose();content.replaceChildren();const form=el('form'),email=field(form,1,'text'),pass=field(form,2,'password');
@@ -150,6 +152,7 @@
       const label=el('label');label.className='platform-remember';label.append(remember,document.createTextNode(names[lang.value]));form.append(label);
     }
     scanner=window.WFOwnerInvite?.mount(content,new URL('../',location.href),lang.value);
+    loginExperience=window.WFPlatformLoginExperience?.mount({content,form,language:lang.value,endpoint:config.endpoint,feedback:status})||null;
     submit(form,3,async()=>{
       const epoch=++authEpoch;
       const result=await platformFetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.signIn',founderOnly:true,workspaceId:config.workspaceId,username:email.value.trim(),password:pass.value})});
@@ -607,6 +610,7 @@
   async function list(){
     const ticket=++generation,result=await request('company.list',{offset});if(ticket!==generation)return;
     const state={...result,companies:result.companies.slice(0,directoryPageSize)};
+    loginExperience?.dispose();loginExperience=null;
     serverRobot?.dispose();serverRobot=null;
     scanner?.dispose();scanner=null;remoteClock?.dispose();remoteClock=null;subscriptionClocks?.dispose();subscriptionClocks=null;
     companyProfilePanel?.close();companyProfilePanel=null;content.replaceChildren();failureIndex=null;status.textContent='';const nav=el('div'),menu=el('nav'),form=el('form');
@@ -1127,6 +1131,8 @@
     const loader=el('div'),servers=el('span');loader.className='platform-server-startup';loader.setAttribute('role','status');
     servers.className='platform-server-rack';servers.setAttribute('aria-hidden','true');servers.append(el('i'),el('i'),el('i'));
     loader.append(servers,el('strong',message));content.replaceChildren(loader);
+    loginExperience?.dispose();
+    loginExperience=window.WFPlatformLoginExperience?.mount({content,language:lang.value,endpoint:config.endpoint,feedback:status})||null;
   }
   function lockDisconnected(){
     clear();if(!new URL(location.href).searchParams.has('setup'))login();status.textContent=word(2);
