@@ -9,7 +9,7 @@ test('server login animation uses real health, frameless robot and preserves for
  try{
   const page=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
   let state='ready',requests=0;
-  await page.route('https://wow-login.invalid/*',async route=>{
+  await page.route('https://wow-login.invalid/**',async route=>{
    const u=new URL(route.request().url());
    if(u.pathname==='/service/health'){
     requests++;
