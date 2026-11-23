@@ -10,6 +10,7 @@
  function create({api,invitation,onState=()=>{},onRemote=()=>{},onPresence=()=>{},onHistory=()=>{},onError=()=>{}}){
   if(!api?.realtimeCredentials||!root.WFCallRealtime||!root.RTCPeerConnection)throw fail('CALLS_UNSUPPORTED');
   let alive=true,room=null,channel=null,callChannel=null,call=null,local=null,ice=null,muted=false;
+   let relayReady=null,iceExpiresAt=0,facingMode='user',cameraChanging=false,quality='unknown',qualityAt=0;
   let peers=new Map(),joining=false,busy=false,polling=false,mediaToken=0,heartAt=0,connectedAck=false;
   const getMe=()=>api.getSession?.()?.userId||api.getSession?.()?.currentAccount?.id;
   const me=getMe();
@@ -17,7 +18,7 @@
   let notified=valid(invitation?.roomId)&&valid(invitation?.callId)?invitation:null;
   const request=(name,data={})=>api.request('chat.call.'+name,data);
   const connected=()=>[...peers.values()].some(peer=>peer.pc.connectionState==='connected');
-  const emit=()=>{if(alive)onState({call,muted,localStream:local,peers:[...peers.keys()],connected:connected(),busy});};
+  const emit=()=>{if(alive)onState({call,muted,localStream:local,peers:[...peers.keys()],connected:connected(),relayReady,quality,busy});};
   const message=err=>{if(alive)onError(err?.code||err?.name||'CALL_FAILED');};
   const channelFor=(topic,onBroadcast,onPres)=>root.WFCallRealtime.create({
     topic,credentials:()=>api.realtimeCredentials(),onBroadcast,onPresence:onPres||(()=>{}),
@@ -25,6 +26,7 @@
   });
   function disconnectPeer(uid,p){
    peers.delete(uid);
+   if(p.restartTimer!==null&&p.restartTimer!==undefined)root.clearTimeout(p.restartTimer);
    p.pc.onnegotiationneeded=null;p.pc.onicecandidate=null;p.pc.ontrack=null;p.pc.onconnectionstatechange=null;
    try{p.pc.close();}catch(_){}onRemote(uid,null);
   }
@@ -32,7 +34,8 @@
    mediaToken++;
    for(const [uid,p] of peers)disconnectPeer(uid,p);
    if(local){for(const tr of local.getTracks())tr.stop();local=null;}
-   callChannel?.stop();callChannel=null;call=null;ice=null;muted=false;connectedAck=false;heartAt=0;busy=false;emit();
+   callChannel?.stop();callChannel=null;call=null;ice=null;iceExpiresAt=0;relayReady=null;quality='unknown';qualityAt=0;
+   muted=false;connectedAck=false;heartAt=0;facingMode='user';cameraChanging=false;busy=false;emit();
   }
   const callValid=c=>c&&valid(c.id)&&valid(c.roomId)&&['ringing','active'].includes(c.status);
   function accepted(c){return c?.participants?.filter(p=>p.status==='joined'&&valid(p.id))||[];}
@@ -81,14 +84,15 @@
    if(peers.size>=3)throw fail('VOICE_GROUP_LIMIT');
    if(!accepted(call).some(p=>p.id===peerId))return null;
    const token=mediaToken,callId=call.id;
-   const result=ice||await request('ice',{callId});
+   const result=ice&&(!iceExpiresAt||Date.now()<iceExpiresAt-60000)?ice:await request('ice',{callId});
    if(!alive||token!==mediaToken||call?.id!==callId||!accepted(call).some(p=>p.id===peerId))return null;
    if(peers.has(peerId))return peers.get(peerId);
-   ice=result;
+   ice=result;relayReady=ice.relayReady===true;
+   iceExpiresAt=Number.isFinite(ice.expiresIn)&&ice.expiresIn>0?Date.now()+ice.expiresIn*1000:0;
    const conf={iceServers:ice.iceServers||[]};
    const pc=new root.RTCPeerConnection(conf);
    const peer={pc,polite:me.localeCompare(peerId)>0,makingOffer:false,ignoreOffer:false,
-    answerPending:false,pending:[],retry:false,ready:false};
+    answerPending:false,pending:[],retry:0,restartTimer:null,ready:false};
    peers.set(peerId,peer);
    pc.onicecandidate=event=>{
     if(!event.candidate||token!==mediaToken||call?.id!==callId)return;
@@ -99,14 +103,31 @@
     onRemote(peerId,stream);
    };
    pc.onconnectionstatechange=()=>{
-    if(!alive||!call)return;
+    if(!alive||call?.id!==callId)return;
     if(pc.connectionState==='connected'){
-     peer.ready=true;if(!connectedAck){connectedAck=true;request('connected',{callId:call.id}).catch(()=>{});}
-     emit();
-    }else if(pc.connectionState==='failed'&&!peer.retry){
-     peer.retry=true;try{pc.restartIce?.();}catch(_){}
+     peer.ready=true;peer.retry=0;
+     if(peer.restartTimer!==null){root.clearTimeout(peer.restartTimer);peer.restartTimer=null;}
+     if(!connectedAck){connectedAck=true;request('connected',{callId}).catch(()=>{});}
+    }else if(['failed','disconnected'].includes(pc.connectionState)&&peer.retry<3&&peer.restartTimer===null){
+     // Bounded ICE restarts handle short network handovers without retry storms.
+     peer.restartTimer=root.setTimeout(async()=>{
+      peer.restartTimer=null;
+      if(!alive||call?.id!==callId||!['failed','disconnected'].includes(pc.connectionState))return;
+      peer.retry++;
+      try{
+       if(iceExpiresAt&&Date.now()>iceExpiresAt-60000){
+        const next=await request('ice',{callId});
+        if(!alive||call?.id!==callId)return;
+        ice=next;relayReady=next.relayReady===true;
+        iceExpiresAt=next.expiresIn>0?Date.now()+next.expiresIn*1000:0;
+        pc.setConfiguration?.({iceServers:next.iceServers||[]});
+       }
+       pc.restartIce?.();
+      }catch(err){message(err);}
+      emit();
+     },pc.connectionState==='disconnected'?1800:350);
     }else if(pc.connectionState==='closed'){onRemote(peerId,null);}
-    if(pc.connectionState!=='connected')emit();
+    emit();
    };
    pc.onnegotiationneeded=async()=>{
     try{
@@ -249,7 +270,9 @@
    if(!session?.authenticated||getMe()!==me){if(call||local)cleanup();return;}
    polling=true;
    try{
-    if(call)await refreshCall();
+    if(call){await refreshCall();if(call?.status==='active'&&connected()&&Date.now()-qualityAt>7500){
+      qualityAt=Date.now();await sampleQuality();
+     }}
     else if(notified){
      const target=notified;
      const row=await request('status',{callId:target.callId});
@@ -273,6 +296,29 @@
     message(error);
    }finally{polling=false;}
   }
+  async function sampleQuality(){
+   const activePeers=[...peers.values()].filter(peer=>peer.pc.connectionState==='connected');
+   if(!activePeers.length){quality='unknown';emit();return;}
+   let worstRtt=0,worstLoss=0,measured=false;
+   for(const peer of activePeers){
+    if(typeof peer.pc.getStats!=='function')continue;
+    try{
+     const stats=await peer.pc.getStats();
+     for(const report of stats.values()){
+      if(report.type==='candidate-pair'&&report.state==='succeeded'&&report.nominated&&
+         Number.isFinite(report.currentRoundTripTime)){
+       worstRtt=Math.max(worstRtt,report.currentRoundTripTime);measured=true;
+      }
+      if(report.type==='inbound-rtp'&&Number.isFinite(report.packetsLost)&&Number.isFinite(report.packetsReceived)){
+       const total=report.packetsLost+report.packetsReceived;
+       if(total>20){worstLoss=Math.max(worstLoss,report.packetsLost/total);measured=true;}
+      }
+     }
+    }catch(_){}
+   }
+   quality=!measured?'unknown':worstRtt>.6||worstLoss>.08?'poor':worstRtt>.25||worstLoss>.03?'fair':'good';
+   emit();
+  }
   function micToggle(){
    if(!local)return false;muted=!muted;
    for(const tr of local.getAudioTracks())tr.enabled=!muted;emit();return !muted;
@@ -295,6 +341,30 @@
    }
    emit();return true;
   }
+  async function switchCamera(){
+   if(cameraChanging||!call||!local||!root.navigator?.mediaDevices?.getUserMedia)throw fail('CALLS_UNSUPPORTED');
+   const previous=local.getVideoTracks().find(tr=>tr.readyState==='live'&&tr.enabled);
+   if(!previous)return false;
+   cameraChanging=true;const token=mediaToken,callId=call.id;
+   const target=facingMode==='user'?'environment':'user';
+   let stream=null;
+   try{
+    stream=await root.navigator.mediaDevices.getUserMedia({audio:false,
+     video:{...videoLimits,facingMode:{ideal:target}}});
+    const next=stream.getVideoTracks()[0];
+    if(!next||!alive||token!==mediaToken||call?.id!==callId||!local?.getVideoTracks().includes(previous))
+     throw fail('CALL_CANCELLED');
+    const senders=[...peers.values()].flatMap(p=>p.pc.getSenders().filter(s=>s.track===previous));
+    const changed=[];
+    try{for(const sender of senders){await sender.replaceTrack(next);changed.push(sender);}}
+    catch(error){await Promise.allSettled(changed.map(sender=>sender.replaceTrack(previous)));throw error;}
+    local.addTrack(next);local.removeTrack(previous);previous.stop();facingMode=target;
+    emit();return true;
+   }finally{
+    if(stream)for(const track of stream.getTracks())if(!local?.getTracks().includes(track))track.stop();
+    cameraChanging=false;
+   }
+  }
   async function switchMode(kind){
    if(!['audio','video'].includes(kind)||!call)return;
    if(kind==='video'&&!local?.getVideoTracks().some(t=>t.readyState==='live'&&t.enabled))await cameraToggle();
@@ -306,8 +376,8 @@
    if(prev&&(prev.callerId===me||accepted(prev).some(p=>p.id===me)))request(prev.callerId===me?'end':'leave',{callId:prev.id}).catch(()=>{});
   }
   emit();
-  return Object.freeze({selectRoom:joinRoom,start,accept,decline,finish,poll,micToggle,cameraToggle,switchMode,stop,
-   getState:()=>({call,muted,localStream:local,peers:[...peers.keys()],connected:connected(),busy})});
+  return Object.freeze({selectRoom:joinRoom,start,accept,decline,finish,poll,micToggle,cameraToggle,switchCamera,switchMode,stop,
+   getState:()=>({call,muted,localStream:local,peers:[...peers.keys()],connected:connected(),relayReady,quality,busy})});
  }
  root.WFCallManager=Object.freeze({create});
  if(typeof module==='object'&&module.exports)module.exports={create};
