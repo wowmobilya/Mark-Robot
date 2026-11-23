@@ -107,6 +107,8 @@ begin
        'allowed',pg_catalog.jsonb_array_length(blockers)=0,'blockers',blockers,'permanent',true);
    end if;
    if p_data->'confirmed' is distinct from 'true'::jsonb
+      or p_data->>'confirmWord1' is distinct from 'حذف'
+      or p_data->>'confirmWord2' is distinct from 'حذف'
       or p_data->>'confirmName' is distinct from company_name
       or p_data->>'expectedRevision' is distinct from workspace_revision::text then
      raise exception using message='CONFIRMATION_REQUIRED',errcode='P0001';

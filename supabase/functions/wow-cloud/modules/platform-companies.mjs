@@ -32,8 +32,9 @@ export function createPlatformActions({platformRpc,requirePlatformFounder,manage
         const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
         if(typeof body.workspaceId!=='string'||!uuid.test(body.workspaceId))throw failure('INVALID_REQUEST',422);
         if(action==='company.deleteEmpty' && (body.confirmed!==true||typeof body.confirmName!=='string'||body.confirmName.length>100||
+          (body.confirmWord1!=='حذف'||body.confirmWord2!=='حذف')||
           !Number.isSafeInteger(body.expectedRevision)||body.expectedRevision<0))throw failure('CONFIRMATION_REQUIRED',422);
-        data={workspaceId:body.workspaceId,...(action==='company.deleteEmpty'?{confirmed:true,confirmName:body.confirmName,expectedRevision:body.expectedRevision}:{})};
+        data={workspaceId:body.workspaceId,...(action==='company.deleteEmpty'?{confirmed:true,confirmName:body.confirmName,expectedRevision:body.expectedRevision,confirmWord1:body.confirmWord1,confirmWord2:body.confirmWord2}:{})};
       }
       if(action==='company.create'){
         if(typeof body.setupToken!=='string'||!/^[a-f0-9]{64}$/.test(body.setupToken))throw failure('INVALID_REQUEST',422);

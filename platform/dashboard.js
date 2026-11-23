@@ -403,6 +403,8 @@
     fr:{action:'Supprimer la société',heading:'Suppression définitive du serveur',loading:'Vérification des données…',warning:'Action irréversible. Seules les sociétés entièrement vides peuvent être supprimées.',blocked:'Cette société possède des données ou des comptes. Suppression bloquée pour protéger les archives. Vous pouvez la suspendre.',type:'Saisissez exactement le nom de la société',check:'Je confirme la suppression définitive de cette société vide',confirm:'Supprimer définitivement',cancel:'Annuler',error:'Échec de la suppression. La société n’a pas été supprimée.'},
     ru:{action:'Удалить компанию',heading:'Безвозвратное удаление с сервера',loading:'Проверка данных компании…',warning:'Операция необратима. Удаляются только полностью пустые компании.',blocked:'У компании есть данные или учётные записи. Удаление заблокировано для сохранения записей. Можно приостановить компанию.',type:'Введите точное название компании для подтверждения',check:'Подтверждаю окончательное удаление пустой компании',confirm:'Удалить навсегда',cancel:'Отмена',error:'Удаление не выполнено. Компания сохранена.'}
   };
+  const deletionConfirmWords={"ar":{"keyword":"حذف","first":"التأكيد الأول: اكتب «حذف»","second":"التأكيد الثاني: اكتب «حذف» مرة أخرى","next":"الانتقال إلى التأكيد الثاني","repeat":"أؤكد للمرة الثانية الحذف النهائي لهذه الشركة الفارغة","review":"تأكيد 2 من 2 — الحذف نهائي ولا يمكن التراجع."},"en":{"keyword":"حذف","first":"Confirmation 1: type Arabic «حذف»","second":"Confirmation 2: type «حذف» again","next":"Proceed to final confirmation","repeat":"I confirm deleting this empty company a second time","review":"Confirmation 2 of 2 — this cannot be undone."},"tr":{"keyword":"حذف","first":"1. onay: Arapça «حذف» yazın","second":"2. onay: yeniden «حذف» yazın","next":"İkinci onaya geç","repeat":"Boş şirketin silinmesini ikinci kez onaylıyorum","review":"Onay 2/2 — geri alınamaz."},"fr":{"keyword":"حذف","first":"Confirmation 1 : écrivez «حذف» en arabe","second":"Confirmation 2 : écrivez encore «حذف»","next":"Dernière confirmation","repeat":"Je confirme à nouveau la suppression de la société vide","review":"Confirmation 2 sur 2 — action irréversible."},"ru":{"keyword":"حذف","first":"Подтверждение 1: введите «حذف»","second":"Подтверждение 2: повторите «حذف»","next":"Второе подтверждение","repeat":"Подтверждаю удаление пустой компании ещё раз","review":"Подтверждение 2 из 2 — необратимо."}};
+  for(const locale of Object.keys(deletionConfirmWords)) Object.assign(deleteCompanyWords[locale],deletionConfirmWords[locale]);
   const deviceWords={
     ar:['الأجهزة المرتبطة','لا توجد أجهزة مرتبطة بهذه الشركة.','فك الارتباط','بعد التأكيد يستطيع صاحب هذا الحساب ربط جهاز آخر بتسجيل الدخول. تحقق من هوية صاحب الطلب.','تأكيد فك الارتباط','تاريخ الربط','مالك الشركة','تم فك ربط الجهاز.'],
     en:['Linked devices','This company has no linked devices.','Release device','After confirmation, this account can link a different device by signing in. Verify who requested the change.','Confirm release','Linked on','Company owner','Device released.'],
@@ -890,28 +892,51 @@
           if(!deletion.isConnected)return;
           if(preview.workspaceId!==company.id||preview.name!==company.name||!Number.isSafeInteger(preview.revision))throw Error();
           if(preview.allowed!==true){deletion.replaceChildren(el('strong',delCopy.heading),el('p',delCopy.blocked));return;}
-          const form=el('form'),title=el('strong',delCopy.heading),warning=el('p',delCopy.warning);
-          form.className='platform-delete-form';
-          const label=el('label',delCopy.type),input=el('input');input.type='text';input.autocomplete='off';
-          input.maxLength=100;input.required=true;label.append(input);
-          const checkLabel=el('label',delCopy.check),check=el('input');check.type='checkbox';checkLabel.prepend(check);
-          checkLabel.className='platform-delete-checkbox';
-          const actions=el('div'),cancel=el('button',delCopy.cancel),confirm=el('button',delCopy.confirm),message=el('p');
-          actions.className='platform-delete-actions';cancel.type='button';confirm.type='submit';
-          confirm.className='platform-delete-confirm';confirm.disabled=true;message.setAttribute('role','status');
-          const validate=()=>{confirm.disabled=input.value!==preview.name||!check.checked;};
-          input.addEventListener('input',validate);check.addEventListener('change',validate);
-          cancel.onclick=()=>{deletion.replaceChildren();deleteButton.focus();};
-          actions.append(cancel,confirm);form.append(title,warning,label,checkLabel,actions,message);
-          deletion.replaceChildren(form);input.focus();
+          const form=el('form'),title=el('strong',delCopy.heading),message=el('p');
+          form.className='platform-delete-form';message.setAttribute('role','status');
+          const label=el('label',delCopy.type),input=el('input');
+          input.type='text';input.autocomplete='off';input.required=true;input.maxLength=100;label.append(input);
+          const firstLabel=el('label',delCopy.first),firstWord=el('input');
+          firstWord.type='text';firstWord.dir='rtl';firstWord.autocomplete='off';firstWord.required=true;firstWord.maxLength=8;firstLabel.append(firstWord);
+          const checkboxLabel=el('label',delCopy.check),checkbox=el('input');
+          checkbox.type='checkbox';checkboxLabel.prepend(checkbox);checkboxLabel.className='platform-delete-checkbox';
+          const secondLabel=el('label',delCopy.second),secondWord=el('input');
+          secondWord.type='text';secondWord.dir='rtl';secondWord.autocomplete='off';secondWord.required=true;secondWord.maxLength=8;secondLabel.append(secondWord);
+          const repeatLabel=el('label',delCopy.repeat),repeat=el('input');
+          repeat.type='checkbox';repeatLabel.prepend(repeat);repeatLabel.className='platform-delete-checkbox';
+          const actions=el('div'),cancel=el('button',delCopy.cancel),back=el('button',delCopy.cancel),confirm=el('button',delCopy.next);
+          actions.className='platform-delete-actions';cancel.type='button';back.type='button';confirm.type='submit';confirm.className='platform-delete-confirm';
+          let stage=1,busy=false;
+          const validate=()=>{
+            const firstValid=input.value===preview.name&&firstWord.value===delCopy.keyword&&checkbox.checked;
+            confirm.disabled=busy||!firstValid||(stage===2&&(secondWord.value!==delCopy.keyword||!repeat.checked));
+          };
+          const showStage=()=>{
+            confirm.textContent=stage===1?delCopy.next:delCopy.confirm;
+            actions.replaceChildren(cancel,...(stage===2?[back]:[]),confirm);
+            form.replaceChildren(title,el('p',stage===1?delCopy.warning:delCopy.review),
+              ...(stage===1?[label,firstLabel,checkboxLabel]:[secondLabel,repeatLabel]),actions,message);
+            message.textContent='';validate();
+          };
+          for(const field of [input,firstWord,secondWord])field.addEventListener('input',validate);
+          for(const field of [checkbox,repeat])field.addEventListener('change',validate);
+          cancel.onclick=()=>{if(busy)return;deletion.replaceChildren();deleteButton.focus();};
+          back.onclick=()=>{if(busy)return;stage=1;showStage();firstWord.focus();};
+          showStage();deletion.replaceChildren(form);input.focus();
           form.onsubmit=async event=>{
-            event.preventDefault();validate();if(confirm.disabled)return;
-            confirm.disabled=true;cancel.disabled=true;message.textContent=delCopy.loading;
+            event.preventDefault();if(busy)return;validate();if(confirm.disabled)return;
+            if(stage===1){stage=2;secondWord.value='';repeat.checked=false;showStage();secondWord.focus();return;}
+            busy=true;validate();cancel.disabled=true;back.disabled=true;message.textContent=delCopy.loading;
             try{
-              const result=await request('company.deleteEmpty',{workspaceId:company.id,confirmName:preview.name,expectedRevision:preview.revision,confirmed:true});
+              const result=await request('company.deleteEmpty',{
+                workspaceId:company.id,confirmName:preview.name,expectedRevision:preview.revision,
+                confirmed:true,confirmWord1:firstWord.value,confirmWord2:secondWord.value
+              });
               if(result.workspaceId!==company.id||result.deleted!==true)throw Error();
               await list();
-            }catch(error){message.textContent=delCopy.error+(error?.publicCode?' ('+error.publicCode+')':'');cancel.disabled=false;validate();}
+            }catch(error){
+              message.textContent=delCopy.error+(error?.publicCode?' ('+error.publicCode+')':'');
+            }finally{busy=false;cancel.disabled=false;back.disabled=false;validate();}
           };
         }catch(error){if(deletion.isConnected)info.textContent=delCopy.error+(error?.publicCode?' ('+error.publicCode+')':'');}
         finally{if(deleteButton.isConnected)deleteButton.disabled=false;}

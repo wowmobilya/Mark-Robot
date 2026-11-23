@@ -118,7 +118,7 @@ const urlsToCache = [
   './platform/relay.js?v=1',
   './support-settings.js?v=1',
   './platform/manifest.webmanifest',
-  './platform/dashboard.js?v=238',
+  './platform/dashboard.js?v=238b',
   './platform/dashboard.css?v=238',
   './touch-keyboard.js?v=5',
   './touch-keyboard.css?v=3',
