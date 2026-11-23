@@ -36,7 +36,7 @@
  }
  async function qr(container,url,caption,lang){
   const w=words[lang]||words.en,box=node('div');box.className='wf-join-qr';
-  const label=node('label',caption),input=node('input');input.type='url';input.readOnly=true;input.value=url;input.dir='ltr';
+  const label=node('label',caption),input=node('input');input.type='url';input.readOnly=true;input.value=url;input.dir='ltr';input.setAttribute('aria-label',caption);
   label.append(input);box.append(label,btn(w[31],async event=>{try{await navigator.clipboard.writeText(url);event.target.textContent=w[32];}catch{input.select();}}));
   container.append(box);
   try{const z=root.ZXingBrowser||await root.qblLoadFallback();if(!box.isConnected)return;
@@ -46,7 +46,7 @@
  }
  function mountApplicant({container,client,base,workspace,lang}){
   if(!client||!uuid.test(workspace))return null;
-  const details=node('details'),summary=node('summary'),panel=node('div');details.className='wf-owner-invite';details.append(summary,panel);container.append(details);
+  const details=node('details'),summary=node('summary'),panel=node('div');details.className='wf-owner-invite wf-company-join wf-company-join-applicant';details.append(summary,panel);container.append(details);
   const params=new URLSearchParams(root.location.search);details.open=params.get('join')==='1'&&params.get('workspace')===workspace;
   let locale=lang,receipt=null,reading,busy=false,error='',inputName='',inputUser='',attempt=null;
   const txt=i=>(words[locale]||words.en)[i];
@@ -55,11 +55,13 @@
    if(receipt){panel.append(node('strong',txt({pending:9,approved:10,rejected:11}[receipt.state])));
     if(receipt.state==='pending'){panel.append(node('p',txt(12)));qr(panel,link(base,workspace,receipt.id),txt(24),locale);}
     const sign=node('a',txt(29)),u=new URL(chosen);u.searchParams.delete('join');sign.href=u.href;panel.append(sign);return;}
+   const guidance=node('p',({ar:'لإضافة جهاز جديد، افتح رابط الشركة أو امسح الرمز. أرسل الطلب ثم يوافق مالك الشركة من جهازه الرئيسي.',en:'To add a device, open the company link or scan its QR. Submit the request and the company owner approves it on the primary device.',tr:'Yeni cihaz için şirket bağlantısını açın veya QR kodunu tarayın. İsteği gönderin; şirket sahibi ana cihazından onaylar.',fr:'Pour ajouter un appareil, ouvrez le lien ou scannez le QR. Envoyez la demande ; le propriétaire la valide depuis son appareil principal.',ru:'Чтобы добавить устройство, откройте ссылку компании или отсканируйте QR. Отправьте заявку; владелец одобрит её с основного устройства.'})[locale]||'');guidance.className='wf-join-guidance';panel.append(guidance);
    reading=scanner(panel,base,locale,'company',null,url=>root.location.assign(url));
    const form=node('form'),inputs=[];form.className='wf-join-form';const message=node('p',error);message.setAttribute('role','status');
    for(const [index,type,auto,max] of [[5,'text','name',100],[6,'text','username',64],[7,'password','new-password',128]]){
     const line=node('label',txt(index)),input=node('input');input.className='fi';input.type=type;input.autocomplete=auto;input.maxLength=max;input.required=true;
-    if(index===7){input.minLength=12;input.setAttribute('aria-label',txt(7));}else input.value=index===5?inputName:inputUser;
+    if(index===7){input.minLength=12;input.setAttribute('aria-label',txt(7));input.setAttribute('enterkeyhint','done');}else input.value=index===5?inputName:inputUser;
+    if(index===6){input.dir='ltr';input.spellcheck=false;input.autocapitalize='none';}
     line.append(input);form.append(line);inputs.push(input);
    }
    const note=node('small',txt(33)),send=node('button',txt(8));send.className='btn btn-p';send.type='submit';send.disabled=busy;
@@ -86,7 +88,7 @@
   const s=client?.getSnapshot(),workspace=s?.workspaceId,actor=s?.currentAccount?.id;
   if(!s?.authenticated||s.mode!=='remote'||s.currentAccount?.role!=='owner'||!uuid.test(workspace))return null;
   const valid=()=>{const cur=client.getSnapshot();return details.isConnected&&cur.authenticated&&cur.workspaceId===workspace&&cur.currentAccount?.id===actor&&cur.currentAccount.role==='owner';};
-  const details=node('details'),summary=node('summary'),body=node('div'),rows=node('div'),status=node('p');details.className='wf-owner-invite';
+  const details=node('details'),summary=node('summary'),body=node('div'),rows=node('div'),status=node('p');details.className='wf-owner-invite wf-company-join wf-company-join-owner';
   details.append(summary,body);container.append(details);status.setAttribute('role','status');
   const params=new URLSearchParams(root.location.search);
   let locale=lang,offset=0,selected=params.get('workspace')===workspace&&uuid.test(params.get('reviewJoin'))?params.get('reviewJoin'):null;
@@ -124,7 +126,7 @@
    }catch{if(valid()&&run===ticket)status.textContent=txt(27);}
   }
   function open(){
-   reading?.dispose();body.replaceChildren();drawn=true;qr(body,link(base,workspace),txt(14),locale);
+   reading?.dispose();body.replaceChildren();drawn=true;const guide=node('p',({ar:'أضف جهازاً جديداً: شارك رابط الشركة أو QR مع الجهاز الثاني، ثم راجع طلب الانضمام ووافق عليه هنا. لا تُشارك كلمة مرور المالك.',en:'Add another device: share this company link or QR with the second device, then approve its request here. Never share the owner password.',tr:'Başka cihaz ekleyin: şirket bağlantısını veya QR kodunu paylaşın, ardından katılma isteğini burada onaylayın. Sahip parolasını paylaşmayın.',fr:'Ajoutez un appareil : partagez le lien ou le QR, puis approuvez la demande ici. Ne partagez jamais le mot de passe du propriétaire.',ru:'Добавьте устройство: отправьте ссылку или QR, затем одобрите запрос здесь. Не делитесь паролем владельца.'})[locale]||'');guide.className='wf-join-guidance';body.append(guide);qr(body,link(base,workspace),txt(14),locale);
    reading=scanner(body,base,locale,'review',workspace,url=>{selected=new URL(url).searchParams.get('reviewJoin');offset=0;load();});
    body.append(btn(txt(15),load),status,rows);load();
   }

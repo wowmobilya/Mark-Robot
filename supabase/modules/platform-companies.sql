@@ -10,6 +10,15 @@ create table if not exists public.wow_platform_company_audit (
 );
 alter table public.wow_platform_owners enable row level security;
 alter table public.wow_platform_company_audit enable row level security;
+-- Immutable deletion receipt has no FK to the deleted tenant. No customer data is stored.
+create table if not exists public.wow_platform_company_deletion_log (
+ id bigint generated always as identity primary key,
+ workspace_id uuid not null unique, company_name text not null,
+ actor_id uuid not null references auth.users(id),
+ deleted_at timestamptz not null default now()
+);
+alter table public.wow_platform_company_deletion_log enable row level security;
+revoke all on public.wow_platform_company_deletion_log from public,anon,authenticated;
 revoke all on public.wow_platform_owners,public.wow_platform_company_audit from public,anon,authenticated;
 create or replace function public.wow_platform_require(p_user uuid,p_session uuid)
 returns void language plpgsql stable security definer set search_path='' as $$
@@ -25,6 +34,7 @@ grant execute on function public.wow_platform_require(uuid,uuid) to service_role
 create or replace function public.wow_platform_service(p_user uuid,p_session uuid,p_action text,p_data jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare wid uuid; company_name text; claim text; expiry timestamptz; target_status text; result jsonb;
+ workspace_revision bigint; fk record; occupied boolean; blockers jsonb; protected_name boolean;
 begin
  perform public.wow_platform_require(p_user,p_session);
  if p_action='company.create' then
@@ -61,6 +71,58 @@ begin
    end if;
    insert into public.wow_platform_company_audit(actor_id,workspace_id,action) values(p_user,wid,target_status);
    return jsonb_build_object('workspaceId',wid,'status',target_status,'changed',true);
+ elsif p_action in ('company.deletePreview','company.deleteEmpty') then
+   begin wid=(p_data->>'workspaceId')::uuid;
+   exception when others then raise exception using message='INVALID_COMPANY',errcode='P0001'; end;
+   if wid is null then raise exception using message='INVALID_COMPANY',errcode='P0001';end if;
+   -- Lock before checking dependents: FK inserts need a key-share lock, and cannot race deletion.
+   select w.name,w.control_revision into company_name,workspace_revision
+     from public.wow_workspaces w where w.id=wid for update;
+   if not found then raise exception using message='COMPANY_NOT_FOUND',errcode='P0001';end if;
+   protected_name=(position('galeri' in lower(company_name))>0 or position('galer' in lower(company_name))>0);
+   blockers='[]'::jsonb;
+   -- Never cascade-delete a company with any tenant data or related resources.
+   for fk in
+     select ns.nspname schema_name,src.relname table_name,att.attname column_name
+       from pg_catalog.pg_constraint c
+       join pg_catalog.pg_class src on src.oid=c.conrelid
+       join pg_catalog.pg_namespace ns on ns.oid=src.relnamespace
+       join pg_catalog.pg_attribute att on att.attrelid=src.oid and att.attnum=c.conkey[1]
+      where c.contype='f' and c.confrelid='public.wow_workspaces'::regclass
+        and pg_catalog.array_length(c.conkey,1)=1
+   loop
+     if fk.schema_name='public' and fk.table_name in ('wow_setup_claims','wow_platform_company_audit') then continue;end if;
+     execute pg_catalog.format('select exists(select 1 from %I.%I where %I=$1)',fk.schema_name,fk.table_name,fk.column_name)
+       into occupied using wid;
+     if occupied then blockers=blockers||pg_catalog.to_jsonb(fk.schema_name||'.'||fk.table_name);end if;
+   end loop;
+   -- Some storage objects are keyed by path rather than a relational foreign key.
+   if pg_catalog.to_regclass('storage.objects') is not null then
+     execute 'select exists(select 1 from storage.objects where position($1 in name)>0)' into occupied using wid::text;
+     if occupied then blockers=blockers||'"storage.objects"'::jsonb;end if;
+   end if;
+   if protected_name then blockers=blockers||'"protected.company"'::jsonb;end if;
+   if p_action='company.deletePreview' then
+     return jsonb_build_object('workspaceId',wid,'name',company_name,'revision',workspace_revision,
+       'allowed',pg_catalog.jsonb_array_length(blockers)=0,'blockers',blockers,'permanent',true);
+   end if;
+   if p_data->'confirmed' is distinct from 'true'::jsonb
+      or p_data->>'confirmWord1' is distinct from 'حذف'
+      or p_data->>'confirmWord2' is distinct from 'حذف'
+      or p_data->>'confirmName' is distinct from company_name
+      or p_data->>'expectedRevision' is distinct from workspace_revision::text then
+     raise exception using message='CONFIRMATION_REQUIRED',errcode='P0001';
+   end if;
+   if pg_catalog.jsonb_array_length(blockers)>0 then
+     raise exception using message='COMPANY_HAS_DATA',errcode='P0001';
+   end if;
+   -- Only never-used empty workspaces may be physically deleted. This is one SQL transaction.
+   delete from public.wow_setup_claims where workspace_id=wid;
+   delete from public.wow_platform_company_audit where workspace_id=wid;
+   delete from public.wow_workspaces where id=wid;
+   insert into public.wow_platform_company_deletion_log(workspace_id,company_name,actor_id)
+     values(wid,company_name,p_user);
+   return jsonb_build_object('workspaceId',wid,'deleted',true);
  elsif p_action='company.list' then
    select coalesce(jsonb_agg(jsonb_build_object('id',id,'name',name,'status',status,'createdAt',created_at,'accounts',account_count) order by created_at desc,id),'[]'::jsonb)
     into result from (select w.id,w.name,w.status,w.created_at,(select count(*) from public.wow_accounts a where a.workspace_id=w.id and a.deleted_at is null) account_count from public.wow_workspaces w order by w.created_at desc,w.id limit 50 offset greatest(0,coalesce((p_data->>'offset')::integer,0))) w;
