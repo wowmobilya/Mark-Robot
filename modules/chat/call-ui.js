@@ -47,7 +47,10 @@
   unremoteAudio:['تشغيل صوت الطرف الآخر','Play incoming audio','Karşı tarafın sesini aç','Activer le son reçu','Включить звук собеседника'],
   audioOutput:['اختيار مكبر الصوت','Choose audio output','Ses çıkışını seç','Choisir la sortie audio','Выбрать аудиовыход'],
   flipCamera:['تبديل الكاميرا','Flip camera','Kamerayı çevir','Changer de caméra','Сменить камеру'],
-  relayUnavailable:['خادم عبور الشبكات غير متاح حالياً؛ قد تفشل المكالمات بين شبكتين مختلفتين.','Network relay unavailable; calls across different networks may fail.','Aktarma sunucusu kullanılamıyor; farklı ağlarda aramalar başarısız olabilir.','Relais indisponible ; les appels entre réseaux peuvent échouer.','Ретранслятор недоступен; звонки между сетями могут не пройти.']
+  relayUnavailable:['خادم عبور الشبكات غير متاح حالياً؛ قد تفشل المكالمات بين شبكتين مختلفتين.','Network relay unavailable; calls across different networks may fail.','Aktarma sunucusu kullanılamıyor; farklı ağlarda aramalar başarısız olabilir.','Relais indisponible ; les appels entre réseaux peuvent échouer.','Ретранслятор недоступен; звонки между сетями могут не пройти.'],
+  qualityGood:['إشارة قوية','Good signal','İyi bağlantı','Bon signal','Хороший сигнал'],
+  qualityFair:['إشارة متوسطة','Fair signal','Orta bağlantı','Signal moyen','Средний сигнал'],
+  qualityPoor:['إشارة ضعيفة','Weak signal','Zayıf bağlantı','Signal faible','Слабый сигнал']
  };
  function mount({container,historyContainer,api,invitation,lang=()=>root.document?.documentElement.lang||'ar'}){
   const doc=container.ownerDocument||root.document;
@@ -232,7 +235,7 @@
    ringer.sync(!!ringing);
    note.textContent=error;note.hidden=!error||!!c;panel.hidden=!c;layout.classList.toggle('wf-calling-active',!!c||!!error);
    if(!c){if(panel.open)panel.close();bar.hidden=true;presentedId=null;minimized=false;selfVideo.srcObject=null;for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
-   if(presentedId!==c.id){presentedId=c.id;minimized=false;}
+   if(presentedId!==c.id){presentedId=c.id;minimized=false;remoteMuted=false;outputDeviceId=null;}
    const invited=c.participants?.some(p=>p.id===api.getSession?.()?.userId&&p.status==='invited');
    const kind=t(c.kind==='video'?'video':'audio');
    const caller=invited&&c.participants?.find(p=>p.id===c.callerId)?.name;
@@ -244,7 +247,11 @@
    avatar.textContent=Array.from(title.textContent.trim())[0]||'';
    kindLabel.textContent=(invited?t('inbound')+' · '+kind:kind)+(group?' · '+t('participants')+' '+(c.participants||[]).filter(p=>p.status==='joined').length+'/'+c.participants.length:'');
    info.textContent=invited||c.status==='ringing'?t('ringing'):t('connecting');
-   if(state.connected)info.textContent=t('connected')+(c.startedAt?' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(c.startedAt))/1000))):'');
+   if(state.connected){
+    info.textContent=t('connected')+(c.startedAt?' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(c.startedAt))/1000))):'');
+    const indicator={good:'qualityGood',fair:'qualityFair',poor:'qualityPoor'}[state.quality];
+    if(indicator)info.textContent+=' · '+t(indicator);
+   }
 
    if(state.localStream){
     if(selfVideo.srcObject!==state.localStream)selfVideo.srcObject=state.localStream;selfLabel.textContent=t('local');
