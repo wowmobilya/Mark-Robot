@@ -52,6 +52,15 @@ test('updates reuse exactly versioned prior assets and fetch fresh unversioned c
   const stored=f.stores.get(f.context.qa.CACHE_NAME);
   assert.match(stored.get(url('./package-labels.js?v=8')).tag,/^previous:/);
 });
+test('a release 236 installation downloads the changed chat assets once for release 237',async()=>{
+  const before=['./modules/chat/call-manager.js?v=5','./modules/chat/call-ui.js?v=7',
+    './modules/chat/workspace.js?v=8','./modules/chat/styles.css?v=6','./modules/chat/call-ui.css?v=3'];
+  const after=['./modules/chat/call-manager.js?v=6','./modules/chat/call-ui.js?v=8',
+    './modules/chat/workspace.js?v=9','./modules/chat/styles.css?v=7','./modules/chat/call-ui.css?v=4'];
+  const f=fixture({seed:before});await f.install();
+  for(const asset of after)assert(f.calls.includes(url(asset)),asset+' must download a fresh version');
+  for(const asset of before)assert.equal(f.calls.includes(url(asset)),false,'old code must not be downloaded');
+});
 test('a required script failure retains the old worker, while optional audio failure does not block the shell',async()=>{
   const required=fixture({fail:value=>value.includes('/purchase-planner.js')});
   await assert.rejects(required.install());assert.equal(required.skip,0);

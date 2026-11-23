@@ -32,8 +32,18 @@ test('invitation installs the company app and preserves workspace after a clean 
   assert.equal(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href'),origin+'/apple-touch-icon.png');
   await page.selectOption('#lang','en',{force:true});assert.equal(await page.locator('#installPlatform').innerText(),'Install company app');
   assert.match(await page.locator('#installHint').innerText(),/Safari.*Add to Home Screen/);
-  const cdp=await context.newCDPSession(page),initial=await cdp.send('Page.getAppManifest');
-  assert.deepEqual(initial.errors,[]);const data=JSON.parse(initial.data);
+  await page.waitForFunction(()=>document.querySelector('link[rel="manifest"]')?.href.includes('/company.webmanifest?'));
+  const cdp=await context.newCDPSession(page);
+  let initial,data;
+  // Chromium may still have the default install metadata while the dynamic
+  // company manifest is loading; assert the final identity, not that race.
+  for(let attempt=0;attempt<30;attempt++){
+    initial=await cdp.send('Page.getAppManifest');
+    try{data=JSON.parse(initial.data||'null');}catch{data=null;}
+    if(data?.id===app&&data.start_url===app)break;
+    await page.waitForTimeout(150);
+  }
+  assert.deepEqual(initial.errors,[]);assert(data,'A valid company manifest must be available');
   assert.equal(data.start_url,app);assert.equal(data.id,app);assert(!initial.data.includes('invite'));
   assert.deepEqual((await cdp.send('Page.getInstallabilityErrors')).installabilityErrors,[]);
   const clean=await chromium.launchPersistentContext('',options);t.after(()=>clean.close());const opened=await clean.newPage();

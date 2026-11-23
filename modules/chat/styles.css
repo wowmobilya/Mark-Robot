@@ -121,3 +121,41 @@
 #page-chat .wf-chat-filters button[aria-pressed=true] {background:var(--ui-soft);border-color:var(--brand-primary);font-weight:700}
 #page-chat .wf-calling-notice:not([hidden]) {background:var(--card);padding:.55rem .75rem;border:1px solid var(--border);border-radius:var(--rs,10px);pointer-events:auto}
 #page-chat [data-call-alerts][hidden] {display:none}
+
+/* WOW chat 237: subtle interchangeable conversation textures, not third-party artwork. */
+#page-chat .wf-chat-feed[data-wallpaper="plain"]{
+ background-image:radial-gradient(circle at 14px 18px,color-mix(in srgb,var(--primary,#3f7c94) 7%,transparent) 1.2px,transparent 1.6px),
+ radial-gradient(circle at 45px 48px,color-mix(in srgb,var(--primary,#3f7c94) 5%,transparent) 1px,transparent 1.6px);
+ background-size:68px 68px;
+}
+#page-chat .wf-chat-feed[data-wallpaper="warm"]{
+ background-image:radial-gradient(ellipse at 20% 15%,color-mix(in srgb,var(--gold,#b99b70) 12%,transparent) 0 2px,transparent 3px),
+ linear-gradient(135deg,transparent 47%,color-mix(in srgb,var(--gold,#b99b70) 7%,transparent) 48% 49%,transparent 50%);
+ background-size:90px 90px,125px 125px;
+}
+#page-chat .wf-chat-feed[data-wallpaper="cool"]{
+ background-image:radial-gradient(circle at 20px 20px,color-mix(in srgb,var(--primary,#3f7c94) 12%,transparent) 1px,transparent 2px),
+ linear-gradient(45deg,transparent 48%,color-mix(in srgb,var(--primary,#3f7c94) 6%,transparent) 49% 50%,transparent 51%);
+ background-size:68px 68px,120px 120px;
+}
+#page-chat .wf-chat-line.chosen .wf-chat-bubble{
+ outline:2px solid var(--primary,#3f7c94);outline-offset:2px;
+ background:color-mix(in srgb,var(--primary,#3f7c94) 12%,var(--card,#fff));
+}
+#page-chat .wf-chat-file{
+ display:inline-flex;align-items:center;gap:.35rem;max-width:100%;min-height:44px;
+ border-radius:14px;padding:.55rem .7rem;white-space:normal;overflow-wrap:anywhere;text-align:start;
+}
+#page-chat .wf-chat-file-pdf{border-inline-start:3px solid #b44652}
+#page-chat .wf-chat-file-audio{border-inline-start:3px solid #428f74}
+#page-chat .wf-chat-file-video{border-inline-start:3px solid #407fa7}
+#page-chat .wf-chat-file-image{border-inline-start:3px solid #a18a44}
+#page-chat .wf-chat-record-time{font-variant-numeric:tabular-nums}
+#page-chat .wf-chat-send-tools button[aria-label="إرسال الرسالة الصوتية"],
+#page-chat .wf-chat-send-tools button[aria-label="Send voice note"]{
+ background:var(--primary,#3f7c94);color:#fff;border-radius:22px;
+}
+@media(max-width:400px){
+ #page-chat .wf-chat-send-tools{gap:.24rem}
+ #page-chat .wf-chat-send-tools button{min-width:38px}
+}

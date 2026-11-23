@@ -41,7 +41,16 @@
   play:['تشغيل الصوت','Play audio','Sesi aç','Activer le son','Включить звук'],
   callback:['معاودة الاتصال','Call back','Geri ara','Rappeler','Перезвонить'],
   alertOptions:['تنبيهات المكالمات على هذا الجهاز','Call alerts on this device','Bu cihazdaki arama bildirimleri','Alertes d’appel sur cet appareil','Уведомления о звонках на устройстве'],
-  alerts:['تفعيل إشعار المكالمات','Enable call alerts','Arama bildirimlerini aç','Activer les alertes d’appel','Включить уведомления о звонках']
+  alerts:['تفعيل إشعار المكالمات','Enable call alerts','Arama bildirimlerini aç','Activer les alertes d’appel','Включить уведомления о звонках'],
+  ringSound:['تشغيل نغمة الاتصال','Enable call ringtone','Arama sesini aç','Activer la sonnerie','Включить мелодию звонка'],
+  remoteAudio:['كتم صوت الطرف الآخر','Mute incoming audio','Karşı tarafın sesini kapat','Couper le son reçu','Выключить звук собеседника'],
+  unremoteAudio:['تشغيل صوت الطرف الآخر','Play incoming audio','Karşı tarafın sesini aç','Activer le son reçu','Включить звук собеседника'],
+  audioOutput:['اختيار مكبر الصوت','Choose audio output','Ses çıkışını seç','Choisir la sortie audio','Выбрать аудиовыход'],
+  flipCamera:['تبديل الكاميرا','Flip camera','Kamerayı çevir','Changer de caméra','Сменить камеру'],
+  relayUnavailable:['خادم عبور الشبكات غير متاح حالياً؛ قد تفشل المكالمات بين شبكتين مختلفتين.','Network relay unavailable; calls across different networks may fail.','Aktarma sunucusu kullanılamıyor; farklı ağlarda aramalar başarısız olabilir.','Relais indisponible ; les appels entre réseaux peuvent échouer.','Ретранслятор недоступен; звонки между сетями могут не пройти.'],
+  qualityGood:['إشارة قوية','Good signal','İyi bağlantı','Bon signal','Хороший сигнал'],
+  qualityFair:['إشارة متوسطة','Fair signal','Orta bağlantı','Signal moyen','Средний сигнал'],
+  qualityPoor:['إشارة ضعيفة','Weak signal','Zayıf bağlantı','Signal faible','Слабый сигнал']
  };
  function mount({container,historyContainer,api,invitation,lang=()=>root.document?.documentElement.lang||'ar'}){
   const doc=container.ownerDocument||root.document;
@@ -77,6 +86,57 @@
   historyTitle.setAttribute('aria-expanded','false');historyList.hidden=true;history.append(historyTitle,historyList);
   layout.append(panel,note,history);container.append(layout);doc.body.append(bar);
   let manager=null,lastState=null,historyRows=[],language='ar',error='',shownRoom=null,presence=[];
+  let remoteMuted=false,outputDeviceId=null;
+  // Original WOW ringtone: audio needs an unlocked AudioContext from a user gesture.
+  // Vibration is best-effort and depends on browser/OS support and settings.
+  const ringer=(()=>{
+    let context=null,timer=null,active=false,unlockPending=false;
+    const playing=new Set();
+    function stop(){
+      active=false;if(timer!==null){root.clearInterval(timer);timer=null;}
+      for(const oscillator of playing){try{oscillator.stop();}catch(_){}}playing.clear();
+      try{root.navigator?.vibrate?.(0);}catch(_){}
+    }
+    function pulse(){
+      if(!active||doc.visibilityState==='hidden')return;
+      const feedback=root.WFPush?.getSnapshot?.()?.feedback;
+      if(feedback?.vibration!==false)try{root.navigator?.vibrate?.([180,120,210,400,160]);}catch(_){}
+      if(feedback?.sound===false||!context||context.state!=='running')return;
+      const now=context.currentTime;
+      for(const offset of [0,.32,.64]){
+        const oscillator=context.createOscillator(),gain=context.createGain();
+        oscillator.type='sine';oscillator.frequency.value=670;
+        gain.gain.setValueAtTime(.0001,now+offset);
+        gain.gain.linearRampToValueAtTime(.055,now+offset+.014);
+        gain.gain.exponentialRampToValueAtTime(.0001,now+offset+.20);
+        oscillator.connect(gain).connect(context.destination);
+        oscillator.onended=()=>{playing.delete(oscillator);oscillator.disconnect();gain.disconnect();};
+        playing.add(oscillator);oscillator.start(now+offset);oscillator.stop(now+offset+.22);
+      }
+    }
+    function unlock(){
+      if(unlockPending)return;
+      const Audio=root.AudioContext||root.webkitAudioContext;
+      if(!Audio)return;
+      try{if(!context)context=new Audio();unlockPending=true;
+        Promise.resolve(context.resume()).then(()=>{unlockPending=false;if(active)pulse();})
+          .catch(()=>{unlockPending=false;});
+      }catch(_){unlockPending=false;}
+    }
+    function sync(next){
+      if(active===next)return;
+      stop();if(!next)return;active=true;pulse();timer=root.setInterval(pulse,3100);
+    }
+    const onVisibility=()=>{if(doc.visibilityState==='hidden')sync(false);else render();};
+    const onGesture=()=>{if(!context||context.state!=='running')unlock();};
+    doc.addEventListener('pointerdown',onGesture,{capture:true});
+    doc.addEventListener('keydown',onGesture,{capture:true});
+    doc.addEventListener('visibilitychange',onVisibility);
+    return {unlock,sync,ready:()=>!!context&&context.state==='running',
+      dispose(){stop();doc.removeEventListener('pointerdown',onGesture,true);
+        doc.removeEventListener('keydown',onGesture,true);doc.removeEventListener('visibilitychange',onVisibility);
+        context?.close?.().catch?.(()=>{});}};
+  })();
   const locale=()=>{const v=typeof lang==='function'?lang():lang;return locales.includes(v)?v:'ar';};
   const t=key=>text[key][locales.indexOf(locale())];let ticking=null;
   const button=(key,action,cls='')=>{
@@ -91,7 +151,9 @@
    hangup:'<path d="M3 16v-3a2 2 0 0 1 1-2c5-4 11-4 16 0a2 2 0 0 1 1 2v3h-5v-3a13 13 0 0 0-8 0v3z"/>',
    mic:'<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2m-7 9v3m-4 0h8"/>',
    camera:'<rect x="2" y="5" width="14" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3"/>',
-   play:'<path d="m7 4 13 8-13 8z"/>'
+   play:'<path d="m7 4 13 8-13 8z"/>',
+   speaker:'<path d="m4 9h4l5-4v14l-5-4H4z"/><path d="M16 9c2 2 2 4 0 6m2-9c4 3 4 9 0 12"/>',
+   flip:'<rect x="3" y="6" width="18" height="12" rx="3"/><path d="m9 10-2 2 2 2m6-4 2 2-2 2M12 3v2m0 14v2"/>'
   };
   const control=(key,action,glyph,cls='',off=false)=>{
    const b=button(key,action,cls);b.dataset.callControl=glyph;b.setAttribute('aria-label',t(key));
@@ -159,6 +221,8 @@
   function updateRemote(uid,stream){
    if(!stream){const old=remote.get(uid);if(old){old.video.pause?.();old.video.srcObject=null;old.card.remove();remote.delete(uid);}render();return;}
    const unit=remoteUnit(uid);
+   unit.video.muted=remoteMuted;
+   if(outputDeviceId&&typeof unit.video.setSinkId==='function')unit.video.setSinkId(outputDeviceId).catch(()=>{});
    if(unit.video.srcObject!==stream){unit.video.srcObject=stream;
     Promise.resolve(unit.video.play()).catch(()=>{unit.playBlocked=true;render();});}
    render();
@@ -166,9 +230,12 @@
   function render(){
    language=locale();displayHistory();const state=lastState;const c=state?.call;
    for(const start of container.querySelectorAll('[data-call-start]'))start.disabled=!enabled||!!c||!!state?.busy||!api.can?.('chat.edit');
+   const ringing=!!c&&c.status==='ringing'&&c.callerId!==api.getSession?.()?.userId&&
+      c.participants?.some(p=>p.id===api.getSession?.()?.userId&&p.status==='invited')&&doc.visibilityState!=='hidden';
+   ringer.sync(!!ringing);
    note.textContent=error;note.hidden=!error||!!c;panel.hidden=!c;layout.classList.toggle('wf-calling-active',!!c||!!error);
    if(!c){if(panel.open)panel.close();bar.hidden=true;presentedId=null;minimized=false;selfVideo.srcObject=null;for(const [id,item] of remote){item.video.srcObject=null;item.card.remove();remote.delete(id);}return;}
-   if(presentedId!==c.id){presentedId=c.id;minimized=false;}
+   if(presentedId!==c.id){presentedId=c.id;minimized=false;remoteMuted=false;outputDeviceId=null;}
    const invited=c.participants?.some(p=>p.id===api.getSession?.()?.userId&&p.status==='invited');
    const kind=t(c.kind==='video'?'video':'audio');
    const caller=invited&&c.participants?.find(p=>p.id===c.callerId)?.name;
@@ -180,7 +247,11 @@
    avatar.textContent=Array.from(title.textContent.trim())[0]||'';
    kindLabel.textContent=(invited?t('inbound')+' · '+kind:kind)+(group?' · '+t('participants')+' '+(c.participants||[]).filter(p=>p.status==='joined').length+'/'+c.participants.length:'');
    info.textContent=invited||c.status==='ringing'?t('ringing'):t('connecting');
-   if(state.connected)info.textContent=t('connected')+(c.startedAt?' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(c.startedAt))/1000))):'');
+   if(state.connected){
+    info.textContent=t('connected')+(c.startedAt?' · '+duration(Math.max(0,Math.floor((Date.now()-Date.parse(c.startedAt))/1000))):'');
+    const indicator={good:'qualityGood',fair:'qualityFair',poor:'qualityPoor'}[state.quality];
+    if(indicator)info.textContent+=' · '+t(indicator);
+   }
 
    if(state.localStream){
     if(selfVideo.srcObject!==state.localStream)selfVideo.srcObject=state.localStream;selfLabel.textContent=t('local');
@@ -201,12 +272,27 @@
    if(invited){
     const accept=control('answer',()=>manager.accept(),'handset','wf-calling-accept');accept.disabled=!!state.busy;
     actions.append(control('reject',()=>manager.decline(),'hangup','wf-calling-danger'),accept);
+    if(!ringer.ready()&&(root.AudioContext||root.webkitAudioContext))
+      actions.append(control('ringSound',()=>ringer.unlock(),'speaker'));
    }else{
     if(c.status==='active'){
      actions.append(control(state.muted?'unmic':'mic',()=>manager.micToggle(),'mic','',!!state.muted));
+     actions.append(control(remoteMuted?'unremoteAudio':'remoteAudio',()=>{
+       remoteMuted=!remoteMuted;for(const unit of remote.values())unit.video.muted=remoteMuted;render();
+     },'speaker','',remoteMuted));
+     if(root.navigator?.mediaDevices?.selectAudioOutput&&
+        typeof doc.createElement('audio').setSinkId==='function')
+       actions.append(control('audioOutput',async()=>{
+         const selected=await root.navigator.mediaDevices.selectAudioOutput();
+         if(!selected?.deviceId)return;
+         outputDeviceId=selected.deviceId;
+         await Promise.all([...remote.values()].map(unit=>unit.video.setSinkId(outputDeviceId)));
+       },'speaker'));
      if(c.kind==='video'){
       const cameraOn=state.localStream?.getVideoTracks().some(tr=>tr.enabled&&tr.readyState==='live');
       actions.append(control(cameraOn?'nocamera':'camera',()=>manager.cameraToggle(),'camera','',!cameraOn));
+      if(cameraOn&&root.navigator?.mediaDevices?.getUserMedia&&typeof manager.switchCamera==='function')
+        actions.append(control('flipCamera',()=>manager.switchCamera(),'flip'));
      }
     }
     actions.append(control('end',()=>manager.finish(c.callerId===myId),'hangup','wf-calling-danger'));
@@ -214,7 +300,8 @@
    for(const item of remote.values())if(item.playBlocked){
     actions.append(control('play',async()=>{await item.video.play();item.playBlocked=false;render();},'play'));
    }
-   problem.textContent=error;problem.hidden=!error;panel.dir=language==='ar'?'rtl':'ltr';
+   problem.textContent=error||(state.relayReady===false?t('relayUnavailable'):'');
+   problem.hidden=!problem.textContent;panel.dir=language==='ar'?'rtl':'ltr';
    collapse.setAttribute('aria-label',t('minimize'));collapse.title=t('minimize');
    bar.hidden=!minimized;bar.dir=panel.dir;restore.textContent=t('restore')+' · '+title.textContent;
    compactMic.hidden=invited||c.status!=='active';compactMic.textContent=t(state.muted?'unmic':'mic');compactEnd.textContent=t(invited?'reject':'end');
@@ -284,7 +371,7 @@
   }
   return Object.freeze({controls,startPrivate,selectRoom,renderHistoryInFeed:feedHistory,refresh:()=>manager?.poll(),
    hasActiveCall:()=>!!lastState?.call,updateLanguage:render,
-   dispose(){unsubscribeAlerts?.();if(ticking)root.clearInterval(ticking);manager?.stop();bar.remove();historyContainer?.querySelector?.('[data-wf-call-history]')?.remove();layout.remove();}});
+   dispose(){ringer.dispose();unsubscribeAlerts?.();if(ticking)root.clearInterval(ticking);manager?.stop();bar.remove();historyContainer?.querySelector?.('[data-wf-call-history]')?.remove();layout.remove();}});
  }
  root.WFChatCallUI=Object.freeze({mount});
 })(globalThis);

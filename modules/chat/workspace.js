@@ -39,7 +39,8 @@
     choose:['Choose a conversation','اختر محادثة','Bir sohbet seçin','Choisissez une conversation','Выберите беседу'],none:['No messages.','لا توجد رسائل.','Mesaj yok.','Aucun message.','Нет сообщений.'],
     older:['Older','الأقدم','Daha eski','Plus anciens','Старее'],newer:['Newer','الأحدث','Daha yeni','Plus récents','Новее'],latest:['Latest','الأخيرة','En son','Derniers','Последние'],top:['Top','الأعلى','En üst','Haut','Вверх'],
     write:['Write a message','اكتب رسالة','Mesaj yaz','Écrire un message','Написать сообщение'],send:['Send','إرسال','Gönder','Envoyer','Отправить'],attach:['Attach','إرفاق','Dosya ekle','Joindre','Прикрепить'],
-    voice:['Voice note','رسالة صوتية','Sesli mesaj','Message vocal','Голосовое сообщение'],stop:['Finish recording','إنهاء التسجيل','Kaydı bitir','Terminer l’enregistrement','Завершить запись'],
+    voice:['Voice note','رسالة صوتية','Sesli mesaj','Message vocal','Голосовое сообщение'],
+    sendVoice:['Send voice note','إرسال الرسالة الصوتية','Sesli mesajı gönder','Envoyer le message vocal','Отправить голосовое сообщение'],stop:['Finish recording','إنهاء التسجيل','Kaydı bitir','Terminer l’enregistrement','Завершить запись'],
     cancel:['Cancel','إلغاء','İptal','Annuler','Отмена'],recording:['Recording','جار التسجيل','Kaydediliyor','Enregistrement','Запись'],voiceFailed:['Microphone access is unavailable.','تعذر استخدام الميكروفون.','Mikrofon kullanılamıyor.','Le microphone est indisponible.','Микрофон недоступен.'],
     emoji:['Emoji','رمز تعبيري','Emoji','Émoji','Эмодзи'],reply:['Reply','رد','Yanıtla','Répondre','Ответить'],edit:['Edit','تعديل','Düzenle','Modifier','Изменить'],delete:['Delete','حذف','Sil','Supprimer','Удалить'],
     forward:['Forward','إعادة توجيه','İlet','Transférer','Переслать'],copy:['Copy','نسخ','Kopyala','Copier','Копировать'],copied:['Copied','تم النسخ','Kopyalandı','Copié','Скопировано'],
@@ -313,14 +314,29 @@
           if(here){here.scrollIntoView({block:'center'});return;}stack.push(before);before=String(BigInt(m.reply.id)+1n);lastFeed='';await loadFeed();},'wf-chat-quote');bubble.append(q);}
         if(m.text){const p=el('p');for(const part of H.parts(m.text,query))p.append(part.match?el('mark',part.value):root.document.createTextNode(part.value));bubble.append(p);}
         if(filter==='links'){for(const href of H.links(m.text)){const a=el('a',href);a.href=href;a.target='_blank';a.rel='noopener noreferrer nofollow';bubble.append(a);}}
-        if(m.asset)bubble.append(act(m.asset.name+' · '+C.humanBytes(m.asset.bytes,language),()=>openAsset(m),'wf-chat-file'));
+        if(m.asset){
+          const kind=['image','video','audio','pdf'].includes(m.asset.kind)?m.asset.kind:'files';
+          const symbol={image:'▧',video:'▶',audio:'◉',pdf:'▤',files:'▣'}[kind];
+          const fileButton=act(symbol+'  '+m.asset.name+' · '+C.humanBytes(m.asset.bytes,language),()=>openAsset(m),'wf-chat-file wf-chat-file-'+kind);
+          fileButton.setAttribute('aria-label',m.asset.name+' · '+t('play'));bubble.append(fileButton);
+        }
         const meta=el('footer');const when=new Date(m.createdAt);meta.append(el('small',when.toLocaleTimeString(language,{hour:'2-digit',minute:'2-digit'})));
         if(m.editedAt)meta.append(el('small',t('edited')));if(m.starred)meta.append(el('small','★'));
         if(m.authorId===me.id)meta.append(el('small',H.after(m.id,feed.readByPeer)?'✓':'✓✓'));
         for(const [e,n] of Object.entries(m.reactions||{}))meta.append(act(e+' '+n,()=>edit()?react(m,e):infoDialog(m)));bubble.append(meta);row.append(bubble);feedBox.append(row);
-        let start=null,lastTap=0;
-        bubble.onpointerdown=e=>{if(!e.target.closest('button,a'))start={x:e.clientX,y:e.clientY};};
-        bubble.onpointerup=e=>{if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;start=null;
+        let start=null,lastTap=0,hold=null,held=false;
+        const clearHold=()=>{if(hold!==null){clearTimeout(hold);hold=null;}};
+        bubble.onpointerdown=e=>{
+          if(e.target.closest('button,a'))return;
+          held=false;start={x:e.clientX,y:e.clientY};
+          if(e.pointerType!=='mouse')hold=setTimeout(()=>{
+            hold=null;if(start&&!selected.has(m.id)){held=true;toggleSelect(m);}
+          },550);
+        };
+        bubble.onpointermove=e=>{if(start&&Math.hypot(e.clientX-start.x,e.clientY-start.y)>14)clearHold();};
+        bubble.onpointercancel=()=>{clearHold();start=null;};
+        bubble.oncontextmenu=e=>{if(!e.target.closest('button,a')){e.preventDefault();clearHold();start=null;toggleSelect(m);}};
+        bubble.onpointerup=e=>{clearHold();if(held){held=false;start=null;return;}if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;start=null;
           if(Math.abs(dx)>65&&Math.abs(dy)<36){setReply(m);return;}
           if(Math.abs(dx)<8&&Math.abs(dy)<8){if(selected.size)toggleSelect(m);else if(Date.now()-lastTap<320&&edit()){run(()=>react(m,'❤️'))();lastTap=0;return;}lastTap=Date.now();}};
       }
@@ -528,7 +544,7 @@
         sendTools.append(attachmentMenu.group);attachmentMenu.menu.append(act(t('attach'),()=>picker.click()));
         if(api.can('files.view')&&api.can('files.export'))attachmentMenu.menu.append(act(t('nativeFiles'),chooseNativeFile));
       }
-      if(recording){const time=el('span',t('recording'),'wf-chat-record-time');sendTools.append(time,act(t('stop'),()=>{stopRecord(true);drawComposer();}),act(t('cancel'),()=>{stopRecord();drawComposer();}));}
+      if(recording){const time=el('span',t('recording'),'wf-chat-record-time');sendTools.append(time,act(t(recording.kind==='audio'?'sendVoice':'stop'),()=>{stopRecord(true);drawComposer();}),act(t('cancel'),()=>{stopRecord();drawComposer();}));}
       else if(root.navigator.mediaDevices?.getUserMedia&&root.MediaRecorder&&!attached&&!editing&&!sending){
         for(const [kind,label] of [['audio','voice'],['video','videoNote']]){
           const recordButton=kind==='audio'?iconButton('voice',t(label),()=>startRecord(kind)):act(t(label),()=>startRecord(kind));recordButton.disabled=requestingCapture;(kind==='audio'?sendTools:attachmentMenu.menu).append(recordButton);
@@ -565,7 +581,11 @@
           const type=(device.mimeType||mime||rec.parts[0].type).split(';')[0];
           if(!type.startsWith(kind+'/')){status.textContent=t('captureFailed');return;}
           const extension=type.includes('mp4')?(isVideo?'mp4':'m4a'):type.includes('ogg')?'ogg':'webm';
-          attach(new File(rec.parts,(isVideo?'video':'voice')+'-'+Date.now()+'.'+extension,{type}));
+          const file=new File(rec.parts,(isVideo?'video':'voice')+'-'+Date.now()+'.'+extension,{type});
+          attach(file);
+          // The finish button commits a voice note without asking for Send again.
+          // Video retains the preview-before-send workflow.
+          if(!isVideo&&roomNow(id)&&attached?.file===file)send().catch(actionStatus);
         };
         device.onerror=()=>{if(recording===rec){stopRecord();drawComposer();status.textContent=t('captureFailed');}};
         device.start(500);requestingCapture=false;drawComposer();
