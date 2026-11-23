@@ -27,7 +27,7 @@ test('invited owner gets field-specific corrections and a confirmed pending rece
       assert.equal(await field(2).getAttribute('aria-invalid'),'true');assert.equal(submissions,0);await field(2).fill('مالك.الشركة');
       await submit.click();await page.getByText(/USERNAME_TAKEN/).waitFor();assert(await field(2).evaluate(el=>el===document.activeElement));
       await field(2).fill('مالك.الشركة2');await submit.click();await page.getByText(/وصل طلبك إلى لوحة تحكم الأدمن/).waitFor();
-      await page.selectOption('#lang','en');await page.getByText(/Your request is in the admin panel/).waitFor();
+      await page.locator('#lang').selectOption('en',{force:true});await page.getByText(/Your request is in the admin panel/).waitFor();
       assert.equal(submissions,2);assert.equal(await page.locator('.platform-enrollment input').count(),0);
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await ctx.close();
     }
