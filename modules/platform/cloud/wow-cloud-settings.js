@@ -54,6 +54,7 @@
     conflicts:['اختلافات محفوظة للمراجعة','Saved conflicts to review','İncelenecek kayıtlı çakışmalar','Conflits conservés à examiner','Сохранённые конфликты'],
     lastSync:['آخر مزامنة مكتملة','Last completed sync','Son tamamlanan eşitleme','Dernière synchronisation terminée','Последняя завершённая синхронизация'],
     never:['لم تكتمل مزامنة بعد','No completed sync yet','Henüz eşitleme tamamlanmadı','Aucune synchronisation terminée','Синхронизация ещё не завершена'],
+    approvalPending:["وصل طلبك إلى أدمن برنامج التحكم. سجّل الدخول بعد الموافقة.","Request submitted. Sign in after admin approval.","Talep iletildi. Yönetici onayından sonra giriş yapın.","Demande envoyée. Connectez-vous après approbation.","Заявка отправлена. Войдите после одобрения."],
     connected:["تم التحقق من حساب الشركة.", "Company account verified.", "Şirket hesabı doğrulandı.", "Compte de société vérifié.", "Учётная запись компании подтверждена."],
     savedOffline:['بيانات الجهاز محفوظة؛ ستُرسل التغييرات المعلقة بعد عودة الاتصال والتحقق من الحساب.','Device data is saved. Pending changes send after connectivity and account verification return.','Cihaz verileri kayıtlıdır. Bekleyen değişiklikler bağlantı ve hesap doğrulaması geri geldiğinde gönderilir.','Les données locales sont enregistrées. Les modifications seront envoyées après reconnexion et vérification.','Локальные данные сохранены. Изменения отправятся после восстановления связи и проверки учётной записи.'],
     syncUnavailable:['محرك المزامنة غير جاهز. أعد تحميل البرنامج.','Sync is not ready. Reload the app.','Eşitleme hazır değil. Uygulamayı yenileyin.','La synchronisation n’est pas prête. Rechargez l’application.','Синхронизация не готова. Обновите приложение.'],
@@ -127,7 +128,7 @@
     if(formMode==='enroll'&&fields.password.value!==fields.confirmPassword.value){fields.confirmPassword.setCustomValidity(text('mismatch'));fields.confirmPassword.reportValidity();return;}
     const input={username:fields.username.value.trim(),password:fields.password.value};
     if(formMode==='enroll'){input.name=fields.name.value.trim();input.setupToken=fields.setupToken.value.trim();}
-    await perform(async()=>{await(formMode==='enroll'?client.enrollOwner(input):client.signIn(input));await root.wfInitializeCloudSync?.();},'connected');
+    await perform(async()=>{const result=await(formMode==='enroll'?client.enrollOwner(input):client.signIn(input));if(result?.pendingApproval){formMode='signIn';drawForm();noticeText='approvalPending';return;}await root.wfInitializeCloudSync?.();noticeText='connected';});
     if(client.getSnapshot().authenticated)for(const field of Object.values(fields))field.value='';
     input.password='';if(input.setupToken)input.setupToken='';
   }

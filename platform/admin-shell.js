@@ -139,7 +139,7 @@
     updateAppearance();syncDrawerActive();
   }
   function syncDrawerActive(){
-    const current=location.hash.slice(1)||'home';
+    const current=location.hash.startsWith('#company/')?'companies':location.hash.slice(1)||'home';
     for(const item of drawer.querySelectorAll('.platform-drawer-link')){
       if(item.dataset.section===current)item.setAttribute('aria-current','page');
       else item.removeAttribute('aria-current');

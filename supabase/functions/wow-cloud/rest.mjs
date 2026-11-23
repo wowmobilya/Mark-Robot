@@ -61,6 +61,7 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
   };
   const objectPath=path=>'mark-robot-private/'+path.split('/').map(encodeURIComponent).join('/');
   return {
+    ownerEnrollment:(action,data)=>call('/rest/v1/rpc/wow_owner_enrollment',{body:{p_action:action,p_data:data},kind:'rpc'}),
     rpc:(action,data)=>call('/rest/v1/rpc/wow_service',{body:{p_action:action,p_data:data},kind:'rpc'}),
     deviceSession:(action,data)=>call('/rest/v1/rpc/wow_device_session',{body:{p_action:action,p_data:data},kind:'rpc'}),
     brandRpc:(actor,action,data)=>call('/rest/v1/rpc/wow_platform_brand',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
@@ -81,6 +82,8 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     requirePlatformFounder:actor=>call('/rest/v1/rpc/wow_platform_require',{body:{p_user:actor.userId,p_session:actor.sessionId},kind:'rpc'}),
     inspectCompany:(actor,workspaceId,section,offset)=>call('/rest/v1/rpc/wow_platform_inspect',{
       body:{p_user:actor.userId,p_session:actor.sessionId,p_workspace:workspaceId,p_section:section,p_offset:offset},kind:'rpc'}),
+    ownerApprovalAlerts:(actor,offset)=>call('/rest/v1/rpc/wow_platform_owner_alerts',{
+      body:{p_user:actor.userId,p_session:actor.sessionId,p_offset:offset},kind:'rpc'}),
     subscriptionSummaries:(actor,workspaces)=>call('/rest/v1/rpc/wow_platform_subscription_summary',{
       body:{p_user:actor.userId,p_session:actor.sessionId,p_workspaces:workspaces},kind:'rpc'}),
     deviceObservations:(actor,action,data)=>call('/rest/v1/rpc/wow_client_devices_rpc',{

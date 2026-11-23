@@ -224,12 +224,9 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(await page.locator('[data-metric=paused] .platform-analytics-value').textContent(),'0');
     assert.equal(await page.locator('[data-metric=accounts] .platform-analytics-value').textContent(),'0');
     await page.waitForFunction(()=>Number.parseFloat(document.querySelector('.platform-analytics-donut').style.getPropertyValue('--platform-active-share'))===100);
-    const companyFold=page.locator('.platform-company-fold');
-    assert.equal(await companyFold.getAttribute('open'),null,'company is folded by default');
-    await companyFold.locator('summary').first().click();
-    await page.locator('.platform-company-link-pill[data-link-state=pending]').waitFor();
-    assert.match(await page.locator('.platform-company-link-pill').innerText(),/Awaiting owner activation/);
-    assert.equal(await page.locator('.platform-company-connectivity>small').isVisible(),true);
+    const profileLink=page.getByRole('link',{name:'Company page · Test',exact:true});
+    assert.equal(await profileLink.getAttribute('href'),'#company/'+wid);
+    assert.equal(await page.getByRole('button',{name:'Open company program'}).count(),0);
     await page.locator('.platform-qr-actions button').first().waitFor();
     assert.equal(await page.locator('.platform-qr-actions button').count(),4);
     const rendered=page.locator('svg.platform-setup-qr');await rendered.waitFor();
@@ -246,6 +243,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.locator('.platform-overview-status select').selectOption('all');
     assert.equal(await page.locator('.platform-company-card').isVisible(),true);
     await finder.fill('');
+    await profileLink.click();
+    await page.getByRole('heading',{name:'Company settings · Test'}).waitFor();
+    await page.getByRole('link',{name:'Back to companies'}).click();
+    await profileLink.waitFor();
+    await page.goBack();
+    await page.locator('.platform-company-link-pill[data-link-state=pending]').waitFor();
+    assert.match(await page.locator('.platform-company-link-pill').innerText(),/Awaiting invitation acceptance/);
+    assert.equal(await page.locator('.platform-company-connectivity>small').isVisible(),true);
     // iPhone SE through desktop: company cards and their actions must stay on-screen.
     for(const size of [{width:320,height:640},{width:360,height:780},{width:390,height:844},
        {width:430,height:932},{width:768,height:1024},{width:1024,height:768},
@@ -268,7 +273,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.getByRole('button',{name:'Open company program'}).click();
     assert.equal(await page.locator('.wf-inspect').getAttribute('aria-modal'),'true');
     await page.locator('.wf-inspect-back').click();
-    await page.getByText('Manage company',{exact:true}).click();
+    assert(await page.locator('.platform-company-page .platform-company-tools').evaluate(details=>details.open));
     await page.getByRole('button',{name:'Manage company accounts'}).click();
     await page.locator('.wf-inspect-nav-item[data-section=accounts][aria-current=page]').waitFor();
     await page.locator('.wf-inspect-back').click();
@@ -291,6 +296,14 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await company.getByRole('button',{name:'Owner setup'}).click();await page.getByRole('button',{name:'Issue new invitation'}).click();
     await page.getByRole('form',{name:'Owner setup'}).getByRole('button',{name:'Issue new invitation'}).click();
     await page.waitForFunction(previous=>document.querySelector('a[href*="#invite="]').href!==previous,link);
+    for(const [state,label] of [['owner_suspended','Owner account suspended'],['owner_expired','Owner account expired'],['owner_unavailable','Owner account unavailable']]){
+      activation=state;
+      await company.getByRole('button',{name:'Owner setup'}).click();
+      await company.locator('.platform-company-tools').getByText(label,{exact:true}).waitFor();
+      assert.equal(await company.getByRole('button',{name:'Issue new invitation'}).count(),0);
+      assert.equal(await company.getByRole('button',{name:'Activate owner account'}).count(),0);
+      assert.equal(await company.locator('.platform-company-link-pill').textContent(),label);
+    }
     activation='active';await company.getByRole('button',{name:'Owner setup'}).click();await page.getByText('Owner active').waitFor();
     assert.equal(await page.getByRole('button',{name:'Send recovery email'}).count(),0);
     canRecover=true;await company.getByRole('button',{name:'Owner setup'}).click();await page.getByRole('button',{name:'Send recovery email'}).click();
@@ -433,6 +446,7 @@ test('trusted founder device rotates, revalidates founder access and forgets log
     const context=await browser.newContext(),page=await context.newPage();
     let refresh='',revision=0,permitted=true,revoked=false,password='not-a-real-password';
     const workspace=randomUUID(),founder=randomUUID(),events=[];
+    const directory=Array.from({length:14},(_,i)=>({id:randomUUID(),name:'Office '+(i+1),accounts:i,status:'active'}));
     const endpoint='https://founder.test';
     await context.route('**/*',async route=>{
       const url=new URL(route.request().url()),file=url.pathname.slice(1);
@@ -451,7 +465,12 @@ test('trusted founder device rotates, revalidates founder access and forgets log
           return route.fulfill({json:{ok:true,workspaceId:workspace,identity:{currentAccount:{id:founder,name:'Founder',status:'active',sessionVersion:1}},
             session:{access_token:'access-'+revision,refresh_token:refresh,expires_at:Math.floor(Date.now()/1000)+3600}}});
         }
-        if(body.action==='platform.company.list')return route.fulfill({status:permitted?200:403,json:permitted?{ok:true,total:0,companies:[]}:{ok:false,error:{code:'ACCESS_DENIED'}}});
+        if(body.action==='platform.company.list')return route.fulfill({status:permitted?200:403,json:permitted?{ok:true,total:directory.length,companies:directory.slice(body.offset,body.offset+50)}:{ok:false,error:{code:'ACCESS_DENIED'}}});
+        if(body.action==='platform.company.inspect'){
+          const workspace=directory.find(row=>row.id===body.workspaceId);assert.equal(body.section,'summary');
+          return route.fulfill({json:{ok:true,workspace,summary:{accounts:workspace.accounts}}});
+        }
+        if(body.action==='platform.company.activation')return route.fulfill({json:{ok:true,state:'awaiting_approval',name:'Pending owner',username:'owner.test',canApprove:true}});
         return route.fulfill({json:{ok:true,cases:[],unreadCases:0}});
       }
       if(file==='platform/'||file==='platform/index.html')return route.fulfill({path:path.join(__dirname,'../platform/index.html')});
@@ -467,6 +486,25 @@ test('trusted founder device rotates, revalidates founder access and forgets log
     const open=async()=>{await page.goto(endpoint+'/platform/');await page.locator('#lang').selectOption('en',{force:true});};
     await open();await signin(false);await open();await page.getByLabel('Founder username').waitFor();assert(!events.includes('auth.refresh'));
     await signin(true);const first=refresh;
+    await page.evaluate(()=>{location.hash='companies';});
+    const cards=page.locator('#platform-page-companies > .platform-company-card:visible');
+    await cards.first().waitFor();assert.equal(await cards.count(),12);
+    for(const width of [360,900,1440]){
+      await page.setViewportSize({width,height:900});
+      const grid=await cards.evaluateAll(rows=>rows.map(row=>row.getBoundingClientRect().toJSON()));
+      assert(grid.every(row=>row.left>=0&&row.right<=width&&row.height>44));
+      if(width===360)assert(grid[1].top>=grid[0].bottom);
+      else assert.equal(grid[0].top,grid[1].top);
+    }
+    await page.getByRole('button',{name:'Next',exact:true}).click();
+    await cards.filter({hasText:'Office 14'}).waitFor();assert.equal(await cards.count(),2);
+    await page.getByRole('button',{name:'Previous',exact:true}).click();await cards.filter({hasText:'Office 12'}).waitFor();
+    await page.evaluate(id=>{location.hash='company/'+id+'/activation';},directory[13].id);
+    await page.getByRole('heading',{name:'Company settings · Office 14'}).waitFor();
+    await page.getByRole('button',{name:'Activate owner account'}).waitFor();
+    assert.equal(await cards.count(),0);
+    await page.getByRole('link',{name:'Back to companies'}).click();
+    await cards.first().waitFor();assert.equal(await cards.count(),12);
     const stored=await page.evaluate(()=>Object.values(localStorage).join());assert(stored.includes(first)&&!stored.includes('not-a-real-password')&&!stored.includes('access-'));
     await page.reload();await page.locator('.wf-founder-check').waitFor();assert.notEqual(refresh,first);
     await page.evaluate(()=>dispatchEvent(new Event('offline')));assert.equal(await page.locator('.wf-founder-check').count(),0);

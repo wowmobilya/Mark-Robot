@@ -4,6 +4,7 @@ import {createRelayActions} from './modules/platform-relay.mjs';
 import {createCentralBankActions} from './modules/platform-fx.mjs';
 import {createCompanyJoin} from './modules/company-join.mjs';
 import {createFounderActivation} from './modules/founder-activation.mjs';
+import {companyManifest} from './modules/company-manifest.mjs';
 import {createOrderSms} from './modules/order-sms.mjs';
 import {createStatementDelivery} from './modules/statement-delivery.mjs';
 import {createPlatformActions} from './modules/platform-companies.mjs';
@@ -81,6 +82,7 @@ const moduleActions={...relayActions,...createCentralBankActions(remote),...comp
 const app=createHandler({...remote,origins,moduleActions,publicActions:{...companyJoin.publicActions,...founderActivation.publicActions,...customerAuth.publicActions,...ownerActivation.publicActions},policy,dataPolicy:globals.WFAccountDataPolicy,costCore:globals.WFCostCore});
 let worker: ((req:Request)=>Promise<Response>)|undefined;
 Deno.serve(async(req:Request)=>{
+  if(/^\/(?:functions\/v1\/)?wow-cloud\/company\.webmanifest$/.test(new URL(req.url).pathname))return companyManifest(req,origins);
   if(/^\/(?:functions\/v1\/)?wow-cloud\/order-download\//.test(new URL(req.url).pathname)||new URL(req.url).pathname.startsWith('/order-download/'))return orderSms.download(req);
   if(new URL(req.url).pathname.startsWith('/functions/v1/wow-cloud/public-share/'))return publicShare(req);
   if(new URL(req.url).pathname==='/functions/v1/wow-cloud/mail-webhook')return communications.webhook(req);

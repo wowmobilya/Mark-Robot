@@ -73,6 +73,12 @@ function sharedNotice(kind,d,language){
       return {title,body,route,params};
     } catch {invalidNotice();}
   }
+  if(kind==='owner.approval'){
+    if(!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(d.workspaceId))invalidNotice();
+    const bodies={ar:'طلب تفعيل مالك جديد في إدارة الشركات.',en:'A company owner is waiting for approval.',
+      tr:'Bir şirket sahibi onay bekliyor.',fr:'Un propriétaire attend votre approbation.',ru:'Владелец компании ожидает подтверждения.'};
+    return {title:'WOW Admin',body:bodies[language],route:'owner-approval',params:{workspaceId:d.workspaceId}};
+  }
   if(kind==='support.ticket'||kind==='support.reply'){
     const route=kind==='support.ticket'?'founder-support':'member-support';
     if(d.route!==route)invalidNotice();
@@ -118,7 +124,7 @@ export function formatPushPayload(event,recipient){
   const notice=sharedNotice(kind,d,language);
   const company=cleanPushText(recipient.companyName,60).replace(/\s+/g,' ').trim();
   const brandedTitle=title=>cleanPushText(company?company+' · '+title:title,120);
-  if(notice)return {...envelope,...notice,title:kind.startsWith('support.')?notice.title:brandedTitle(notice.title)};
+  if(notice)return {...envelope,...notice,title:(kind.startsWith('support.')||kind==='owner.approval')?notice.title:brandedTitle(notice.title)};
   if(!['test','proforma','payment','expense','receipt'].includes(kind))invalidNotice();
   const number=new Intl.NumberFormat(language==='ar'?'ar-u-nu-latn':language,{minimumFractionDigits:2,maximumFractionDigits:2});
   const money=(amount,code=d.currency)=>amount!==null&&Number.isFinite(Number(amount))?currency(code)+' '+number.format(Number(amount)):'';

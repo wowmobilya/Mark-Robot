@@ -472,7 +472,11 @@
     }
     async function authenticate(action,input){
       await ready;expire();checkGeneration(generation);invalidateSession('');const expected=generation;connection='checking';emit();
-      try{return adopt(await transport(action,input),expected,{authentication:true});}
+      try{
+        const result=await transport(action,input);checkGeneration(expected);
+        if(action==='auth.enrollOwner'&&result.pendingApproval===true){invalidateSession('');return {pendingApproval:true};}
+        return adopt(result,expected,{authentication:true});
+      }
       catch(error){if(expected===generation){invalidateSession(error.code);if(error.code==='NETWORK'){connection='offline';emit();}}throw error;}
     }
     async function activateOwner(proof){

@@ -1,10 +1,15 @@
 import {sha256,failure} from '../core.mjs';
 
-export function createPlatformActions({platformRpc,requirePlatformFounder,manageDevices,inspectCompany,subscriptionSummaries,deviceObservations}){
+export function createPlatformActions({platformRpc,requirePlatformFounder,manageDevices,inspectCompany,subscriptionSummaries,deviceObservations,ownerApprovalAlerts}){
   const handlers={'platform.identity':async({actor})=>{
     try{await requirePlatformFounder(actor);return {verifiedFounder:true};}
     catch(error){if(error?.code==='ACCESS_DENIED')return {verifiedFounder:false};throw error;}
   }};
+  handlers['platform.company.ownerAlerts']=async({actor,body})=>{
+    const offset=body.offset??0;
+    if(!Number.isSafeInteger(offset)||offset<0||offset>2147483647)throw failure('INVALID_REQUEST',422);
+    return ownerApprovalAlerts(actor,offset);
+  };
   handlers['device.observe']=async({actor,body})=>deviceObservations(actor,'report',body);
   handlers['platform.company.inspect']=async({actor,body})=>{
     if(typeof body.workspaceId!=='string'||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(body.workspaceId)||
