@@ -1088,11 +1088,20 @@
             if(linked&&stage===1){stage=2;secondWord.value='';repeat.checked=false;showStage();secondWord.focus();return;}
             busy=true;validate();cancel.disabled=true;back.disabled=true;message.textContent=delCopy.loading;
             try{
-              const result=await request('company.deleteEmpty',{
+              const confirmation={
                 workspaceId:company.id,confirmName:preview.name,expectedRevision:preview.revision,
                 confirmed:true,confirmWord1:firstWord.value,confirmWord2:linked?secondWord.value:'',
                 ...(linked&&stage===2&&repeat.checked?{acceptsLinkedData:true}:{})
-              });
+              };
+              let result;
+              do{
+                if(!form.isConnected)return;
+                result=await request('company.deleteEmpty',confirmation);
+                if(result.workspaceId!==company.id)throw Error();
+                if(result.deleted!==true&&result.cleanupPending===true){
+                  await new Promise(resolve=>setTimeout(resolve,1000));
+                }
+              }while(result.deleted!==true&&result.cleanupPending===true);
               if(result.workspaceId!==company.id||result.deleted!==true)throw Error();
               await list();
             }catch(error){
