@@ -4,11 +4,11 @@
  padding:clamp(.75rem,2vw,1.16rem);border:1px solid var(--border);
  border-radius:20px;background:var(--card);color:var(--text);box-sizing:border-box;
 }
-.platform-server-robot[data-state=ready]{--robot-tone:#23765b}
+.platform-server-robot[data-state=ready]{--robot-tone:#3f7c94}
 .platform-server-robot[data-state=attention]{--robot-tone:#916100}
 .platform-server-robot:is([data-state=unavailable],[data-state=unreachable]){--robot-tone:#aa3748}
 .platform-server-robot[data-state=unverified]{--robot-tone:var(--text2)}
-html[data-theme=dark] .platform-server-robot[data-state=ready]{--robot-tone:#78d5af}
+html[data-theme=dark] .platform-server-robot[data-state=ready]{--robot-tone:#95c6d8}
 html[data-theme=dark] .platform-server-robot[data-state=attention]{--robot-tone:#f1ba65}
 html[data-theme=dark] .platform-server-robot:is([data-state=unavailable],[data-state=unreachable]){--robot-tone:#ffa0aa}
 .platform-server-robot-head{
@@ -17,7 +17,7 @@ html[data-theme=dark] .platform-server-robot:is([data-state=unavailable],[data-s
 }
 .platform-server-robot-face{
  display:grid;place-items:center;min-inline-size:0;min-block-size:62px;
- border:0;border-radius:0;background:transparent;color:var(--robot-tone);
+ border:0;border-radius:0;background:transparent;color:#3f7c94;
  animation:platform-robot-breathe 4.6s ease-in-out infinite;
 }
 .platform-server-robot-face svg{display:block;inline-size:100%;max-inline-size:90px;block-size:auto;overflow:visible;fill:currentColor}
@@ -71,3 +71,30 @@ html[data-theme=dark] .platform-server-robot:is([data-state=unavailable],[data-s
 }
 @media(prefers-reduced-motion:reduce){.platform-robot-blink,.platform-server-robot-face{animation:none!important}}
 html[data-wf-motion=reduced] .platform-robot-blink,html[data-wf-motion=reduced] .platform-server-robot-face{animation:none!important}
+
+.platform-server-robot-directory{display:flex;align-items:center;justify-content:space-between;min-block-size:44px;gap:.6rem;margin-block-start:.6rem;padding:.2rem .7rem;border:1px solid var(--border);border-radius:10px;color:var(--text);background:var(--card);text-decoration:underline;text-underline-offset:.2em;font-weight:650}
+.platform-server-robot-directory strong{font-variant-numeric:tabular-nums}
+.platform-server-robot-guide,.platform-server-robot-notice{margin-block:.5rem;padding:.55rem .65rem;border-inline-start:3px solid var(--ui-accent,var(--brand-primary));border-radius:5px;background:var(--card);color:var(--text);font-size:.84rem;line-height:1.5}
+.platform-server-robot-guide ul{margin:.2rem 0 0;padding-inline-start:1.2rem}
+.platform-server-robot-guide p{margin:.2rem 0 0}
+.platform-server-robot-issues li>span{display:block}
+
+.platform-server-robot:is([data-state=partial],[data-state=staleState]){--robot-tone:#906100}
+html[data-theme=dark] .platform-server-robot:is([data-state=partial],[data-state=staleState]){--robot-tone:#f1ba65}
+.platform-server-robot:is([data-state=partial],[data-state=staleState]) .platform-robot-brow{transform:translateY(5px)}
+.platform-server-robot:is([data-state=unavailable],[data-state=unreachable]) .platform-server-robot-face{animation:none}
+.platform-company-agent-scan{display:grid;gap:.4rem;margin-block:.55rem}
+.platform-company-agent{padding:.45rem .6rem;background:var(--card);border:1px solid var(--border);border-radius:10px;min-inline-size:0}
+.platform-company-agent h6{font-size:.84rem;margin:0;color:var(--text)}
+.platform-company-agent-reading{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.25rem;margin:.2rem 0;color:var(--text2);font-size:.78rem}
+.platform-company-agent-reading strong{color:var(--text);font-variant-numeric:tabular-nums}
+.platform-company-agent .platform-server-robot-link{font-size:.78rem;min-block-size:32px}
+.platform-agent-attention{margin:.2rem 0;color:var(--text);font-weight:650;font-size:.8rem}
+
+.platform-agent-icon{display:inline-block;vertical-align:-.17em;inline-size:1.05em;block-size:1.05em;margin-inline-end:.35em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.platform-server-robot[data-state=checking] .platform-server-robot-status .platform-agent-icon{animation:platform-agent-spin 1.8s linear infinite}
+@keyframes platform-agent-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.platform-server-robot-status .platform-agent-icon{animation:none!important}}
+html[data-wf-motion=reduced] .platform-server-robot-status .platform-agent-icon{animation:none!important}
+
+html[data-theme=dark] .platform-server-robot-face{color:#95c6d8}
