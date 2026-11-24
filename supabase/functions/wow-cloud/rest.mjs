@@ -3,7 +3,7 @@
 import {failure} from './core.mjs';
 const AUTH_CODES=new Set(['AUTH_REQUIRED','SESSION_REVOKED','SESSION_EXPIRED']);
 const FORBIDDEN_CODES=new Set(['DEVICE_ALREADY_BOUND','DEVICE_PROOF_REQUIRED','DEVICE_BLOCKED','ACCESS_DENIED','PERMISSION_DENIED','ACCOUNT_UNAVAILABLE','SETUP_PROOF_INVALID','SETUP_PROOF_REQUIRED','SUBSCRIPTION_EXPIRED','SELF_PROTECTION','LAST_OWNER','CUSTOMER_PRINCIPAL_ROLE_FIXED']);
-const CONFLICT_CODES=new Set(['DEVICE_NOT_BOUND','JOIN_APPROVAL_REQUIRED','DEVICE_LIMIT_REACHED','STORAGE_LIMIT_REACHED','USER_LIMIT_REACHED','PLAN_NAME_EXISTS','VOICE_MINUTES_EXHAUSTED','VIDEO_MINUTES_EXHAUSTED','CONFLICT','IDENTITY_CONFLICT','IDEMPOTENCY_MISMATCH','BATCH_SESSION_CHANGED','DUPLICATE_INVOICE_NUMBER','DUPLICATE_RECORD','USERNAME_TAKEN','ALREADY_CONFIGURED','MEDIA_REVISION_MISMATCH','MEDIA_NOT_UPLOADED','SUBSCRIPTION_BOUND_TO_OTHER_IDENTITY','PUSH_SUBSCRIPTION_REQUIRED']);
+const CONFLICT_CODES=new Set(['COMPANY_NAME_TAKEN','DEVICE_NOT_BOUND','JOIN_APPROVAL_REQUIRED','DEVICE_LIMIT_REACHED','STORAGE_LIMIT_REACHED','USER_LIMIT_REACHED','PLAN_NAME_EXISTS','VOICE_MINUTES_EXHAUSTED','VIDEO_MINUTES_EXHAUSTED','CONFLICT','IDENTITY_CONFLICT','IDEMPOTENCY_MISMATCH','BATCH_SESSION_CHANGED','DUPLICATE_INVOICE_NUMBER','DUPLICATE_RECORD','USERNAME_TAKEN','ALREADY_CONFIGURED','MEDIA_REVISION_MISMATCH','MEDIA_NOT_UPLOADED','SUBSCRIPTION_BOUND_TO_OTHER_IDENTITY','PUSH_SUBSCRIPTION_REQUIRED']);
 const MODULE_RPCS=new Set(['wow_company_join','wow_order_sms','wow_statement_service','wow_gallery_service','wow_chat_service','wow_voice_service','wow_files_service','wow_finance_service','wow_operations_service','wow_assistant_service','wow_communications_service','wow_public_share_service']);
 const UUID='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const MODULE_OBJECT_PATH=new RegExp('^(?:chat|files)/'+UUID+'/'+UUID+'/'+UUID+'/[0-9a-f]{64}$');
@@ -18,7 +18,8 @@ function ownsWorkspaceObject(workspaceId,path){
     (segments.length>=3&&['chat','files'].includes(segments[0])&&segments[1]===workspaceId);
 }
 function rpcError(value) {
-  const code=value?.code==='P0001'&&/^[A-Z][A-Z0-9_]{2,60}$/.test(value.message||'')?value.message:'SERVICE_UNAVAILABLE';
+  const duplicateCompanyName=value?.code==='23505'&&value.message==='duplicate key value violates unique constraint "wow_workspaces_company_name_key"';
+  const code=duplicateCompanyName?'COMPANY_NAME_TAKEN':value?.code==='P0001'&&/^[A-Z][A-Z0-9_]{2,60}$/.test(value.message||'')?value.message:'SERVICE_UNAVAILABLE';
   let details={};try{details=JSON.parse(value?.details||'{}');}catch(_){}
   const status=AUTH_CODES.has(code)?401:FORBIDDEN_CODES.has(code)?403:CONFLICT_CODES.has(code)?409:code==='RATE_LIMITED'?429:
     ['ACCOUNT_NOT_FOUND','PLAN_NOT_FOUND','COMPANY_NOT_FOUND'].includes(code)?404:code.startsWith('INVALID_')||code==='WORKSPACE_REQUIRED'?422:503;
@@ -76,6 +77,7 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     manageDevices:(actor,action,data)=>call('/rest/v1/rpc/wow_manage_devices',{body:{p_user:actor.userId,p_session:actor.sessionId,p_action:action,p_data:data},kind:'rpc'}),
     pushRpc:(action,data)=>call('/rest/v1/rpc/wow_push_worker',{body:{p_action:action,p_data:data},kind:'rpc'}),
     statementWorker:(action,data)=>call('/rest/v1/rpc/wow_statement_worker',{body:{p_action:action,p_data:data},kind:'rpc'}),
+    deletedWorkspaceSweep:()=>call('/rest/v1/rpc/wow_deleted_workspace_storage_sweep',{body:{},kind:'rpc'}),
     maintenanceRpc:(action,data)=>call('/rest/v1/rpc/wow_storage_maintenance',{body:{p_action:action,p_data:data},kind:'rpc'}),
     communicationsRpc:(action,data)=>call('/rest/v1/rpc/wow_communications_worker',{body:{p_action:action,p_data:data},kind:'rpc'}),
     health:()=>call('/rest/v1/rpc/wow_operations_health',{body:{},kind:'rpc'}),
