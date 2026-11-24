@@ -85,10 +85,15 @@ drop trigger if exists wow_voice_plan_admission on wow_voice.calls;
 create trigger wow_voice_plan_admission before insert or update of status,started_at,expires_at on wow_voice.calls
 for each row execute function wow_limits.admit_call();
 -- Only the three approved starter packages; no company is auto-enrolled.
-update wow_limits.plans set device_limit=2,storage_bytes=2000000000,
- voice_minutes=500,video_minutes=250,version=version+1
-where id in ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a01','a0e8f0db-7cf8-4d2a-a230-10f4ddc44a02','a0e8f0db-7cf8-4d2a-a230-10f4ddc44a03')
-and (device_limit,storage_bytes,voice_minutes,video_minutes) is distinct from (2,2000000000,500,250);
+update wow_limits.plans as plan
+set device_limit=tier.phones, storage_bytes=tier.bytes, voice_minutes=tier.voice, video_minutes=tier.video, version=plan.version+1
+from (values
+ ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a01'::uuid,2,2000000000::bigint,500,250),
+ ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a02'::uuid,3,4000000000::bigint,500,250),
+ ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a03'::uuid,6,8000000000::bigint,1000,500)
+) as tier(id,phones,bytes,voice,video)
+where plan.id=tier.id and (plan.device_limit,plan.storage_bytes,plan.voice_minutes,plan.video_minutes)
+ is distinct from (tier.phones,tier.bytes,tier.voice,tier.video);
 revoke all on function wow_limits.plan_json(wow_limits.plans),wow_limits.devices_used(uuid),
  wow_limits.seconds_used(uuid,text,timestamptz,uuid),wow_limits.minutes_used(uuid,text),
  wow_limits.admit_installation(),wow_limits.admit_call() from public,anon,authenticated;

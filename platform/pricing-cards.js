@@ -5,28 +5,28 @@
   'use strict';
   const tiers=[
     {key:'month',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a01',name:'WOW Monthly',price:'100',days:30,months:1},
-    {key:'year',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a02',name:'WOW Annual',price:'1000',days:365,months:12},
-    {key:'twoYears',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a03',name:'WOW Two Years',price:'1800',days:730,months:24}
+    {key:'year',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a02',name:'WOW Annual',price:'1000',days:365,months:12,deviceLimit:3,storageBytes:4000000000},
+    {key:'twoYears',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a03',name:'WOW Two Years',price:'1800',days:730,months:24,deviceLimit:6,storageBytes:8000000000,voiceMinutes:1000,videoMinutes:500}
   ];
   const copy={
-    ar:{title:'باقات WOW',lead:'اشتراكات مرتبطة بإدارة الشركات، قابلة للتعديل متى شئت',month:'الشهري',year:'السنوي',twoYears:'سنتان',
-      day:'30 يومًا',annual:'365 يومًا',biennial:'730 يومًا',recommended:'الأكثر توفيرًا',saved:'محفوظة في النظام',
+    ar:{title:'باقات WOW',lead:'اختر مدة تناسب شركتك، وقارن السعر وحدود الأجهزة والتخزين والمكالمات.',month:'الشهري',year:'السنوي',twoYears:'سنتان',
+      pitch:['بداية مرنة لاحتياجات شركتك الحالية.','خطّة تناسب ميزانية العام.','خطّط لاشتراكك على مدى أطول.'],recommended:'أقل تكلفة يومية',saved:'محفوظة في النظام',
       draft:'قالب جاهز للحفظ',edit:'تعديل الباقة',create:'إنشاء الباقة',perMonth:'متوسط الشهر',noCharge:'الأسعار للعرض والإدارة فقط؛ لا يتم تحصيل دفعات تلقائيًا.',
       adjust:'اضبط السعر والمدة وحدود الحسابات والأجهزة والتخزين في المحرر قبل الحفظ',currency:'دولار أمريكي'},
-    en:{title:'WOW plans',lead:'Editable, company-linked subscriptions in your existing manager',month:'Monthly',year:'Annual',twoYears:'Two years',
-      day:'30 days',annual:'365 days',biennial:'730 days',recommended:'Best value',saved:'Saved in system',
+    en:{title:'WOW plans',lead:'Pick a term for your company and compare pricing, devices, storage and call allowances.',month:'Monthly',year:'Annual',twoYears:'Two years',
+      pitch:['A flexible start for your company.','A term that fits annual budgeting.','Plan your subscription further ahead.'],recommended:'Lowest daily cost',saved:'Saved in system',
       draft:'Ready to create',edit:'Edit plan',create:'Create plan',perMonth:'Monthly equivalent',noCharge:'Prices are for plan management only; no automatic billing.',
       adjust:'Adjust price, duration, seats, devices and storage in the editor before saving',currency:'US dollars'},
-    tr:{title:'WOW paketleri',lead:'Şirketlerle bağlantılı, düzenlenebilir abonelikler',month:'Aylık',year:'Yıllık',twoYears:'İki yıl',
-      day:'30 gün',annual:'365 gün',biennial:'730 gün',recommended:'En avantajlı',saved:'Sistemde kayıtlı',
+    tr:{title:'WOW paketleri',lead:'Şirketinize uygun süreyi seçin. Fiyatları, cihaz, depolama ve arama limitlerini karşılaştırın.',month:'Aylık',year:'Yıllık',twoYears:'İki yıl',
+      pitch:['Şirketiniz için esnek bir başlangıç.','Yıllık bütçenize uygun bir süre.','Aboneliğinizi uzun vadeli planlayın.'],recommended:'En düşük günlük maliyet',saved:'Sistemde kayıtlı',
       draft:'Oluşturulmaya hazır',edit:'Paketi düzenle',create:'Paket oluştur',perMonth:'Aylık ortalama',noCharge:'Fiyatlar sadece paket yönetimi içindir; otomatik ödeme alınmaz.',
       adjust:'Kaydetmeden önce fiyat, süre, kullanıcı, cihaz ve depolama sınırlarını düzenleyin',currency:'ABD doları'},
-    fr:{title:'Formules WOW',lead:'Abonnements modifiables et liés aux sociétés',month:'Mensuelle',year:'Annuelle',twoYears:'Deux ans',
-      day:'30 jours',annual:'365 jours',biennial:'730 jours',recommended:'Le plus avantageux',saved:'Enregistrée',
+    fr:{title:'Formules WOW',lead:'Choisissez une durée et comparez les prix, les appareils, le stockage et les appels inclus.',month:'Mensuelle',year:'Annuelle',twoYears:'Deux ans',
+      pitch:['Un démarrage flexible pour votre société.','Une durée adaptée au budget annuel.','Planifiez votre abonnement à plus long terme.'],recommended:'Coût journalier le plus bas',saved:'Enregistrée',
       draft:'Prête à créer',edit:'Modifier',create:'Créer',perMonth:'Équivalent mensuel',noCharge:'Prix indicatifs pour la gestion ; aucun débit automatique.',
       adjust:'Réglez prix, durée, comptes, appareils et stockage avant enregistrement',currency:'Dollars américains'},
-    ru:{title:'Тарифы WOW',lead:'Редактируемые подписки, связанные с компаниями',month:'Месячный',year:'Годовой',twoYears:'Два года',
-      day:'30 дней',annual:'365 дней',biennial:'730 дней',recommended:'Самый выгодный',saved:'Сохранён',
+    ru:{title:'Тарифы WOW',lead:'Выберите срок для компании и сравните цены, лимиты устройств, хранилища и звонков.',month:'Месячный',year:'Годовой',twoYears:'Два года',
+      pitch:['Гибкий старт для вашей компании.','Срок, удобный для годового бюджета.','Запланируйте подписку на более долгий срок.'],recommended:'Самая низкая цена за день',saved:'Сохранён',
       draft:'Готов к созданию',edit:'Изменить тариф',create:'Создать тариф',perMonth:'За месяц',noCharge:'Цены только для управления тарифами; автоматических списаний нет.',
       adjust:'Перед сохранением измените цену, срок, пользователей, устройства и хранилище',currency:'Доллары США'}
   };
@@ -110,8 +110,8 @@
   function addIcon(link,kind){link.prepend(svgIcon(kind));return link;}
   function visual(key){
     const markup={
-      month:'<rect x="31" y="29" width="106" height="102" rx="22"/><path d="M31 62h106M58 17v28M110 17v28"/><path class="wf-tier-line" d="M61 91h47M61 107h29"/>',
-      year:'<circle cx="84" cy="80" r="53"/><circle cx="84" cy="80" r="33" class="wf-tier-orbit"/><path d="M84 43v38l26 21"/><circle class="wf-tier-dot" cx="84" cy="27" r="6"/>',
+      month:'<rect x="31" y="29" width="106" height="102" rx="22"/><path d="M31 62h106M58 17v28M110 17v28"/><path class="wf-tier-line" d="M61 91h30M61 107h20"/><path class="wf-tier-spark" d="m96 102 6 6 14-15"/>',
+      year:'<circle cx="84" cy="80" r="53"/><circle cx="84" cy="80" r="33" class="wf-tier-orbit"/><path d="M84 43v38l26 21"/><path class="wf-tier-line" d="M84 35v6m45 39h-6M84 125v-6m-45-39h6"/><circle class="wf-tier-dot" cx="84" cy="27" r="6"/>',
       twoYears:'<path d="M84 16 127 36v44c0 29-15 47-43 61-28-14-43-32-43-61V36L84 16Z"/><path class="wf-tier-line" d="M64 65 84 47l20 18-20 19-20-19ZM64 98l20 17 20-17"/><path class="wf-tier-spark" d="M84 30v8M130 49l9-5M38 49l-9-5"/>'
     };
     const wrap=make('div','wf-plan-art');
@@ -125,14 +125,21 @@
     const w=copy[document.documentElement.lang]||copy.ar,heading=make('header','platform-pricing-heading');
     heading.append(make('h3','',w.title),make('p','',w.lead));
     const grid=make('div','platform-pricing-cards'),fxEntries=[];
-    for(const item of tiers){
-      const plan=plans.find(p=>p.id===item.id)||plans.find(p=>p.name===item.name)||null;
+    const offers=tiers.map((tier,index)=>{
+      const plan=plans.find(entry=>entry.id===tier.id)||plans.find(entry=>entry.name===tier.name)||null;
+      return {tier,index,plan,amount:Number(plan?.price??tier.price),currency:plan?.currency||'USD',days:plan?.durationDays??tier.days};
+    });
+    const dayFormat=new Intl.NumberFormat(document.documentElement.lang,{style:'unit',unit:'day'});
+    for(const {tier:item,index,plan,amount,currency,days} of offers){
       const card=make('article','platform-pricing-card');card.dataset.tier=item.key;
-      if(item.key==='twoYears')card.dataset.recommended='true';
+      const lowestDailyCost=offers.every(other=>other.index===index||
+        (other.currency===currency&&amount/days<other.amount/other.days));
+      if(lowestDailyCost)card.dataset.recommended='true';
       const visualNode=visual(item.key);
-      const eyebrow=make('span','platform-plan-eyebrow',item.key==='twoYears'?w.recommended:w[ item.key]);
+      const eyebrow=make('span','platform-plan-eyebrow',lowestDailyCost?w.recommended:w[item.key]);
       const name=make('h4','',plan?.name||w[item.key]);
-      const amount=Number(plan?.price??item.price),currency=plan?.currency||'USD';
+      const pitch=make('p','platform-plan-pitch',days===item.days?w.pitch[index]:'');
+      pitch.hidden=!pitch.textContent;
       const price=make('strong','platform-plan-price');
       price.append(make('span','',money(amount,currency,document.documentElement.lang)));
       const fx=make('div','platform-plan-fx'),fxIcon=make('span','platform-plan-fx-icon','⇄');
@@ -142,19 +149,19 @@
       const fxNote=make('small','platform-plan-fx-note',fxWords[document.documentElement.lang]?.loading||fxWords.ar.loading);
       fx.append(fxIcon,fxLabel,fxValue,fxNote);
       fxEntries.push({value:fxValue,note:fxNote,amount,currency});
-      const duration=make('small','platform-plan-duration',(plan?.durationDays||item.days)+' '+(item.key==='month'?w.day.replace(/^30\s*/, ''):item.key==='year'?w.annual.replace(/^365\s*/, ''):w.biennial.replace(/^730\s*/, '')));
-      const monthly=make('span','platform-plan-per-month',w.perMonth+' · '+money(amount/item.months,currency,document.documentElement.lang));
+      const duration=make('small','platform-plan-duration',dayFormat.format(days));
+      const monthly=make('span','platform-plan-per-month',w.perMonth+' · '+money(amount*item.days/(days*item.months),currency,document.documentElement.lang));
       const label=make('span','platform-plan-label',plan?w.saved:w.draft);
       label.dataset.saved=String(!!plan);
       const button=make('button','platform-plan-edit',plan?w.edit:w.create);button.type='button';
       button.addEventListener('click',()=>onEdit(item,plan));
       const benefits=benefitCopy[document.documentElement.lang]||benefitCopy.ar;
       const values=[
-        [String(plan?.deviceLimit??2)+' '+benefits[0],'phone'],
+        [String(plan?.deviceLimit??item.deviceLimit??2)+' '+benefits[0],'phone'],
         [new Intl.NumberFormat(document.documentElement.lang,{maximumFractionDigits:1}).format(
-          Number(plan?.storageBytes??2000000000)/1e9)+' GB · '+benefits[1],'storage'],
-        [String(plan?.voiceMinutes??500)+' '+benefits[2],'voice'],
-        [String(plan?.videoMinutes??250)+' '+benefits[3],'video'],
+          Number(plan?.storageBytes??item.storageBytes??2000000000)/1e9)+' GB · '+benefits[1],'storage'],
+        [String(plan?.voiceMinutes??item.voiceMinutes??500)+' '+benefits[2],'voice'],
+        [String(plan?.videoMinutes??item.videoMinutes??250)+' '+benefits[3],'video'],
         [benefits[4],'addon-phone'],[benefits[5],'addon-double']
       ];
       const featureList=make('ul','platform-plan-features');
@@ -170,7 +177,7 @@
       const lang=document.documentElement.lang in activationCopy?document.documentElement.lang:'ar';
       const whats=activationCopy[lang];
       const formattedAmount=money(amount,currency,lang);
-      const activationText=whats.message(plan?.name||w[item.key],formattedAmount,Number(plan?.durationDays??item.days));
+      const activationText=whats.message(plan?.name||w[item.key],formattedAmount,Number(days));
       const whatsappUrl=new URL('https://wa.me/'+whatsappNumber);
       whatsappUrl.searchParams.set('text',activationText);
       const activate=addIcon(make('a','platform-plan-activate',whats.button),'whatsapp');
@@ -179,7 +186,7 @@
       activate.setAttribute('aria-label',whats.button+' · '+(plan?.name||w[item.key]));
       const actions=make('div','platform-plan-actions');
       actions.append(activate,button);
-      card.append(visualNode,eyebrow,name,price,fx,duration,monthly,featureList,note,label,actions);
+      card.append(visualNode,eyebrow,name,pitch,price,fx,duration,monthly,featureList,note,label,actions);
       grid.append(card);
     }
     // A single shared contact block avoids duplicating sensitive contact links

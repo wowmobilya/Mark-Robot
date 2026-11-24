@@ -253,8 +253,8 @@
       }else{
         pick.value='';pick.onchange();id=tier.id;
         name.value=tier.name;price.value=tier.price;currency.value='USD';duration.value=tier.days;
-        users.value='';devices.value='2';amount.value='2';unit.value='GB';
-        voiceMinutes.value='500';videoMinutes.value='250';
+        users.value='';devices.value=tier.deviceLimit??2;amount.value=(tier.storageBytes??2000000000)/1e9;unit.value='GB';
+        voiceMinutes.value=tier.voiceMinutes??500;videoMinutes.value=tier.videoMinutes??250;
       }
       price.focus({preventScroll:true});
       form.scrollIntoView({block:'nearest',behavior:'instant'});
@@ -611,10 +611,12 @@
   const header=document.querySelector('main > header'),headerActions=el('div');
   headerActions.className='platform-header-actions';headerActions.hidden=true;header.append(headerActions);
   // One predictable order across mobile and desktop, matching WOW's primary workspaces.
+  const desktopMenu=matchMedia('(min-width:1025px)');
+  desktopMenu.addEventListener('change',arrangeMenu);
   function arrangeMenu(){
     const menu=content.querySelector('.platform-section-menu');if(!menu)return;
     const focused=menu.contains(document.activeElement)?document.activeElement:null;
-    for(const key of ['companies','plans','home','support','calls','settings']){
+    for(const key of (desktopMenu.matches?['home','companies','plans','calls','support','settings']:['companies','plans','home','support','calls','settings'])){
       const link=menu.querySelector('a[href="#'+key+'"]');if(link)menu.append(link);
     }
     focused?.focus({preventScroll:true});
@@ -911,7 +913,17 @@
     const logoutWords={ar:'هل تريد تسجيل الخروج من إدارة WOW على هذا الجهاز؟',en:'Sign out of WOW Admin on this device?',
       tr:'Bu cihazda WOW yönetiminden çıkış yapılsın mı?',fr:'Se déconnecter de WOW Admin sur cet appareil ?',ru:'Выйти из WOW Admin на этом устройстве?'};
     window.WFPlatformLogout=async()=>{
-      if(!token||!window.confirm(logoutWords[lang.value]))return;
+      if(!token||content.querySelector('.platform-signout-dialog'))return;
+      const session=token,dialog=el('dialog'),form=el('form'),title=el('h3',t(4));
+      dialog.className='platform-signout-dialog';dialog.setAttribute('aria-label',title.textContent);
+      form.method='dialog';
+      const cancel=el('button',word(5)),confirm=el('button',t(4));
+      cancel.value='cancel';confirm.value='confirm';cancel.autofocus=true;
+      form.append(title,el('p',logoutWords[lang.value]),cancel,confirm);
+      dialog.append(form);content.append(dialog);dialog.showModal();
+      await new Promise(resolve=>dialog.addEventListener('close',resolve,{once:true}));
+      dialog.remove();
+      if(dialog.returnValue!=='confirm'||token!==session)return;
       const previous=token;ownerAlerts?.detachDevice();forget();clear();login();
       try{await platformFetch(config.endpoint,{method:'POST',cache:'no-store',redirect:'error',credentials:'omit',
         headers:{apikey:config.publishableKey,'Content-Type':'application/json',Authorization:'Bearer '+previous},

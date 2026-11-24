@@ -186,7 +186,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     }
     for(const width of [320,360,375,390,430,768,820,1024,1180,1280,1440]){
       await page.setViewportSize({width,height:844});
-      await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash==='#companies');
+      await page.waitForFunction(()=>document.querySelector('.platform-section-menu a')?.hash===(innerWidth>=1025?'#home':'#companies'));
       const metrics=await menu.evaluate(element=>({position:getComputedStyle(element).position,bottom:element.getBoundingClientRect().bottom,
         height:element.getBoundingClientRect().height,orbit:element.querySelector('.platform-nav-orbit').getClientRects().length,
         links:[...element.querySelectorAll('a')].filter(a=>a.getClientRects().length).map(a=>({height:a.getBoundingClientRect().height,width:a.getBoundingClientRect().width,path:a.hash})), 
@@ -194,7 +194,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       assert(!metrics.overflow);
       assert(metrics.links.every(link=>link.height>=44&&link.width>=44));
       if(width<=1024){assert.equal(metrics.position,'fixed');assert(Math.abs(metrics.bottom-844)<2);assert.equal(metrics.height,64);assert.equal(metrics.orbit,0);assert.equal(metrics.links.length,5);assert.equal(metrics.links[2].path,'#home');}
-      else if(width>1024){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[2].path,'#home');}
+      else if(width>1024){assert.equal(metrics.position,'sticky');assert.equal(metrics.links[0].path,'#home');}
     }
     // iPhone/iPad/Android/tablet/desktop breakpoints and orientation changes.
     await page.setViewportSize({width:863,height:388});
@@ -409,6 +409,12 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     }
     assert.equal(events.filter(action=>action==='platform.plans.save').length,0);
     assert.match(await pricing.locator('[data-tier=year] .platform-plan-price').innerText(),/^\$1,000(?:\.00)?$/);
+    for(const [tier,storage,phones,voice,video] of [['year','4','3','500','250'],['twoYears','8','6','1000','500']]){
+      await pricing.locator('[data-tier='+tier+'] .platform-plan-edit').click();
+      for(const [label,value] of [['File storage limit',storage],['Device limit',phones],['Monthly voice minutes',voice],['Monthly video minutes',video]]){
+        assert.equal(await page.getByLabel(label).inputValue(),value);
+      }
+    }
     await pricing.locator('[data-tier=month] .platform-plan-edit').click();
     assert.equal(await page.getByLabel('Subscription price').inputValue(),'100');
     assert.equal(await page.getByLabel('Currency').inputValue(),'USD');
@@ -582,9 +588,9 @@ test('trusted founder device rotates, revalidates founder access and forgets log
     await page.evaluate(()=>dispatchEvent(new Event('online')));await page.locator('.wf-founder-check').waitFor();
     const peer=await context.newPage();await peer.goto(endpoint+'/platform/');await peer.locator('.wf-founder-check').waitFor();
     await page.locator('#lang').selectOption('en',{force:true});
-    page.once('dialog',dialog=>dialog.accept());
     await page.locator('#platformMenuButton').click();
     await page.locator('#platformSideDrawer .platform-drawer-signout').click();
+    await page.locator('.platform-signout-dialog button[value=confirm]').click();
     await peer.locator('.platform-login').waitFor();assert(events.includes('auth.signOut'));await peer.close();
     await signin(true);permitted=false;await page.reload();await page.locator('.platform-login').waitFor();await page.waitForFunction(()=>!Object.keys(localStorage).some(k=>k.startsWith('wow.platform.remember')));
     assert.equal(await page.locator('.wf-founder-check').count(),0);permitted=true;

@@ -44,7 +44,7 @@
       title:'مارك روبوت',server:'تقرير الخادم',idle:'جاهز لفحص الخادم',checking:'جارٍ فحص الخادم…',ready:'الخادم يستجيب',
       attention:'الخادم يستجيب وتوجد حالات تحتاج متابعة',unavailable:'الخادم أبلغ عن عدم الجاهزية',unreachable:'تعذّر الوصول إلى الخادم من هذا الجهاز',
       unverified:'تعذّر التحقق من استجابة الخادم',checked:'آخر فحص',updated:'جُلب التقرير في',refresh:'تحديث حالة الخادم',
-      unknown:'غير متاح',database:'حجم قاعدة البيانات',connections:'اتصالات قاعدة البيانات',scheduler:'آخر تشغيل للمجدول',
+      unknown:'غير متاح',latency:'زمن استجابة فحص السيرفر',freeStorage:'المتبقي من حصة التخزين',database:'حجم قاعدة البيانات',connections:'اتصالات قاعدة البيانات',scheduler:'آخر تشغيل للمجدول',
       pending:'إشعارات معلّقة',overdue:'إشعارات متأخرة',stale:'شركات تأخرت مهامها المجدولة',
       incidents:'حالات نشطة',failures:'الأعطال الأخيرة',monitoring:'بيانات مراقبة الخادم غير متاحة.',
       company:'تقرير شركة',select:'اختر شركة',empty:'لا توجد شركات في هذه الصفحة.',previous:'السابق',next:'التالي',
@@ -94,7 +94,7 @@
       title:'Mark Robot',server:'Server report',idle:'Ready to check the server',checking:'Checking the server…',ready:'Server responded',
       attention:'Server responded. Some items need attention.',unavailable:'The server reported that it is unavailable',unreachable:'Could not reach the server from this device',
       unverified:'Could not verify the server response',checked:'Last checked',updated:'Report fetched',refresh:'Refresh server status',
-      unknown:'Unavailable',database:'Database size',connections:'Database connections',scheduler:'Last scheduled run',
+      unknown:'Unavailable',latency:'Health request latency',freeStorage:'Storage quota remaining',database:'Database size',connections:'Database connections',scheduler:'Last scheduled run',
       pending:'Pending notifications',overdue:'Overdue notifications',stale:'Companies with stale scheduled jobs',
       incidents:'Active incidents',failures:'Recent failures',monitoring:'Server monitoring details are unavailable.',
       company:'Company report',select:'Select a company',empty:'No companies on this page.',previous:'Previous',next:'Next',
@@ -144,7 +144,7 @@
       title:'Mark Robot',server:'Sunucu raporu',idle:'Sunucu denetlenebilir',checking:'Sunucu denetleniyor…',ready:'Sunucu yanıt verdi',
       attention:'Sunucu yanıt verdi. Bazı durumlar incelenmeli.',unavailable:'Sunucu hizmetin kullanılamadığını bildirdi',unreachable:'Bu cihazdan sunucuya ulaşılamadı',
       unverified:'Sunucu yanıtı doğrulanamadı',checked:'Son denetim',updated:'Rapor alındı',refresh:'Sunucu durumunu yenile',
-      unknown:'Kullanılamıyor',database:'Veritabanı boyutu',connections:'Veritabanı bağlantıları',scheduler:'Son zamanlanmış çalışma',
+      unknown:'Kullanılamıyor',latency:'Sağlık isteği gecikmesi',freeStorage:'Kalan depolama kotası',database:'Veritabanı boyutu',connections:'Veritabanı bağlantıları',scheduler:'Son zamanlanmış çalışma',
       pending:'Bekleyen bildirimler',overdue:'Geciken bildirimler',stale:'Zamanlanmış işi geciken şirketler',
       incidents:'Etkin olaylar',failures:'Son hatalar',monitoring:'Sunucu izleme ayrıntıları kullanılamıyor.',
       company:'Şirket raporu',select:'Şirket seçin',empty:'Bu sayfada şirket yok.',previous:'Önceki',next:'Sonraki',
@@ -194,7 +194,7 @@
       title:'Robot Mark',server:'Rapport serveur',idle:'Prêt à vérifier le serveur',checking:'Vérification du serveur…',ready:'Le serveur a répondu',
       attention:'Le serveur a répondu. Certains éléments sont à vérifier.',unavailable:'Le serveur a signalé son indisponibilité',unreachable:'Le serveur est inaccessible depuis cet appareil',
       unverified:'Impossible de vérifier la réponse du serveur',checked:'Dernière vérification',updated:'Rapport récupéré',refresh:'Actualiser le serveur',
-      unknown:'Indisponible',database:'Taille de la base',connections:'Connexions à la base',scheduler:'Dernière exécution planifiée',
+      unknown:'Indisponible',latency:'Latence de la vérification',freeStorage:'Quota de stockage restant',database:'Taille de la base',connections:'Connexions à la base',scheduler:'Dernière exécution planifiée',
       pending:'Notifications en attente',overdue:'Notifications en retard',stale:'Sociétés avec tâches planifiées en retard',
       incidents:'Incidents actifs',failures:'Échecs récents',monitoring:'Les détails de surveillance du serveur sont indisponibles.',
       company:'Rapport société',select:'Choisir une société',empty:'Aucune société sur cette page.',previous:'Précédent',next:'Suivant',
@@ -244,7 +244,7 @@
       title:'Робот Mark',server:'Отчёт сервера',idle:'Готов к проверке сервера',checking:'Проверка сервера…',ready:'Сервер ответил',
       attention:'Сервер ответил. Некоторые события требуют внимания.',unavailable:'Сервер сообщил о недоступности',unreachable:'Сервер недоступен с этого устройства',
       unverified:'Ответ сервера не удалось проверить',checked:'Последняя проверка',updated:'Отчёт получен',refresh:'Обновить состояние сервера',
-      unknown:'Нет данных',database:'Размер базы данных',connections:'Подключения к базе',scheduler:'Последний запуск по расписанию',
+      unknown:'Нет данных',latency:'Задержка проверки сервера',freeStorage:'Остаток квоты хранилища',database:'Размер базы данных',connections:'Подключения к базе',scheduler:'Последний запуск по расписанию',
       pending:'Ожидающие уведомления',overdue:'Просроченные уведомления',stale:'Компании с просроченными заданиями',
       incidents:'Активные инциденты',failures:'Последние ошибки',monitoring:'Сведения мониторинга сервера недоступны.',
       company:'Отчёт компании',select:'Выберите компанию',empty:'На этой странице нет компаний.',previous:'Назад',next:'Далее',
@@ -310,10 +310,11 @@
     try{
       const url=new URL(endpoint,location.href);
       url.pathname=url.pathname.replace(/\/$/,'')+'/health';url.search='';url.hash='';
+      const started=performance.now();
       const response=await fetch(url,{method:'GET',cache:'no-store',credentials:'omit',redirect:'error',signal:controller.signal});
       const data=await response.json().catch(()=>null);
       if(data?.service!=='mark-robot')return {state:'unverified'};
-      if(response.ok&&data.ok===true)return {state:'ready',at:parseTime(data.checkedAt)};
+      if(response.ok&&data.ok===true)return {state:'ready',at:parseTime(data.checkedAt),latency:performance.now()-started};
       return {state:response.status>=500&&data.ok===false?'unavailable':'unverified'};
     }catch{
       return {state:'unreachable'};
@@ -341,7 +342,8 @@
     title.append(make('h4','',t.center),status,checked);header.append(face,title,refresh);report.append(header);
     const sections=make('div','platform-server-robot-sections');
     const server=make('section','platform-server-robot-panel'),serverData=make('div');
-    server.append(titled('h5','',t.serverAgent,'server'),serverData);sections.append(server);
+    const serverHeading=titled('h5','',t.serverAgent,'server');
+    server.append(serverHeading,serverData);sections.append(server);
     const company=make('section','platform-server-robot-panel');
     const control=make('label','platform-server-robot-select',t.select),select=make('select');
     control.append(select);
@@ -352,7 +354,22 @@
     const companyData=make('div'),details=make('a','platform-server-robot-link',t.details);details.hidden=true;
     const runCompany=titled('button','platform-server-robot-refresh',t.runCompany,'refresh');
     runCompany.type='button';runCompany.disabled=true;
-    company.append(titled('h5','',t.agents,'companies'),control,pages,runCompany,companyStatus,timestamp,companyData,details);
+    const companyHeading=titled('h5','',t.agents,'companies');
+    company.append(companyHeading,control,pages,runCompany,companyStatus,timestamp,companyData,details);
+    const jumps=make('div','platform-server-robot-jumps');
+    jumps.setAttribute('role','group');jumps.setAttribute('aria-label',t.center);
+    for(const [label,glyph,heading] of [[t.serverAgent,'server',serverHeading],[t.agents,'companies',companyHeading]]){
+      heading.tabIndex=-1;
+      const button=titled('button','platform-server-robot-jump',label,glyph);
+      button.type='button';
+      button.addEventListener('click',()=>{
+        const reduceMotion=document.documentElement.dataset.wfMotion==='reduced'||matchMedia('(prefers-reduced-motion: reduce)').matches;
+        heading.focus({preventScroll:true});
+        heading.scrollIntoView({block:'start',behavior:reduceMotion?'instant':'smooth'});
+      });
+      jumps.append(button);
+    }
+    header.append(jumps);
     sections.append(company);
     const directory=make('a','platform-server-robot-directory');
     directory.href='#companies';
@@ -375,19 +392,30 @@
     }
     function metrics(rows){
       const list=make('dl','platform-server-robot-metrics');
-      for(const [label,value] of rows){
-        const tile=make('div');tile.append(make('dt','',label),make('dd','',value));list.append(tile);
+      for(const [label,value,glyph,ratio] of rows){
+        const tile=make('div'),term=glyph?titled('dt','',label,glyph):make('dt','',label);
+        const reading=make('dd','',value);
+        if(Number.isFinite(ratio)){
+          tile.className='platform-reading-capacity';
+          const ring=make('span','platform-reading-ring',new Intl.NumberFormat(language,{style:'percent'}).format(ratio));
+          ring.style.setProperty('--reading-fill',Math.min(100,ratio*100)+'%');
+          reading.prepend(ring);
+        }
+        tile.append(term,reading);list.append(tile);
       }
       return list;
     }
     let previousReport=null;
-    function showOperations(data){
+    function showOperations(data,latency){
       serverData.replaceChildren();
       const fresh=typeof data?.healthy==='boolean' && Boolean(parseTime(data.checkedAt));
       if(fresh)previousReport=data;
       else{
         serverData.append(make('p','platform-server-robot-notice',previousReport?t.older:t.monitoring));
-        if(!previousReport)return;
+        if(!previousReport){
+          if(latency)serverData.append(metrics([[t.latency,latency,'time']]));
+          return;
+        }
         data=previousReport;
       }
       const {database,scheduler,push}=data;
@@ -396,12 +424,14 @@
       const stamp=make('time','platform-server-robot-time');
       setTime(stamp,t.last,parseTime(data.checkedAt));
       const rows=[
-        [t.database,bytes(database?.bytes)],
-        [t.connections,quantity(database?.clientConnections)&&quantity(database?.maxConnections)?connections+' / '+format(database.maxConnections):connections],
-        [t.scheduler,lastRun?timeFormat.format(lastRun):t.unknown],
-        [t.pending,format(push?.pending)],
-        [t.incidents,format(data.activeIncidents)]
+        [t.database,bytes(database?.bytes),'storage'],
+        [t.connections,quantity(database?.clientConnections)&&quantity(database?.maxConnections)?connections+' / '+format(database.maxConnections):connections,'server',
+          quantity(database?.clientConnections)&&quantity(database?.maxConnections)&&database.maxConnections>0?database.clientConnections/database.maxConnections:null],
+        [t.scheduler,lastRun?timeFormat.format(lastRun):t.unknown,'time'],
+        [t.pending,format(push?.pending),'time'],
+        [t.incidents,format(data.activeIncidents),'attention']
       ];
+      if(latency)rows.push([t.latency,latency,'time']);
       if(push?.overdue>0)rows.push([t.overdue,format(push.overdue)]);
       if(scheduler?.staleWorkspaces>0)rows.push([t.stale,format(scheduler.staleWorkspaces)]);
       if(quantity(scheduler?.failedRuns24h))rows.push([t.today,format(scheduler.failedRuns24h)]);
@@ -450,7 +480,10 @@
         const complete=typeof data?.healthy==='boolean'&&Boolean(parseTime(data.checkedAt));
         setState(publicHealth.state==='ready'?(complete?(attention?'attention':'ready'):'partial'):publicHealth.state);
         setTime(checked,t.checked,publicHealth.at||new Date());
-        showOperations(data);
+        const latency=quantity(publicHealth.latency)?new Intl.NumberFormat(language,{
+          style:'unit',unit:'millisecond',maximumFractionDigits:0
+        }).format(publicHealth.latency):null;
+        showOperations(data,latency);
         clearTimeout(ageTimer);
         if(complete&&publicHealth.state==='ready'){
           const markOld=()=>{
@@ -487,6 +520,15 @@
         reading.append(make('span','',measure),make('strong','',evidence));
         card.append(reading);
         if(quantity(used)&&quantity(cap)){
+          if(glyph==='storage'){
+            const available=make('p','platform-server-robot-note',t.freeStorage+' · '+bytes(Math.max(0,cap-used)));
+            card.append(available);
+            if(cap>0){
+              const meter=make('meter','platform-storage-meter');
+              meter.max=cap;meter.value=Math.min(used,cap);meter.setAttribute('aria-label',title);
+              card.append(meter);
+            }
+          }
           const issue=used>=cap&&(cap>0||used>0)?t.full:cap>0&&used/cap>.8?t.nearly:'';
           if(issue)card.append(make('p','platform-agent-attention',issue));
         }

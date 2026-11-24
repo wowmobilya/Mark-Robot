@@ -99,7 +99,11 @@
     top.append(identity,closeButton);drawer.append(top);
     const label=create('h2','',w.nav),navLinks=create('nav','platform-drawer-links');
     navLinks.setAttribute('aria-label',w.nav);
-    for(const [key,source] of Object.entries(links)){
+    const operations={ar:'التشغيل والدعم',en:'Operations and support',tr:'İşletim ve destek',fr:'Exploitation et assistance',ru:'Работа и поддержка'};
+    for(const key of ['home','companies','plans','calls','support','settings']){
+      const source=links[key];
+      if(key==='calls')navLinks.append(create('h2','',operations[doc.documentElement.lang]||operations.en));
+      if(key==='settings')navLinks.append(create('h2','',w.quick));
       const link=create('a','platform-drawer-link');
       link.href='#'+key;link.dataset.section=key;
       const mark=create('span','platform-drawer-icon');
@@ -109,7 +113,7 @@
       link.append(mark,create('span','',source.textContent));
       link.addEventListener('click',close);navLinks.append(link);
     }
-    drawer.append(label,navLinks,create('h2','',w.quick));
+    drawer.append(label,navLinks);
     const quick=create('div','platform-drawer-quick');
     const theme=create('button','platform-drawer-theme');theme.type='button';
     theme.addEventListener('click',()=>pref()?.toggleTheme?.());
