@@ -158,3 +158,19 @@ html.platform-auth-screen main>.platform-app-actions .platform-release{color:var
 }
 html[data-wf-motion=reduced] .platform-auth-experience :is(.platform-auth-blink,.platform-auth-orbit,.platform-auth-ring,.platform-auth-face,.platform-auth-state-light,.platform-auth-rack i::before),
 html[data-wf-motion=reduced] .platform-auth-stage::after{animation:none!important;transition:none!important}
+
+/* Keep facial features on the page background and reserve color changes for status. */
+.platform-auth-brow-motion,.platform-auth-gaze{transform-box:fill-box;transform-origin:center;transition:transform .32s ease}
+.platform-auth-mouth{transform-box:fill-box;transform-origin:center;transition:d .32s ease,transform .32s ease}
+.platform-auth-experience:is([data-phase=checking],[data-phase=verifying]) .platform-auth-gaze{animation:platform-auth-look 2.4s ease-in-out infinite}
+.platform-auth-experience[data-phase=ready] .platform-auth-brow-motion.left{transform:rotate(-5deg) translateY(-3px)}
+.platform-auth-experience[data-phase=ready] .platform-auth-brow-motion.right{transform:rotate(5deg) translateY(-3px)}
+.platform-auth-experience:is([data-phase=unverified],[data-phase=unreachable]) .platform-auth-brow-motion.left{transform:rotate(-10deg) translateY(-7px)}
+.platform-auth-experience[data-phase=denied] .platform-auth-brow-motion.right{transform:rotate(7deg)}
+.platform-auth-experience[data-phase=unreachable] .platform-auth-state-light{background:#b87636;animation:none}
+.platform-auth-experience[data-phase=ready] .platform-auth-state-light{background:var(--auth-glow)}
+.platform-auth-experience:is([data-phase=unavailable],[data-phase=unreachable],[data-phase=unverified],[data-phase=denied]) .platform-auth-rack i::before{animation:none;opacity:.45}
+@keyframes platform-auth-look{0%,100%{transform:translateX(0)}35%{transform:translateX(4px)}70%{transform:translateX(-2px)}}
+@media(max-width:790px) and (min-height:620px){.platform-auth-network{display:flex;gap:5px;height:13px;align-items:center}.platform-auth-rack{display:none}.platform-auth-rack:first-child{display:flex;gap:3px}.platform-auth-rack:first-child i{width:18px;height:6px}}
+@media(prefers-reduced-motion:reduce){.platform-auth-experience :is(.platform-auth-gaze,.platform-auth-mouth,.platform-auth-brow-motion){animation:none;transition:none}}
+html[data-wf-motion=reduced] .platform-auth-experience :is(.platform-auth-gaze,.platform-auth-mouth,.platform-auth-brow-motion){animation:none;transition:none}
