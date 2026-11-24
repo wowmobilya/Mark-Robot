@@ -43,7 +43,8 @@
     "modules/platform-device-observations.sql",
     "modules/owner-approval-alerts.sql",
     "modules/platform-announcements.sql",
-    "modules/confirmed-company-purge.sql"
+    "modules/confirmed-company-purge.sql",
+    "modules/platform-storage-inventory.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",
