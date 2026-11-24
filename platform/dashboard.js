@@ -942,7 +942,11 @@
       const row=el('article'),active=company.status==='active',link=el('button',t(16));
       row.className='platform-company-card platform-company-card-v2';link.className='platform-company-launch';
       link.type='button';link.onclick=()=>window.WFPlatformCompanyInspector?.open({company,request,language:lang.value});
-      const name=el('strong',company.name),stateLabel=el('span',t(active?7:8)),accountLabel=el('span',t(13)+' · '+company.accounts);
+      const name=el('strong',company.name),stateLabel=el('span',t(active?7:8));
+      const accountCount=Number.isSafeInteger(company.accounts)&&company.accounts>=0?company.accounts.toLocaleString(lang.value):'—';
+      const accountLabel=el('span',t(13)+' · '+accountCount);
+      name.id='company-name-'+company.id;row.setAttribute('aria-labelledby',name.id);
+      row.dataset.companyStatus=active?'active':'suspended';
       const hero=el('div'),pills=el('div'),actions=el('div'),summaryLine=el('div');
       const detail=el('div'),shortcuts=el('div'),openPage=el('a',profileWords[0]),openDevices=el('a',profileWords[5]);
       detail.className='platform-company-detail';detail.hidden=true;
