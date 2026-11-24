@@ -8,6 +8,7 @@
     fr:{checking:"Vérification de l’abonnement",missing:'Aucun abonnement',unavailable:'État indisponible',undated:'Aucune date de fin',expired:'Abonnement expiré',soon:'Expire bientôt',remaining:'Temps restant',ends:'Date d’expiration',days:'jours',hours:'heures',minutes:'min'},
     ru:{checking:'Проверка подписки',missing:'Подписки нет',unavailable:'Данные недоступны',undated:'Дата окончания не задана',expired:'Срок подписки истёк',soon:'Скоро закончится',remaining:'Осталось до окончания',ends:'Дата окончания',days:'дней',hours:'часов',minutes:'мин'}
   };
+  const trial={ar:'فترة تجريبية',en:'Free trial',tr:'Ücretsiz deneme',fr:'Essai gratuit',ru:'Пробный период'};
   const node=(type,klass,label)=>{
     const element=document.createElement(type);
     if(klass)element.className=klass;
@@ -45,16 +46,17 @@
       if(disposed)return;
       for(const e of entries.values()){
         const s=e.subscription;
+        const trialPrefix=s?.subscriptionType==='trial'?(trial[language]||trial.ar)+' · ':'';
         if(!s)continue;
         if(!s.hasSubscription){label(e,'missing',texts.missing);continue;}
         const deadline=Date.parse(s.expiresAt||'');
         if(!Number.isFinite(deadline)){label(e,'undated',texts.undated,s.planName||'');continue;}
         const diff=deadline-Date.now()-clockAdjustment;
-        if(diff<=0){label(e,'expired',texts.expired,texts.ends+' · '+date(deadline));continue;}
+        if(diff<=0){label(e,'expired',trialPrefix+texts.expired,texts.ends+' · '+date(deadline));continue;}
         const totalMinutes=Math.ceil(diff/60000),days=Math.floor(totalMinutes/1440),
           hours=Math.floor(totalMinutes%1440/60),minutes=totalMinutes%60;
         e.wrapper.dataset.state=diff<3*86400000?'soon':'active';
-        e.header.textContent=diff<3*86400000?texts.soon:texts.remaining;
+        e.header.textContent=trialPrefix+(diff<3*86400000?texts.soon:texts.remaining);
         e.value.textContent=days+' '+texts.days+' · '+hours+' '+texts.hours+' · '+minutes+' '+texts.minutes;
         e.end.textContent=(s.planName?s.planName+' · ':'')+texts.ends+' · '+date(deadline);
         e.end.dateTime=s.expiresAt;
