@@ -42,6 +42,7 @@
     "modules/platform-subscription-summary.sql",
     "modules/platform-device-observations.sql",
     "modules/owner-approval-alerts.sql",
+    "modules/platform-announcements.sql",
     "modules/confirmed-company-purge.sql"
   ],
   "liveAcceptanceRequired": [
