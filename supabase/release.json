@@ -46,7 +46,8 @@
     "modules/confirmed-company-purge.sql",
     "modules/platform-storage-inventory.sql",
     "modules/company-storage-folders.sql",
-    "modules/company-storage-consumers.sql"
+    "modules/company-storage-consumers.sql",
+    "modules/company-creation-plan.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",
