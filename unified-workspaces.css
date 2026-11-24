@@ -352,3 +352,77 @@
     }
   }
 }
+
+/* Module surfaces follow the brand while keeping each tool recognizable. */
+@media screen {
+  #mainContent .wf-chat { --module-hue: #418f9b; }
+  #mainContent .wf-files { --module-hue: #6487b3; }
+  #mainContent .wfg-workspace { --module-hue: #b38356; }
+  #mainContent .wf-fin { --module-hue: #428c70; }
+  #mainContent .wf-server { --module-hue: #567fab; }
+  #mainContent .wf-assistant { --module-hue: #8774af; }
+  #mainContent :is(.wf-chat,.wf-files,.wfg-workspace,.wf-fin,.wf-server,.wf-assistant) {
+    --module-tone: color-mix(in srgb,var(--brand-primary) 45%,var(--module-hue));
+    --module-line: color-mix(in srgb,var(--module-tone) 30%,var(--border));
+    --module-wash: color-mix(in srgb,var(--module-tone) 10%,var(--card));
+  }
+  #mainContent :is(.wf-server,.wf-assistant) {
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: 100%;
+  }
+  #mainContent .wf-server {
+    grid-template-columns: repeat(auto-fit,minmax(min(100%,25rem),1fr));
+    gap: clamp(.65rem,1.25vw,1.2rem);
+    align-items: start;
+  }
+  #mainContent .wf-server > :is(.wf-server-summary,.wf-server-note,.wf-server-metrics) {
+    grid-column: 1 / -1;
+  }
+  #mainContent .wf-server :is(.wf-server-summary,.wf-server-panel,.wf-server-card),
+  #mainContent .wf-assistant .wf-ai-state,
+  #mainContent .wf-fin .wf-fin-filter {
+    padding: clamp(.75rem,1.4vw,1.2rem);
+    min-inline-size: 0;
+    border: 1px solid var(--module-line);
+    border-radius: 16px;
+    background: var(--card);
+  }
+  #mainContent .wf-server .wf-server-metrics {
+    gap: clamp(.4rem,1vw,.9rem);
+  }
+  #mainContent .wf-fin .wf-fin-summary:not(:empty) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(min(100%,9rem),1fr));
+  }
+  #mainContent .wf-fin .wf-fin-summary > span {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+  #mainContent .wf-fin .wf-fin-summary > span,
+  #mainContent .wf-server .wf-server-card,
+  #mainContent .wf-chat .wf-chat-room.active,
+  #mainContent .wf-assistant .wf-ai-mode[aria-pressed=true],
+  #mainContent .wfg-tabs .wfg-active {
+    background: var(--module-wash);
+    border-color: var(--module-line);
+  }
+  #mainContent .wf-files .wf-file-icon,
+  #mainContent .wf-chat .wf-chat-avatar {
+    background: var(--module-wash);
+    border: 1px solid var(--module-line);
+    color: var(--text);
+  }
+  #mainContent .wfg-workspace :is(.wfg-product,.wfg-collection),
+  #mainContent .wf-files .wf-file-entry {
+    border-color: var(--module-line);
+  }
+  @media (hover:hover) and (prefers-reduced-motion:no-preference) {
+    html:not([data-wf-motion=reduced]) #mainContent :is(.wf-files .wf-file-entry,.wf-chat .wf-chat-room,.wfg-workspace .wfg-product,.wf-assistant .wf-ai-mode) {
+      transition: border-color .17s ease,background-color .17s ease;
+    }
+    html:not([data-wf-motion=reduced]) #mainContent :is(.wf-files .wf-file-entry,.wf-chat .wf-chat-room,.wfg-workspace .wfg-product,.wf-assistant .wf-ai-mode):hover {
+      border-color: var(--module-tone);
+    }
+  }
+}

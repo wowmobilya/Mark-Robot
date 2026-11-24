@@ -1553,3 +1553,152 @@
  html body #sidebar .wf-context-actions button[aria-current="page"] {background:var(--wash);color:var(--ui-accent);font-weight:700;}
  @media(prefers-reduced-motion:no-preference) {html:not([data-wf-motion="reduced"]) body #sidebar .wf-destination-toggle svg {transition:transform .18s ease;}}
 }
+
+/* Shared appearance for the business lists, forms, reports and settings. */
+@media screen {
+  html body #mainContent .page {
+    --workspace-edge: color-mix(in srgb, var(--section-accent, var(--brand-primary)) 24%, var(--hairline));
+    --workspace-tone: color-mix(in srgb, var(--section-accent, var(--brand-primary)) 9%, var(--paper));
+    --workspace-halo: color-mix(in srgb, var(--section-accent, var(--brand-primary)) 19%, transparent);
+    --wf-workspace-chrome: radial-gradient(ellipse at 50% 0, var(--workspace-halo), transparent 75%), var(--paper);
+    --wf-workspace-chrome-shadow: var(--lift);
+  }
+
+  html body #mainContent :is(#page-companies,#page-products,#page-invoices) .co-toolbar-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    align-items: center;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  html body #mainContent .page :is(.co-toolbar-title,.sct-sticky-title h1,.card-title) > .wf-ui-icon {
+    flex: none;
+    color: var(--section-accent, var(--brand-primary));
+  }
+  html body #mainContent :is(#page-companies,#page-products,#page-invoices) .co-stats-bar {
+    display: flex;
+    gap: 6px !important;
+    margin: 0;
+  }
+  html body #mainContent :is(#page-companies,#page-products,#page-invoices) .co-stats-bar > .co-stat-pill {
+    flex: 1 1 104px;
+    justify-content: center;
+    min-width: 0;
+    min-height: 44px;
+    padding: 6px 9px;
+    gap: 6px;
+    background: var(--paper) !important;
+    border-color: var(--workspace-edge) !important;
+    font-size: .79rem;
+    line-height: 1.35;
+    white-space: normal;
+  }
+  html body #mainContent :is(#page-companies,#page-products,#page-invoices) .co-stats-bar > .co-stat-pill.active {
+    background: var(--workspace-tone) !important;
+    border-color: var(--section-accent) !important;
+    color: var(--ink) !important;
+    box-shadow: inset 0 -2px var(--section-accent) !important;
+  }
+  html body #mainContent :is(#page-companies,#page-products,#page-invoices) .co-stats-bar > .co-stat-pill .csp-num {
+    flex: none;
+    background: var(--wash) !important;
+    color: var(--ink) !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  html body #mainContent .page :is(.co-grid,.pr-grid-new,.inv-grid) :is(.co-card,.pr-card-new,.inv-card) {
+    border-color: var(--workspace-edge) !important;
+    border-radius: 18px !important;
+  }
+  html body #mainContent .page :is(.co-card-body,.pr-card-new-body,.inv-card-body) {
+    padding: clamp(11px, 1.3vw, 17px);
+  }
+  html body #mainContent .page :is(.co-hdr,.inv-card-hdr) {
+    margin-block-end: 9px;
+    gap: 8px;
+  }
+  html body #mainContent .page :is(.co-logo,.inv-card-avatar) {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-color: var(--workspace-edge) !important;
+    border-radius: 12px;
+  }
+  html body #mainContent #page-products .pr-card-new-img {
+    background: radial-gradient(ellipse at 50% 65%, var(--workspace-halo), transparent 74%), var(--paper) !important;
+  }
+  html body #mainContent #page-invoices .inv-card-hdr-amount {
+    min-width: 0;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+  html body #mainContent #page-invoices :is(.inv-card-meta,.inv-card-pay),
+  html body #mainContent #page-companies :is(.co-details-toggle,.co-fin-summary) {
+    background: var(--workspace-tone);
+    border-color: var(--workspace-edge);
+  }
+  html body #mainContent #page-invoices .inv-card-meta {
+    margin-block: 8px 0;
+  }
+  html body #mainContent .page :is(.co-actions,.inv-card-actions,.pr-card-new.is-open .pr-card-new-actions) {
+    gap: 6px;
+    background: var(--workspace-tone) !important;
+    border-color: var(--workspace-edge) !important;
+  }
+  html body #mainContent .page :is(.co-actions,.inv-card-actions,.pr-card-new.is-open .pr-card-new-actions) > button {
+    min-height: 44px;
+  }
+
+  html body #mainContent :is(#page-add-company,#page-add-product,#page-create-invoice,#page-reports,#page-payment-management) :is(.card-hdr,.card-header) {
+    background: var(--workspace-tone);
+    border-color: var(--workspace-edge);
+  }
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) > .tabs {
+    gap: clamp(8px, 1.25vw, 14px) !important;
+  }
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) .tab-btn {
+    background: var(--paper) !important;
+    border-color: var(--workspace-edge) !important;
+    padding: 10px 12px !important;
+    min-height: 76px !important;
+  }
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) .tab-btn .wf-ui-icon {
+    width: 26px;
+    height: 26px;
+    padding: 4px;
+    box-sizing: border-box;
+    color: var(--section-accent);
+    background: var(--workspace-tone);
+    border-radius: 8px;
+  }
+  html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) .tab-btn:is(:hover,:focus-visible) {
+    border-color: var(--section-accent) !important;
+    background: var(--workspace-tone) !important;
+  }
+  @media (min-width: 920px) {
+    html body #mainContent #page-settings .wf-settings-workspace:has(> #wfSettingsDialog) > .tabs {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+  }
+  @media (min-width: 1200px) {
+    html body #mainContent :is(#page-companies,#page-products,#page-invoices) :is(#coGrid,#prGrid,#invListContainer) {
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 265px), 1fr)) !important;
+    }
+  }
+  @media (max-width: 440px) {
+    html body #mainContent :is(#page-companies,#page-products,#page-invoices) .co-toolbar-row {
+      gap: 5px !important;
+    }
+    html body #mainContent :is(#page-companies,#page-products,#page-invoices) .co-toolbar-row > button {
+      min-height: 44px;
+    }
+    html body #mainContent :is(#page-companies,#page-products,#page-invoices) .co-toolbar-title {
+      font-size: clamp(15px, 5vw, 20px) !important;
+    }
+    html body #mainContent :is(#page-companies,#page-products,#page-invoices) .co-stats-bar > .co-stat-pill {
+      flex-basis: 74px;
+      padding-inline: 5px;
+      font-size: .73rem;
+    }
+  }
+}

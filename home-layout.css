@@ -3,8 +3,12 @@
 @media screen {
   html body #mainContent #page-dashboard.wf-home-customized.active { display: block !important; }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout {
+    --home-accent: var(--ui-accent,var(--brand-primary));
+    --home-edge: color-mix(in srgb,var(--home-accent) 25%,var(--dash-line,var(--border)));
+    --home-wash: color-mix(in srgb,var(--home-accent) 7%,var(--card));
+    --home-glow: color-mix(in srgb,var(--home-accent) 16%,transparent);
     display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
-    grid-auto-flow: row; align-items: start; gap: var(--dash-gap,20px);
+    grid-auto-flow: row; align-items: start; gap: clamp(12px,2vw,20px);
     inline-size: 100%; min-inline-size: 0; margin: 0;
   }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout > .wf-home-section {
@@ -20,30 +24,38 @@
   html body #mainContent #page-dashboard.wf-home-customized .wf-home-retired[hidden] { display: none !important; }
 
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics {
-    padding: clamp(16px,2vw,22px); border: 1px solid var(--dash-line,var(--border));
-    border-radius: 20px; background: var(--dashboard-card-wash,var(--card));
+    container-type: inline-size;
+    padding: clamp(12px,1.65vw,20px); border: 1px solid var(--home-edge);
+    border-radius: 20px; background: var(--card);
   }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetricsTitle {
-    margin: 0 0 14px; color: var(--text); font-size: 16px; font-weight: 750; line-height: 1.5;
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 12px; color: var(--text); font-size: 16px; font-weight: 800; line-height: 1.5;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetricsTitle::before {
+    content: ""; flex: 0 0 11px; inline-size: 11px; block-size: 11px; border-radius: 4px;
+    background: var(--home-accent); box-shadow: 0 0 0 4px var(--home-glow);
   }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics > .stats-grid {
     display: grid !important; grid-area: auto !important;
     grid-template-columns: repeat(3,minmax(0,1fr)) !important;
-    gap: 10px !important; margin: 0 !important; padding: 0 !important; border: 0;
+    gap: clamp(6px,1vw,10px) !important; margin: 0 !important; padding: 0 !important; border: 0;
   }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-card {
     display: flex !important; flex-direction: column !important;
     align-items: center !important; justify-content: center !important;
-    gap: 6px !important; min-inline-size: 0; min-block-size: 96px;
+    gap: 5px !important; min-inline-size: 0; min-block-size: 78px;
     padding: 12px 6px !important; text-align: center;
     border-radius: 13px !important; border: 1px solid var(--dash-line,var(--border)) !important;
-    background: color-mix(in srgb,var(--brand-primary) 5%,var(--card)) !important;
+    background: var(--home-wash) !important;
     color: var(--text); touch-action: manipulation;
+    transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
   }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-icon {
     display: grid !important; place-items: center; grid-area: auto !important;
     flex: 0 0 32px; inline-size: 32px; block-size: 32px; margin: 0 !important;
     font-size: 21px !important; border-radius: 10px !important;
+    color: var(--home-accent) !important; background: var(--home-glow) !important;
   }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-icon svg {
     inline-size: 22px; block-size: 22px; fill: none; stroke: currentColor;
@@ -56,8 +68,8 @@
     grid-area: auto !important; margin: 0 !important; text-align: center;
     white-space: normal; overflow-wrap: anywhere; line-height: 1.5;
   }
-  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-val { font-size: 22px !important; font-variant-numeric: tabular-nums; }
-  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics :is(.stat-lbl,.wf-sales-action-label) { font-size: 13px !important; font-weight: 650; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-val { font-size: clamp(17px,2.2vw,24px) !important; font-variant-numeric: tabular-nums; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics :is(.stat-lbl,.wf-sales-action-label) { font-size: clamp(11px,1vw,13px) !important; font-weight: 650; }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .wf-sales-action { color: var(--brand-primary); }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .wf-stat-trend { display: none !important; }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-card:is(:hover,:focus-visible) {
@@ -69,18 +81,49 @@
   }
 
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales {
-    gap: 16px !important; padding: clamp(18px,2vw,24px) !important;
+    gap: clamp(10px,1.4vw,17px) !important; padding: clamp(14px,2vw,22px) !important;
+    border-color: var(--home-edge) !important;
+    background: radial-gradient(ellipse at 50% 3%,var(--home-glow),transparent 75%),var(--card) !important;
     justify-content: flex-start !important;
   }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales .sales-currencies { gap: 8px; }
-  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales .sales-currencies > div { padding: 10px 8px; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales .sales-currencies > div {
+    min-inline-size: 0; padding: 8px 5px; border-color: var(--home-edge);
+    background: var(--card); border-radius: 12px;
+  }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales .sales-currencies dt { font-size: 12px; }
-  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales .sales-currencies dd { font-size: 17px; line-height: 1.5; }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-sales .sales-currencies dd { font-size: clamp(13px,1.5vw,17px); line-height: 1.45; overflow-wrap: anywhere; }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout :is(.wf-dash-recent,#currBar) { margin: 0 !important; }
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-secondary[data-home-size="wide"] #dashIntelligence {
     grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start;
   }
-  /* About one quarter taller, while Spacious remains visibly larger than Standard. */
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout :is(.wf-dash-recent,#currBar,.wf-insight-card) {
+    border-color: var(--home-edge) !important;
+    border-radius: 20px;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-greeting-faces > * {
+    border-color: var(--home-edge) !important;
+    background: radial-gradient(ellipse at center,var(--home-glow),transparent 78%),var(--card) !important;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout :is(.curr-item,.curr-refresh,.wf-dash-recent .btn,.overview-style select):focus-visible {
+    outline: 2px solid var(--home-accent); outline-offset: 2px;
+  }
+  html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout :is(.curr-refresh,.wf-dash-recent .btn,.overview-style select) {
+    min-block-size: 44px;
+  }
+  @container (min-width:370px) {
+    html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-card {
+      display: grid !important; grid-template-columns: 32px minmax(0,1fr) !important;
+      gap: 7px !important; align-content: center; min-block-size: 68px;
+      padding: 8px !important;
+    }
+  }
+  @container (min-width:760px) {
+    html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics > .stats-grid:has(> :nth-child(6)) {
+      grid-template-columns: repeat(6,minmax(0,1fr)) !important;
+    }
+  }
+  /* Keep the existing spacious preference distinct from the default. */
   html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-greeting-flip:not([data-smart-density="comfortable"]) {
     --wf-smart-card-height: clamp(15.5rem,22.5vw,16rem);
     --wf-smart-card-padding: clamp(16px,1.6vw,20px);
@@ -101,7 +144,11 @@
     html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout { grid-template-columns: minmax(0,1fr); }
     html body #mainContent #page-dashboard.wf-home-customized #wfHomeLayout .wf-dash-secondary[data-home-size="wide"] #dashIntelligence { grid-template-columns: minmax(0,1fr); }
   }
-  @media (max-width:360px) {
+  @container (max-width:265px) {
     html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics > .stats-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  }
+  html[data-wf-motion="reduced"] body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-card { transition: none !important; }
+  @media (prefers-reduced-motion:reduce) {
+    html body #mainContent #page-dashboard.wf-home-customized #wfHomeMetrics .stat-card { transition: none !important; }
   }
 }

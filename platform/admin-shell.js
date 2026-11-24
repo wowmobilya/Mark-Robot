@@ -148,15 +148,23 @@
   function positionOrbit(){
     if(!nav||!nav.isConnected)return;
     const active=nav.querySelector('.platform-section-link[aria-current="page"]');
-    const menuRect=nav.getBoundingClientRect(),rect=active?.getBoundingClientRect();
-    const visible=menuRect.width>0&&rect?.width>0&&matchMedia('(max-width:1024px)').matches;
+    const mobile=matchMedia('(max-width:1024px)').matches;
+    const rect=mobile&&active?.getBoundingClientRect();
+    const visible=rect&&rect.width>0;
     nav.toggleAttribute('data-active-orbit',!!visible);orbit.hidden=!visible;
     if(!visible)return;
-    const center=rect.left+rect.width/2-menuRect.left;
+    const center=rect.left+rect.width/2-nav.getBoundingClientRect().left;
     nav.style.setProperty('--admin-nav-x',Math.round(center*10)/10+'px');
     orbit.style.setProperty('--admin-orbit-icon',getComputedStyle(active).getPropertyValue('--section-icon'));
   }
-  const queueOrbit=()=>requestAnimationFrame(positionOrbit);
+  let orbitFrame=null;
+  function queueOrbit(){
+    if(!nav||orbitFrame!==null)return;
+    orbitFrame=requestAnimationFrame(()=>{
+      orbitFrame=null;
+      positionOrbit();
+    });
+  }
   window.addEventListener('resize',queueOrbit,{passive:true});
   window.visualViewport?.addEventListener('resize',queueOrbit,{passive:true});
   window.addEventListener('hashchange',()=>{syncDrawerActive();queueOrbit();});
@@ -176,13 +184,19 @@
     filterLabel.append(filter);tools.append(searchLabel,filterLabel);
     const stats=create('p','platform-overview-count'),empty=create('p','platform-overview-empty',w.empty);
     empty.hidden=true;
+    const locale=doc.documentElement.lang||'ar';
+    const normalize=value=>value.toLocaleLowerCase(locale).normalize('NFD')
+      .replace(/[\p{M}ـ]/gu,'').replace(/ى/g,'ي');
+    const entries=cards.map(card=>({
+      card,
+      name:normalize(card.querySelector('.platform-company-name')?.textContent||''),
+      status:card.dataset.companyStatus
+    }));
     const apply=()=>{
-      const term=search.value.trim().toLocaleLowerCase(),kind=filter.value;
+      const terms=normalize(search.value).trim().split(/\s+/),kind=filter.value;
       let visible=0;
-      for(const card of cards){
-        const title=card.querySelector('.platform-company-name')?.textContent||'';
-        const status=card.querySelector('.platform-company-status')?.dataset.state||'';
-        const show=(!term||title.toLocaleLowerCase().includes(term))&&(kind==='all'||kind===status);
+      for(const {card,name,status} of entries){
+        const show=(kind==='all'||kind===status)&&terms.every(term=>name.includes(term));
         card.hidden=!show;if(show)visible++;
       }
       stats.textContent=w.results+': '+visible+' / '+cards.length+' · '+w.page;
@@ -224,6 +238,7 @@
     updateAppearance();
     navObserver?.disconnect();navObserver=null;
     resizeObserver?.disconnect();resizeObserver=null;
+    cancelAnimationFrame(orbitFrame);orbitFrame=null;
     nav=null;preferenceHosts=[];
   }
   updateAppearance();

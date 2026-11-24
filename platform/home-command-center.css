@@ -1,6 +1,6 @@
 /* WOW Control Center — home only. Existing shell, navigation and server APIs are untouched. */
 #platform-page-home:not([hidden]){
-  --home-gap:clamp(.75rem,1.4vw,1.2rem);
+  --home-gap:clamp(.65rem,1.2vw,1.1rem);
   --home-radius:20px;
   --home-tint:color-mix(in srgb,var(--ui-accent) 8%,var(--card));
   --home-line:color-mix(in srgb,var(--ui-accent) 27%,var(--border));
@@ -25,8 +25,8 @@
   justify-items:center;
   align-content:center;
   gap:.3rem;
-  min-block-size:clamp(108px,12vw,166px);
-  padding:clamp(1rem,3vw,2.25rem);
+  min-block-size:clamp(94px,9vw,138px);
+  padding:clamp(.8rem,2vw,1.65rem);
   text-align:center;
   border:1px solid var(--home-line);
   border-radius:var(--home-radius);
@@ -114,12 +114,25 @@
 }
 #platform-page-home .platform-server-robot-sections{
   grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--home-gap);margin:0;
-  align-items:stretch;
+  align-items:start;
 }
 #platform-page-home .platform-server-robot-panel{
   background:var(--card);border-color:var(--home-line);padding:clamp(.7rem,1.45vw,1.1rem);border-radius:var(--home-radius);min-inline-size:0;
 }
-#platform-page-home .platform-server-robot-panel h5{font-weight:820;line-height:1.4}
+#platform-page-home .platform-server-robot-panel h5{
+  display:flex;align-items:center;gap:.5rem;margin-block-end:.5rem;
+  font-weight:820;line-height:1.4;
+}
+#platform-page-home .platform-server-robot-panel h5 .platform-agent-icon{
+  box-sizing:content-box;
+  padding:.38rem;
+  margin:0;
+  border-radius:9px;
+  background:var(--ui-soft);
+  color:var(--ui-accent);
+}
+#platform-page-home .platform-server-robot-panel select{margin-block-start:.15rem}
+#platform-page-home .platform-server-robot-panel .platform-server-robot-refresh{margin-block-start:.3rem}
 #platform-page-home .platform-server-robot-metrics{
   grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem;
 }
@@ -141,10 +154,14 @@
 #platform-page-home .platform-analytics-header{gap:.25rem;padding-block-end:.25rem}
 #platform-page-home .platform-analytics-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}
 #platform-page-home .platform-analytics-tile{
-  border-radius:13px;min-height:78px;gap:.12rem .5rem;padding:.55rem;
+  border-radius:13px;min-block-size:69px;gap:.15rem .5rem;padding:.55rem;
   background:var(--home-tint);border-color:var(--home-line);box-shadow:none;
 }
 #platform-page-home .platform-analytics-title{font-size:.75rem}
+#platform-page-home .platform-analytics-value{overflow-wrap:anywhere}
+#platform-page-home .platform-analytics-tile[data-metric=active]{--home-icon-tint:#2c9b74}
+#platform-page-home .platform-analytics-tile[data-metric=paused]{--home-icon-tint:#bc7a30}
+#platform-page-home .platform-analytics-tile[data-metric=accounts]{--home-icon-tint:#7969bb}
 #platform-page-home .platform-analytics-value{font-size:clamp(1.1rem,2.2vw,1.5rem)}
 #platform-page-home .platform-analytics-visual,
 #platform-page-home .platform-analytics-traffic{margin:0;border-radius:15px;border-color:var(--home-line);background:var(--home-tint);min-inline-size:0}
@@ -165,10 +182,21 @@
   background:var(--card);
   box-shadow:var(--home-shadow);
 }
-#platform-page-home .platform-home-actions h3{margin:0;font-size:1rem;font-weight:800}
+#platform-page-home :is(.platform-home-actions,.platform-home-directory) h3{
+  margin:0;font-size:clamp(.96rem,1.4vw,1.12rem);font-weight:820;
+}
+#platform-page-home .platform-home-shortcut[data-shortcut=create]{--home-icon-tint:#2c9b74}
+#platform-page-home .platform-home-shortcut[data-shortcut=plans]{--home-icon-tint:#bc7a30}
+#platform-page-home .platform-home-shortcut[data-shortcut=support]{--home-icon-tint:#7969bb}
+#platform-page-home .platform-home-shortcut[data-shortcut=calls]{--home-icon-tint:#018baf}
+#platform-page-home :is(.platform-analytics-symbol,.platform-home-shortcut-icon,.platform-home-company-mark){
+  background:color-mix(in srgb,var(--home-icon-tint,var(--ui-accent)) 17%,var(--card));
+  color:color-mix(in srgb,var(--home-icon-tint,var(--ui-accent)) 69%,var(--text));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--home-icon-tint,var(--ui-accent)) 25%,transparent);
+}
 #platform-page-home .platform-home-quick{margin:0;gap:.55rem;align-items:stretch}
 #platform-page-home .platform-home-shortcut{
-  min-height:72px;min-inline-size:0;padding:.55rem;gap:.5rem;
+  min-block-size:64px;min-inline-size:0;padding:.55rem;gap:.5rem;
   border-radius:13px;background:var(--home-tint);box-shadow:none;
 }
 #platform-page-home .platform-home-shortcut[data-shortcut=create]{background:var(--ui-soft)}
@@ -182,10 +210,9 @@
 #platform-page-home .platform-home-directory-head{
   display:flex;align-items:center;justify-content:space-between;gap:.4rem .65rem;flex-wrap:wrap;
 }
-#platform-page-home .platform-home-directory-head h3{margin:0;font-size:.95rem;font-weight:820}
 #platform-page-home .platform-home-directory-head a{
   display:flex;align-items:center;min-height:44px;font-size:.8rem;font-weight:700;
-  color:var(--ui-accent);text-decoration:underline;text-underline-offset:.18em;
+  color:var(--text);text-decoration:underline;text-underline-offset:.18em;
 }
 #platform-page-home .platform-home-directory-list{display:grid;gap:.45rem;min-inline-size:0}
 #platform-page-home .platform-home-directory-list>p{margin:.25rem 0;color:var(--text2);font-size:.85rem}
@@ -195,7 +222,7 @@
   background:var(--home-tint);color:var(--text);text-decoration:none;
 }
 #platform-page-home .platform-home-company-mark{
-  display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--ui-soft);color:var(--ui-accent)
+  display:grid;place-items:center;width:32px;height:32px;border-radius:9px;
 }
 #platform-page-home .platform-home-company-mark::before{
   content:"";inline-size:17px;block-size:17px;background:currentColor;
@@ -208,7 +235,13 @@
   font-size:.69rem;font-weight:700;padding:.25rem .45rem;border:1px solid var(--border);
   border-radius:8px;background:var(--card);max-inline-size:7rem;overflow-wrap:anywhere;
 }
-#platform-page-home .platform-home-company-state[data-state=active]{color:var(--ui-accent);border-color:var(--ui-accent)}
+#platform-page-home .platform-home-company-state:is([data-state=active],[data-state=suspended]){
+  --status-tone:#2c9b74;
+  color:color-mix(in srgb,var(--status-tone) 65%,var(--text));
+  background:color-mix(in srgb,var(--status-tone) 12%,var(--card));
+  border-color:color-mix(in srgb,var(--status-tone) 35%,var(--border));
+}
+#platform-page-home .platform-home-company-state[data-state=suspended]{--status-tone:#bc7a30}
 #platform-page-home .platform-home-company:hover{border-color:var(--ui-accent)}
 #platform-page-home :is(.platform-home-company,.platform-home-directory-head a):focus-visible{
   outline:2px solid var(--ui-accent);outline-offset:2px;
@@ -220,12 +253,20 @@
 }
 @media(min-width:1050px){
   #platform-page-home:not([hidden]){
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);
+    grid-template-areas:"title title" "robot robot" "analytics shortcuts" "analytics companies";
+    grid-template-rows:auto auto auto 1fr;
   }
-  #platform-page-home>:is(.platform-home-masthead,.platform-home-hero,.platform-analytics){grid-column:1/-1}
+  #platform-page-home>.platform-home-masthead{grid-area:title}
+  #platform-page-home>.platform-home-hero{grid-area:robot}
+  #platform-page-home>.platform-analytics{grid-area:analytics}
+  #platform-page-home>.platform-home-actions{grid-area:shortcuts}
+  #platform-page-home>.platform-home-directory{grid-area:companies}
+  #platform-page-home .platform-company-agent-scan{grid-template-columns:minmax(0,1fr)}
   #platform-page-home .platform-server-robot{
     grid-template-columns:minmax(0,1fr) minmax(0,2fr);
-    grid-template-rows:1fr auto;
+    grid-template-rows:auto 1fr;
+    align-items:start;
   }
   #platform-page-home .platform-server-robot-head{
     grid-template-columns:minmax(0,1fr);
@@ -233,13 +274,16 @@
     justify-items:center;
     text-align:center;
   }
-  #platform-page-home .platform-server-robot-face{inline-size:clamp(88px,9vw,126px)}
+  #platform-page-home .platform-server-robot-face{inline-size:clamp(74px,6vw,104px)}
   #platform-page-home .platform-server-robot-sections{
     grid-column:2;
     grid-row:1/3;
   }
 }
-@media(min-width:1450px){
+@media(min-width:1250px){
+  #platform-page-home .platform-company-agent-scan{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(min-width:1540px){
   #platform-page-home .platform-home-quick{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media(max-width:740px){
@@ -249,13 +293,21 @@
 }
 @media(max-width:420px){
   #platform-page-home .platform-company-agent-scan{grid-template-columns:minmax(0,1fr)}
-  #platform-page-home .platform-home-shortcut{min-height:80px;gap:.35rem;padding:.45rem}
+  #platform-page-home .platform-home-shortcut{min-block-size:62px;gap:.35rem;padding:.45rem}
   #platform-page-home .platform-home-shortcut-icon{inline-size:29px;block-size:29px;flex-basis:29px}
   #platform-page-home .platform-home-shortcut small{font-size:.68rem}
   #platform-page-home .platform-analytics-tile{grid-template-columns:28px minmax(0,1fr);padding:.42rem;gap:.12rem .35rem}
   #platform-page-home .platform-analytics-symbol{inline-size:28px;block-size:28px}
   #platform-page-home .platform-analytics-title{font-size:.69rem}
   #platform-page-home .platform-home-company-state{max-inline-size:5.5rem}
+}
+@media(min-width:1050px) and (max-width:1230px){
+  #platform-page-home .platform-analytics-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #platform-page-home>.platform-analytics{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:359px){
+  #platform-page-home .platform-home-shortcut{align-items:start}
+  #platform-page-home .platform-home-shortcut-icon{align-self:center}
 }
 #platform-page-home > *{
   animation:platform-home-enter .42s ease-out backwards;

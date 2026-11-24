@@ -275,7 +275,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await finder.fill('does-not-exist');
     assert.equal(await page.locator('.platform-company-card').isVisible(),false);
     await page.getByText('No matching companies on this page').waitFor();
-    await finder.fill('Test');
+    await finder.fill('st té');
     assert.equal(await page.locator('.platform-company-card').isVisible(),true);
     await page.locator('.platform-overview-status select').selectOption('suspended');
     assert.equal(await page.locator('.platform-company-card').isVisible(),false);
