@@ -44,6 +44,27 @@
   const icons={summary:'⌂',companies:'▦',products:'◈',invoices:'▤',payments:'◉',accounts:'♙',
     'gallery-orders':'▣','gallery-listings':'◫',files:'▧',storage:'▤',calls:'⌕',settings:'⚙',audit:'≡',devices:'▤'};
 
+  const storageSymbols={
+    folder:'M3 7V5a1 1 0 0 1 1-1h5l2 3h9a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z',
+    chat:'M21 11a8 8 0 0 1-8 8H8l-5 3 1.5-5A8 8 0 1 1 21 11Z',
+    image:'M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1ZM3 17l5-5 4 4 3-3 6 6M15.5 7.5h.01',
+    audio:'M9 17V6l10-2v11M9 17a3 2.5 0 1 1-3-2.5A3 2.5 0 0 1 9 17Zm10-2a3 2.5 0 1 1-3-2.5 3 2.5 0 0 1 3 2.5Z',
+    video:'M3 6h12v12H3zM15 10l6-4v12l-6-4z',
+    document:'M6 2h8l4 4v16H6zM14 2v5h4M9 12h6M9 16h6',
+    loading:'M3 12a9 9 0 1 1 9 9M12 6v6l4 2',
+    empty:'M3 14l3-9h12l3 9v5H3zM3 14h5l2 3h4l2-3h5',
+    error:'M12 3 2 20h20L12 3ZM12 9v5m0 3h.01'
+  };
+  function storageIcon(name){
+    const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    for(const [key,value] of Object.entries({viewBox:'0 0 24 24',width:19,height:19,fill:'none',stroke:'currentColor','stroke-width':1.7,'stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true',focusable:'false'}))icon.setAttribute(key,String(value));
+    const path=document.createElementNS(icon.namespaceURI,'path');path.setAttribute('d',storageSymbols[name]);icon.append(path);
+    icon.style.verticalAlign='middle';return icon;
+  }
+  function storageLabel(node,name,text){
+    node.replaceChildren(storageIcon(name),document.createTextNode(' '+text));
+    return node;
+  }
   const deviceCopy={
     ar:{warning:'هذه مؤشرات تقنية تقديرية وليست إثباتًا لهوية الجهاز أو موقعه. عنوان IP من اتصال Supabase وقد يكون عنوان خادم WOW الوسيط. الجلسة غير المغلقة لا تعني أن الجهاز متصل الآن.',
       phone:'هاتف',tablet:'تابلت',desktop:'كمبيوتر',unknown:'جهاز غير معروف',notReported:'لم يُرسل الجهاز معلوماته بعد',
@@ -91,6 +112,7 @@
     for(const name of sections){
       const b=el('button','wf-inspect-nav-item');b.type='button';b.dataset.section=name;
       const sym=el('span','wf-inspect-nav-icon',icons[name]);sym.setAttribute('aria-hidden','true');
+      if(name==='storage')sym.replaceChildren(storageIcon('folder'));
       b.append(sym,el('span','',name==='storage'?(storageCopy[language]||storageCopy.ar)[0]:texts[name]));b.onclick=()=>{current=name;offset=0;load();};
       nav.append(b);controls[name]=b;
     }
@@ -146,8 +168,8 @@
       const family=(record.mime||'').split('/')[0],kind={image:w[7],audio:w[8],video:w[9]}[family]||w[10];
       const source={chat:w[3],gallery:w[4],files:w[5],media:w[6]}[record.source]||w[6];
       const item=el('article','wf-inspect-record');
-      const heading=el('strong','wf-inspect-record-title',record.name||kind);heading.dir='auto';item.append(heading);
-      item.append(el('span','wf-inspect-breakdown-chip',source+' · '+kind));
+      const heading=el('strong','wf-inspect-record-title',record.name||kind);heading.dir='auto';storageLabel(heading,['image','audio','video'].includes(family)?family:'document',record.name||kind);item.append(heading);
+      item.append(storageLabel(el('span','wf-inspect-breakdown-chip'),record.source==='chat'?'chat':record.source==='gallery'?'image':'folder',source+' · '+kind));
       const grid=el('dl','wf-inspect-record-data');
       for(const [caption,value] of [[w[11],fileSize(record.bytes)],[w[12],record.mime||w[17]],[w[13],date(record.updatedAt)],[w[14],date(record.createdAt)]]){
         const field=el('dd','',value);field.dir='auto';grid.append(el('dt','',caption),field);
@@ -159,7 +181,7 @@
     }
     function storageSummary(data){
       const w=storageText;
-      const heading=el('h3','',company.name+' / '+w[0]);heading.dir='auto';results.append(heading);
+      const heading=storageLabel(el('h3'),'folder',company.name+' / '+w[0]);heading.dir='auto';results.append(heading);
       const grid=el('div','wf-inspect-summary');
       for(const [label,value] of [[w[1],new Intl.NumberFormat(language).format(data.total)],[data.unknownSizes?w[18]:w[2],fileSize(data.totalBytes)]]){
         const card=el('article','wf-inspect-stat');card.append(el('span','',label),el('strong','',value));grid.append(card);
@@ -212,7 +234,7 @@
       if(current==='summary'){summary(data);return;}
       if(current==='storage')storageSummary(data);
       if(current==='devices')results.append(el('p','wf-inspect-device-warning',(deviceCopy[language]||deviceCopy.ar).warning));
-      if(!rows.length){results.append(el('p','wf-inspect-empty',current==='storage'?storageText[16]:texts.empty));return;}
+      if(!rows.length){results.append(current==='storage'?storageLabel(el('p','wf-inspect-empty'),'empty',storageText[16]):el('p','wf-inspect-empty',texts.empty));return;}
       const input=el('input','wf-inspect-search');input.type='search';input.placeholder=texts.search;input.setAttribute('aria-label',texts.search);
       const list=el('div','wf-inspect-record-list');results.append(input,list);
       const paint=()=>{const q=input.value.trim().toLocaleLowerCase();list.replaceChildren();
@@ -227,14 +249,14 @@
       pages.append(prev,status,next);
     }
     async function load(){
-      const ticket=++serial;message.textContent=texts.loading;message.dataset.type='loading';refresh.disabled=true;
+      const ticket=++serial;message.textContent=texts.loading;message.dataset.type='loading';if(current==='storage')storageLabel(message,'loading',texts.loading);refresh.disabled=true;
       for(const [name,b] of Object.entries(controls))b.setAttribute('aria-current',name===current?'page':'false');
       try{
         const data=await request('company.inspect',{workspaceId:company.id,section:current,offset});
         if(!alive||ticket!==serial)return;
         if(data?.readOnly!==true||data.workspace?.id!==company.id)throw Error('INVALID_INSPECTION');
         render(data);message.textContent='';message.dataset.type='done';
-      }catch(error){if(alive&&ticket===serial){results.replaceChildren();pages.replaceChildren();message.textContent=texts.error;message.dataset.type='error';}}
+      }catch(error){if(alive&&ticket===serial){results.replaceChildren();pages.replaceChildren();message.textContent=texts.error;if(current==='storage')storageLabel(message,'error',texts.error);message.dataset.type='error';}}
       finally{if(alive&&ticket===serial)refresh.disabled=false;}
     }
     load();
