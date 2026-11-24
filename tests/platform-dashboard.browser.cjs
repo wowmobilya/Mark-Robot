@@ -215,6 +215,18 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       return active?.hash==='#companies'&&!orbit.hidden&&Math.abs(center(active)-center(orbit))<1;
     });
     await menu.getByRole('link',{name:'Home'}).click();
+    const homePage=page.locator('#platform-page-home');
+    assert.equal(await homePage.getByRole('heading',{name:'WOW Control Center',exact:true}).count(),1,'one control-center heading');
+    await homePage.locator('.platform-home-directory').getByText('No company records on this page').waitFor();
+    for(const width of [320,390,768,1024,1280,1440]){
+      await page.setViewportSize({width,height:844});
+      const layout=await homePage.evaluate(el=>({overflow:document.documentElement.scrollWidth>innerWidth,
+        fits:[...el.querySelectorAll('.platform-server-robot,.platform-analytics,.platform-home-directory')].every(child=>{
+          const r=child.getBoundingClientRect();return r.left>=-1&&r.right<=innerWidth+1;
+        })}));
+      assert(!layout.overflow&&layout.fits,JSON.stringify({width,layout}));
+    }
+    await page.setViewportSize({width:390,height:844});
     const stats=page.locator('.platform-analytics');
     await stats.getByRole('heading',{name:'Platform pulse'}).waitFor();
     assert.equal(await stats.locator('[data-metric=companies] .platform-analytics-value').textContent(),'0');
