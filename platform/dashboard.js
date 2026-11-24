@@ -431,6 +431,7 @@
   };
   const deleteCompanyWords={
       "ar": {
+          "success": "تم حذف الشركة نهائيًا",
           "action": "حذف الشركة",
           "heading": "حذف نهائي من الخادم",
           "loading": "جارِ التحقق من بيانات الشركة…",
@@ -451,6 +452,7 @@
           "linkedWarning": "تحتوي الشركة على بيانات مرتبطة. سيحذف التأكيد النهائي الشركة وحساباتها وبياناتها من الخادم."
       },
       "en": {
+          "success": "Company permanently deleted",
           "action": "Delete company",
           "heading": "Permanently delete from server",
           "loading": "Checking company data…",
@@ -471,6 +473,7 @@
           "linkedWarning": "This company has linked data. Final confirmation permanently deletes the company, its accounts and its data from the server."
       },
       "tr": {
+          "success": "Şirket kalıcı olarak silindi",
           "action": "Şirketi sil",
           "heading": "Sunucudan kalıcı olarak sil",
           "loading": "Şirket verileri denetleniyor…",
@@ -491,6 +494,7 @@
           "linkedWarning": "Şirketin bağlı verileri var. Son onay şirketi, hesaplarını ve verilerini sunucudan kalıcı olarak siler."
       },
       "fr": {
+          "success": "Entreprise supprimée définitivement",
           "action": "Supprimer la société",
           "heading": "Suppression définitive du serveur",
           "loading": "Vérification des données…",
@@ -511,6 +515,7 @@
           "linkedWarning": "La confirmation finale supprimera définitivement cette société, ses comptes et ses données du serveur."
       },
       "ru": {
+          "success": "Компания удалена безвозвратно",
           "action": "Удалить компанию",
           "heading": "Безвозвратное удаление с сервера",
           "loading": "Проверка данных компании…",
@@ -1103,7 +1108,11 @@
                 }
               }while(result.deleted!==true&&result.cleanupPending===true);
               if(result.workspaceId!==company.id||result.deleted!==true)throw Error();
+              expandedCompany=null;
+              offset=0;
+              history.replaceState(null,'','#companies');
               await list();
+              status.textContent=delCopy.success+' · '+preview.name;
             }catch(error){
               message.textContent=delCopy.error+(error?.publicCode?' ('+error.publicCode+')':'');
             }finally{busy=false;cancel.disabled=false;back.disabled=false;validate();}
