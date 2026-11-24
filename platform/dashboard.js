@@ -430,14 +430,107 @@
     ru:['Компании','Тарифы','Поддержка','Разделы управления','Компаний пока нет.','Звонки']
   };
   const deleteCompanyWords={
-    ar:{action:'حذف الشركة',heading:'حذف نهائي من الخادم',loading:'جارِ التحقق من بيانات الشركة…',warning:'لا يمكن استعادة الشركة بعد الحذف. لا يُسمح بالحذف إلا عندما تكون الشركة فارغة تماماً.',blocked:'هذه الشركة تحتوي على بيانات أو حسابات أو ملفات مرتبطة، لذا مُنع حذفها حمايةً للسجلات. يمكنك تعليق الشركة بدلاً من ذلك.',type:'اكتب اسم الشركة كما يظهر للتأكيد',check:'أؤكد أنني أريد حذف هذه الشركة الفارغة نهائياً',confirm:'تأكيد الحذف النهائي',cancel:'إلغاء',error:'تعذّر إتمام الحذف. لم تُحذف الشركة، ويمكن إعادة المحاولة بعد التحقق.'},
-    en:{action:'Delete company',heading:'Permanently delete from server',loading:'Checking company data…',warning:'This cannot be undone. Only completely empty companies can be deleted.',blocked:'This company has linked data, accounts or files. Deletion was blocked to preserve records. You may suspend it instead.',type:'Type the exact company name to confirm',check:'I confirm permanent deletion of this empty company',confirm:'Permanently delete',cancel:'Cancel',error:'Deletion could not be completed. The company was not deleted.'},
-    tr:{action:'Şirketi sil',heading:'Sunucudan kalıcı olarak sil',loading:'Şirket verileri denetleniyor…',warning:'Bu işlem geri alınamaz. Yalnızca tamamen boş şirketler silinebilir.',blocked:'Bu şirkete bağlı veriler veya hesaplar var. Kayıtları korumak için silme engellendi. Dilerseniz askıya alabilirsiniz.',type:'Onay için şirket adını aynen yazın',check:'Bu boş şirketin kalıcı olarak silinmesini onaylıyorum',confirm:'Kalıcı olarak sil',cancel:'İptal',error:'Silme tamamlanamadı. Şirket silinmedi.'},
-    fr:{action:'Supprimer la société',heading:'Suppression définitive du serveur',loading:'Vérification des données…',warning:'Action irréversible. Seules les sociétés entièrement vides peuvent être supprimées.',blocked:'Cette société possède des données ou des comptes. Suppression bloquée pour protéger les archives. Vous pouvez la suspendre.',type:'Saisissez exactement le nom de la société',check:'Je confirme la suppression définitive de cette société vide',confirm:'Supprimer définitivement',cancel:'Annuler',error:'Échec de la suppression. La société n’a pas été supprimée.'},
-    ru:{action:'Удалить компанию',heading:'Безвозвратное удаление с сервера',loading:'Проверка данных компании…',warning:'Операция необратима. Удаляются только полностью пустые компании.',blocked:'У компании есть данные или учётные записи. Удаление заблокировано для сохранения записей. Можно приостановить компанию.',type:'Введите точное название компании для подтверждения',check:'Подтверждаю окончательное удаление пустой компании',confirm:'Удалить навсегда',cancel:'Отмена',error:'Удаление не выполнено. Компания сохранена.'}
+      "ar": {
+          "action": "حذف الشركة",
+          "heading": "حذف نهائي من الخادم",
+          "loading": "جارِ التحقق من بيانات الشركة…",
+          "warning": "هذه الشركة فارغة. سيُحذف سجلها نهائيًا.",
+          "blocked": "تعذّر السماح بحذف هذه الشركة. راجع حالة الحماية والملفات المرتبطة.",
+          "type": "اكتب اسم الشركة كما يظهر للتأكيد",
+          "check": "أتحمل مسؤولية حذف الشركة المحددة نهائيًا.",
+          "confirm": "تأكيد الحذف النهائي",
+          "cancel": "إلغاء",
+          "error": "تعذّر التحقق من نتيجة الحذف. حدّث القائمة قبل إعادة المحاولة.",
+          "keyword": "حذف",
+          "first": "التأكيد الأول: اكتب «حذف»",
+          "second": "التأكيد الثاني: اكتب «حذف» مرة أخرى",
+          "next": "الانتقال إلى التأكيد الثاني",
+          "repeat": "راجعت اسم الشركة وأتحمل مسؤولية حذفها مع بياناتها المرتبطة.",
+          "review": "تأكيد 2 من 2 — الحذف نهائي ولا يمكن التراجع.",
+          "back": "رجوع",
+          "linkedWarning": "تحتوي الشركة على بيانات مرتبطة. سيحذف التأكيد النهائي الشركة وحساباتها وبياناتها من الخادم."
+      },
+      "en": {
+          "action": "Delete company",
+          "heading": "Permanently delete from server",
+          "loading": "Checking company data…",
+          "warning": "This company is empty. Its company record will be permanently deleted.",
+          "blocked": "Deletion is unavailable. Check company protection and linked files.",
+          "type": "Type the exact company name to confirm",
+          "check": "I accept responsibility for permanently deleting this company.",
+          "confirm": "Permanently delete",
+          "cancel": "Cancel",
+          "error": "Could not verify the result. Refresh the company list before trying again.",
+          "keyword": "حذف",
+          "first": "Confirmation 1: type Arabic «حذف»",
+          "second": "Confirmation 2: type «حذف» again",
+          "next": "Proceed to final confirmation",
+          "repeat": "I checked the company name and accept responsibility for deleting it and its linked data.",
+          "review": "Confirmation 2 of 2 — this cannot be undone.",
+          "back": "Back",
+          "linkedWarning": "This company has linked data. Final confirmation permanently deletes the company, its accounts and its data from the server."
+      },
+      "tr": {
+          "action": "Şirketi sil",
+          "heading": "Sunucudan kalıcı olarak sil",
+          "loading": "Şirket verileri denetleniyor…",
+          "warning": "Bu şirket boş. Şirket kaydı kalıcı olarak silinecek.",
+          "blocked": "Silme işlemi kullanılamıyor. Şirket korumasını ve bağlı dosyaları kontrol edin.",
+          "type": "Onay için şirket adını aynen yazın",
+          "check": "Bu şirketi kalıcı olarak silmenin sorumluluğunu kabul ediyorum.",
+          "confirm": "Kalıcı olarak sil",
+          "cancel": "İptal",
+          "error": "Silme sonucu doğrulanamadı. Tekrar denemeden önce şirket listesini yenileyin.",
+          "keyword": "حذف",
+          "first": "1. onay: Arapça «حذف» yazın",
+          "second": "2. onay: yeniden «حذف» yazın",
+          "next": "İkinci onaya geç",
+          "repeat": "Şirket adını kontrol ettim. Şirketi ve bağlı verilerini silmenin sorumluluğunu kabul ediyorum.",
+          "review": "Onay 2/2 — geri alınamaz.",
+          "back": "Geri",
+          "linkedWarning": "Şirketin bağlı verileri var. Son onay şirketi, hesaplarını ve verilerini sunucudan kalıcı olarak siler."
+      },
+      "fr": {
+          "action": "Supprimer la société",
+          "heading": "Suppression définitive du serveur",
+          "loading": "Vérification des données…",
+          "warning": "Cette société est vide. Sa fiche sera définitivement supprimée.",
+          "blocked": "La suppression est indisponible. Vérifiez la protection de la société et les fichiers associés.",
+          "type": "Saisissez exactement le nom de la société",
+          "check": "J’assume la responsabilité de supprimer définitivement cette société.",
+          "confirm": "Supprimer définitivement",
+          "cancel": "Annuler",
+          "error": "Résultat incertain. Actualisez la liste des sociétés avant de réessayer.",
+          "keyword": "حذف",
+          "first": "Confirmation 1 : écrivez «حذف» en arabe",
+          "second": "Confirmation 2 : écrivez encore «حذف»",
+          "next": "Dernière confirmation",
+          "repeat": "J’ai vérifié le nom et j’assume la suppression de cette société et de ses données.",
+          "review": "Confirmation 2 sur 2 — action irréversible.",
+          "back": "Retour",
+          "linkedWarning": "La confirmation finale supprimera définitivement cette société, ses comptes et ses données du serveur."
+      },
+      "ru": {
+          "action": "Удалить компанию",
+          "heading": "Безвозвратное удаление с сервера",
+          "loading": "Проверка данных компании…",
+          "warning": "Компания пуста. Запись о ней будет удалена навсегда.",
+          "blocked": "Удаление недоступно. Проверьте защиту компании и связанные файлы.",
+          "type": "Введите точное название компании для подтверждения",
+          "check": "Я беру на себя ответственность за удаление этой компании.",
+          "confirm": "Удалить навсегда",
+          "cancel": "Отмена",
+          "error": "Не удалось проверить результат. Обновите список компаний перед повторной попыткой.",
+          "keyword": "حذف",
+          "first": "Подтверждение 1: введите «حذف»",
+          "second": "Подтверждение 2: повторите «حذف»",
+          "next": "Второе подтверждение",
+          "repeat": "Я проверил название и беру на себя ответственность за удаление компании и её данных.",
+          "review": "Подтверждение 2 из 2 — необратимо.",
+          "back": "Назад",
+          "linkedWarning": "Окончательное подтверждение навсегда удалит компанию, её учётные записи и связанные данные с сервера."
+      }
   };
-  const deletionConfirmWords={"ar":{"keyword":"حذف","first":"التأكيد الأول: اكتب «حذف»","second":"التأكيد الثاني: اكتب «حذف» مرة أخرى","next":"الانتقال إلى التأكيد الثاني","repeat":"أؤكد للمرة الثانية الحذف النهائي لهذه الشركة الفارغة","review":"تأكيد 2 من 2 — الحذف نهائي ولا يمكن التراجع.","back":"رجوع"},"en":{"keyword":"حذف","first":"Confirmation 1: type Arabic «حذف»","second":"Confirmation 2: type «حذف» again","next":"Proceed to final confirmation","repeat":"I confirm deleting this empty company a second time","review":"Confirmation 2 of 2 — this cannot be undone.","back":"Back"},"tr":{"keyword":"حذف","first":"1. onay: Arapça «حذف» yazın","second":"2. onay: yeniden «حذف» yazın","next":"İkinci onaya geç","repeat":"Boş şirketin silinmesini ikinci kez onaylıyorum","review":"Onay 2/2 — geri alınamaz.","back":"Geri"},"fr":{"keyword":"حذف","first":"Confirmation 1 : écrivez «حذف» en arabe","second":"Confirmation 2 : écrivez encore «حذف»","next":"Dernière confirmation","repeat":"Je confirme à nouveau la suppression de la société vide","review":"Confirmation 2 sur 2 — action irréversible.","back":"Retour"},"ru":{"keyword":"حذف","first":"Подтверждение 1: введите «حذف»","second":"Подтверждение 2: повторите «حذف»","next":"Второе подтверждение","repeat":"Подтверждаю удаление пустой компании ещё раз","review":"Подтверждение 2 из 2 — необратимо.","back":"Назад"}};
-  for(const locale of Object.keys(deletionConfirmWords)) Object.assign(deleteCompanyWords[locale],deletionConfirmWords[locale]);
   const deviceWords={
     ar:['الأجهزة المرتبطة','لا توجد أجهزة مرتبطة بهذه الشركة.','فك الارتباط','بعد التأكيد يستطيع صاحب هذا الحساب ربط جهاز آخر بتسجيل الدخول. تحقق من هوية صاحب الطلب.','تأكيد فك الارتباط','تاريخ الربط','مالك الشركة','تم فك ربط الجهاز.'],
     en:['Linked devices','This company has no linked devices.','Release device','After confirmation, this account can link a different device by signing in. Verify who requested the change.','Confirm release','Linked on','Company owner','Device released.'],
@@ -956,6 +1049,8 @@
           if(!deletion.isConnected)return;
           if(preview.workspaceId!==company.id||preview.name!==company.name||!Number.isSafeInteger(preview.revision))throw Error();
           if(preview.allowed!==true){deletion.replaceChildren(el('strong',delCopy.heading),el('p',delCopy.blocked));return;}
+          if(typeof preview.hasLinkedData!=='boolean')throw Error();
+          const linked=preview.hasLinkedData;
           const form=el('form'),title=el('strong',delCopy.heading),message=el('p');
           form.className='platform-delete-form';message.setAttribute('role','status');
           const label=el('label',delCopy.type),input=el('input');
@@ -976,9 +1071,10 @@
             confirm.disabled=busy||!firstValid||(stage===2&&(secondWord.value!==delCopy.keyword||!repeat.checked));
           };
           const showStage=()=>{
-            confirm.textContent=stage===1?delCopy.next:delCopy.confirm;
+            confirm.textContent=linked&&stage===1?delCopy.next:delCopy.confirm;
             actions.replaceChildren(cancel,...(stage===2?[back]:[]),confirm);
-            form.replaceChildren(title,el('p',stage===1?delCopy.warning:delCopy.review+' '+preview.name),
+            const identity=el('bdi',preview.name),description=stage===2?delCopy.review:linked?delCopy.linkedWarning:delCopy.warning;
+            form.replaceChildren(title,identity,el('p',description),
               ...(stage===1?[label,firstLabel,checkboxLabel]:[secondLabel,repeatLabel]),actions,message);
             message.textContent='';validate();
           };
@@ -989,12 +1085,13 @@
           showStage();deletion.replaceChildren(form);input.focus();
           form.onsubmit=async event=>{
             event.preventDefault();if(busy)return;validate();if(confirm.disabled)return;
-            if(stage===1){stage=2;secondWord.value='';repeat.checked=false;showStage();secondWord.focus();return;}
+            if(linked&&stage===1){stage=2;secondWord.value='';repeat.checked=false;showStage();secondWord.focus();return;}
             busy=true;validate();cancel.disabled=true;back.disabled=true;message.textContent=delCopy.loading;
             try{
               const result=await request('company.deleteEmpty',{
                 workspaceId:company.id,confirmName:preview.name,expectedRevision:preview.revision,
-                confirmed:true,confirmWord1:firstWord.value,confirmWord2:secondWord.value
+                confirmed:true,confirmWord1:firstWord.value,confirmWord2:linked?secondWord.value:'',
+                ...(linked&&stage===2&&repeat.checked?{acceptsLinkedData:true}:{})
               });
               if(result.workspaceId!==company.id||result.deleted!==true)throw Error();
               await list();
