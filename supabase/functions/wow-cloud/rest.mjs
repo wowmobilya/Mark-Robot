@@ -9,6 +9,14 @@ const UUID='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const MODULE_OBJECT_PATH=new RegExp('^(?:chat|files)/'+UUID+'/'+UUID+'/'+UUID+'/[0-9a-f]{64}$');
 const GALLERY_OBJECT_PATH=new RegExp('^'+UUID+'/gallery/'+UUID+'/'+UUID+'\\.(?:jpeg|png|webp)$');
 export const isStorageCleanupPath=path=>typeof path==='string'&&(MODULE_OBJECT_PATH.test(path)||GALLERY_OBJECT_PATH.test(path));
+const WORKSPACE_ID=new RegExp('^'+UUID+'$');
+function ownsWorkspaceObject(workspaceId,path){
+  if(!WORKSPACE_ID.test(workspaceId)||typeof path!=='string'||path.length>1024)return false;
+  const segments=path.split('/');
+  if(segments.some(part=>!part||part==='.'||part==='..'||/[\\\x00-\x1f]/.test(part)))return false;
+  return (segments.length>=2&&segments[0]===workspaceId)||
+    (segments.length>=3&&['chat','files'].includes(segments[0])&&segments[1]===workspaceId);
+}
 function rpcError(value) {
   const code=value?.code==='P0001'&&/^[A-Z][A-Z0-9_]{2,60}$/.test(value.message||'')?value.message:'SERVICE_UNAVAILABLE';
   let details={};try{details=JSON.parse(value?.details||'{}');}catch(_){}
@@ -98,6 +106,16 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     },
     auth,
     storage:{
+      ownsWorkspaceObject,
+      async removeWorkspaceObjects(workspaceId,paths){
+        if(!Array.isArray(paths)||!paths.length||paths.length>20||paths.some(path=>!ownsWorkspaceObject(workspaceId,path)))
+          throw failure('INVALID_STORAGE_PATH',422);
+        const result=await call('/storage/v1/object/mark-robot-private',{
+          method:'DELETE',body:{prefixes:paths},kind:'storage',removeObject:true
+        });
+        if(!Array.isArray(result)||result.length>paths.length||result.some(object=>!paths.includes(object?.name)))
+          throw failure('STORAGE_UNAVAILABLE',503);
+      },
       // Each call removes exactly one database-generated name in the private bucket.
       remove:path=>{
         if(!isStorageCleanupPath(path))throw failure('INVALID_STORAGE_PATH',422);
