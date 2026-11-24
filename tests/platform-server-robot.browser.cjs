@@ -11,7 +11,7 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
     const at=new Date().toISOString();
     let transport='ready';
     await page.route('https://robot.test/',route=>route.fulfill({contentType:'text/html',
-      body:'<meta name="viewport" content="width=device-width, initial-scale=1"><main style="--brand-primary:#3f7c94;--card:#fff;--text:#102030;--text2:#43586a;--input:#fafcfd;--border:#d9e3ea;--ui-accent:#3f7c94"></main>'}));
+      body:'<meta name="viewport" content="width=device-width, initial-scale=1"><main style="--brand-primary:#3f7c94;--card:#fff;--text:#102030;--text2:#43586a;--input:#fafcfd;--border:#d9e3ea;--ui-accent:#3f7c94"><section id="platform-page-home"><section class="platform-home-hero"></section></section></main>'}));
     await page.route('https://robot.test/service/health',route=>{
       if(transport==='unreachable')return route.abort('connectionrefused');
       const ready=transport==='ready';
@@ -19,12 +19,13 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
     });
     await page.goto('https://robot.test/');
     await page.addStyleTag({path:path.resolve(__dirname,'../platform/server-robot.css')});
+    await page.addStyleTag({path:path.resolve(__dirname,'../platform/home-command-center.css')});
     await page.addScriptTag({path:path.resolve(__dirname,'../platform/server-robot.js')});
     const id='adb5b000-9c21-49b4-92ec-0eb273230ab4';
     await page.evaluate(({id,at})=>{
       window.robotRequests=[];
       window.WFPlatformServerRobot.mount({
-        host:document.querySelector('main'),state:{companies:[{id,name:'Fixture company',status:'active'}],total:1},
+        host:document.querySelector('.platform-home-hero'),state:{companies:[{id,name:'Fixture company',status:'active'}],total:1},
         language:'en',endpoint:'/service',
         async request(action,params){
           window.robotRequests.push({action,params});
@@ -57,7 +58,17 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
     assert.equal(await robot.getByRole('link',{name:'Open company devices'}).getAttribute('href'),'#company/'+id+'/devices');
     assert.equal(await robot.getByRole('link',{name:'Open usage details'}).getAttribute('href'),'#company/'+id+'/usage');
     assert.deepEqual(await page.evaluate(()=>window.robotRequests[1]),{action:'limits.get',params:{workspaceId:id}});
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    for(const width of [320,390,768,1024,1280,1440,1920]){
+      await page.setViewportSize({width,height:844});
+      const bounds=await robot.evaluate(el=>{
+        const r=el.getBoundingClientRect();
+        return {fits:r.left>=-1&&r.right<=innerWidth+1,overflow:document.documentElement.scrollWidth>innerWidth,
+          panels:getComputedStyle(el.querySelector('.platform-server-robot-sections')).gridTemplateColumns.split(' ').length};
+      });
+      assert(bounds.fits&&!bounds.overflow&&bounds.panels===(width<=740?1:2),JSON.stringify({width,bounds}));
+      await robot.getByText('315 MB').waitFor();
+    }
+    await page.setViewportSize({width:320,height:760});
     assert.equal(await robot.getByRole('link',{name:/Registered companies/}).getAttribute('href'),'#companies');
     await robot.getByText('What needs attention?').waitFor();
     await page.evaluate(()=>{window.reportDown=true;});

@@ -86,7 +86,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       let f=u.pathname==='/platform/'?'platform/index.html':u.pathname.slice(1);
       if(f==='vendor/zxing-browser.min.js')qrDownloads++;
       if(f==='platform/admin-icon-192.png')return route.fulfill({path:path.join(__dirname,'..',f),contentType:'image/png'});
-      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/login-experience.css','platform/login-experience.js','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/analytics.js','platform/admin-audio.js','platform/pricing-cards.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js','platform/company-inspect.css','platform/company-inspect.js','platform/subscription-clocks.js','platform/developer-entry.js','developer-profile.js','developer-profile.css'].includes(f))return route.abort();
+      if(!['platform/index.html','ui-identity.css','platform/dashboard.css','platform/home-command-center.css','platform/login-experience.css','platform/login-experience.js','platform/dashboard.js','platform/admin-shell.js','platform/qr-invite.js','platform/analytics.js','platform/admin-audio.js','platform/pricing-cards.js','platform/support.js','platform/preferences.js','platform/relay.js','owner-invite.js','vendor/zxing-browser.min.js','platform/company-inspect.css','platform/company-inspect.js','platform/subscription-clocks.js','platform/developer-entry.js','developer-profile.js','developer-profile.css'].includes(f))return route.abort();
       return route.fulfill({path:path.join(__dirname,'..',f),contentType:f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'text/html; charset=utf-8'});
     });
     await page.goto(scope+'/platform/#support');assert.equal(qrDownloads,0,'login does not download the QR engine');
@@ -220,11 +220,11 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await homePage.locator('.platform-home-directory').getByText('No company records on this page').waitFor();
     for(const width of [320,390,768,1024,1280,1440]){
       await page.setViewportSize({width,height:844});
-      const layout=await homePage.evaluate(el=>({overflow:document.documentElement.scrollWidth>innerWidth,
+      const layout=await homePage.evaluate(el=>({display:getComputedStyle(el).display,columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,overflow:document.documentElement.scrollWidth>innerWidth,
         fits:[...el.querySelectorAll('.platform-server-robot,.platform-analytics,.platform-home-directory')].every(child=>{
           const r=child.getBoundingClientRect();return r.left>=-1&&r.right<=innerWidth+1;
         })}));
-      assert(!layout.overflow&&layout.fits,JSON.stringify({width,layout}));
+      assert(layout.display==='grid'&&layout.columns===(width>=1050?2:1)&&!layout.overflow&&layout.fits,JSON.stringify({width,layout}));
     }
     await page.setViewportSize({width:390,height:844});
     const stats=page.locator('.platform-analytics');
