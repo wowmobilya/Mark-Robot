@@ -67,7 +67,7 @@ test('storage deletion accepts only exact immutable chat/files object paths retu
   await remote.storage.remove(path);
   assert(calls[0].url.endsWith('/storage/v1/object/mark-robot-private'));assert.equal(calls[0].options.method,'DELETE');
   assert.deepEqual(JSON.parse(calls[0].options.body),{prefixes:[path]});
-  for(const wrong of ['',workspaceId+'/image.png','files/'+workspaceId,'files/../private','chat/'+workspaceId+'/'+userId+'/'+sessionId+'/'+('a'.repeat(64))+'/'])assert.throws(()=>remote.storage.remove(wrong),/INVALID_STORAGE_PATH/);
+  for(const wrong of ['',workspaceId+'/image.png','files/'+workspaceId,'files/../private','chat/'+workspaceId+'/'+userId+'/'+sessionId+'/'+('a'.repeat(64))+'/'])await assert.rejects(remote.storage.remove(wrong),/INVALID_STORAGE_PATH/);
   assert.equal(calls.length,1);
 });
 

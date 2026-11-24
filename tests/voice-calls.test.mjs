@@ -139,7 +139,10 @@ test('WOW familiar chat UI, in-chat events, customer signup and release source p
  assert.match(signup,/if\(!options\.registrationEnabled\)/);
  assert.match(html,/modules\/chat\/call-ui\.js\?v=8/);
  assert.match(html,/modules\/chat\/realtime-channel\.js\?v=1/);
- assert.match(html,/data-release="240"/);assert.match(sw,/wow-furniture-v240-cloud/);
+ const pageRelease=/<script\b[^>]*src="app-updates\.js[^"]*"[^>]*data-release="(\d+)"/.exec(html)?.[1];
+ const workerRelease=/\bconst CACHE_NAME\s*=\s*'wow-furniture-v(\d+)-cloud'/.exec(sw)?.[1];
+ assert(pageRelease&&Number(pageRelease)>=240,'retain the voice-call release baseline');
+ assert.equal(pageRelease,workerRelease,'page and worker releases must match');
  assert.match(workspace,/callUI\.controls\(room\)/);
  assert.match(workspace,/callUI\?\.renderHistoryInFeed\?\.\(\)/);
  assert.match(workspace,/wf-chat-bubble/);assert.match(ui,/wf-chat-call-chip/);

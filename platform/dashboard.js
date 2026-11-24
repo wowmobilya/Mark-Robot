@@ -735,8 +735,8 @@
     }
     arrangeMenu();
     const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);
-    const hero=el('section'),heroTitle=el('h3',homepage.heading),heroLead=el('p',homepage.caption);
-    hero.className='platform-home-hero';hero.append(heroTitle,heroLead);
+    const hero=el('section'),heroLead=el('p',homepage.caption);
+    hero.className='platform-home-hero';heroLead.className='platform-home-lead';hero.append(heroLead);
     serverRobot=window.WFPlatformServerRobot?.mount({host:hero,state:{...result,offset},request,language:lang.value,endpoint:config.endpoint});
     const quickHeading=el('h3',homepage.quick),quick=el('nav');
     quick.className='platform-home-quick';quick.setAttribute('aria-label',homepage.quick);
@@ -752,7 +752,30 @@
       body.className='platform-home-shortcut-copy';body.append(title,note);link.append(icon,body);
       quick.append(link);
     }
-    panels.home.append(hero,quickHeading,quick);
+    // Home uses only the founder-authorized list already loaded above; no second request.
+    const previewWords={
+      ar:['الشركات في الصفحة الحالية','عرض جميع الشركات','الحسابات','لا توجد شركات في الصفحة الحالية','حالة غير معروفة','فتح تفاصيل الشركة'],
+      en:['Companies on this page','View all companies','Accounts','No company records on this page','Unknown status','Open company details'],
+      tr:['Bu sayfadaki şirketler','Tüm şirketleri gör','Hesaplar','Bu sayfada şirket yok','Bilinmeyen durum','Şirket ayrıntılarını aç'],
+      fr:['Sociétés de cette page','Voir toutes les sociétés','Comptes','Aucune société sur cette page','Statut inconnu','Ouvrir les détails'],
+      ru:['Компании на этой странице','Все компании','Аккаунты','На этой странице нет компаний','Неизвестный статус','Открыть компанию']
+    }[lang.value];
+    const preview=el('section'),previewHead=el('div'),previewTitle=el('h3',previewWords[0]),directoryLink=el('a',previewWords[1]),previewList=el('div');
+    preview.className='platform-home-directory';previewHead.className='platform-home-directory-head';previewList.className='platform-home-directory-list';
+    directoryLink.href='#companies';previewHead.append(previewTitle,directoryLink);preview.append(previewHead,previewList);
+    const validCount=value=>Number.isSafeInteger(value)&&value>=0?value.toLocaleString(lang.value):'—';
+    for(const company of state.companies.slice(0,4)){
+      const entry=el('a'),mark=el('span'),copy=el('span'),name=el('strong',company.name),accounts=el('small',previewWords[2]+' · '+validCount(company.accounts));
+      const stateLabel=el('span',company.status==='active'?t(7):company.status==='suspended'?t(8):previewWords[4]);
+      entry.className='platform-home-company';entry.href='#company/'+company.id;
+      entry.setAttribute('aria-label',previewWords[5]+' · '+company.name);
+      mark.className='platform-home-company-mark';mark.setAttribute('aria-hidden','true');
+      copy.className='platform-home-company-copy';name.dir='auto';copy.append(name,accounts);
+      stateLabel.className='platform-home-company-state';stateLabel.dataset.state=company.status==='active'?'active':company.status==='suspended'?'suspended':'unknown';
+      entry.append(mark,copy,stateLabel);previewList.append(entry);
+    }
+    if(!previewList.childElementCount)previewList.append(el('p',previewWords[3]));
+    panels.home.append(hero,quickHeading,quick,preview);
     const createPanel=el('details'),createSummary=el('summary',homepage.openForm),createHint=el('p',homepage.formHelp);
     createPanel.className='platform-create-panel';createHint.className='platform-create-hint';
     form.className='platform-create-form';form.append(createHint);

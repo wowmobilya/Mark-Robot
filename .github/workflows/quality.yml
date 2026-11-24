@@ -43,7 +43,7 @@ jobs:
         run: npm audit --prefix supabase --omit=dev --audit-level=high
   chromium-fixtures:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, verified 2026-11-21
         with:
@@ -56,7 +56,7 @@ jobs:
       - name: Install pinned dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Install Chromium and its system dependencies
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: npx playwright install --with-deps chromium
       - name: Select the installed Playwright Chromium
         id: browser_ready
@@ -74,7 +74,7 @@ jobs:
       - name: Verify founder navigation, preferences, company branding and deferred finance startup
         if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
         timeout-minutes: 2
-        run: node --test tests/platform-login-experience.browser.cjs tests/platform-dashboard.browser.cjs tests/platform-brand.browser.cjs tests/platform-preferences.browser.cjs tests/finance-startup.browser.cjs tests/owner-alerts.browser.cjs tests/owner-enrollment.browser.cjs tests/company-invite-install.browser.cjs
+        run: node --test tests/platform-login-experience.browser.cjs tests/platform-dashboard.browser.cjs tests/platform-server-robot.browser.cjs tests/platform-brand.browser.cjs tests/platform-preferences.browser.cjs tests/finance-startup.browser.cjs tests/owner-alerts.browser.cjs tests/owner-enrollment.browser.cjs tests/company-invite-install.browser.cjs
       - name: Verify synthetic closed-app push with a native service worker
         if: ${{ !cancelled() && steps.browser_ready.outcome == 'success' }}
         timeout-minutes: 2
