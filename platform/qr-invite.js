@@ -48,7 +48,7 @@
         ctx.textAlign='center';ctx.fillStyle='#213a48';ctx.font='bold 52px system-ui, sans-serif';
         ctx.fillText('WOW FURNITURE',480,115);
         ctx.fillStyle='#5d7180';ctx.font='32px system-ui, sans-serif';ctx.fillText('MARK ROBOT · ADMIN',480,167);
-        ctx.fillStyle='#fff';ctx.fillRect(105,205,750,750);ctx.drawImage(img,125,225,710,710);
+        ctx.drawImage(img,150,250,660,660);
         ctx.fillStyle='#314b5d';ctx.font='bold 29px system-ui, sans-serif';ctx.fillText('SCAN TO OPEN OWNER INVITATION',480,1020);
         ctx.fillStyle='#738697';ctx.font='25px system-ui, sans-serif';ctx.fillText('WOW · Private invitation',480,1070);
         canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('PNG_EXPORT_FAILED')),'image/png');
@@ -60,6 +60,9 @@
   function attach(container,{svg,url,name='WOW'}) {
     if(!container||!svg||!url||container.querySelector('.platform-qr-actions'))return;
     markQr(svg);
+    const frame=E('div','platform-qr-frame');
+    svg.before(frame);
+    frame.append(svg);
     const w=labels(),buttons=E('div','platform-qr-actions'),note=E('p','platform-qr-note',w[5]),status=E('p','platform-qr-feedback');
     status.setAttribute('role','status');
     const imagePromise=svgPng(svg).catch(()=>null);

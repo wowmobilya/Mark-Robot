@@ -1313,7 +1313,7 @@ main>header .platform-header-link[href="#support"]:not([aria-label*="0"]):focus-
  color:var(--text);background:var(--card);text-decoration:none;font-weight:700;font-size:.86rem;
  overflow-wrap:anywhere;box-sizing:border-box;
 }
-.platform-company-device-link,.platform-company-device-tab{
+.platform-company-device-link,.platform-company-devices-tab{
  --company-tab-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='4' width='15' height='12' rx='2'/%3E%3Cpath d='M6 20h6m-3-4v4'/%3E%3Crect x='16' y='9' width='6' height='12' rx='1.6' fill='white'/%3E%3Cpath d='M18.5 18h1'/%3E%3C/svg%3E");
 }
 .platform-company-overview-tab{
@@ -1365,3 +1365,296 @@ main>header .platform-header-link[href="#support"]:not([aria-label*="0"]):focus-
 .platform-server-rack i:nth-child(3)::before{animation-delay:.4s}
 @keyframes platform-server-pulse{from{opacity:.25}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.platform-server-rack i::before{animation:none}}
+
+/* Company directory and company routes */
+#platform-page-companies:not([hidden]),.platform-company-page:not([hidden]){
+  --company-line:color-mix(in srgb,var(--ui-accent) 26%,var(--border));
+  --company-tint:color-mix(in srgb,var(--ui-accent) 8%,var(--card));
+  padding:clamp(.55rem,1.2vw,.85rem) 0;
+  border:0;
+  background:none;
+  box-shadow:none;
+}
+#platform-page-companies:not([hidden]){
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,15rem),1fr));
+}
+#platform-page-companies>h2,.platform-company-page .platform-company-profile-header{
+  margin:0!important;
+  padding:clamp(.85rem,2vw,1.35rem);
+  border:1px solid var(--company-line);
+  border-radius:18px;
+  background:radial-gradient(ellipse at 50% 0,color-mix(in srgb,var(--ui-accent) 17%,transparent),transparent 75%),var(--card);
+}
+#platform-page-companies>h2::before{display:none}
+#platform-page-companies .platform-company-overview{
+  margin:0;
+  padding:.65rem;
+  border:1px solid var(--company-line);
+  border-radius:15px;
+  background:var(--card);
+}
+#platform-page-companies .platform-company-card-v2{
+  grid-template-rows:auto auto 1fr auto;
+  gap:.48rem!important;
+  padding:.65rem .75rem!important;
+  border-color:var(--company-line)!important;
+  border-radius:16px!important;
+  background:var(--card)!important;
+}
+#platform-page-companies .platform-company-card-v2::before,.platform-company-page .platform-company-card-v2::before{display:none}
+#platform-page-companies .platform-brand-avatar{
+  inline-size:36px;
+  block-size:36px;
+  flex-basis:36px;
+  border-radius:10px;
+}
+#platform-page-companies .platform-company-name{font-size:.98rem}
+#platform-page-companies .platform-company-pills>span{padding:.22rem .45rem}
+#platform-page-companies .wf-subscription-clock{
+  grid-template-columns:30px minmax(0,1fr);
+  min-block-size:0;
+  padding:.4rem .5rem;
+  gap:.45rem;
+  border-radius:10px;
+}
+#platform-page-companies .wf-subscription-icon{inline-size:30px;block-size:30px}
+#platform-page-companies .wf-subscription-icon svg{inline-size:18px;block-size:18px}
+#platform-page-companies .platform-company-shortcuts{
+  grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);
+  gap:.35rem;
+}
+#platform-page-companies .platform-company-shortcuts>a{
+  gap:.3rem;
+  padding:.32rem .42rem;
+  font-size:.75rem;
+  line-height:1.3;
+}
+#platform-page-companies .platform-company-shortcuts>a::before{inline-size:1rem;block-size:1rem}
+#platform-page-companies .platform-company-page-link::after{display:none}
+.platform-company-page:not([hidden]){
+  display:grid;
+  gap:.7rem;
+}
+.platform-company-page .platform-company-profile-header{
+  display:grid;
+  justify-items:start;
+  gap:.15rem;
+}
+.platform-company-profile-header h2{
+  margin:0;
+  font-size:clamp(1.2rem,2.4vw,2rem);
+  overflow-wrap:anywhere;
+}
+.platform-company-page .platform-company-back{padding-inline:.18rem}
+.platform-company-page .platform-company-profile-nav{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,8rem),1fr));
+  background:var(--card);
+  border-color:var(--company-line);
+}
+.platform-company-profile-nav>a{
+  font-size:.8rem;
+  line-height:1.3;
+  background:var(--company-tint);
+}
+.platform-company-profile-nav>a[aria-current=page]{
+  box-shadow:inset 0 -2px var(--ui-accent);
+}
+.platform-company-subscription-tab{
+  --company-tab-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='3'/%3E%3Cpath d='M3 10h18M7 15h4'/%3E%3C/svg%3E");
+}
+.platform-company-activation-tab{
+  --company-tab-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 3 8 3v5c0 4-3 7-8 10-5-3-8-6-8-10V6zM8.5 12l2 2 4.5-5'/%3E%3C/svg%3E");
+}
+.platform-company-management-tab{
+  --company-tab-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 6h6m4 0h6M4 12h11m4 0h1M4 18h2m4 0h10M10 4v4M15 10v4M6 16v4'/%3E%3C/svg%3E");
+}
+.platform-company-page .platform-company-card-v2{
+  border-color:var(--company-line)!important;
+  background:var(--card)!important;
+}
+.platform-company-page .platform-company-tools>summary,
+.platform-company-page[data-company-view=overview] .platform-company-tools,
+.platform-company-page:not([data-company-view=overview]) .platform-company-primary-actions,
+.platform-company-page:not([data-company-view=overview],[data-company-view=activation]) .platform-company-connectivity,
+.platform-company-page:not([data-company-view=management]) [data-company-tool=management],
+.platform-company-page:not([data-company-view=activation]) [data-company-tool=activation],
+.platform-company-page:not([data-company-view=subscription]) [data-company-tool=subscription]{
+  display:none!important;
+}
+.platform-company-page:not([data-company-view=overview]) .platform-company-detail{align-items:start}
+.platform-company-page .platform-company-connectivity{grid-column:1/-1}
+.platform-company-page[data-company-view=overview] .platform-company-primary-actions{grid-column:1/-1}
+.platform-company-page .platform-company-tools [data-company-tool]:is(section):not(:empty){
+  margin-block:.55rem 0;
+}
+.platform-company-page .platform-company-tools>.platform-company-actions-grid{
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,10rem),1fr))!important;
+}
+@media(max-width:520px){
+  .platform-company-page .platform-company-profile-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .platform-company-page .platform-company-profile-nav>a{
+    flex-direction:column;
+    gap:.2rem;
+    min-block-size:62px;
+    padding:.35rem .2rem;
+    font-size:.7rem;
+  }
+  .platform-company-page .platform-company-tools>.platform-company-actions-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(hover:hover){
+  .platform-company-profile-nav>a:hover,#platform-page-companies .platform-company-shortcuts>a:hover{
+    border-color:var(--ui-accent);
+    background:var(--ui-soft);
+  }
+}
+
+/* Subscription illustrations share the current WOW accent in both themes. */
+.platform-pricing-card{
+  --plan-tone:var(--ui-accent);
+  --plan-halo:color-mix(in srgb,var(--plan-tone) 23%,transparent);
+  border-color:color-mix(in srgb,var(--plan-tone) 27%,var(--border))!important;
+  background:var(--card)!important;
+}
+.platform-pricing-card[data-tier=year]{--plan-tone:color-mix(in srgb,var(--ui-accent) 64%,#8f82bc)}
+.platform-pricing-card[data-tier=twoYears]{--plan-tone:color-mix(in srgb,var(--ui-accent) 62%,#c2914f)}
+.platform-pricing-card::after{display:none}
+.platform-pricing-card .wf-plan-art{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--plan-tone) 22%,var(--border));
+  border-radius:16px;
+  background:radial-gradient(ellipse at 50% 62%,var(--plan-halo),transparent 70%),var(--input);
+}
+.platform-pricing-card .wf-plan-art::before,.platform-pricing-card .wf-plan-art::after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inline-size:75%;
+  max-inline-size:230px;
+  block-size:57%;
+  border:1px solid var(--plan-halo);
+  border-radius:50%;
+  pointer-events:none;
+  transform:rotate(-17deg);
+}
+.platform-pricing-card .wf-plan-art::after{
+  transform:rotate(17deg);
+  box-shadow:0 0 15px var(--plan-halo);
+}
+.platform-pricing-card[data-tier] .wf-plan-art svg{
+  stroke:var(--plan-tone);
+  stroke-width:4.75;
+  filter:drop-shadow(0 6px 12px var(--plan-halo));
+}
+.platform-pricing-card .wf-plan-art svg>:first-child{fill:color-mix(in srgb,var(--plan-tone) 13%,var(--card))}
+.platform-pricing-card .wf-tier-line,.platform-pricing-card .wf-tier-orbit{stroke-opacity:.66}
+.platform-pricing-card .wf-tier-orbit{stroke-dasharray:3 5}
+.platform-pricing-card .wf-plan-art .wf-tier-dot{fill:var(--plan-tone)}
+.platform-pricing-card .platform-plan-fx{background:color-mix(in srgb,var(--plan-tone) 8%,var(--card))}
+.platform-company-page .wf-subscription-clock{
+  background:radial-gradient(ellipse at center,var(--company-tint),transparent 80%),var(--card);
+  border-color:var(--company-line);
+}
+html[data-wf-motion=reduced] :is(.platform-pricing-card,.platform-pricing-card .wf-plan-art svg,.wf-tier-dot,.wf-tier-spark,.wf-subscription-icon svg){
+  animation:none;
+  transition:none;
+  transform:none;
+}
+
+/* The frame animates independently of the QR modules and their quiet zone. */
+.platform-invite-card .platform-qr-frame{
+  --qr-tone:var(--ui-accent,#3f7c94);
+  --qr-frame-edge:color-mix(in srgb,var(--qr-tone) 58%,var(--border));
+  position:relative;
+  isolation:isolate;
+  display:grid;
+  justify-self:center;
+  inline-size:min(100%,clamp(13.25rem,32vw,18rem));
+  padding:clamp(.65rem,1.4vw,.95rem);
+  box-sizing:border-box;
+  border:1px solid var(--qr-frame-edge);
+  border-radius:20px;
+  background:radial-gradient(ellipse,var(--ui-soft),var(--card));
+}
+.platform-qr-frame::before,.platform-qr-frame::after{
+  content:"";
+  position:absolute;
+  inset:.22rem;
+  border:2px solid var(--qr-tone);
+  border-radius:17px;
+  clip-path:polygon(0 0,100% 0,100% 100%,0 100%,0 0,17% 0,17% 17%,0 17%,0 83%,17% 83%,17% 100%,83% 100%,83% 83%,100% 83%,100% 17%,83% 17%,83% 0,17% 0);
+  pointer-events:none;
+}
+.platform-qr-frame::after{
+  filter:drop-shadow(0 0 4px var(--qr-tone));
+  animation:platform-qr-frame-ready 1.2s ease-out both;
+}
+.platform-invite-card .platform-qr-frame .platform-setup-qr{
+  inline-size:100%;
+  max-inline-size:100%;
+  padding:0;
+  border:0;
+  border-radius:5px;
+  box-shadow:none;
+}
+@keyframes platform-qr-frame-ready{
+  from{opacity:0;transform:scale(.95)}
+  35%{opacity:1}
+  to{opacity:0;transform:scale(1.04)}
+}
+@media(prefers-reduced-motion:reduce){
+  .platform-qr-frame::after{display:none}
+}
+html[data-wf-motion=reduced] .platform-qr-frame::after{display:none}
+
+.platform-company-card-v2 .platform-company-edit-dialog{
+  inline-size:min(32rem,calc(100% - 1.25rem));
+  max-block-size:calc(100dvh - 1.25rem);
+  padding:clamp(.9rem,3vw,1.45rem);
+  border:1px solid var(--company-line,var(--border));
+  border-radius:20px;
+  color:var(--text);
+  background:var(--card);
+  box-shadow:0 18px 70px rgb(0 0 0 / .23);
+}
+.platform-company-edit-dialog::backdrop{background:rgb(9 20 33 / .56)}
+.platform-company-card-v2 .platform-company-edit-dialog form{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  margin:0;
+}
+.platform-company-edit-dialog form>:is(h3,label,span){grid-column:1/-1;overflow-wrap:anywhere}
+.platform-company-edit-dialog h3{margin:0}
+.platform-company-edit-dialog input{inline-size:100%;font-size:1rem}
+.platform-company-card-v2 .platform-company-edit-dialog form>button[type=submit]{grid-column:auto}
+
+.platform-side-drawer{
+  --drawer-edge:color-mix(in srgb,var(--ui-accent) 27%,var(--border));
+  inline-size:min(295px,86vw);
+  padding-inline:clamp(.65rem,2vw,1rem);
+  border-color:var(--drawer-edge);
+  background:var(--card);
+}
+.platform-side-drawer .platform-drawer-head{min-height:55px;margin-block-end:.35rem;padding-block-end:.5rem}
+.platform-side-drawer .platform-drawer-link{min-height:44px;padding:.26rem .45rem}
+.platform-side-drawer .platform-drawer-icon{inline-size:32px;block-size:32px;flex-basis:32px}
+.platform-side-drawer .platform-drawer-link[aria-current=page]{border-color:var(--drawer-edge);background:var(--ui-soft)}
+.platform-side-drawer .platform-density-widget{margin-block:.65rem;padding:.6rem;border-color:var(--drawer-edge)}
+@media(min-width:1025px){
+  #content>.platform-section-menu{
+    padding:.45rem;
+    border-color:color-mix(in srgb,var(--ui-accent) 24%,var(--border));
+    border-radius:17px;
+    background:var(--card);
+  }
+  #content>.platform-section-menu>.platform-section-link[aria-current=page]{
+    background:var(--ui-soft);
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ui-accent) 32%,var(--border));
+  }
+}
+@media(prefers-reduced-motion:no-preference){
+  html:not([data-wf-motion=reduced]) .platform-side-drawer:not([hidden]){animation:platform-drawer-enter .2s ease-out}
+}
+@keyframes platform-drawer-enter{from{opacity:0}to{opacity:1}}
+.platform-side-drawer .platform-drawer-quick{grid-template-columns:minmax(0,1fr)}

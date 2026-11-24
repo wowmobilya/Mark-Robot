@@ -113,8 +113,7 @@
     const quick=create('div','platform-drawer-quick');
     const theme=create('button','platform-drawer-theme');theme.type='button';
     theme.addEventListener('click',()=>pref()?.toggleTheme?.());
-    const settings=create('a','platform-drawer-settings',links.settings?.textContent||'⚙');settings.href='#settings';settings.addEventListener('click',close);
-    quick.append(theme,settings);drawer.append(quick,densityPicker());
+    quick.append(theme);drawer.append(quick,densityPicker());
     const footer=create('footer','platform-drawer-footer');
     const developerText={
       ar:['برمجة وتطوير','م. معتز بالله حاج شعبان'],

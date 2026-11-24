@@ -117,7 +117,6 @@ html.platform-auth-screen #content>.platform-login>button[type=submit]:disabled{
 html.platform-auth-screen #content>.wf-owner-invite{
  grid-column:2;margin:.45rem 0 0!important;max-width:100%;
 }
-html.platform-auth-screen #content>.platform-server-startup{grid-column:1/-1;justify-self:center}
 html.platform-auth-screen #status:not(:empty){margin:.65rem auto;max-width:37rem;padding:.6rem .95rem;border-radius:13px;background:color-mix(in srgb,#d7676d 10%,var(--auth-soft));color:var(--auth-ink);text-align:center;line-height:1.45}
 html.platform-auth-screen main>.platform-app-actions{width:100%;margin:.4rem 0 0;justify-content:space-between;min-width:0;background:transparent}
 html.platform-auth-screen main>.platform-app-actions .platform-release{color:var(--auth-ink)}
@@ -174,3 +173,113 @@ html[data-wf-motion=reduced] .platform-auth-stage::after{animation:none!importan
 @media(max-width:790px) and (min-height:620px){.platform-auth-network{display:flex;gap:5px;height:13px;align-items:center}.platform-auth-rack{display:none}.platform-auth-rack:first-child{display:flex;gap:3px}.platform-auth-rack:first-child i{width:18px;height:6px}}
 @media(prefers-reduced-motion:reduce){.platform-auth-experience :is(.platform-auth-gaze,.platform-auth-mouth,.platform-auth-brow-motion){animation:none;transition:none}}
 html[data-wf-motion=reduced] .platform-auth-experience :is(.platform-auth-gaze,.platform-auth-mouth,.platform-auth-brow-motion){animation:none;transition:none}
+
+/* Session restore fills the viewport until founder authorization completes. */
+main:has(#content>.platform-server-startup){
+ max-inline-size:none;
+ min-block-size:100dvh;
+ padding:0;
+}
+main:has(#content>.platform-server-startup)>:not(#content){display:none}
+main:has(#content>.platform-server-startup)>#content{margin:0;padding:0;border:0}
+#content>.platform-server-startup{
+ --startup-tone:var(--ui-accent,var(--brand-primary,#3f7c94));
+ --startup-surface:var(--card,#fff);
+ --startup-grid:color-mix(in srgb,var(--startup-tone) 12%,transparent);
+ --startup-aura:color-mix(in srgb,var(--startup-tone) 20%,transparent);
+ position:relative;
+ isolation:isolate;
+ display:grid;
+ align-content:center;
+ justify-items:center;
+ gap:clamp(.75rem,3vh,1.7rem);
+ inline-size:100%;
+ max-inline-size:none;
+ min-block-size:100dvh;
+ margin:0;
+ padding:max(1rem,env(safe-area-inset-top)) max(1rem,env(safe-area-inset-right))
+         max(1rem,env(safe-area-inset-bottom)) max(1rem,env(safe-area-inset-left));
+ border:0;
+ border-radius:0;
+ color:var(--text,CanvasText);
+ background:
+  radial-gradient(ellipse at center,var(--startup-aura),transparent 70%),
+  var(--bg,var(--startup-surface));
+}
+.platform-server-startup::before{
+ content:"";
+ position:absolute;
+ z-index:-1;
+ inset:0;
+ pointer-events:none;
+ background-image:linear-gradient(var(--startup-grid) 1px,transparent 1px),
+                  linear-gradient(90deg,var(--startup-grid) 1px,transparent 1px);
+ background-size:32px 32px;
+ mask-image:radial-gradient(ellipse at center,#000,transparent 82%);
+}
+.platform-startup-scene{
+ position:relative;
+ display:grid;
+ grid-template-columns:1fr auto 1fr;
+ align-items:center;
+ justify-items:center;
+ gap:clamp(.55rem,2.5vw,1.25rem);
+ inline-size:min(90vw,21rem);
+ color:var(--startup-tone);
+}
+.platform-startup-scene::before{
+ content:"";
+ grid-column:2;
+ grid-row:1;
+ inline-size:clamp(1.15rem,7vw,2.6rem);
+ block-size:1px;
+ background:currentColor;
+ box-shadow:0 0 12px currentColor;
+}
+.platform-startup-code,.platform-startup-scene .platform-server-rack{
+ display:grid;
+ place-content:center;
+ inline-size:100%;
+ min-block-size:clamp(4.2rem,16vw,7rem);
+ border:1px solid color-mix(in srgb,var(--startup-tone) 35%,var(--border,#d5e1e8));
+ border-radius:clamp(.85rem,3vw,1.55rem);
+ background:var(--startup-surface);
+ color:inherit;
+ box-shadow:0 12px 32px var(--startup-aura);
+}
+.platform-startup-code{
+ grid-column:1;
+ grid-row:1;
+ font:700 clamp(1.4rem,6vw,3rem)/1 ui-monospace,monospace;
+}
+.platform-startup-scene .platform-server-rack{grid-column:3;grid-row:1}
+.platform-startup-scene .platform-server-rack i{inline-size:clamp(2.15rem,7.5vw,3.6rem)}
+.platform-server-startup>strong{
+ font-size:clamp(.95rem,2.35vw,1.35rem);
+ max-inline-size:min(33ch,100%);
+ overflow-wrap:anywhere;
+ text-wrap:balance;
+}
+.platform-startup-progress{
+ inline-size:min(65%,11rem);
+ block-size:4px;
+ overflow:hidden;
+ border-radius:99px;
+ background:var(--startup-grid);
+}
+.platform-startup-progress::before{
+ content:"";
+ display:block;
+ inline-size:33.3%;
+ block-size:100%;
+ margin-left:0;
+ margin-right:auto;
+ border-radius:inherit;
+ background:var(--startup-tone);
+ animation:platform-startup-transfer 1.4s ease-in-out infinite alternate;
+}
+@keyframes platform-startup-transfer{to{transform:translateX(200%)}}
+html[data-wf-motion=reduced] .platform-server-startup :is(.platform-startup-progress,.platform-server-rack i)::before{animation:none}
+@media(prefers-reduced-motion:reduce){
+ .platform-startup-progress::before{animation:none}
+}

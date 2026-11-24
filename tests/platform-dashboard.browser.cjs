@@ -220,7 +220,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await controlCenterHeading.waitFor({state:'visible'});
     assert.equal(await controlCenterHeading.count(),1,'one control-center heading');
     await homePage.locator('.platform-home-directory').getByText('No company records on this page').waitFor();
-    for(const width of [320,390,768,1024,1280,1440]){
+    for(const width of [320,390,768,1024,1280,1440,1920]){
       await page.setViewportSize({width,height:844});
       const layout=await homePage.evaluate(el=>({display:getComputedStyle(el).display,columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,overflow:document.documentElement.scrollWidth>innerWidth,
         fits:[...el.querySelectorAll('.platform-server-robot,.platform-analytics,.platform-home-directory')].every(child=>{
@@ -312,7 +312,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       await page.setViewportSize(size);
       const box=await page.locator('.platform-company-card-v2').evaluate(card=>{
         const r=card.getBoundingClientRect();
-        const buttons=[...card.querySelectorAll('.platform-company-primary-actions button,.platform-company-refresh,.platform-company-tools summary')].map(x=>{
+        const buttons=[...card.querySelectorAll('.platform-company-primary-actions button,.platform-company-refresh')].map(x=>{
           const box=x.getBoundingClientRect();return {width:box.width,height:box.height,right:box.right,left:box.left};
         });
         return {left:r.left,right:r.right,overflow:document.documentElement.scrollWidth>innerWidth,buttons};
@@ -327,6 +327,9 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.getByRole('button',{name:'Open company program'}).click();
     assert.equal(await page.locator('.wf-inspect').getAttribute('aria-modal'),'true');
     await page.locator('.wf-inspect-back').click();
+    assert.equal(await page.getByRole('button',{name:'Rename'}).isVisible(),false);
+    await page.getByRole('link',{name:'Manage company',exact:true}).click();
+    await page.locator('.platform-company-page[data-company-view=management]').waitFor();
     assert(await page.locator('.platform-company-page .platform-company-tools').evaluate(details=>details.open));
     await page.getByRole('button',{name:'Manage company accounts'}).click();
     await page.locator('.wf-inspect-nav-item[data-section=accounts][aria-current=page]').waitFor();
@@ -344,10 +347,11 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await company.getByRole('button',{name:'Rename'}).click();const companyInput=editor.getByLabel('Company name');await companyInput.tap();assert.equal(await companyInput.evaluate(el=>el===document.activeElement&&!el.readOnly&&el.inputMode!=='none'),true);await companyInput.fill('Edited');
     await editor.getByRole('button',{name:'Save'}).click();await company.getByText('Edited').waitFor();
     await company.getByRole('button',{name:'Suspend'}).click();await page.keyboard.press('Escape');
-    assert.equal(await editor.count(),0);assert.equal(companyStatus,'active');
+    await editor.waitFor({state:'detached'});assert.equal(companyStatus,'active');
     await company.getByRole('button',{name:'Suspend'}).click();await editor.getByRole('button',{name:'Suspend'}).click();
     await company.getByText('Suspended').waitFor();
-    await company.getByRole('button',{name:'Owner setup'}).click();await page.getByRole('button',{name:'Issue new invitation'}).click();
+    await page.getByRole('link',{name:'Owner setup',exact:true}).click();
+    await page.getByRole('button',{name:'Issue new invitation'}).click();
     await page.getByRole('form',{name:'Owner setup'}).getByRole('button',{name:'Issue new invitation'}).click();
     await page.waitForFunction(previous=>document.querySelector('a[href*="#invite="]').href!==previous,link);
     for(const [state,label] of [['owner_suspended','Owner account suspended'],['owner_expired','Owner account expired'],['owner_unavailable','Owner account unavailable']]){
@@ -443,8 +447,10 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.getByLabel('Subscription price').fill('14.9975');await page.getByLabel('Currency').fill('eur');await page.getByLabel('Duration in days').fill('30');
     await page.getByLabel('Device limit').fill('3');await page.getByRole('button',{name:'Save'}).click();await page.waitForFunction(()=>!document.querySelector('form button:disabled'));
     assert(events.includes('platform.plans.save'));
-    await page.goBack();await company.getByRole('button',{name:'Subscription and usage'}).waitFor();
-    await company.getByRole('button',{name:'Subscription and usage'}).click();
+    await page.goBack();
+    await page.getByRole('link',{name:'Subscription and usage',exact:true}).click();
+    await page.locator('.platform-company-page[data-company-view=subscription]').waitFor();
+    assert.equal(await company.getByRole('button',{name:'Rename'}).isVisible(),false);
     const assignment=page.locator('form').filter({has:page.getByLabel('Subscription expiry')});
     await assignment.getByRole('combobox').selectOption({label:'Test plan'});
     await assignment.getByLabel('Extra staff phones').fill('2');
@@ -461,7 +467,6 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await assignment.getByRole('button',{name:'Save'}).click();await userUsage.nth(1).getByText('Unlimited',{exact:true}).waitFor();
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await page.locator('#lang').selectOption('ar',{force:true});
-    await company.getByRole('button',{name:'الاشتراك والاستخدام'}).click();
     await page.locator('.platform-usage-value bdi').first().waitFor();
     for(const width of [320,390,1024]){
       await page.setViewportSize({width,height:840});

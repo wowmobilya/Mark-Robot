@@ -300,7 +300,7 @@
     </g>`).join('');
     face.innerHTML=`<svg viewBox="86 60 428 234" focusable="false">${eyes}
       <path class="platform-robot-nose" d="M 300 198 Q 293 205 300 210 Q 307 205 300 198"/>
-      <path class="platform-robot-mouth" d="M 274 252.72 Q 300 273.72 326 252.72"/>
+      <path class="platform-robot-mouth" d="M 276 248 C 289 260 310 262 325 248"/>
     </svg>`;
     return face;
   }
@@ -364,14 +364,14 @@
       node.textContent=date?label+' · '+timeFormat.format(date):'';
       if(date)node.dateTime=date.toISOString();else node.removeAttribute('datetime');
     }
-    const pose={ready:'M 264 252.72 Q 300 284.72 336 252.72',attention:'M 274 263.72 Q 300 246.72 326 263.72',
-      unavailable:'M 274 263.72 Q 300 239.72 326 263.72',unreachable:'M 274 263.72 Q 300 239.72 326 263.72'};
+    const pose={ready:'M 267 244 C 286 269 314 270 333 244',attention:'M 279 251 C 292 249 308 249 321 254',
+      unavailable:'M 278 254 C 291 246 308 246 322 254',unreachable:'M 278 254 C 291 246 308 246 322 254'};
     const mouth=face.querySelector('.platform-robot-mouth');
     function setState(state){
       report.dataset.state=state;
       const glyph=({ready:'ready',attention:'attention',unavailable:'attention',unreachable:'offline',unverified:'unknown',partial:'unknown',staleState:'time',checking:'refresh',idle:'time'})[state];
       status.replaceChildren(icon(glyph),document.createTextNode(t[state]));
-      mouth.setAttribute('d',pose[state]||'M 274 252.72 Q 300 263.72 326 252.72');
+      mouth.setAttribute('d',pose[state]||'M 280 251 C 292 256 308 256 320 250');
     }
     function metrics(rows){
       const list=make('dl','platform-server-robot-metrics');

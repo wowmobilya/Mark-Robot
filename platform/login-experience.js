@@ -23,18 +23,18 @@
       '<circle class="platform-auth-eye-glint" cx="13" cy="19" r="4"/></g></g></g>').join('');
     el.innerHTML='<svg viewBox="86 48 428 252" focusable="false" aria-hidden="true">'+eyes+
       '<path class="platform-auth-nose" d="M 299 183 Q 293 193 296 196 Q 300 199 305 196"/>'+
-      '<path class="platform-auth-mouth" d="M 274 252.72 Q 300 273.72 326 252.72"/></svg>';
+      '<path class="platform-auth-mouth" d="M 276 248 C 289 260 310 262 325 248"/></svg>';
     return el;
   }
   const poses={
-    idle:'M 274 252.72 Q 300 273.72 326 252.72',
-    checking:'M 274 252.72 Q 300 264 326 252.72',
-    verifying:'M 274 252.72 Q 300 264 326 252.72',
-    ready:'M 264 252.72 Q 300 290 336 252.72',
-    unavailable:'M 274 264 Q 300 239 326 264',
-    unreachable:'M 273 259 Q 298 243 327 258',
-    unverified:'M 274 253 Q 300 253 326 253',
-    denied:'M 275 257 Q 297 249 325 261'
+    idle:'M 276 248 C 289 260 310 262 325 248',
+    checking:'M 280 251 C 292 256 308 256 320 250',
+    verifying:'M 280 251 C 292 256 308 256 320 250',
+    ready:'M 267 244 C 286 269 314 270 333 244',
+    unavailable:'M 278 254 C 291 246 308 246 322 254',
+    unreachable:'M 278 254 C 291 248 309 248 322 254',
+    unverified:'M 280 253 C 293 252 307 252 320 252',
+    denied:'M 279 251 C 292 249 308 249 321 254'
   };
   function healthUrl(endpoint){
     if(!endpoint||typeof endpoint!=='string')return null;
