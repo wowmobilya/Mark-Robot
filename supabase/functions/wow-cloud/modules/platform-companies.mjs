@@ -13,8 +13,8 @@ export function createPlatformActions({platformRpc,storage,requirePlatformFounde
   handlers['device.observe']=async({actor,body})=>deviceObservations(actor,'report',body);
   handlers['platform.company.inspect']=async({actor,body})=>{
     if(typeof body.workspaceId!=='string'||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(body.workspaceId)||
-      !['summary','accounts','companies','products','invoices','payments','settings','audit','gallery-orders','gallery-listings','files','calls','devices'].includes(body.section)||
-      !Number.isSafeInteger(body.offset)||body.offset<0||body.offset>10000)throw failure('INVALID_REQUEST',422);
+      !['summary','accounts','companies','products','invoices','payments','settings','audit','gallery-orders','gallery-listings','files','storage','calls','devices'].includes(body.section)||
+      !Number.isSafeInteger(body.offset)||body.offset<0||body.offset>(body.section==='storage'?2147483600:10000))throw failure('INVALID_REQUEST',422);
     // Founder identity and company scope are reverified by the service-only PostgreSQL RPC.
     return body.section==='devices'?deviceObservations(actor,'list',{workspaceId:body.workspaceId,offset:body.offset}):inspectCompany(actor,body.workspaceId,body.section,body.offset);
   };
