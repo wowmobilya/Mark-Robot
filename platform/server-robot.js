@@ -3,6 +3,44 @@
 
   const copy={
     ar:{
+      center:"مركز وكلاء مارك",
+      serverAgent:"وكيل مراقبة السيرفر",
+      agents:"وكلاء الشركة",
+      runCompany:"تشغيل فحص الشركة",
+      accountAgent:"الحسابات والاشتراك",
+      deviceAgent:"الأجهزة",
+      storageAgent:"التخزين",
+      expired:"انتهى الاشتراك",
+      soon:"ينتهي الاشتراك خلال ٧ أيام",
+      noPlan:"لا توجد باقة معيّنة",
+      expires:"تاريخ الانتهاء",
+      accounts:"الحسابات",
+      used:"المستخدم من السعة",
+      full:"وصل الاستخدام إلى الحد",
+      nearly:"تجاوز الاستخدام ٨٠٪ من السعة",
+      registered:"الأجهزة المسجلة",
+      deviceLink:"فتح أجهزة الشركة",
+      companyLink:"عرض الشركة",
+      outdated:"آخر تقرير مضى عليه أكثر من ١٥ دقيقة. حدّث القراءة.",
+      staleState:"القراءة قديمة",
+      again:"فحص الشركة مجددًا",
+      source:"المسجّل على السيرفر",
+      directory:"الشركات المسجّلة",
+      partial:"الخادم يستجيب، وتعذّر تحديث تقرير المراقبة.",
+      last:"آخر تقرير ناجح",
+      older:"القراءات أدناه من التقرير السابق. اضغط تحديث للمحاولة مجددًا.",
+      today:"أعطال التشغيل خلال ٢٤ ساعة",
+      normal:"اكتمل فحص المراقبة دون تنبيهات نشطة.",
+      review:"ما الذي يحتاج متابعة؟",
+      schedulerOff:"الفحص الدوري للشركات متوقف. راجع إعداد المهمة المجدولة على السيرفر.",
+      pushOff:"إرسال الإشعارات متوقف. راجع إعدادات خدمة الإشعارات على السيرفر.",
+      backlog:"تأخّر إرسال الإشعارات. راجع طابور الإرسال.",
+      staleJobs:"لم يكتمل الفحص الدوري لبعض الشركات في آخر ١٥ دقيقة.",
+      other:"افتح تفاصيل الأعطال أدناه لمراجعة السبب.",
+      issue:"عطل مسجّل",
+      failedPush:"تعذّر تسليم بعض الإشعارات.",
+      pushSchedule:"توقيت إرسال الإشعارات يحتاج إلى مراجعة.",
+      rls:"تحتاج حماية الوصول إلى البيانات إلى مراجعة.",
       title:'مارك روبوت',server:'تقرير الخادم',idle:'جاهز لفحص الخادم',checking:'جارٍ فحص الخادم…',ready:'الخادم يستجيب',
       attention:'الخادم يستجيب وتوجد حالات تحتاج متابعة',unavailable:'الخادم أبلغ عن عدم الجاهزية',unreachable:'تعذّر الوصول إلى الخادم من هذا الجهاز',
       unverified:'تعذّر التحقق من استجابة الخادم',checked:'آخر فحص',updated:'جُلب التقرير في',refresh:'تحديث حالة الخادم',
@@ -15,6 +53,44 @@
       month:'دقائق المكالمات للشهر الحالي بتوقيت UTC.',details:'افتح تفاصيل الاستهلاك'
     },
     en:{
+      center:"Mark agent center",
+      serverAgent:"Server monitor",
+      agents:"Company agents",
+      runCompany:"Run company check",
+      accountAgent:"Accounts and subscription",
+      deviceAgent:"Devices",
+      storageAgent:"Storage",
+      expired:"Subscription expired",
+      soon:"Subscription ends within 7 days",
+      noPlan:"No plan assigned",
+      expires:"Expires",
+      accounts:"Accounts",
+      used:"Capacity used",
+      full:"Usage has reached the limit",
+      nearly:"Over 80% of capacity used",
+      registered:"Registered devices",
+      deviceLink:"Open company devices",
+      companyLink:"Open company",
+      outdated:"The report is over 15 minutes old. Refresh for current readings.",
+      staleState:"Report is out of date",
+      again:"Run company check again",
+      source:"Recorded by the server",
+      directory:"Registered companies",
+      partial:"Server responded. Monitoring could not be refreshed.",
+      last:"Last successful report",
+      older:"Showing the previous readings. Refresh to try again.",
+      today:"Failed scheduled runs in 24 hours",
+      normal:"Monitoring completed with no active alerts.",
+      review:"What needs attention?",
+      schedulerOff:"Scheduled checks are off. Review the server scheduler.",
+      pushOff:"Notifications are switched off. Review the server notification settings.",
+      backlog:"Notifications are overdue. Review the delivery queue.",
+      staleJobs:"Some companies have missed their scheduled check in the last 15 minutes.",
+      other:"Open the failure details below to review the cause.",
+      issue:"Recorded failure",
+      failedPush:"Some notifications could not be delivered.",
+      pushSchedule:"The notification schedule needs review.",
+      rls:"Data access protection needs review.",
       title:'Mark Robot',server:'Server report',idle:'Ready to check the server',checking:'Checking the server…',ready:'Server responded',
       attention:'Server responded. Some items need attention.',unavailable:'The server reported that it is unavailable',unreachable:'Could not reach the server from this device',
       unverified:'Could not verify the server response',checked:'Last checked',updated:'Report fetched',refresh:'Refresh server status',
@@ -27,6 +103,44 @@
       month:'Call minutes cover the current UTC month.',details:'Open usage details'
     },
     tr:{
+      center:"Mark aracı merkezi",
+      serverAgent:"Sunucu izleme aracı",
+      agents:"Şirket araçları",
+      runCompany:"Şirket kontrolünü çalıştır",
+      accountAgent:"Hesaplar ve abonelik",
+      deviceAgent:"Cihazlar",
+      storageAgent:"Depolama",
+      expired:"Abonelik sona erdi",
+      soon:"Abonelik 7 gün içinde sona eriyor",
+      noPlan:"Paket atanmamış",
+      expires:"Bitiş tarihi",
+      accounts:"Hesaplar",
+      used:"Kullanılan kapasite",
+      full:"Kullanım sınıra ulaştı",
+      nearly:"Kapasitenin %80’inden fazlası kullanıldı",
+      registered:"Kayıtlı cihazlar",
+      deviceLink:"Şirket cihazlarını aç",
+      companyLink:"Şirketi aç",
+      outdated:"Rapor 15 dakikadan eski. Güncel veriler için yenileyin.",
+      staleState:"Rapor güncel değil",
+      again:"Şirket kontrolünü tekrarla",
+      source:"Sunucu kaydı",
+      directory:"Kayıtlı şirketler",
+      partial:"Sunucu yanıt verdi. İzleme raporu güncellenemedi.",
+      last:"Son başarılı rapor",
+      older:"Önceki ölçümler gösteriliyor. Tekrar denemek için yenileyin.",
+      today:"Son 24 saatte başarısız görevler",
+      normal:"İzleme tamamlandı. Etkin uyarı yok.",
+      review:"Neyi kontrol etmeliyim?",
+      schedulerOff:"Zamanlanmış kontroller kapalı. Sunucunun görev zamanlayıcısını kontrol edin.",
+      pushOff:"Bildirim gönderimi kapalı. Sunucunun bildirim ayarlarını kontrol edin.",
+      backlog:"Bildirimler gecikiyor. Gönderim kuyruğunu kontrol edin.",
+      staleJobs:"Bazı şirketlerin son 15 dakika içindeki zamanlanmış kontrolü tamamlanmadı.",
+      other:"Nedeni incelemek için aşağıdaki hata ayrıntılarını açın.",
+      issue:"Kaydedilen hata",
+      failedPush:"Bazı bildirimler teslim edilemedi.",
+      pushSchedule:"Bildirim zamanlaması kontrol edilmeli.",
+      rls:"Veri erişim koruması kontrol edilmeli.",
       title:'Mark Robot',server:'Sunucu raporu',idle:'Sunucu denetlenebilir',checking:'Sunucu denetleniyor…',ready:'Sunucu yanıt verdi',
       attention:'Sunucu yanıt verdi. Bazı durumlar incelenmeli.',unavailable:'Sunucu hizmetin kullanılamadığını bildirdi',unreachable:'Bu cihazdan sunucuya ulaşılamadı',
       unverified:'Sunucu yanıtı doğrulanamadı',checked:'Son denetim',updated:'Rapor alındı',refresh:'Sunucu durumunu yenile',
@@ -39,6 +153,44 @@
       month:'Arama dakikaları geçerli UTC ayına aittir.',details:'Kullanım ayrıntılarını aç'
     },
     fr:{
+      center:"Centre des agents Mark",
+      serverAgent:"Agent de surveillance du serveur",
+      agents:"Agents de l’entreprise",
+      runCompany:"Vérifier l’entreprise",
+      accountAgent:"Comptes et abonnement",
+      deviceAgent:"Appareils",
+      storageAgent:"Stockage",
+      expired:"Abonnement expiré",
+      soon:"L’abonnement expire dans 7 jours ou moins",
+      noPlan:"Aucun forfait attribué",
+      expires:"Expiration",
+      accounts:"Comptes",
+      used:"Capacité utilisée",
+      full:"La limite est atteinte",
+      nearly:"Plus de 80 % de la capacité utilisée",
+      registered:"Appareils enregistrés",
+      deviceLink:"Ouvrir les appareils",
+      companyLink:"Ouvrir l’entreprise",
+      outdated:"Le rapport date de plus de 15 minutes. Actualisez les mesures.",
+      staleState:"Rapport ancien",
+      again:"Relancer la vérification",
+      source:"Relevé du serveur",
+      directory:"Entreprises enregistrées",
+      partial:"Le serveur répond. Le rapport de suivi n’a pas pu être actualisé.",
+      last:"Dernier rapport reçu",
+      older:"Les mesures précédentes sont affichées. Actualisez pour réessayer.",
+      today:"Exécutions en échec sur 24 h",
+      normal:"Contrôle terminé sans alerte active.",
+      review:"Que faut-il vérifier ?",
+      schedulerOff:"Les contrôles périodiques sont désactivés. Vérifiez le planificateur du serveur.",
+      pushOff:"Les notifications sont désactivées. Vérifiez leur configuration sur le serveur.",
+      backlog:"Des notifications sont en retard. Vérifiez la file d’envoi.",
+      staleJobs:"Certaines entreprises n’ont pas été contrôlées dans les 15 dernières minutes.",
+      other:"Consultez le détail des incidents ci-dessous.",
+      issue:"Échec enregistré",
+      failedPush:"Certaines notifications n’ont pas été livrées.",
+      pushSchedule:"La planification des notifications est à vérifier.",
+      rls:"La protection de l’accès aux données est à vérifier.",
       title:'Robot Mark',server:'Rapport serveur',idle:'Prêt à vérifier le serveur',checking:'Vérification du serveur…',ready:'Le serveur a répondu',
       attention:'Le serveur a répondu. Certains éléments sont à vérifier.',unavailable:'Le serveur a signalé son indisponibilité',unreachable:'Le serveur est inaccessible depuis cet appareil',
       unverified:'Impossible de vérifier la réponse du serveur',checked:'Dernière vérification',updated:'Rapport récupéré',refresh:'Actualiser le serveur',
@@ -51,6 +203,44 @@
       month:'Les minutes concernent le mois UTC en cours.',details:'Ouvrir les détails de consommation'
     },
     ru:{
+      center:"Центр агентов Mark",
+      serverAgent:"Монитор сервера",
+      agents:"Агенты компании",
+      runCompany:"Проверить компанию",
+      accountAgent:"Аккаунты и подписка",
+      deviceAgent:"Устройства",
+      storageAgent:"Хранилище",
+      expired:"Подписка закончилась",
+      soon:"Подписка истекает в течение 7 дней",
+      noPlan:"Тариф не назначен",
+      expires:"Окончание",
+      accounts:"Аккаунты",
+      used:"Использовано",
+      full:"Лимит достигнут",
+      nearly:"Использовано более 80 %",
+      registered:"Зарегистрированные устройства",
+      deviceLink:"Устройства компании",
+      companyLink:"Открыть компанию",
+      outdated:"Отчёт старше 15 минут. Обновите показания.",
+      staleState:"Устаревший отчёт",
+      again:"Повторить проверку компании",
+      source:"По данным сервера",
+      directory:"Зарегистрированные компании",
+      partial:"Сервер ответил. Данные мониторинга обновить не удалось.",
+      last:"Последний успешный отчёт",
+      older:"Показаны предыдущие данные. Обновите отчёт ещё раз.",
+      today:"Сбои задач за 24 часа",
+      normal:"Проверка завершена. Активных предупреждений нет.",
+      review:"Что требует внимания?",
+      schedulerOff:"Регулярные проверки отключены. Проверьте планировщик сервера.",
+      pushOff:"Отправка уведомлений отключена. Проверьте настройки уведомлений сервера.",
+      backlog:"Уведомления задерживаются. Проверьте очередь отправки.",
+      staleJobs:"У некоторых компаний не прошла плановая проверка за последние 15 минут.",
+      other:"Откройте сведения о сбоях ниже.",
+      issue:"Зарегистрированный сбой",
+      failedPush:"Часть уведомлений не доставлена.",
+      pushSchedule:"Проверьте расписание отправки уведомлений.",
+      rls:"Проверьте защиту доступа к данным.",
       title:'Робот Mark',server:'Отчёт сервера',idle:'Готов к проверке сервера',checking:'Проверка сервера…',ready:'Сервер ответил',
       attention:'Сервер ответил. Некоторые события требуют внимания.',unavailable:'Сервер сообщил о недоступности',unreachable:'Сервер недоступен с этого устройства',
       unverified:'Ответ сервера не удалось проверить',checked:'Последняя проверка',updated:'Отчёт получен',refresh:'Обновить состояние сервера',
@@ -69,6 +259,28 @@
     if(text!==undefined)node.textContent=text;
     return node;
   };
+  const icons={
+    server:'<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01M12 7h5M12 18h5"/>',
+    companies:'<path d="M4 21V4h11v17M15 10h5v11M2 21h20M7 8h1m3 0h1m-5 4h1m3 0h1m-5 4h1m3 0h1"/>',
+    accounts:'<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 7a3 3 0 0 1 0 6m2 2a5 5 0 0 1 3 5"/>',
+    devices:'<rect x="3" y="3" width="15" height="12" rx="2"/><path d="M9 15v4m-4 1h7"/><rect x="14" y="9" width="7" height="12" rx="2"/>',
+    storage:'<path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
+    refresh:'<path d="M20 6v5h-5M4 18v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/>',
+    ready:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+    attention:'<path d="m12 3 10 18H2Z"/><path d="M12 9v5m0 3h.01"/>',
+    time:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    offline:'<path d="m3 3 18 18M3 9a14 14 0 0 1 3-2m4-1a15 15 0 0 1 11 3M6 13a10 10 0 0 1 5-2m5 1 2 1m-9 4a5 5 0 0 1 6 0m-3 3h.01"/>',
+    unknown:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1.5 1-1.5 1.5-1.5 3m0 3h.01"/>'
+  };
+  function icon(name){
+    const node=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    node.setAttribute('class','platform-agent-icon');node.setAttribute('viewBox','0 0 24 24');
+    node.setAttribute('aria-hidden','true');node.setAttribute('focusable','false');
+    node.innerHTML=icons[name];return node;
+  }
+  function titled(tag,cls,label,glyph){
+    const node=make(tag,cls,label);node.prepend(icon(glyph));return node;
+  }
   const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
   const quantity=value=>Number.isFinite(value)&&value>=0;
   const parseTime=value=>typeof value==='string'&&Number.isFinite(Date.parse(value))?new Date(value):null;
@@ -124,12 +336,12 @@
     const header=make('header','platform-server-robot-head'),status=make('p','platform-server-robot-status');
     const title=make('div','platform-server-robot-heading'),face=makeFace();
     const checked=make('time','platform-server-robot-time');
-    const refresh=make('button','platform-server-robot-refresh',t.refresh);
+    const refresh=titled('button','platform-server-robot-refresh',t.refresh,'refresh');
     refresh.type='button';status.setAttribute('role','status');status.setAttribute('aria-atomic','true');
-    title.append(make('h4','',t.title),status,checked);header.append(face,title,refresh);report.append(header);
+    title.append(make('h4','',t.center),status,checked);header.append(face,title,refresh);report.append(header);
     const sections=make('div','platform-server-robot-sections');
     const server=make('section','platform-server-robot-panel'),serverData=make('div');
-    server.append(make('h5','',t.server),serverData);sections.append(server);
+    server.append(titled('h5','',t.serverAgent,'server'),serverData);sections.append(server);
     const company=make('section','platform-server-robot-panel');
     const control=make('label','platform-server-robot-select',t.select),select=make('select');
     control.append(select);
@@ -138,8 +350,15 @@
     const companyStatus=make('p','platform-server-robot-note'),timestamp=make('time','platform-server-robot-time');
     companyStatus.setAttribute('role','status');
     const companyData=make('div'),details=make('a','platform-server-robot-link',t.details);details.hidden=true;
-    company.append(make('h5','',t.company),control,pages,companyStatus,timestamp,companyData,details);
-    sections.append(company);report.append(sections);host.append(report);
+    const runCompany=titled('button','platform-server-robot-refresh',t.runCompany,'refresh');
+    runCompany.type='button';runCompany.disabled=true;
+    company.append(titled('h5','',t.agents,'companies'),control,pages,runCompany,companyStatus,timestamp,companyData,details);
+    sections.append(company);
+    const directory=make('a','platform-server-robot-directory');
+    directory.href='#companies';
+    directory.append(titled('span','',t.directory,'companies'));
+    if(quantity(state?.total))directory.append(make('strong','',format(state.total)));
+    report.append(directory,sections);host.append(report);
 
     function setTime(node,label,date){
       node.textContent=date?label+' · '+timeFormat.format(date):'';
@@ -149,7 +368,9 @@
       unavailable:'M 274 263.72 Q 300 239.72 326 263.72',unreachable:'M 274 263.72 Q 300 239.72 326 263.72'};
     const mouth=face.querySelector('.platform-robot-mouth');
     function setState(state){
-      report.dataset.state=state;status.textContent=t[state];
+      report.dataset.state=state;
+      const glyph=({ready:'ready',attention:'attention',unavailable:'attention',unreachable:'offline',unverified:'unknown',partial:'unknown',staleState:'time',checking:'refresh',idle:'time'})[state];
+      status.replaceChildren(icon(glyph),document.createTextNode(t[state]));
       mouth.setAttribute('d',pose[state]||'M 274 252.72 Q 300 263.72 326 252.72');
     }
     function metrics(rows){
@@ -159,17 +380,21 @@
       }
       return list;
     }
+    let previousReport=null;
     function showOperations(data){
       serverData.replaceChildren();
-      if(typeof data?.healthy!=='boolean'){
-        serverData.append(make('p','platform-server-robot-note',t.monitoring));
-        return;
+      const fresh=typeof data?.healthy==='boolean' && Boolean(parseTime(data.checkedAt));
+      if(fresh)previousReport=data;
+      else{
+        serverData.append(make('p','platform-server-robot-notice',previousReport?t.older:t.monitoring));
+        if(!previousReport)return;
+        data=previousReport;
       }
       const {database,scheduler,push}=data;
       const connections=format(database?.clientConnections);
       const lastRun=parseTime(scheduler?.lastRunAt);
       const stamp=make('time','platform-server-robot-time');
-      setTime(stamp,t.updated,parseTime(data.checkedAt));
+      setTime(stamp,t.last,parseTime(data.checkedAt));
       const rows=[
         [t.database,bytes(database?.bytes)],
         [t.connections,quantity(database?.clientConnections)&&quantity(database?.maxConnections)?connections+' / '+format(database.maxConnections):connections],
@@ -179,7 +404,25 @@
       ];
       if(push?.overdue>0)rows.push([t.overdue,format(push.overdue)]);
       if(scheduler?.staleWorkspaces>0)rows.push([t.stale,format(scheduler.staleWorkspaces)]);
-      serverData.append(stamp,metrics(rows));
+      if(quantity(scheduler?.failedRuns24h))rows.push([t.today,format(scheduler.failedRuns24h)]);
+      serverData.append(stamp);
+      const reasons=[];
+      if(scheduler?.configured===false)reasons.push(t.schedulerOff);
+      if(push?.configured===false)reasons.push(t.pushOff);
+      if(push?.overdue>0)reasons.push(t.backlog);
+      if(scheduler?.staleWorkspaces>0)reasons.push(t.staleJobs);
+      const codeLabels={PUSH_BACKLOG:t.backlog,PUSH_FAILURES:t.failedPush,PUSH_NOT_CONFIGURED:t.pushOff,PUSH_SCHEDULE:t.pushSchedule,RLS_DISABLED:t.rls};
+      for(const item of Array.isArray(data.incidents)?data.incidents:[]){
+        if(item.active && Object.hasOwn(codeLabels,item.code) && !reasons.includes(codeLabels[item.code]))reasons.push(codeLabels[item.code]);
+      }
+      if(reasons.length || data.healthy===false){
+        const guide=make('div','platform-server-robot-guide'),list=make('ul');
+        for(const reason of reasons)list.append(make('li','',reason));
+        guide.append(make('strong','',t.review));
+        if(reasons.length)guide.append(list);else guide.append(make('p','',t.other));
+        serverData.append(guide);
+      }else if(fresh)serverData.append(make('p','platform-server-robot-note',t.normal));
+      serverData.append(metrics(rows));
       const active=Array.isArray(data.incidents)?data.incidents.filter(item=>item.active).map(item=>({code:item.code,at:item.lastSeenAt})):[];
       const failures=Array.isArray(data.recentFailures)?data.recentFailures:[];
       const entries=[...active,...failures].filter(item=>typeof item?.code==='string'&&/^[A-Z0-9_]{2,64}$/i.test(item.code)).slice(0,8);
@@ -187,25 +430,37 @@
       const issues=make('details','platform-server-robot-issues'),list=make('ul');
       for(const item of entries){
         const line=make('li'),at=parseTime(item.at),time=make('time');
-        line.append(make('code','',item.code));
+        line.append(make('span','',Object.hasOwn(codeLabels,item.code)?codeLabels[item.code]:t.issue),make('code','',item.code));
         if(at){time.dateTime=at.toISOString();time.textContent=timeFormat.format(at);line.append(time);}
         list.append(line);
       }
       issues.append(make('summary','',t.failures),list);serverData.append(issues);
     }
-    let observer;
+    let observer,ageTimer;
+    const maxAge=15*60*1000;
     async function checkServer(){
       if(refresh.disabled||!report.isConnected)return;
-      observer?.disconnect();refresh.disabled=true;setState('checking');
+      observer?.disconnect();clearTimeout(ageTimer);refresh.disabled=true;setState('checking');
       try{
         const [health,operations]=await Promise.allSettled([readHealth(endpoint),request('operationsReport')]);
         if(!report.isConnected)return;
         const publicHealth=health.status==='fulfilled'?health.value:{state:'unverified'};
         const data=operations.status==='fulfilled'?operations.value:null;
         const attention=data?.healthy===false||(quantity(data?.activeIncidents)&&data.activeIncidents>0);
-        setState(publicHealth.state==='ready'&&attention?'attention':publicHealth.state);
+        const complete=typeof data?.healthy==='boolean'&&Boolean(parseTime(data.checkedAt));
+        setState(publicHealth.state==='ready'?(complete?(attention?'attention':'ready'):'partial'):publicHealth.state);
         setTime(checked,t.checked,publicHealth.at||new Date());
         showOperations(data);
+        clearTimeout(ageTimer);
+        if(complete&&publicHealth.state==='ready'){
+          const markOld=()=>{
+            if(!report.isConnected)return;
+            setState('staleState');
+            serverData.prepend(make('p','platform-server-robot-notice',t.outdated));
+          };
+          const remaining=parseTime(data.checkedAt).getTime()+maxAge-Date.now();
+          if(remaining<=0)markOld();else ageTimer=setTimeout(markOld,remaining);
+        }
       }finally{refresh.disabled=false;}
     }
     refresh.onclick=checkServer;setState('idle');
@@ -220,20 +475,53 @@
       previous.hidden=offset===0;next.hidden=!(quantity(total)&&offset+pageCount<total);
       pages.hidden=previous.hidden&&next.hidden;
     }
+    function companyAgents(row,data){
+      const scan=make('div','platform-company-agent-scan');
+      const limit=(effective,base)=>Object.hasOwn(data,effective)?data[effective]:data.plan?.[base];
+      function agent(glyph,title,measure,used,cap,formatValue,extra,link,label){
+        const card=make('section','platform-company-agent');
+        card.append(titled('h6','',title,glyph));
+        const measured=quantity(used)?formatValue(used):t.unknown;
+        const evidence=quantity(cap)?measured+' / '+formatValue(cap):measured;
+        const reading=make('p','platform-company-agent-reading');
+        reading.append(make('span','',measure),make('strong','',evidence));
+        card.append(reading);
+        if(quantity(used)&&quantity(cap)){
+          const issue=used>=cap&&(cap>0||used>0)?t.full:cap>0&&used/cap>.8?t.nearly:'';
+          if(issue)card.append(make('p','platform-agent-attention',issue));
+        }
+        if(extra)card.append(make('p','platform-server-robot-note',extra));
+        const open=make('a','platform-server-robot-link',label);open.href=link;card.append(open);scan.append(card);
+      }
+      const date=parseTime(data.expiresAt);
+      let subscription=data.planId===null?t.noPlan:'';
+      if(date){
+        const remaining=date.getTime()-Date.now();
+        const prefix=remaining<=0?t.expired:remaining<=7*86400000?t.soon:t.expires;
+        subscription=prefix+' · '+timeFormat.format(date);
+      }
+      const route='#company/'+row.id;
+      agent('accounts',t.accountAgent,t.accounts,data.usedUsers,limit('effectiveUserLimit','userLimit'),format,subscription,route,t.companyLink);
+      agent('devices',t.deviceAgent,t.registered,data.usedDevices,limit('effectiveDeviceLimit','deviceLimit'),format,'',route+'/devices',t.deviceLink);
+      agent('storage',t.storageAgent,t.used,data.usedBytes,limit('effectiveStorageBytes','storageBytes'),bytes,'',route+'/usage',t.details);
+      return scan;
+    }
     async function readCompany(){
       const ticket=++companyTicket,row=rows.find(item=>item.id===select.value);
       details.hidden=true;setTime(timestamp,'',null);companyData.replaceChildren();companyStatus.textContent='';
+      runCompany.disabled=true;
       if(!row)return;
-      details.href='#company/'+row.id+'/usage';details.hidden=false;companyStatus.textContent=t.companyLoading;
+      details.href='#company/'+row.id+'/usage';companyStatus.textContent=t.companyLoading;
       try{
         const data=await request('limits.get',{workspaceId:row.id});
         if(!report.isConnected||ticket!==companyTicket)return;
         companyStatus.textContent=row.status==='active'?t.active:row.status==='suspended'?t.suspended:'';
-        setTime(timestamp,t.updated,new Date());
-        companyData.append(metrics([[t.storage,bytes(data.usedBytes)],[t.phones,format(data.usedDevices)],
-          [t.voice,format(data.usedVoiceMinutes)],[t.video,format(data.usedVideoMinutes)]]),make('p','platform-server-robot-note',t.month));
+        setTime(timestamp,t.source,new Date());
+        companyData.append(companyAgents(row,data),metrics([[t.voice,format(data.usedVoiceMinutes)],[t.video,format(data.usedVideoMinutes)]]),make('p','platform-server-robot-note',t.month));
       }catch{
         if(report.isConnected&&ticket===companyTicket)companyStatus.textContent=t.companyError;
+      }finally{
+        if(report.isConnected&&ticket===companyTicket){runCompany.disabled=false;runCompany.replaceChildren(icon('refresh'),document.createTextNode(t.again));}
       }
     }
     async function loadPage(target){
@@ -248,16 +536,16 @@
         if(report.isConnected)companyStatus.textContent=t.companyError;
       }finally{previous.disabled=next.disabled=false;}
     }
-    select.onchange=readCompany;previous.onclick=()=>loadPage(Math.max(0,offset-50));next.onclick=()=>loadPage(offset+pageCount);
+    runCompany.onclick=readCompany;select.onchange=readCompany;previous.onclick=()=>loadPage(Math.max(0,offset-50));next.onclick=()=>loadPage(offset+pageCount);
     pickCompanies();
     if(typeof IntersectionObserver==='function'){
       observer=new IntersectionObserver(entries=>{
         if(entries.some(entry=>entry.isIntersecting))void checkServer();
       });
       observer.observe(report);
-    }
+    }else void checkServer();
     return {dispose(){
-      observer?.disconnect();companyTicket++;report.remove();
+      observer?.disconnect();clearTimeout(ageTimer);companyTicket++;report.remove();
     }};
   }
   window.WFPlatformServerRobot=Object.freeze({mount});
