@@ -893,6 +893,7 @@
     supportInbox=window.WFPlatformSupport?.mount({nav,container:panels.support,routeLink:links.support,request,lang:lang.value,alerts:supportAlerts,userId:adminUserId});
     window.WFPlatformAnnouncements?.mount({container:panels.support,request,language:lang.value});
     const name=field(form,5);name.required=true;name.maxLength=100;
+    const creationPlan=window.WFCompanyCreatePlan?.mount({form,request,language:lang.value});
     panels.home.querySelector('[data-shortcut=create]')?.addEventListener('click',()=>{
       createPanel.open=true;
       requestAnimationFrame(()=>{if(pageFromUrl()==='companies'&&name.isConnected)name.focus({preventScroll:true});});
@@ -900,13 +901,16 @@
     submit(form,6,async()=>{
       const company=name.value.trim();if(!company)return;
       if(draft?.company!==company)draft={company,code:inviteCode()};
-      const created=await request('company.create',{name:company,setupToken:draft.code});
-      setup={code:draft.code,workspace:created.workspaceId};draft=null;offset=0;await list();
+      const subscription=creationPlan?.selection();
+      const created=await request('company.create',{name:company,setupToken:draft.code,...(subscription?{subscription}:{})});
+      if(subscription&&(!created.subscription||created.subscription.planId!==subscription.planId||created.subscription.mode!==subscription.mode))throw Error('INVALID_RESPONSE');
+      setup={code:draft.code,workspace:created.workspaceId,subscription:created.subscription};draft=null;offset=0;await list();
     });
     if(setup){
       const link=el('a',setupLabels[lang.value][5]),url=new URL(location.pathname,location.origin);
       url.searchParams.set('setup',setup.workspace);url.hash='invite='+setup.code;link.href=url.href;
       const invitation=el('section');invitation.className='platform-invite-card';invitation.append(link,el('p',t(14)),el('output',setup.code));companies.append(invitation);
+      if(setup.subscription&&window.WFCompanyCreatePlan)invitation.append(window.WFCompanyCreatePlan.receipt(setup.subscription,lang.value));
       window.WFOwnerInvite?.loadQrTools().then(({BrowserQRCodeSvgWriter})=>{
         if(!invitation.isConnected||generation!==ticket)return;
         const qr=new BrowserQRCodeSvgWriter().write(url.href,660,660,new Map([[0,'M']]));
