@@ -44,7 +44,9 @@
     "modules/owner-approval-alerts.sql",
     "modules/platform-announcements.sql",
     "modules/confirmed-company-purge.sql",
-    "modules/platform-storage-inventory.sql"
+    "modules/platform-storage-inventory.sql",
+    "modules/company-storage-folders.sql",
+    "modules/company-storage-consumers.sql"
   ],
   "liveAcceptanceRequired": [
     "authorized-target-inventory-and-backup",

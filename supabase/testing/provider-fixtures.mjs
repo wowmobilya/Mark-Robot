@@ -21,7 +21,7 @@ create table auth.users(id uuid primary key,instance_id uuid,aud text,role text,
   created_at timestamptz,updated_at timestamptz,is_anonymous boolean default false,deleted_at timestamptz,banned_until timestamptz);
 create table auth.sessions(id uuid primary key,user_id uuid not null references auth.users(id),created_at timestamptz,updated_at timestamptz,aal text,not_after timestamptz);
 create table storage.buckets(id text primary key,name text not null,public boolean default false,file_size_limit bigint,allowed_mime_types text[]);
-create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text references storage.buckets(id),name text);
+create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text references storage.buckets(id),name text,created_at timestamptz default now());
 alter table storage.objects enable row level security;
 create table vault.secrets(id uuid primary key default gen_random_uuid(),name text unique,secret text,description text);
 create view vault.decrypted_secrets as select id,name,secret as decrypted_secret from vault.secrets;

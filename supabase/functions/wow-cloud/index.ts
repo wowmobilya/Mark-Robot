@@ -34,7 +34,7 @@ import {createOwnerActivationActions} from './modules/owner-activation.mjs';
 // These are Supabase's built-in server variables. They are never emitted in a
 // response, logged, placed in app configuration, or copied to the repository.
 const secretKeys=JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS')||'{}');
-const remote=createRestDependencies({url:Deno.env.get('SUPABASE_URL'),serviceKey:secretKeys.default||Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')});
+const remote=createRestDependencies({url:Deno.env.get('SUPABASE_URL'),serviceKey:secretKeys.default||Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),companyFolders:true});
 const origins=(Deno.env.get('WOW_ALLOWED_ORIGINS')||'https://markrobot.wowfurniture.com.tr,https://galeri.wowfurniture.com.tr')
   .split(',').map(value=>value.trim()).filter(Boolean);
 const globals=globalThis as unknown as Record<string,unknown>;
@@ -65,7 +65,7 @@ const founderActivation=createFounderActivation({...remote,origin:origins[0],ena
 const orderSms=createOrderSms({...remote,config:{enabled:Deno.env.get('WOW_NETGSM_ENABLED')==='true',tenants:Deno.env.get('WOW_NETGSM_TENANTS'),signingKey:Deno.env.get('WOW_ORDER_LINK_SIGNING_KEY'),projectUrl:Deno.env.get('SUPABASE_URL')}});
 const storageMaintenance=createStorageMaintenance(remote);
 const maintenance=async()=>{
-  const results=await Promise.allSettled([storageMaintenance(),communications.process(),statements.process()]);
+  const results=await Promise.allSettled([storageMaintenance(),communications.process(),statements.process(),remote.organizeCompanyStorage()]);
   if(results.some(result=>result.status==='rejected'))throw new Error('MAINTENANCE_DEFERRED');
 };
 const voiceTurn={url:Deno.env.get('WOW_TURN_URL'),urls:Deno.env.get('WOW_TURN_URLS'),secret:Deno.env.get('WOW_TURN_SHARED_SECRET'),
@@ -106,3 +106,4 @@ Deno.serve(async(req:Request)=>{
   }
   return app(req);
 });
+

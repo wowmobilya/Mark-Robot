@@ -1,6 +1,7 @@
 /* Small native REST adapter: no browser session persistence and no SDK import.
  * Service credentials remain in Edge environment variables. */
 import {failure} from './core.mjs';
+import {createCompanyStorage,workspaceOwnsPath} from './company-storage.mjs';
 const AUTH_CODES=new Set(['AUTH_REQUIRED','SESSION_REVOKED','SESSION_EXPIRED']);
 const FORBIDDEN_CODES=new Set(['DEVICE_ALREADY_BOUND','DEVICE_PROOF_REQUIRED','DEVICE_BLOCKED','ACCESS_DENIED','PERMISSION_DENIED','ACCOUNT_UNAVAILABLE','SETUP_PROOF_INVALID','SETUP_PROOF_REQUIRED','SUBSCRIPTION_EXPIRED','SELF_PROTECTION','LAST_OWNER','CUSTOMER_PRINCIPAL_ROLE_FIXED']);
 const CONFLICT_CODES=new Set(['COMPANY_NAME_TAKEN','DEVICE_NOT_BOUND','JOIN_APPROVAL_REQUIRED','DEVICE_LIMIT_REACHED','STORAGE_LIMIT_REACHED','USER_LIMIT_REACHED','PLAN_NAME_EXISTS','VOICE_MINUTES_EXHAUSTED','VIDEO_MINUTES_EXHAUSTED','CONFLICT','IDENTITY_CONFLICT','IDEMPOTENCY_MISMATCH','BATCH_SESSION_CHANGED','DUPLICATE_INVOICE_NUMBER','DUPLICATE_RECORD','USERNAME_TAKEN','ALREADY_CONFIGURED','MEDIA_REVISION_MISMATCH','MEDIA_NOT_UPLOADED','SUBSCRIPTION_BOUND_TO_OTHER_IDENTITY','PUSH_SUBSCRIPTION_REQUIRED']);
@@ -9,14 +10,7 @@ const UUID='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const MODULE_OBJECT_PATH=new RegExp('^(?:chat|files)/'+UUID+'/'+UUID+'/'+UUID+'/[0-9a-f]{64}$');
 const GALLERY_OBJECT_PATH=new RegExp('^'+UUID+'/gallery/'+UUID+'/'+UUID+'\\.(?:jpeg|png|webp)$');
 export const isStorageCleanupPath=path=>typeof path==='string'&&(MODULE_OBJECT_PATH.test(path)||GALLERY_OBJECT_PATH.test(path));
-const WORKSPACE_ID=new RegExp('^'+UUID+'$');
-function ownsWorkspaceObject(workspaceId,path){
-  if(!WORKSPACE_ID.test(workspaceId)||typeof path!=='string'||path.length>1024)return false;
-  const segments=path.split('/');
-  if(segments.some(part=>!part||part==='.'||part==='..'||/[\\\x00-\x1f]/.test(part)))return false;
-  return (segments.length>=2&&segments[0]===workspaceId)||
-    (segments.length>=3&&['chat','files'].includes(segments[0])&&segments[1]===workspaceId);
-}
+const ownsWorkspaceObject=workspaceOwnsPath;
 function rpcError(value) {
   const duplicateCompanyName=value?.code==='23505'&&value.message==='duplicate key value violates unique constraint "wow_workspaces_company_name_key"';
   const code=duplicateCompanyName?'COMPANY_NAME_TAKEN':value?.code==='P0001'&&/^[A-Z][A-Z0-9_]{2,60}$/.test(value.message||'')?value.message:'SERVICE_UNAVAILABLE';
@@ -25,7 +19,7 @@ function rpcError(value) {
     ['ACCOUNT_NOT_FOUND','PLAN_NOT_FOUND','COMPANY_NOT_FOUND'].includes(code)?404:code.startsWith('INVALID_')||code==='WORKSPACE_REQUIRED'?422:503;
   return failure(code,status,{...(Array.isArray(details.conflicts)?{conflicts:details.conflicts}:{}),...(Number.isFinite(details.retryAfter)?{retryAfter:details.retryAfter}:{})});
 }
-export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.fetch,timeoutMs=12000}) {
+export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.fetch,timeoutMs=12000,companyFolders=false}) {
   if(typeof url!=='string'||!/^https:\/\//.test(url)||!serviceKey)throw failure('SERVER_CONFIGURATION',503);
   // New opaque secret keys authenticate the gateway through apikey, not the
   // bearer header. A real user token overrides Authorization only when needed.
@@ -69,7 +63,10 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     updatePassword:(id,password)=>call('/auth/v1/admin/users/'+encodeURIComponent(id),{method:'PUT',body:{password},kind:'auth-admin'})
   };
   const objectPath=path=>'mark-robot-private/'+path.split('/').map(encodeURIComponent).join('/');
+  const folders=createCompanyStorage({base,serviceHeaders,call,fetcher,objectPath,timeoutMs});
+  const resolvePath=(path,mode)=>companyFolders?folders.resolve(path,mode):Promise.resolve(path);
   return {
+    organizeCompanyStorage:folders.organize,
     ownerEnrollment:(action,data)=>call('/rest/v1/rpc/wow_owner_enrollment',{body:{p_action:action,p_data:data},kind:'rpc'}),
     rpc:(action,data)=>call('/rest/v1/rpc/wow_service',{body:{p_action:action,p_data:data},kind:'rpc'}),
     deviceSession:(action,data)=>call('/rest/v1/rpc/wow_device_session',{body:{p_action:action,p_data:data},kind:'rpc'}),
@@ -119,17 +116,18 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
           throw failure('STORAGE_UNAVAILABLE',503);
       },
       // Each call removes exactly one database-generated name in the private bucket.
-      remove:path=>{
+      remove:async path=>{
         if(!isStorageCleanupPath(path))throw failure('INVALID_STORAGE_PATH',422);
-        return call('/storage/v1/object/mark-robot-private',{method:'DELETE',body:{prefixes:[path]},kind:'storage',removeObject:true}).then(result=>{
-          if(!Array.isArray(result)||result.length>1||result.some(object=>object?.name!==path))throw failure('STORAGE_UNAVAILABLE',503);
+        const paths=companyFolders?await folders.lookup(path,'maintenance'):[path];
+        return call('/storage/v1/object/mark-robot-private',{method:'DELETE',body:{prefixes:paths},kind:'storage',removeObject:true}).then(result=>{
+          if(!Array.isArray(result)||result.length>paths.length||result.some(object=>!paths.includes(object?.name)))throw failure('STORAGE_UNAVAILABLE',503);
           return result;
         });
       },
-      put:(path,bytes,contentType)=>call('/storage/v1/object/'+objectPath(path),{body:bytes,binary:true,kind:'storage',allowDuplicate:true,
+      put:async(path,bytes,contentType)=>call('/storage/v1/object/'+objectPath(await resolvePath(path,'write')),{body:bytes,binary:true,kind:'storage',allowDuplicate:true,
         headers:{'content-type':contentType,'cache-control':'max-age=0','x-upsert':'false'}}),
       async sign(path,expiresIn=60){
-        const value=await call('/storage/v1/object/sign/'+objectPath(path),{body:{expiresIn},kind:'storage'});
+        const value=await call('/storage/v1/object/sign/'+objectPath(await resolvePath(path,'read')),{body:{expiresIn},kind:'storage'});
         const signed=value.signedURL||value.signedUrl;
         if(typeof signed!=='string')throw failure('STORAGE_UNAVAILABLE',503);
         const resolved=new URL(signed.startsWith('http')?signed:base+'/storage/v1'+signed);
@@ -139,3 +137,4 @@ export function createRestDependencies({url,serviceKey,fetch:fetcher=globalThis.
     }
   };
 }
+
