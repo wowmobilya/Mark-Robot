@@ -1,0 +1,13 @@
+.platform-create-plan{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));align-items:end;gap:.75rem;min-inline-size:0}
+.platform-create-plan[hidden],.platform-create-plan [hidden]{display:none!important}
+.platform-plan-caption{display:inline-flex;align-items:center;gap:.45rem}
+.platform-plan-caption svg,.platform-create-plan output svg{color:var(--ui-accent);flex:none}
+.platform-create-form select,.platform-create-plan input{inline-size:100%;min-inline-size:0;min-block-size:44px}
+.platform-create-plan output{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr));gap:.55rem}
+.platform-create-plan output:empty,.platform-create-plan [role=status]:empty{display:none}
+.platform-create-plan output div,.platform-create-plan-receipt{padding:.7rem .85rem;border-radius:var(--ui-radius);border:1px solid var(--border);background:var(--card)}
+.platform-create-plan output svg{vertical-align:middle;margin-inline-end:.3rem}
+.platform-create-plan output span{font-size:.82rem}
+.platform-create-plan output strong{display:block;overflow-wrap:anywhere}
+.platform-create-plan-receipt{grid-column:1/-1;min-inline-size:0}
+.platform-create-plan-receipt p{margin-block:.3rem}
