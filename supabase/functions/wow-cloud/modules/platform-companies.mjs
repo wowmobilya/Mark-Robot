@@ -38,7 +38,11 @@ export function createPlatformActions({platformRpc,storage,requirePlatformFounde
       }
       if(action==='company.create'){
         if(typeof body.setupToken!=='string'||!/^[a-f0-9]{64}$/.test(body.setupToken))throw failure('INVALID_REQUEST',422);
-        data={name:body.name,claimHash:await sha256(body.setupToken),expiresAt:new Date(Date.now()+3600000).toISOString()};
+        const choice=body.subscription;
+        if(choice!==undefined&&(!choice||!['paid','trial'].includes(choice.mode)||typeof choice.planId!=='string'||
+          !Number.isSafeInteger(choice.planVersion)||choice.planVersion<1||!Number.isSafeInteger(choice.durationDays)||
+          choice.durationDays<1||choice.durationDays>36500))throw failure('INVALID_LIMITS',422);
+        data={...(choice===undefined?{}:{subscription:{mode:choice.mode,planId:choice.planId,planVersion:choice.planVersion,durationDays:choice.durationDays}}),name:body.name,claimHash:await sha256(body.setupToken),expiresAt:new Date(Date.now()+3600000).toISOString()};
       }
       if(action==='company.deleteEmpty'){
         const deadline=Date.now()+25000;
