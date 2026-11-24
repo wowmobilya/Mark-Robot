@@ -238,7 +238,7 @@ test('the REST adapter accepts only exact immutable keys and specific Storage ac
   assert.equal(last.url,origin+'/storage/v1/object/mark-robot-private');assert.equal(last.options.redirect,'error');
   assert.deepEqual(JSON.parse(last.options.body),{prefixes:[path]});
   for(const invalid of [origin+'/'+path,path+'.png',path+'/',path+'?x=1',path.replace('/gallery/','/gallery/../'),path.replace('.webp','.svg')])
-    assert.throws(()=>deps.storage.remove(invalid),/INVALID_STORAGE_PATH/);
+    await assert.rejects(deps.storage.remove(invalid),/INVALID_STORAGE_PATH/);
   assert.equal(calls.length,1);
   for(const success of [()=>Response.json([]),()=>Response.json({code:'NoSuchKey'},{status:404})]){
     response=success;await deps.storage.remove(path);
