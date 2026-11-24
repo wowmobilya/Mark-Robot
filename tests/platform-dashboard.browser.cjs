@@ -514,7 +514,7 @@ test('trusted founder device rotates, revalidates founder access and forgets log
         return route.fulfill({json:{ok:true,cases:[],unreadCases:0}});
       }
       if(file==='platform/'||file==='platform/index.html')return route.fulfill({path:path.join(__dirname,'../platform/index.html')});
-      if(['platform/dashboard.js','platform/dashboard.css','platform/admin-shell.js','platform/analytics.js','platform/qr-invite.js','platform/admin-audio.js','platform/pricing-cards.js','platform/preferences.js','platform/support.js','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
+      if(['platform/dashboard.js','platform/dashboard.css','platform/admin-shell.js','platform/analytics.js','platform/qr-invite.js','platform/admin-audio.js','platform/pricing-cards.js','platform/preferences.js','platform/support.js','platform/company-brand.css','ui-identity.css'].includes(file))return route.fulfill({path:path.join(__dirname,'..',file)});
       return route.abort();
     });
     const signin=async trusted=>{
@@ -536,6 +536,18 @@ test('trusted founder device rotates, revalidates founder access and forgets log
       if(width===360)assert(grid[1].top>=grid[0].bottom);
       else assert.equal(grid[0].top,grid[1].top);
     }
+    await page.setViewportSize({width:360,height:780});
+    await page.locator('#lang').selectOption('ar',{force:true});
+    const firstCard=page.getByRole('article',{name:directory[0].name,exact:true});
+    const devicesLink=firstCard.locator('.platform-company-device-link');
+    await devicesLink.waitFor();
+    assert.equal(await firstCard.evaluate(card=>getComputedStyle(card).direction),'rtl');
+    const bounds=await devicesLink.boundingBox();
+    assert(bounds.width>=44&&bounds.height>=44);
+    await devicesLink.focus();await page.keyboard.press('Enter');
+    await page.waitForURL('**/#company/'+directory[0].id+'/devices');
+    await page.getByRole('link',{name:'العودة إلى الشركات',exact:true}).click();
+    await page.locator('#lang').selectOption('en',{force:true});
     await page.getByRole('button',{name:'Next',exact:true}).click();
     await cards.filter({hasText:'Office 14'}).waitFor();assert.equal(await cards.count(),2);
     await page.getByRole('button',{name:'Previous',exact:true}).click();await cards.filter({hasText:'Office 12'}).waitFor();
