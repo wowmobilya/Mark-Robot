@@ -33,9 +33,16 @@
       summary:'Главная',companies:'Компании',products:'Товары',invoices:'Счета',payments:'Платежи',accounts:'Аккаунты',settings:'Настройки',audit:'Журнал',
       'gallery-orders':'Заказы галереи','gallery-listings':'Каталог',files:'Файлы',calls:'Звонки',devices:'Устройства и сеансы'}
   };
-  const sections=['summary','companies','products','invoices','payments','accounts','gallery-orders','gallery-listings','files','calls','settings','audit','devices'];
+  const storageCopy={
+    ar:['ملفات الشركة','ملف','الحجم الإجمالي','المحادثات','المعرض','ملفات مرفوعة','وسائط الشركة','صورة','مقطع صوتي','فيديو','مستند','الحجم','النوع','آخر تحديث','أُنشئ في','مسار التخزين','لا توجد ملفات مخزّنة لهذه الشركة بعد.','غير معروف','المجموع للملفات ذات الحجم المعروف'],
+    en:['Company storage','Files','Total size','Chats','Gallery','Uploaded files','Company media','Image','Audio','Video','Document','Size','Type','Last updated','Created','Storage path','This company has no stored files yet.','Unknown','Total for files with a known size'],
+    tr:['Şirket dosyaları','Dosya','Toplam boyut','Sohbetler','Galeri','Yüklenen dosyalar','Şirket medyası','Görsel','Ses','Video','Belge','Boyut','Tür','Son güncelleme','Oluşturulma','Depolama yolu','Bu şirketin henüz depolanan dosyası yok.','Bilinmiyor','Boyutu bilinen dosyaların toplamı'],
+    fr:['Fichiers de la société','Fichiers','Taille totale','Discussions','Galerie','Fichiers importés','Médias de la société','Image','Audio','Vidéo','Document','Taille','Type','Mise à jour','Création','Chemin de stockage','Aucun fichier stocké pour cette société.','Inconnu','Total des fichiers de taille connue'],
+    ru:['Файлы компании','Файлы','Общий размер','Чаты','Галерея','Загруженные файлы','Медиа компании','Изображение','Аудио','Видео','Документ','Размер','Тип','Обновлено','Создано','Путь в хранилище','У этой компании пока нет файлов в хранилище.','Неизвестно','Сумма файлов с известным размером']
+  };
+  const sections=['summary','companies','products','invoices','payments','accounts','gallery-orders','gallery-listings','storage','files','calls','settings','audit','devices'];
   const icons={summary:'⌂',companies:'▦',products:'◈',invoices:'▤',payments:'◉',accounts:'♙',
-    'gallery-orders':'▣','gallery-listings':'◫',files:'▧',calls:'⌕',settings:'⚙',audit:'≡',devices:'▤'};
+    'gallery-orders':'▣','gallery-listings':'◫',files:'▧',storage:'▤',calls:'⌕',settings:'⚙',audit:'≡',devices:'▤'};
 
   const deviceCopy={
     ar:{warning:'هذه مؤشرات تقنية تقديرية وليست إثباتًا لهوية الجهاز أو موقعه. عنوان IP من اتصال Supabase وقد يكون عنوان خادم WOW الوسيط. الجلسة غير المغلقة لا تعني أن الجهاز متصل الآن.',
@@ -84,7 +91,7 @@
     for(const name of sections){
       const b=el('button','wf-inspect-nav-item');b.type='button';b.dataset.section=name;
       const sym=el('span','wf-inspect-nav-icon',icons[name]);sym.setAttribute('aria-hidden','true');
-      b.append(sym,el('span','',texts[name]));b.onclick=()=>{current=name;offset=0;load();};
+      b.append(sym,el('span','',name==='storage'?(storageCopy[language]||storageCopy.ar)[0]:texts[name]));b.onclick=()=>{current=name;offset=0;load();};
       nav.append(b);controls[name]=b;
     }
     if(host){
@@ -126,6 +133,39 @@
       return item;
     }
 
+    const storageText=storageCopy[language]||storageCopy.ar;
+    function fileSize(bytes){
+      if(bytes==null||!Number.isFinite(Number(bytes)))return storageText[17];
+      const units=['byte','kilobyte','megabyte','gigabyte','terabyte'];
+      let size=Number(bytes),index=0;
+      while(size>=1000&&index<units.length-1){size/=1000;index++;}
+      return new Intl.NumberFormat(language,{style:'unit',unit:units[index],unitDisplay:'short',maximumFractionDigits:index?1:0}).format(size);
+    }
+    function storageRow(record){
+      const w=storageText;
+      const family=(record.mime||'').split('/')[0],kind={image:w[7],audio:w[8],video:w[9]}[family]||w[10];
+      const source={chat:w[3],gallery:w[4],files:w[5],media:w[6]}[record.source]||w[6];
+      const item=el('article','wf-inspect-record');
+      const heading=el('strong','wf-inspect-record-title',record.name||kind);heading.dir='auto';item.append(heading);
+      item.append(el('span','wf-inspect-breakdown-chip',source+' · '+kind));
+      const grid=el('dl','wf-inspect-record-data');
+      for(const [caption,value] of [[w[11],fileSize(record.bytes)],[w[12],record.mime||w[17]],[w[13],date(record.updatedAt)],[w[14],date(record.createdAt)]]){
+        const field=el('dd','',value);field.dir='auto';grid.append(el('dt','',caption),field);
+      }
+      item.append(grid);
+      const details=el('details','wf-inspect-record-detail'),path=el('pre','',record.path);
+      path.dir='ltr';details.append(el('summary','',w[15]),path);item.append(details);
+      return item;
+    }
+    function storageSummary(data){
+      const w=storageText;
+      const heading=el('h3','',company.name+' / '+w[0]);heading.dir='auto';results.append(heading);
+      const grid=el('div','wf-inspect-summary');
+      for(const [label,value] of [[w[1],new Intl.NumberFormat(language).format(data.total)],[data.unknownSizes?w[18]:w[2],fileSize(data.totalBytes)]]){
+        const card=el('article','wf-inspect-stat');card.append(el('span','',label),el('strong','',value));grid.append(card);
+      }
+      results.append(grid);
+    }
     function deviceRow(record){
       const w=deviceCopy[language]||deviceCopy.ar;
       const item=el('article','wf-inspect-record wf-inspect-device'),top=el('div','wf-inspect-device-head'),
@@ -170,12 +210,13 @@
     function render(data){
       rows=data.items||[];lastTotal=Number(data.total)||0;results.replaceChildren();pages.replaceChildren();
       if(current==='summary'){summary(data);return;}
+      if(current==='storage')storageSummary(data);
       if(current==='devices')results.append(el('p','wf-inspect-device-warning',(deviceCopy[language]||deviceCopy.ar).warning));
-      if(!rows.length){results.append(el('p','wf-inspect-empty',texts.empty));return;}
+      if(!rows.length){results.append(el('p','wf-inspect-empty',current==='storage'?storageText[16]:texts.empty));return;}
       const input=el('input','wf-inspect-search');input.type='search';input.placeholder=texts.search;input.setAttribute('aria-label',texts.search);
       const list=el('div','wf-inspect-record-list');results.append(input,list);
       const paint=()=>{const q=input.value.trim().toLocaleLowerCase();list.replaceChildren();
-        for(const row of rows)if(!q||JSON.stringify(row).toLocaleLowerCase().includes(q))list.append(current==='devices'?deviceRow(row):rowItem(row));
+        for(const row of rows)if(!q||JSON.stringify(row).toLocaleLowerCase().includes(q))list.append(current==='devices'?deviceRow(row):current==='storage'?storageRow(row):rowItem(row));
         if(!list.childElementCount)list.append(el('p','wf-inspect-empty',texts.empty));
       };
       input.oninput=paint;paint();
