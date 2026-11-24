@@ -216,7 +216,9 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     });
     await menu.getByRole('link',{name:'Home'}).click();
     const homePage=page.locator('#platform-page-home');
-    assert.equal(await homePage.getByRole('heading',{name:'WOW Control Center',exact:true}).count(),1,'one control-center heading');
+    const controlCenterHeading=homePage.getByRole('heading',{name:'WOW Control Center',exact:true});
+    await controlCenterHeading.waitFor({state:'visible'});
+    assert.equal(await controlCenterHeading.count(),1,'one control-center heading');
     await homePage.locator('.platform-home-directory').getByText('No company records on this page').waitFor();
     for(const width of [320,390,768,1024,1280,1440]){
       await page.setViewportSize({width,height:844});
