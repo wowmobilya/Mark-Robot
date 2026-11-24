@@ -16,13 +16,13 @@
   function face(){
     const el=node('div','platform-auth-face');
     el.setAttribute('aria-hidden','true');
-    const eyes=[174,426].map(x=>'<g transform="translate('+x+' 147.84)">'+
-      '<path class="platform-auth-brow" d="M -29 -70 Q 0 -80 29 -70"/>'+
-      '<g class="platform-auth-blink"><ellipse rx="34" ry="50"/>'+
+    const eyes=[205,395].map((x,index)=>'<g transform="translate('+x+' 147.84)">'+
+      '<g class="platform-auth-brow-motion '+(index?'right':'left')+'"><path class="platform-auth-brow" d="M -31 -59 Q -4 -71 29 -61"/></g>'+
+      '<g class="platform-auth-blink"><g class="platform-auth-gaze"><ellipse rx="33" ry="43"/>'+
       '<ellipse class="platform-auth-eye-glint" cx="-10" cy="-18" rx="10" ry="13"/>'+
-      '<circle class="platform-auth-eye-glint" cx="13" cy="19" r="4"/></g></g>').join('');
+      '<circle class="platform-auth-eye-glint" cx="13" cy="19" r="4"/></g></g></g>').join('');
     el.innerHTML='<svg viewBox="86 48 428 252" focusable="false" aria-hidden="true">'+eyes+
-      '<path class="platform-auth-nose" d="M 300 198 Q 293 205 300 210 Q 307 205 300 198"/>'+
+      '<path class="platform-auth-nose" d="M 299 183 Q 293 193 296 196 Q 300 199 305 196"/>'+
       '<path class="platform-auth-mouth" d="M 274 252.72 Q 300 273.72 326 252.72"/></svg>';
     return el;
   }
@@ -32,9 +32,9 @@
     verifying:'M 274 252.72 Q 300 264 326 252.72',
     ready:'M 264 252.72 Q 300 290 336 252.72',
     unavailable:'M 274 264 Q 300 239 326 264',
-    unreachable:'M 274 264 Q 300 239 326 264',
+    unreachable:'M 273 259 Q 298 243 327 258',
     unverified:'M 274 253 Q 300 253 326 253',
-    denied:'M 274 264 Q 300 239 326 264'
+    denied:'M 275 257 Q 297 249 325 261'
   };
   function healthUrl(endpoint){
     if(!endpoint||typeof endpoint!=='string')return null;
