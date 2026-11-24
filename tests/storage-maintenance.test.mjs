@@ -168,7 +168,10 @@ test('unattended Storage maintenance runs on the complete PostgreSQL release',as
     await db.exec(sql);
   });
   await scenario('the scan rotates across workspaces and jobs stay within independent scan, lease and expiry limits',async()=>{
-    for(let i=0;i<5;i++)await db.query("insert into public.wow_workspaces(id,name) values($1,'quiet fixture')",[randomUUID()]);
+    for(let i=0;i<5;i++){
+      const id=randomUUID();
+      await db.query('insert into public.wow_workspaces(id,name) values($1,$2)',[id,`quiet fixture ${id}`]);
+    }
     const stale=[];
     for(let i=0;i<40;i++){const a=await image(owner,false);await age(a.id,'2 days');stale.push(a.id);}
     let claimed=await lease();
