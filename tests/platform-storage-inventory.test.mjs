@@ -1,0 +1,36 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {randomUUID} from 'node:crypto';
+import {createProviderTestDatabase} from '../supabase/testing/provider-fixtures.mjs';
+
+test('founder storage browser pages real objects and scopes both company folders and legacy keys',async t=>{
+  const db=await createProviderTestDatabase();t.after(()=>db.close());
+  const load=path=>readFile(new URL('../supabase/'+path,import.meta.url),'utf8');
+  const release=JSON.parse(await load('release.json'));
+  for(const path of release.migrations)if(path!=='wow-schema.sql')await db.exec(await load(path));
+  await db.exec('alter table storage.objects add column if not exists metadata jsonb, add column if not exists created_at timestamptz default now(), add column if not exists updated_at timestamptz default now()');
+  const founder=randomUUID(),sid=randomUUID(),outsider=randomUUID(),otherSid=randomUUID();
+  await db.query('insert into auth.users(id) values($1),($2)',[founder,outsider]);
+  await db.query('insert into auth.sessions(id,user_id) values($1,$2),($3,$4)',[sid,founder,otherSid,outsider]);
+  await db.query('insert into public.wow_platform_owners(user_id) values($1)',[founder]);
+  const create=async name=>(await db.query("select public.wow_platform_service($1,$2,'company.create',$3::jsonb) r",[founder,sid,JSON.stringify({name,claimHash:randomUUID().replaceAll('-','').padEnd(64,'e'),expiresAt:new Date(Date.now()+3600000).toISOString()})])).rows[0].r.workspaceId;
+  const wid=await create('Workshop'),other=await create('Sibling');
+  const inspect=(u=founder,s=sid,offset=0)=>db.query("select public.wow_platform_inspect($1,$2,$3,'storage',$4) r",[u,s,wid,offset]).then(res=>res.rows[0].r);
+  await assert.rejects(inspect(outsider,otherSid),/ACCESS_DENIED/);
+  assert.deepEqual((await inspect()).items,[]);
+  const bucket='mark-robot-private',root='companies/workshop--'+wid+'/';
+  const insert=(key,bucketId=bucket)=>db.query('insert into storage.objects(bucket_id,name,metadata) values($1,$2,$3::jsonb)',[bucketId,key,'{"size":125,"mimetype":"image/png"}']);
+  await db.query("insert into storage.buckets(id,name) values('other','other')");
+  for(const path of ['chat/'+wid+'/voice','files/'+wid+'/quote.pdf',wid+'/gallery/photo.png',root+wid+'/logo.png'])await insert(path);
+  await insert(root+'.keep');await insert(root+'chat/'+other+'/wrong');await insert('companies/sibling--'+other+'/'+wid+'/wrong');
+  await insert(other+'/other.png');await insert(wid+'/foreign.png','other');
+  for(let i=0;i<37;i++)await insert(wid+'/part-'+i);
+  const first=await inspect(),second=await inspect(founder,sid,40);
+  assert.equal(first.workspace.name,'Workshop');assert.equal(first.readOnly,true);assert.equal(first.total,41);assert.equal(first.totalBytes,5125);
+  assert.equal(first.items.length,40);assert.equal(second.items.length,1);
+  const items=[...first.items,...second.items];assert.equal(new Set(items.map(x=>x.path)).size,41);
+  assert.deepEqual([...new Set(items.map(x=>x.source))].sort(),['chat','files','gallery','media']);
+  assert(items.every(x=>x.bytes===125&&x.createdAt&&x.updatedAt&&x.mime==='image/png'));
+  assert.equal((await db.query("select has_function_privilege('authenticated','public.wow_platform_storage_inventory(uuid,uuid,uuid,integer)','execute') allowed")).rows[0].allowed,false);
+});
