@@ -62,16 +62,30 @@ test('populated tenant, protected Galeri and stored assets are never removed',as
   assert.equal((await db.query('select count(*)::int n from public.wow_workspaces')).rows[0].n,3);
 });
 
-test('client deletion action validates the exact tenant, typed name, revision and confirmed flag',async()=>{
+test('deletion action binds a receipt to the confirmed workspace and confirmation strength',async()=>{
   const seen=[];
-  const handlers=createPlatformActions({platformRpc:async(actor,action,data)=>{seen.push({actor,action,data});return {ok:true};}});
+  const handlers=createPlatformActions({platformRpc:async(actor,action,data)=>{
+    seen.push({actor,action,data});
+    return {workspaceId:data.workspaceId,deleted:true};
+  }});
   const actor={userId:randomUUID(),sessionId:randomUUID()},workspaceId=randomUUID();
   const preview=handlers['platform.company.deletePreview'];
   const remove=handlers['platform.company.deleteEmpty'];
+  const body={workspaceId,confirmName:'Example',expectedRevision:0,confirmed:true,confirmWord1:'حذف'};
   await assert.rejects(preview({actor,body:{workspaceId:'not-a-uuid'}}),/INVALID_REQUEST/);
-  await assert.rejects(remove({actor,body:{workspaceId,confirmName:'Example',expectedRevision:0,confirmed:false}}),/CONFIRMATION_REQUIRED/);
-  await assert.rejects(remove({actor,body:{workspaceId,confirmName:'Example',expectedRevision:'0',confirmed:true,confirmWord1:'حذف',confirmWord2:'حذف'}}),/CONFIRMATION_REQUIRED/);
-  await assert.rejects(remove({actor,body:{workspaceId,confirmName:'Example',expectedRevision:0,confirmed:true,confirmWord1:'حذف'}}),/CONFIRMATION_REQUIRED/);
-  await remove({actor,body:{workspaceId,confirmName:'Example',expectedRevision:0,confirmed:true,confirmWord1:'حذف',confirmWord2:'حذف'}});
-  assert.deepEqual(seen[0],{actor,action:'company.deleteEmpty',data:{workspaceId,confirmed:true,confirmName:'Example',expectedRevision:0,confirmWord1:'حذف',confirmWord2:'حذف'}});
+  for(const invalid of [{confirmed:false},{expectedRevision:'0'},{confirmWord1:''},{acceptsLinkedData:true}]){
+    await assert.rejects(remove({actor,body:{...body,...invalid}}),/CONFIRMATION_REQUIRED/);
+  }
+  assert.equal(seen.length,0);
+  assert.deepEqual(await remove({actor,body}),{workspaceId,deleted:true});
+  const linked={...body,acceptsLinkedData:true,confirmWord2:'حذف'};
+  assert.deepEqual(await remove({actor,body:linked}),{workspaceId,deleted:true});
+  assert.deepEqual(seen,[
+    {actor,action:'company.deleteEmpty',data:{...body,confirmWord2:undefined,acceptsLinkedData:false}},
+    {actor,action:'company.deleteEmpty',data:linked}
+  ]);
+  for(const receipt of [{ok:true},{workspaceId:randomUUID(),deleted:true}]){
+    const handlers=createPlatformActions({platformRpc:async()=>receipt});
+    await assert.rejects(handlers['platform.company.deleteEmpty']({actor,body}),/SERVICE_UNAVAILABLE/);
+  }
 });
