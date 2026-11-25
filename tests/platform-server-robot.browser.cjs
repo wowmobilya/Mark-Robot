@@ -17,6 +17,9 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
       const ready=transport==='ready';
       return route.fulfill({status:ready?200:503,json:{ok:ready,service:'mark-robot',checkedAt:at}});
     });
+    await page.route('https://robot.test/briefing-audio/en.mp3',route=>route.fulfill({
+      contentType:'audio/mpeg',path:path.resolve(__dirname,'../platform/briefing-audio/en.mp3')
+    }));
     await page.goto('https://robot.test/');
     await page.addStyleTag({path:path.resolve(__dirname,'../platform/server-robot.css')});
     await page.addStyleTag({path:path.resolve(__dirname,'../platform/home-command-center.css')});
@@ -26,7 +29,7 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
       window.briefingVoices=[{lang:'en-US',localService:false},{lang:'en-GB',localService:true}];
       Object.defineProperty(window,'speechSynthesis',{value:{
         getVoices:()=>window.briefingVoices,
-        speak:utterance=>window.briefingCalls.push({text:utterance.text,lang:utterance.lang}),
+        speak:utterance=>{utterance.onstart();window.briefingCalls.push({text:utterance.text,lang:utterance.lang});},
         cancel:()=>window.briefingCalls.push('stopped')
       }});
     });
@@ -70,7 +73,8 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
     await robot.getByRole('button',{name:'Stop reading'}).click();
     await page.evaluate(()=>{window.briefingVoices=window.briefingVoices.filter(voice=>!voice.localService);});
     await listen.click();
-    await robot.getByText('A local voice for this language is unavailable on this device.').waitFor();
+    await robot.locator('.platform-robot-briefing [role=status]').getByText(/Active incidents: 1/).waitFor();
+    await robot.getByRole('button',{name:'Stop reading'}).click();
     assert.equal(await page.evaluate(()=>window.briefingCalls.length),4);
 
     const jump=robot.locator('.platform-server-robot-jump').last();
@@ -150,7 +154,7 @@ test('Mark narrates distinct server states in five languages and rotates Arabic 
       window.SpeechSynthesisUtterance=class { constructor(text){this.text=text;} };
       Object.defineProperty(window,'speechSynthesis',{value:{
         getVoices:()=>voices,
-        speak:utterance=>{current=utterance;readings.push([utterance.lang,utterance.text]);}
+        speak:utterance=>{current=utterance;utterance.onstart();readings.push([utterance.lang,utterance.text]);}
       }});
       for(const language of ['ar','en','tr','fr','ru']){
         const host=document.createElement('section');
