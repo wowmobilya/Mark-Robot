@@ -62,7 +62,8 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
     await listen.click();
     const [spoken]=await page.evaluate(()=>window.briefingCalls);
     assert.equal(spoken.lang,'en-GB');
-    assert.match(spoken.text,/Some items need attention/);
+    assert.match(spoken.text,/Hello, engineer.*need your attention/);
+    assert.match(spoken.text,/Active incidents: 1.*Overdue notifications: 3.*Pending notifications: 7/);
     await robot.getByRole('button',{name:'Stop reading'}).click();
     assert.equal(await page.evaluate(()=>window.briefingCalls.at(-1)),'stopped');
     await page.evaluate(()=>{window.briefingVoices=window.briefingVoices.filter(voice=>!voice.localService);});
@@ -133,4 +134,45 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
   }finally{
     await browser.close();
   }
+});
+
+test('Mark narrates distinct server states in five languages and rotates Arabic greetings',async()=>{
+  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH});
+  try{
+    const page=await browser.newPage();
+    await page.addScriptTag({path:path.resolve(__dirname,'../platform/robot-briefing.js')});
+    const result=await page.evaluate(()=>{
+      const voices=['ar-SY','ar-SA','en-GB','tr-TR','fr-FR','ru-RU'].map(lang=>({lang,localService:true}));
+      const readings=[];
+      let current;
+      window.SpeechSynthesisUtterance=class { constructor(text){this.text=text;} };
+      Object.defineProperty(window,'speechSynthesis',{value:{
+        getVoices:()=>voices,
+        speak:utterance=>{current=utterance;readings.push([utterance.lang,utterance.text]);}
+      }});
+      for(const language of ['ar','en','tr','fr','ru']){
+        const host=document.createElement('section');
+        document.body.append(host);
+        let state='ready';
+        const dispose=window.WFPlatformRobotBriefing.mount({host,language,read:()=>({state,details:['طابور الإرسال متأخر.']})});
+        const listen=host.querySelector('button');
+        listen.click();
+        current.onend();
+        if(language==='ar'){
+          state='attention';listen.click();current.onend();
+          state='staleState';listen.click();current.onend();
+        }
+        dispose();
+      }
+      return readings;
+    });
+    assert.deepEqual(result.map(([lang])=>lang),['ar-SA','ar-SA','ar-SA','en-GB','tr-TR','fr-FR','ru-RU']);
+    assert.match(result[0][1],/مهندسي\. معك مارك.*لم تظهر تنبيهات/);
+    assert.match(result[1][1],/مهندسي معتز.*تحتاج إلى انتباهك.*طابور الإرسال متأخر/);
+    assert.match(result[2][1],/أستاذي.*القراءة المتاحة قديمة/);
+    assert.match(result[3][1],/report shows no active alerts/);
+    assert.match(result[4][1],/etkin uyarı yok/);
+    assert.match(result[5][1],/aucune alerte active/);
+    assert.match(result[6][1],/активных предупреждений в отчёте нет/);
+  }finally{await browser.close();}
 });

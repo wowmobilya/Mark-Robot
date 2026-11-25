@@ -465,10 +465,14 @@
     header.append(jumps,settings);
     const stopBriefing=window.WFPlatformRobotBriefing?.mount({
       host:header,language,
-      read:()=>[
-        status.textContent,
-        ...Array.from(serverData.querySelectorAll('.platform-server-robot-notice, .platform-server-robot-guide li:not([hidden]), .platform-agent-attention:not([hidden])'),node=>node.textContent)
-      ]
+      read:()=>({
+        state:report.dataset.state,
+        details:Array.from(serverData.querySelectorAll('.platform-server-robot-notice, .platform-server-robot-guide li:not([hidden]), .platform-agent-attention:not([hidden])'),node=>node.textContent),
+        readings:[t.incidents,t.overdue,t.pending,t.stale,t.today,t.latency].flatMap(label=>{
+          const reading=currentDiagnostic?.rows.find(([name,value])=>name===label&&value!==t.unknown);
+          return reading?[label+': '+reading[1]+'.']:[];
+        })
+      })
     });
     sections.append(company);
     const directory=make('a','platform-server-robot-directory');
