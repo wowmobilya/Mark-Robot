@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=5');
 importScripts('./modules/platform/push/wow-push-sw.js?v=10');
-const CACHE_NAME = 'wow-furniture-v250-cloud';
+const CACHE_NAME = 'wow-furniture-v251-cloud';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -128,7 +128,7 @@ const urlsToCache = [
   './platform/owner-alerts.css?v=2',
   './platform/announcements.js?v=1',
   './platform/server-robot.css?v=249',
-  './platform/server-robot.js?v=249',
+  './platform/server-robot.js?v=251',
   './platform/admin-shell.js?v=249',
   './platform/company-inspect.js?v=243',
   './platform/company-inspect.css?v=243',

@@ -466,11 +466,13 @@
       }
       issues.append(make('summary','',t.failures),list);serverData.append(issues);
     }
-    let observer,ageTimer;
+    let observer,ageTimer,nextReading=0;
+    let visible=typeof IntersectionObserver!=='function';
+    const refreshInterval=5*60*1000;
     const maxAge=15*60*1000;
     async function checkServer(){
       if(refresh.disabled||!report.isConnected)return;
-      observer?.disconnect();clearTimeout(ageTimer);refresh.disabled=true;setState('checking');
+      nextReading=Date.now()+refreshInterval;clearTimeout(ageTimer);refresh.disabled=true;setState('checking');
       try{
         const [health,operations]=await Promise.allSettled([readHealth(endpoint),request('operationsReport')]);
         if(!report.isConnected)return;
@@ -580,14 +582,24 @@
     }
     runCompany.onclick=readCompany;select.onchange=readCompany;previous.onclick=()=>loadPage(Math.max(0,offset-50));next.onclick=()=>loadPage(offset+pageCount);
     pickCompanies();
-    if(typeof IntersectionObserver==='function'){
+    function refreshVisible(){
+      if(visible&&!document.hidden&&navigator.onLine!==false&&Date.now()>=nextReading)void checkServer();
+    }
+    const refreshTimer=setInterval(refreshVisible,refreshInterval);
+    document.addEventListener('visibilitychange',refreshVisible);
+    window.addEventListener('online',refreshVisible);
+    if(!visible){
       observer=new IntersectionObserver(entries=>{
-        if(entries.some(entry=>entry.isIntersecting))void checkServer();
+        visible=entries.some(entry=>entry.isIntersecting);
+        refreshVisible();
       });
       observer.observe(report);
-    }else void checkServer();
+    }else refreshVisible();
     return {dispose(){
-      observer?.disconnect();clearTimeout(ageTimer);companyTicket++;report.remove();
+      observer?.disconnect();clearTimeout(ageTimer);clearInterval(refreshTimer);
+      document.removeEventListener('visibilitychange',refreshVisible);
+      window.removeEventListener('online',refreshVisible);
+      companyTicket++;report.remove();
     }};
   }
   window.WFPlatformServerRobot=Object.freeze({mount});
