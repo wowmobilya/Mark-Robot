@@ -49,8 +49,9 @@ function privateJpeg(photo){
   invalid();
 }
 
-export function createSupportActions({supportRpc}){
+export function createSupportActions({supportRpc,ownerSubscription}){
   const handlers={};
+  if(typeof ownerSubscription==='function')handlers['subscription.overview']=({actor})=>ownerSubscription(actor);
   for(const action of ['support.list','support.create','support.open','support.reply','platform.support.list','platform.support.open','platform.support.reply']){
     handlers[action]=({actor,body})=>{
       const data={};
