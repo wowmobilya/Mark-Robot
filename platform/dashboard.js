@@ -737,23 +737,23 @@
     }
     arrangeMenu();
     const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);
-    const masthead=el('header'),hero=el('section'),heroLead=el('p',homepage.caption);
-    masthead.className='platform-home-masthead';heroLead.className='platform-home-lead';
-    masthead.append(panels.home.firstElementChild,heroLead);panels.home.append(masthead);
+    const masthead=el('header'),hero=el('section');
+    masthead.className='platform-home-masthead';
+    masthead.append(panels.home.firstElementChild);panels.home.append(masthead);
     hero.className='platform-home-hero';
     serverRobot=window.WFPlatformServerRobot?.mount({host:hero,state:{...result,offset},request,language:lang.value,endpoint:config.endpoint});
     const quickHeading=el('h3',homepage.quick),quick=el('nav');
     quick.className='platform-home-quick';quick.setAttribute('aria-label',homepage.quick);
     const shortcuts=[
-      ['companies','companies','companyNote'],['create','create','createNote'],['plans','plans','plansNote'],
+      ['create','create','createNote'],['plans','plans','plansNote'],
       ['support','support','supportNote'],['calls','calls','callsNote'],['settings','settings','settingsNote']
     ];
-    for(const [key,labelKey,noteKey] of shortcuts){
-      const link=el('a'),icon=el('span'),body=el('span'),title=el('strong',homepage[labelKey]),note=el('small',homepage[noteKey]);
+    for(const [key,labelKey] of shortcuts){
+      const link=el('a'),icon=el('span'),body=el('span'),title=el('strong',homepage[labelKey]);
       link.className='platform-home-shortcut';link.dataset.shortcut=key;
       link.href='#'+(key==='create'?'companies':key);
       icon.className='platform-home-shortcut-icon';icon.setAttribute('aria-hidden','true');
-      body.className='platform-home-shortcut-copy';body.append(title,note);link.append(icon,body);
+      body.className='platform-home-shortcut-copy';body.append(title);link.append(icon,body);
       quick.append(link);
     }
     // Home uses only the founder-authorized list already loaded above; no second request.

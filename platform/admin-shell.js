@@ -117,7 +117,7 @@
     const quick=create('div','platform-drawer-quick');
     const theme=create('button','platform-drawer-theme');theme.type='button';
     theme.addEventListener('click',()=>pref()?.toggleTheme?.());
-    quick.append(theme);drawer.append(quick,densityPicker());
+    quick.append(theme);drawer.append(quick);
     const footer=create('footer','platform-drawer-footer');
     const developerText={
       ar:['برمجة وتطوير','م. معتز بالله حاج شعبان'],
@@ -231,8 +231,8 @@
     if(preferences){
       const control=densityPicker();
       preferences.append(control);
-      preferenceHosts=[drawer,preferences];
-    }else preferenceHosts=[drawer];
+      preferenceHosts=[preferences];
+    }else preferenceHosts=[];
     mountOverview(companies,state);
     updateAppearance();queueOrbit();
   }

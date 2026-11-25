@@ -1882,3 +1882,21 @@ main:has(>#content>.platform-section-menu)>header{border-block-end-color:var(--a
   from{opacity:.48;scale:.93}
   to{opacity:.95;scale:1.06}
 }
+
+/* Keep the administration drawer within the viewport on phones and desktop. */
+.platform-side-drawer{
+  inline-size:min(360px,94vw);
+  gap:.3rem;
+  overflow:clip;
+  padding:max(.4rem,env(safe-area-inset-top)) .65rem max(.4rem,env(safe-area-inset-bottom));
+}
+.platform-side-drawer h2{margin:.1rem 0}
+.platform-side-drawer>.platform-drawer-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+.platform-drawer-links>h2{grid-column:1/-1}
+.platform-side-drawer .platform-drawer-link{gap:.3rem;overflow-wrap:anywhere}
+.platform-side-drawer>.platform-drawer-developer{min-height:44px;margin:0}
+@media(max-height:480px){
+  .platform-side-drawer .platform-drawer-links>h2,
+  .platform-side-drawer>h2{display:none}
+  .platform-side-drawer .platform-drawer-head{min-height:44px;margin:0;padding:0}
+}

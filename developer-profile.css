@@ -208,3 +208,23 @@
     #wfDevDialog .wf-dev-discipline p { grid-column: 2; }
   }
 }
+
+@media screen {
+  #wfDevDialog .wf-dev-overview { gap:.45rem; }
+  #wfDevDialog :is(.wf-dev-block,.wf-dev-focus) { padding:.55rem .7rem; gap:.28rem; }
+  #wfDevDialog .wf-dev-summary p { line-height:1.35; }
+  #wfDevDialog .wf-dev-summary p + p { display:none; }
+  #wfDevDialog .wf-dev-discipline { padding:.35rem; }
+  #wfDevDialog .wf-dev-discipline p { display:none; }
+  #wfDevDialog .wf-dev-disciplines { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  #wfDevDialog .wf-dev-discipline .wf-dev-icon { grid-row:auto; }
+  #wfDevDialog .wf-dev-discipline h4 { font-size:.72rem; }
+  #wfDevDialog .wf-dev-code pre { margin:0; padding:.4rem; }
+  @media (max-height:540px) {
+    #wfDevDialog .wf-dev-overview { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    #wfDevDialog .wf-dev-profile { padding:.4rem; margin-block-end:.35rem; grid-template-columns:44px minmax(0,1fr); }
+    #wfDevDialog .wf-dev-app { grid-column:auto; }
+    #wfDevDialog .wf-dev-focus { grid-column:auto; }
+    #wfDevDialog .wf-dev-disciplines { grid-template-columns:minmax(0,1fr); }
+  }
+}

@@ -137,11 +137,12 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(await drawer.isVisible(),false);
     await menu.getByRole('link',{name:'Support'}).click();
     await sideButton.click();
-    await drawer.getByRole('button',{name:'Compact'}).click();
+    assert(await drawer.evaluate(el=>el.scrollHeight<=el.clientHeight));
+    await drawer.getByRole('link',{name:'Settings'}).click();
+    await page.getByRole('button',{name:'Compact'}).click();
     assert.equal(await page.locator('html').getAttribute('data-admin-density'),'compact');
-    await drawer.getByRole('button',{name:'Comfortable'}).click();
+    await page.getByRole('button',{name:'Comfortable'}).click();
     assert.equal(await page.locator('html').getAttribute('data-admin-density'),'comfortable');
-    await drawer.getByRole('button',{name:'Close menu'}).click();
     assert.equal(await page.evaluate(()=>localStorage.getItem('wow.platform.density')),'comfortable');
     const themeBefore=await page.locator('html').getAttribute('data-theme');
     await page.locator('#platformThemeToggle').click();
