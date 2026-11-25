@@ -293,3 +293,42 @@ html[data-wf-motion=reduced] #platform-page-home > *{animation:none;transition:n
     animation:none;transition:none;transform:none;
   }
 }
+
+/* Company cards before entering a company workspace. */
+#platform-page-companies>.platform-company-card-v2{
+  --company-edge:color-mix(in srgb,var(--ui-accent) 24%,var(--border));
+  align-content:start;gap:.65rem!important;padding:clamp(.78rem,1.5vw,1.05rem)!important;
+  border:1px solid var(--company-edge)!important;border-radius:20px!important;
+}
+#platform-page-companies>.platform-company-card-v2>.platform-company-hero{
+  padding-block-end:.65rem;border-block-end:1px solid var(--company-edge);
+}
+#platform-page-companies .platform-company-hero .platform-brand-avatar{
+  inline-size:46px;block-size:46px;flex-basis:46px;border-radius:14px;
+}
+#platform-page-companies .platform-company-hero .platform-company-name{
+  font-size:clamp(1rem,1.5vw,1.18rem);line-height:1.4;overflow-wrap:anywhere;
+}
+#platform-page-companies>.platform-company-card-v2>.platform-company-shortcuts{
+  align-self:end;gap:.5rem;
+}
+#platform-page-companies .platform-company-shortcuts>a{
+  min-block-size:44px;border-radius:12px;white-space:normal;text-align:center;
+}
+#platform-page-companies .platform-company-shortcuts>.platform-company-page-link{
+  background:var(--text);color:var(--card);border-color:var(--text);
+}
+#platform-page-home .platform-home-company{
+  grid-template-columns:40px minmax(0,1fr) auto;gap:.65rem;padding:.65rem .75rem;
+  min-block-size:64px;border-radius:16px;background:var(--card);border-color:var(--home-line);
+}
+#platform-page-home .platform-home-company-mark{
+  inline-size:40px;block-size:40px;border-radius:12px;background:var(--home-tint);
+}
+#platform-page-home .platform-home-company-copy strong{font-size:.94rem}
+#platform-page-home .platform-home-company-state{border-radius:999px;text-align:center}
+@supports(content-visibility:auto){
+  #platform-page-companies>.platform-company-card-v2:nth-of-type(n+7){
+    content-visibility:auto;contain-intrinsic-block-size:auto 16rem;
+  }
+}
