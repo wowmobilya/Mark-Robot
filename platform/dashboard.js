@@ -781,7 +781,7 @@
     if(!previewList.childElementCount)previewList.append(el('p',previewWords[3]));
     const quickPanel=el('section');
     quickPanel.className='platform-home-actions';quickPanel.append(quickHeading,quick);
-    panels.home.append(hero,quickPanel,preview);
+    panels.home.append(quickPanel,hero,preview);
     const createPanel=el('details'),createSummary=el('summary',homepage.openForm),createHint=el('p',homepage.formHelp);
     createPanel.className='platform-create-panel';createHint.className='platform-create-hint';
     form.className='platform-create-form';form.append(createHint);

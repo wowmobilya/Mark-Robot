@@ -20,6 +20,17 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
     await page.goto('https://robot.test/');
     await page.addStyleTag({path:path.resolve(__dirname,'../platform/server-robot.css')});
     await page.addStyleTag({path:path.resolve(__dirname,'../platform/home-command-center.css')});
+    await page.evaluate(()=>{
+      window.briefingCalls=[];
+      window.SpeechSynthesisUtterance=class { constructor(text){this.text=text;} };
+      window.briefingVoices=[{lang:'en-US',localService:false},{lang:'en-GB',localService:true}];
+      Object.defineProperty(window,'speechSynthesis',{value:{
+        getVoices:()=>window.briefingVoices,
+        speak:utterance=>window.briefingCalls.push({text:utterance.text,lang:utterance.lang}),
+        cancel:()=>window.briefingCalls.push('stopped')
+      }});
+    });
+    await page.addScriptTag({path:path.resolve(__dirname,'../platform/robot-briefing.js')});
     await page.addScriptTag({path:path.resolve(__dirname,'../platform/server-robot.js')});
     const id='adb5b000-9c21-49b4-92ec-0eb273230ab4';
     await page.evaluate(({id,at})=>{
@@ -33,7 +44,7 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
           if(action==='operationsReport')return {
             checkedAt:at,healthy:false,database:{bytes:315e6,clientConnections:2,maxConnections:75},
             scheduler:{lastRunAt:at,staleWorkspaces:1},push:{pending:7,overdue:3},activeIncidents:1,
-            incidents:[{active:true,code:'PUSH_BACKLOG',lastSeenAt:at}],recentFailures:[{code:'XX000',at}]
+            incidents:[{active:true,code:'PUSH_BACKLOG',lastSeenAt:at}],recentFailures:[{code:'XX000',at},{code:'raw error: internal detail',at}]
           };
           if(action==='limits.get')return {usedUsers:1,planId:'fixture',effectiveStorageBytes:500e6,effectiveDeviceLimit:2,usedBytes:500e6,usedDevices:1,usedVoiceMinutes:12.34,usedVideoMinutes:0};
           throw Error('UNEXPECTED_ACTION');
@@ -47,6 +58,18 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
     assert.equal(await robot.locator('.platform-robot-blink').first().evaluate(node=>getComputedStyle(node).animationName),'none');
     assert.equal(await robot.locator('.platform-server-robot-face').evaluate(node=>getComputedStyle(node).color),'rgb(63, 124, 148)');
     await robot.getByText('Health request latency',{exact:true}).waitFor();
+    const listen=robot.getByRole('button',{name:'Listen to Mark’s briefing'});
+    await listen.click();
+    const [spoken]=await page.evaluate(()=>window.briefingCalls);
+    assert.equal(spoken.lang,'en-GB');
+    assert.match(spoken.text,/Some items need attention/);
+    await robot.getByRole('button',{name:'Stop reading'}).click();
+    assert.equal(await page.evaluate(()=>window.briefingCalls.at(-1)),'stopped');
+    await page.evaluate(()=>{window.briefingVoices=window.briefingVoices.filter(voice=>!voice.localService);});
+    await listen.click();
+    await robot.getByText('A local voice for this language is unavailable on this device.').waitFor();
+    assert.equal(await page.evaluate(()=>window.briefingCalls.length),2);
+
     const jump=robot.locator('.platform-server-robot-jump').last();
     await jump.focus();await page.keyboard.press('Enter');
     assert.equal(await robot.locator('.platform-server-robot-panel h5').last().evaluate(el=>el===document.activeElement),true);
@@ -56,6 +79,23 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
     await robot.getByText('Overdue notifications').waitFor();
     await robot.getByText('Recent failures', {exact:true}).click();
     await robot.getByText('PUSH_BACKLOG').waitFor();
+    await robot.getByText('Diagnostic summary',{exact:true}).first().click();
+    const diagnostic=robot.getByRole('textbox',{name:'Diagnostic summary'});
+    const summary=await diagnostic.inputValue();
+    assert(summary.includes(at)&&summary.includes('PUSH_BACKLOG')&&!summary.includes('internal detail'));
+    await page.evaluate(()=>{
+      window.robotClipboard=null;
+      Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+        async writeText(value){window.robotClipboard=value;}
+      }});
+    });
+    await robot.getByRole('button',{name:'Copy summary'}).click();
+    await robot.getByText('Summary copied.').waitFor();
+    assert.equal(await page.evaluate(()=>window.robotClipboard),summary);
+    await page.evaluate(()=>{navigator.clipboard.writeText=async()=>{throw Error('denied');};});
+    await robot.getByRole('button',{name:'Copy summary'}).click();
+    await robot.getByText('Select the text and copy it manually.').waitFor();
+    assert.equal(await diagnostic.evaluate(node=>node.selectionEnd-node.selectionStart),summary.length);
     await robot.getByLabel('Select a company').selectOption(id);
     await robot.getByText('12.34',{exact:true}).waitFor();
     await robot.getByText('0',{exact:true}).waitFor();
@@ -82,6 +122,7 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
     await robot.getByRole('button',{name:'Refresh server status'}).click();
     await robot.getByText('Server responded. Monitoring could not be refreshed.').waitFor();
     await robot.getByText('Showing the previous readings. Refresh to try again.').waitFor();
+    assert.match(await diagnostic.inputValue(),/last available readings/);
     await robot.getByText('315 MB').waitFor();
     transport='unavailable';
     await robot.getByRole('button',{name:'Refresh server status'}).click();

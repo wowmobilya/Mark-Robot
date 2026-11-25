@@ -40,8 +40,18 @@ test('a founder confirms a targeted message and a tenant inbox clears on sign-ou
     await page.getByText('User messages and notifications',{exact:true}).click();
     await page.getByLabel('Recipients').selectOption('company');
     await page.getByLabel('Choose a company').selectOption({label:'Company A'});
+    const editor=page.getByLabel('Message',{exact:true});
+    const suggestion=page.getByRole('button',{name:'Insert suggested text'});
+    const category=page.getByLabel('Message type');
+    await category.selectOption('maintenance');
+    await suggestion.click();
+    assert.match(await editor.inputValue(),/planning service maintenance/);
+    assert.equal(await suggestion.isDisabled(),true);
+    await category.selectOption('update');
+    assert.match(await editor.inputValue(),/planning service maintenance/);
     await page.getByLabel('Title').fill('Ready');
-    await page.getByLabel('Message',{exact:true}).fill('Review this message.');
+    await editor.fill('Review this message.');
+    await page.getByText('Characters · 20 / 2,500',{exact:true}).waitFor();
     await page.getByRole('checkbox').check();
     await page.getByRole('button',{name:'Review before sending'}).click();
     await page.getByText('Recipient accounts 4').waitFor();
@@ -51,6 +61,8 @@ test('a founder confirms a targeted message and a tenant inbox clears on sign-ou
     await page.getByText('The request could not be completed. Try again.').waitFor();
     await page.getByRole('button',{name:'Send now'}).click();
     await page.getByText('User inbox messages saved 4 · Device alerts queued 1').waitFor();
+    await page.getByText('Characters · 0 / 2,500',{exact:true}).waitFor();
+    await suggestion.waitFor({state:'hidden'});
     const sends=await page.evaluate(()=>events.filter(event=>event.action==='announcement.send').map(event=>event.data));
     assert.equal(sends.length,2);
     assert.deepEqual(sends[0],sends[1]);

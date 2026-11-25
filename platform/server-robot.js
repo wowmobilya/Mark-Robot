@@ -3,6 +3,11 @@
 
   const copy={
     ar:{
+      diagnostic:"ملخص التشخيص",
+      copyDiagnostic:"نسخ الملخص",
+      copiedDiagnostic:"تم نسخ الملخص.",
+      manualDiagnostic:"حدّد النص وانسخه يدويًا.",
+      earlierDiagnostic:"الملخص يعرض آخر قراءة متاحة.",
       center:"مركز وكلاء مارك",
       serverAgent:"وكيل مراقبة السيرفر",
       agents:"وكلاء الشركة",
@@ -53,6 +58,11 @@
       month:'دقائق المكالمات للشهر الحالي بتوقيت UTC.',details:'افتح تفاصيل الاستهلاك'
     },
     en:{
+      diagnostic:"Diagnostic summary",
+      copyDiagnostic:"Copy summary",
+      copiedDiagnostic:"Summary copied.",
+      manualDiagnostic:"Select the text and copy it manually.",
+      earlierDiagnostic:"The summary uses the last available readings.",
       center:"Mark agent center",
       serverAgent:"Server monitor",
       agents:"Company agents",
@@ -103,6 +113,11 @@
       month:'Call minutes cover the current UTC month.',details:'Open usage details'
     },
     tr:{
+      diagnostic:"Tanılama özeti",
+      copyDiagnostic:"Özeti kopyala",
+      copiedDiagnostic:"Özet kopyalandı.",
+      manualDiagnostic:"Metni seçip elle kopyalayın.",
+      earlierDiagnostic:"Özet, alınan son ölçümleri içerir.",
       center:"Mark aracı merkezi",
       serverAgent:"Sunucu izleme aracı",
       agents:"Şirket araçları",
@@ -153,6 +168,11 @@
       month:'Arama dakikaları geçerli UTC ayına aittir.',details:'Kullanım ayrıntılarını aç'
     },
     fr:{
+      diagnostic:"Résumé du diagnostic",
+      copyDiagnostic:"Copier le résumé",
+      copiedDiagnostic:"Résumé copié.",
+      manualDiagnostic:"Sélectionnez le texte pour le copier manuellement.",
+      earlierDiagnostic:"Le résumé reprend les dernières mesures disponibles.",
       center:"Centre des agents Mark",
       serverAgent:"Agent de surveillance du serveur",
       agents:"Agents de l’entreprise",
@@ -203,6 +223,11 @@
       month:'Les minutes concernent le mois UTC en cours.',details:'Ouvrir les détails de consommation'
     },
     ru:{
+      diagnostic:"Сводка диагностики",
+      copyDiagnostic:"Скопировать сводку",
+      copiedDiagnostic:"Сводка скопирована.",
+      manualDiagnostic:"Выделите и скопируйте текст вручную.",
+      earlierDiagnostic:"Сводка содержит последние доступные показатели.",
       center:"Центр агентов Mark",
       serverAgent:"Монитор сервера",
       agents:"Агенты компании",
@@ -343,7 +368,31 @@
     const sections=make('div','platform-server-robot-sections');
     const server=make('section','platform-server-robot-panel'),serverData=make('div');
     const serverHeading=titled('h5','',t.serverAgent,'server');
-    server.append(serverHeading,serverData);sections.append(server);
+    const diagnostics=make('details','platform-server-diagnostics');
+    const diagnosticText=make('textarea','platform-server-diagnostic-text');
+    const copyDiagnostic=make('button','platform-server-robot-refresh',t.copyDiagnostic);
+    const diagnosticStatus=make('p','platform-server-robot-note');
+    diagnosticText.readOnly=true;
+    diagnosticText.rows=5;
+    diagnosticText.setAttribute('aria-label',t.diagnostic);
+    copyDiagnostic.type='button';
+    diagnosticStatus.setAttribute('role','status');
+    diagnostics.hidden=true;
+    diagnostics.append(make('summary','',t.diagnostic),diagnosticText,copyDiagnostic,diagnosticStatus);
+    copyDiagnostic.onclick=async()=>{
+      const content=diagnosticText.value;
+      diagnosticStatus.textContent='';
+      try{
+        await navigator.clipboard.writeText(content);
+        if(diagnosticText.value===content)diagnosticStatus.textContent=t.copiedDiagnostic;
+      }catch{
+        if(!diagnosticText.isConnected||diagnosticText.value!==content)return;
+        diagnosticText.focus();
+        diagnosticText.select();
+        diagnosticStatus.textContent=t.manualDiagnostic;
+      }
+    };
+    server.append(serverHeading,serverData,diagnostics);sections.append(server);
     const company=make('section','platform-server-robot-panel');
     const control=make('label','platform-server-robot-select',t.select),select=make('select');
     control.append(select);
@@ -414,6 +463,13 @@
     thresholdLabel.append(threshold);choices.append(thresholdLabel);
     settings.append(choices);
     header.append(jumps,settings);
+    const stopBriefing=window.WFPlatformRobotBriefing?.mount({
+      host:header,language,
+      read:()=>[
+        status.textContent,
+        ...Array.from(serverData.querySelectorAll('.platform-server-robot-notice, .platform-server-robot-guide li:not([hidden]), .platform-agent-attention:not([hidden])'),node=>node.textContent)
+      ]
+    });
     sections.append(company);
     const directory=make('a','platform-server-robot-directory');
     directory.href='#companies';
@@ -449,7 +505,25 @@
       }
       return list;
     }
-    let previousReport=null;
+    let previousReport=null,currentDiagnostic=null;
+    function showDiagnostic(data,rows,reasons,entries,fresh){
+      currentDiagnostic={data,rows,reasons,entries};
+      const measured=parseTime(data?.checkedAt);
+      diagnosticStatus.textContent='';
+      diagnostics.hidden=false;
+      diagnosticText.value=[
+        t.title+' · '+t.server,
+        t[report.dataset.state],
+        ...(!fresh&&measured?[t.earlierDiagnostic]:[]),
+        ...(measured?[t.last+' · '+measured.toISOString()]:[]),
+        ...rows.filter(([,value])=>value!==t.unknown).map(([label,value])=>label+' · '+value),
+        ...reasons.map(reason=>'• '+reason),
+        ...entries.map(({code,at})=>{
+          const when=parseTime(at);
+          return when?code+' · '+when.toISOString():code;
+        })
+      ].join('\n');
+    }
     function showOperations(data,latency){
       serverData.replaceChildren();
       const fresh=typeof data?.healthy==='boolean' && Boolean(parseTime(data.checkedAt));
@@ -457,7 +531,9 @@
       else{
         serverData.append(make('p','platform-server-robot-notice',previousReport?t.older:t.monitoring));
         if(!previousReport){
-          if(latency)serverData.append(metrics([[t.latency,latency,'time']]));
+          const rows=latency?[[t.latency,latency,'time']]:[];
+          if(rows.length)serverData.append(metrics(rows));
+          showDiagnostic(null,rows,[],[],false);
           return;
         }
         data=previousReport;
@@ -513,6 +589,7 @@
       const active=Array.isArray(data.incidents)?data.incidents.filter(item=>item.active).map(item=>({code:item.code,at:item.lastSeenAt})):[];
       const failures=Array.isArray(data.recentFailures)?data.recentFailures:[];
       const entries=[...active,...failures].filter(item=>typeof item?.code==='string'&&/^[A-Z0-9_]{2,64}$/i.test(item.code)).slice(0,8);
+      showDiagnostic(data,rows,reasons,entries,fresh&&report.dataset.state!=='staleState');
       if(!entries.length)return;
       const issues=make('details','platform-server-robot-issues'),list=make('ul');
       for(const item of entries){
@@ -548,6 +625,10 @@
           const markOld=()=>{
             if(!report.isConnected)return;
             setState('staleState');
+            if(currentDiagnostic){
+              const {data,rows,reasons,entries}=currentDiagnostic;
+              showDiagnostic(data,rows,reasons,entries,false);
+            }
             serverData.prepend(make('p','platform-server-robot-notice',t.outdated));
           };
           const remaining=parseTime(data.checkedAt).getTime()+maxAge-Date.now();
@@ -657,6 +738,7 @@
       observer.observe(report);
     }else refreshVisible();
     return {dispose(){
+      stopBriefing?.();
       observer?.disconnect();clearTimeout(ageTimer);clearInterval(refreshTimer);
       document.removeEventListener('visibilitychange',refreshVisible);
       window.removeEventListener('online',refreshVisible);

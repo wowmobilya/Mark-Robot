@@ -164,3 +164,43 @@ html[data-theme=dark] .platform-server-robot-face{color:#95c6d8}
 .platform-server-alert-choices input[type=number]{inline-size:4.5rem}
 .platform-server-robot [data-alert-source][hidden]{display:none!important}
 .platform-server-robot-guide:has(ul):not(:has(li:not([hidden]))){display:none}
+
+.platform-server-diagnostics{
+ margin-block-start:.6rem;padding-inline:.65rem;border:1px solid var(--border);
+ border-radius:10px;background:var(--card);min-inline-size:0;
+}
+.platform-server-diagnostics summary{
+ min-block-size:44px;align-content:center;cursor:pointer;color:var(--ui-accent);font-weight:750;
+}
+.platform-server-diagnostics .platform-server-diagnostic-text{
+ display:block;inline-size:100%;min-inline-size:0;box-sizing:border-box;
+ padding:.55rem;border:1px solid var(--border);border-radius:8px;resize:vertical;
+ background:var(--input,var(--card));color:var(--text);font:inherit;font-size:.82rem;line-height:1.55;
+}
+.platform-server-diagnostics button{margin-block:.4rem}
+.platform-server-diagnostics .platform-server-robot-note:not(:empty){margin-block:0 .45rem}
+
+.platform-robot-briefing{
+ display:flex;grid-column:1/-1;align-items:center;flex-wrap:wrap;gap:.3rem .75rem;min-inline-size:0;
+}
+.platform-robot-briefing .platform-server-robot-refresh{
+ max-inline-size:100%;border-color:var(--ui-accent);overflow-wrap:anywhere;
+}
+.platform-server-robot .platform-robot-briefing .platform-server-robot-note{margin:0}
+.platform-server-robot[data-state=checking] .platform-server-robot-face{position:relative}
+.platform-server-robot[data-state=checking] .platform-server-robot-face::after{
+ content:"";position:absolute;inset-inline:10%;inset-block-start:50%;height:1px;
+ background:currentColor;opacity:.3;pointer-events:none;
+}
+@media(prefers-reduced-motion:no-preference){
+ html:not([data-wf-motion=reduced]) .platform-server-robot[data-state=checking] .platform-server-robot-face::after{
+  animation:platform-robot-scan 1.35s ease-in-out infinite alternate;
+ }
+ html:not([data-wf-motion=reduced]) .platform-robot-briefing button{
+  transition:background-color .18s ease,border-color .18s ease;
+ }
+}
+@keyframes platform-robot-scan{
+ from{transform:translateY(-16px);opacity:.16}
+ to{transform:translateY(16px);opacity:.52}
+}

@@ -1900,3 +1900,46 @@ main:has(>#content>.platform-section-menu)>header{border-block-end-color:var(--a
   .platform-side-drawer>h2{display:none}
   .platform-side-drawer .platform-drawer-head{min-height:44px;margin:0;padding:0}
 }
+
+.platform-announcement-fields{border:0;margin:0;padding:0;min-inline-size:0}
+.platform-announcement-group{
+  display:grid;gap:.65rem;min-inline-size:0;margin:0;padding:.5rem .65rem .65rem;
+  border:1px solid var(--border);border-radius:12px;background:var(--card);
+}
+.platform-announcement-group legend{padding-inline:.3rem;font-weight:750;color:var(--text)}
+.platform-announcement-draft-tools{
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.35rem;
+  color:var(--text2);font-size:.78rem;font-variant-numeric:tabular-nums;
+}
+.platform-announcement-draft-tools button{max-inline-size:100%}
+.platform-announcement-review{
+  padding:.75rem;border:1px solid var(--border);border-radius:12px;background:var(--card);
+}
+.platform-announcement-review :is(h3,p){margin:0;overflow-wrap:anywhere}
+
+/* Keep the selected destination visible in the dock and the desktop rail. */
+#content>.platform-section-menu>.platform-section-link:focus-visible{
+  outline:2px solid var(--ui-accent);outline-offset:-3px;
+}
+@media(max-width:1024px){
+  #content>.platform-section-menu .platform-nav-orbit{
+    border:2px solid color-mix(in srgb,var(--brand-primary) 74%,var(--card));
+    background:var(--brand-primary);
+  }
+  #content>.platform-section-menu .platform-section-link[aria-current=page] .platform-nav-label{
+    padding:.16rem .36rem;border-radius:7px;background:var(--ui-soft);color:var(--text);
+  }
+}
+@media(min-width:1025px){
+  #content>.platform-section-menu>.platform-section-link[aria-current=page]{
+    border-inline-start:3px solid var(--ui-accent);
+  }
+}
+@media(hover:hover){
+  #content>.platform-section-menu .platform-section-link:hover .platform-nav-label{color:var(--text);text-decoration:underline;text-underline-offset:.22em}
+}
+@media(prefers-reduced-motion:no-preference){
+  html:not([data-wf-motion=reduced]) #content>.platform-section-menu .platform-section-link .platform-nav-label{
+    transition:color .16s ease,background-color .16s ease;
+  }
+}

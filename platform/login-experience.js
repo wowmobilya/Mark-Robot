@@ -2,11 +2,11 @@
 (() => {
   'use strict';
   const messages={
-    ar:{eyebrow:'WOW · مركز التحكم',heading:'مرحباً بك في مركز السيرفر',intro:'إدارة محمية ومراقبة اتصال حقيقية، بتصميم مارك روبوت.',idle:'تهيئة واجهة السيرفر',checking:'جارٍ فحص استجابة السيرفر…',ready:'السيرفر يستجيب',unavailable:'السيرفر أبلغ عن عدم الجاهزية',unreachable:'لا يمكن الوصول إلى السيرفر',unverified:'تعذّر التحقق من حالة السيرفر',verifying:'جارٍ التحقق من بيانات الدخول…',denied:'راجع رسالة تسجيل الدخول أدناه',secure:'اتصال الإدارة الآمن',service:'حالة السيرفر',access:'وصول المؤسس فقط'},
-    en:{eyebrow:'WOW · CONTROL CENTER',heading:'Welcome to your server',intro:'Protected administration and real connectivity checks, powered by Mark Robot.',idle:'Preparing server interface',checking:'Checking server response…',ready:'Server responded',unavailable:'Server reported unavailable',unreachable:'Cannot reach server',unverified:'Could not verify server status',verifying:'Verifying your sign-in…',denied:'Review the sign-in message below',secure:'Secure administration',service:'Server status',access:'Founder access only'},
-    tr:{eyebrow:'WOW · KONTROL MERKEZİ',heading:'Sunucu kontrol merkezine hoş geldiniz',intro:'Mark Robot ile korumalı yönetim ve gerçek bağlantı kontrolü.',idle:'Sunucu arayüzü hazırlanıyor',checking:'Sunucu yanıtı denetleniyor…',ready:'Sunucu yanıt verdi',unavailable:'Sunucu kullanılamıyor',unreachable:'Sunucuya ulaşılamıyor',unverified:'Sunucu durumu doğrulanamadı',verifying:'Giriş doğrulanıyor…',denied:'Aşağıdaki giriş bildirimini inceleyin',secure:'Güvenli yönetim',service:'Sunucu durumu',access:'Yalnızca kurucu erişimi'},
-    fr:{eyebrow:'WOW · CENTRE DE CONTRÔLE',heading:'Bienvenue sur votre serveur',intro:'Administration protégée et état du serveur vérifié par Mark Robot.',idle:'Préparation de l’interface',checking:'Vérification du serveur…',ready:'Le serveur répond',unavailable:'Serveur indisponible',unreachable:'Serveur inaccessible',unverified:'État du serveur non vérifié',verifying:'Vérification de la connexion…',denied:'Consultez le message de connexion ci-dessous',secure:'Administration sécurisée',service:'État du serveur',access:'Accès fondateur'},
-    ru:{eyebrow:'WOW · ЦЕНТР УПРАВЛЕНИЯ',heading:'Добро пожаловать на сервер',intro:'Защищённое управление и настоящая проверка связи с Mark Robot.',idle:'Подготовка интерфейса',checking:'Проверка сервера…',ready:'Сервер отвечает',unavailable:'Сервер сообщил о недоступности',unreachable:'Сервер недоступен',unverified:'Статус сервера не подтверждён',verifying:'Проверка входа…',denied:'Проверьте сообщение о входе ниже',secure:'Защищённое управление',service:'Статус сервера',access:'Только для основателя'}
+    ar:{eyebrow:'WOW · مركز التحكم',heading:'مرحباً بك في مركز السيرفر',intro:'إدارة محمية ومراقبة اتصال حقيقية، بتصميم مارك روبوت.',idle:'تهيئة واجهة السيرفر',checking:'جارٍ فحص استجابة السيرفر…',ready:'السيرفر يستجيب',unavailable:'السيرفر أبلغ عن عدم الجاهزية',unreachable:'لا يمكن الوصول إلى السيرفر',unverified:'تعذّر التحقق من حالة السيرفر',verifying:'جارٍ التحقق من بيانات الدخول…',denied:'راجع رسالة تسجيل الدخول أدناه'},
+    en:{eyebrow:'WOW · CONTROL CENTER',heading:'Welcome to your server',intro:'Protected administration and real connectivity checks, powered by Mark Robot.',idle:'Preparing server interface',checking:'Checking server response…',ready:'Server responded',unavailable:'Server reported unavailable',unreachable:'Cannot reach server',unverified:'Could not verify server status',verifying:'Verifying your sign-in…',denied:'Review the sign-in message below'},
+    tr:{eyebrow:'WOW · KONTROL MERKEZİ',heading:'Sunucu kontrol merkezine hoş geldiniz',intro:'Mark Robot ile korumalı yönetim ve gerçek bağlantı kontrolü.',idle:'Sunucu arayüzü hazırlanıyor',checking:'Sunucu yanıtı denetleniyor…',ready:'Sunucu yanıt verdi',unavailable:'Sunucu kullanılamıyor',unreachable:'Sunucuya ulaşılamıyor',unverified:'Sunucu durumu doğrulanamadı',verifying:'Giriş doğrulanıyor…',denied:'Aşağıdaki giriş bildirimini inceleyin'},
+    fr:{eyebrow:'WOW · CENTRE DE CONTRÔLE',heading:'Bienvenue sur votre serveur',intro:'Administration protégée et état du serveur vérifié par Mark Robot.',idle:'Préparation de l’interface',checking:'Vérification du serveur…',ready:'Le serveur répond',unavailable:'Serveur indisponible',unreachable:'Serveur inaccessible',unverified:'État du serveur non vérifié',verifying:'Vérification de la connexion…',denied:'Consultez le message de connexion ci-dessous'},
+    ru:{eyebrow:'WOW · ЦЕНТР УПРАВЛЕНИЯ',heading:'Добро пожаловать на сервер',intro:'Защищённое управление и настоящая проверка связи с Mark Robot.',idle:'Подготовка интерфейса',checking:'Проверка сервера…',ready:'Сервер отвечает',unavailable:'Сервер сообщил о недоступности',unreachable:'Сервер недоступен',unverified:'Статус сервера не подтверждён',verifying:'Проверка входа…',denied:'Проверьте сообщение о входе ниже'}
   };
   const node=(tag,cls,txt)=>{
     const n=document.createElement(tag);if(cls)n.className=cls;
@@ -57,15 +57,13 @@
     const stateMessage=node('strong','',msg.idle);
     stateRow.setAttribute('role','status');stateRow.setAttribute('aria-live','polite');
     stateRow.append(light,stateMessage);
-    const network=node('div','platform-auth-network'),terminal=node('span','platform-auth-terminal','</>');
+    const network=node('div','platform-auth-network'),terminal=node('span','platform-auth-terminal','>_');
     const route=node('span','platform-auth-route'),rack=node('span','platform-auth-rack');
     network.setAttribute('aria-hidden','true');
     network.dir='ltr';
     for(let tier=0;tier<3;tier++)rack.append(node('i'));
     network.append(terminal,route,rack);
-    const tags=node('div','platform-auth-tags');
-    for(const name of [msg.secure,msg.service,msg.access])tags.append(node('span','',name));
-    hero.append(head,stage,network,copy,stateRow,tags);
+    hero.append(head,stage,copy,network,stateRow);
     content.prepend(hero);
     let disposed=false,pending=false,controller=null,phase='idle';
     const mouth=expression.querySelector('.platform-auth-mouth');
