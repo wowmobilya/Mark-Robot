@@ -15,8 +15,8 @@
   const narration={
     ar:['',
       'أنا جاهز لفحص الخادم. اضغط زر التحديث لنبدأ.',
-      'أتحقق الآن من حالة الخادم. سأعطيك النتيجة عند اكتمال الفحص.',
-      'انتهيت من الفحص. الخادم يستجيب، ولم تظهر تنبيهات نشطة في التقرير.',
+      'أتحقق الآن من حالة الخادم. استمع إلى الملخص مجددًا عند انتهاء الفحص.',
+      'انتهيت من الفحص. الخادم يستجيب، والتقرير جاهز.',
       'الخادم يستجيب، وهناك أمور تحتاج إلى انتباهك. دعني أخبرك بما وجدته.',
       'الخادم يستجيب، لكنني لم أتمكّن من جلب تقرير المراقبة الجديد.',
       'القراءة المتاحة قديمة. حدّث الفحص حتى أتمكّن من إخبارك بالحالة الحالية.',
@@ -25,8 +25,8 @@
       'لم أتمكّن من التحقّق من حالة الخادم. جرّب تحديث الفحص.'],
     en:['Hello, engineer. Mark here.',
       'I’m ready to check the server. Press refresh to get started.',
-      'I’m checking the server now. I’ll have the result when the check finishes.',
-      'I’ve finished checking. The server responded, and the report shows no active alerts.',
+      'I’m checking the server now. Listen again when the check finishes.',
+      'I’ve finished checking. The server responded, and the report is ready.',
       'The server responded, and a few things need your attention. Here’s what I found.',
       'The server responded, but I couldn’t get a fresh monitoring report.',
       'The latest reading is out of date. Refresh the check for the current status.',
@@ -35,8 +35,8 @@
       'I couldn’t verify the server status. Try refreshing the check.'],
     tr:['Merhaba mühendis. Ben Mark.',
       'Sunucuyu kontrol etmeye hazırım. Başlamak için yenile düğmesine basın.',
-      'Sunucuyu kontrol ediyorum. İşlem tamamlandığında sonuç hazır olacak.',
-      'Kontrol tamamlandı. Sunucu yanıt verdi ve raporda etkin uyarı yok.',
+      'Sunucuyu kontrol ediyorum. Kontrol tamamlandığında özeti yeniden dinleyin.',
+      'Kontrol tamamlandı. Sunucu yanıt verdi ve rapor hazır.',
       'Sunucu yanıt verdi. Dikkat etmeniz gereken noktaları anlatayım.',
       'Sunucu yanıt verdi ancak güncel izleme raporunu alamadım.',
       'Son ölçüm güncel değil. Mevcut durumu öğrenmek için kontrolü yenileyin.',
@@ -45,8 +45,8 @@
       'Sunucu durumunu doğrulayamadım. Kontrolü yenilemeyi deneyin.'],
     fr:['Bonjour. C’est Mark.',
       'Je suis prêt à vérifier le serveur. Appuyez sur Actualiser pour commencer.',
-      'Je vérifie le serveur. Le résultat sera disponible à la fin du contrôle.',
-      'Le contrôle est terminé. Le serveur répond et le rapport ne signale aucune alerte active.',
+      'Je vérifie le serveur. Écoutez de nouveau le résumé à la fin du contrôle.',
+      'Le contrôle est terminé. Le serveur répond et le rapport est prêt.',
       'Le serveur répond. Voici les points qui demandent votre attention.',
       'Le serveur répond, mais je n’ai pas pu récupérer un nouveau rapport de suivi.',
       'La dernière mesure date. Relancez le contrôle pour connaître l’état actuel.',
@@ -55,8 +55,8 @@
       'Je n’ai pas pu vérifier l’état du serveur. Relancez le contrôle.'],
     ru:['Здравствуйте, инженер. Это Марк.',
       'Я готов проверить сервер. Нажмите кнопку обновления.',
-      'Я проверяю сервер. Результат появится после завершения проверки.',
-      'Проверка завершена. Сервер ответил, активных предупреждений в отчёте нет.',
+      'Я проверяю сервер. Прослушайте сводку ещё раз после завершения проверки.',
+      'Проверка завершена. Сервер ответил, отчёт готов.',
       'Сервер ответил. Вот что требует вашего внимания.',
       'Сервер ответил, но свежий отчёт мониторинга получить не удалось.',
       'Последние данные устарели. Повторите проверку, чтобы узнать текущее состояние.',
@@ -107,14 +107,14 @@
       if(disposed)return;
       disposed=true;
       document.removeEventListener('visibilitychange',onVisibility);
-      window.removeEventListener('pagehide',dispose);
+      window.removeEventListener('pagehide',stop);
       stop();
     }
     function onVisibility(){
       if(document.hidden)stop();
     }
     document.addEventListener('visibilitychange',onVisibility);
-    window.addEventListener('pagehide',dispose);
+    window.addEventListener('pagehide',stop);
     button.addEventListener('click',()=>{
       if(disposed)return;
       message.textContent='';
@@ -124,9 +124,10 @@
       const {state,details,readings=[]}=read();
       const words=narration[locale];
       const opening=words[1+states.indexOf(states.includes(state)?state:'unverified')];
-      const relevant=state==='attention'?details.slice(0,3):state==='partial'?details.slice(0,1):[];
+      const fresh=['ready','attention'].includes(state);
+      const relevant=fresh?details.slice(0,3):state==='partial'?details.slice(0,1):[];
       const greeting=locale==='ar'?arabicGreetings[plays%arabicGreetings.length]:plays===0?words[0]:'';
-      const measurements=['ready','attention'].includes(state)?readings:[];
+      const measurements=fresh?readings:[];
       const text=[greeting,opening,...relevant,...measurements].filter(Boolean).join(' ');
       const utterance=new SpeechSynthesisUtterance(text);
       utterance.lang=voice.lang;

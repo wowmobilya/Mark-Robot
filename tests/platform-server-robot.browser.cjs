@@ -64,12 +64,14 @@ test('admin robot uses actual server and tenant readings and marks unreachable s
     assert.equal(spoken.lang,'en-GB');
     assert.match(spoken.text,/Hello, engineer.*need your attention/);
     assert.match(spoken.text,/Active incidents: 1.*Overdue notifications: 3.*Pending notifications: 7/);
-    await robot.getByRole('button',{name:'Stop reading'}).click();
+    await page.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true})));
     assert.equal(await page.evaluate(()=>window.briefingCalls.at(-1)),'stopped');
+    await listen.click();
+    await robot.getByRole('button',{name:'Stop reading'}).click();
     await page.evaluate(()=>{window.briefingVoices=window.briefingVoices.filter(voice=>!voice.localService);});
     await listen.click();
     await robot.getByText('A local voice for this language is unavailable on this device.').waitFor();
-    assert.equal(await page.evaluate(()=>window.briefingCalls.length),2);
+    assert.equal(await page.evaluate(()=>window.briefingCalls.length),4);
 
     const jump=robot.locator('.platform-server-robot-jump').last();
     await jump.focus();await page.keyboard.press('Enter');
@@ -167,12 +169,12 @@ test('Mark narrates distinct server states in five languages and rotates Arabic 
       return readings;
     });
     assert.deepEqual(result.map(([lang])=>lang),['ar-SA','ar-SA','ar-SA','en-GB','tr-TR','fr-FR','ru-RU']);
-    assert.match(result[0][1],/مهندسي\. معك مارك.*لم تظهر تنبيهات/);
+    assert.match(result[0][1],/مهندسي\. معك مارك.*التقرير جاهز.*طابور الإرسال متأخر/);
     assert.match(result[1][1],/مهندسي معتز.*تحتاج إلى انتباهك.*طابور الإرسال متأخر/);
     assert.match(result[2][1],/أستاذي.*القراءة المتاحة قديمة/);
-    assert.match(result[3][1],/report shows no active alerts/);
-    assert.match(result[4][1],/etkin uyarı yok/);
-    assert.match(result[5][1],/aucune alerte active/);
-    assert.match(result[6][1],/активных предупреждений в отчёте нет/);
+    assert.match(result[3][1],/report is ready/);
+    assert.match(result[4][1],/rapor hazır/);
+    assert.match(result[5][1],/rapport est prêt/);
+    assert.match(result[6][1],/отчёт готов/);
   }finally{await browser.close();}
 });
