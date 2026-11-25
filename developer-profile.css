@@ -228,3 +228,18 @@
     #wfDevDialog .wf-dev-disciplines { grid-template-columns:minmax(0,1fr); }
   }
 }
+@media screen and (max-width:420px), screen and (max-height:540px) {
+  #wfDevDialog .wf-dev-overview { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #wfDevDialog .wf-dev-summary { grid-column:1/-1; }
+  #wfDevDialog .wf-dev-code { display:none; }
+  #wfDevDialog .wf-dev-focus { grid-column:1/-1; }
+  #wfDevDialog .wf-dev-app { grid-column:1/-1; }
+  #wfDevDialog .wf-dev-disciplines { grid-template-columns:repeat(3,minmax(0,1fr)); gap:.25rem; }
+  #wfDevDialog .wf-dev-discipline { grid-template-columns:minmax(0,1fr); justify-items:center; text-align:center; }
+  #wfDevDialog .wf-dev-discipline .wf-dev-icon { display:none; }
+}
+@media screen and (max-height:480px) and (min-width:540px) {
+  #wfDevDialog .wf-dev-overview > * { grid-column:auto; }
+  #wfDevDialog .wf-dev-app { grid-column:1/-1; }
+  #wfDevDialog .wf-dev-app-identity img { inline-size:58px; }
+}
