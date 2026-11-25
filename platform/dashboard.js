@@ -732,17 +732,17 @@
       tile.className='platform-nav-icon';caption.className='platform-nav-label';
       tile.setAttribute('aria-hidden','true');link.append(tile,caption);
       panel.className='platform-page';panel.id='platform-page-'+id;panel.hidden=true;
-      panel.setAttribute('aria-labelledby',title.id);panel.append(title);content.append(panel);
+      if(id==='home'){panel.setAttribute('aria-label',homepage.navHome);panel.tabIndex=-1;}
+      else{panel.setAttribute('aria-labelledby',title.id);panel.append(title);}
+      content.append(panel);
       link.setAttribute('aria-controls',panel.id);menu.append(link);panels[id]=panel;links[id]=link;
     }
     arrangeMenu();
     const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);
-    const masthead=el('header'),hero=el('section');
-    masthead.className='platform-home-masthead';
-    masthead.append(panels.home.firstElementChild);panels.home.append(masthead);
+    const hero=el('section');
     hero.className='platform-home-hero';
     serverRobot=window.WFPlatformServerRobot?.mount({host:hero,state:{...result,offset},request,language:lang.value,endpoint:config.endpoint});
-    const quickHeading=el('h3',homepage.quick),quick=el('nav');
+    const quick=el('nav');
     quick.className='platform-home-quick';quick.setAttribute('aria-label',homepage.quick);
     const shortcuts=[
       ['create','create','createNote'],['plans','plans','plansNote'],
@@ -780,7 +780,7 @@
     }
     if(!previewList.childElementCount)previewList.append(el('p',previewWords[3]));
     const quickPanel=el('section');
-    quickPanel.className='platform-home-actions';quickPanel.append(quickHeading,quick);
+    quickPanel.className='platform-home-actions';quickPanel.append(quick);
     panels.home.append(quickPanel,hero,preview);
     const createPanel=el('details'),createSummary=el('summary',homepage.openForm),createHint=el('p',homepage.formHelp);
     createPanel.className='platform-create-panel';createHint.className='platform-create-hint';
@@ -902,7 +902,7 @@
         }).finally(()=>{loadingPlans=false;});
       }
       if(changed&&lastPage!==null&&!route){
-        const heading=panels[id].querySelector('h2');heading.focus({preventScroll:true});heading.scrollIntoView({block:'nearest'});
+        const heading=id==='home'?panels.home:panels[id].querySelector('h2');heading.focus({preventScroll:true});heading.scrollIntoView({block:'nearest'});
       }
       lastPage=id;
     };

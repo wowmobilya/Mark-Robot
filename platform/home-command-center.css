@@ -16,19 +16,6 @@
   box-shadow:none;
   align-items:start;
 }
-#platform-page-home>.platform-home-masthead{
-  padding:.45rem .75rem;
-  border:0;
-  border-inline-start:3px solid var(--ui-accent);
-  margin:0;
-}
-#platform-page-home .platform-home-masthead h2{
-  margin:0;
-  font-size:clamp(1.2rem,2.3vw,1.8rem);
-  font-weight:850;
-  line-height:1.3;
-  overflow-wrap:anywhere;
-}
 #platform-page-home>.platform-home-hero{
   margin:0;
   padding:0;
@@ -229,9 +216,8 @@
 @media(min-width:1050px){
   #platform-page-home:not([hidden]){
     grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);
-    grid-template-areas:"title title" "shortcuts shortcuts" "robot robot" "analytics companies";
+    grid-template-areas:"shortcuts shortcuts" "robot robot" "analytics companies";
   }
-  #platform-page-home>.platform-home-masthead{grid-area:title}
   #platform-page-home>.platform-home-hero{grid-area:robot}
   #platform-page-home>.platform-analytics{grid-area:analytics}
   #platform-page-home>.platform-home-actions{grid-area:shortcuts}
