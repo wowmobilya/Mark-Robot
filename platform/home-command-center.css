@@ -216,11 +216,10 @@
 @media(min-width:1050px){
   #platform-page-home:not([hidden]){
     grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);
-    grid-template-areas:"shortcuts shortcuts" "robot robot" "analytics companies";
+    grid-template-areas:"robot robot" "analytics companies";
   }
   #platform-page-home>.platform-home-hero{grid-area:robot}
   #platform-page-home>.platform-analytics{grid-area:analytics}
-  #platform-page-home>.platform-home-actions{grid-area:shortcuts}
   #platform-page-home>.platform-home-directory{grid-area:companies}
   #platform-page-home .platform-company-agent-scan{grid-template-columns:minmax(0,1fr)}
   #platform-page-home .platform-server-robot{
@@ -332,3 +331,15 @@ html[data-wf-motion=reduced] #platform-page-home > *{animation:none;transition:n
     content-visibility:auto;contain-intrinsic-block-size:auto 16rem;
   }
 }
+
+
+#platform-page-home .platform-agent-company-head{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.3rem .65rem;
+}
+#platform-page-home .platform-agent-create-company{
+  display:inline-flex;align-items:center;gap:.35rem;min-block-size:44px;
+  padding:.25rem .65rem;border:1px solid var(--home-line);border-radius:10px;
+  background:var(--ui-soft);color:var(--text);font-size:.8rem;font-weight:750;text-decoration:none;
+}
+#platform-page-home .platform-agent-create-company::before{content:"+";color:var(--ui-accent);font-size:1.2rem;line-height:1}
+#platform-page-home .platform-agent-create-company:is(:hover,:focus-visible){border-color:var(--ui-accent)}

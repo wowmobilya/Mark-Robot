@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=5');
 importScripts('./modules/platform/push/wow-push-sw.js?v=10');
-const CACHE_NAME = 'wow-furniture-v261-cloud';
+const CACHE_NAME = 'wow-furniture-v262-cloud';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -134,7 +134,7 @@ const urlsToCache = [
   './platform/briefing-audio/tr.mp3',
   './platform/briefing-audio/fr.mp3',
   './platform/briefing-audio/ru.mp3',
-  './platform/server-robot.js?v=256',
+  './platform/server-robot.js?v=262',
   './platform/admin-shell.js?v=252',
   './platform/company-inspect.js?v=243',
   './platform/company-inspect.css?v=243',
@@ -144,8 +144,8 @@ const urlsToCache = [
   './platform/relay.js?v=1',
   './support-settings.js?v=1',
   './platform/manifest.webmanifest',
-  './platform/dashboard.js?v=259',
-  './platform/home-command-center.css?v=259',
+  './platform/dashboard.js?v=262',
+  './platform/home-command-center.css?v=262',
   './platform/dashboard.css?v=261',
   './touch-keyboard.js?v=5',
   './touch-keyboard.css?v=3',

@@ -347,7 +347,7 @@
       clearTimeout(timeout);
     }
   }
-  function mount({host,state,request,language='ar',endpoint}){
+  function mount({host,state,request,language='ar',endpoint,createCompany}){
     if(!host||typeof request!=='function'||host.querySelector('.platform-server-robot'))return;
     const t=copy[language]||copy.ar;
     const number=new Intl.NumberFormat(language,{maximumFractionDigits:2});
@@ -404,7 +404,10 @@
     const runCompany=titled('button','platform-server-robot-refresh',t.runCompany,'refresh');
     runCompany.type='button';runCompany.disabled=true;
     const companyHeading=titled('h5','',t.agents,'companies');
-    company.append(companyHeading,control,pages,runCompany,companyStatus,timestamp,companyData,details);
+    const companyHeader=make('div','platform-agent-company-head');
+    companyHeader.append(companyHeading);
+    if(createCompany)companyHeader.append(createCompany);
+    company.append(companyHeader,control,pages,runCompany,companyStatus,timestamp,companyData,details);
     const jumps=make('div','platform-server-robot-jumps');
     jumps.setAttribute('role','group');jumps.setAttribute('aria-label',t.center);
     for(const [label,glyph,heading] of [[t.serverAgent,'server',serverHeading],[t.agents,'companies',companyHeading]]){

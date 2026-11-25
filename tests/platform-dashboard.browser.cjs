@@ -219,18 +219,17 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await menu.getByRole('link',{name:'Home'}).click();
     const homePage=page.locator('#platform-page-home');
     await homePage.waitFor();
-    assert.equal(await homePage.locator('.platform-home-masthead,.platform-home-actions h3').count(),0);
+    assert.equal(await homePage.locator('.platform-home-masthead,.platform-home-actions').count(),0);
     assert.equal(await homePage.getByRole('heading',{name:'WOW Control Center'}).count(),0);
     await homePage.locator('.platform-home-directory').getByText('No company records on this page').waitFor();
     await homePage.locator('.platform-server-robot').waitFor();
     for(const width of [320,390,768,1024,1280,1440,1920]){
       await page.setViewportSize({width,height:844});
       const layout=await homePage.evaluate(el=>({display:getComputedStyle(el).display,columns:getComputedStyle(el).gridTemplateColumns.split(' ').length,overflow:document.documentElement.scrollWidth>innerWidth,
-        actionsFirst:el.querySelector('.platform-home-actions').getBoundingClientRect().bottom<=el.querySelector('.platform-home-hero').getBoundingClientRect().top,
         fits:[...el.querySelectorAll('.platform-home-shortcut,.platform-server-robot,.platform-analytics,.platform-home-directory')].every(child=>{
           const r=child.getBoundingClientRect();return r.left>=-1&&r.right<=innerWidth+1;
         })}));
-      assert(layout.display==='grid'&&layout.columns===(width>=1050?2:1)&&!layout.overflow&&layout.actionsFirst&&layout.fits,JSON.stringify({width,layout}));
+      assert(layout.display==='grid'&&layout.columns===(width>=1050?2:1)&&!layout.overflow&&layout.fits,JSON.stringify({width,layout}));
     }
     await page.setViewportSize({width:390,height:844});
     const stats=page.locator('.platform-analytics');
@@ -259,7 +258,8 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await relay.getByRole('checkbox').check();await enable.click();await relay.getByText('Enabled',{exact:true}).waitFor();
     await relay.getByRole('button',{name:'Turn off relay'}).click();await relay.getByText('Off',{exact:true}).waitFor();
     assert.deepEqual(relayWrites,[true,false]);await menu.getByRole('link',{name:'Companies'}).click();
-    await page.locator('.platform-create-panel summary').click();
+    await menu.getByRole('link',{name:'Home',exact:true}).click();
+    await homePage.locator('.platform-server-robot').getByRole('link',{name:'Add company',exact:true}).click();
     await page.getByLabel('Company name').fill('Test');await page.getByRole('button',{name:'Create company'}).click();
     const link=await page.getByText('Owner setup link').getAttribute('href');assert.equal(new URL(link).searchParams.get('setup'),wid);
     assert.equal(await page.locator('[data-metric=companies] .platform-analytics-value').textContent(),'1');

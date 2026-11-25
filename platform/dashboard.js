@@ -741,21 +741,12 @@
     const companies=panels.companies,plansBox=el('div');panels.plans.append(plansBox);
     const hero=el('section');
     hero.className='platform-home-hero';
-    serverRobot=window.WFPlatformServerRobot?.mount({host:hero,state:{...result,offset},request,language:lang.value,endpoint:config.endpoint});
-    const quick=el('nav');
-    quick.className='platform-home-quick';quick.setAttribute('aria-label',homepage.quick);
-    const shortcuts=[
-      ['create','create','createNote'],['plans','plans','plansNote'],
-      ['support','support','supportNote'],['calls','calls','callsNote'],['settings','settings','settingsNote']
-    ];
-    for(const [key,labelKey] of shortcuts){
-      const link=el('a'),icon=el('span'),body=el('span'),title=el('strong',homepage[labelKey]);
-      link.className='platform-home-shortcut';link.dataset.shortcut=key;
-      link.href='#'+(key==='create'?'companies':key);
-      icon.className='platform-home-shortcut-icon';icon.setAttribute('aria-hidden','true');
-      body.className='platform-home-shortcut-copy';body.append(title);link.append(icon,body);
-      quick.append(link);
-    }
+    const createCompany=el('a',homepage.create);
+    createCompany.className='platform-agent-create-company';createCompany.href='#companies';
+    createCompany.setAttribute('aria-label',homepage.create);
+    serverRobot=window.WFPlatformServerRobot?.mount({
+      host:hero,state:{...result,offset},request,language:lang.value,endpoint:config.endpoint,createCompany
+    });
     // Home uses only the founder-authorized list already loaded above; no second request.
     const previewWords={
       ar:['الشركات في الصفحة الحالية','عرض جميع الشركات','الحسابات','لا توجد شركات في الصفحة الحالية','حالة غير معروفة','فتح تفاصيل الشركة'],
@@ -779,9 +770,7 @@
       entry.append(mark,copy,stateLabel);previewList.append(entry);
     }
     if(!previewList.childElementCount)previewList.append(el('p',previewWords[3]));
-    const quickPanel=el('section');
-    quickPanel.className='platform-home-actions';quickPanel.append(quick);
-    panels.home.append(quickPanel,hero,preview);
+    panels.home.append(hero,preview);
     const createPanel=el('details'),createSummary=el('summary',homepage.openForm),createHint=el('p',homepage.formHelp);
     createPanel.className='platform-create-panel';createHint.className='platform-create-hint';
     form.className='platform-create-form';form.append(createHint);
@@ -947,7 +936,7 @@
     window.WFPlatformAnnouncements?.mount({container:panels.support,request,language:lang.value});
     const name=field(form,5);name.required=true;name.maxLength=100;
     const creationPlan=window.WFCompanyCreatePlan?.mount({form,request,language:lang.value});
-    panels.home.querySelector('[data-shortcut=create]')?.addEventListener('click',()=>{
+    createCompany.addEventListener('click',()=>{
       createPanel.open=true;
       requestAnimationFrame(()=>{if(pageFromUrl()==='companies'&&name.isConnected)name.focus({preventScroll:true});});
     });
