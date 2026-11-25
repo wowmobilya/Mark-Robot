@@ -369,7 +369,51 @@
       });
       jumps.append(button);
     }
-    header.append(jumps);
+    const alertWords={
+      ar:['التحكم بالتنبيهات','تحذير التخزين عند (%)'],
+      en:['Alert controls','Storage warning threshold (%)'],
+      tr:['Uyarı ayarları','Depolama uyarı eşiği (%)'],
+      fr:['Réglages des alertes','Seuil d’alerte de stockage (%)'],
+      ru:['Настройка уведомлений','Порог заполнения хранилища (%)']
+    }[language]||['Alert controls','Storage warning threshold (%)'];
+    const alertKey='wow.admin.server-alerts';
+    const alertOptions={scheduler:true,push:true,storage:true,connections:true,threshold:80};
+    try{
+      const saved=JSON.parse(localStorage.getItem(alertKey)||'null');
+      for(const key of ['scheduler','push','storage','connections']){
+        if(typeof saved?.[key]==='boolean')alertOptions[key]=saved[key];
+      }
+      if(Number.isInteger(saved?.threshold)&&saved.threshold>=50&&saved.threshold<=99)alertOptions.threshold=saved.threshold;
+    }catch{}
+    const settings=make('details','platform-server-alert-settings');
+    settings.append(make('summary','',alertWords[0]));
+    const choices=make('div','platform-server-alert-choices');
+    function setAlertOption(key,value){
+      alertOptions[key]=value;
+      try{localStorage.setItem(alertKey,JSON.stringify(alertOptions));}catch{}
+      for(const notice of report.querySelectorAll('[data-alert-source]'))updateAlert(notice);
+    }
+    function updateAlert(notice){
+      const source=notice.dataset.alertSource;
+      notice.hidden=!alertOptions[source]||
+        (source==='storage'&&Number(notice.dataset.usage)<alertOptions.threshold);
+    }
+    for(const [key,text] of [['scheduler',t.scheduler],['push',t.pending],['storage',t.storageAgent],['connections',t.connections]]){
+      const label=make('label',''),input=make('input');
+      input.type='checkbox';input.checked=alertOptions[key];
+      input.onchange=()=>setAlertOption(key,input.checked);
+      label.append(input,document.createTextNode(text));choices.append(label);
+    }
+    const thresholdLabel=make('label','',alertWords[1]),threshold=make('input');
+    threshold.type='number';threshold.min=50;threshold.max=99;threshold.step=1;
+    threshold.value=alertOptions.threshold;
+    threshold.onchange=()=>{
+      if(threshold.value&&threshold.validity.valid)setAlertOption('threshold',threshold.valueAsNumber);
+      else threshold.value=alertOptions.threshold;
+    };
+    thresholdLabel.append(threshold);choices.append(thresholdLabel);
+    settings.append(choices);
+    header.append(jumps,settings);
     sections.append(company);
     const directory=make('a','platform-server-robot-directory');
     directory.href='#companies';
@@ -436,6 +480,13 @@
       if(scheduler?.staleWorkspaces>0)rows.push([t.stale,format(scheduler.staleWorkspaces)]);
       if(quantity(scheduler?.failedRuns24h))rows.push([t.today,format(scheduler.failedRuns24h)]);
       serverData.append(stamp);
+      if(quantity(database?.clientConnections)&&quantity(database?.maxConnections)&&database.maxConnections>0&&database.clientConnections/database.maxConnections>=.85){
+        const notice=make('p','platform-agent-attention',t.connections+' · '+connections+' / '+format(database.maxConnections));
+        if(database.clientConnections<database.maxConnections){
+          notice.dataset.alertSource='connections';updateAlert(notice);
+        }
+        serverData.append(notice);
+      }
       const reasons=[];
       if(scheduler?.configured===false)reasons.push(t.schedulerOff);
       if(push?.configured===false)reasons.push(t.pushOff);
@@ -447,7 +498,13 @@
       }
       if(reasons.length || data.healthy===false){
         const guide=make('div','platform-server-robot-guide'),list=make('ul');
-        for(const reason of reasons)list.append(make('li','',reason));
+        for(const reason of reasons){
+          const notice=make('li','',reason);
+          if([t.schedulerOff,t.staleJobs].includes(reason))notice.dataset.alertSource='scheduler';
+          if([t.pushOff,t.backlog,t.failedPush,t.pushSchedule].includes(reason))notice.dataset.alertSource='push';
+          if(notice.dataset.alertSource)updateAlert(notice);
+          list.append(notice);
+        }
         guide.append(make('strong','',t.review));
         if(reasons.length)guide.append(list);else guide.append(make('p','',t.other));
         serverData.append(guide);
@@ -532,7 +589,11 @@
             }
           }
           const issue=used>=cap&&(cap>0||used>0)?t.full:cap>0&&used/cap>.8?t.nearly:'';
-          if(issue)card.append(make('p','platform-agent-attention',issue));
+          if(glyph==='storage'&&cap>0&&used<cap){
+            const notice=make('p','platform-agent-attention',t.nearly);
+            notice.dataset.alertSource='storage';notice.dataset.usage=used/cap*100;
+            updateAlert(notice);card.append(notice);
+          }else if(issue)card.append(make('p','platform-agent-attention',issue));
         }
         if(extra)card.append(make('p','platform-server-robot-note',extra));
         const open=make('a','platform-server-robot-link',label);open.href=link;card.append(open);scan.append(card);
