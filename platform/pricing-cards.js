@@ -108,6 +108,27 @@
     svg.append(mark);return svg;
   }
   function addIcon(link,kind){link.prepend(svgIcon(kind));return link;}
+  // Only the signal inside each glyph moves, keeping labels and card edges steady.
+  const featureMarks={
+    phone:['M8 2.5h8a2 2 0 0 1 2 2v15a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-15a2 2 0 0 1 2-2Z','M10 6h4m-3 12h2'],
+    storage:['M6 17a4.5 4.5 0 0 1-.7-8.9 6.5 6.5 0 0 1 12.4-.6A4.8 4.8 0 0 1 18 17','M12 20v-9m-3 3 3-3 3 3'],
+    voice:['M3 11v2m18-2v2','M7 8v8m5-12v16m5-12v8'],
+    video:['M4 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm13 5 5-3v10l-5-3','M6 9h3'],
+    'addon-phone':['M15 6V4a1.5 1.5 0 0 0-1.5-1.5h-8A1.5 1.5 0 0 0 4 4v16a1.5 1.5 0 0 0 1.5 1.5h8A1.5 1.5 0 0 0 15 20v-2M8 18h3','M17 8v8m-4-4h8'],
+    'addon-double':['m3 15 7-7 7 7','m8 16 7-7 6 6']
+  };
+  function featureIcon(key){
+    const ns='http://www.w3.org/2000/svg';
+    const svg=document.createElementNS(ns,'svg');
+    svg.setAttribute('viewBox','0 0 24 24');
+    svg.setAttribute('focusable','false');
+    for(const shape of featureMarks[key]){
+      const path=document.createElementNS(ns,'path');
+      path.setAttribute('d',shape);
+      svg.append(path);
+    }
+    return svg;
+  }
   function visual(key){
     const markup={
       month:'<rect x="31" y="29" width="106" height="102" rx="22"/><path d="M31 62h106M58 17v28M110 17v28"/><path class="wf-tier-line" d="M61 91h30M61 107h20"/><path class="wf-tier-spark" d="m96 102 6 6 14-15"/>',
@@ -170,6 +191,7 @@
         li.dataset.feature=key;
         const symbol=make('span','platform-plan-feature-icon');
         symbol.setAttribute('aria-hidden','true');
+        symbol.append(featureIcon(key));
         li.append(symbol,make('span','',copy));featureList.append(li);
       }
       const note=make('small','platform-plan-benefits-note',benefits[6]);

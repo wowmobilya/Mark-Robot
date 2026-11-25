@@ -1,6 +1,6 @@
 importScripts('./install-identity.js?v=5');
 importScripts('./modules/platform/push/wow-push-sw.js?v=10');
-const CACHE_NAME = 'wow-furniture-v262-cloud';
+const CACHE_NAME = 'wow-furniture-v263-cloud';
 const urlsToCache = [
   './modules/platform/delta.js?v=1',
   './modules/platform/offline/store.js?v=1',
@@ -115,7 +115,7 @@ const urlsToCache = [
   './platform/enrollment.css?v=236',
   './platform/qr-invite.js?v=247',
   './platform/analytics.js?v=233',
-  './platform/pricing-cards.js?v=250',
+  './platform/pricing-cards.js?v=263',
   './platform/admin-audio.js?v=233',
   './platform/subscription-clocks.js?v=244',
   './platform/login-experience.js?v=255',
@@ -134,7 +134,7 @@ const urlsToCache = [
   './platform/briefing-audio/tr.mp3',
   './platform/briefing-audio/fr.mp3',
   './platform/briefing-audio/ru.mp3',
-  './platform/server-robot.js?v=262',
+  './platform/server-robot.js?v=263',
   './platform/admin-shell.js?v=252',
   './platform/company-inspect.js?v=243',
   './platform/company-inspect.css?v=243',
@@ -145,7 +145,7 @@ const urlsToCache = [
   './support-settings.js?v=1',
   './platform/manifest.webmanifest',
   './platform/dashboard.js?v=262',
-  './platform/home-command-center.css?v=262',
+  './platform/home-command-center.css?v=263',
   './platform/dashboard.css?v=261',
   './touch-keyboard.js?v=5',
   './touch-keyboard.css?v=3',

@@ -343,3 +343,26 @@ html[data-wf-motion=reduced] #platform-page-home > *{animation:none;transition:n
 }
 #platform-page-home .platform-agent-create-company::before{content:"+";color:var(--ui-accent);font-size:1.2rem;line-height:1}
 #platform-page-home .platform-agent-create-company:is(:hover,:focus-visible){border-color:var(--ui-accent)}
+
+/* Subscription allowances share the plan accent and animate independently. */
+.platform-pricing-card .platform-plan-feature-icon:has(svg)::before{display:none}
+.platform-plan-feature-icon svg{
+  inline-size:18px;block-size:18px;fill:none;stroke:currentColor;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+}
+.platform-plan-feature-icon svg path:last-child{transform-box:fill-box;transform-origin:center}
+@keyframes mark-signal{0%,65%,100%{opacity:1}80%{opacity:.4}}
+@keyframes mark-transfer{0%,68%,100%{transform:translateY(0)}84%{transform:translateY(-2px)}}
+@keyframes mark-wave{0%,62%,100%{transform:scaleY(1)}76%{transform:scaleY(.45)}89%{transform:scaleY(.8)}}
+@media(prefers-reduced-motion:no-preference){
+  html:not([data-wf-motion=reduced]) .platform-plan-feature svg path:last-child{
+    animation:var(--allowance-motion,mark-signal) 3.8s ease-in-out infinite;
+    animation-delay:var(--allowance-delay,0s);
+  }
+  .platform-plan-feature:is([data-feature=storage],[data-feature=addon-double]){--allowance-motion:mark-transfer;--allowance-delay:-1s}
+  .platform-plan-feature[data-feature=voice]{--allowance-motion:mark-wave;--allowance-delay:-2s}
+  .platform-plan-feature[data-feature=video]{--allowance-delay:-2.7s}
+  html:not([data-wf-motion=reduced]) .platform-server-robot[data-state=ready] h5 [data-glyph=server] path{
+    animation:mark-signal 3.8s ease-in-out infinite;
+  }
+}

@@ -301,7 +301,7 @@
     const node=document.createElementNS('http://www.w3.org/2000/svg','svg');
     node.setAttribute('class','platform-agent-icon');node.setAttribute('viewBox','0 0 24 24');
     node.setAttribute('aria-hidden','true');node.setAttribute('focusable','false');
-    node.innerHTML=icons[name];return node;
+    node.dataset.glyph=name;node.innerHTML=icons[name];return node;
   }
   function titled(tag,cls,label,glyph){
     const node=make(tag,cls,label);node.prepend(icon(glyph));return node;
