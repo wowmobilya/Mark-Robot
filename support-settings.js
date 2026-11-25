@@ -103,7 +103,9 @@
     if(key!=='support'||result===false||!root.WFAccountAccess?.can?.('settings.view'))close();
     else{active=true;panel.style.display='block';tab.classList.add('active');list();}return result;};
   dialog.addEventListener('close',()=>{close();host.append(panel);});
+  let subscriptionVisibility=()=>{};
   function changed(){
+    subscriptionVisibility();
     const next=stateKey();shortcut.hidden=!next||root.WFAccountAccess?.can?.('settings.view')===true;
     if(dialog.open&&!next){dialog.close();close();return;}
     if(active&&!dialog.open&&root.WFAccountAccess?.can?.('settings.view')!==true){close();return;}
@@ -201,8 +203,7 @@
     if(key!=='subscription'||result===false||!ownerKey()){planClear();return result;}
     planActive=true;planPanel.style.display='block';planTab.classList.add('active');showPlan();return result;
   };
-  planVisibility();client.subscribe(planVisibility);root.addEventListener('wf-account-access-change',planVisibility);
-  root.addEventListener('offline',planVisibility);root.addEventListener('online',planVisibility);
+  subscriptionVisibility=planVisibility;planVisibility();
   function planCloseBinding(){doc.getElementById('wfSettingsDialog')?.addEventListener('close',()=>{if(!doc.getElementById('wfSettingsDialog')?.open)planClear();});}
   if(doc.readyState==='loading'||!doc.getElementById('wfSettingsDialog'))doc.addEventListener('DOMContentLoaded',planCloseBinding,{once:true});else planCloseBinding();
   new MutationObserver(()=>{planCaption.textContent=pt(0);if(planActive)showPlan();}).observe(doc.documentElement,{attributes:true,attributeFilter:['lang']});
