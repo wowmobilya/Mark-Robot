@@ -4,9 +4,9 @@
 (() => {
   'use strict';
   const tiers=[
-    {key:'month',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a01',name:'WOW Monthly',price:'100',days:30,months:1},
-    {key:'year',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a02',name:'WOW Annual',price:'1000',days:365,months:12,deviceLimit:3,storageBytes:4000000000},
-    {key:'twoYears',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a03',name:'WOW Two Years',price:'1800',days:730,months:24,deviceLimit:6,storageBytes:8000000000,voiceMinutes:1000,videoMinutes:500}
+    {key:'month',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a01',name:'WOW Monthly',price:'100',days:30,months:1,deviceLimit:2,storageBytes:4000000000},
+    {key:'year',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a02',name:'WOW Annual',price:'1000',days:365,months:12,deviceLimit:3,storageBytes:16000000000},
+    {key:'twoYears',id:'a0e8f0db-7cf8-4d2a-a230-10f4ddc44a03',name:'WOW Two Years',price:'1800',days:730,months:24,deviceLimit:6,storageBytes:32000000000,voiceMinutes:1000,videoMinutes:500}
   ];
   const copy={
     ar:{title:'باقات WOW',lead:'اختر مدة تناسب شركتك، وقارن السعر وحدود الأجهزة والتخزين والمكالمات.',month:'الشهري',year:'السنوي',twoYears:'سنتان',

@@ -57,16 +57,15 @@
     const stateMessage=node('strong','',msg.idle);
     stateRow.setAttribute('role','status');stateRow.setAttribute('aria-live','polite');
     stateRow.append(light,stateMessage);
-    const network=node('div','platform-auth-network');
+    const network=node('div','platform-auth-network'),terminal=node('span','platform-auth-terminal','</>');
+    const route=node('span','platform-auth-route'),rack=node('span','platform-auth-rack');
     network.setAttribute('aria-hidden','true');
-    for(let i=0;i<3;i++){
-      const rack=node('span','platform-auth-rack');
-      for(let j=0;j<3;j++)rack.append(node('i'));
-      network.append(rack);
-    }
+    network.dir='ltr';
+    for(let tier=0;tier<3;tier++)rack.append(node('i'));
+    network.append(terminal,route,rack);
     const tags=node('div','platform-auth-tags');
     for(const name of [msg.secure,msg.service,msg.access])tags.append(node('span','',name));
-    hero.append(head,stage,copy,stateRow,network,tags);
+    hero.append(head,stage,network,copy,stateRow,tags);
     content.prepend(hero);
     let disposed=false,pending=false,controller=null,phase='idle';
     const mouth=expression.querySelector('.platform-auth-mouth');

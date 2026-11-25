@@ -88,9 +88,9 @@ for each row execute function wow_limits.admit_call();
 update wow_limits.plans as plan
 set device_limit=tier.phones, storage_bytes=tier.bytes, voice_minutes=tier.voice, video_minutes=tier.video, version=plan.version+1
 from (values
- ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a01'::uuid,2,2000000000::bigint,500,250),
- ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a02'::uuid,3,4000000000::bigint,500,250),
- ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a03'::uuid,6,8000000000::bigint,1000,500)
+ ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a01'::uuid,2,4000000000::bigint,500,250),
+ ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a02'::uuid,3,16000000000::bigint,500,250),
+ ('a0e8f0db-7cf8-4d2a-a230-10f4ddc44a03'::uuid,6,32000000000::bigint,1000,500)
 ) as tier(id,phones,bytes,voice,video)
 where plan.id=tier.id and (plan.device_limit,plan.storage_bytes,plan.voice_minutes,plan.video_minutes)
  is distinct from (tier.phones,tier.bytes,tier.voice,tier.video);

@@ -409,7 +409,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     }
     assert.equal(events.filter(action=>action==='platform.plans.save').length,0);
     assert.match(await pricing.locator('[data-tier=year] .platform-plan-price').innerText(),/^\$1,000(?:\.00)?$/);
-    for(const [tier,storage,phones,voice,video] of [['year','4','3','500','250'],['twoYears','8','6','1000','500']]){
+    for(const [tier,storage,phones,voice,video] of [['year','16','3','500','250'],['twoYears','32','6','1000','500']]){
       await pricing.locator('[data-tier='+tier+'] .platform-plan-edit').click();
       for(const [label,value] of [['File storage limit',storage],['Device limit',phones],['Monthly voice minutes',voice],['Monthly video minutes',video]]){
         assert.equal(await page.getByLabel(label).inputValue(),value);
@@ -422,7 +422,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     assert.equal(await page.getByLabel('Monthly voice minutes').inputValue(),'500');
     assert.equal(await page.getByLabel('Monthly video minutes').inputValue(),'250');
     assert.equal(await page.getByLabel('Device limit').inputValue(),'2');
-    assert.equal(await page.getByLabel('File storage limit').inputValue(),'2');
+    assert.equal(await page.getByLabel('File storage limit').inputValue(),'4');
     assert.equal(await pricing.locator('[data-tier=month] [data-feature]').count(),6);
     assert.equal(events.filter(item=>item==='platform.plans.save').length,0,'template does not silently save or charge');
     for(const size of [{width:320,height:700},{width:375,height:812},{width:430,height:932},

@@ -82,13 +82,36 @@ html.platform-auth-screen #content>.platform-auth-experience{
 .platform-auth-state-light{flex:none;width:9px;height:9px;border-radius:50%;background:var(--auth-glow);box-shadow:0 0 0 4px color-mix(in srgb,var(--auth-glow) 12%,transparent);animation:platform-auth-beacon 1.4s ease-in-out infinite}
 .platform-auth-experience[data-phase=ready] .platform-auth-state-light{background:#31a77b;animation:none}
 .platform-auth-experience:is([data-phase=unreachable],[data-phase=unavailable],[data-phase=denied]) .platform-auth-state-light{background:#d7676d;animation:none}
-.platform-auth-network{display:flex;gap:1rem;align-items:center;justify-content:center;padding-block:.15rem}
-.platform-auth-rack{display:grid;gap:3px;width:37px;opacity:.73}
-.platform-auth-rack i{display:flex;align-items:center;padding-inline:4px;height:9px;border:1px solid color-mix(in srgb,var(--auth-glow) 55%,transparent);border-radius:3px}
-.platform-auth-rack i::before{content:"";width:4px;height:4px;background:var(--auth-glow);border-radius:50%;animation:platform-auth-beacon 1.6s ease-in-out infinite}
-.platform-auth-rack:nth-child(2) i::before{animation-delay:.24s}
-.platform-auth-rack:nth-child(3) i::before{animation-delay:.48s}
-.platform-auth-experience[data-phase=unreachable] .platform-auth-rack i::before{background:#d7676d;animation:none}
+.platform-auth-network{
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(20px,.7fr) minmax(0,1fr);
+ align-items:center;inline-size:min(100%,15rem);gap:.35rem;color:var(--auth-glow);
+}
+.platform-auth-terminal,.platform-auth-rack{
+ display:grid;place-content:center;min-inline-size:0;min-block-size:42px;padding:.35rem;
+ border:1px solid color-mix(in srgb,currentColor 37%,transparent);border-radius:10px;
+ background:var(--auth-soft);box-shadow:0 5px 15px color-mix(in srgb,currentColor 12%,transparent);
+}
+.platform-auth-terminal{font:750 clamp(.83rem,2.8vw,1.13rem)/1 ui-monospace,monospace}
+.platform-auth-rack{gap:2px}
+.platform-auth-rack i{
+ display:flex;align-items:center;justify-content:space-between;gap:5px;inline-size:clamp(26px,6vw,37px);
+ block-size:7px;padding-inline:3px;border:1px solid currentColor;border-radius:2px;
+}
+.platform-auth-rack i::before,.platform-startup-scene .platform-server-rack i::before{
+ content:"";inline-size:3px;block-size:3px;border-radius:50%;background:currentColor;flex:none;
+}
+.platform-auth-rack i::after,.platform-startup-scene .platform-server-rack i::after{
+ content:"";inline-size:40%;block-size:3px;background:repeating-linear-gradient(90deg,currentColor 0 1px,transparent 1px 3px);
+}
+.platform-auth-route{position:relative;block-size:1px;background:currentColor}
+.platform-auth-route::before,.platform-startup-scene::after{
+ content:"";inline-size:5px;block-size:5px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;
+}
+.platform-auth-route::before{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%)}
+.platform-auth-experience:is([data-phase=unavailable],[data-phase=unreachable],[data-phase=unverified],[data-phase=denied]) .platform-auth-route{
+ background:none;border-block-start:1px dashed currentColor;
+}
+.platform-auth-experience:is([data-phase=unavailable],[data-phase=unreachable],[data-phase=unverified],[data-phase=denied]) .platform-auth-route::before{display:none}
 .platform-auth-tags{display:flex;gap:.45rem;justify-content:center;flex-wrap:wrap;max-width:100%}
 .platform-auth-tags span{font-size:.68rem;color:color-mix(in srgb,var(--auth-ink) 76%,transparent);padding:.25rem .55rem;border-radius:999px;border:1px solid color-mix(in srgb,var(--auth-glow) 22%,transparent);background:color-mix(in srgb,var(--auth-glow) 5%,transparent)}
 html.platform-auth-screen #content>.platform-login{
@@ -135,7 +158,7 @@ html.platform-auth-screen main>.platform-app-actions .platform-release{color:var
  .platform-auth-description h2{font-size:clamp(1.15rem,5vw,1.55rem)}
  .platform-auth-description p{font-size:.77rem}
  .platform-auth-tags{display:none}
- .platform-auth-network{display:none}
+ .platform-auth-network{inline-size:min(100%,12rem)}
 }
 @media(max-width:390px){
  html.platform-auth-screen main{padding-inline:.68rem}
@@ -168,9 +191,9 @@ html[data-wf-motion=reduced] .platform-auth-stage::after{animation:none!importan
 .platform-auth-experience[data-phase=denied] .platform-auth-brow-motion.right{transform:rotate(7deg)}
 .platform-auth-experience[data-phase=unreachable] .platform-auth-state-light{background:#b87636;animation:none}
 .platform-auth-experience[data-phase=ready] .platform-auth-state-light{background:var(--auth-glow)}
-.platform-auth-experience:is([data-phase=unavailable],[data-phase=unreachable],[data-phase=unverified],[data-phase=denied]) .platform-auth-rack i::before{animation:none;opacity:.45}
+.platform-auth-experience:is([data-phase=unavailable],[data-phase=unreachable],[data-phase=unverified],[data-phase=denied]) .platform-auth-rack i::before{opacity:.45}
 @keyframes platform-auth-look{0%,100%{transform:translateX(0)}35%{transform:translateX(4px)}70%{transform:translateX(-2px)}}
-@media(max-width:790px) and (min-height:620px){.platform-auth-network{display:flex;gap:5px;height:13px;align-items:center}.platform-auth-rack{display:none}.platform-auth-rack:first-child{display:flex;gap:3px}.platform-auth-rack:first-child i{width:18px;height:6px}}
+
 @media(prefers-reduced-motion:reduce){.platform-auth-experience :is(.platform-auth-gaze,.platform-auth-mouth,.platform-auth-brow-motion){animation:none;transition:none}}
 html[data-wf-motion=reduced] .platform-auth-experience :is(.platform-auth-gaze,.platform-auth-mouth,.platform-auth-brow-motion){animation:none;transition:none}
 
@@ -236,6 +259,7 @@ main:has(#content>.platform-server-startup)>#content{margin:0;padding:0;border:0
  background:currentColor;
  box-shadow:0 0 12px currentColor;
 }
+.platform-startup-scene::after{grid-column:2;grid-row:1;justify-self:start}
 .platform-startup-code,.platform-startup-scene .platform-server-rack{
  display:grid;
  place-content:center;
@@ -253,7 +277,9 @@ main:has(#content>.platform-server-startup)>#content{margin:0;padding:0;border:0
  font:700 clamp(1.4rem,6vw,3rem)/1 ui-monospace,monospace;
 }
 .platform-startup-scene .platform-server-rack{grid-column:3;grid-row:1}
-.platform-startup-scene .platform-server-rack i{inline-size:clamp(2.15rem,7.5vw,3.6rem)}
+.platform-startup-scene .platform-server-rack i{
+ inline-size:clamp(2.15rem,7.5vw,3.6rem);justify-content:space-between;
+}
 .platform-server-startup>strong{
  font-size:clamp(.95rem,2.35vw,1.35rem);
  max-inline-size:min(33ch,100%);
@@ -282,4 +308,21 @@ main:has(#content>.platform-server-startup)>#content{margin:0;padding:0;border:0
 html[data-wf-motion=reduced] .platform-server-startup :is(.platform-startup-progress,.platform-server-rack i)::before{animation:none}
 @media(prefers-reduced-motion:reduce){
  .platform-startup-progress::before{animation:none}
+}
+
+
+@media(prefers-reduced-motion:no-preference){
+ html:not([data-wf-motion=reduced]) .platform-auth-experience:is([data-phase=checking],[data-phase=verifying]) .platform-auth-route::before{
+  animation:platform-auth-packet 1.4s ease-in-out infinite;
+ }
+ html:not([data-wf-motion=reduced]) .platform-startup-scene::after{
+  animation:platform-startup-packet 1.2s ease-in-out infinite;
+ }
+}
+@keyframes platform-auth-packet{from{inset-inline-start:0}to{inset-inline-start:100%}}
+@keyframes platform-startup-packet{to{transform:translateX(var(--startup-packet-offset))}}
+.platform-startup-scene{--startup-packet-offset:calc(clamp(1.15rem,7vw,2.6rem) - 5px)}
+[dir=rtl] .platform-startup-scene{--startup-packet-offset:calc(5px - clamp(1.15rem,7vw,2.6rem))}
+@media(max-height:500px){
+ .platform-auth-terminal,.platform-auth-rack{min-block-size:33px;padding:.22rem}
 }
