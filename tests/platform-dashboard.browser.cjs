@@ -506,7 +506,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
     await page.waitForFunction(()=>window.cameraTrack?.readyState==='live');await page.getByRole('button',{name:'Stop camera'}).click();
     assert.equal(await page.evaluate(()=>window.cameraTrack.readyState),'ended');
     await page.evaluate(()=>{window.scanEnabled=true;});await page.getByRole('button',{name:'Scan the QR code with camera'}).click();
-    await page.getByLabel('Setup code').waitFor();assert.equal(new URL(page.url()).hash,'');assert.equal((await page.getByLabel('Setup code').inputValue()).length,64);
+    await page.getByLabel('Setup code').waitFor({state:'attached'});assert.equal(await page.getByLabel('Setup code').isVisible(),false);assert.equal(new URL(page.url()).hash,'');assert.equal((await page.getByLabel('Setup code').inputValue()).length,64);
   }finally{await browser.close();}
 });
 test('trusted founder device rotates, revalidates founder access and forgets logout across tabs',async()=>{

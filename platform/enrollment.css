@@ -15,3 +15,7 @@
 @media(max-width:36rem){.owner-field-grid{grid-template-columns:minmax(0,1fr)}}
 .owner-field > span {display:flex;gap:.45rem;align-items:center}
 .owner-field svg {width:1.1em;height:1.1em;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.owner-field > label > span {display:flex;gap:.45rem;align-items:center}
+.owner-password-entry {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.4rem}
+.owner-password-entry button {padding-inline:.65rem;min-height:44px;font-size:.85rem}
+.owner-password-entry :focus-visible {outline:2px solid var(--ui-accent,currentColor);outline-offset:2px}

@@ -946,12 +946,18 @@
       const subscription=creationPlan?.selection();
       const created=await request('company.create',{name:company,setupToken:draft.code,...(subscription?{subscription}:{})});
       if(subscription&&(!created.subscription||created.subscription.planId!==subscription.planId||created.subscription.mode!==subscription.mode))throw Error('INVALID_RESPONSE');
-      setup={code:draft.code,workspace:created.workspaceId,subscription:created.subscription};draft=null;offset=0;await list();
+      setup={code:draft.code,workspace:created.workspaceId,subscription:created.subscription};
+      draft=null;offset=0;
+      renderSetupInvitation();
+      await list();
     });
-    if(setup){
+    function renderSetupInvitation(){
+      if(!setup||companies.querySelector('.platform-invite-card')?.dataset.workspace===setup.workspace)return;
+      companies.querySelector('.platform-invite-card')?.remove();
       const link=el('a',setupLabels[lang.value][5]),url=new URL(location.pathname,location.origin);
       url.searchParams.set('setup',setup.workspace);url.hash='invite='+setup.code;link.href=url.href;
-      const invitation=el('section');invitation.className='platform-invite-card';invitation.append(link,el('p',t(14)),el('output',setup.code));companies.append(invitation);
+      const invitation=el('section');invitation.className='platform-invite-card';invitation.dataset.workspace=setup.workspace;
+      invitation.append(link,el('p',t(14)),el('output',setup.code));createPanel.after(invitation);
       if(setup.subscription&&window.WFCompanyCreatePlan)invitation.append(window.WFCompanyCreatePlan.receipt(setup.subscription,lang.value));
       window.WFOwnerInvite?.loadQrTools().then(({BrowserQRCodeSvgWriter})=>{
         if(!invitation.isConnected||generation!==ticket)return;
@@ -962,6 +968,7 @@
         window.WFPlatformInviteShare?.attach(invitation,{svg:qr,url:url.href,name:state.companies.find(item=>item.id===setup.workspace)?.name||'WOW'});
       }).catch(()=>{}); // The selectable setup URL and code are already available.
     }
+    renderSetupInvitation();
     brandList?.dispose();brandList=window.WFPlatformBrand?.create({request,config,language:lang.value});
     const cardWords=companyCardWords[lang.value];
     // Verify only visible cards, at a bounded concurrency. This existing endpoint
@@ -1224,13 +1231,40 @@
     intro.append(logo,el('h2',copy[0]),el('p',copy[1]));grid.className='owner-field-grid';form.append(intro,grid);content.append(form);
     const fieldPaths=['M4 8h16v10H4z M8 8V6a4 4 0 0 1 8 0v2','M4 21v-2a7 7 0 0 1 14 0v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0','M16 8v7a3 3 0 0 0 5 0v-3a9 9 0 1 0-5 8 M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0','M5 10h14v11H5z M8 10V7a4 4 0 0 1 8 0v3 M12 14v3','M5 10h14v11H5z M8 10V7a4 4 0 0 1 8 0v3 M9 15l2 2 4-4'];
     const hints=[];
+    const passwordVisibility={
+      ar:['إظهار','إخفاء'],en:['Show','Hide'],tr:['Göster','Gizle'],
+      fr:['Afficher','Masquer'],ru:['Показать','Скрыть']
+    }[lang.value];
     const inputs=['password','text','text','password','password'].map((type,i)=>{
       const label=el('label',i===4?copy[2]:i===3?t(2):labels[i+1]),input=el('input'),hint=el('small');
       input.type=type;input.required=true;input.dir=i===0?'ltr':'auto';input.id='owner-field-'+i;hint.id=input.id+'-hint';hints.push(hint);
       input.autocomplete=['off','name','username','new-password','new-password'][i];
       const caption=el('span',label.textContent),ns='http://www.w3.org/2000/svg',icon=document.createElementNS(ns,'svg'),line=document.createElementNS(ns,'path');
       icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');line.setAttribute('d',fieldPaths[i]);icon.append(line);caption.prepend(icon);
-      label.htmlFor=input.id;label.className='owner-field';label.replaceChildren(caption,input,hint);grid.append(label);return input;
+      label.htmlFor=input.id;
+      label.replaceChildren(caption);
+      const field=el('div');
+      field.className='owner-field';
+      field.append(label);
+      if(i===3||i===4){
+        const entry=el('div'),reveal=el('button',passwordVisibility[0]);
+        entry.className='owner-password-entry';
+        reveal.type='button';
+        reveal.setAttribute('aria-controls',input.id);
+        reveal.setAttribute('aria-label',passwordVisibility[0]+' · '+caption.textContent);
+        reveal.onclick=()=>{
+          const show=input.type==='password';
+          input.type=show?'text':'password';
+          const action=passwordVisibility[show?1:0];
+          reveal.textContent=action;
+          reveal.setAttribute('aria-label',action+' · '+caption.textContent);
+        };
+        entry.append(input,reveal);
+        field.append(entry);
+      }else field.append(input);
+      field.append(hint);
+      grid.append(field);
+      return input;
     });
     const messages={
       invalid:['تعذّر استخدام الدعوة. افتح آخر رابط أرسله الأدمن أو اطلب دعوة جديدة.','Open the latest invitation or ask the administrator for a new one.','Son daveti açın veya yöneticiden yenisini isteyin.','Ouvrez la dernière invitation ou demandez-en une nouvelle.','Откройте последнее приглашение или запросите новое.'],
@@ -1259,24 +1293,30 @@
       const detail=messages[key]?.[language]||(http===429?word(1):http===0?word(2):t(15));
       const safeCode=typeof code==='string'&&/^[A-Z][A-Z0-9_]{2,60}$/.test(code)?code:'';
       note.textContent=detail+(safeCode?' ('+safeCode+')':http?' (HTTP '+http+')':'');
-      if(field!==undefined){inputs[field].parentElement.hidden=false;inputs[field].setAttribute('aria-invalid','true');inputs[field].focus();}
+      if(field!==undefined){inputs[field].closest('.owner-field').hidden=false;inputs[field].setAttribute('aria-invalid','true');inputs[field].focus();}
     }
     for(const input of inputs){input.setAttribute('aria-describedby',input.id+'-hint '+note.id);input.oninput=()=>{input.removeAttribute('aria-invalid');note.textContent='';};}
-    if(/^[a-f0-9]{64}$/.test(invite)){inputs[0].value=invite;inputs[0].parentElement.hidden=true;}
+    for(const input of [inputs[0],inputs[2]]){
+      input.autocapitalize='none';
+      input.spellcheck=false;
+    }
+    if(/^[a-f0-9]{64}$/i.test(invite)){inputs[0].value=invite.toLowerCase();inputs[0].closest('.owner-field').hidden=true;}
     const button=submit(form,6,async()=>{
       const [code,name,user,pass,confirm]=inputs;note.textContent='';
       for(const input of inputs)input.removeAttribute('aria-invalid');
       const bad=(input,reason)=>{input.setAttribute('aria-invalid','true');note.textContent=reason;input.focus();};
       for(const input of inputs)if(!input.value)return bad(input,copy[7]);
+      const setupToken=code.value.trim().replace(/\s+/g,'').toLowerCase();
+      if(!/^[a-f0-9]{64}$/.test(setupToken))return explain('SETUP_PROOF_INVALID');
       if(confirm.value!==pass.value)return bad(confirm,copy[4]);
       const normalized=user.value.trim().normalize('NFC').toLowerCase().normalize('NFC');
       if(!/^[\p{L}\p{N}._@-]{3,64}$/u.test(normalized))return explain('INVALID_USERNAME');
       if(!name.value.trim()||Array.from(name.value.trim().normalize('NFC')).length>100)return explain('INVALID_NAME');
       if(Array.from(pass.value).length<12||Array.from(pass.value).length>128)return explain('INVALID_PASSWORD');
-      const proof=await window.WFInstallation?.proof();
+      const proof=await window.WFInstallation?.proof().catch(()=>null);
       if(!proof)return explain('DEVICE_PROOF_REQUIRED');
       let reply;
-      try{reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.enrollOwner',installationProof:proof,workspaceId:workspace,setupToken:code.value.trim(),name:name.value.trim(),username:user.value.trim(),password:pass.value})});}
+      try{reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',signal:AbortSignal.timeout(20000),headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.enrollOwner',installationProof:proof,workspaceId:workspace,setupToken,name:name.value.trim(),username:normalized,password:pass.value})});}
       catch{return explain(null,0);}
       const result=await reply.json().catch(()=>null);
       if(!form.isConnected)return;
