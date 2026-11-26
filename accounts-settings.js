@@ -620,7 +620,11 @@
     details.append(facts);
     if(account.note){const note=make('div','wf-account-admin-note');note.append(label('strong','note'),make('p','',account.note));note.lastElementChild.dir='auto';details.append(note);}
     panel.append(details);
-    if(deviceHandoffId===account.id&&canAddDevice()){
+    if(canAddDevice()&&account.status==='active'&&account.role!=='customer'&&(account.role!=='owner'||account.id===current()?.id)&&root.WFCompanyJoin?.mountPairing){
+      const issueNow=deviceHandoffId===account.id;
+      if(issueNow)deviceHandoffId=null;
+      root.WFCompanyJoin.mountPairing({container:panel,client:service,account,lang:lang(),issueNow});
+    }else if(deviceHandoffId===account.id&&canAddDevice()){
       const section=make('section','wf-account-device-card wf-account-device-handoff');
       const url=make('input','fi');url.id='wfAccountDeviceUrl';url.type='url';url.readOnly=true;url.dir='ltr';url.value=service.entryUrl();
       const linkField=make('label','wf-account-field');linkField.append(label('span','deviceSignIn'),url);

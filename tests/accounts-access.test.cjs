@@ -452,3 +452,26 @@ test('founder check requires the current online server grant and clears on offli
  const local=runtime();await local.signed('owner');await local.settle();
  assert.equal(local.document.getElementById('wfAccountSession').children[2].hidden,true);
 });
+
+test('pending owner sign-in remains locked until live approval, then opens the app and celebrates',async()=>{
+  const remote=remoteService(),workspaceId='11111111-1111-4111-8111-111111111111';
+  let first=true,poll;
+  const service={...remote.client,signIn:async input=>{
+    if(first){first=false;assert.match(input.approvalToken,/^[0-9a-f]{64}$/);return {workspaceId,pendingApproval:true};}
+    assert.equal(input.password,PASSWORD);return remote.client.signIn(input);
+  },request:async(action,body,options)=>{
+    if(action!=='auth.ownerApprovalStatus')return remote.client.request(action,body,options);
+    assert.equal(body.workspaceId,workspaceId);assert.equal(options.authenticated,false);
+    return {workspaceId,state:'approved'};
+  }};
+  const h=runtime({cloud:service,search:'?wf-cloud=employee&workspace='+workspaceId});
+  h.context.setTimeout=(fn,delay)=>{if(delay===4000)poll=fn;return 1;};h.context.clearTimeout=()=>{};
+  await h.access.ready;const opening=h.access.beforeInit();await h.settle();
+  h.document.getElementById('wfAccountLoginUsername').value='owner';h.document.getElementById('wfAccountLoginPassword').value=PASSWORD;
+  const form=h.document.getElementById('wfAccountLoginForm'),submission=form.listeners.submit[0]({preventDefault(){}});
+  await h.settle();assert.equal(h.document.documentElement.dataset.wfAccountState,'locked');assert.match(h.document.getElementById('wfAccountLoginStatus').textContent,/under review/);
+  poll();await submission;await opening;
+  assert.equal(h.document.documentElement.dataset.wfAccountState,'ready');
+  const notice=h.document.querySelector('.wf-activation-notice');
+  assert.match(notice.textContent,/Congratulations/);assert.equal(notice.querySelectorAll('i').length,9);
+});

@@ -9,6 +9,15 @@ create table if not exists public.wow_owner_approval_requests(
 alter table public.wow_owner_approval_requests enable row level security;
 revoke all on public.wow_owner_approval_requests from public,anon,authenticated;
 
+create table if not exists public.wow_owner_approval_receipts(
+ token_hash text primary key check(token_hash ~ '^[0-9a-f]{64}$'),
+ owner_id uuid not null references public.wow_owner_approval_requests(owner_id) on delete cascade,
+ expires_at timestamptz not null default now()+interval '24 hours'
+);
+alter table public.wow_owner_approval_receipts enable row level security;
+revoke all on public.wow_owner_approval_receipts from public,anon,authenticated;
+create index if not exists wow_owner_receipt_expiry on public.wow_owner_approval_receipts(expires_at);
+
 -- Install the approval gate in the same transaction that consumes the invitation.
 -- Existing installations bootstrapped outside the company control panel keep their setup flow.
 create or replace function public.wow_pending_owner_status() returns trigger
@@ -43,7 +52,32 @@ create or replace function public.wow_owner_enrollment(p_action text,p_data json
 language plpgsql security definer set search_path='' as $$
 declare result jsonb;prior record;
 begin
- if p_action='setup.inspect' then
+ if p_action='approval.login' then
+  select a.login_email into prior from public.wow_owner_approval_requests r
+   join public.wow_accounts a on a.id=r.owner_id and a.workspace_id=r.workspace_id
+   join public.wow_workspaces w on w.id=r.workspace_id
+   where r.owner_id=(p_data->>'userId')::uuid and r.workspace_id=(p_data->>'workspaceId')::uuid
+    and r.approved_at is null and w.status='active' and a.role='owner' and a.status='suspended' and a.deleted_at is null;
+  if found then return jsonb_build_object('email',prior.login_email);end if;
+  return '{}';
+ elsif p_action='approval.issue' then
+  delete from public.wow_owner_approval_receipts where expires_at<=now();
+  insert into public.wow_owner_approval_receipts(token_hash,owner_id)
+   select p_data->>'tokenHash',owner_id from public.wow_owner_approval_requests
+   where owner_id=(p_data->>'userId')::uuid and workspace_id=(p_data->>'workspaceId')::uuid
+   on conflict(token_hash) do nothing;
+  return '{}';
+ elsif p_action='approval.status' then
+  select r.approved_at,a.status into prior from public.wow_owner_approval_receipts t
+   join public.wow_owner_approval_requests r on r.owner_id=t.owner_id
+   join public.wow_accounts a on a.id=r.owner_id and a.workspace_id=r.workspace_id
+   join public.wow_workspaces w on w.id=r.workspace_id
+   where t.token_hash=p_data->>'tokenHash' and t.expires_at>now() and r.workspace_id=(p_data->>'workspaceId')::uuid
+    and w.status='active' and a.role='owner' and a.deleted_at is null and (a.expires_at is null or a.expires_at>now());
+  if found and prior.approved_at is null and prior.status='suspended' then return jsonb_build_object('state','pending');end if;
+  if found and prior.approved_at is not null and prior.status='active' then return jsonb_build_object('state','approved');end if;
+  raise exception 'AUTH_REQUIRED';
+ elsif p_action='setup.inspect' then
   -- A lost response can be retried with the original invite, username and password.
   select c.workspace_id,a.id,a.login_email,(r.approved_at is null) pending into prior
    from public.wow_setup_claims c join public.wow_owner_approval_requests r on r.workspace_id=c.workspace_id and r.owner_id=c.used_by

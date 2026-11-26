@@ -1,11 +1,11 @@
 (function(root){
   'use strict';
   const labels={
-    ar:['دعوة مالك الشركة','مسح رمز QR بالكاميرا','رابط دعوة المالك','فتح الدعوة','إيقاف الكاميرا','تعذرت قراءة الدعوة. تحقق من رابط WOW ورمز الإعداد.','تعذّر فتح الكاميرا. تحقق من الإذن أو الصق الرابط.'],
-    en:['Company owner invitation','Scan the QR code with camera','Owner invitation link','Open invitation','Stop camera','Check the WOW invitation link and setup code.','Camera unavailable. Check permission or paste the link.'],
-    tr:['Şirket sahibi daveti','Kamerayla QR kodunu tara','Sahip davet bağlantısı','Daveti aç','Kamerayı kapat','WOW davet bağlantısını ve kurulum kodunu kontrol edin.','Kamera açılamadı. İzni kontrol edin veya bağlantıyı yapıştırın.'],
-    fr:['Invitation du propriétaire','Scanner le code QR avec la caméra','Lien d’invitation du propriétaire','Ouvrir l’invitation','Arrêter la caméra','Vérifiez le lien WOW et le code de configuration.','Caméra indisponible. Vérifiez l’autorisation ou collez le lien.'],
-    ru:['Приглашение владельца','Сканировать QR-код камерой','Ссылка-приглашение владельца','Открыть приглашение','Остановить камеру','Проверьте ссылку WOW и код настройки.','Камера недоступна. Проверьте разрешение или вставьте ссылку.']
+    ar:['مسح رمز دخول الجهاز أو دعوة المالك','مسح رمز QR بالكاميرا','رابط دعوة المالك','فتح الدعوة','إيقاف الكاميرا','تعذرت قراءة الدعوة. تحقق من رابط WOW ورمز الإعداد.','تعذّر فتح الكاميرا. تحقق من الإذن أو الصق الرابط.'],
+    en:['Scan a device sign-in QR or owner invitation','Scan the QR code with camera','Owner invitation link','Open invitation','Stop camera','Check the WOW invitation link and setup code.','Camera unavailable. Check permission or paste the link.'],
+    tr:['Cihaz giriş QR kodu veya sahip daveti','Kamerayla QR kodunu tara','Sahip davet bağlantısı','Daveti aç','Kamerayı kapat','WOW davet bağlantısını ve kurulum kodunu kontrol edin.','Kamera açılamadı. İzni kontrol edin veya bağlantıyı yapıştırın.'],
+    fr:['QR de connexion ou invitation du propriétaire','Scanner le code QR avec la caméra','Lien d’invitation du propriétaire','Ouvrir l’invitation','Arrêter la caméra','Vérifiez le lien WOW et le code de configuration.','Caméra indisponible. Vérifiez l’autorisation ou collez le lien.'],
+    ru:['QR для входа или приглашение владельца','Сканировать QR-код камерой','Ссылка-приглашение владельца','Открыть приглашение','Остановить камеру','Проверьте ссылку WOW и код настройки.','Камера недоступна. Проверьте разрешение или вставьте ссылку.']
   };
   const scriptUrl=root.document?.currentScript?.src;
   let decoderLoad;
@@ -45,7 +45,7 @@
     let generation=0,stream=null,timer;
     function end(){generation++;clearTimeout(timer);stream?.getTracks().forEach(track=>track.stop());stream=null;
       video.srcObject=null;video.hidden=stop.hidden=true;start.disabled=false;}
-    function accept(raw){const url=options.parse?options.parse(raw,base):parse(raw,base);if(!url){status.textContent=text(5);return false;}
+    function accept(raw){const url=options.parse?options.parse(raw,base):(parse(raw,base)||root.WFCompanyJoin?.readPairing?.(raw,base));if(!url){status.textContent=text(5);return false;}
       end();input.value='';if(options.onAccept)options.onAccept(url);else root.location.assign(url);return true;}
     start.onclick=async()=>{
       end();const ticket=generation;start.disabled=true;stop.hidden=false;status.textContent='';

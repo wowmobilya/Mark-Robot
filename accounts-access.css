@@ -77,3 +77,13 @@ html[data-wf-account-state="checking"],html[data-wf-account-state="locked"]{over
 @media(max-width:480px){.wf-account-login{padding:1rem;border-radius:var(--ui-radius,16px)}.wf-account-login form{gap:.8rem}.wf-account-login .fi{font-size:16px}.wf-account-login-header .wf-account-login-brand img{inline-size:42px;block-size:42px}.wf-account-login-status:empty{display:none}}
 
 #wfAccountLoginForm .wf-account-remember{display:flex;align-items:center;gap:.5rem;min-block-size:40px;cursor:pointer}#wfAccountLoginForm .wf-account-remember input{min-inline-size:1.1rem;inline-size:1.1rem;block-size:1.1rem;accent-color:var(--brand-primary)}
+
+.wf-activation-notice{position:fixed;inset-block-start:max(18px,env(safe-area-inset-top));inset-inline:0;margin-inline:auto;width:max-content;max-width:calc(100% - 28px);box-sizing:border-box;padding:1.2rem 1.65rem;overflow:hidden;isolation:isolate;border-radius:1rem;background:#153e44;color:#fff;box-shadow:0 8px 32px #102b3240;text-align:center;z-index:2147483645;pointer-events:none}
+.wf-activation-notice strong{position:relative;display:inline-block;padding:.25em .55em;background:#153e44e8;border-radius:.5em}
+.wf-activation-bubbles{position:absolute;inset:0;overflow:hidden}
+.wf-activation-bubbles i{position:absolute;left:6%;bottom:-.5rem;width:1.15rem;height:1.15rem;border-radius:50%;background:#ffbf58;animation:wf-approval-bubble 2.3s ease-out 2}
+.wf-activation-bubbles i:nth-child(3n + 2){background:#7ee1ee;animation-delay:.25s}
+.wf-activation-bubbles i:nth-child(3n){background:#ff91b8;animation-delay:.5s}
+.wf-activation-bubbles i:nth-child(2){left:17%}.wf-activation-bubbles i:nth-child(3){left:27%}.wf-activation-bubbles i:nth-child(4){left:38%}.wf-activation-bubbles i:nth-child(5){left:49%}.wf-activation-bubbles i:nth-child(6){left:60%}.wf-activation-bubbles i:nth-child(7){left:71%}.wf-activation-bubbles i:nth-child(8){left:82%}.wf-activation-bubbles i:nth-child(9){left:93%}
+@keyframes wf-approval-bubble{from{transform:translateY(0) scale(.6)}to{transform:translateY(-5rem) scale(1.2);opacity:0}}
+@media(prefers-reduced-motion:reduce){.wf-activation-bubbles i{animation:none}}

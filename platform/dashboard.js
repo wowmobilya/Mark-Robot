@@ -1205,7 +1205,7 @@
     window.WFPlatformAnalytics?.mount({host:panels.home,state,request,language:lang.value});
     showDestination();
   }
-  let submittedWorkspace='';
+  let submittedWorkspace='',ownerApproval=null,approvalTimer=null;
   let invite=new URLSearchParams(location.hash.slice(1)).get('invite');
   if(invite)history.replaceState(null,'',location.pathname+location.search);
   const setupLabels={
@@ -1277,10 +1277,59 @@
       pending:['وصل طلبك إلى لوحة تحكم الأدمن. بعد الموافقة، سجّل الدخول باسم المستخدم وكلمة المرور اللذين اخترتهما.','Your request is in the admin panel. After approval, sign in with your chosen credentials.','Talebiniz yönetim panelinde. Onaydan sonra seçtiğiniz bilgilerle giriş yapın.','Votre demande figure dans le panneau admin. Après approbation, connectez-vous avec vos identifiants.','Заявка поступила в панель администратора. После одобрения войдите со своими данными.']
     };
     const entry=new URL('../',location.href);entry.searchParams.set('wf-cloud','employee');entry.searchParams.set('workspace',workspace);
+    const receiptCopy={
+      ar:['أُرسل طلب التفعيل','افتح صفحة الدخول','بانتظار موافقة الأدمن. ستفتح شركتك تلقائيًا هنا بعد التفعيل.','تم التفعيل. افتح صفحة الدخول للمتابعة.'],
+      en:['Activation requested','Open company sign-in','Waiting for approval. Your company will open automatically here once activated.','Activation complete. Open company sign-in to continue.'],
+      tr:['Etkinleştirme isteği gönderildi','Şirket girişini aç','Onay bekleniyor. Şirketiniz etkinleştirildiğinde burada otomatik açılacak.','Etkinleştirme tamamlandı. Devam etmek için şirket girişini açın.'],
+      fr:['Demande d’activation envoyée','Ouvrir la connexion','En attente d’approbation. Votre entreprise s’ouvrira ici après l’activation.','Activation terminée. Ouvrez la connexion pour continuer.'],
+      ru:['Заявка отправлена','Открыть вход в компанию','Ожидаем одобрения. После активации компания откроется здесь автоматически.','Активация завершена. Откройте вход, чтобы продолжить.']
+    }[lang.value];
+    async function approvalRequest(payload){
+      const reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',
+        signal:AbortSignal.timeout(12000),
+        headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      return reply.json();
+    }
     function showReceipt(){
-      const message=el('p',messages.pending[language]),link=el('a',t(3));
-      message.setAttribute('role','status');link.href=entry.href;form.replaceChildren(message,link);link.focus();
+      const heading=el('h2',receiptCopy[0]),message=el('p',messages.pending[language]),link=el('a',receiptCopy[1]);
+      const live=el('p');
+      heading.tabIndex=-1;message.setAttribute('role','status');live.setAttribute('role','status');link.href=entry.href;
+      form.classList.add('owner-receipt');form.replaceChildren(heading,message,live,link);heading.focus();
       window.dispatchEvent(new Event('wow-company-install-ready'));
+      const receipt=ownerApproval;
+      if(!receipt)return;
+      live.textContent=receiptCopy[2];
+      clearTimeout(approvalTimer);
+      async function check(){
+        if(!form.isConnected||ownerApproval!==receipt)return;
+        if(!navigator.onLine||document.hidden){approvalTimer=setTimeout(check,5000);return;}
+        try{
+          const reply=await approvalRequest({action:'auth.ownerApprovalStatus',workspaceId:workspace,approvalToken:receipt.approvalToken});
+          if(!form.isConnected||ownerApproval!==receipt)return;
+          if(reply.state==='approved'&&reply.workspaceId===workspace){
+            const result=await approvalRequest({action:'auth.signIn',workspaceId:workspace,username:receipt.username,
+              password:receipt.password,installationProof:receipt.proof});
+            if(!form.isConnected||ownerApproval!==receipt)return;
+            ownerApproval=null;
+            live.textContent=receiptCopy[3];
+            const session=result?.session;
+            const userId=result?.identity?.currentAccount?.id;
+            if(result?.ok!==true||result.workspaceId!==workspace||!session?.refresh_token||!userId)return;
+            sessionStorage.setItem('wf.ownerActivation.handoff.v1',JSON.stringify({
+              workspaceId:workspace,userId,refreshToken:session.refresh_token,createdAt:Date.now()
+            }));
+            location.replace(entry.href);
+            return;
+          }
+          if(reply.error?.code==='AUTH_REQUIRED'||reply.error?.code==='UNKNOWN_ACTION'){
+            ownerApproval=null;live.textContent='';return;
+          }
+        }catch{
+          if(!ownerApproval)return;
+        }
+        if(form.isConnected&&ownerApproval===receipt)approvalTimer=setTimeout(check,5000);
+      }
+      approvalTimer=setTimeout(check,3000);
     }
     if(submittedWorkspace===workspace){showReceipt();return;}
     hints[2].textContent=messages.username[language];hints[3].textContent=messages.password[language];hints[4].textContent=copy[3];
@@ -1315,13 +1364,15 @@
       if(Array.from(pass.value).length<12||Array.from(pass.value).length>128)return explain('INVALID_PASSWORD');
       const proof=await window.WFInstallation?.proof().catch(()=>null);
       if(!proof)return explain('DEVICE_PROOF_REQUIRED');
+      const approvalToken=inviteCode();
       let reply;
-      try{reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',signal:AbortSignal.timeout(20000),headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.enrollOwner',installationProof:proof,workspaceId:workspace,setupToken,name:name.value.trim(),username:normalized,password:pass.value})});}
+      try{reply=await fetch(config.endpoint,{method:'POST',cache:'no-store',credentials:'omit',redirect:'error',signal:AbortSignal.timeout(20000),headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'auth.enrollOwner',installationProof:proof,workspaceId:workspace,setupToken,approvalToken,name:name.value.trim(),username:normalized,password:pass.value})});}
       catch{return explain(null,0);}
       const result=await reply.json().catch(()=>null);
       if(!form.isConnected)return;
       if(!reply.ok||result?.ok!==true||result.workspaceId!==workspace)return explain(result?.error?.code,reply.status);
       if(result.pendingApproval===true){
+        ownerApproval={approvalToken,username:normalized,password:pass.value,proof};
         submittedWorkspace=workspace;invite=null;code.value=pass.value=confirm.value='';
         showReceipt();return;
       }
@@ -1356,7 +1407,7 @@
     fail(error);
   }
   window.addEventListener('offline',lockDisconnected);
-  window.addEventListener('pagehide',()=>{clear();});
+  window.addEventListener('pagehide',()=>{clear();clearTimeout(approvalTimer);ownerApproval=null;});
   window.addEventListener('pageshow',event=>{if(event.persisted){render();resume().catch(restoreFailed);}});
   window.addEventListener('storage',event=>{
     if((event.key===trustKey||event.key===null)&&rememberedId&&saved()?.id!==rememberedId){clear();login();}

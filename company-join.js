@@ -15,7 +15,16 @@
   else url.searchParams.set('join','1');
   return url.href;
  }
+ function readPairing(raw,base){
+  try{
+   const url=new URL(raw),expected=new URL('./',base),workspace=url.searchParams.get('workspace');
+   if(!uuid.test(workspace)||url.searchParams.get('wf-cloud')!=='employee'||!/^#wf-device-pair=[A-Za-z0-9_-]{1,2048}$/.test(url.hash))return null;
+   expected.searchParams.set('wf-cloud','employee');expected.searchParams.set('workspace',workspace);expected.hash=url.hash;
+   return expected.href===url.href?url.href:null;
+  }catch{return null;}
+ }
  function readLink(raw,base,type,workspace){
+  if(type==='company'&&!workspace&&readPairing(raw,base))return raw;
   try{const u=new URL(raw),w=u.searchParams.get('workspace'),id=u.searchParams.get('reviewJoin');
    if(workspace&&w!==workspace)return null;
    const expected=link(base,w,type==='review'?id:undefined);
@@ -39,7 +48,7 @@
   const label=node('label',caption),input=node('input');input.type='url';input.readOnly=true;input.value=url;input.dir='ltr';input.setAttribute('aria-label',caption);
   label.append(input);box.append(label,btn(w[31],async event=>{try{await navigator.clipboard.writeText(url);event.target.textContent=w[32];}catch{input.select();}}));
   container.append(box);
-  try{const z=root.ZXingBrowser||await root.qblLoadFallback();if(!box.isConnected)return;
+  try{const z=root.ZXingBrowser||await (root.WFOwnerInvite?.loadQrTools||root.qblLoadFallback)();if(!box.isConnected)return;
    const svg=new z.BrowserQRCodeSvgWriter().write(url,660,660,new Map([[0,'M']]));svg.setAttribute('role','img');svg.setAttribute('aria-label',caption);
    svg.setAttribute('shape-rendering','crispEdges');svg.style.background='white';box.prepend(svg);
   }catch{/* The selectable canonical link remains available. */}
@@ -134,5 +143,31 @@
   if(selected){details.open=true;open();}
   return {updateLanguage(l){if(l===locale)return;locale=l;summary.textContent=txt(13);if(drawn)open();},dispose(){ticket++;reading?.dispose();details.remove();}};
  }
- root.WFCompanyJoin={mountApplicant,mountOwner,link,readLink};
+ function mountPairing({container,client,account,lang,issueNow=false}){
+  const labels={
+   ar:['إصدار رمز دخول للجهاز','امسح الرمز بكاميرا الجهاز الجديد خلال دقيقتين لتسجيل الدخول باسم','انتهت صلاحية الرمز. أصدر رمزًا جديدًا.'],
+   en:['Create device sign-in QR','Scan with the new device camera within two minutes to sign in as','This code expired. Create a new code.'],
+   tr:['Cihaz giriş QR kodu oluştur','İki dakika içinde yeni cihazın kamerasıyla tarayarak şu kullanıcı olarak giriş yapın','Kodun süresi doldu. Yeni kod oluşturun.'],
+   fr:['Créer un QR de connexion','Scannez sous deux minutes avec le nouvel appareil pour vous connecter en tant que','Ce code a expiré. Créez un nouveau code.'],
+   ru:['Создать QR для входа','Отсканируйте камерой нового устройства в течение двух минут для входа как','Срок кода истёк. Создайте новый код.']
+  }[lang]||['Create device sign-in QR','Scan within two minutes to sign in as','Code expired.'];
+  const box=node('section'),output=node('div'),issue=btn(labels[0],generate);
+  box.className='wf-account-device-card';box.append(issue,output);container.append(box);
+  let timer;
+  async function generate(){
+   if(issue.disabled)return;
+   const started=Date.now();issue.disabled=true;output.replaceChildren();clearTimeout(timer);
+   try{
+    const {url}=await client.request('device.issuePairing',{accountId:account.id});
+    if(!box.isConnected)return;
+    const value=new URL(url);
+    if(value.origin!==root.location.origin||!value.hash.startsWith('#wf-device-pair='))throw Error();
+    await qr(output,url,labels[1]+' '+account.name,lang);
+    timer=setTimeout(()=>{output.replaceChildren(node('p',labels[2]));},Math.max(0,120000-(Date.now()-started)));
+   }catch{if(box.isConnected)output.textContent=(words[lang]||words.en)[27];}
+   finally{issue.disabled=false;}
+  }
+  if(issueNow)generate();
+ }
+ root.WFCompanyJoin={mountApplicant,mountOwner,mountPairing,link,readLink,readPairing};
 })(globalThis);

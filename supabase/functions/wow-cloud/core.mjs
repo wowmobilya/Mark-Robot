@@ -4,11 +4,11 @@
 import {derivePushEvents} from './push-events.mjs';
 import {normalizeSubscription,normalizeDevice,normalizeLanguage,digest,validatePushEndpoint} from './push-security.mjs';
 const STORES = new Set(['companies','products','invoices','payments','settings','media']);
-const ACTIONS = new Set(['auth.enrollOwner','auth.signIn','auth.refresh','auth.signOut','session.snapshot','session.touch',
+const ACTIONS = new Set(['auth.ownerApprovalStatus','auth.enrollOwner','auth.signIn','auth.refresh','auth.signOut','session.snapshot','session.touch',
   'accounts.create','accounts.update','accounts.status','accounts.restore','accounts.setPassword','accounts.changePassword',
   'accounts.revokeSessions','permissions.assert','activity.record','sync.pull','sync.push','sync.inspect','media.upload','media.download',
   'push.config','push.subscribe','push.unsubscribe','push.test']);
-const PUBLIC_ACTIONS = new Set(['auth.enrollOwner','auth.signIn','auth.refresh']);
+const PUBLIC_ACTIONS = new Set(['auth.ownerApprovalStatus','auth.enrollOwner','auth.signIn','auth.refresh']);
 const MIME_EXT = {'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif','image/avif':'avif','image/svg+xml':'svg'};
 const encoder = new TextEncoder();
 const own = (v,k) => Object.prototype.hasOwnProperty.call(v || {},k);
@@ -174,7 +174,7 @@ export function createHandler(deps) {
   // Only these named proof endpoints may run before bearer authentication.
   // Ordinary module registration cannot make arbitrary actions public.
   const publicActions=new Map(Object.entries(deps.publicActions||{}));
-  for(const [action,handler] of publicActions)requireValue((/^auth\.customer(?:Options|Register|Recover|Verify)$/.test(action)||(action==='auth.activateOwner'||action==='auth.platformOwnerRecovery'||action==='auth.companyJoin'))&&!moduleActions.has(action)&&typeof handler==='function','SERVER_CONFIGURATION',503);
+  for(const [action,handler] of publicActions)requireValue((/^auth\.customer(?:Options|Register|Recover|Verify)$/.test(action)||(action==='auth.activateOwner'||action==='auth.platformOwnerRecovery'||action==='auth.companyJoin'||action==='auth.devicePair'))&&!moduleActions.has(action)&&typeof handler==='function','SERVER_CONFIGURATION',503);
   const knownAction=action=>ACTIONS.has(action)||moduleActions.has(action)||publicActions.has(action);
   const snapshot=(actor,expectedSessionVersion) => rpc('session.snapshot',{...actor,expectedSessionVersion});
   async function verifyToken(token) {
@@ -183,13 +183,13 @@ export function createHandler(deps) {
     requireValue(user && typeof user.id==='string' && user.is_anonymous!==true,'AUTH_REQUIRED',401);
     return {userId:user.id,sessionId:jwtSession(token)};
   }
-  async function authenticatedResult(session,open,input={}) {
+  async function authenticatedResult(session,open,input={},pairingDigest) {
     const clean=sessionResult(session),actor=await verifyToken(clean.access_token);
     const action=open?'session.open':'session.snapshot';
     let state;
     if(deps.deviceSession){
       const installationHash=/^[0-9a-f]{64}$/.test(input.installationProof||'')?await sha256(actor.userId+':'+input.installationProof):null;
-      try{state=await deps.deviceSession(action,{...actor,installationHash,founderOnly:input.founderOnly===true,activationWorkspace:input.activationWorkspace});}
+      try{state=await deps.deviceSession(action,{...actor,installationHash,founderOnly:input.founderOnly===true,activationWorkspace:input.activationWorkspace,...(pairingDigest?{pairingDigest}:{})});}
       catch(error){if(open&&!input.activationWorkspace)await auth.signOut(clean.access_token).catch(()=>{});throw error;}
     }else state=await rpc(action,actor);
     return {ok:true,session:clean,workspaceId:state.workspaceId,identity:state.identity};
@@ -269,7 +269,17 @@ export function createHandler(deps) {
     const {action}=body;requireValue(knownAction(action),'UNKNOWN_ACTION',400);
     if(publicActions.has(action)){
       const {installationProof,...publicBody}=body;
-      return {ok:true,...await publicActions.get(action)({body:publicBody,request,verifyToken,authenticate:session=>authenticatedResult(session,true,{installationProof,activationWorkspace:action==='auth.activateOwner'?body.workspaceId:undefined})})};
+      return {ok:true,...await publicActions.get(action)({body:publicBody,request,verifyToken,installationProof,authenticate:(session,pairingDigest)=>authenticatedResult(session,true,{installationProof,activationWorkspace:action==='auth.activateOwner'?body.workspaceId:undefined},action==='auth.devicePair'?pairingDigest:undefined)})};
+    }
+    const validApprovalToken=typeof body.approvalToken==='string'&&/^[a-f0-9]{64}$/.test(body.approvalToken);
+    async function pendingApproval(workspaceId,userId){
+      if(validApprovalToken)await deps.ownerEnrollment('approval.issue',{workspaceId,userId,tokenHash:await sha256(body.approvalToken)});
+      return {ok:true,pendingApproval:true,workspaceId};
+    }
+    if(action==='auth.ownerApprovalStatus'){
+      requireValue(validApprovalToken&&typeof body.workspaceId==='string'&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(body.workspaceId)&&deps.ownerEnrollment,'AUTH_REQUIRED',401);
+      const result=await deps.ownerEnrollment('approval.status',{workspaceId:body.workspaceId,tokenHash:await sha256(body.approvalToken)});
+      return {ok:true,workspaceId:body.workspaceId,state:result.state};
     }
     if(action==='auth.enrollOwner') {
       if(deps.deviceSession)requireValue(/^[0-9a-f]{64}$/.test(body.installationProof||''),'DEVICE_PROOF_REQUIRED',403);
@@ -283,23 +293,42 @@ export function createHandler(deps) {
         if(!setup.pendingApproval&&session.user?.id===setup.enrolledUser)return authenticatedResult(session,true,body);
         try{requireValue(session.user?.id===setup.enrolledUser,'SETUP_PROOF_INVALID',403);}
         finally{await auth.signOut(session.access_token);}
-        return {ok:true,pendingApproval:true,workspaceId:setup.workspaceId};
+        return pendingApproval(setup.workspaceId,setup.enrolledUser);
       }
-      const email=crypto.randomUUID()+'@wow.invalid';let created;
+      const email=crypto.randomUUID()+'@wow.invalid';
+      const created=await auth.createUser({email,password:pass,email_confirm:true,user_metadata:{wow:true}});
+      requireValue(created?.id,'SERVICE_UNAVAILABLE',503);
+      let claim;
       try {
-        created=await auth.createUser({email,password:pass,email_confirm:true,user_metadata:{wow:true}});
-        requireValue(created?.id,'SERVICE_UNAVAILABLE',503);
-        const claim=await enroll('setup.claim',{claimHash,userId:created.id,email,profile,workspaceId:setup.workspaceId});
-        if(claim?.pendingApproval===true)return {ok:true,pendingApproval:true,workspaceId:setup.workspaceId};
-      } catch(error) { if(created?.id)try{await auth.deleteUser(created.id);}catch(_){} throw error; }
+        claim=await enroll('setup.claim',{claimHash,userId:created.id,email,profile,workspaceId:setup.workspaceId});
+      } catch(error) {
+        if(error?.status>=400&&error.status<500){
+          try{await auth.deleteUser(created.id);}catch(_){}
+          throw error;
+        }
+        // The database may have committed before its response was lost. Recover
+        // the receipt only for the exact invite, workspace and Auth identity.
+        const receipt=await enroll('setup.inspect',{claimHash,username:profile.username});
+        if(receipt.workspaceId!==setup.workspaceId||receipt.enrolledUser!==created.id||receipt.email!==email)throw error;
+        claim=receipt;
+      }
+      if(claim?.pendingApproval===true)return pendingApproval(setup.workspaceId,created.id);
       return authenticatedResult(await auth.signIn(email,pass),true,body);
     }
     if(action==='auth.signIn') {
       const username=normalizeUsername(body.username);requireValue(typeof body.password==='string'&&body.password.length<=512,'AUTH_REQUIRED',401);
       const login=await rpc('auth.resolve',{workspaceId:body.workspaceId||null,username});
+      const pending=!login.email&&login.userId&&body.workspaceId&&validApprovalToken&&!body.founderOnly&&deps.ownerEnrollment
+        ?await deps.ownerEnrollment('approval.login',{workspaceId:body.workspaceId,userId:login.userId}):null;
       let session;
-      try { session=await auth.signIn(login.email||'unknown@wow.invalid',body.password); }
+      try { session=await auth.signIn(login.email||pending?.email||'unknown@wow.invalid',body.password); }
       catch(error) { if(error?.status>=500||error?.status===429)throw error;await rpc('auth.failed',{attemptId:login.attemptId}); throw failure('AUTH_REQUIRED',401); }
+      if(pending?.email){
+        try{requireValue(session.user?.id===login.userId,'AUTH_REQUIRED',401);}
+        finally{await auth.signOut(session.access_token);}
+        await rpc('auth.succeeded',{attemptId:login.attemptId,userId:login.userId});
+        return pendingApproval(body.workspaceId,login.userId);
+      }
       if(!login.email || session.user?.id && session.user.id!==login.userId) throw failure('AUTH_REQUIRED',401);
       const result=await authenticatedResult(session,true,{installationProof:body.installationProof,founderOnly:body.founderOnly===true});
       await rpc('auth.succeeded',{attemptId:login.attemptId,userId:login.userId});

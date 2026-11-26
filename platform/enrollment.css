@@ -19,3 +19,6 @@
 .owner-password-entry {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.4rem}
 .owner-password-entry button {padding-inline:.65rem;min-height:44px;font-size:.85rem}
 .owner-password-entry :focus-visible {outline:2px solid var(--ui-accent,currentColor);outline-offset:2px}
+.owner-receipt h2,.owner-receipt p {margin:0}
+.owner-receipt a {justify-self:start;text-underline-offset:.2em}
+.owner-receipt p:empty {display:none}
