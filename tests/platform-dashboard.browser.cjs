@@ -493,7 +493,7 @@ test('founder can provision, scan the owner setup URL, and save a plan in mobile
       assert(metrics.controls.every(height=>height>=44));assert(metrics.checkboxLabel>=44,'checkbox has a >=44px labelled touch target');
     }
     await page.goto(scope+'/platform/');await page.locator('#lang').selectOption('en',{force:true});
-    await page.getByText('Company owner invitation').click();
+    await page.getByText('Scan a device sign-in QR or owner invitation').click();
     await page.getByLabel('Owner invitation link').fill('https://outside.invalid/platform/');await page.getByRole('button',{name:'Open invitation'}).click();
     await page.getByText('Check the WOW invitation link and setup code.').waitFor();assert.equal(new URL(page.url()).origin,scope);
     await page.evaluate(link=>{
