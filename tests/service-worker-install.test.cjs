@@ -50,7 +50,7 @@ test('offline installation bounds network work and activates only after the requ
     const address=new URL(asset,url('./platform/index.html')).href;
     assert(stored.has(address),asset+' missing from precache');
   }
-  for(const asset of ['wow-dialog.js?v=1','wow-dialog.css?v=1','touch-keyboard.js?v=5','touch-keyboard.css?v=3','purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=10','accounts-settings.css?v=2','modules/platform/cloud/wow-cloud-client.js?v=9','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/cloud/wow-cloud-settings.js?v=7','modules/platform/push/wow-push-device.js?v=8','modules/platform/push/wow-push-client.js?v=5','modules/platform/push/wow-push-settings.js?v=4','modules/platform/push/wow-push-sw.js?v=10'])assert(stored.has(url('./'+asset)),asset+' missing from precache');
+  for(const asset of ['wow-dialog.js?v=1','wow-dialog.css?v=1','touch-keyboard.js?v=5','touch-keyboard.css?v=3','purchase-planner.js?v=3','invoice-preview.css?v=1','label-reprint-history.js?v=2','accounts-access.js?v=266','accounts-settings.css?v=2','modules/platform/cloud/wow-cloud-client.js?v=266','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/cloud/wow-cloud-settings.js?v=7','modules/platform/push/wow-push-device.js?v=8','modules/platform/push/wow-push-client.js?v=5','modules/platform/push/wow-push-settings.js?v=4','modules/platform/push/wow-push-sw.js?v=10'])assert(stored.has(url('./'+asset)),asset+' missing from precache');
 });
 test('updates reuse exactly versioned prior assets and fetch fresh unversioned configuration and HTML',async()=>{
   const f=fixture({seed:true});await f.install();
@@ -81,7 +81,7 @@ test('an update downloads new versions and retains installed speech compatibilit
   await f.install();
   assert(f.calls.includes(url('./speech-controls.js?v=5')),'changed code must be downloaded');
   assert(f.calls.includes(url('./purchase-planner.js?v=3')),'new modules must be downloaded');
-  for(const asset of ['accounts-core.js?v=3','accounts-access.js?v=10','modules/platform/cloud/wow-cloud-client.js?v=9','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/push/wow-push-sw.js?v=10'])assert(f.calls.includes(url('./'+asset)),'current owner and cloud code must replace previous '+asset);
+  for(const asset of ['accounts-core.js?v=3','accounts-access.js?v=266','modules/platform/cloud/wow-cloud-client.js?v=266','modules/platform/cloud/wow-cloud-sync.js?v=1','modules/platform/push/wow-push-sw.js?v=10'])assert(f.calls.includes(url('./'+asset)),'current owner and cloud code must replace previous '+asset);
   assert.equal(f.calls.includes(url(unchanged)),false,'only exact unchanged URLs may be reused');
   assert.equal(f.calls.includes(url('./speech-controls.js?v=4')),false);
   await f.activate();
@@ -135,7 +135,7 @@ test('the released HTML and offline shell use the same existing local script and
 });
 test('warm navigation uses exact active-release asset hits without issuing network requests',async()=>{
   const f=fixture();await f.install();f.calls.length=0;
-  const asset='./modules/platform/cloud/wow-cloud-client.js?v=9',cached=f.stores.get(f.context.qa.CACHE_NAME).get(url(asset));
+  const asset='./modules/platform/cloud/wow-cloud-client.js?v=266',cached=f.stores.get(f.context.qa.CACHE_NAME).get(url(asset));
   assert.equal((await f.request(asset)).tag,cached.tag);assert.equal(f.calls.length,0);
   f.stores.get(f.context.qa.CACHE_NAME).delete(url(asset));
   assert.match((await f.request(asset)).tag,/^network:/);assert.deepEqual(f.calls,[url(asset)]);
@@ -145,10 +145,10 @@ test('configuration, navigation, unlisted versions and sensitive requests keep t
   await f.request('./modules/platform/cloud/wow-cloud-config.js?v=2');
   await f.request('./index.html',{mode:'navigate'});
   await f.request('./modules/platform/cloud/wow-cloud-client.js?v=900');
-  await f.request('./modules/platform/cloud/wow-cloud-client.js?v=9',{cache:'no-store'});
+  await f.request('./modules/platform/cloud/wow-cloud-client.js?v=266',{cache:'no-store'});
   await f.request('https://example.supabase.co/rest/v1/private',{headers:{has:()=>true}});
   await f.request('./sensitive',{headers:{has:key=>key==='authorization'}});
-  assert.deepEqual(f.calls,[url('./modules/platform/cloud/wow-cloud-config.js?v=2'),url('./index.html'),url('./modules/platform/cloud/wow-cloud-client.js?v=900'),url('./modules/platform/cloud/wow-cloud-client.js?v=9'),'https://example.supabase.co/rest/v1/private',url('./sensitive')]);
+  assert.deepEqual(f.calls,[url('./modules/platform/cloud/wow-cloud-config.js?v=2'),url('./index.html'),url('./modules/platform/cloud/wow-cloud-client.js?v=900'),url('./modules/platform/cloud/wow-cloud-client.js?v=266'),'https://example.supabase.co/rest/v1/private',url('./sensitive')]);
   assert.equal(f.stores.get(f.context.qa.CACHE_NAME).has('https://example.supabase.co/rest/v1/private'),false);
   assert.equal(f.stores.get(f.context.qa.CACHE_NAME).has(url('./sensitive')),false);
 });

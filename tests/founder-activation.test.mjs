@@ -26,6 +26,14 @@ test('company invite requires founder approval of the submitted owner in the sam
  const claim=await enroll('setup.claim',{workspaceId,claimHash,userId:owner,email,profile});
  assert.deepEqual(claim,{workspaceId,pendingApproval:true});
  assert.equal((await db.query('select status from public.wow_accounts where id=$1',[owner])).rows[0].status,'suspended');
+ const tokenHash=await sha256(randomBytes(32).toString('hex'));
+ const status=(scope=workspaceId,hash=tokenHash)=>enroll('approval.status',{workspaceId:scope,tokenHash:hash});
+ assert.equal((await enroll('approval.login',{workspaceId,userId:owner})).email,email);
+ assert.deepEqual(await enroll('approval.login',{workspaceId:second,userId:owner}),{});
+ await enroll('approval.issue',{workspaceId,userId:owner,tokenHash});
+ assert.deepEqual(await status(),{state:'pending'});
+ await assert.rejects(status(second),/AUTH_REQUIRED/);
+ await assert.rejects(status(workspaceId,'1'.repeat(64)),/AUTH_REQUIRED/);
  const pending=await act('activation');assert.equal(pending.state,'awaiting_approval');assert.equal(pending.ownerId,owner);
  assert.equal((await enroll('setup.inspect',{claimHash,username:'owner'})).pendingApproval,true);
  await assert.rejects(enroll('setup.inspect',{claimHash,username:'other'}),/SETUP_PROOF_INVALID/);
@@ -37,6 +45,10 @@ test('company invite requires founder approval of the submitted owner in the sam
  await db.query("update public.wow_workspaces set status='active' where id=$1",[workspaceId]);
  for(let i=0;i<2;i++)assert.equal((await act('approveOwner',{ownerId:owner})).state,'active');
  assert.equal((await db.query('select status from public.wow_accounts where id=$1',[owner])).rows[0].status,'active');
+ assert.deepEqual(await status(),{state:'approved'});
+ assert.deepEqual(await enroll('approval.login',{workspaceId,userId:owner}),{});
+ await db.query("update public.wow_owner_approval_receipts set expires_at=now()-interval '1 hour' where token_hash=$1",[tokenHash]);
+ await assert.rejects(status(),/AUTH_REQUIRED/);
  assert.equal((await db.query("select count(*)::int n from public.wow_platform_company_audit where workspace_id=$1 and action='owner_approved'",[workspaceId])).rows[0].n,1);
  assert.equal((await act('activation')).state,'active');
  await assert.rejects(db.query("update public.wow_accounts set status='suspended' where id=$1",[owner]),/LAST_OWNER/);

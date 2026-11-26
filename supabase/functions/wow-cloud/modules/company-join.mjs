@@ -29,5 +29,37 @@ export function createCompanyJoin({moduleRpc,auth,origins=[]}){
   if(body.id!=null&&!uuid(body.id)||body.offset!=null&&(!Number.isSafeInteger(body.offset)||body.offset<0)||action==='companyJoin.decide'&&(!uuid(body.id)||!['approved','rejected'].includes(body.decision)))throw failure('INVALID_REQUEST',422);
   return service(action,{id:body.id,offset:body.offset,decision:body.decision,userId:actor.userId,sessionId:actor.sessionId});
  };
- return {actions,publicActions:{'auth.companyJoin':submit}};
+ const pair=(operation,data)=>moduleRpc('wow_device_pairing',operation,data);
+ const originFor=request=>{
+  const origin=request.headers.get('origin');
+  if(!origins.includes(origin)||!origin.startsWith('https://'))throw failure('ORIGIN_DENIED',403);
+  return origin;
+ };
+ actions['device.issuePairing']=async({request,actor,body})=>{
+  const origin=originFor(request);
+  if(!uuid(body.accountId))throw failure('INVALID_REQUEST',422);
+  const token=[...crypto.getRandomValues(new Uint8Array(32))].map(n=>n.toString(16).padStart(2,'0')).join('');
+  const {workspaceId}=await pair('issue',{...actor,accountId:body.accountId,digest:await sha256(token)});
+  const url=new URL('/',origin);url.searchParams.set('wf-cloud','employee');url.searchParams.set('workspace',workspaceId);
+  const proof={tokenHash:token,workspaceId,userId:body.accountId};
+  url.hash='wf-device-pair='+btoa(JSON.stringify(proof)).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');
+  return {url:url.href};
+ };
+ const redeem=async({body,request,installationProof,authenticate})=>{
+  originFor(request);
+  if(!uuid(body.userId)||!uuid(body.workspaceId)||!/^[a-f0-9]{64}$/.test(body.tokenHash)||!/^[a-f0-9]{64}$/.test(installationProof))throw failure('ACCESS_DENIED',403);
+  const digest=await sha256(body.tokenHash),installation=await sha256(body.userId+':'+installationProof);
+  const {email}=await pair('claim',{digest,installation,accountId:body.userId,workspaceId:body.workspaceId});
+  const generated=await auth.generateLink(email),user=generated.user||generated,properties=generated.properties||generated;
+  if(user.id!==body.userId||user.email!==email||properties.verification_type!=='magiclink'||!properties.hashed_token)throw failure('ACCESS_DENIED',403);
+  const session=await auth.verifyOtp(properties.hashed_token);
+  try{
+   const verified=await auth.getUser(session.access_token);
+   if(verified.id!==body.userId||verified.is_anonymous===true)throw failure('ACCESS_DENIED',403);
+   const result=await authenticate(session,digest);
+   if(result.workspaceId!==body.workspaceId||result.identity?.currentAccount?.id!==body.userId)throw failure('ACCESS_DENIED',403);
+   return result;
+  }catch(error){await auth.signOut(session.access_token).catch(()=>{});throw error;}
+ };
+ return {actions,publicActions:{'auth.companyJoin':submit,'auth.devicePair':redeem}};
 }

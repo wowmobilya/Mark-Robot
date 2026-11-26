@@ -7,11 +7,12 @@
 const wfTakeOwnerActivation=(()=>{
   let proof=null,fragment=location.hash||'';
   const take=()=>{const value=proof;proof=null;return value;};
-  const prefix='#wf-owner-activate=';
+  const paired=fragment.startsWith('#wf-device-pair=');
+  const prefix=paired?'#wf-device-pair=':'#wf-owner-activate=';
   if(!fragment.startsWith(prefix))return take;
   proof={invalid:true};
   const url=new URL(location.href),query=new URLSearchParams(url.search);
-  url.hash='';url.searchParams.set('wf-cloud','owner');url.searchParams.delete('wf-accounts');
+  url.hash='';url.searchParams.set('wf-cloud',paired?'employee':'owner');url.searchParams.delete('wf-accounts');
   const clean=url.pathname+url.search;
   try{history.replaceState(null,'',clean);}
   catch(_){
@@ -24,13 +25,13 @@ const wfTakeOwnerActivation=(()=>{
   try{
     const encoded=fragment.slice(prefix.length);
     if(encoded.length>2048||!encoded||!/^[A-Za-z0-9_-]+$/.test(encoded)||encoded.length%4===1||
-      query.getAll('wf-cloud').length!==1||query.get('wf-cloud')!=='owner'||query.getAll('workspace').length!==1)return take;
+      query.getAll('wf-cloud').length!==1||query.get('wf-cloud')!==(paired?'employee':'owner')||query.getAll('workspace').length!==1)return take;
     const value=JSON.parse(atob(encoded.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-encoded.length%4)%4)));
     const uuid=v=>typeof v==='string'&&/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
     if(!value||Array.isArray(value)||Object.keys(value).length!==3||
       !Object.prototype.hasOwnProperty.call(value,'tokenHash')||!Object.prototype.hasOwnProperty.call(value,'workspaceId')||!Object.prototype.hasOwnProperty.call(value,'userId')||
       typeof value.tokenHash!=='string'||!/^[A-Za-z0-9_-]{32,512}$/.test(value.tokenHash)||!uuid(value.workspaceId)||!uuid(value.userId)||query.get('workspace')!==value.workspaceId)return take;
-    proof=Object.freeze({tokenHash:value.tokenHash,workspaceId:value.workspaceId,userId:value.userId});
+    proof=Object.freeze({...(paired?{paired:true}:{}),tokenHash:value.tokenHash,workspaceId:value.workspaceId,userId:value.userId});
   }catch(_){}finally{fragment='';}
   return take;
 })();
@@ -6468,20 +6469,20 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <style>html.wf-booting .navbar,html.wf-booting .main,html.wf-booting .sidebar,html.wf-booting .bottom-nav{visibility:hidden!important}</style>
 <link rel="stylesheet" href="modern-ui.css?v=47">
      <link rel="stylesheet" href="ui-identity.css?v=36">
-     <link rel="stylesheet" href="accounts-access.css?v=4">
+     <link rel="stylesheet" href="accounts-access.css?v=266">
 <link rel="stylesheet" href="accounts-settings.css?v=2">
 <script src="accounts-policy.js?v=2" defer></script>
 <script src="accounts-data-policy.js?v=1" defer></script>
 <script src="accounts-core.js?v=3" defer></script>
 <script src="accounts-local-provider.js?v=1" defer></script>
 <script src="modules/platform/cloud/wow-cloud-config.js?v=2" defer></script><script src="company-install.js?v=1" defer></script>
-<script src="modules/platform/cloud/installation.js?v=1" defer></script><script src="modules/platform/cloud/wow-cloud-client.js?v=9" defer></script>
+<script src="modules/platform/cloud/installation.js?v=1" defer></script><script src="modules/platform/cloud/wow-cloud-client.js?v=266" defer></script>
 <script src="modules/platform/cloud/wow-cloud-sync.js?v=1" defer></script>
 <link rel="stylesheet" href="wow-dialog.css?v=1">
 <script src="wow-dialog.js?v=1" defer></script>
-<script src="owner-invite.js?v=3" defer></script>
-<script src="company-join.js?v=2" defer></script>
-<script src="accounts-access.js?v=10" defer></script>
+<script src="owner-invite.js?v=266" defer></script>
+<script src="company-join.js?v=266" defer></script>
+<script src="accounts-access.js?v=266" defer></script>
 <script src="cart-page.js?v=1" defer></script>
 <script src="operations-workspace.js?v=8" defer></script>
 <script src="ui-navigation.js?v=34" defer></script>
@@ -6499,7 +6500,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="reference-voice.js?v=5" defer></script>
 <script src="robot-settings.js?v=12" defer></script>
 <script src="smart-card-settings.js?v=3" defer></script>
-<script src="accounts-settings.js?v=7" defer></script>
+<script src="accounts-settings.js?v=266" defer></script>
 <script src="modules/platform/cloud/wow-cloud-settings.js?v=7" defer></script>
 <script src="support-settings.js?v=1" defer></script>
 <link rel="stylesheet" href="modules/platform/cloud/wow-cloud-settings.css?v=1">
@@ -6608,7 +6609,7 @@ button,.btn,.icon-btn,.nav-item,.tab-btn,.tg-opt,.pay-method-card{touch-action:m
 <script src="barcode-workspace.js?v=1" defer></script>
 <script src="touch-keyboard.js?v=5" defer></script>
 <script src="developer-profile.js?v=250" defer></script>
-<script src="app-updates.js?v=4" defer data-release="265"></script>
+<script src="app-updates.js?v=4" defer data-release="266"></script>
 <link rel="stylesheet" href="currency-calculator.css?v=11">
 <link rel="stylesheet" href="business-ui.css?v=1">
 <link rel="stylesheet" href="settings-responsive.css?v=6">

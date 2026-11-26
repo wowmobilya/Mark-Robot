@@ -69,3 +69,50 @@ test('cross-origin browser requests are denied before auth and preflight remains
   const allowed=await handler(new Request('https://edge.test',{method:'OPTIONS',headers:{origin:'https://galeri.wowfurniture.com.tr'}}));
   assert.equal(allowed.status,204);assert.equal(allowed.headers.get('access-control-allow-origin'),'https://galeri.wowfurniture.com.tr');
 });
+
+test('owner enrollment recovers a committed approval request after the claim response is lost',async()=>{
+  let email,claimed=false,deleted=false;
+  const ownerEnrollment=async(action,data)=>{
+    if(action==='setup.inspect')return claimed
+      ?{workspaceId:'workspace',enrolledUser:'owner',email,pendingApproval:true}
+      :{workspaceId:'workspace'};
+    assert.equal(action,'setup.claim');assert.equal(data.email,email);
+    claimed=true;
+    throw Object.assign(new Error('SERVICE_UNAVAILABLE'),{status:503});
+  };
+  const auth={
+    createUser:async input=>{email=input.email;return {id:'owner'};},
+    deleteUser:async()=>{deleted=true;}
+  };
+  const handler=createHandler({...dependencies,ownerEnrollment,auth});
+  const body={action:'auth.enrollOwner',workspaceId:'workspace',setupToken:'a'.repeat(64),
+    name:'Owner',username:'owner',password:'fixture-password'};
+  const response=await handler(new Request('https://edge.test',{method:'POST',body:JSON.stringify(body)}));
+  assert.deepEqual(await response.json(),{ok:true,pendingApproval:true,workspaceId:'workspace'});
+  assert.equal(deleted,false);
+});
+
+test('only a password-verified pending owner receives an approval receipt without a session',async()=>{
+  const workspaceId='11111111-1111-4111-8111-111111111111',userId='22222222-2222-4222-8222-222222222222';
+  const approvalToken='ab'.repeat(32),writes=[],closed=[];
+  const handler=createHandler({...dependencies,
+    rpc:async(action)=>action==='auth.resolve'?{attemptId:'attempt',userId,email:null}:{},
+    ownerEnrollment:async(action,body)=>{
+      if(action==='approval.login')return {email:'pending@wow.invalid'};
+      if(action==='approval.issue'){writes.push(body);return {};}
+      if(action==='approval.status'){assert.equal(body.tokenHash,writes[0].tokenHash);return {state:'pending'};}
+      assert.fail(action);
+    },
+    auth:{signIn:async(email,password)=>{
+      assert.equal(email,'pending@wow.invalid');if(password!=='valid')throw Error('bad login');
+      return {user:{id:userId},access_token:'temporary-fixture'};
+    },signOut:async token=>closed.push(token)}
+  });
+  const run=async body=>(await handler(new Request('https://edge.test',{method:'POST',body:JSON.stringify(body)}))).json();
+  const body={action:'auth.signIn',workspaceId,username:'pending',approvalToken};
+  assert.equal((await run({...body,password:'wrong'})).error.code,'AUTH_REQUIRED');assert.equal(writes.length,0);
+  assert.deepEqual(await run({...body,password:'valid'}),{ok:true,workspaceId,pendingApproval:true});
+  assert.deepEqual(closed,['temporary-fixture']);assert.equal(writes.length,1);
+  assert.match(writes[0].tokenHash,/^[0-9a-f]{64}$/);assert.notEqual(writes[0].tokenHash,approvalToken);
+  assert.deepEqual(await run({action:'auth.ownerApprovalStatus',workspaceId,approvalToken}),{ok:true,workspaceId,state:'pending'});
+});

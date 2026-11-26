@@ -522,3 +522,23 @@ test('offline sign-out also retires the legacy predecessor of an incompletely cl
  const reopened=boot({hash:'#dashboard',storageMap:upgrade.storageMap,durableMap:upgrade.durableMap});await reopened.client.ready;
  assert.equal(reopened.client.getSnapshot().authenticated,false);assert.equal(reopened.calls.length,0);
 });
+
+test('approved enrollment handoff verifies the session and celebrates once',async()=>{
+ const key='wf.ownerActivation.handoff.v1',row={workspaceId:workspace,userId:owner,createdAt:Date.now(),refreshToken:'approved-fixture'};
+ const start=(change={},result=authResponse())=>boot({hash:'',query:'?wf-cloud=employee&workspace='+workspace,clock:row.createdAt,
+  storageMap:new Map([[key,JSON.stringify({...row,...change})]]),handler:async()=>({ok:true,status:200,json:async()=>result})});
+ const h=start();await h.client.ready;
+ assert.equal(h.storageMap.has(key),false);assert.deepEqual(h.calls[0].body,{action:'auth.refresh',refreshToken:row.refreshToken});
+ assert.equal(h.client.getSnapshot().currentAccount.id,owner);assert(h.client.takeApprovalNotice());assert(!h.client.takeApprovalNotice());
+ const expired=start({createdAt:row.createdAt-120001});await expired.client.ready;assert.equal(expired.calls.length,0);
+ const wrong=start({},authResponse({workspaceId:other}));await wrong.client.ready;
+ assert.equal(wrong.client.getSnapshot().authenticated,false);assert(!wrong.client.takeApprovalNotice());assert.equal(wrong.calls.at(-1).body.action,'auth.signOut');
+});
+test('device QR cleans the URL and adopts only the requested worker session',async()=>{
+ const response=authResponse();response.identity.currentAccount.role='sales';
+ const hash='#wf-device-pair='+Buffer.from(JSON.stringify({...proof,tokenHash:'a'.repeat(64)})).toString('base64url');
+ const h=boot({hash,query:'?wf-cloud=employee&workspace='+workspace,configuredWorkspace:other,
+  handler:async()=>({ok:true,status:200,json:async()=>response})});
+ assert.equal(h.observedBeforeClient,'');assert.equal((await h.client.ready).currentAccount.role,'sales');
+ assert.deepEqual(h.calls.map(call=>call.body.action),['auth.devicePair']);
+});

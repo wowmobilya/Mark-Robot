@@ -6,6 +6,9 @@
   const remoteMode=!!root.WFCloudClient?.isRemoteMode?.()||/(?:^|[?&])wf-cloud=(?:employee|owner)(?:&|$)/.test(root.location?.search||'');
   const locales=['ar','en','tr','fr','ru'];
   const words={
+    approvalWaiting:['طلب تفعيل حسابك قيد المراجعة. سيفتح البرنامج تلقائيًا بعد الموافقة.','Your activation request is under review. The app will open automatically after approval.','Etkinleştirme isteğiniz inceleniyor. Onaydan sonra uygulama otomatik olarak açılacak.','Votre demande est en cours d’examen. L’application s’ouvrira automatiquement après validation.','Заявка на активацию рассматривается. После одобрения приложение откроется автоматически.'],
+    cancelWait:['إلغاء الانتظار','Cancel waiting','Beklemeyi iptal et','Arrêter l’attente','Отменить ожидание'],
+    approved:['مبروك! تم تفعيل حسابك.','Congratulations! Your account is active.','Tebrikler! Hesabınız etkinleştirildi.','Félicitations ! Votre compte est activé.','Поздравляем! Ваш аккаунт активирован.'],
     rememberMember:['تذكّر حساب الموظف على هذا الجهاز ضمن مدة الجلسة','Remember this employee account for the session','Oturum süresince bu çalışanı hatırla','Mémoriser ce compte employé pour la durée de la session','Запомнить сотрудника на время сеанса'],
     deviceBound:['هذا الحساب مرتبط بجهاز آخر. اطلب من مالك الشركة إضافة حساب لهذا الجهاز أو فك ربط الجهاز السابق.','This account is linked to another device. Ask the company owner for an account for this device or to release the previous device.','Bu hesap başka bir cihaza bağlı. Şirket sahibinden bu cihaz için bir hesap açmasını veya önceki cihazın bağlantısını kaldırmasını isteyin.','Ce compte est associé à un autre appareil. Demandez au propriétaire un compte pour cet appareil ou la dissociation de l’ancien appareil.','Аккаунт привязан к другому устройству. Попросите владельца компании создать аккаунт для этого устройства или отвязать прежнее устройство.'],
     deviceBlocked:['هذا الجهاز محظور. اطلب من مسؤول الشركة إلغاء الحظر.','This device is blocked. Ask your company administrator to unblock it.','Bu cihaz engellendi. Şirket yöneticinizden engeli kaldırmasını isteyin.','Cet appareil est bloqué. Demandez à votre administrateur de le débloquer.','Устройство заблокировано. Попросите администратора компании разблокировать его.'],
@@ -49,7 +52,42 @@
   let service,ready,booted=false,checking=true,refreshing=null,reloading=false,loginBusy=false,loginResolve,loginWait;
   let explicitLockPending=false,resumeChecking=false;
   let lockSurface,loginForm,username,password,submit,status,showPassword,loginTitle,loginIntro,localNote,sessionNote,langSelect,sessionButton;
-  let rememberMember,rememberCaption;
+  let rememberMember,rememberCaption,waitingForApproval=false,cancelWait;
+  function celebrateActivation(){
+    const notice=make('aside','wf-activation-notice'),message=make('strong'),bubbles=make('span','wf-activation-bubbles');
+    notice.setAttribute('role','status');bubbles.setAttribute('aria-hidden','true');
+    for(let i=0;i<9;i++)bubbles.append(make('i'));
+    notice.append(bubbles,message);doc.body.append(notice);
+    message.textContent=text('approved');
+    root.setTimeout(()=>notice.remove(),6000);
+  }
+  async function waitForApproval(workspaceId,approvalToken){
+    waitingForApproval=true;cancelWait.hidden=false;translateLock();
+    let delay=4000;
+    try{
+      while(waitingForApproval){
+        await new Promise(resolve=>{
+          const finish=()=>{root.clearTimeout(timer);cancelWait.onclick=null;resolve();};
+          const timer=root.setTimeout(finish,delay);
+          cancelWait.onclick=()=>{waitingForApproval=false;finish();};
+        });
+        if(!waitingForApproval)return false;
+        if(doc.hidden||root.navigator?.onLine===false)continue;
+        cancelWait.onclick=()=>{waitingForApproval=false;};
+        try{
+          const result=await service.request('auth.ownerApprovalStatus',{workspaceId,approvalToken},{authenticated:false});
+          if(!waitingForApproval)return false;
+          if(result.workspaceId!==workspaceId||!['pending','approved'].includes(result.state))throw Error('INVALID_RESPONSE');
+          if(result.state==='approved')return true;
+          delay=5000;
+        }catch(error){
+          if(error?.code!=='NETWORK'&&error?.status!==429&&!(error?.status>=500))throw error;
+          delay=Math.min(delay*2,30000);
+        }
+      }
+      return false;
+    }finally{waitingForApproval=false;cancelWait.onclick=null;cancelWait.hidden=true;status.textContent='';}
+  }
   let ownerInvite,companyJoin,customerAuthSurface,founderBadge,founderScope='',founderVerified=false,founderGeneration=0;
   function badgeScope(state){
     if(!remoteMode||root.navigator?.onLine===false||!state?.authenticated||state.offlineVerified||state.connection!=='online'||!state.currentAccount)return '';
@@ -95,6 +133,7 @@
       if(sessionButton.dataset.wfSessionRole!==account?.role){sessionButton.dataset.wfSessionRole=account?.role||'';sessionButton.children[0].innerHTML=account?.role==='owner'?ownerIcon:lockIcon;}
     }
     if(!lockSurface)return;
+    if(waitingForApproval){status.textContent=text('approvalWaiting');cancelWait.textContent=text('cancelWait');}
     lockSurface.dir=locale()==='ar'?'rtl':'ltr';lockSurface.lang=locale();
     if(rememberCaption)rememberCaption.textContent=text('rememberMember');
     loginTitle.textContent=text('title');loginIntro.textContent=text('intro');
@@ -134,7 +173,8 @@
       const label=make('label','wf-account-remember');rememberMember=make('input');rememberMember.type='checkbox';
       rememberCaption=make('span');label.append(rememberMember,rememberCaption);loginForm.append(label);
     }
-    loginForm.append(submit);card.append(header,loginTitle,loginIntro,loginForm,status,sessionNote,localNote);lockSurface.append(card);doc.body.append(lockSurface);
+    cancelWait=make('button','btn');cancelWait.type='button';cancelWait.hidden=true;
+    loginForm.append(submit);card.append(header,loginTitle,loginIntro,loginForm,status,cancelWait,sessionNote,localNote);lockSurface.append(card);doc.body.append(lockSurface);
     ownerInvite=root.WFOwnerInvite?.mount(card,new URL('./',root.location.href),locale());
     if(root.WFCompanyJoin){
       const cloud=root.WFCloudClient?.getClient?.(),base=new URL('./',root.location.href);
@@ -148,7 +188,20 @@
       event.preventDefault();if(loginBusy||!loginForm.reportValidity())return;
       loginBusy=true;submit.disabled=true;status.textContent='';translateLock();
       const value=password.value;password.value='';password.type='password';showPassword.setAttribute('aria-pressed','false');
-      try{await service.signIn({username:username.value,password:value,...(rememberMember?.checked?{rememberDevice:true}:{})});if(rememberMember)rememberMember.checked=false;const account=snapshot().currentAccount;if(!policy.safeHome(account)){status.textContent=text('noAccess');await service.signOut();}else{setLocked(false);loginResolve?.();loginResolve=null;}}
+      try{
+        const credentials={username:username.value,password:value,...(rememberMember?.checked?{rememberDevice:true}:{})};
+        const approvalToken=remoteMode&&root.crypto?.getRandomValues
+          ?Array.from(root.crypto.getRandomValues(new Uint8Array(32)),byte=>byte.toString(16).padStart(2,'0')).join(''):null;
+        let result=await service.signIn({...credentials,...(approvalToken?{approvalToken}:{})});
+        const pending=result?.pendingApproval===true;
+        if(pending){
+          if(!await waitForApproval(result.workspaceId,approvalToken))return;
+          result=await service.signIn(credentials);
+        }
+        if(rememberMember)rememberMember.checked=false;
+        if(!policy.safeHome(snapshot().currentAccount)){status.textContent=text('noAccess');await service.signOut();}
+        else{setLocked(false);loginResolve?.();loginResolve=null;if(pending)celebrateActivation();}
+      }
       catch(error){status.textContent=text(signInErrors.get(error?.code)||'failed');password.focus();}
       finally{loginBusy=false;submit.disabled=false;translateLock();}
     });
@@ -205,6 +258,7 @@
       loginWait=loginWait||new Promise(resolve=>{loginResolve=resolve;});showLogin();await loginWait;loginWait=null;state=snapshot();
     }
     booted=true;setLocked(false);updateSession();scheduleControls();
+    if(service?.takeApprovalNotice?.())celebrateActivation();
   }
   function initialRoute(requested){
     const state=snapshot();if(!state.configured)return requested||'dashboard';

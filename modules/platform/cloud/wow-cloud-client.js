@@ -339,7 +339,7 @@
       if(!configured||typeof fetcher!=='function')throw failure('CLOUD_UNCONFIGURED');
       const sentGeneration=generation;
       const installation=options.installation||root.WFInstallation;
-      if(['auth.signIn','auth.enrollOwner','auth.refresh','auth.activateOwner'].includes(action)&&installation){
+      if(['auth.signIn','auth.enrollOwner','auth.refresh','auth.activateOwner','auth.devicePair'].includes(action)&&installation){
         const proof=await installation.proof();
         if(!proof)throw failure('DEVICE_PROOF_REQUIRED',403);
         checkGeneration(sentGeneration);payload={...payload,installationProof:proof};
@@ -474,7 +474,9 @@
       await ready;expire();checkGeneration(generation);invalidateSession('');const expected=generation;connection='checking';emit();
       try{
         const result=await transport(action,input);checkGeneration(expected);
-        if(action==='auth.enrollOwner'&&result.pendingApproval===true){invalidateSession('');return {pendingApproval:true};}
+        if(result.pendingApproval===true&&(action==='auth.enrollOwner'||action==='auth.signIn'&&input.approvalToken&&result.workspaceId===input.workspaceId)){
+          invalidateSession('');return {pendingApproval:true,workspaceId:result.workspaceId};
+        }
         return adopt(result,expected,{authentication:true});
       }
       catch(error){if(expected===generation){invalidateSession(error.code);if(error.code==='NETWORK'){connection='offline';emit();}}throw error;}
@@ -482,23 +484,56 @@
     async function activateOwner(proof){
       invalidateSession('');const expected=generation;connection='checking';emit();let result;
       try{
-        if(!ownerEntry||proof?.invalid||!uuid(config.workspaceId)||!uuid(proof?.workspaceId)||!uuid(proof?.userId)||
-          proof.workspaceId!==config.workspaceId||proof.workspaceId!==workspaceHint||
+        const paired=proof?.paired===true;
+        if((paired?!employeeEntry:!ownerEntry)||proof?.invalid||(!paired&&!uuid(config.workspaceId))||!uuid(proof?.workspaceId)||!uuid(proof?.userId)||
+          (!paired&&proof.workspaceId!==config.workspaceId)||proof.workspaceId!==workspaceHint||
           typeof proof.tokenHash!=='string'||!/^[A-Za-z0-9_-]{32,512}$/.test(proof.tokenHash))throw failure('OWNER_ACTIVATION_FAILED');
         const expectedWorkspace=proof.workspaceId,expectedUser=proof.userId;
-        const pending=transport('auth.activateOwner',{tokenHash:proof.tokenHash,workspaceId:expectedWorkspace,userId:expectedUser},undefined,{quiet:true});
+        const pending=transport(paired?'auth.devicePair':'auth.activateOwner',{tokenHash:proof.tokenHash,workspaceId:expectedWorkspace,userId:expectedUser},undefined,{quiet:true});
         proof=null;result=await pending;checkGeneration(expected);
         const account=result?.identity?.currentAccount;
-        if(result.workspaceId!==expectedWorkspace||account?.id!==expectedUser||account.role!=='owner'||account.status!=='active')throw failure('OWNER_ACTIVATION_FAILED');
-        return adopt(result,expected,{authentication:true});
+        if(result.workspaceId!==expectedWorkspace||account?.id!==expectedUser||(!paired&&account.role!=='owner')||account.status!=='active')throw failure('OWNER_ACTIVATION_FAILED');
+        const state=adopt(result,expected,{authentication:true});
+        if(paired&&canRememberMember())saveMemberLogin();
+        return state;
       }catch(_){
         await discardReturnedSession(result);
         if(expected===generation)invalidateSession('OWNER_ACTIVATION_FAILED');
         return snapshot();
       }finally{proof=null;result=null;}
     }
-    async function signIn({username,password,workspaceId:requestedWorkspace,rememberDevice=false}={}){
-      const state=await authenticate('auth.signIn',{workspaceId:requestedWorkspace||workspaceHint||link?.workspaceId||undefined,username,password});
+    let approvedOwnerId=null;
+    function takeEnrolledSession(){
+      const key='wf.ownerActivation.handoff.v1';
+      try{
+        const raw=root.sessionStorage?.getItem(key);
+        if(!raw)return null;
+        root.sessionStorage.removeItem(key);
+        const row=JSON.parse(raw);
+        if(employeeEntry&&row.workspaceId===workspaceHint&&uuid(row.userId)&&Number.isSafeInteger(row.createdAt)&&
+          row.createdAt<=now()&&now()-row.createdAt<=120000&&typeof row.refreshToken==='string'&&row.refreshToken.length>0&&row.refreshToken.length<=4096)return row;
+      }catch{}
+      return null;
+    }
+    async function resumeEnrolledOwner(row){
+      const expected=generation;let result;
+      try{
+        result=await transport('auth.refresh',{refreshToken:row.refreshToken},undefined,{quiet:true});
+        const account=result?.identity?.currentAccount;
+        if(result.workspaceId!==workspaceHint||account?.id!==row.userId||account.role!=='owner')throw failure('OWNER_ACTIVATION_FAILED');
+        const state=adopt(result,expected,{authentication:true});approvedOwnerId=account.id;return state;
+      }catch{
+        await discardReturnedSession(result);
+        if(expected===generation)invalidateSession('OWNER_ACTIVATION_FAILED');
+        return snapshot();
+      }
+    }
+    function takeApprovalNotice(){
+      const id=approvedOwnerId;approvedOwnerId=null;
+      return !!id&&snapshot().currentAccount?.id===id;
+    }
+    async function signIn({username,password,workspaceId:requestedWorkspace,rememberDevice=false,approvalToken}={}){
+      const state=await authenticate('auth.signIn',{workspaceId:requestedWorkspace||workspaceHint||link?.workspaceId||undefined,username,password,...(approvalToken?{approvalToken}:{})});
       if(state.authGeneration===generation&&state.authenticated&&employeeEntry){
         // Explicit switching to a different account also cancels the old device continuation.
         if(canRememberMember()){const old=readMember();if(old){memberTag=old.tag;clearMember();}}
@@ -556,7 +591,12 @@
       if(mode==='remote'){
         clearStored();
         if(activation){const proof=activation;activation=null;return activateOwner(proof);}
-        if(!ownerEntry){clearRemoteStored(true);return configured?recoverMember():snapshot();}
+        if(!ownerEntry){
+          clearRemoteStored(true);
+          const handoff=takeEnrolledSession();
+          if(configured&&handoff)return resumeEnrolledOwner(handoff);
+          return configured?recoverMember():snapshot();
+        }
         if(!configured)return snapshot();
         return recoverOwner();
       }
@@ -582,7 +622,7 @@
       for(const type of ['online','focus','pageshow'])root.addEventListener?.(type,resume);
       root.document?.addEventListener?.('visibilitychange',resume);
     }
-    return Object.freeze({ready,request,realtimeCredentials,getSnapshot:snapshot,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
+    return Object.freeze({ready,request,takeApprovalNotice,realtimeCredentials,getSnapshot:snapshot,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
       canRememberMember,isConfigured:()=>configured,isRemote:()=>mode==='remote',isRemoteMode:()=>mode==='remote',isLinkedOwner:()=>mode==='local'&&!!link,
       localIdentityChanged,lockLocalAccess,invalidateSession,cacheName,entryUrl,can,touch,refresh,signIn,signOut,enrollOwner,bootstrapOwner:enrollOwner,
       customerAuthOptions:()=>customerAuth('auth.customerOptions'),
